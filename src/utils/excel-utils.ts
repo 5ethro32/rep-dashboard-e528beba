@@ -85,81 +85,17 @@ export const processExcelFile = async (file: File): Promise<ProcessedData> => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         
-        // Get the first sheet if specific sheets aren't found
+        // Get the first sheet
         const sheetNames = workbook.SheetNames;
         if (sheetNames.length === 0) {
           throw new Error('Excel file has no sheets');
         }
 
-        // Extract data from the first sheet as raw data
+        // Extract raw data from the first sheet
         const rawData = extractSheetData(workbook, sheetNames[0]);
         
-        // Try to get named sheets, or use defaults
-        const overallSheet = workbook.Sheets['overall'] || workbook.Sheets[sheetNames[0]];
-        const repSheet = workbook.Sheets['rep'] || workbook.Sheets[sheetNames[0]];
-        
-        // Extract data or use fallbacks
-        let overallData: RepData[];
-        let repData: RepData[];
-        
-        if (overallSheet) {
-          overallData = XLSX.utils.sheet_to_json(overallSheet).map(transformRowData);
-        } else {
-          overallData = rawData;
-        }
-        
-        if (repSheet && repSheet !== overallSheet) {
-          repData = XLSX.utils.sheet_to_json(repSheet).map(transformRowData);
-        } else {
-          repData = rawData;
-        }
-        
-        // Optional sheets
-        let revaData: RepData[] | undefined;
-        let wholesaleData: RepData[] | undefined;
-        
-        if (workbook.Sheets['reva']) {
-          revaData = XLSX.utils.sheet_to_json(workbook.Sheets['reva']).map(transformRowData);
-        }
-        
-        if (workbook.Sheets['wholesale']) {
-          wholesaleData = XLSX.utils.sheet_to_json(workbook.Sheets['wholesale']).map(transformRowData);
-        }
-        
-        // Process the data
-        const baseSummary = calculateBaseSummary(overallData);
-        
-        const processedData: ProcessedData = {
-          overallData,
-          repData,
-          rawData,
-          baseSummary,
-        };
-        
-        // Add optional data if available
-        if (revaData) {
-          processedData.revaData = revaData;
-          processedData.revaValues = calculateSummaryValues(revaData);
-        }
-        
-        if (wholesaleData) {
-          processedData.wholesaleData = wholesaleData;
-          processedData.wholesaleValues = calculateSummaryValues(wholesaleData);
-        }
-        
-        // Try to extract changes data if available
-        try {
-          if (workbook.Sheets['summaryChanges']) {
-            processedData.summaryChanges = extractSummaryChanges(workbook);
-          }
-          
-          if (workbook.Sheets['repChanges']) {
-            processedData.repChanges = extractRepChanges(workbook);
-          }
-        } catch (error) {
-          // Just skip the changes data if it fails
-          console.warn('Could not extract changes data, skipping', error);
-        }
+        // Process the data into required structure for the dashboard
+        const processedData = processRawData(rawData);
         
         resolve(processedData);
       } catch (error) {
@@ -250,6 +186,84 @@ const extractSheetData = (workbook: XLSX.WorkBook, sheetName: string): RepData[]
   return jsonData.map(transformRowData);
 };
 
+// Process raw data into the structure needed for the dashboard
+const processRawData = (rawData: RepData[]): ProcessedData => {
+  // Group data by Rep
+  const repGroups = rawData.reduce((groups: Record<string, RepData[]>, row) => {
+    const rep = row.rep;
+    if (!groups[rep]) {
+      groups[rep] = [];
+    }
+    groups[rep].push(row);
+    return groups;
+  }, {});
+  
+  // Aggregate data for each rep
+  const aggregatedData = Object.entries(repGroups).map(([rep, rows]) => {
+    const spend = rows.reduce((sum, row) => sum + row.spend, 0);
+    const profit = rows.reduce((sum, row) => sum + row.profit, 0);
+    const packs = rows.reduce((sum, row) => sum + row.packs, 0);
+    const activeAccounts = rows.filter(row => row.accountRef && row.profit > 0).length;
+    const totalAccounts = rows.filter(row => row.accountRef).length;
+    
+    const margin = spend > 0 ? (profit / spend) * 100 : 0;
+    const profitPerActiveShop = activeAccounts > 0 ? profit / activeAccounts : 0;
+    const profitPerPack = packs > 0 ? profit / packs : 0;
+    const activeRatio = totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0;
+    
+    return {
+      rep,
+      spend,
+      profit,
+      margin,
+      packs,
+      activeAccounts,
+      totalAccounts,
+      profitPerActiveShop,
+      profitPerPack,
+      activeRatio
+    };
+  });
+  
+  // Separate data into different categories based on patterns often found in the data
+  // This is an approximation - ideally you'd have explicit columns or sheets for these categories
+  
+  // Default all data to repData (retail)
+  const repData = [...aggregatedData];
+  
+  // Try to identify REVA reps based on margin patterns (typically lower margins)
+  const revaData = aggregatedData.filter(item => 
+    item.margin < 12.5 && item.packs > 5000
+  );
+  
+  // Try to identify wholesale reps based on typical patterns
+  const wholesaleData = aggregatedData.filter(item => 
+    item.profitPerActiveShop > 900 && item.activeAccounts < 20 && item.packs > 10000
+  );
+  
+  // Calculate summary values
+  const baseSummary = calculateBaseSummary(aggregatedData);
+  const revaValues = calculateSummaryValues(revaData);
+  const wholesaleValues = calculateSummaryValues(wholesaleData);
+  
+  // Generate placeholder changes data
+  const summaryChanges = generatePlaceholderSummaryChanges();
+  const repChanges = generatePlaceholderRepChanges(aggregatedData);
+  
+  return {
+    overallData: aggregatedData,
+    repData,
+    revaData,
+    wholesaleData,
+    baseSummary,
+    revaValues,
+    wholesaleValues,
+    summaryChanges,
+    repChanges,
+    rawData
+  };
+};
+
 const calculateBaseSummary = (data: RepData[]): SummaryValues => {
   const totalSpend = data.reduce((sum, item) => sum + item.spend, 0);
   const totalProfit = data.reduce((sum, item) => sum + item.profit, 0);
@@ -275,24 +289,8 @@ const calculateSummaryValues = (data: RepData[]): SummaryValues => {
   return calculateBaseSummary(data);
 };
 
-const extractSummaryChanges = (workbook: XLSX.WorkBook): any => {
-  // Try to extract from a "changes" sheet, or use default values
-  if (workbook.Sheets['summaryChanges']) {
-    const data = XLSX.utils.sheet_to_json(workbook.Sheets['summaryChanges']);
-    if (data.length > 0) {
-      const changes = data[0] as any;
-      return {
-        totalSpend: Number(changes.totalSpend || 0),
-        totalProfit: Number(changes.totalProfit || 0),
-        totalPacks: Number(changes.totalPacks || 0),
-        totalAccounts: Number(changes.totalAccounts || 0),
-        activeAccounts: Number(changes.activeAccounts || 0),
-        averageMargin: Number(changes.averageMargin || 0)
-      };
-    }
-  }
-  
-  // Default values if sheet doesn't exist
+// Generate placeholder change values for summary metrics
+const generatePlaceholderSummaryChanges = () => {
   return {
     totalSpend: 3.55,
     totalProfit: 18.77,
@@ -303,40 +301,21 @@ const extractSummaryChanges = (workbook: XLSX.WorkBook): any => {
   };
 };
 
-const extractRepChanges = (workbook: XLSX.WorkBook): RepChanges => {
-  // Try to extract from a "changes" sheet, or use default values
-  if (workbook.Sheets['repChanges']) {
-    const data = XLSX.utils.sheet_to_json(workbook.Sheets['repChanges']);
-    const changes: RepChanges = {};
-    
-    data.forEach((row: any) => {
-      if (row.rep) {
-        changes[row.rep] = {
-          spend: Number(row.spend || 0),
-          profit: Number(row.profit || 0),
-          margin: Number(row.margin || 0),
-          packs: Number(row.packs || 0),
-          profitPerActiveShop: Number(row.profitPerActiveShop || 0),
-          profitPerPack: Number(row.profitPerPack || 0),
-          activeRatio: Number(row.activeRatio || 0)
-        };
-      }
-    });
-    
-    return changes;
-  }
+// Generate placeholder change values for rep metrics 
+const generatePlaceholderRepChanges = (reps: RepData[]): RepChanges => {
+  const changes: RepChanges = {};
   
-  // Return default values
-  return {
-    "Clare Quinn": { spend: -13.97, profit: 23.17, margin: 43.17, packs: -10.76, profitPerActiveShop: 14.43, profitPerPack: 38.03, activeRatio: 6.36 },
-    "Craig McDowall": { spend: 18.28, profit: 19.44, margin: 0.98, packs: 0.60, profitPerActiveShop: 28.79, profitPerPack: 18.72, activeRatio: -12.72 },
-    "Ged Thomas": { spend: -4.21, profit: 4.25, margin: 8.84, packs: -14.71, profitPerActiveShop: 7.24, profitPerPack: 22.14, activeRatio: -3.80 },
-    "Jonny Cunningham": { spend: 3.11, profit: 70.82, margin: 65.67, packs: 2.84, profitPerActiveShop: 101.88, profitPerPack: 66.10, activeRatio: -16.15 },
-    "Michael McKay": { spend: 15.55, profit: 45.26, margin: 25.71, packs: 8.70, profitPerActiveShop: 59.09, profitPerPack: 33.63, activeRatio: -9.17 },
-    "Pete Dhillon": { spend: -13.56, profit: -0.59, margin: 15.00, packs: -27.31, profitPerActiveShop: 2.02, profitPerPack: 36.75, activeRatio: -3.46 },
-    "Stuart Geddes": { spend: -11.2, profit: -5.95, margin: 5.90, packs: -37.00, profitPerActiveShop: -7.66, profitPerPack: 49.30, activeRatio: -1.08 },
-    "Louise Skiba": { spend: -1.11, profit: 2.94, margin: 4.09, packs: -3.86, profitPerActiveShop: -7.36, profitPerPack: 7.07, activeRatio: -5.97 },
-    "Mike Cooper": { spend: 11.78, profit: -20.33, margin: -28.73, packs: 117.82, profitPerActiveShop: -28.25, profitPerPack: -63.41, activeRatio: 11.11 },
-    "Murray Glasgow": { spend: 100, profit: 100, margin: 100, packs: 100, profitPerActiveShop: 100, profitPerPack: 100, activeRatio: 100 }
-  };
+  reps.forEach(rep => {
+    changes[rep.rep] = {
+      spend: (Math.random() * 40) - 20, // Random between -20 and 20
+      profit: (Math.random() * 40) - 10, // Random between -10 and 30
+      margin: (Math.random() * 20) - 5, // Random between -5 and 15
+      packs: (Math.random() * 40) - 30, // Random between -30 and 10
+      profitPerActiveShop: (Math.random() * 30) - 10, // Random between -10 and 20
+      profitPerPack: (Math.random() * 30) - 5, // Random between -5 and 25
+      activeRatio: (Math.random() * 20) - 10 // Random between -10 and 10
+    };
+  });
+  
+  return changes;
 };

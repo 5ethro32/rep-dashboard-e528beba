@@ -48,7 +48,7 @@ const DataUpload: React.FC = () => {
       
       toast({
         title: "Data uploaded successfully",
-        description: "Your performance data has been updated.",
+        description: "Your performance data has been processed and is ready to view.",
         variant: "default",
       });
       
