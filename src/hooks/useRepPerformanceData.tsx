@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 
@@ -11,8 +10,6 @@ const defaultOverallData = [
   { rep: "Michael McKay", spend: 324630.48, profit: 53194.85, margin: 16.39, packs: 184224, activeAccounts: 105, totalAccounts: 192, profitPerActiveShop: 506.62, profitPerPack: 0.29, activeRatio: 54.69 },
   { rep: "Pete Dhillon", spend: 167740.56, profit: 33757.35, margin: 20.12, packs: 114437, activeAccounts: 76, totalAccounts: 109, profitPerActiveShop: 444.18, profitPerPack: 0.29, activeRatio: 69.72 },
   { rep: "Stuart Geddes", spend: 162698.54, profit: 25799.93, margin: 15.86, packs: 68130, activeAccounts: 57, totalAccounts: 71, profitPerActiveShop: 452.63, profitPerPack: 0.38, activeRatio: 80.28 },
-  { rep: "Louise Skiba", spend: 113006.33, profit: 11745.28, margin: 10.39, packs: 88291, activeAccounts: 10, totalAccounts: 13, profitPerActiveShop: 1174.53, profitPerPack: 0.13, activeRatio: 76.92 },
-  { rep: "Mike Cooper", spend: 88801.22, profit: 13545.86, margin: 15.25, packs: 91490, activeAccounts: 10, totalAccounts: 20, profitPerActiveShop: 1354.59, profitPerPack: 0.15, activeRatio: 50.00 },
   { rep: "Murray Glasgow", spend: 1259.21, profit: 365.84, margin: 29.05, packs: 289, activeAccounts: 3, totalAccounts: 5, profitPerActiveShop: 121.95, profitPerPack: 1.27, activeRatio: 60.00 }
 ];
 
@@ -131,6 +128,78 @@ export const useRepPerformanceData = () => {
     }
   }, []);
 
+  const getCombinedRepData = () => {
+    const combinedData = JSON.parse(JSON.stringify(repData));
+    
+    if (includeReva) {
+      revaData.forEach(revaItem => {
+        const repIndex = combinedData.findIndex((rep: any) => rep.rep === revaItem.rep);
+        
+        if (repIndex >= 0) {
+          const rep = combinedData[repIndex];
+          rep.spend += revaItem.spend;
+          rep.profit += revaItem.profit;
+          rep.packs += revaItem.packs;
+          
+          rep.margin = (rep.profit / rep.spend) * 100;
+          
+          if (rep.activeAccounts) {
+            rep.activeAccounts += revaItem.activeAccounts || 0;
+            rep.profitPerActiveShop = rep.profit / rep.activeAccounts;
+          }
+          
+          if (rep.totalAccounts) {
+            rep.totalAccounts += revaItem.totalAccounts || 0;
+            rep.activeRatio = (rep.activeAccounts / rep.totalAccounts) * 100;
+          }
+          
+          if (rep.packs > 0) {
+            rep.profitPerPack = rep.profit / rep.packs;
+          }
+        } else {
+          if (revaItem.rep !== "REVA" && revaItem.rep !== "Reva") {
+            combinedData.push(revaItem);
+          }
+        }
+      });
+    }
+    
+    if (includeWholesale) {
+      wholesaleData.forEach(wholesaleItem => {
+        const repIndex = combinedData.findIndex((rep: any) => rep.rep === wholesaleItem.rep);
+        
+        if (repIndex >= 0) {
+          const rep = combinedData[repIndex];
+          rep.spend += wholesaleItem.spend;
+          rep.profit += wholesaleItem.profit;
+          rep.packs += wholesaleItem.packs;
+          
+          rep.margin = (rep.profit / rep.spend) * 100;
+          
+          if (rep.activeAccounts) {
+            rep.activeAccounts += wholesaleItem.activeAccounts || 0;
+            rep.profitPerActiveShop = rep.profit / rep.activeAccounts;
+          }
+          
+          if (rep.totalAccounts) {
+            rep.totalAccounts += wholesaleItem.totalAccounts || 0;
+            rep.activeRatio = (rep.activeAccounts / rep.totalAccounts) * 100;
+          }
+          
+          if (rep.packs > 0) {
+            rep.profitPerPack = rep.profit / rep.packs;
+          }
+        } else {
+          if (wholesaleItem.rep !== "WHOLESALE" && wholesaleItem.rep !== "Wholesale") {
+            combinedData.push(wholesaleItem);
+          }
+        }
+      });
+    }
+    
+    return combinedData;
+  };
+
   const getActiveData = (tabValue: string) => {
     switch (tabValue) {
       case 'rep':
@@ -141,23 +210,7 @@ export const useRepPerformanceData = () => {
         return includeWholesale ? wholesaleData : [];
       case 'overall':
       default:
-        let combinedData = [...overallData];
-        
-        if (!includeReva) {
-          const revaReps = revaData.map(item => item.rep);
-          combinedData = combinedData.filter(rep => 
-            !revaReps.includes(rep.rep) || rep.rep === "Stuart Geddes" || rep.rep === "Craig McDowall" || rep.rep === "Ged Thomas"
-          );
-        }
-        
-        if (!includeWholesale) {
-          const wholesaleReps = wholesaleData.map(item => item.rep);
-          combinedData = combinedData.filter(rep => 
-            !wholesaleReps.includes(rep.rep) || rep.rep === "Craig McDowall" || rep.rep === "Pete Dhillon" || rep.rep === "Jonny Cunningham"
-          );
-        }
-        
-        return combinedData;
+        return getCombinedRepData();
     }
   };
 

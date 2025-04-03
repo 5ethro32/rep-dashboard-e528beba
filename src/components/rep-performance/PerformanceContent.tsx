@@ -48,11 +48,26 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
 
   const getTabTitle = (tabValue: string) => {
     switch (tabValue) {
-      case 'overall': return 'Overall Rep Performance';
+      case 'overall': return 'Overall Rep Performance (Combined)';
       case 'rep': return 'Retail Performance';
       case 'reva': return 'REVA Performance';
       case 'wholesale': return 'Wholesale Performance';
       default: return '';
+    }
+  };
+
+  const getTabDescription = (tabValue: string) => {
+    switch (tabValue) {
+      case 'overall': 
+        return 'Showing retail data with REVA and wholesale data combined into rep totals.';
+      case 'rep': 
+        return 'Showing retail data only, excluding REVA and wholesale.';
+      case 'reva': 
+        return 'Showing REVA data by rep.';
+      case 'wholesale': 
+        return 'Showing wholesale data by rep.';
+      default: 
+        return '';
     }
   };
 
@@ -75,9 +90,12 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
           <TabsContent key={tabValue} value={tabValue} className="mt-0">
             <div className="bg-gray-900/40 rounded-lg border border-white/10 mb-6 md:mb-8 backdrop-blur-sm shadow-lg">
               <div className="p-3 md:p-6">
-                <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-white/90">
+                <h2 className="text-lg md:text-xl font-semibold mb-1 md:mb-2 text-white/90">
                   {getTabTitle(tabValue)}
                 </h2>
+                <p className="text-xs md:text-sm mb-3 md:mb-4 text-white/60">
+                  {getTabDescription(tabValue)}
+                </p>
                 <PerformanceTable 
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}

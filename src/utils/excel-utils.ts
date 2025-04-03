@@ -226,7 +226,7 @@ const processRawData = (rawData: RepData[]): ProcessedData => {
       const repName = row.subRep && row.subRep.trim() !== '' ? row.subRep : row.rep;
       wholesaleData.push({...row, rep: repName});
     } else {
-      // For standard retail, keep the rep as is
+      // For standard retail, keep the rep as is (only include those not in REVA or Wholesale)
       retailData.push(row);
     }
   });
@@ -241,13 +241,9 @@ const processRawData = (rawData: RepData[]): ProcessedData => {
   const aggregatedRevaData = aggregateGroups(revaGroups).filter(rep => rep.spend > 0);
   const aggregatedWholesaleData = aggregateGroups(wholesaleGroups).filter(rep => rep.spend > 0);
   
-  // Create overall data by combining all sectors but handling duplicate rep names
-  // Start with all retail reps
+  // For overall data, we now just use the retail data and don't combine them here
+  // The combining logic is now in the getCombinedRepData function in useRepPerformanceData
   const overallData = [...aggregatedRepData];
-  
-  // Add REVA and Wholesale data to the overall data, combining with existing reps if needed
-  combineDataIntoOverall(overallData, aggregatedRevaData);
-  combineDataIntoOverall(overallData, aggregatedWholesaleData);
   
   // Calculate summary values
   const baseSummary = calculateSummaryValues([...aggregatedRepData, ...aggregatedRevaData, ...aggregatedWholesaleData]);
@@ -256,7 +252,7 @@ const processRawData = (rawData: RepData[]): ProcessedData => {
   
   // Generate placeholder changes data
   const summaryChanges = generatePlaceholderSummaryChanges();
-  const repChanges = generatePlaceholderRepChanges(overallData);
+  const repChanges = generatePlaceholderRepChanges([...overallData, ...aggregatedRevaData, ...aggregatedWholesaleData]);
   
   return {
     overallData,
