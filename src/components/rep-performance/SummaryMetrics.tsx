@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
+import MetricCard from '@/components/MetricCard';
+import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 interface SummaryMetricsProps {
   summary: {
@@ -18,81 +20,55 @@ interface SummaryMetricsProps {
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges }) => {
-  const formatCurrency = (value: number, decimals = 0) => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    }).format(value);
-  };
-
-  const formatPercent = (value: number) => {
-    return `${value.toFixed(1)}%`;
-  };
-
-  const formatNumber = (value: number) => {
-    return new Intl.NumberFormat('en-GB').format(value);
-  };
-
   const renderChangeIndicator = (changeValue: number) => {
     const isPositive = changeValue > 0;
     
     if (Math.abs(changeValue) < 0.1) return null; // No significant change
     
-    return (
-      <span className={`inline-flex items-center ml-1 ${isPositive ? 'text-emerald-500' : 'text-finance-red'}`}>
-        {isPositive ? 
-          <ArrowUp className="h-3.5 w-3.5 md:h-4 md:w-4" /> : 
-          <ArrowDown className="h-3.5 w-3.5 md:h-4 md:w-4" />
-        }
-        <span className="text-xs font-medium ml-0.5">{Math.abs(changeValue).toFixed(1)}%</span>
-      </span>
-    );
+    return {
+      value: `${Math.abs(changeValue).toFixed(1)}%`,
+      type: isPositive ? 'increase' : 'decrease'
+    };
+  };
+
+  const getPreviousValue = (current: number, changePercent: number) => {
+    return Math.round(current / (1 + changePercent / 100));
   };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
-      <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-5 backdrop-blur-sm shadow-lg">
-        <h3 className="text-xs font-medium text-finance-gray uppercase">Revenue</h3>
-        <div className="flex items-center mt-1">
-          <p className="text-xl md:text-2xl font-bold">{formatCurrency(summary.totalSpend)}</p>
-          {renderChangeIndicator(summaryChanges.totalSpend)}
-        </div>
-        <div className="text-xs text-finance-gray/80 mt-1">
-          {formatCurrency(Math.round(summary.totalSpend / (1 + summaryChanges.totalSpend / 100)))}
-        </div>
-      </div>
-      <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-5 backdrop-blur-sm shadow-lg">
-        <h3 className="text-xs font-medium text-finance-gray uppercase">Profit</h3>
-        <div className="flex items-center mt-1">
-          <p className="text-xl md:text-2xl font-bold text-finance-red">{formatCurrency(summary.totalProfit)}</p>
-          {renderChangeIndicator(summaryChanges.totalProfit)}
-        </div>
-        <div className="text-xs text-finance-gray/80 mt-1">
-          {formatCurrency(Math.round(summary.totalProfit / (1 + summaryChanges.totalProfit / 100)))}
-        </div>
-      </div>
-      <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-5 backdrop-blur-sm shadow-lg">
-        <h3 className="text-xs font-medium text-finance-gray uppercase">Margin</h3>
-        <div className="flex items-center mt-1">
-          <p className="text-xl md:text-2xl font-bold">{formatPercent(summary.averageMargin)}</p>
-          {renderChangeIndicator(summaryChanges.averageMargin)}
-        </div>
-        <div className="text-xs text-finance-gray/80 mt-1">
-          {formatPercent(summary.averageMargin - summaryChanges.averageMargin)}
-        </div>
-      </div>
-      <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-5 backdrop-blur-sm shadow-lg">
-        <h3 className="text-xs font-medium text-finance-gray uppercase">Packs</h3>
-        <div className="flex items-center mt-1">
-          <p className="text-xl md:text-2xl font-bold">{formatNumber(summary.totalPacks)}</p>
-          {renderChangeIndicator(summaryChanges.totalPacks)}
-        </div>
-        <div className="text-xs text-finance-gray/80 mt-1">
-          {formatNumber(Math.round(summary.totalPacks / (1 + summaryChanges.totalPacks / 100)))}
-        </div>
-      </div>
+      {/* Revenue Card */}
+      <MetricCard
+        title="Revenue"
+        value={formatCurrency(summary.totalSpend, 0)}
+        change={summaryChanges.totalSpend ? renderChangeIndicator(summaryChanges.totalSpend) : undefined}
+        subtitle={formatCurrency(getPreviousValue(summary.totalSpend, summaryChanges.totalSpend), 0)}
+      />
+      
+      {/* Profit Card */}
+      <MetricCard
+        title="Profit"
+        value={formatCurrency(summary.totalProfit, 0)}
+        change={summaryChanges.totalProfit ? renderChangeIndicator(summaryChanges.totalProfit) : undefined}
+        subtitle={formatCurrency(getPreviousValue(summary.totalProfit, summaryChanges.totalProfit), 0)}
+        valueClassName="text-finance-red"
+      />
+      
+      {/* Margin Card */}
+      <MetricCard
+        title="Margin"
+        value={formatPercent(summary.averageMargin)}
+        change={summaryChanges.averageMargin ? renderChangeIndicator(summaryChanges.averageMargin) : undefined}
+        subtitle={formatPercent(summary.averageMargin - summaryChanges.averageMargin)}
+      />
+      
+      {/* Packs Card */}
+      <MetricCard
+        title="Packs"
+        value={formatNumber(summary.totalPacks)}
+        change={summaryChanges.totalPacks ? renderChangeIndicator(summaryChanges.totalPacks) : undefined}
+        subtitle={formatNumber(getPreviousValue(summary.totalPacks, summaryChanges.totalPacks))}
+      />
     </div>
   );
 };

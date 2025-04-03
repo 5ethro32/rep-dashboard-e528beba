@@ -1,4 +1,3 @@
-
 export const calculateSummary = (
   baseSummary: {
     totalSpend: number;
@@ -27,27 +26,42 @@ export const calculateSummary = (
   includeReva: boolean,
   includeWholesale: boolean
 ) => {
-  let summary = {...baseSummary};
+  // Start with retail values
+  let totalSpend = baseSummary.totalSpend - revaValues.totalSpend - wholesaleValues.totalSpend;
+  let totalProfit = baseSummary.totalProfit - revaValues.totalProfit - wholesaleValues.totalProfit;
+  let totalPacks = baseSummary.totalPacks - revaValues.totalPacks - wholesaleValues.totalPacks;
+  let totalAccounts = baseSummary.totalAccounts - revaValues.totalAccounts - wholesaleValues.totalAccounts;
+  let activeAccounts = baseSummary.activeAccounts - revaValues.activeAccounts - wholesaleValues.activeAccounts;
   
-  if (!includeReva) {
-    summary.totalSpend -= revaValues.totalSpend;
-    summary.totalProfit -= revaValues.totalProfit;
-    summary.totalPacks -= revaValues.totalPacks;
-    summary.totalAccounts -= revaValues.totalAccounts;
-    summary.activeAccounts -= revaValues.activeAccounts;
+  // Add REVA values if toggle is on
+  if (includeReva) {
+    totalSpend += revaValues.totalSpend;
+    totalProfit += revaValues.totalProfit;
+    totalPacks += revaValues.totalPacks;
+    totalAccounts += revaValues.totalAccounts;
+    activeAccounts += revaValues.activeAccounts;
   }
   
-  if (!includeWholesale) {
-    summary.totalSpend -= wholesaleValues.totalSpend;
-    summary.totalProfit -= wholesaleValues.totalProfit;
-    summary.totalPacks -= wholesaleValues.totalPacks;
-    summary.totalAccounts -= wholesaleValues.totalAccounts;
-    summary.activeAccounts -= wholesaleValues.activeAccounts;
+  // Add Wholesale values if toggle is on
+  if (includeWholesale) {
+    totalSpend += wholesaleValues.totalSpend;
+    totalProfit += wholesaleValues.totalProfit;
+    totalPacks += wholesaleValues.totalPacks;
+    totalAccounts += wholesaleValues.totalAccounts;
+    activeAccounts += wholesaleValues.activeAccounts;
   }
   
-  summary.averageMargin = summary.totalSpend > 0 ? (summary.totalProfit / summary.totalSpend) * 100 : 0;
+  // Calculate average margin based on included values
+  const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
   
-  return summary;
+  return {
+    totalSpend,
+    totalProfit,
+    totalPacks,
+    totalAccounts,
+    activeAccounts,
+    averageMargin
+  };
 };
 
 export const formatCurrency = (value: number, decimals = 0) => {
