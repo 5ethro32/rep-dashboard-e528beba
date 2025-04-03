@@ -1,108 +1,270 @@
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
-  ArrowDown, 
-  ArrowUp, 
-  Calendar,
-  ChartBar, 
-  CircleDollarSign, 
-  Info, 
-  TrendingDown, 
-  TrendingUp 
-} from 'lucide-react';
+import { ArrowDown, ArrowUp, Calendar, ChartBar, CircleDollarSign, Info, TrendingDown, TrendingUp } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
 import LineChart from '@/components/LineChart';
 import ProgressBar from '@/components/ProgressBar';
 import DonutChart from '@/components/DonutChart';
 import ActionItem from '@/components/ActionItem';
-
-const turnoverData = [
-  { name: 'Mar', value: 2100, avg: 2200 },
-  { name: 'Apr', value: 2250, avg: 2200 },
-  { name: 'May', value: 2400, avg: 2200 },
-  { name: 'Jun', value: 2300, avg: 2200 },
-  { name: 'Jul', value: 1900, avg: 2200 },
-  { name: 'Aug', value: 2100, avg: 2200 },
-  { name: 'Sep', value: 2500, avg: 2200 },
-  { name: 'Oct', value: 2400, avg: 2200 },
-  { name: 'Nov', value: 2250, avg: 2200 },
-  { name: 'Dec', value: 2146, avg: 2200 },
-];
-
-const costOfSalesData = [
-  { name: 'Mar', value: 1650, avg: 1800 },
-  { name: 'Apr', value: 1700, avg: 1800 },
-  { name: 'May', value: 1850, avg: 1800 },
-  { name: 'Jun', value: 1800, avg: 1800 },
-  { name: 'Jul', value: 1500, avg: 1800 },
-  { name: 'Aug', value: 1650, avg: 1800 },
-  { name: 'Sep', value: 1900, avg: 1800 },
-  { name: 'Oct', value: 1850, avg: 1800 },
-  { name: 'Nov', value: 1750, avg: 1800 },
-  { name: 'Dec', value: 1750, avg: 1800 },
-];
-
-const grossProfitData = [
-  { name: 'Mar', value: 350, avg: 360 },
-  { name: 'Apr', value: 330, avg: 360 },
-  { name: 'May', value: 380, avg: 360 },
-  { name: 'Jun', value: 400, avg: 360 },
-  { name: 'Jul', value: 370, avg: 360 },
-  { name: 'Aug', value: 360, avg: 360 },
-  { name: 'Sep', value: 420, avg: 360 },
-  { name: 'Oct', value: 450, avg: 360 },
-  { name: 'Nov', value: 360, avg: 360 },
-  { name: 'Dec', value: 390, avg: 360 },
-];
-
-const operatingExpensesData = [
-  { name: 'Jun', value: 342, avg: 312 },
-  { name: 'Jul', value: 332, avg: 312 },
-  { name: 'Aug', value: 336, avg: 312 },
-  { name: 'Sep', value: 320, avg: 312 },
-  { name: 'Oct', value: 318, avg: 312 },
-  { name: 'Nov', value: 295, avg: 312 },
-  { name: 'Dec', value: 319, avg: 312 },
-  { name: 'Jan', value: 310, avg: 312 },
-  { name: 'Feb', value: 292, avg: 312 },
-  { name: 'Mar', value: 285, avg: 312 },
-  { name: 'Apr', value: 290, avg: 312 },
-  { name: 'May', value: 288, avg: 312 },
-  { name: 'Jun', value: 290, avg: 312 },
-];
-
-const expensesChartData = [
-  { name: 'Wages', value: 68.5, color: '#ea384c' },
-  { name: 'Bank', value: 9.1, color: '#4c4c4c' },
-  { name: 'Fees', value: 2.2, color: '#5c5c5c' },
-  { name: 'IT', value: 5.4, color: '#6c6c6c' },
-  { name: 'Motor', value: 3.2, color: '#7c7c7c' },
-  { name: 'Other', value: 8.8, color: '#8c8c8c' },
-];
-
-const wagesData = [
-  { name: 'Jun', value: 215, avg: 210 },
-  { name: 'Jul', value: 214, avg: 210 },
-  { name: 'Aug', value: 213, avg: 210 },
-  { name: 'Sep', value: 208, avg: 210 },
-  { name: 'Oct', value: 205, avg: 210 },
-  { name: 'Nov', value: 204, avg: 210 },
-  { name: 'Dec', value: 217, avg: 210 },
-  { name: 'Jan', value: 204, avg: 210 },
-  { name: 'Feb', value: 200, avg: 210 },
-  { name: 'Mar', value: 198, avg: 210 },
-  { name: 'Apr', value: 197, avg: 210 },
-  { name: 'May', value: 204, avg: 210 },
-  { name: 'Jun', value: 205, avg: 210 },
-];
-
+const turnoverData = [{
+  name: 'Mar',
+  value: 2100,
+  avg: 2200
+}, {
+  name: 'Apr',
+  value: 2250,
+  avg: 2200
+}, {
+  name: 'May',
+  value: 2400,
+  avg: 2200
+}, {
+  name: 'Jun',
+  value: 2300,
+  avg: 2200
+}, {
+  name: 'Jul',
+  value: 1900,
+  avg: 2200
+}, {
+  name: 'Aug',
+  value: 2100,
+  avg: 2200
+}, {
+  name: 'Sep',
+  value: 2500,
+  avg: 2200
+}, {
+  name: 'Oct',
+  value: 2400,
+  avg: 2200
+}, {
+  name: 'Nov',
+  value: 2250,
+  avg: 2200
+}, {
+  name: 'Dec',
+  value: 2146,
+  avg: 2200
+}];
+const costOfSalesData = [{
+  name: 'Mar',
+  value: 1650,
+  avg: 1800
+}, {
+  name: 'Apr',
+  value: 1700,
+  avg: 1800
+}, {
+  name: 'May',
+  value: 1850,
+  avg: 1800
+}, {
+  name: 'Jun',
+  value: 1800,
+  avg: 1800
+}, {
+  name: 'Jul',
+  value: 1500,
+  avg: 1800
+}, {
+  name: 'Aug',
+  value: 1650,
+  avg: 1800
+}, {
+  name: 'Sep',
+  value: 1900,
+  avg: 1800
+}, {
+  name: 'Oct',
+  value: 1850,
+  avg: 1800
+}, {
+  name: 'Nov',
+  value: 1750,
+  avg: 1800
+}, {
+  name: 'Dec',
+  value: 1750,
+  avg: 1800
+}];
+const grossProfitData = [{
+  name: 'Mar',
+  value: 350,
+  avg: 360
+}, {
+  name: 'Apr',
+  value: 330,
+  avg: 360
+}, {
+  name: 'May',
+  value: 380,
+  avg: 360
+}, {
+  name: 'Jun',
+  value: 400,
+  avg: 360
+}, {
+  name: 'Jul',
+  value: 370,
+  avg: 360
+}, {
+  name: 'Aug',
+  value: 360,
+  avg: 360
+}, {
+  name: 'Sep',
+  value: 420,
+  avg: 360
+}, {
+  name: 'Oct',
+  value: 450,
+  avg: 360
+}, {
+  name: 'Nov',
+  value: 360,
+  avg: 360
+}, {
+  name: 'Dec',
+  value: 390,
+  avg: 360
+}];
+const operatingExpensesData = [{
+  name: 'Jun',
+  value: 342,
+  avg: 312
+}, {
+  name: 'Jul',
+  value: 332,
+  avg: 312
+}, {
+  name: 'Aug',
+  value: 336,
+  avg: 312
+}, {
+  name: 'Sep',
+  value: 320,
+  avg: 312
+}, {
+  name: 'Oct',
+  value: 318,
+  avg: 312
+}, {
+  name: 'Nov',
+  value: 295,
+  avg: 312
+}, {
+  name: 'Dec',
+  value: 319,
+  avg: 312
+}, {
+  name: 'Jan',
+  value: 310,
+  avg: 312
+}, {
+  name: 'Feb',
+  value: 292,
+  avg: 312
+}, {
+  name: 'Mar',
+  value: 285,
+  avg: 312
+}, {
+  name: 'Apr',
+  value: 290,
+  avg: 312
+}, {
+  name: 'May',
+  value: 288,
+  avg: 312
+}, {
+  name: 'Jun',
+  value: 290,
+  avg: 312
+}];
+const expensesChartData = [{
+  name: 'Wages',
+  value: 68.5,
+  color: '#ea384c'
+}, {
+  name: 'Bank',
+  value: 9.1,
+  color: '#4c4c4c'
+}, {
+  name: 'Fees',
+  value: 2.2,
+  color: '#5c5c5c'
+}, {
+  name: 'IT',
+  value: 5.4,
+  color: '#6c6c6c'
+}, {
+  name: 'Motor',
+  value: 3.2,
+  color: '#7c7c7c'
+}, {
+  name: 'Other',
+  value: 8.8,
+  color: '#8c8c8c'
+}];
+const wagesData = [{
+  name: 'Jun',
+  value: 215,
+  avg: 210
+}, {
+  name: 'Jul',
+  value: 214,
+  avg: 210
+}, {
+  name: 'Aug',
+  value: 213,
+  avg: 210
+}, {
+  name: 'Sep',
+  value: 208,
+  avg: 210
+}, {
+  name: 'Oct',
+  value: 205,
+  avg: 210
+}, {
+  name: 'Nov',
+  value: 204,
+  avg: 210
+}, {
+  name: 'Dec',
+  value: 217,
+  avg: 210
+}, {
+  name: 'Jan',
+  value: 204,
+  avg: 210
+}, {
+  name: 'Feb',
+  value: 200,
+  avg: 210
+}, {
+  name: 'Mar',
+  value: 198,
+  avg: 210
+}, {
+  name: 'Apr',
+  value: 197,
+  avg: 210
+}, {
+  name: 'May',
+  value: 204,
+  avg: 210
+}, {
+  name: 'Jun',
+  value: 205,
+  avg: 210
+}];
 const Index = () => {
   const currentDate = "March 2025";
-
-  return (
-    <div className="min-h-screen bg-finance-darkBg text-white">
-      <header className="py-16 px-6 md:px-12 container max-w-7xl mx-auto animate-fade-in">
+  return <div className="min-h-screen bg-finance-darkBg text-white">
+      <header className="py-16 px-6 md:px-12 container max-w-7xl mx-auto animate-fade-in bg-gray-950">
         <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold">
           Monthly
           <br />
@@ -115,7 +277,7 @@ const Index = () => {
         </div>
       </header>
 
-      <div className="container max-w-7xl mx-auto px-6 md:px-12 pb-16">
+      <div className="container max-w-7xl mx-auto px-6 md:px-12 pb-16 bg-gray-950">
         <section className="mb-20 animate-slide-in-up">
           <h2 className="section-title mb-8">Executive Summary</h2>
           
@@ -136,36 +298,30 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-12">
-            <MetricCard
-              title="GROSS PROFIT INCREASED"
-              value="£390k"
-              change={{ value: "from £360k (+8%)", type: "increase" }}
-            />
+            <MetricCard title="GROSS PROFIT INCREASED" value="£390k" change={{
+            value: "from £360k (+8%)",
+            type: "increase"
+          }} />
             
-            <MetricCard
-              title="OPERATING EXPENSES INCREASED"
-              value="£319k"
-              change={{ value: "from £298k", type: "increase" }}
-            />
+            <MetricCard title="OPERATING EXPENSES INCREASED" value="£319k" change={{
+            value: "from £298k",
+            type: "increase"
+          }} />
             
-            <MetricCard
-              title="POSITIVE EBITDA TREND"
-              value="£490k"
-              change={{ value: "+£100k in-month", type: "increase" }}
-            />
+            <MetricCard title="POSITIVE EBITDA TREND" value="£490k" change={{
+            value: "+£100k in-month",
+            type: "increase"
+          }} />
             
-            <MetricCard
-              title="NEGATIVE OPERATING CASHFLOW"
-              value="-£589k"
-              change={{ value: "-£177k prior month", type: "decrease" }}
-              valueClassName="text-finance-red"
-            />
+            <MetricCard title="NEGATIVE OPERATING CASHFLOW" value="-£589k" change={{
+            value: "-£177k prior month",
+            type: "decrease"
+          }} valueClassName="text-finance-red" />
             
-            <MetricCard
-              title="INCREASED DEBT POSITION"
-              value="£2.147m"
-              change={{ value: "+0.13% (£3k)", type: "increase" }}
-            />
+            <MetricCard title="INCREASED DEBT POSITION" value="£2.147m" change={{
+            value: "+0.13% (£3k)",
+            type: "increase"
+          }} />
           </div>
         </section>
         
@@ -195,12 +351,10 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
             <div>
               <h3 className="text-xl mb-4">Turnover</h3>
-              <MetricCard
-                title=""
-                value="£2.146m"
-                change={{ value: "-3.7% MoM", type: "decrease" }}
-                className="mb-4"
-              />
+              <MetricCard title="" value="£2.146m" change={{
+              value: "-3.7% MoM",
+              type: "decrease"
+            }} className="mb-4" />
               <div className="h-40">
                 <LineChart data={turnoverData} />
               </div>
@@ -208,12 +362,10 @@ const Index = () => {
             
             <div>
               <h3 className="text-xl mb-4">Cost of Sales</h3>
-              <MetricCard
-                title=""
-                value="£1.750m"
-                change={{ value: "-5.6% MoM", type: "decrease" }}
-                className="mb-4"
-              />
+              <MetricCard title="" value="£1.750m" change={{
+              value: "-5.6% MoM",
+              type: "decrease"
+            }} className="mb-4" />
               <div className="h-40">
                 <LineChart data={costOfSalesData} />
               </div>
@@ -221,12 +373,10 @@ const Index = () => {
             
             <div>
               <h3 className="text-xl mb-4">Gross Profit</h3>
-              <MetricCard
-                title=""
-                value="£390k"
-                change={{ value: "+8.3% MoM", type: "increase" }}
-                className="mb-4"
-              />
+              <MetricCard title="" value="£390k" change={{
+              value: "+8.3% MoM",
+              type: "increase"
+            }} className="mb-4" />
               <div className="h-40">
                 <LineChart data={grossProfitData} color="#4ade80" />
               </div>
@@ -239,19 +389,11 @@ const Index = () => {
           
           <div className="grid md:grid-cols-2 gap-8 mb-10">
             <div className="h-80">
-              <LineChart 
-                data={operatingExpensesData} 
-                color="#fff"
-                avgColor="#ea384c"
-              />
+              <LineChart data={operatingExpensesData} color="#fff" avgColor="#ea384c" />
             </div>
             
             <div className="h-80">
-              <DonutChart 
-                data={expensesChartData}
-                innerValue="£319k"
-                innerLabel="7% MoM"
-              />
+              <DonutChart data={expensesChartData} innerValue="£319k" innerLabel="7% MoM" />
             </div>
           </div>
           
@@ -330,12 +472,10 @@ const Index = () => {
           
           <div className="grid md:grid-cols-2 gap-8 mt-12">
             <div className="space-y-6">
-              <MetricCard
-                title="November Total Gross Wages"
-                value="£216,836"
-                change={{ value: "+6.4% MoM", type: "increase" }}
-                className="mb-6"
-              />
+              <MetricCard title="November Total Gross Wages" value="£216,836" change={{
+              value: "+6.4% MoM",
+              type: "increase"
+            }} className="mb-6" />
               
               <ul className="list-disc pl-6 space-y-2 text-finance-gray text-sm">
                 <li>Estimated £204k gross in January (-6.0%).</li>
@@ -353,33 +493,25 @@ const Index = () => {
               <h3 className="text-xl mb-4">Breakdown and Forecast</h3>
               
               <div className="grid grid-cols-2 gap-4">
-                <MetricCard
-                  title="Net Wages"
-                  value="£148,225"
-                  change={{ value: "+4.2% MoM", type: "increase" }}
-                  className="mb-2"
-                />
+                <MetricCard title="Net Wages" value="£148,225" change={{
+                value: "+4.2% MoM",
+                type: "increase"
+              }} className="mb-2" />
                 
-                <MetricCard
-                  title="PAYE Tax"
-                  value="£30,938"
-                  change={{ value: "+16.3% MoM", type: "increase" }}
-                  className="mb-2"
-                />
+                <MetricCard title="PAYE Tax" value="£30,938" change={{
+                value: "+16.3% MoM",
+                type: "increase"
+              }} className="mb-2" />
                 
-                <MetricCard
-                  title="NI"
-                  value="£29,033"
-                  change={{ value: "+9.1% MoM", type: "increase" }}
-                  className="mb-2"
-                />
+                <MetricCard title="NI" value="£29,033" change={{
+                value: "+9.1% MoM",
+                type: "increase"
+              }} className="mb-2" />
                 
-                <MetricCard
-                  title="Pension"
-                  value="£8,509"
-                  change={{ value: "+2.7% MoM", type: "increase" }}
-                  className="mb-2"
-                />
+                <MetricCard title="Pension" value="£8,509" change={{
+                value: "+2.7% MoM",
+                type: "increase"
+              }} className="mb-2" />
               </div>
               
               <div className="h-60 mt-6">
@@ -398,7 +530,7 @@ const Index = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="bg-finance-darkSecondary border-white/10 border">
-                  <CardContent className="p-6">
+                  <CardContent className="p-6 bg-slate-950">
                     <h4 className="text-lg mb-2">Aver</h4>
                     <div className="text-sm text-finance-gray">Current EBITDA</div>
                     <div className="text-3xl font-bold mb-1">£490k</div>
@@ -414,7 +546,7 @@ const Index = () => {
                 </Card>
                 
                 <Card className="bg-finance-darkSecondary border-white/10 border">
-                  <CardContent className="p-6">
+                  <CardContent className="p-6 bg-gray-950">
                     <h4 className="text-lg mb-2">Howard (WHC)</h4>
                     <div className="text-sm text-finance-gray">Current EBITDA</div>
                     <div className="text-3xl font-bold mb-1">£104k</div>
@@ -430,7 +562,7 @@ const Index = () => {
                 </Card>
                 
                 <Card className="bg-finance-darkSecondary border-white/10 border">
-                  <CardContent className="p-6">
+                  <CardContent className="p-6 bg-gray-950">
                     <h4 className="text-lg mb-2">Howard (LPP)</h4>
                     <div className="text-sm text-finance-gray">Current EBITDA</div>
                     <div className="text-3xl font-bold mb-1">£257k</div>
@@ -451,7 +583,7 @@ const Index = () => {
               <h3 className="text-xl mb-6">Combined EBITDA To Target</h3>
               
               <Card className="bg-finance-darkSecondary border-white/10 border h-80">
-                <CardContent className="p-6 h-full">
+                <CardContent className="p-6 h-full bg-gray-950">
                   <div className="flex flex-col h-full">
                     <div>
                       <div className="text-sm text-finance-gray">Current EBITDA</div>
@@ -463,13 +595,15 @@ const Index = () => {
                     
                     <div className="flex-1 flex items-center justify-center">
                       <div className="h-48 w-48">
-                        <DonutChart 
-                          data={[
-                            { name: 'Progress', value: 55, color: '#ea384c' },
-                            { name: 'Remaining', value: 45, color: '#ffffff' }
-                          ]}
-                          innerValue="55%"
-                        />
+                        <DonutChart data={[{
+                        name: 'Progress',
+                        value: 55,
+                        color: '#ea384c'
+                      }, {
+                        name: 'Remaining',
+                        value: 45,
+                        color: '#ffffff'
+                      }]} innerValue="55%" />
                       </div>
                     </div>
                   </div>
@@ -548,8 +682,6 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
