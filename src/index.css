@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
@@ -93,10 +94,28 @@
 
   body {
     @apply bg-finance-darkBg text-white;
+    -webkit-tap-highlight-color: transparent;
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-display font-bold;
+  }
+  
+  /* Set text size scale for mobile */
+  html {
+    font-size: 14px;
+  }
+  
+  @media (min-width: 768px) {
+    html {
+      font-size: 16px;
+    }
+  }
+  
+  /* Add extra small text size for mobile */
+  .text-2xs {
+    font-size: 0.625rem;
+    line-height: 0.75rem;
   }
   
   .metric-value {

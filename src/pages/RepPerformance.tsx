@@ -8,12 +8,14 @@ import { Label } from '@/components/ui/label';
 import RepProfitChart from '@/components/RepProfitChart';
 import RepProfitShare from '@/components/RepProfitShare';
 import RepMarginComparison from '@/components/RepMarginComparison';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const RepPerformance = () => {
   const [includeReva, setIncludeReva] = useState(true);
   const [includeWholesale, setIncludeWholesale] = useState(true);
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
+  const isMobile = useIsMobile();
 
   const overallData = [
     { rep: "Clare Quinn", spend: 174152.39, profit: 22951.81, margin: 13.18, packs: 105432, activeAccounts: 42, totalAccounts: 81, profitPerActiveShop: 546.47, profitPerPack: 0.22, activeRatio: 51.85 },
@@ -229,32 +231,32 @@ const RepPerformance = () => {
 
   return (
     <div className="min-h-screen bg-finance-darkBg text-white">
-      <header className="py-16 px-6 md:px-12 container max-w-7xl mx-auto animate-fade-in bg-gray-950">
+      <header className="py-8 md:py-16 px-4 md:px-6 container max-w-7xl mx-auto animate-fade-in bg-gray-950">
         <div className="flex justify-between items-center mb-4">
           <Link to="/">
             <Button variant="ghost" className="text-white hover:text-white hover:bg-white/10">
-              <Home className="h-5 w-5 mr-2" />
-              Back to Finance Report
+              <Home className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2" />
+              <span className="text-sm md:text-base">Back</span>
             </Button>
           </Link>
         </div>
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold">
           Rep
           <br />
           Perform<span className="font-normal italic">a</span>nce
           <br />
           <span className="text-finance-red">Dashboard</span>
         </h1>
-        <div className="mt-8 text-right">
-          <span className="text-xl md:text-2xl">March 2025</span>
+        <div className="mt-4 md:mt-8 text-right">
+          <span className="text-lg md:text-xl lg:text-2xl">March 2025</span>
         </div>
       </header>
 
-      <div className="container max-w-7xl mx-auto px-6 md:px-12 pb-16 bg-gray-950">
-        <div className="flex flex-col md:flex-row justify-between gap-4 mb-8 animate-slide-in-up">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="bg-gray-900/60 p-3 rounded-lg flex items-center">
-              <Label htmlFor="include-reva" className="text-sm mr-2">Include REVA</Label>
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-8 md:pb-16 bg-gray-950 overflow-x-hidden">
+        <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 justify-between gap-4 mb-8 animate-slide-in-up">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center">
+              <Label htmlFor="include-reva" className="text-xs md:text-sm mr-2">Include REVA</Label>
               <Switch 
                 id="include-reva" 
                 checked={includeReva} 
@@ -262,8 +264,8 @@ const RepPerformance = () => {
                 className="data-[state=checked]:bg-finance-red"
               />
             </div>
-            <div className="bg-gray-900/60 p-3 rounded-lg flex items-center">
-              <Label htmlFor="include-wholesale" className="text-sm mr-2">Include Wholesale</Label>
+            <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center">
+              <Label htmlFor="include-wholesale" className="text-xs md:text-sm mr-2">Include Wholesale</Label>
               <Switch 
                 id="include-wholesale" 
                 checked={includeWholesale}
@@ -274,41 +276,41 @@ const RepPerformance = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-slide-in-up">
-          <div className="bg-transparent rounded-lg border border-white/10 p-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
+          <div className="bg-transparent rounded-lg border border-white/10 p-3 md:p-5">
             <h3 className="text-xs font-medium text-finance-gray uppercase">Revenue</h3>
             <div className="flex items-center">
-              <p className="text-2xl font-bold mt-1">{formatCurrency(summary.totalSpend)}</p>
+              <p className="text-xl md:text-2xl font-bold mt-1">{formatCurrency(summary.totalSpend)}</p>
               {renderChangeIndicator(summaryChanges.totalSpend, "large")}
             </div>
             <div className="text-xs text-finance-gray mt-1">
               prev: {formatCurrency(Math.round(summary.totalSpend / (1 + summaryChanges.totalSpend / 100)))}
             </div>
           </div>
-          <div className="bg-transparent rounded-lg border border-white/10 p-5">
+          <div className="bg-transparent rounded-lg border border-white/10 p-3 md:p-5">
             <h3 className="text-xs font-medium text-finance-gray uppercase">Profit</h3>
             <div className="flex items-center">
-              <p className="text-2xl font-bold mt-1 text-finance-red">{formatCurrency(summary.totalProfit)}</p>
+              <p className="text-xl md:text-2xl font-bold mt-1 text-finance-red">{formatCurrency(summary.totalProfit)}</p>
               {renderChangeIndicator(summaryChanges.totalProfit, "large")}
             </div>
             <div className="text-xs text-finance-gray mt-1">
               prev: {formatCurrency(Math.round(summary.totalProfit / (1 + summaryChanges.totalProfit / 100)))}
             </div>
           </div>
-          <div className="bg-transparent rounded-lg border border-white/10 p-5">
+          <div className="bg-transparent rounded-lg border border-white/10 p-3 md:p-5">
             <h3 className="text-xs font-medium text-finance-gray uppercase">Margin</h3>
             <div className="flex items-center">
-              <p className="text-2xl font-bold mt-1">{formatPercent(summary.averageMargin)}</p>
+              <p className="text-xl md:text-2xl font-bold mt-1">{formatPercent(summary.averageMargin)}</p>
               {renderChangeIndicator(summaryChanges.averageMargin, "large")}
             </div>
             <div className="text-xs text-finance-gray mt-1">
               prev: {formatPercent(summary.averageMargin - summaryChanges.averageMargin)}
             </div>
           </div>
-          <div className="bg-transparent rounded-lg border border-white/10 p-5">
+          <div className="bg-transparent rounded-lg border border-white/10 p-3 md:p-5">
             <h3 className="text-xs font-medium text-finance-gray uppercase">Packs</h3>
             <div className="flex items-center">
-              <p className="text-2xl font-bold mt-1">{formatNumber(summary.totalPacks)}</p>
+              <p className="text-xl md:text-2xl font-bold mt-1">{formatNumber(summary.totalPacks)}</p>
               {renderChangeIndicator(summaryChanges.totalPacks, "large")}
             </div>
             <div className="text-xs text-finance-gray mt-1">
@@ -319,26 +321,26 @@ const RepPerformance = () => {
 
         <div className="mb-8 animate-slide-in-up">
           <Tabs defaultValue="overall" className="w-full">
-            <TabsList className="grid grid-cols-4 mb-8 bg-gray-900/50">
-              <TabsTrigger value="overall" className="data-[state=active]:bg-finance-red data-[state=active]:text-white">
-                Overall Performance
+            <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50`}>
+              <TabsTrigger value="overall" className="data-[state=active]:bg-finance-red data-[state=active]:text-white text-xs md:text-sm py-1 md:py-2">
+                Overall
               </TabsTrigger>
-              <TabsTrigger value="rep" className="data-[state=active]:bg-finance-red data-[state=active]:text-white">
-                Retail Performance
+              <TabsTrigger value="rep" className="data-[state=active]:bg-finance-red data-[state=active]:text-white text-xs md:text-sm py-1 md:py-2">
+                Retail
               </TabsTrigger>
-              <TabsTrigger value="reva" className="data-[state=active]:bg-finance-red data-[state=active]:text-white">
-                REVA Performance
+              <TabsTrigger value="reva" className="data-[state=active]:bg-finance-red data-[state=active]:text-white text-xs md:text-sm py-1 md:py-2">
+                REVA
               </TabsTrigger>
-              <TabsTrigger value="wholesale" className="data-[state=active]:bg-finance-red data-[state=active]:text-white">
-                Wholesale Performance
+              <TabsTrigger value="wholesale" className="data-[state=active]:bg-finance-red data-[state=active]:text-white text-xs md:text-sm py-1 md:py-2">
+                Wholesale
               </TabsTrigger>
             </TabsList>
             
             {['overall', 'rep', 'reva', 'wholesale'].map((tabValue) => (
               <TabsContent key={tabValue} value={tabValue} className="mt-0">
-                <div className="bg-gray-900/40 rounded-lg border border-white/10 mb-8">
-                  <div className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">
+                <div className="bg-gray-900/40 rounded-lg border border-white/10 mb-6 md:mb-8">
+                  <div className="p-3 md:p-6">
+                    <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">
                       {tabValue === 'overall'
                         ? 'Overall Rep Performance'
                         : tabValue === 'rep' 
@@ -347,37 +349,37 @@ const RepPerformance = () => {
                             ? 'REVA Performance' 
                             : 'Wholesale Performance'}
                     </h2>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-white/10">
+                    <div className="overflow-x-auto -mx-3 md:mx-0">
+                      <table className="min-w-full divide-y divide-white/10 text-xs md:text-sm">
                         <thead>
                           <tr>
                             <th 
                               onClick={() => handleSort('rep')}
-                              className="px-6 py-3 text-left text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
                             >
                               Rep {sortBy === 'rep' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                               onClick={() => handleSort('spend')}
-                              className="px-6 py-3 text-left text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
                             >
                               Spend {sortBy === 'spend' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                               onClick={() => handleSort('profit')}
-                              className="px-6 py-3 text-left text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
                             >
                               Profit {sortBy === 'profit' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                               onClick={() => handleSort('margin')}
-                              className="px-6 py-3 text-left text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
                             >
                               Margin {sortBy === 'margin' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                               onClick={() => handleSort('packs')}
-                              className="px-6 py-3 text-left text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
                             >
                               Packs {sortBy === 'packs' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
@@ -389,28 +391,28 @@ const RepPerformance = () => {
                             return displayData.length > 0 ? (
                               displayData.map((item) => (
                                 <tr key={item.rep} className="hover:bg-white/5">
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium">
                                     {item.rep}
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                                     <div className="flex items-center">
                                       {formatCurrency(item.spend)}
                                       {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].spend)}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-finance-red">
+                                  <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-finance-red">
                                     <div className="flex items-center">
                                       {formatCurrency(item.profit)}
                                       {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].profit)}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                                     <div className="flex items-center">
                                       {formatPercent(item.margin)}
                                       {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].margin)}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                                     <div className="flex items-center">
                                       {formatNumber(item.packs)}
                                       {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].packs)}
@@ -420,7 +422,7 @@ const RepPerformance = () => {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={5} className="px-6 py-4 text-center text-sm text-finance-gray">
+                                <td colSpan={5} className="px-3 md:px-6 py-2 md:py-4 text-center text-xs md:text-sm text-finance-gray">
                                   No data available for the selected filters
                                 </td>
                               </tr>
@@ -432,7 +434,7 @@ const RepPerformance = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
                   <RepProfitChart 
                     displayData={sortData(getActiveData(tabValue))}
                     repChanges={repChanges}

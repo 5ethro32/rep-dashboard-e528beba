@@ -1,6 +1,7 @@
 
 import React from 'react';
 import DonutChart from './DonutChart';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface RepProfitShareProps {
   displayData: any[];
@@ -8,6 +9,8 @@ interface RepProfitShareProps {
 }
 
 const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges }) => {
+  const isMobile = useIsMobile();
+  
   // Calculate total profit
   const totalProfit = displayData.reduce((sum, item) => sum + item.profit, 0);
   
@@ -48,12 +51,26 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     }
   }
   
+  // For mobile, we might want to limit the number of slices shown
+  const mobileData = isMobile && filteredData.length > 5 
+    ? [
+        ...filteredData.slice(0, 4), 
+        {
+          name: "Others",
+          value: filteredData.slice(4).reduce((sum, item) => sum + item.value, 0),
+          color: "#6b7280"
+        }
+      ]
+    : filteredData;
+  
+  const dataToUse = isMobile ? mobileData : filteredData;
+  
   return (
-    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-6">
-      <h3 className="text-lg font-medium mb-4">Profit Share</h3>
-      <div className="h-80">
+    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6">
+      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4">Profit Share</h3>
+      <div className="h-60 md:h-80">
         <DonutChart 
-          data={filteredData}
+          data={dataToUse}
           innerValue={`${totalProfit.toFixed(0)}`}
           innerLabel="Total Profit"
         />
