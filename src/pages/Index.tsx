@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
@@ -257,7 +256,7 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-8">
-            <Card className="bg-finance-darkSecondary border-white/10 border">
+            <Card className="bg-transparent border-white/10 border">
               <CardContent className="p-4">
                 <h4 className="text-sm text-finance-gray mb-2">Wages</h4>
                 <div className="text-xl font-bold mb-1">£217k</div>
@@ -267,7 +266,7 @@ const Index = () => {
               </CardContent>
             </Card>
             
-            <Card className="bg-finance-darkSecondary border-white/10 border">
+            <Card className="bg-transparent border-white/10 border">
               <CardContent className="p-4">
                 <h4 className="text-sm text-finance-gray mb-2">IT</h4>
                 <div className="text-xl font-bold mb-1">£17.1k</div>
@@ -277,7 +276,7 @@ const Index = () => {
               </CardContent>
             </Card>
             
-            <Card className="bg-finance-darkSecondary border-white/10 border">
+            <Card className="bg-transparent border-white/10 border">
               <CardContent className="p-4">
                 <h4 className="text-sm text-finance-gray mb-2">Professional Fees</h4>
                 <div className="text-xl font-bold mb-1">£7.3k</div>
@@ -287,7 +286,7 @@ const Index = () => {
               </CardContent>
             </Card>
             
-            <Card className="bg-finance-darkSecondary border-white/10 border">
+            <Card className="bg-transparent border-white/10 border">
               <CardContent className="p-4">
                 <h4 className="text-sm text-finance-gray mb-2">Motor Expenses</h4>
                 <div className="text-xl font-bold mb-1">£13.6k</div>
@@ -297,7 +296,7 @@ const Index = () => {
               </CardContent>
             </Card>
             
-            <Card className="bg-finance-darkSecondary border-white/10 border">
+            <Card className="bg-transparent border-white/10 border">
               <CardContent className="p-4">
                 <h4 className="text-sm text-finance-gray mb-2">Bank Charges</h4>
                 <div className="text-xl font-bold mb-1">£29.1k</div>
@@ -307,7 +306,7 @@ const Index = () => {
               </CardContent>
             </Card>
             
-            <Card className="bg-finance-darkSecondary border-white/10 border">
+            <Card className="bg-transparent border-white/10 border">
               <CardContent className="p-4">
                 <h4 className="text-sm text-finance-gray mb-2">Rent & Rates</h4>
                 <div className="text-xl font-bold mb-1">£8.7k</div>
