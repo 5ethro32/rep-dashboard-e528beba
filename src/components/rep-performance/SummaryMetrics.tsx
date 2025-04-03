@@ -27,7 +27,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
     
     return {
       value: `${Math.abs(changeValue).toFixed(1)}%`,
-      type: isPositive ? 'increase' : 'decrease'
+      type: isPositive ? 'increase' as const : 'decrease' as const
     };
   };
 
