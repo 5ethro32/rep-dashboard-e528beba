@@ -17,8 +17,9 @@ interface DonutChartProps {
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-finance-darkSecondary p-2 border border-white/10 rounded-md text-sm">
-        <p className="text-white">{`${payload[0].name}: ${payload[0].value}%`}</p>
+      <div className="bg-gray-800 p-2 border border-white/10 rounded-md text-xs md:text-sm shadow-lg backdrop-blur-sm">
+        <p className="text-white font-medium">{payload[0].name}</p>
+        <p className="text-white/80">{`${payload[0].value}%`}</p>
       </div>
     );
   }
@@ -40,9 +41,15 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
             dataKey="value"
             startAngle={90}
             endAngle={450}
+            animationDuration={1000}
+            animationBegin={200}
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.color} 
+                className="transition-all duration-300 ease-in-out"
+              />
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
@@ -50,9 +57,9 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
       </ResponsiveContainer>
       
       {innerValue && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <div className="text-3xl font-bold">{innerValue}</div>
-          {innerLabel && <div className="text-xs text-finance-gray">{innerLabel}</div>}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
+          <div className="text-2xl md:text-3xl font-bold text-white">{innerValue}</div>
+          {innerLabel && <div className="text-xs md:text-sm text-finance-gray mt-1 opacity-80">{innerLabel}</div>}
         </div>
       )}
     </div>

@@ -14,7 +14,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
   // Calculate total profit
   const totalProfit = displayData.reduce((sum, item) => sum + item.profit, 0);
   
-  // Colors for the chart
+  // Colors for the chart - refined gradient of reds
   const colors = [
     "#ef4444", "#f87171", "#fca5a5", "#fee2e2", "#b91c1c",
     "#dc2626", "#991b1b", "#7f1d1d", "#ef4444", "#dc2626"
@@ -66,12 +66,12 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
   const dataToUse = isMobile ? mobileData : filteredData;
   
   return (
-    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6">
-      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4">Profit Share</h3>
+    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg">
+      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Share</h3>
       <div className="h-60 md:h-80">
         <DonutChart 
           data={dataToUse}
-          innerValue={`${totalProfit.toFixed(0)}`}
+          innerValue={`${totalProfit.toLocaleString()}`}
           innerLabel="Total Profit"
         />
       </div>

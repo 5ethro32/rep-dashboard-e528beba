@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, TrendingDown, ChevronUp, ChevronDown, Home } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronUp, ChevronDown, Home, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -16,7 +16,7 @@ const RepPerformance = () => {
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const isMobile = useIsMobile();
-
+  
   const overallData = [
     { rep: "Clare Quinn", spend: 174152.39, profit: 22951.81, margin: 13.18, packs: 105432, activeAccounts: 42, totalAccounts: 81, profitPerActiveShop: 546.47, profitPerPack: 0.22, activeRatio: 51.85 },
     { rep: "Craig McDowall", spend: 607269.54, profit: 75999.24, margin: 12.51, packs: 327729, activeAccounts: 127, totalAccounts: 291, profitPerActiveShop: 598.42, profitPerPack: 0.23, activeRatio: 43.64 },
@@ -211,8 +211,8 @@ const RepPerformance = () => {
       return (
         <span className={`inline-flex items-center ml-1 ${isPositive ? 'text-emerald-500' : 'text-finance-red'}`}>
           {isPositive ? 
-            <TrendingUp className="h-5 w-5" /> : 
-            <TrendingDown className="h-5 w-5" />
+            <ArrowUp className="h-3.5 w-3.5 md:h-4 md:w-4" /> : 
+            <ArrowDown className="h-3.5 w-3.5 md:h-4 md:w-4" />
           }
           <span className="text-xs font-medium ml-0.5">{Math.abs(changeValue).toFixed(1)}%</span>
         </span>
@@ -230,17 +230,17 @@ const RepPerformance = () => {
   };
 
   return (
-    <div className="min-h-screen bg-finance-darkBg text-white">
-      <header className="py-8 md:py-16 px-4 md:px-6 container max-w-7xl mx-auto animate-fade-in bg-gray-950">
+    <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
+      <header className="py-8 md:py-16 px-4 md:px-6 container max-w-7xl mx-auto animate-fade-in bg-transparent">
         <div className="flex justify-between items-center mb-4">
           <Link to="/">
-            <Button variant="ghost" className="text-white hover:text-white hover:bg-white/10">
+            <Button variant="ghost" className="text-white hover:text-white hover:bg-white/10 transition-all duration-300">
               <Home className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2" />
               <span className="text-sm md:text-base">Back</span>
             </Button>
           </Link>
         </div>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
           Rep
           <br />
           Perform<span className="font-normal italic">a</span>nce
@@ -248,15 +248,15 @@ const RepPerformance = () => {
           <span className="text-finance-red">Dashboard</span>
         </h1>
         <div className="mt-4 md:mt-8 text-right">
-          <span className="text-lg md:text-xl lg:text-2xl">March 2025</span>
+          <span className="text-lg md:text-xl lg:text-2xl text-white/80">March 2025</span>
         </div>
       </header>
 
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-8 md:pb-16 bg-gray-950 overflow-x-hidden">
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-8 md:pb-16 bg-transparent overflow-x-hidden">
         <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 justify-between gap-4 mb-8 animate-slide-in-up">
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center">
-              <Label htmlFor="include-reva" className="text-xs md:text-sm mr-2">Include REVA</Label>
+            <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg">
+              <Label htmlFor="include-reva" className="text-xs md:text-sm mr-2 text-white/90">Include REVA</Label>
               <Switch 
                 id="include-reva" 
                 checked={includeReva} 
@@ -264,8 +264,8 @@ const RepPerformance = () => {
                 className="data-[state=checked]:bg-finance-red"
               />
             </div>
-            <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center">
-              <Label htmlFor="include-wholesale" className="text-xs md:text-sm mr-2">Include Wholesale</Label>
+            <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg">
+              <Label htmlFor="include-wholesale" className="text-xs md:text-sm mr-2 text-white/90">Include Wholesale</Label>
               <Switch 
                 id="include-wholesale" 
                 checked={includeWholesale}
@@ -277,70 +277,70 @@ const RepPerformance = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
-          <div className="bg-transparent rounded-lg border border-white/10 p-3 md:p-5">
+          <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-5 backdrop-blur-sm shadow-lg">
             <h3 className="text-xs font-medium text-finance-gray uppercase">Revenue</h3>
-            <div className="flex items-center">
-              <p className="text-xl md:text-2xl font-bold mt-1">{formatCurrency(summary.totalSpend)}</p>
+            <div className="flex items-center mt-1">
+              <p className="text-xl md:text-2xl font-bold">{formatCurrency(summary.totalSpend)}</p>
               {renderChangeIndicator(summaryChanges.totalSpend, "large")}
             </div>
-            <div className="text-xs text-finance-gray mt-1">
-              prev: {formatCurrency(Math.round(summary.totalSpend / (1 + summaryChanges.totalSpend / 100)))}
+            <div className="text-xs text-finance-gray/80 mt-1">
+              {formatCurrency(Math.round(summary.totalSpend / (1 + summaryChanges.totalSpend / 100)))}
             </div>
           </div>
-          <div className="bg-transparent rounded-lg border border-white/10 p-3 md:p-5">
+          <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-5 backdrop-blur-sm shadow-lg">
             <h3 className="text-xs font-medium text-finance-gray uppercase">Profit</h3>
-            <div className="flex items-center">
-              <p className="text-xl md:text-2xl font-bold mt-1 text-finance-red">{formatCurrency(summary.totalProfit)}</p>
+            <div className="flex items-center mt-1">
+              <p className="text-xl md:text-2xl font-bold text-finance-red">{formatCurrency(summary.totalProfit)}</p>
               {renderChangeIndicator(summaryChanges.totalProfit, "large")}
             </div>
-            <div className="text-xs text-finance-gray mt-1">
-              prev: {formatCurrency(Math.round(summary.totalProfit / (1 + summaryChanges.totalProfit / 100)))}
+            <div className="text-xs text-finance-gray/80 mt-1">
+              {formatCurrency(Math.round(summary.totalProfit / (1 + summaryChanges.totalProfit / 100)))}
             </div>
           </div>
-          <div className="bg-transparent rounded-lg border border-white/10 p-3 md:p-5">
+          <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-5 backdrop-blur-sm shadow-lg">
             <h3 className="text-xs font-medium text-finance-gray uppercase">Margin</h3>
-            <div className="flex items-center">
-              <p className="text-xl md:text-2xl font-bold mt-1">{formatPercent(summary.averageMargin)}</p>
+            <div className="flex items-center mt-1">
+              <p className="text-xl md:text-2xl font-bold">{formatPercent(summary.averageMargin)}</p>
               {renderChangeIndicator(summaryChanges.averageMargin, "large")}
             </div>
-            <div className="text-xs text-finance-gray mt-1">
-              prev: {formatPercent(summary.averageMargin - summaryChanges.averageMargin)}
+            <div className="text-xs text-finance-gray/80 mt-1">
+              {formatPercent(summary.averageMargin - summaryChanges.averageMargin)}
             </div>
           </div>
-          <div className="bg-transparent rounded-lg border border-white/10 p-3 md:p-5">
+          <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-5 backdrop-blur-sm shadow-lg">
             <h3 className="text-xs font-medium text-finance-gray uppercase">Packs</h3>
-            <div className="flex items-center">
-              <p className="text-xl md:text-2xl font-bold mt-1">{formatNumber(summary.totalPacks)}</p>
+            <div className="flex items-center mt-1">
+              <p className="text-xl md:text-2xl font-bold">{formatNumber(summary.totalPacks)}</p>
               {renderChangeIndicator(summaryChanges.totalPacks, "large")}
             </div>
-            <div className="text-xs text-finance-gray mt-1">
-              prev: {formatNumber(Math.round(summary.totalPacks / (1 + summaryChanges.totalPacks / 100)))}
+            <div className="text-xs text-finance-gray/80 mt-1">
+              {formatNumber(Math.round(summary.totalPacks / (1 + summaryChanges.totalPacks / 100)))}
             </div>
           </div>
         </div>
 
         <div className="mb-8 animate-slide-in-up">
           <Tabs defaultValue="overall" className="w-full">
-            <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50`}>
-              <TabsTrigger value="overall" className="data-[state=active]:bg-finance-red data-[state=active]:text-white text-xs md:text-sm py-1 md:py-2">
+            <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
+              <TabsTrigger value="overall" className="data-[state=active]:bg-finance-red data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
                 Overall
               </TabsTrigger>
-              <TabsTrigger value="rep" className="data-[state=active]:bg-finance-red data-[state=active]:text-white text-xs md:text-sm py-1 md:py-2">
+              <TabsTrigger value="rep" className="data-[state=active]:bg-finance-red data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
                 Retail
               </TabsTrigger>
-              <TabsTrigger value="reva" className="data-[state=active]:bg-finance-red data-[state=active]:text-white text-xs md:text-sm py-1 md:py-2">
+              <TabsTrigger value="reva" className="data-[state=active]:bg-finance-red data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
                 REVA
               </TabsTrigger>
-              <TabsTrigger value="wholesale" className="data-[state=active]:bg-finance-red data-[state=active]:text-white text-xs md:text-sm py-1 md:py-2">
+              <TabsTrigger value="wholesale" className="data-[state=active]:bg-finance-red data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
                 Wholesale
               </TabsTrigger>
             </TabsList>
             
             {['overall', 'rep', 'reva', 'wholesale'].map((tabValue) => (
               <TabsContent key={tabValue} value={tabValue} className="mt-0">
-                <div className="bg-gray-900/40 rounded-lg border border-white/10 mb-6 md:mb-8">
+                <div className="bg-gray-900/40 rounded-lg border border-white/10 mb-6 md:mb-8 backdrop-blur-sm shadow-lg">
                   <div className="p-3 md:p-6">
-                    <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">
+                    <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-white/90">
                       {tabValue === 'overall'
                         ? 'Overall Rep Performance'
                         : tabValue === 'rep' 
@@ -349,37 +349,37 @@ const RepPerformance = () => {
                             ? 'REVA Performance' 
                             : 'Wholesale Performance'}
                     </h2>
-                    <div className="overflow-x-auto -mx-3 md:mx-0">
+                    <div className="overflow-x-auto -mx-3 md:mx-0 scrollbar-hide">
                       <table className="min-w-full divide-y divide-white/10 text-xs md:text-sm">
                         <thead>
-                          <tr>
+                          <tr className="bg-black/20">
                             <th 
                               onClick={() => handleSort('rep')}
-                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors"
                             >
                               Rep {sortBy === 'rep' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                               onClick={() => handleSort('spend')}
-                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors"
                             >
                               Spend {sortBy === 'spend' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                               onClick={() => handleSort('profit')}
-                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors"
                             >
                               Profit {sortBy === 'profit' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                               onClick={() => handleSort('margin')}
-                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors"
                             >
                               Margin {sortBy === 'margin' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th 
                               onClick={() => handleSort('packs')}
-                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5"
+                              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors"
                             >
                               Packs {sortBy === 'packs' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
@@ -390,7 +390,7 @@ const RepPerformance = () => {
                             const displayData = sortData(getActiveData(tabValue));
                             return displayData.length > 0 ? (
                               displayData.map((item) => (
-                                <tr key={item.rep} className="hover:bg-white/5">
+                                <tr key={item.rep} className="hover:bg-white/5 transition-colors">
                                   <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium">
                                     {item.rep}
                                   </td>

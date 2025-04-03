@@ -27,18 +27,18 @@ const MetricCard: React.FC<MetricCardProps> = ({
   icon
 }) => {
   return (
-    <Card className={cn("border border-white/10 bg-transparent", className)}>
-      <CardContent className="p-5">
+    <Card className={cn("border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg", className)}>
+      <CardContent className="p-4 md:p-5">
         <div className="flex flex-col space-y-2">
-          <div className="text-sm text-finance-gray uppercase tracking-wider">{title}</div>
+          <div className="text-xs md:text-sm font-medium text-finance-gray uppercase tracking-wider">{title}</div>
           
           <div className="flex items-baseline gap-x-3">
-            <div className={cn("text-3xl font-bold", valueClassName)}>{value}</div>
+            <div className={cn("text-2xl md:text-3xl font-bold", valueClassName)}>{value}</div>
             
             {change && (
               <div className={cn(
                 "flex items-center text-xs",
-                change.type === 'increase' ? 'text-green-500' : 
+                change.type === 'increase' ? 'text-emerald-500' : 
                 change.type === 'decrease' ? 'text-finance-red' : 'text-finance-gray'
               )}>
                 {change.type === 'increase' && <ArrowUp className="mr-1 h-3 w-3" />}
@@ -51,7 +51,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           </div>
           
           {subtitle && (
-            <div className="text-xs text-finance-gray">{subtitle}</div>
+            <div className="text-xs text-finance-gray/80">{subtitle}</div>
           )}
         </div>
       </CardContent>

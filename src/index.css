@@ -157,4 +157,33 @@
   .metric-box {
     @apply h-full border border-white/10 bg-transparent p-5 rounded-lg;
   }
+  
+  /* Add glassmorphism effect for cards */
+  .glass-card {
+    @apply backdrop-blur-sm bg-gray-900/40 border border-white/10 shadow-lg;
+  }
+  
+  /* Hide scrollbars but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+  
+  /* Add subtle animations */
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }
