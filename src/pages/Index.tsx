@@ -2,11 +2,14 @@ import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowDown, ArrowUp, Calendar, ChartBar, CircleDollarSign, Info, TrendingDown, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import MetricCard from '@/components/MetricCard';
 import LineChart from '@/components/LineChart';
 import ProgressBar from '@/components/ProgressBar';
 import DonutChart from '@/components/DonutChart';
 import ActionItem from '@/components/ActionItem';
+
 const turnoverData = [{
   name: 'Mar',
   value: 2100,
@@ -261,17 +264,27 @@ const wagesData = [{
   value: 205,
   avg: 210
 }];
+
 const Index = () => {
   const currentDate = "March 2025";
   return <div className="min-h-screen bg-finance-darkBg text-white">
       <header className="py-16 px-6 md:px-12 container max-w-7xl mx-auto animate-fade-in bg-gray-950">
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold">
-          Monthly
-          <br />
-          Fin<span className="font-normal italic">a</span>nce
-          <br />
-          <span className="text-finance-red">Report</span>
-        </h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold">
+            Monthly
+            <br />
+            Fin<span className="font-normal italic">a</span>nce
+            <br />
+            <span className="text-finance-red">Report</span>
+          </h1>
+          <div className="flex flex-col gap-4">
+            <Link to="/rep-performance">
+              <Button className="bg-finance-red hover:bg-red-700 text-white">
+                View Rep Performance
+              </Button>
+            </Link>
+          </div>
+        </div>
         <div className="mt-8 text-right">
           <span className="text-xl md:text-2xl">{currentDate}</span>
         </div>
