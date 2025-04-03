@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import RepProfitChart from '@/components/RepProfitChart';
+import RepProfitShare from '@/components/RepProfitShare';
+import RepMarginComparison from '@/components/RepMarginComparison';
 
 const RepPerformance = () => {
   const [includeReva, setIncludeReva] = useState(true);
@@ -12,7 +15,6 @@ const RepPerformance = () => {
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
 
-  // Hard-coded data for March 2025 with correct values from Excel
   const overallData = [
     { rep: "Clare Quinn", spend: 174152.39, profit: 22951.81, margin: 13.18, packs: 105432, activeAccounts: 42, totalAccounts: 81, profitPerActiveShop: 546.47, profitPerPack: 0.22, activeRatio: 51.85 },
     { rep: "Craig McDowall", spend: 607269.54, profit: 75999.24, margin: 12.51, packs: 327729, activeAccounts: 127, totalAccounts: 291, profitPerActiveShop: 598.42, profitPerPack: 0.23, activeRatio: 43.64 },
@@ -25,7 +27,7 @@ const RepPerformance = () => {
     { rep: "Mike Cooper", spend: 88801.22, profit: 13545.86, margin: 15.25, packs: 91490, activeAccounts: 10, totalAccounts: 20, profitPerActiveShop: 1354.59, profitPerPack: 0.15, activeRatio: 50.00 },
     { rep: "Murray Glasgow", spend: 1259.21, profit: 365.84, margin: 29.05, packs: 289, activeAccounts: 3, totalAccounts: 5, profitPerActiveShop: 121.95, profitPerPack: 1.27, activeRatio: 60.00 }
   ];
-  
+
   const repData = [
     { rep: "Clare Quinn", spend: 174152.39, profit: 22951.81, margin: 13.18, packs: 105432, activeAccounts: 42, totalAccounts: 81, profitPerActiveShop: 546.47, profitPerPack: 0.22, activeRatio: 51.85 },
     { rep: "Craig McDowall", spend: 283468.89, profit: 44286.56, margin: 15.62, packs: 190846, activeAccounts: 108, totalAccounts: 262, profitPerActiveShop: 410.06, profitPerPack: 0.23, activeRatio: 41.22 },
@@ -36,7 +38,7 @@ const RepPerformance = () => {
     { rep: "Stuart Geddes", spend: 154070.16, profit: 25005.81, margin: 16.23, packs: 62039, activeAccounts: 56, totalAccounts: 70, profitPerActiveShop: 446.53, profitPerPack: 0.40, activeRatio: 80.00 },
     { rep: "Murray Glasgow", spend: 1259.21, profit: 365.84, margin: 29.05, packs: 289, activeAccounts: 3, totalAccounts: 5, profitPerActiveShop: 121.95, profitPerPack: 1.27, activeRatio: 60.00 }
   ];
-  
+
   const revaData = [
     { rep: "Louise Skiba", spend: 113006.33, profit: 11745.28, margin: 10.39, packs: 88291, activeAccounts: 10, totalAccounts: 13, profitPerActiveShop: 1174.53, profitPerPack: 0.13, activeRatio: 76.92 },
     { rep: "Stuart Geddes", spend: 8628.38, profit: 794.12, margin: 9.20, packs: 6091, activeAccounts: 1, totalAccounts: 1, profitPerActiveShop: 794.12, profitPerPack: 0.13, activeRatio: 100.00 },
@@ -46,7 +48,7 @@ const RepPerformance = () => {
     { rep: "Pete Dhillon", spend: 12554.86, profit: 1297.68, margin: 10.34, packs: 10216, activeAccounts: 2, totalAccounts: 3, profitPerActiveShop: 648.84, profitPerPack: 0.13, activeRatio: 66.67 },
     { rep: "Michael McKay", spend: 9875.24, profit: 1052.31, margin: 10.66, packs: 7843, activeAccounts: 2, totalAccounts: 3, profitPerActiveShop: 526.16, profitPerPack: 0.13, activeRatio: 66.67 }
   ];
-  
+
   const wholesaleData = [
     { rep: "Craig McDowall", spend: 200479.40, profit: 20096.46, margin: 10.02, packs: 48250, activeAccounts: 6, totalAccounts: 16, profitPerActiveShop: 3349.41, profitPerPack: 0.42, activeRatio: 37.50 },
     { rep: "Pete Dhillon", spend: 5850.00, profit: 900.00, margin: 15.38, packs: 11000, activeAccounts: 1, totalAccounts: 1, profitPerActiveShop: 900.00, profitPerPack: 0.08, activeRatio: 100.00 },
@@ -54,7 +56,6 @@ const RepPerformance = () => {
     { rep: "Mike Cooper", spend: 88801.22, profit: 13545.86, margin: 15.25, packs: 91490, activeAccounts: 10, totalAccounts: 20, profitPerActiveShop: 1354.59, profitPerPack: 0.15, activeRatio: 50.00 }
   ];
 
-  // Summaries based on toggle states - updated with accurate Excel data
   const baseSummary = {
     totalSpend: 2056199.28,
     totalProfit: 326951.32,
@@ -63,7 +64,7 @@ const RepPerformance = () => {
     activeAccounts: 555,
     averageMargin: 15.90
   };
-  
+
   const revaValues = {
     totalSpend: 279053.28,
     totalProfit: 27694.99,
@@ -72,7 +73,7 @@ const RepPerformance = () => {
     activeAccounts: 26,
     averageMargin: 9.85
   };
-  
+
   const wholesaleValues = {
     totalSpend: 363311.19,
     totalProfit: 56602.18,
@@ -81,8 +82,7 @@ const RepPerformance = () => {
     activeAccounts: 24,
     averageMargin: 15.58
   };
-  
-  // Performance changes from Feb to March - updated with accurate Excel data
+
   const summaryChanges = {
     totalSpend: 3.55,
     totalProfit: 18.77,
@@ -91,8 +91,7 @@ const RepPerformance = () => {
     activeAccounts: -4.31,
     averageMargin: 2.04
   };
-  
-  // Rep-level performance changes - updated with accurate Excel data
+
   const repChanges = {
     "Clare Quinn": { spend: -13.97, profit: 23.17, margin: 43.17, packs: -10.76, profitPerActiveShop: 14.43, profitPerPack: 38.03, activeRatio: 6.36 },
     "Craig McDowall": { spend: 18.28, profit: 19.44, margin: 0.98, packs: 0.60, profitPerActiveShop: 28.79, profitPerPack: 18.72, activeRatio: -12.72 },
@@ -106,7 +105,6 @@ const RepPerformance = () => {
     "Murray Glasgow": { spend: 100, profit: 100, margin: 100, packs: 100, profitPerActiveShop: 100, profitPerPack: 100, activeRatio: 100 }
   };
 
-  // Calculate current summary based on toggle states
   const calculateSummary = () => {
     let summary = {...baseSummary};
     
@@ -126,14 +124,12 @@ const RepPerformance = () => {
       summary.activeAccounts -= wholesaleValues.activeAccounts;
     }
     
-    // Recalculate average margin
     summary.averageMargin = summary.totalSpend > 0 ? (summary.totalProfit / summary.totalSpend) * 100 : 0;
     
     return summary;
   };
-  
-  // Get active data based on current tab
-  const getActiveData = (tabValue) => {
+
+  const getActiveData = (tabValue: string) => {
     switch (tabValue) {
       case 'rep':
         return repData;
@@ -143,10 +139,8 @@ const RepPerformance = () => {
         return includeWholesale ? wholesaleData : [];
       case 'overall':
       default:
-        // For overall, combine data from different sources based on toggles
         let combinedData = [...overallData];
         
-        // If toggles are off, filter out reps from respective categories
         if (!includeReva) {
           const revaReps = revaData.map(item => item.rep);
           combinedData = combinedData.filter(rep => 
@@ -165,8 +159,7 @@ const RepPerformance = () => {
     }
   };
 
-  // Sort the active data
-  const sortData = (data) => {
+  const sortData = (data: any[]) => {
     return [...data].sort((a, b) => {
       const aValue = a[sortBy];
       const bValue = b[sortBy];
@@ -179,11 +172,9 @@ const RepPerformance = () => {
     });
   };
 
-  // Get current summary
   const summary = calculateSummary();
 
-  // Format helpers
-  const formatCurrency = (value, decimals = 0) => {
+  const formatCurrency = (value: number, decimals = 0) => {
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
       currency: 'GBP',
@@ -192,16 +183,15 @@ const RepPerformance = () => {
     }).format(value);
   };
 
-  const formatPercent = (value) => {
+  const formatPercent = (value: number) => {
     return `${value.toFixed(1)}%`;
   };
 
-  const formatNumber = (value) => {
+  const formatNumber = (value: number) => {
     return new Intl.NumberFormat('en-GB').format(value);
   };
-  
-  // Helper to render change indicators
-  const renderChangeIndicator = (changeValue, size = "small") => {
+
+  const renderChangeIndicator = (changeValue: number, size = "small") => {
     const isPositive = changeValue > 0;
     
     if (Math.abs(changeValue) < 0.1) return null; // No significant change
@@ -228,7 +218,7 @@ const RepPerformance = () => {
     }
   };
 
-  const handleSort = (column) => {
+  const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -430,7 +420,7 @@ const RepPerformance = () => {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan="5" className="px-6 py-4 text-center text-sm text-finance-gray">
+                                <td colSpan={5} className="px-6 py-4 text-center text-sm text-finance-gray">
                                   No data available for the selected filters
                                 </td>
                               </tr>
@@ -453,3 +443,20 @@ const RepPerformance = () => {
                     displayData={sortData(getActiveData(tabValue))}
                     repChanges={repChanges}
                   />
+                  
+                  <RepMarginComparison
+                    displayData={sortData(getActiveData(tabValue))}
+                    repChanges={repChanges}
+                    formatPercent={formatPercent}
+                  />
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RepPerformance;
