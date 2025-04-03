@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
@@ -125,6 +124,18 @@
   }
   
   .chart-container {
-    @apply bg-finance-darkSecondary rounded-lg p-4 h-full;
+    @apply border border-white/10 bg-transparent rounded-lg p-4 h-full;
+  }
+
+  .section-spacing {
+    @apply mb-20;
+  }
+  
+  .card-grid {
+    @apply grid gap-4 md:gap-6;
+  }
+  
+  .metric-box {
+    @apply h-full border border-white/10 bg-transparent p-5 rounded-lg;
   }
 }

@@ -23,6 +23,14 @@ const LineChart: React.FC<LineChartProps> = ({
   showAverage = true,
   yAxisFormatter = (value) => `£${value}k`
 }) => {
+  // Calculate the minimum value for the Y-axis
+  const minValue = Math.floor(Math.min(...data.map(item => item.value)) * 0.9);
+  const avgValues = data.filter(item => item.avg !== undefined).map(item => item.avg);
+  const minAvg = avgValues.length > 0 ? Math.min(...avgValues as number[]) : Infinity;
+  
+  // Set the domain minimum to be slightly lower than the lowest data point
+  const yAxisMin = Math.min(minValue, minAvg !== Infinity ? Math.floor(minAvg * 0.9) : minValue);
+  
   return (
     <ResponsiveContainer width="100%" height="100%">
       <RechartLine
@@ -37,6 +45,7 @@ const LineChart: React.FC<LineChartProps> = ({
           tick={{ fill: '#8E9196', fontSize: 12 }}
         />
         <YAxis 
+          domain={[yAxisMin, 'auto']}
           tickLine={false} 
           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
           tick={{ fill: '#8E9196', fontSize: 12 }}
@@ -55,8 +64,8 @@ const LineChart: React.FC<LineChartProps> = ({
           dataKey="value" 
           stroke={color} 
           strokeWidth={2}
-          dot={{ fill: color, r: 4 }}
-          activeDot={{ fill: color, r: 6, strokeWidth: 2 }}
+          dot={{ fill: color, r: 3 }}
+          activeDot={{ fill: color, r: 5, strokeWidth: 2 }}
         />
         {showAverage && (
           <Line 
@@ -64,8 +73,8 @@ const LineChart: React.FC<LineChartProps> = ({
             dataKey="avg" 
             stroke={avgColor} 
             strokeWidth={1.5}
-            dot={{ fill: avgColor, r: 3 }}
-            activeDot={{ fill: avgColor, r: 5, strokeWidth: 1 }}
+            dot={{ fill: avgColor, r: 2 }}
+            activeDot={{ fill: avgColor, r: 4, strokeWidth: 1 }}
           />
         )}
       </RechartLine>

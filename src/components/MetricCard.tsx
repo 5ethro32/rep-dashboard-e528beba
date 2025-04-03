@@ -27,8 +27,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
   icon
 }) => {
   return (
-    <Card className={cn("border-0 bg-finance-darkSecondary", className)}>
-      <CardContent className="p-6">
+    <Card className={cn("border border-white/10 bg-transparent", className)}>
+      <CardContent className="p-5">
         <div className="flex flex-col space-y-2">
           <div className="text-sm text-finance-gray uppercase tracking-wider">{title}</div>
           
