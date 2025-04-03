@@ -7,19 +7,24 @@ interface RepData {
   profit: number;
   margin: number;
   packs: number;
-  activeAccounts: number;
-  totalAccounts: number;
-  profitPerActiveShop: number;
-  profitPerPack: number;
-  activeRatio: number;
+  activeAccounts?: number;
+  totalAccounts?: number;
+  profitPerActiveShop?: number;
+  profitPerPack?: number;
+  activeRatio?: number;
+  cost?: number;
+  credit?: number;
+  subRep?: string;
+  accountRef?: string;
+  accountName?: string;
 }
 
 interface SummaryValues {
   totalSpend: number;
   totalProfit: number;
   totalPacks: number;
-  totalAccounts: number;
-  activeAccounts: number;
+  totalAccounts?: number;
+  activeAccounts?: number;
   averageMargin: number;
 }
 
@@ -29,30 +34,47 @@ interface RepChanges {
     profit: number;
     margin: number;
     packs: number;
-    profitPerActiveShop: number;
-    profitPerPack: number;
-    activeRatio: number;
+    profitPerActiveShop?: number;
+    profitPerPack?: number;
+    activeRatio?: number;
   };
 }
 
 interface ProcessedData {
   overallData: RepData[];
   repData: RepData[];
-  revaData: RepData[];
-  wholesaleData: RepData[];
+  revaData?: RepData[];
+  wholesaleData?: RepData[];
   baseSummary: SummaryValues;
-  revaValues: SummaryValues;
-  wholesaleValues: SummaryValues;
-  summaryChanges: {
+  revaValues?: SummaryValues;
+  wholesaleValues?: SummaryValues;
+  summaryChanges?: {
     totalSpend: number;
     totalProfit: number;
     totalPacks: number;
-    totalAccounts: number;
-    activeAccounts: number;
+    totalAccounts?: number;
+    activeAccounts?: number;
     averageMargin: number;
   };
-  repChanges: RepChanges;
+  repChanges?: RepChanges;
+  rawData: RepData[];
 }
+
+// Maps the expected columns to the actual columns in the file
+const columnMapping = {
+  rep: "Rep",
+  subRep: "Sub-Rep",
+  accountRef: "Account Ref",
+  accountName: "Account Name",
+  spend: "Spend",
+  cost: "Cost",
+  credit: "Credit",
+  profit: "Profit",
+  margin: "Margin",
+  packs: "Packs",
+  activeAccounts: "activeAccounts", // Will be calculated if not present
+  totalAccounts: "totalAccounts",    // Will be calculated if not present
+};
 
 export const processExcelFile = async (file: File): Promise<ProcessedData> => {
   return new Promise((resolve, reject) => {
@@ -63,21 +85,85 @@ export const processExcelFile = async (file: File): Promise<ProcessedData> => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         
-        // Process each sheet
+        // Get the first sheet if specific sheets aren't found
+        const sheetNames = workbook.SheetNames;
+        if (sheetNames.length === 0) {
+          throw new Error('Excel file has no sheets');
+        }
+
+        // Extract data from the first sheet as raw data
+        const rawData = extractSheetData(workbook, sheetNames[0]);
+        
+        // Try to get named sheets, or use defaults
+        const overallSheet = workbook.Sheets['overall'] || workbook.Sheets[sheetNames[0]];
+        const repSheet = workbook.Sheets['rep'] || workbook.Sheets[sheetNames[0]];
+        
+        // Extract data or use fallbacks
+        let overallData: RepData[];
+        let repData: RepData[];
+        
+        if (overallSheet) {
+          overallData = XLSX.utils.sheet_to_json(overallSheet).map(transformRowData);
+        } else {
+          overallData = rawData;
+        }
+        
+        if (repSheet && repSheet !== overallSheet) {
+          repData = XLSX.utils.sheet_to_json(repSheet).map(transformRowData);
+        } else {
+          repData = rawData;
+        }
+        
+        // Optional sheets
+        let revaData: RepData[] | undefined;
+        let wholesaleData: RepData[] | undefined;
+        
+        if (workbook.Sheets['reva']) {
+          revaData = XLSX.utils.sheet_to_json(workbook.Sheets['reva']).map(transformRowData);
+        }
+        
+        if (workbook.Sheets['wholesale']) {
+          wholesaleData = XLSX.utils.sheet_to_json(workbook.Sheets['wholesale']).map(transformRowData);
+        }
+        
+        // Process the data
+        const baseSummary = calculateBaseSummary(overallData);
+        
         const processedData: ProcessedData = {
-          overallData: extractSheetData(workbook, 'overall'),
-          repData: extractSheetData(workbook, 'rep'),
-          revaData: extractSheetData(workbook, 'reva'),
-          wholesaleData: extractSheetData(workbook, 'wholesale'),
-          baseSummary: calculateBaseSummary(extractSheetData(workbook, 'overall')),
-          revaValues: calculateSummaryValues(extractSheetData(workbook, 'reva')),
-          wholesaleValues: calculateSummaryValues(extractSheetData(workbook, 'wholesale')),
-          summaryChanges: extractSummaryChanges(workbook),
-          repChanges: extractRepChanges(workbook)
+          overallData,
+          repData,
+          rawData,
+          baseSummary,
         };
+        
+        // Add optional data if available
+        if (revaData) {
+          processedData.revaData = revaData;
+          processedData.revaValues = calculateSummaryValues(revaData);
+        }
+        
+        if (wholesaleData) {
+          processedData.wholesaleData = wholesaleData;
+          processedData.wholesaleValues = calculateSummaryValues(wholesaleData);
+        }
+        
+        // Try to extract changes data if available
+        try {
+          if (workbook.Sheets['summaryChanges']) {
+            processedData.summaryChanges = extractSummaryChanges(workbook);
+          }
+          
+          if (workbook.Sheets['repChanges']) {
+            processedData.repChanges = extractRepChanges(workbook);
+          }
+        } catch (error) {
+          // Just skip the changes data if it fails
+          console.warn('Could not extract changes data, skipping', error);
+        }
         
         resolve(processedData);
       } catch (error) {
+        console.error('Excel processing error:', error);
         reject(new Error('Invalid Excel file format. Please ensure your file follows the required structure.'));
       }
     };
@@ -90,6 +176,58 @@ export const processExcelFile = async (file: File): Promise<ProcessedData> => {
   });
 };
 
+// Transform the row data from the actual column names to our expected format
+function transformRowData(row: any): RepData {
+  const transformed: RepData = {
+    rep: String(row[columnMapping.rep] || ''),
+    spend: Number(row[columnMapping.spend] || 0),
+    profit: Number(row[columnMapping.profit] || 0),
+    margin: Number(row[columnMapping.margin] || 0),
+    packs: Number(row[columnMapping.packs] || 0),
+  };
+  
+  // Add optional fields if present
+  if (row[columnMapping.subRep]) transformed.subRep = String(row[columnMapping.subRep]);
+  if (row[columnMapping.accountRef]) transformed.accountRef = String(row[columnMapping.accountRef]);
+  if (row[columnMapping.accountName]) transformed.accountName = String(row[columnMapping.accountName]);
+  if (row[columnMapping.cost]) transformed.cost = Number(row[columnMapping.cost]);
+  if (row[columnMapping.credit]) transformed.credit = Number(row[columnMapping.credit]);
+  
+  // Calculate or assign account values
+  if (row[columnMapping.activeAccounts]) {
+    transformed.activeAccounts = Number(row[columnMapping.activeAccounts]);
+  } else if (row[columnMapping.accountRef]) {
+    // If we have account data but no explicit active accounts, set to 1 (this row represents one account)
+    transformed.activeAccounts = 1;
+  } else {
+    transformed.activeAccounts = 0;
+  }
+  
+  if (row[columnMapping.totalAccounts]) {
+    transformed.totalAccounts = Number(row[columnMapping.totalAccounts]);
+  } else if (row[columnMapping.accountRef]) {
+    // If we have account data but no explicit total accounts, set to 1 (this row represents one account)
+    transformed.totalAccounts = 1;
+  } else {
+    transformed.totalAccounts = 0;
+  }
+  
+  // Calculate derived metrics if not present
+  transformed.profitPerActiveShop = 
+    transformed.activeAccounts > 0 ? 
+    transformed.profit / transformed.activeAccounts : 0;
+    
+  transformed.profitPerPack = 
+    transformed.packs > 0 ? 
+    transformed.profit / transformed.packs : 0;
+    
+  transformed.activeRatio = 
+    transformed.totalAccounts > 0 ? 
+    (transformed.activeAccounts / transformed.totalAccounts) * 100 : 0;
+  
+  return transformed;
+}
+
 const extractSheetData = (workbook: XLSX.WorkBook, sheetName: string): RepData[] => {
   if (!workbook.Sheets[sheetName]) {
     throw new Error(`Sheet "${sheetName}" not found in the Excel file`);
@@ -97,40 +235,30 @@ const extractSheetData = (workbook: XLSX.WorkBook, sheetName: string): RepData[]
   
   const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
   
-  return jsonData.map((row: any) => {
-    // Validate row data
-    const requiredFields = ['rep', 'spend', 'profit', 'margin', 'packs', 'activeAccounts', 'totalAccounts'];
-    for (const field of requiredFields) {
-      if (row[field] === undefined) {
-        throw new Error(`Missing required field "${field}" in sheet "${sheetName}"`);
-      }
-    }
+  // Validate that required columns exist
+  if (jsonData.length > 0) {
+    const firstRow = jsonData[0] as any;
     
-    // Convert to proper types
-    return {
-      rep: String(row.rep),
-      spend: Number(row.spend),
-      profit: Number(row.profit),
-      margin: Number(row.margin),
-      packs: Number(row.packs),
-      activeAccounts: Number(row.activeAccounts),
-      totalAccounts: Number(row.totalAccounts),
-      profitPerActiveShop: row.profitPerActiveShop ? Number(row.profitPerActiveShop) : 
-        (row.activeAccounts > 0 ? Number(row.profit) / Number(row.activeAccounts) : 0),
-      profitPerPack: row.profitPerPack ? Number(row.profitPerPack) : 
-        (row.packs > 0 ? Number(row.profit) / Number(row.packs) : 0),
-      activeRatio: row.activeRatio ? Number(row.activeRatio) : 
-        (row.totalAccounts > 0 ? (Number(row.activeAccounts) / Number(row.totalAccounts)) * 100 : 0)
-    };
-  });
+    // Check for minimum required columns
+    if (firstRow[columnMapping.rep] === undefined || 
+        firstRow[columnMapping.spend] === undefined || 
+        firstRow[columnMapping.profit] === undefined) {
+      throw new Error(`Missing required columns. Please ensure your file has columns for Rep, Spend, and Profit.`);
+    }
+  }
+  
+  return jsonData.map(transformRowData);
 };
 
 const calculateBaseSummary = (data: RepData[]): SummaryValues => {
   const totalSpend = data.reduce((sum, item) => sum + item.spend, 0);
   const totalProfit = data.reduce((sum, item) => sum + item.profit, 0);
   const totalPacks = data.reduce((sum, item) => sum + item.packs, 0);
-  const totalAccounts = data.reduce((sum, item) => sum + item.totalAccounts, 0);
-  const activeAccounts = data.reduce((sum, item) => sum + item.activeAccounts, 0);
+  
+  // Optional sums
+  const totalAccounts = data.reduce((sum, item) => sum + (item.totalAccounts || 0), 0);
+  const activeAccounts = data.reduce((sum, item) => sum + (item.activeAccounts || 0), 0);
+  
   const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
   
   return {

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, Upload, AlertCircle, FileSpreadsheet } from 'lucide-react';
+import { Home, Upload, AlertCircle, FileSpreadsheet, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,11 +9,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { processExcelFile } from '@/utils/excel-utils';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const DataUpload: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detailedError, setDetailedError] = useState<string | null>(null);
+  const [previewData, setPreviewData] = useState<any[] | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -24,6 +26,7 @@ const DataUpload: React.FC = () => {
     setIsUploading(true);
     setError(null);
     setDetailedError(null);
+    setPreviewData(null);
 
     try {
       // Check file extension
@@ -35,16 +38,22 @@ const DataUpload: React.FC = () => {
       console.log('Processing file:', file.name);
       const result = await processExcelFile(file);
       
+      // Show preview of the raw data
+      if (result.rawData && result.rawData.length > 0) {
+        setPreviewData(result.rawData.slice(0, 5)); // Just show first 5 rows
+      }
+      
       // Store the processed data in localStorage
       localStorage.setItem('repPerformanceData', JSON.stringify(result));
       
       toast({
         title: "Data uploaded successfully",
         description: "Your performance data has been updated.",
+        variant: "default",
       });
       
       // Navigate to the performance dashboard
-      navigate('/rep-performance');
+      setTimeout(() => navigate('/rep-performance'), 1500);
     } catch (err: any) {
       console.error('Upload error:', err);
       
@@ -53,11 +62,11 @@ const DataUpload: React.FC = () => {
       
       // Set more detailed error information
       if (errorMessage.includes('not found')) {
-        setDetailedError(`Missing required sheet. Please ensure your Excel file includes sheets named: overall, rep, reva, wholesale.`);
-      } else if (errorMessage.includes('Missing required field')) {
-        setDetailedError(`Missing columns in the Excel file. Each sheet must contain these columns: rep, spend, profit, margin, packs, activeAccounts, totalAccounts.`);
+        setDetailedError(`Could not find expected data in your file. Please ensure your Excel file includes the following columns: Rep, Spend, Profit, Margin, Packs.`);
+      } else if (errorMessage.includes('Missing required')) {
+        setDetailedError(`Missing required columns in the Excel file. Your file must contain at least: Rep, Spend, and Profit columns.`);
       } else {
-        setDetailedError('Please check that your Excel file matches the expected structure shown below.');
+        setDetailedError('Please check that your Excel file contains the required columns shown below.');
       }
       
       toast({
@@ -107,6 +116,41 @@ const DataUpload: React.FC = () => {
               </Alert>
             )}
 
+            {previewData && previewData.length > 0 && (
+              <div className="mb-6">
+                <Alert className="mb-4 bg-green-900/30 border-green-800 text-white">
+                  <Check className="h-4 w-4" />
+                  <AlertTitle>Upload Successful</AlertTitle>
+                  <AlertDescription>Data preview (first 5 rows):</AlertDescription>
+                </Alert>
+                
+                <div className="overflow-x-auto max-h-60 rounded border border-gray-800">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {Object.keys(previewData[0]).map((key) => (
+                          <TableHead key={key} className="text-gray-300 text-xs">
+                            {key}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {previewData.map((row, index) => (
+                        <TableRow key={index}>
+                          {Object.values(row).map((value: any, i) => (
+                            <TableCell key={i} className="text-gray-400 text-xs">
+                              {typeof value === 'number' ? value.toLocaleString() : String(value)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-6">
               <div className="grid w-full items-center gap-2">
                 <label htmlFor="excel-file" className="text-sm font-medium text-gray-300">
@@ -121,7 +165,7 @@ const DataUpload: React.FC = () => {
                   disabled={isUploading}
                 />
                 <p className="text-xs text-gray-400">
-                  Your Excel file should have sheets named: overall, rep, reva, wholesale.
+                  Your Excel file should include columns for: Rep, Spend, Profit, Margin, Packs.
                 </p>
               </div>
             </div>
@@ -129,18 +173,75 @@ const DataUpload: React.FC = () => {
           <CardFooter className="flex flex-col space-y-4">
             <Tabs defaultValue="structure" className="w-full">
               <TabsList className="bg-gray-800/50 border-gray-700">
-                <TabsTrigger value="structure">File Structure</TabsTrigger>
+                <TabsTrigger value="structure">Expected Columns</TabsTrigger>
                 <TabsTrigger value="template">Template</TabsTrigger>
               </TabsList>
               <TabsContent value="structure" className="mt-4">
                 <div className="text-xs text-gray-400 space-y-2">
-                  <p className="font-semibold">Expected Excel Structure:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>Each sheet needs columns: rep, spend, profit, margin, packs, activeAccounts, totalAccounts</li>
-                    <li>Optional columns: profitPerActiveShop, profitPerPack, activeRatio (will be calculated if missing)</li>
-                    <li>Sheet names should be: overall, rep, reva, wholesale</li>
-                    <li>Include a "repChanges" sheet for YoY changes with columns for rep, spend, profit, margin, etc.</li>
-                  </ul>
+                  <p className="font-semibold">Required Excel Columns:</p>
+                  <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-white">Column Name</TableHead>
+                          <TableHead className="text-white">Required</TableHead>
+                          <TableHead className="text-white">Description</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell>Rep</TableCell>
+                          <TableCell className="text-green-400">Required</TableCell>
+                          <TableCell>Name of the representative</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Sub-Rep</TableCell>
+                          <TableCell>Optional</TableCell>
+                          <TableCell>Secondary representative</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Account Ref</TableCell>
+                          <TableCell>Optional</TableCell>
+                          <TableCell>Account reference code</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Account Name</TableCell>
+                          <TableCell>Optional</TableCell>
+                          <TableCell>Name of the account</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Spend</TableCell>
+                          <TableCell className="text-green-400">Required</TableCell>
+                          <TableCell>Spending amount</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Cost</TableCell>
+                          <TableCell>Optional</TableCell>
+                          <TableCell>Cost amount</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Credit</TableCell>
+                          <TableCell>Optional</TableCell>
+                          <TableCell>Credit amount</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Profit</TableCell>
+                          <TableCell className="text-green-400">Required</TableCell>
+                          <TableCell>Profit amount</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Margin</TableCell>
+                          <TableCell>Optional</TableCell>
+                          <TableCell>Profit margin</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Packs</TableCell>
+                          <TableCell>Optional</TableCell>
+                          <TableCell>Number of packs</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </TabsContent>
               <TabsContent value="template" className="mt-4">
