@@ -37,7 +37,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
             
             {change && (
               <div className={cn(
-                "flex items-center text-sm",
+                "flex items-center text-xs",
                 change.type === 'increase' ? 'text-green-500' : 
                 change.type === 'decrease' ? 'text-finance-red' : 'text-finance-gray'
               )}>

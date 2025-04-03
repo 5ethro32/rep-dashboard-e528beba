@@ -9,7 +9,7 @@ interface ActionItemProps {
 
 const ActionItem: React.FC<ActionItemProps> = ({ icon, children }) => {
   return (
-    <div className="flex items-start gap-4">
+    <div className="flex items-start gap-4 animate-fade-in">
       <div className="flex-shrink-0 mt-1">
         <div className="flex items-center justify-center w-8 h-8 rounded-full border border-finance-red">
           {icon === 'up' && <ArrowUp className="text-finance-red h-4 w-4" />}

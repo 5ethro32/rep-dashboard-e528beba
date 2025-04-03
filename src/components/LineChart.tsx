@@ -23,21 +23,23 @@ const LineChart: React.FC<LineChartProps> = ({
   showAverage = true,
   yAxisFormatter = (value) => `£${value}k`
 }) => {
-  // Calculate the minimum value for the Y-axis
-  const minValue = Math.floor(Math.min(...data.map(item => item.value)) * 0.9);
+  // Calculate the minimum and maximum values for the Y-axis
+  const minValue = Math.min(...data.map(item => item.value));
+  const maxValue = Math.max(...data.map(item => item.value));
   const avgValues = data.filter(item => item.avg !== undefined).map(item => item.avg);
   const minAvg = avgValues.length > 0 ? Math.min(...avgValues as number[]) : Infinity;
   
-  // Set the domain minimum to be slightly lower than the lowest data point
-  const yAxisMin = Math.min(minValue, minAvg !== Infinity ? Math.floor(minAvg * 0.9) : minValue);
+  // Set the domain to be slightly padded from the data points for better visualization
+  const yAxisMin = Math.floor(Math.min(minValue, minAvg !== Infinity ? minAvg : minValue) * 0.95);
+  const yAxisMax = Math.ceil(Math.max(...data.map(item => item.value)) * 1.05);
   
   return (
     <ResponsiveContainer width="100%" height="100%">
       <RechartLine
         data={data}
-        margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+        margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
         <XAxis 
           dataKey="name" 
           tickLine={false} 
@@ -45,27 +47,34 @@ const LineChart: React.FC<LineChartProps> = ({
           tick={{ fill: '#8E9196', fontSize: 12 }}
         />
         <YAxis 
-          domain={[yAxisMin, 'auto']}
+          domain={[yAxisMin, yAxisMax]}
           tickLine={false} 
           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
           tick={{ fill: '#8E9196', fontSize: 12 }}
           tickFormatter={yAxisFormatter}
+          allowDecimals={false}
+          width={50}
         />
         <Tooltip 
           contentStyle={{ 
             backgroundColor: '#1A1F2C', 
             borderColor: 'rgba(255,255,255,0.1)',
-            color: '#ffffff'
+            color: '#ffffff',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
           }}
-          labelStyle={{ color: '#ffffff' }}
+          labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '5px' }}
+          itemStyle={{ padding: '2px 0' }}
+          cursor={{ stroke: 'rgba(255,255,255,0.2)' }}
         />
         <Line 
           type="monotone" 
           dataKey="value" 
           stroke={color} 
-          strokeWidth={2}
-          dot={{ fill: color, r: 3 }}
-          activeDot={{ fill: color, r: 5, strokeWidth: 2 }}
+          strokeWidth={2.5}
+          dot={{ fill: color, r: 2, strokeWidth: 0 }}
+          activeDot={{ fill: color, r: 4, strokeWidth: 2 }}
+          animationDuration={1500}
         />
         {showAverage && (
           <Line 
@@ -73,8 +82,10 @@ const LineChart: React.FC<LineChartProps> = ({
             dataKey="avg" 
             stroke={avgColor} 
             strokeWidth={1.5}
-            dot={{ fill: avgColor, r: 2 }}
-            activeDot={{ fill: avgColor, r: 4, strokeWidth: 1 }}
+            strokeDasharray="5 5"
+            dot={{ fill: avgColor, r: 1.5, strokeWidth: 0 }}
+            activeDot={{ fill: avgColor, r: 3, strokeWidth: 1 }}
+            animationDuration={1500}
           />
         )}
       </RechartLine>
