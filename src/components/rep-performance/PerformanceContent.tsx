@@ -1,0 +1,120 @@
+
+import React from 'react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import PerformanceTable from './PerformanceTable';
+import RepProfitChart from '@/components/RepProfitChart';
+import RepProfitShare from '@/components/RepProfitShare';
+import RepMarginComparison from '@/components/RepMarginComparison';
+import { useIsMobile } from '@/hooks/use-mobile';
+
+interface PerformanceContentProps {
+  tabValues: string[];
+  getActiveData: (tabValue: string) => any[];
+  sortData: (data: any[]) => any[];
+  sortBy: string;
+  sortOrder: string;
+  handleSort: (column: string) => void;
+  repChanges: Record<string, any>;
+  formatCurrency: (value: number, decimals?: number) => string;
+  formatPercent: (value: number) => string;
+  formatNumber: (value: number) => string;
+  renderChangeIndicator: (changeValue: number, size?: string) => React.ReactNode;
+}
+
+const PerformanceContent: React.FC<PerformanceContentProps> = ({
+  tabValues,
+  getActiveData,
+  sortData,
+  sortBy,
+  sortOrder,
+  handleSort,
+  repChanges,
+  formatCurrency,
+  formatPercent,
+  formatNumber,
+  renderChangeIndicator
+}) => {
+  const isMobile = useIsMobile();
+
+  const getTabLabel = (tabValue: string) => {
+    switch (tabValue) {
+      case 'overall': return 'Overall';
+      case 'rep': return 'Retail';
+      case 'reva': return 'REVA';
+      case 'wholesale': return 'Wholesale';
+      default: return tabValue;
+    }
+  };
+
+  const getTabTitle = (tabValue: string) => {
+    switch (tabValue) {
+      case 'overall': return 'Overall Rep Performance';
+      case 'rep': return 'Retail Performance';
+      case 'reva': return 'REVA Performance';
+      case 'wholesale': return 'Wholesale Performance';
+      default: return '';
+    }
+  };
+
+  return (
+    <div className="mb-8 animate-slide-in-up">
+      <Tabs defaultValue="overall" className="w-full">
+        <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
+          {tabValues.map((tabValue) => (
+            <TabsTrigger 
+              key={tabValue}
+              value={tabValue} 
+              className="data-[state=active]:bg-finance-red data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2"
+            >
+              {getTabLabel(tabValue)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        
+        {tabValues.map((tabValue) => (
+          <TabsContent key={tabValue} value={tabValue} className="mt-0">
+            <div className="bg-gray-900/40 rounded-lg border border-white/10 mb-6 md:mb-8 backdrop-blur-sm shadow-lg">
+              <div className="p-3 md:p-6">
+                <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4 text-white/90">
+                  {getTabTitle(tabValue)}
+                </h2>
+                <PerformanceTable 
+                  displayData={sortData(getActiveData(tabValue))}
+                  repChanges={repChanges}
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                  onSort={handleSort}
+                  formatCurrency={formatCurrency}
+                  formatPercent={formatPercent}
+                  formatNumber={formatNumber}
+                  renderChangeIndicator={renderChangeIndicator}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+              <RepProfitChart 
+                displayData={sortData(getActiveData(tabValue))}
+                repChanges={repChanges}
+                formatCurrency={formatCurrency}
+              />
+              
+              <RepProfitShare 
+                displayData={sortData(getActiveData(tabValue))}
+                repChanges={repChanges}
+              />
+              
+              <RepMarginComparison
+                displayData={sortData(getActiveData(tabValue))}
+                repChanges={repChanges}
+                formatPercent={formatPercent}
+              />
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+};
+
+export default PerformanceContent;
