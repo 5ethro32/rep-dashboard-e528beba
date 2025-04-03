@@ -93,9 +93,13 @@ export const processExcelFile = async (file: File): Promise<ProcessedData> => {
 
         // Extract raw data from the first sheet
         const rawData = extractSheetData(workbook, sheetNames[0]);
+        console.log('Processing file:', file.name);
         
         // Process the data into required structure for the dashboard
         const processedData = processRawData(rawData);
+        
+        // Store the data in localStorage for persistence
+        localStorage.setItem('repPerformanceData', JSON.stringify(processedData));
         
         resolve(processedData);
       } catch (error) {
@@ -134,7 +138,7 @@ function transformRowData(row: any): RepData {
     transformed.activeAccounts = Number(row[columnMapping.activeAccounts]);
   } else if (row[columnMapping.accountRef]) {
     // If we have account data but no explicit active accounts, set to 1 (this row represents one account)
-    transformed.activeAccounts = 1;
+    transformed.activeAccounts = transformed.profit > 0 ? 1 : 0;
   } else {
     transformed.activeAccounts = 0;
   }
@@ -188,9 +192,26 @@ const extractSheetData = (workbook: XLSX.WorkBook, sheetName: string): RepData[]
 
 // Process raw data into the structure needed for the dashboard
 const processRawData = (rawData: RepData[]): ProcessedData => {
-  // Group data by Rep
-  const repGroups = rawData.reduce((groups: Record<string, RepData[]>, row) => {
-    const rep = row.rep;
+  // Filter out rows with zero spend to avoid adding them to the tabs
+  const nonZeroData = rawData.filter(row => row.spend > 0);
+  
+  // Group data by Rep for standard retail accounts
+  const repGroups = nonZeroData.reduce((groups: Record<string, RepData[]>, row) => {
+    // For standard retail accounts, use the main Rep
+    if (!isRevaAccount(row) && !isWholesaleAccount(row)) {
+      const rep = row.rep;
+      if (!groups[rep]) {
+        groups[rep] = [];
+      }
+      groups[rep].push(row);
+    }
+    return groups;
+  }, {});
+  
+  // Group data by Sub-Rep for REVA accounts (fall back to Rep if no Sub-Rep)
+  const revaGroups = nonZeroData.filter(isRevaAccount).reduce((groups: Record<string, RepData[]>, row) => {
+    // Use Sub-Rep if available, otherwise use Rep
+    const rep = row.subRep && row.subRep.trim() !== '' ? row.subRep : row.rep;
     if (!groups[rep]) {
       groups[rep] = [];
     }
@@ -198,71 +219,143 @@ const processRawData = (rawData: RepData[]): ProcessedData => {
     return groups;
   }, {});
   
-  // Aggregate data for each rep
-  const aggregatedData = Object.entries(repGroups).map(([rep, rows]) => {
-    const spend = rows.reduce((sum, row) => sum + row.spend, 0);
-    const profit = rows.reduce((sum, row) => sum + row.profit, 0);
-    const packs = rows.reduce((sum, row) => sum + row.packs, 0);
-    const activeAccounts = rows.filter(row => row.accountRef && row.profit > 0).length;
-    const totalAccounts = rows.filter(row => row.accountRef).length;
-    
-    const margin = spend > 0 ? (profit / spend) * 100 : 0;
-    const profitPerActiveShop = activeAccounts > 0 ? profit / activeAccounts : 0;
-    const profitPerPack = packs > 0 ? profit / packs : 0;
-    const activeRatio = totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0;
-    
-    return {
-      rep,
-      spend,
-      profit,
-      margin,
-      packs,
-      activeAccounts,
-      totalAccounts,
-      profitPerActiveShop,
-      profitPerPack,
-      activeRatio
-    };
+  // Group data by Sub-Rep for Wholesale accounts (fall back to Rep if no Sub-Rep)
+  const wholesaleGroups = nonZeroData.filter(isWholesaleAccount).reduce((groups: Record<string, RepData[]>, row) => {
+    // Use Sub-Rep if available, otherwise use Rep
+    const rep = row.subRep && row.subRep.trim() !== '' ? row.subRep : row.rep;
+    if (!groups[rep]) {
+      groups[rep] = [];
+    }
+    groups[rep].push(row);
+    return groups;
+  }, {});
+  
+  // Aggregate data for each standard rep
+  const aggregatedRepData = Object.entries(repGroups).map(([rep, rows]) => {
+    return aggregateRepData(rep, rows);
+  }).filter(rep => rep.spend > 0);  // Filter out any zero spend reps
+  
+  // Aggregate data for each REVA rep
+  const aggregatedRevaData = Object.entries(revaGroups).map(([rep, rows]) => {
+    return aggregateRepData(rep, rows);
+  }).filter(rep => rep.spend > 0);  // Filter out any zero spend reps
+  
+  // Aggregate data for each Wholesale rep
+  const aggregatedWholesaleData = Object.entries(wholesaleGroups).map(([rep, rows]) => {
+    return aggregateRepData(rep, rows);
+  }).filter(rep => rep.spend > 0);  // Filter out any zero spend reps
+  
+  // Combine all data for overall view
+  const overallData = [...aggregatedRepData];
+  
+  // Add REVA data to overall if it's not already represented by the same rep name
+  aggregatedRevaData.forEach(revaRep => {
+    const existingOverallIndex = overallData.findIndex(rep => rep.rep === revaRep.rep);
+    if (existingOverallIndex === -1) {
+      // Rep doesn't exist in overall, add them
+      overallData.push(revaRep);
+    } else {
+      // Rep exists in overall, combine their metrics
+      const existingRep = overallData[existingOverallIndex];
+      overallData[existingOverallIndex] = combineRepData(existingRep.rep, [existingRep, revaRep]);
+    }
   });
   
-  // Separate data into different categories based on patterns often found in the data
-  // This is an approximation - ideally you'd have explicit columns or sheets for these categories
-  
-  // Default all data to repData (retail)
-  const repData = [...aggregatedData];
-  
-  // Try to identify REVA reps based on margin patterns (typically lower margins)
-  const revaData = aggregatedData.filter(item => 
-    item.margin < 12.5 && item.packs > 5000
-  );
-  
-  // Try to identify wholesale reps based on typical patterns
-  const wholesaleData = aggregatedData.filter(item => 
-    item.profitPerActiveShop > 900 && item.activeAccounts < 20 && item.packs > 10000
-  );
+  // Add Wholesale data to overall if it's not already represented by the same rep name
+  aggregatedWholesaleData.forEach(wholesaleRep => {
+    const existingOverallIndex = overallData.findIndex(rep => rep.rep === wholesaleRep.rep);
+    if (existingOverallIndex === -1) {
+      // Rep doesn't exist in overall, add them
+      overallData.push(wholesaleRep);
+    } else {
+      // Rep exists in overall, combine their metrics
+      const existingRep = overallData[existingOverallIndex];
+      overallData[existingOverallIndex] = combineRepData(existingRep.rep, [existingRep, wholesaleRep]);
+    }
+  });
   
   // Calculate summary values
-  const baseSummary = calculateBaseSummary(aggregatedData);
-  const revaValues = calculateSummaryValues(revaData);
-  const wholesaleValues = calculateSummaryValues(wholesaleData);
+  const baseSummary = calculateBaseSummary(overallData);
+  const revaValues = calculateSummaryValues(aggregatedRevaData);
+  const wholesaleValues = calculateSummaryValues(aggregatedWholesaleData);
   
   // Generate placeholder changes data
   const summaryChanges = generatePlaceholderSummaryChanges();
-  const repChanges = generatePlaceholderRepChanges(aggregatedData);
+  const repChanges = generatePlaceholderRepChanges(overallData);
   
   return {
-    overallData: aggregatedData,
-    repData,
-    revaData,
-    wholesaleData,
+    overallData,
+    repData: aggregatedRepData,
+    revaData: aggregatedRevaData,
+    wholesaleData: aggregatedWholesaleData,
     baseSummary,
     revaValues,
     wholesaleValues,
     summaryChanges,
     repChanges,
-    rawData
+    rawData: nonZeroData
   };
 };
+
+// Helper function to check if an account is likely a REVA account
+function isRevaAccount(row: RepData): boolean {
+  // REVA accounts typically have lower margins
+  return row.margin < 12.5 && row.packs > 1000;
+}
+
+// Helper function to check if an account is likely a Wholesale account
+function isWholesaleAccount(row: RepData): boolean {
+  // Wholesale accounts typically have higher profit per shop and lower account numbers
+  return (row.profit > 500 && row.packs > 5000) && 
+         !(row.margin < 12.5 && row.packs > 1000); // Not a REVA account
+}
+
+// Aggregate data for a single rep
+function aggregateRepData(rep: string, rows: RepData[]): RepData {
+  const spend = rows.reduce((sum, row) => sum + row.spend, 0);
+  const profit = rows.reduce((sum, row) => sum + row.profit, 0);
+  const packs = rows.reduce((sum, row) => sum + row.packs, 0);
+  
+  // Count unique account refs with profit > 0 as active accounts
+  const uniqueActiveAccountRefs = new Set(
+    rows
+      .filter(row => row.accountRef && row.profit > 0)
+      .map(row => row.accountRef)
+  );
+  
+  // Count unique account refs as total accounts
+  const uniqueTotalAccountRefs = new Set(
+    rows
+      .filter(row => row.accountRef)
+      .map(row => row.accountRef)
+  );
+  
+  const activeAccounts = uniqueActiveAccountRefs.size;
+  const totalAccounts = uniqueTotalAccountRefs.size;
+  
+  const margin = spend > 0 ? (profit / spend) * 100 : 0;
+  const profitPerActiveShop = activeAccounts > 0 ? profit / activeAccounts : 0;
+  const profitPerPack = packs > 0 ? profit / packs : 0;
+  const activeRatio = totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0;
+  
+  return {
+    rep,
+    spend,
+    profit,
+    margin,
+    packs,
+    activeAccounts,
+    totalAccounts,
+    profitPerActiveShop,
+    profitPerPack,
+    activeRatio
+  };
+}
+
+// Combine data from multiple rep entries (used when merging different categories)
+function combineRepData(rep: string, rows: RepData[]): RepData {
+  return aggregateRepData(rep, rows);
+}
 
 const calculateBaseSummary = (data: RepData[]): SummaryValues => {
   const totalSpend = data.reduce((sum, item) => sum + item.spend, 0);
@@ -319,3 +412,4 @@ const generatePlaceholderRepChanges = (reps: RepData[]): RepChanges => {
   
   return changes;
 };
+
