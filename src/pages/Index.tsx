@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
@@ -98,13 +97,11 @@ const wagesData = [
   { name: 'Jun', value: 205, avg: 210 },
 ];
 
-// Main dashboard component
 const Index = () => {
   const currentDate = "March 2025";
 
   return (
     <div className="min-h-screen bg-finance-darkBg text-white">
-      {/* Header section */}
       <header className="py-16 px-6 md:px-12 container max-w-7xl mx-auto animate-fade-in">
         <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold">
           Monthly
@@ -119,147 +116,140 @@ const Index = () => {
       </header>
 
       <div className="container max-w-7xl mx-auto px-6 md:px-12 pb-16">
-        {/* Executive Summary */}
         <section className="mb-20 animate-slide-in-up">
           <h2 className="section-title mb-8">Executive Summary</h2>
           
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <p className="text-lg">
-                In December, Gross Profit grew by 8%, due to cost of sales declining at a faster rate than falling revenues. 
-                This was mainly driven by reduced purchasing and a higher closing stock position than opening stock.
-                However, Operating Expenses also rose to £319k, up from £298k.
-              </p>
-              
-              <p className="text-lg">
-                EBITDA improved to £490k, showing a £100k positive contribution in month though it still remains below target year-to-date.
-              </p>
-              
-              <p className="text-lg">
-                Persistent negative cash flow and underperforming EBITDA highlight the critical need to enhance working capital management and drive greater operational efficiencies.
-              </p>
-            </div>
+          <div className="space-y-6 mb-10">
+            <p className="text-base md:text-lg max-w-4xl text-finance-gray">
+              In December, Gross Profit grew by 8%, due to cost of sales declining at a faster rate than falling revenues. 
+              This was mainly driven by reduced purchasing and a higher closing stock position than opening stock.
+              However, Operating Expenses also rose to £319k, up from £298k.
+            </p>
             
-            <div className="space-y-4">
-              <MetricCard
-                title="GROSS PROFIT INCREASED"
-                value="£390k"
-                change={{ value: "up from £360k (+8%) in November", type: "increase" }}
-              />
-              
-              <MetricCard
-                title="OPERATING EXPENSES INCREASED"
-                value="£319k"
-                change={{ value: "from £298k", type: "increase" }}
-              />
-              
-              <MetricCard
-                title="POSITIVE EBITDA TREND"
-                value="£490k"
-                subtitle="+£100k in-month position"
-              />
-              
-              <MetricCard
-                title="NEGATIVE OPERATING CASHFLOW"
-                value="-£589k"
-                subtitle="-£177k in the prior month"
-                valueClassName="text-finance-red"
-              />
-              
-              <MetricCard
-                title="INCREASED DEBT POSITION"
-                value="£2.147m"
-                subtitle="increased by c.£3k (0.13%)"
-              />
-            </div>
+            <p className="text-base md:text-lg max-w-4xl text-finance-gray">
+              EBITDA improved to £490k, showing a £100k positive contribution in month though it still remains below target year-to-date.
+            </p>
+            
+            <p className="text-base md:text-lg max-w-4xl text-finance-gray">
+              Persistent negative cash flow and underperforming EBITDA highlight the critical need to enhance working capital management and drive greater operational efficiencies.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <MetricCard
+              title="GROSS PROFIT INCREASED"
+              value="£390k"
+              change={{ value: "up from £360k (+8%) in November", type: "increase" }}
+            />
+            
+            <MetricCard
+              title="OPERATING EXPENSES INCREASED"
+              value="£319k"
+              change={{ value: "from £298k", type: "increase" }}
+            />
+            
+            <MetricCard
+              title="POSITIVE EBITDA TREND"
+              value="£490k"
+              subtitle="+£100k in-month position"
+            />
+            
+            <MetricCard
+              title="NEGATIVE OPERATING CASHFLOW"
+              value="-£589k"
+              subtitle="-£177k in the prior month"
+              valueClassName="text-finance-red"
+            />
+            
+            <MetricCard
+              title="INCREASED DEBT POSITION"
+              value="£2.147m"
+              subtitle="increased by c.£3k (0.13%)"
+            />
           </div>
         </section>
         
         <Separator className="bg-white/10 my-12" />
         
-        {/* Profit & Loss */}
         <section className="mb-20 animate-slide-in-up">
           <h2 className="section-title mb-8">Profit & Loss</h2>
           
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <p className="text-lg">
-                Turnover experienced a slight decrease, primarily driven by seasonal factors that reduced market activity. 
-                This led to a notable decline in generic sales, although CDs continued to perform strongly.
-              </p>
-              
-              <p className="text-lg">
-                The Cost of Sales decreased at an accelerated pace month-on-month, resulting in an improvement in Gross Profit.
-              </p>
-              
-              <p className="text-lg">
-                The reduction in Cost of Sales is attributed to a higher closing stock position and a strategic decrease in
-                purchasing from manufacturers, reflecting a deliberate effort to minimise buying after achieving core rebate tiers.
-              </p>
-              
-              <p className="text-lg">
-                Gross Profit is trending positively on a month-on-month basis and is exceeding the yearly average,
-                demonstrating ongoing financial strength.
-              </p>
+          <div className="space-y-6 mb-10 max-w-4xl">
+            <p className="text-base md:text-lg text-finance-gray">
+              Turnover experienced a slight decrease, primarily driven by seasonal factors that reduced market activity. 
+              This led to a notable decline in generic sales, although CDs continued to perform strongly.
+            </p>
+            
+            <p className="text-base md:text-lg text-finance-gray">
+              The Cost of Sales decreased at an accelerated pace month-on-month, resulting in an improvement in Gross Profit.
+            </p>
+            
+            <p className="text-base md:text-lg text-finance-gray">
+              The reduction in Cost of Sales is attributed to a higher closing stock position and a strategic decrease in
+              purchasing from manufacturers, reflecting a deliberate effort to minimise buying after achieving core rebate tiers.
+            </p>
+            
+            <p className="text-base md:text-lg text-finance-gray">
+              Gross Profit is trending positively on a month-on-month basis and is exceeding the yearly average,
+              demonstrating ongoing financial strength.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <h3 className="text-xl mb-2">Turnover</h3>
+              <MetricCard
+                title=""
+                value="£2.146m"
+                className="mb-2"
+              />
+              <div className="flex gap-4 text-finance-red text-sm mb-2">
+                <span>-3.7% MoM</span>
+                <span>-2.3% YTD Avg</span>
+              </div>
+              <div className="h-40">
+                <LineChart data={turnoverData} />
+              </div>
             </div>
             
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-xl mb-2">Turnover</h3>
-                <MetricCard
-                  title=""
-                  value="£2.146m"
-                  className="mb-2"
-                />
-                <div className="flex gap-4 text-finance-red text-sm mb-2">
-                  <span>-3.7% MoM</span>
-                  <span>-2.3% YTD Avg</span>
-                </div>
-                <div className="h-40">
-                  <LineChart data={turnoverData} />
-                </div>
+            <div>
+              <h3 className="text-xl mb-2">Cost of Sales</h3>
+              <MetricCard
+                title=""
+                value="£1.750m"
+                className="mb-2"
+              />
+              <div className="flex gap-4 text-finance-red text-sm mb-2">
+                <span>-5.6% MoM</span>
+                <span>-4.3% YTD Avg</span>
               </div>
-              
-              <div>
-                <h3 className="text-xl mb-2">Cost of Sales</h3>
-                <MetricCard
-                  title=""
-                  value="£1.750m"
-                  className="mb-2"
-                />
-                <div className="flex gap-4 text-finance-red text-sm mb-2">
-                  <span>-5.6% MoM</span>
-                  <span>-4.3% YTD Avg</span>
-                </div>
-                <div className="h-40">
-                  <LineChart data={costOfSalesData} />
-                </div>
+              <div className="h-40">
+                <LineChart data={costOfSalesData} />
               </div>
-              
-              <div>
-                <h3 className="text-xl mb-2">Gross Profit</h3>
-                <MetricCard
-                  title=""
-                  value="£390k"
-                  className="mb-2"
-                />
-                <div className="flex gap-4 text-green-500 text-sm mb-2">
-                  <span>+8.3% MoM</span>
-                  <span>8.7% YTD Avg</span>
-                </div>
-                <div className="h-40">
-                  <LineChart data={grossProfitData} color="#4ade80" />
-                </div>
+            </div>
+            
+            <div>
+              <h3 className="text-xl mb-2">Gross Profit</h3>
+              <MetricCard
+                title=""
+                value="£390k"
+                className="mb-2"
+              />
+              <div className="flex gap-4 text-green-500 text-sm mb-2">
+                <span>+8.3% MoM</span>
+                <span>8.7% YTD Avg</span>
+              </div>
+              <div className="h-40">
+                <LineChart data={grossProfitData} color="#4ade80" />
               </div>
             </div>
           </div>
         </section>
         
-        {/* Operating Expenses */}
         <section className="mb-20 animate-slide-in-up">
           <h2 className="section-title mb-8">Operating Expenses</h2>
           
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 mb-10">
             <div className="h-80">
               <LineChart 
                 data={operatingExpensesData} 
@@ -328,9 +318,15 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Wages Analysis */}
         <section className="mb-20 animate-slide-in-up">
           <h2 className="section-title mb-8">Wages Analysis</h2>
+          
+          <div className="space-y-6 mb-10 max-w-4xl">
+            <p className="text-base md:text-lg text-finance-gray">
+              December saw the gross wages increase substantially from the prior month (+6.4%), driven primarily from Christmas bonuses.
+              c.£5k gross reduction expected over next 6 months, before an increase from budget changes.
+            </p>
+          </div>
           
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-6">
@@ -341,15 +337,7 @@ const Index = () => {
                 className="mb-6"
               />
               
-              <p className="text-lg">
-                December saw the gross wages increase substantially from the prior month (+6.4%), driven primarily from Christmas bonuses.
-              </p>
-              
-              <p className="text-lg">
-                c.£5k gross reduction expected over next 6 months, before an increase from budget changes.
-              </p>
-              
-              <ul className="list-disc pl-6 space-y-2 mt-4">
+              <ul className="list-disc pl-6 space-y-2 text-finance-gray">
                 <li>Estimated £204k gross in January (-6.0%).</li>
                 <li>c.£12k decrease in January due to no bonuses.</li>
                 <li>Steady continued reduction MoM thereafter.
@@ -362,7 +350,7 @@ const Index = () => {
             </div>
             
             <div className="space-y-6">
-              <h3 className="text-xl mb-2">Breakdown and Forecast</h3>
+              <h3 className="text-xl mb-4">Breakdown and Forecast</h3>
               
               <div className="grid grid-cols-2 gap-4">
                 <MetricCard
@@ -394,14 +382,13 @@ const Index = () => {
                 />
               </div>
               
-              <div className="h-60 mt-4">
+              <div className="h-60 mt-6">
                 <LineChart data={wagesData} />
               </div>
             </div>
           </div>
         </section>
         
-        {/* EBITDA Tracker */}
         <section className="mb-20 animate-slide-in-up">
           <h2 className="section-title mb-8">EBITDA Tracker</h2>
           
@@ -486,7 +473,6 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Actions & Next Steps */}
         <section className="animate-slide-in-up">
           <h2 className="section-title mb-8">Actions & Next Steps</h2>
           
@@ -496,15 +482,15 @@ const Index = () => {
               
               <div className="space-y-8">
                 <ActionItem icon="up">
-                  <p className="text-lg">Net Profit and EBITDA are positive, though down from prior year.</p>
+                  <p className="text-lg text-finance-gray">Net Profit and EBITDA are positive, though down from prior year.</p>
                 </ActionItem>
                 
                 <ActionItem icon="down">
-                  <p className="text-lg">EBITDA currently falling short of covenant target.</p>
+                  <p className="text-lg text-finance-gray">EBITDA currently falling short of covenant target.</p>
                 </ActionItem>
                 
                 <ActionItem icon="down">
-                  <p className="text-lg">Costs trending downward, but more progress is needed to reach desired levels.</p>
+                  <p className="text-lg text-finance-gray">Costs trending downward, but more progress is needed to reach desired levels.</p>
                 </ActionItem>
               </div>
             </div>
@@ -516,7 +502,7 @@ const Index = () => {
                 <ActionItem icon="right">
                   <div>
                     <p className="text-lg font-semibold mb-2">Proposed £200k reduction of external debt:</p>
-                    <ul className="list-disc pl-6 space-y-1">
+                    <ul className="list-disc pl-6 space-y-1 text-finance-gray">
                       <li>Covenant lowered to £1.115m</li>
                       <li>c. £15k of interest savings</li>
                       <li>Strong progress in reducing outstanding debt</li>
@@ -527,7 +513,7 @@ const Index = () => {
                 <ActionItem icon="right">
                   <div>
                     <p className="text-lg font-semibold mb-2">5% reduction in Operating Expenditure:</p>
-                    <ul className="list-disc pl-6 space-y-1">
+                    <ul className="list-disc pl-6 space-y-1 text-finance-gray">
                       <li>Review and eliminate discretionary spending to target £280k pcm</li>
                       <li>Focus on inefficiencies (e.g. warehouse)</li>
                     </ul>
@@ -537,7 +523,7 @@ const Index = () => {
                 <ActionItem icon="right">
                   <div>
                     <p className="text-lg font-semibold mb-2">Payroll Expense:</p>
-                    <ul className="list-disc pl-6 space-y-1">
+                    <ul className="list-disc pl-6 space-y-1 text-finance-gray">
                       <li>Reduce costs in anticipation of increases in April 25</li>
                     </ul>
                   </div>
@@ -548,7 +534,6 @@ const Index = () => {
         </section>
       </div>
       
-      {/* Footer */}
       <footer className="py-6 border-t border-white/10">
         <div className="container max-w-7xl mx-auto px-6 md:px-12">
           <div className="flex justify-between items-center">
