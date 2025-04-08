@@ -90,7 +90,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         
         setStats(deptStats);
         
-        // Run direct SQL queries for each department to compare results
+        // Use direct SQL RPC calls for accurate department totals
         await fetchRawDepartmentSums();
         
       } catch (err) {
@@ -143,8 +143,19 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
     fetchDirectStats();
   }, []); // Only fetch once on mount
 
-  // Calculate totals based on department filters
+  // Calculate totals based on department filters and using SQL results for profit
   const calculateFilteredTotals = () => {
+    // Use SQL values (more accurate) for profit when available
+    const retailProfit = rawRetailSum !== null ? rawRetailSum : 
+      stats.find(s => s.department === 'RETAIL')?.total_profit || 0;
+      
+    const revaProfit = rawRevaSum !== null ? rawRevaSum : 
+      stats.find(s => s.department === 'REVA')?.total_profit || 0;
+      
+    const wholesaleProfit = rawWholesaleSum !== null ? rawWholesaleSum : 
+      stats.find(s => s.department === 'Wholesale')?.total_profit || 0;
+    
+    // Calculate totals based on filters
     let totalSpend = 0;
     let totalProfit = 0;
     let totalPacks = 0;
@@ -156,7 +167,16 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         (stat.department === 'Wholesale' && includeWholesale)
       ) {
         totalSpend += stat.total_spend;
-        totalProfit += stat.total_profit;
+        // Use SQL values for profit
+        if (stat.department === 'RETAIL') {
+          totalProfit += includeRetail ? retailProfit : 0;
+        } else if (stat.department === 'REVA') {
+          totalProfit += includeReva ? revaProfit : 0;
+        } else if (stat.department === 'Wholesale') {
+          totalProfit += includeWholesale ? wholesaleProfit : 0;
+        } else {
+          totalProfit += stat.total_profit;
+        }
         totalPacks += stat.total_packs;
       }
     });

@@ -12,96 +12,100 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data from Supabase...');
     
-    // Use a type assertion to access the sales_data_march table
-    const { data: allDataFromDb, error: dataError } = await supabase
-      .from('sales_data_march')
-      .select('*');
+    // Use direct SQL queries for accurate department profit totals
+    const { data: retailProfitData, error: retailProfitError } = await supabase
+      .rpc('get_retail_profit');
     
-    if (dataError) throw new Error(`Error fetching data: ${dataError.message}`);
-    console.log('Data fetched:', allDataFromDb?.length || 0, 'rows');
+    const { data: revaProfitData, error: revaProfitError } = await supabase
+      .rpc('get_reva_profit');
+      
+    const { data: wholesaleProfitData, error: wholesaleProfitError } = await supabase
+      .rpc('get_wholesale_profit');
+
+    if (retailProfitError || revaProfitError || wholesaleProfitError) {
+      console.error("Error fetching profit data:", { 
+        retailProfitError, 
+        revaProfitError, 
+        wholesaleProfitError 
+      });
+    }
+    
+    console.log('Profit data from SQL functions:', {
+      retailProfit: retailProfitData,
+      revaProfit: revaProfitData,
+      wholesaleProfit: wholesaleProfitData
+    });
+    
+    // Instead of fetching all data at once, fetch by department to avoid pagination issues
+    // RETAIL data
+    const { data: retailData, error: retailError } = await fetchAllDepartmentData('RETAIL');
+    if (retailError) throw new Error(`Error fetching RETAIL data: ${retailError.message}`);
+    console.log('Fetched RETAIL records:', retailData?.length || 0);
+    
+    // REVA data
+    const { data: revaData, error: revaError } = await fetchAllDepartmentData('REVA');
+    if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
+    console.log('Fetched REVA records:', revaData?.length || 0);
+    
+    // Wholesale data
+    const { data: wholesaleData, error: wholesaleError } = await fetchAllDepartmentData('Wholesale');
+    if (wholesaleError) throw new Error(`Error fetching Wholesale data: ${wholesaleError.message}`);
+    console.log('Fetched Wholesale records:', wholesaleData?.length || 0);
+    
+    // Count total records for verification
+    const totalCount = (retailData?.length || 0) + (revaData?.length || 0) + (wholesaleData?.length || 0);
+    console.log('Total fetched records:', totalCount);
+    
+    // Verify data completeness by comparing with direct SQL totals
+    const retailProfit = calculateTotalProfit(retailData || []);
+    const revaProfit = calculateTotalProfit(revaData || []);
+    const wholesaleProfit = calculateTotalProfit(wholesaleData || []);
+    
+    console.log('Calculated profits from fetched data:', {
+      retailProfit,
+      revaProfit,
+      wholesaleProfit,
+      total: retailProfit + revaProfit + wholesaleProfit
+    });
+    
+    // Compare with SQL direct calculations
+    console.log('SQL direct profits:', {
+      retailProfit: retailProfitData,
+      revaProfit: revaProfitData,
+      wholesaleProfit: wholesaleProfitData,
+      total: (retailProfitData || 0) + (revaProfitData || 0) + (wholesaleProfitData || 0)
+    });
+    
+    // Check for discrepancies
+    const retailDiscrepancy = Math.abs((retailProfitData || 0) - retailProfit);
+    const revaDiscrepancy = Math.abs((revaProfitData || 0) - revaProfit);
+    const wholesaleDiscrepancy = Math.abs((wholesaleProfitData || 0) - wholesaleProfit);
+    
+    console.log('Profit discrepancies:', {
+      retailDiscrepancy,
+      revaDiscrepancy,
+      wholesaleDiscrepancy
+    });
+    
+    if (wholesaleDiscrepancy > 1000 || retailDiscrepancy > 1000 || revaDiscrepancy > 1000) {
+      console.warn('SIGNIFICANT PROFIT DISCREPANCY DETECTED! Some data may be missing.');
+      toast({
+        title: "Data Discrepancy Warning",
+        description: "There's a significant difference between SQL and JavaScript calculations. Some data may be missing.",
+        variant: "destructive",
+      });
+    }
+    
+    // Process all data
+    const allDataFromDb = [...(retailData || []), ...(revaData || []), ...(wholesaleData || [])];
     
     if (!allDataFromDb || allDataFromDb.length === 0) {
       throw new Error('No data found for the specified period.');
     }
-
-    // DIAGNOSTIC: Get total count from SQL directly for comparison
-    const { data: totalCountFromSql, error: countError } = await supabase
-      .from('get_total_count')
-      .select()
-      .single();
-      
-    if (!countError && totalCountFromSql) {
-      console.log('SQL Direct Count:', totalCountFromSql);
-      console.log('JS allDataFromDb Count:', allDataFromDb.length);
-      
-      if (totalCountFromSql !== allDataFromDb.length) {
-        console.warn('WARNING: SQL count and JS data count do not match!');
-      }
-    }
     
-    // DIAGNOSTIC: Get department counts directly from SQL
-    const { data: deptCountsFromSql, error: deptCountError } = await supabase
-      .from('get_department_counts')
-      .select()
-      .single();
-      
-    if (!deptCountError && deptCountsFromSql) {
-      console.log('Department counts from SQL:', deptCountsFromSql);
-    }
+    console.log('Total combined data rows:', allDataFromDb.length);
     
-    // DIAGNOSTIC: Count wholesale records directly from SQL
-    const { data: wholesaleCountFromSql, error: wholesaleCountError } = await supabase
-      .from('get_wholesale_count')
-      .select()
-      .single();
-      
-    if (!wholesaleCountError && wholesaleCountFromSql) {
-      console.log('Wholesale count from SQL:', wholesaleCountFromSql);
-    }
-    
-    // DIAGNOSTIC: Get all unique Department values directly from SQL
-    const { data: uniqueDepartments, error: uniqueDeptsError } = await supabase
-      .from('get_unique_departments')
-      .select()
-      .single();
-      
-    if (!uniqueDeptsError && uniqueDepartments) {
-      console.log('All unique Department values from SQL:', uniqueDepartments);
-    }
-    
-    // Debug: Log the raw data structure from Supabase
-    if (allDataFromDb.length > 0) {
-      console.log('First raw data item:', allDataFromDb[0]);
-      
-      // Log all unique Department values to debug case sensitivity issues
-      const departmentValues = new Set();
-      allDataFromDb.forEach(item => {
-        if (item.Department) departmentValues.add(item.Department);
-      });
-      console.log('All unique Department values in raw data:', [...departmentValues]);
-      
-      // Calculate the total raw profit to verify data
-      const rawTotalProfit = allDataFromDb.reduce((sum, item) => {
-        const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-        return sum + profit;
-      }, 0);
-      
-      console.log('Raw total profit from database:', rawTotalProfit);
-      
-      // Count rows and profit by department to debug
-      const deptStats = {};
-      allDataFromDb.forEach(item => {
-        const dept = item.Department || 'Unknown';
-        if (!deptStats[dept]) {
-          deptStats[dept] = { count: 0, profit: 0 };
-        }
-        deptStats[dept].count++;
-        deptStats[dept].profit += (typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0));
-      });
-      console.log('Department statistics (raw data):', deptStats);
-    }
-    
-    // Map the sales_data_march table fields to our standard format
+    // Map the data to our standard format
     const mappedData = allDataFromDb.map((item: any) => {
       // Parse numerical values properly, ensuring they're numbers and not strings
       const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
@@ -113,7 +117,7 @@ export const fetchRepPerformanceData = async () => {
       
       return {
         id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
-        reporting_period: 'March 2025', // Hardcode the reporting period since it's all March data
+        reporting_period: 'March 2025',
         rep_name: item.Rep || '',
         sub_rep: item['Sub-Rep'] || '',
         account_ref: item['Account Ref'] || '',
@@ -125,144 +129,37 @@ export const fetchRepPerformanceData = async () => {
         margin: margin,
         packs: packs,
         rep_type: item.Department || 'RETAIL',
-        original_dept: item.Department, // Keep this for debugging
+        original_dept: item.Department,
         import_date: new Date().toISOString()
       };
     });
     
-    // Debug: Log the mapped data structure
-    if (mappedData.length > 0) {
-      console.log('First mapped item:', mappedData[0]);
-      
-      // Calculate total profit to verify mapping is correct
-      const totalMappedProfit = mappedData.reduce((total, item) => total + item.profit, 0);
-      console.log('Total calculated profit from mapped data:', totalMappedProfit);
-    }
+    // Filter data by department for further processing
+    const repDataFromDb = mappedData.filter(item => item.rep_type === 'RETAIL');
+    const revaDataFromDb = mappedData.filter(item => item.rep_type === 'REVA');
+    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'Wholesale');
     
-    // Count departments for debugging
-    const deptCounts = {};
-    mappedData.forEach(item => {
-      const dept = item.rep_type;
-      deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+    // Log department data counts
+    console.log('Filtered department counts:', {
+      retail: repDataFromDb.length,
+      reva: revaDataFromDb.length,
+      wholesale: wholesaleDataFromDb.length
     });
-    console.log('Department counts in mapped data:', deptCounts);
     
-    // Log profit by department after mapping
-    const mappedDeptProfits = {};
-    mappedData.forEach(item => {
-      const dept = item.rep_type;
-      if (!mappedDeptProfits[dept]) {
-        mappedDeptProfits[dept] = 0;
-      }
-      mappedDeptProfits[dept] += item.profit;
-    });
-    console.log('Department profits after mapping:', mappedDeptProfits);
-    
-    // DIAGNOSTIC: Let's compare the sum from JS vs what we get from SQL for Wholesale
-    const wholesaleSumFromJs = mappedData
-      .filter(item => item.rep_type === 'Wholesale')
-      .reduce((sum, item) => sum + item.profit, 0);
-      
-    console.log('Wholesale sum calculated in JS (strict match):', wholesaleSumFromJs);
-    
-    // Try with case-insensitive matching
-    const wholesaleSumFromJsCaseInsensitive = mappedData
-      .filter(item => item.rep_type && item.rep_type.toLowerCase() === 'wholesale')
-      .reduce((sum, item) => sum + item.profit, 0);
-      
-    console.log('Wholesale sum with case-insensitive match in JS:', wholesaleSumFromJsCaseInsensitive);
-    
-    // IMPORTANT: Fix for inconsistent case in department names
-    // We need to correctly identify all wholesale records
-    // They may be stored with different cases (like "Wholesale", "wholesale", "WHOLESALE")
-    const repDataFromDb = mappedData.filter(item => 
-      item.rep_type === 'RETAIL' || 
-      item.rep_type.toUpperCase() === 'RETAIL');
-      
-    const revaDataFromDb = mappedData.filter(item => 
-      item.rep_type === 'REVA' || 
-      item.rep_type.toUpperCase() === 'REVA');
-      
-    // DIAGNOSTIC: Get array of all wholesale records to check their values
-    const allWholesaleRecords = mappedData.filter(item => 
-      item.rep_type === 'Wholesale' || 
-      item.rep_type.toLowerCase() === 'wholesale' ||
-      item.rep_type.toUpperCase() === 'WHOLESALE');
-    
-    // Log the first few wholesale records for debugging
-    if (allWholesaleRecords.length > 0) {
-      console.log('First 5 wholesale records:', allWholesaleRecords.slice(0, 5));
-      console.log('Wholesale records with highest profit:', 
-        [...allWholesaleRecords].sort((a, b) => b.profit - a.profit).slice(0, 5));
-    }
-    
-    // DIAGNOSTIC: Try fetching the wholesale directly via SQL
-    try {
-      const { data: directWholesaleData, error: directWholesaleError } = await supabase
-        .from('get_wholesale_data')
-        .select()
-        .single();
-        
-      if (!directWholesaleError && directWholesaleData) {
-        // Check if data is an array before using array methods
-        const wholesaleArray = Array.isArray(directWholesaleData) ? directWholesaleData : [];
-        
-        if (wholesaleArray.length > 0) {
-          console.log('Direct wholesale data from SQL (first 5):', 
-            wholesaleArray.slice(0, 5));
-            
-          // Calculate the sum directly from this data
-          const directWholesaleSum = wholesaleArray.reduce(
-            (sum, item) => sum + Number(item.profit || 0), 0);
-            
-          console.log('Direct wholesale sum calculated from SQL data:', directWholesaleSum);
-        } else {
-          console.log('Direct wholesale data is empty or not array:', directWholesaleData);
-        }
-      }
-    } catch (directError) {
-      console.error('Error fetching direct wholesale data:', directError);
-    }
-    
-    // Use the filtered data for further processing
-    const wholesaleDataFromDb = allWholesaleRecords;
-    
-    console.log('Retail data count:', repDataFromDb.length);
-    console.log('REVA data count:', revaDataFromDb.length);
-    console.log('Wholesale data count:', wholesaleDataFromDb.length);
-    
-    // Log profit metrics to verify department filtering
-    const retailProfit = repDataFromDb.reduce((sum, item) => sum + item.profit, 0);
-    const revaProfit = revaDataFromDb.reduce((sum, item) => sum + item.profit, 0);
-    const wholesaleProfit = wholesaleDataFromDb.reduce((sum, item) => sum + item.profit, 0);
-    
-    console.log('Retail total profit:', retailProfit);
-    console.log('REVA total profit:', revaProfit);
-    console.log('Wholesale total profit:', wholesaleProfit);
-    console.log('Combined segment profit:', retailProfit + revaProfit + wholesaleProfit);
-    
-    // Process the retail data to RepData format
+    // Process the data to RepData format
     const processedRepData = processRepData(repDataFromDb as SalesDataItem[] || []);
-    
-    // Calculate summary data
-    const calculatedSummary = calculateSummaryFromData(processedRepData);
-    
-    // Process REVA and Wholesale data
     const processedRevaData = processRepData(revaDataFromDb as SalesDataItem[] || []);
     const processedWholesaleData = processRepData(wholesaleDataFromDb as SalesDataItem[] || []);
     
-    // Calculate summaries for REVA and Wholesale
+    // Calculate summary data
+    const calculatedSummary = calculateSummaryFromData(processedRepData);
     const revaSummary = calculateSummaryFromData(processedRevaData);
     const wholesaleSummary = calculateSummaryFromData(processedWholesaleData);
     
-    // Log calculated summary values
-    console.log('Retail summary calculated:', calculatedSummary);
-    console.log('REVA summary calculated:', revaSummary);
-    console.log('Wholesale summary calculated:', wholesaleSummary);
-    
-    // Log combined total profit for verification
-    const combinedTotalProfit = calculatedSummary.totalProfit + revaSummary.totalProfit + wholesaleSummary.totalProfit;
-    console.log('Combined total profit from all segments:', combinedTotalProfit);
+    // Adjust calculated summaries to match SQL totals for accuracy
+    if (retailProfitData) calculatedSummary.totalProfit = Number(retailProfitData);
+    if (revaProfitData) revaSummary.totalProfit = Number(revaProfitData);
+    if (wholesaleProfitData) wholesaleSummary.totalProfit = Number(wholesaleProfitData);
     
     return {
       repData: processedRepData,
@@ -281,6 +178,49 @@ export const fetchRepPerformanceData = async () => {
     });
     throw error;
   }
+};
+
+// Helper function to calculate total profit from a dataset
+const calculateTotalProfit = (data: any[]): number => {
+  return data.reduce((sum, item) => {
+    const profit = typeof item.Profit === 'string' 
+      ? parseFloat(item.Profit) 
+      : Number(item.Profit || 0);
+    return sum + profit;
+  }, 0);
+};
+
+// Helper function to fetch all records for a specific department
+const fetchAllDepartmentData = async (department: string) => {
+  // This function fetches data in chunks to avoid pagination limits
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let page = 0;
+  let hasMoreData = true;
+  
+  while (hasMoreData) {
+    const { data, error, count } = await supabase
+      .from('sales_data_march')
+      .select('*', { count: 'exact' })
+      .eq('Department', department)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    
+    if (error) {
+      return { data: null, error };
+    }
+    
+    if (data && data.length > 0) {
+      allData = [...allData, ...data];
+      page++;
+      
+      // Check if we've fetched all available data
+      hasMoreData = data.length === PAGE_SIZE;
+    } else {
+      hasMoreData = false;
+    }
+  }
+  
+  return { data: allData, error: null };
 };
 
 export const saveRepPerformanceData = (data: any) => {
