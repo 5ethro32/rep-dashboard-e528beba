@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { SendIcon, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,9 +29,8 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
       isUser: false, 
       timestamp: new Date(),
       examples: [
-        "Who are the top performers this month?",
-        "Tell me about Craig McDowall's sales",
-        "Which reps have the highest margin?"
+        "Who are the top performers?",
+        "Tell me about Craig's sales"
       ]
     }
   ]);
@@ -183,7 +181,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
                           <button
                             key={index}
                             onClick={() => handleExampleClick(example)}
-                            className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-full transition-colors whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                            className="px-3 py-1.5 text-sm bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
                           >
                             {example}
                           </button>
