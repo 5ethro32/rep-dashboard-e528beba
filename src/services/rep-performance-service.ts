@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -65,9 +66,6 @@ export const fetchRepPerformanceData = async () => {
       const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
       const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
       
-      // Store the original Department value to debug
-      const originalDept = item.Department;
-      
       return {
         id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
         reporting_period: 'March 2025', // Hardcode the reporting period since it's all March data
@@ -81,10 +79,8 @@ export const fetchRepPerformanceData = async () => {
         profit: profit,
         margin: margin,
         packs: packs,
-        // IMPORTANT: Keep the EXACT original Department value from database
-        // This is critical for filtering correctly
-        rep_type: originalDept || 'RETAIL',
-        original_dept: originalDept, // Add this for debugging
+        rep_type: item.Department || 'RETAIL',
+        original_dept: item.Department, // Keep this for debugging
         import_date: new Date().toISOString()
       };
     });
@@ -106,11 +102,32 @@ export const fetchRepPerformanceData = async () => {
     });
     console.log('Department counts in mapped data:', deptCounts);
     
-    // Group data by original department value (not normalized)
-    // This preserves the exact case as in the database
-    const repDataFromDb = mappedData.filter(item => item.rep_type === 'RETAIL');
-    const revaDataFromDb = mappedData.filter(item => item.rep_type === 'REVA');
-    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'Wholesale');
+    // Log profit by department after mapping
+    const mappedDeptProfits = {};
+    mappedData.forEach(item => {
+      const dept = item.rep_type;
+      if (!mappedDeptProfits[dept]) {
+        mappedDeptProfits[dept] = 0;
+      }
+      mappedDeptProfits[dept] += item.profit;
+    });
+    console.log('Department profits after mapping:', mappedDeptProfits);
+    
+    // IMPORTANT: Fix for inconsistent case in department names
+    // We need to correctly identify all wholesale records
+    // They may be stored with different cases (like "Wholesale", "wholesale", "WHOLESALE")
+    const repDataFromDb = mappedData.filter(item => 
+      item.rep_type === 'RETAIL' || 
+      item.rep_type.toUpperCase() === 'RETAIL');
+      
+    const revaDataFromDb = mappedData.filter(item => 
+      item.rep_type === 'REVA' || 
+      item.rep_type.toUpperCase() === 'REVA');
+      
+    const wholesaleDataFromDb = mappedData.filter(item => 
+      item.rep_type === 'Wholesale' || 
+      item.rep_type.toLowerCase() === 'wholesale' ||
+      item.rep_type.toUpperCase() === 'WHOLESALE');
     
     console.log('Retail data count:', repDataFromDb.length);
     console.log('REVA data count:', revaDataFromDb.length);
