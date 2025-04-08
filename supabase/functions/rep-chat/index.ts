@@ -39,6 +39,11 @@ interface OverallMetrics {
   departmentBreakdown: any;
 }
 
+// Determine if a string is a department name
+const isDepartment = (name: string): boolean => {
+  return ['RETAIL', 'REVA', 'Wholesale'].includes(name);
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -173,24 +178,46 @@ serve(async (req) => {
             activeAccounts: data.activeAccounts.size
           }));
           
-          // Get top performers by profit
+          // Get top performers by profit - ONLY include actual reps, not departments
           const repProfitMap = new Map<string, number>();
           const repMarginMap = new Map<string, { spend: number, profit: number }>();
+          const repSet = new Set<string>();
           
+          // First, gather all rep names (from both Rep and Sub-Rep fields)
           allData.forEach(record => {
-            const rep = record.Rep;
-            const profit = Number(record.Profit || 0);
-            const spend = Number(record.Spend || 0);
-            
-            if (!repProfitMap.has(rep)) {
-              repProfitMap.set(rep, 0);
-              repMarginMap.set(rep, { spend: 0, profit: 0 });
+            if (record.Rep && !isDepartment(record.Rep)) {
+              repSet.add(record.Rep);
             }
+            if (record['Sub-Rep'] && record['Sub-Rep'].trim() !== '') {
+              repSet.add(record['Sub-Rep']);
+            }
+          });
+          
+          // Then, calculate totals for each rep (combining data where they appear as Rep or Sub-Rep)
+          Array.from(repSet).forEach(rep => {
+            let totalProfit = 0;
+            let totalSpend = 0;
             
-            repProfitMap.set(rep, repProfitMap.get(rep)! + profit);
+            // Add data where the person is listed as Rep
+            allData.forEach(record => {
+              if (record.Rep === rep) {
+                totalProfit += Number(record.Profit || 0);
+                totalSpend += Number(record.Spend || 0);
+              }
+            });
+            
+            // Add data where the person is listed as Sub-Rep
+            allData.forEach(record => {
+              if (record['Sub-Rep'] === rep) {
+                totalProfit += Number(record.Profit || 0);
+                totalSpend += Number(record.Spend || 0);
+              }
+            });
+            
+            repProfitMap.set(rep, totalProfit);
             repMarginMap.set(rep, { 
-              spend: repMarginMap.get(rep)!.spend + spend,
-              profit: repMarginMap.get(rep)!.profit + profit
+              spend: totalSpend, 
+              profit: totalProfit 
             });
           });
           
@@ -229,111 +256,122 @@ serve(async (req) => {
       if (repName) {
         console.log(`Looking for data on rep: ${repName}`);
         
-        const { data: repData, error: repError } = await supabase
+        // Here we need to look for the rep name in both Rep and Sub-Rep fields
+        const { data: repAsMainRep, error: repAsMainError } = await supabase
           .from(tableName)
           .select('*')
           .ilike('Rep', `%${repName}%`);
+
+        const { data: repAsSubRep, error: repAsSubError } = await supabase
+          .from(tableName)
+          .select('*')
+          .ilike('Sub-Rep', `%${repName}%`);
         
-        if (repError) {
-          console.error(`Error fetching data for rep ${repName}:`, repError);
-        } else if (repData && repData.length > 0) {
-          // Group by department to show the breakdown
-          const departmentData = repData.reduce((acc, record) => {
-            const dept = record.Department || 'Unknown';
-            if (!acc[dept]) {
-              acc[dept] = { 
-                spend: 0, 
-                profit: 0, 
-                packs: 0, 
-                accounts: new Set(), 
-                activeAccounts: new Set(),
-              };
-            }
-            
-            const spend = Number(record.Spend || 0);
-            const profit = Number(record.Profit || 0);
-            const packs = Number(record.Packs || 0);
-            
-            acc[dept].spend += spend;
-            acc[dept].profit += profit;
-            acc[dept].packs += packs;
-            
-            if (record['Account Ref']) {
-              acc[dept].accounts.add(record['Account Ref']);
-              if (spend > 0) {
-                acc[dept].activeAccounts.add(record['Account Ref']);
-              }
-            }
-            
-            return acc;
-          }, {});
-          
-          // Calculate overall totals across all departments
-          let totalSpend = 0;
-          let totalProfit = 0;
-          let totalPacks = 0;
-          const allAccounts = new Set<string>();
-          const allActiveAccounts = new Set<string>();
-          const departments: string[] = [];
-          
-          Object.entries(departmentData).forEach(([dept, data]) => {
-            departments.push(dept);
-            totalSpend += data.spend;
-            totalProfit += data.profit;
-            totalPacks += data.packs;
-            
-            data.accounts.forEach(account => allAccounts.add(String(account)));
-            data.activeAccounts.forEach(account => allActiveAccounts.add(String(account)));
-          });
-          
-          // Find interesting sample transactions (non-zero values preferably)
-          const interestingTransactions = repData
-            .filter(record => Number(record.Spend || 0) > 0 || Number(record.Profit || 0) !== 0)
-            .slice(0, 2);
-          
-          // If we don't have enough interesting transactions, add some zero ones
-          if (interestingTransactions.length < 3) {
-            const zeroTransactions = repData
-              .filter(record => Number(record.Spend || 0) === 0 && Number(record.Profit || 0) === 0)
-              .slice(0, 3 - interestingTransactions.length);
-            
-            interestingTransactions.push(...zeroTransactions);
-          }
-          
-          // Ensure we have exactly 3 transactions or fewer if not enough data
-          const sampleTransactions = interestingTransactions.slice(0, 3);
-          
-          // Create the final rep summary
-          repDetails = {
-            name: repName,
-            departments: departments,
-            totalSpend: totalSpend,
-            totalProfit: totalProfit,
-            margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
-            totalPacks: totalPacks,
-            totalAccounts: allAccounts.size,
-            activeAccounts: allActiveAccounts.size,
-            profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0,
-            sampleTransactions: sampleTransactions
-          };
-          
-          // Also provide department breakdown for context
-          const departmentBreakdown = Object.entries(departmentData).map(([dept, data]) => ({
-            department: dept,
-            spend: data.spend,
-            profit: data.profit,
-            margin: data.spend > 0 ? (data.profit / data.spend) * 100 : 0,
-            packs: data.packs,
-            accounts: data.accounts.size,
-            activeAccounts: data.activeAccounts.size,
-          }));
-          
-          console.log(`Found details for rep ${repName}:`, JSON.stringify({
-            summary: repDetails,
-            departmentBreakdown
-          }, null, 2));
+        if (repAsMainError || repAsSubError) {
+          console.error(`Error fetching data for rep ${repName}:`, repAsMainError || repAsSubError);
         } else {
-          console.log(`No data found for rep ${repName}`);
+          // Combine results where the person appears as either Rep or Sub-Rep
+          const repData = [...(repAsMainRep || []), ...(repAsSubRep || [])];
+          
+          if (repData && repData.length > 0) {
+            // Group by department to show the breakdown
+            const departmentData = repData.reduce((acc, record) => {
+              const dept = record.Department || 'Unknown';
+              if (!acc[dept]) {
+                acc[dept] = { 
+                  spend: 0, 
+                  profit: 0, 
+                  packs: 0, 
+                  accounts: new Set(), 
+                  activeAccounts: new Set(),
+                };
+              }
+              
+              const spend = Number(record.Spend || 0);
+              const profit = Number(record.Profit || 0);
+              const packs = Number(record.Packs || 0);
+              
+              acc[dept].spend += spend;
+              acc[dept].profit += profit;
+              acc[dept].packs += packs;
+              
+              if (record['Account Ref']) {
+                acc[dept].accounts.add(record['Account Ref']);
+                if (spend > 0) {
+                  acc[dept].activeAccounts.add(record['Account Ref']);
+                }
+              }
+              
+              return acc;
+            }, {});
+            
+            // Calculate overall totals across all departments
+            let totalSpend = 0;
+            let totalProfit = 0;
+            let totalPacks = 0;
+            const allAccounts = new Set<string>();
+            const allActiveAccounts = new Set<string>();
+            const departments: string[] = [];
+            
+            Object.entries(departmentData).forEach(([dept, data]) => {
+              departments.push(dept);
+              totalSpend += data.spend;
+              totalProfit += data.profit;
+              totalPacks += data.packs;
+              
+              data.accounts.forEach(account => allAccounts.add(String(account)));
+              data.activeAccounts.forEach(account => allActiveAccounts.add(String(account)));
+            });
+            
+            // Find interesting sample transactions (non-zero values preferably)
+            const interestingTransactions = repData
+              .filter(record => Number(record.Spend || 0) > 0 || Number(record.Profit || 0) !== 0)
+              .slice(0, 2);
+            
+            // If we don't have enough interesting transactions, add some zero ones
+            if (interestingTransactions.length < 3) {
+              const zeroTransactions = repData
+                .filter(record => Number(record.Spend || 0) === 0 && Number(record.Profit || 0) === 0)
+                .slice(0, 3 - interestingTransactions.length);
+              
+              interestingTransactions.push(...zeroTransactions);
+            }
+            
+            // Ensure we have exactly 3 transactions or fewer if not enough data
+            const sampleTransactions = interestingTransactions.slice(0, 3);
+            
+            // Create the final rep summary
+            repDetails = {
+              name: repName,
+              departments: departments,
+              totalSpend: totalSpend,
+              totalProfit: totalProfit,
+              margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
+              totalPacks: totalPacks,
+              totalAccounts: allAccounts.size,
+              activeAccounts: allActiveAccounts.size,
+              profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0,
+              sampleTransactions: sampleTransactions
+            };
+            
+            // Also provide department breakdown for context
+            const departmentBreakdown = Object.entries(departmentData).map(([dept, data]) => ({
+              department: dept,
+              spend: data.spend,
+              profit: data.profit,
+              margin: data.spend > 0 ? (data.profit / data.spend) * 100 : 0,
+              packs: data.packs,
+              accounts: data.accounts.size,
+              activeAccounts: data.activeAccounts.size,
+            }));
+            
+            console.log(`Found details for rep ${repName}:`, JSON.stringify({
+              summary: repDetails,
+              departmentBreakdown
+            }, null, 2));
+          } else {
+            console.log(`No data found for rep ${repName}`);
+          }
         }
       }
       
@@ -348,41 +386,135 @@ serve(async (req) => {
         throw generalError;
       }
       
-      // Get top sales people by profit
-      const { data: topByProfit, error: profitError } = await supabase
+      // Get top sales people by profit - now excluding departments like REVA and Wholesale
+      const { data: allSalesData, error: allSalesError } = await supabase
         .from(tableName)
-        .select('Rep, Profit, Department')
-        .order('Profit', { ascending: false })
-        .limit(5);
+        .select('Rep, Profit, Department, "Sub-Rep"');
       
-      if (profitError) {
-        console.error('Error fetching top sales by profit:', profitError);
-        throw profitError;
+      if (allSalesError) {
+        console.error('Error fetching sales data:', allSalesError);
+        throw allSalesError;
       }
       
-      // Get top sales people by margin
-      const { data: topByMargin, error: marginError } = await supabase
-        .from(tableName)
-        .select('Rep, Margin, Department')
-        .order('Margin', { ascending: false })
-        .limit(5);
+      // Process sales data to get top performers excluding departments
+      const repProfits: Record<string, number> = {};
+      const repMargins: Record<string, { profit: number, spend: number }> = {};
+      const repPacks: Record<string, number> = {};
       
-      if (marginError) {
-        console.error('Error fetching top sales by margin:', marginError);
-        throw marginError;
+      // First collect all rep names (whether in Rep or Sub-Rep columns)
+      const allReps = new Set<string>();
+      allSalesData.forEach(record => {
+        if (record.Rep && !isDepartment(record.Rep)) {
+          allReps.add(record.Rep);
+        }
+        if (record["Sub-Rep"] && record["Sub-Rep"].trim() !== '') {
+          allReps.add(record["Sub-Rep"]);
+        }
+      });
+      
+      // Then calculate totals for each rep
+      Array.from(allReps).forEach(repName => {
+        let totalProfit = 0;
+        let totalSpend = 0;
+        let totalPacks = 0;
+        
+        // Add data where they appear as Rep
+        allSalesData.forEach(record => {
+          if (record.Rep === repName) {
+            totalProfit += Number(record.Profit || 0);
+            // We don't have Spend in this query so we'll need to extract it separately
+          }
+        });
+        
+        // Add data where they appear as Sub-Rep
+        allSalesData.forEach(record => {
+          if (record["Sub-Rep"] === repName) {
+            totalProfit += Number(record.Profit || 0);
+            // We don't have Spend in this query so we'll need to extract it separately
+          }
+        });
+        
+        repProfits[repName] = totalProfit;
+      });
+      
+      // Now get spend data
+      const { data: spendData, error: spendError } = await supabase
+        .from(tableName)
+        .select('Rep, Spend, Department, "Sub-Rep"');
+        
+      if (!spendError) {
+        Array.from(allReps).forEach(repName => {
+          let totalSpend = 0;
+          
+          // Add data where they appear as Rep
+          spendData.forEach(record => {
+            if (record.Rep === repName) {
+              totalSpend += Number(record.Spend || 0);
+            }
+          });
+          
+          // Add data where they appear as Sub-Rep
+          spendData.forEach(record => {
+            if (record["Sub-Rep"] === repName) {
+              totalSpend += Number(record.Spend || 0);
+            }
+          });
+          
+          // Update margin data
+          if (!repMargins[repName]) {
+            repMargins[repName] = { profit: 0, spend: 0 };
+          }
+          repMargins[repName].spend = totalSpend;
+          repMargins[repName].profit = repProfits[repName] || 0;
+        });
       }
       
-      // Get top sales people by packs
-      const { data: topByPacks, error: packsError } = await supabase
+      // Now get packs data
+      const { data: packsData, error: packsError } = await supabase
         .from(tableName)
-        .select('Rep, Packs, Department')
-        .order('Packs', { ascending: false })
-        .limit(5);
-      
-      if (packsError) {
-        console.error('Error fetching top sales by packs:', packsError);
-        throw packsError;
+        .select('Rep, Packs, Department, "Sub-Rep"');
+        
+      if (!packsError) {
+        Array.from(allReps).forEach(repName => {
+          let totalPacks = 0;
+          
+          // Add data where they appear as Rep
+          packsData.forEach(record => {
+            if (record.Rep === repName) {
+              totalPacks += Number(record.Packs || 0);
+            }
+          });
+          
+          // Add data where they appear as Sub-Rep
+          packsData.forEach(record => {
+            if (record["Sub-Rep"] === repName) {
+              totalPacks += Number(record.Packs || 0);
+            }
+          });
+          
+          repPacks[repName] = totalPacks;
+        });
       }
+      
+      // Sort and get top performers
+      const topByProfit = Object.entries(repProfits)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([rep, profit]) => ({ Rep: rep, Profit: profit, Department: "Combined" }));
+        
+      const topByMargin = Object.entries(repMargins)
+        .map(([rep, { profit, spend }]) => ({ 
+          Rep: rep, 
+          Margin: spend > 0 ? (profit / spend) * 100 : 0,
+          Department: "Combined"
+        }))
+        .sort((a, b) => b.Margin - a.Margin)
+        .slice(0, 5);
+        
+      const topByPacks = Object.entries(repPacks)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([rep, packs]) => ({ Rep: rep, Packs: packs, Department: "Combined" }));
       
       salesData = generalData;
       topSalesPeople = {
@@ -438,7 +570,7 @@ ${JSON.stringify(overallMetrics.topPerformersByMargin, null, 2)}
 ${repDetails ? `
 ${overallMetrics ? '5' : '4'}. Specific details for ${repDetails.name}:
 
-Key Performance Metrics (Combined across ${repDetails.departments.join(', ')} departments):
+Key Performance Metrics:
 
 Total Spend: ${repDetails.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 Total Profit: ${repDetails.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -469,7 +601,9 @@ When answering:
 7. Use plain text formatting with proper line breaks and paragraphs
 8. Use simple formatting with dashes and numbers for lists
 9. If responding about a specific rep, use proper paragraph breaks between sections
-10. Do not mention the department unless specifically asked - just give combined results
+10. Do not mention the department unless specifically asked - just give combined results across all departments
+11. For rep performance, combine data where they appear as both Rep and Sub-Rep
+12. NEVER refer to Wholesale or REVA as sales reps - they are departments, not individuals
 
 Sample of the general data (first few records):
 ${JSON.stringify(salesData?.slice(0, 3) || 'No data available')}
