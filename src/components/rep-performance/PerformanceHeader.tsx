@@ -19,7 +19,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ selectedMonth, se
       <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
         Rep
         <br />
-        Perform<span className="font-normal italic mr-0.5 ml-0">a</span>nce
+        Perform<span className="font-normal italic mr-1 -ml-0.5">a</span>nce
         <br />
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">Dashboard</span>
       </h1>

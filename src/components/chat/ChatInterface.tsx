@@ -141,7 +141,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
         <CollapsibleTrigger asChild>
           <Button 
             variant="ghost" 
-            className="w-full flex justify-between items-center p-3 rounded-none rounded-t-lg bg-gradient-to-r from-rose-500 to-finance-red text-white"
+            className="w-full flex justify-between items-center p-3 rounded-none rounded-t-lg bg-gradient-to-r from-finance-red to-rose-700 text-white"
           >
             <span className="flex items-center">
               <Avatar className="h-6 w-6 mr-2">
@@ -171,7 +171,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
                     <div 
                       className={`rounded-lg p-3 ${
                         msg.isUser 
-                          ? 'bg-gradient-to-r from-rose-500 to-finance-red text-white' 
+                          ? 'bg-gradient-to-r from-finance-red to-rose-700 text-white' 
                           : 'bg-gray-800 text-gray-100'
                       } whitespace-pre-line`}
                     >
@@ -195,7 +195,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
                   
                   {msg.isUser && (
                     <Avatar className="h-8 w-8 ml-2 flex-shrink-0 mt-1">
-                      <AvatarFallback className="bg-finance-red text-white text-xs">U</AvatarFallback>
+                      <AvatarFallback className="bg-gradient-to-r from-finance-red to-rose-700 text-white text-xs">U</AvatarFallback>
                     </Avatar>
                   )}
                 </div>
@@ -233,7 +233,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
                 <Button 
                   type="submit" 
                   size="icon" 
-                  className="h-10 w-10 rounded-full bg-gradient-to-r from-rose-500 to-finance-red text-white"
+                  className="h-10 w-10 rounded-full bg-gradient-to-r from-finance-red to-rose-700 text-white"
                   disabled={isLoading || !message.trim()}
                 >
                   <SendIcon className="h-5 w-5" />
