@@ -12,7 +12,8 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data from Supabase...');
     
-    // Fetch data from sales_data_march table
+    // Directly fetch data from sales_data_march table without specifying the table type
+    // This avoids TypeScript errors with the table name
     const { data: allDataFromDb, error: dataError } = await supabase
       .from('sales_data_march')
       .select('*')
@@ -25,12 +26,12 @@ export const fetchRepPerformanceData = async () => {
       throw new Error('No data found for the specified period.');
     }
     
-    // Map data to standard format expected by our app
-    const mappedData = allDataFromDb.map(item => ({
-      id: parseInt(item.id) || 0,
+    // Map the sales_data_march table fields to our standard format
+    const mappedData = allDataFromDb.map((item: any) => ({
+      id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
       reporting_period: 'March 2025',
-      rep_name: item.Rep,
-      sub_rep: item['Sub-Rep'],
+      rep_name: item.Rep || '',
+      sub_rep: item['Sub-Rep'] || '',
       account_ref: item['Account Ref'] || '',
       account_name: item['Account Name'] || '',
       spend: Number(item.Spend) || 0,
@@ -42,6 +43,11 @@ export const fetchRepPerformanceData = async () => {
       rep_type: item.Department || 'RETAIL',
       import_date: new Date().toISOString()
     }));
+    
+    // Debug: Log the structure of the first item
+    if (mappedData.length > 0) {
+      console.log('First item structure:', mappedData[0]);
+    }
     
     // Separate data by rep_type
     const repDataFromDb = mappedData.filter(item => item.rep_type.toUpperCase() === 'RETAIL');
