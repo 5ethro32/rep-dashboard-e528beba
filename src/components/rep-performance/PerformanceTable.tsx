@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
@@ -86,7 +87,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
           <TableRow className="bg-black/20 hover:bg-black/30">
             <TableHead 
               onClick={() => onSort('rep')}
-              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors sticky left-0 z-20 border-r border-white/10"
+              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors sticky left-0 z-20 bg-gray-900/90 backdrop-blur-sm border-r border-white/5"
             >
               Rep {sortBy === 'rep' && (sortOrder === 'asc' ? '↑' : '↓')}
             </TableHead>
@@ -144,7 +145,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
               
               return (
                 <TableRow key={item.rep} className="hover:bg-white/5 transition-colors">
-                  <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium sticky left-0 z-10 border-r border-white/10">
+                  <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium sticky left-0 z-10 bg-gray-900/90 backdrop-blur-sm border-r border-white/5">
                     <div className="flex items-center">
                       <span>{item.rep}</span>
                       {showChangeIndicators && rankChange !== 0 ? (
