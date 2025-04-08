@@ -33,8 +33,9 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
       examples: [
         "Who are the top performers?",
         "Tell me about Craig's sales",
-        "Compare February and March profit",
-        "How did Murray perform in February vs March?"
+        "What is the total REVA profit?",
+        "What is Craig's wholesale profit?",
+        "What is the account number for Knightswood?"
       ]
     }
   ]);
