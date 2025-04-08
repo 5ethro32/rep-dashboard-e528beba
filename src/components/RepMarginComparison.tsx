@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from 'recharts';
+import { ChevronUp, ChevronDown, Percent, Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface RepMarginComparisonProps {
@@ -10,22 +11,32 @@ interface RepMarginComparisonProps {
   isLoading?: boolean;
 }
 
-const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({ 
-  displayData, 
-  repChanges, 
-  formatPercent,
-  isLoading
-}) => {
+const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({ displayData, repChanges, formatPercent, isLoading }) => {
   const isMobile = useIsMobile();
   
-  // Filter out any reps with zero values across all metrics
-  const filteredData = displayData.filter(item => 
-    item.margin > 0 || 
-    item.profit > 0 || 
-    item.spend > 0 || 
-    item.packs > 0 ||
-    item.activeAccounts > 0
-  );
+  // Filter data to remove any reps with 0 margin
+  const activeData = displayData.filter(item => item.margin > 0);
+  
+  // Sort by margin (highest to lowest)
+  const sortedData = [...activeData].sort((a, b) => b.margin - a.margin);
+  
+  // Only show top 8 on mobile, top 12 otherwise
+  const limitedData = sortedData.slice(0, isMobile ? 5 : 8);
+  
+  // Calculate the average margin across all reps
+  const averageMargin = activeData.length > 0 ? 
+    activeData.reduce((sum, item) => sum + item.margin, 0) / activeData.length : 0;
+    
+  // REVA is typically red, default is purple, but we can adjust as needed
+  const defaultBarColor = '#818cf8';
+  const belowAverageColor = '#ef4444';
+  
+  // Format the data for the chart
+  const chartData = limitedData.map(item => ({
+    rep: item.rep,
+    margin: Number(item.margin.toFixed(1)),
+    change: repChanges[item.rep] ? repChanges[item.rep].margin : 0
+  }));
   
   return (
     <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
@@ -37,39 +48,54 @@ const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({
             <span className="text-sm text-finance-gray">Loading data...</span>
           </div>
         </div>
+      ) : chartData.length > 0 ? (
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 5, right: 10, bottom: 5, left: isMobile ? 30 : 70 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" horizontal={false} />
+              <XAxis 
+                type="number" 
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
+                axisLine={{ stroke: '#444' }}
+                tickLine={{ stroke: '#444' }}
+                tickFormatter={(value) => `${value}%`}
+              />
+              <YAxis 
+                dataKey="rep" 
+                type="category"
+                tick={{ fontSize: isMobile ? 8 : 12, fill: '#9ca3af' }}
+                axisLine={{ stroke: '#444' }}
+                tickLine={{ stroke: '#444' }}
+                width={isMobile ? 30 : 70}
+              />
+              <Tooltip
+                formatter={(value) => [`${value}%`, 'Margin']}
+                labelStyle={{ color: '#111' }}
+                contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '4px' }}
+              />
+              <Bar dataKey="margin" name="Margin" barSize={20}>
+                {chartData.map((entry, index) => {
+                  const isAboveAverage = entry.margin >= averageMargin;
+                  return (
+                    <Cell 
+                      key={`cell-${index}`}
+                      fill={isAboveAverage ? defaultBarColor : belowAverageColor}
+                    />
+                  );
+                })}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       ) : (
-        <div className="flex-1 flex items-end justify-center">
-          <div className="w-full h-full flex items-end justify-center overflow-x-auto overflow-y-hidden px-1">
-            <div className={`flex items-end ${isMobile ? 'space-x-1' : 'space-x-2'} pb-1`}>
-              {filteredData.slice(0, isMobile ? 8 : 12).map(item => {
-                const repInitials = item.rep.split(' ').map((name: string) => name[0]).join('');
-                const maxHeight = isMobile ? 120 : 150;
-                const barHeight = Math.max(20, (item.margin / 32) * maxHeight);
-                const change = repChanges[item.rep] ? repChanges[item.rep].margin : 0;
-                const barColor = 'from-blue-600 to-blue-400';
-                
-                return (
-                  <div key={item.rep} className="flex flex-col items-center">
-                    <div className="relative">
-                      {Math.abs(change) >= 0.1 && (
-                        <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
-                          {change > 0 ? 
-                            <ChevronUp className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" /> : 
-                            <ChevronDown className="h-4 w-4 md:h-5 md:w-5 text-finance-red" />
-                          }
-                        </div>
-                      )}
-                      <div 
-                        className={`w-6 md:w-8 bg-gradient-to-t ${barColor} rounded-t-lg transition-all duration-500 ease-in-out`}
-                        style={{ height: `${barHeight}px` }}
-                      />
-                    </div>
-                    <div className="mt-2 text-2xs md:text-xs font-bold text-white/80">{repInitials}</div>
-                    <div className="text-2xs md:text-xs text-finance-gray">{formatPercent(item.margin)}</div>
-                  </div>
-                );
-              })}
-            </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-finance-gray">
+            <Percent className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>No margin data available</p>
           </div>
         </div>
       )}
