@@ -1,3 +1,4 @@
+
 export const calculateSummary = (
   baseSummary: {
     totalSpend: number;
@@ -26,12 +27,12 @@ export const calculateSummary = (
   includeReva: boolean,
   includeWholesale: boolean
 ) => {
-  // Start with retail values
-  let totalSpend = baseSummary.totalSpend - revaValues.totalSpend - wholesaleValues.totalSpend;
-  let totalProfit = baseSummary.totalProfit - revaValues.totalProfit - wholesaleValues.totalProfit;
-  let totalPacks = baseSummary.totalPacks - revaValues.totalPacks - wholesaleValues.totalPacks;
-  let totalAccounts = baseSummary.totalAccounts - revaValues.totalAccounts - wholesaleValues.totalAccounts;
-  let activeAccounts = baseSummary.activeAccounts - revaValues.activeAccounts - wholesaleValues.activeAccounts;
+  // Start with retail values (base without reva and wholesale)
+  let totalSpend = baseSummary.totalSpend;
+  let totalProfit = baseSummary.totalProfit;
+  let totalPacks = baseSummary.totalPacks;
+  let totalAccounts = baseSummary.totalAccounts;
+  let activeAccounts = baseSummary.activeAccounts;
   
   // Add REVA values if toggle is on
   if (includeReva) {

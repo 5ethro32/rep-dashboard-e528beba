@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { ArrowUp, ArrowDown } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
@@ -21,19 +20,20 @@ interface SummaryMetricsProps {
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges, isLoading }) => {
+  // Create a change indicator for the KPI cards
   const renderChangeIndicator = (changeValue: number) => {
-    const isPositive = changeValue > 0;
-    
-    if (Math.abs(changeValue) < 0.1) return null; // No significant change
+    if (Math.abs(changeValue) < 0.1) return undefined; // No significant change
     
     return {
       value: `${Math.abs(changeValue).toFixed(1)}%`,
-      type: isPositive ? 'increase' as const : 'decrease' as const
+      type: changeValue > 0 ? 'increase' as const : 'decrease' as const
     };
   };
 
+  // Calculate previous value based on current value and percent change
   const getPreviousValue = (current: number, changePercent: number) => {
-    return Math.round(current / (1 + changePercent / 100));
+    if (!changePercent || Math.abs(changePercent) < 0.1) return current;
+    return current / (1 + changePercent / 100);
   };
 
   return (
@@ -42,8 +42,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       <MetricCard
         title="Revenue"
         value={formatCurrency(summary.totalSpend, 0)}
-        change={summaryChanges.totalSpend ? renderChangeIndicator(summaryChanges.totalSpend) : undefined}
-        subtitle={formatCurrency(getPreviousValue(summary.totalSpend, summaryChanges.totalSpend), 0)}
+        change={renderChangeIndicator(summaryChanges.totalSpend)}
+        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalSpend, summaryChanges.totalSpend), 0)}`}
         isLoading={isLoading}
       />
       
@@ -51,8 +51,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       <MetricCard
         title="Profit"
         value={formatCurrency(summary.totalProfit, 0)}
-        change={summaryChanges.totalProfit ? renderChangeIndicator(summaryChanges.totalProfit) : undefined}
-        subtitle={formatCurrency(getPreviousValue(summary.totalProfit, summaryChanges.totalProfit), 0)}
+        change={renderChangeIndicator(summaryChanges.totalProfit)}
+        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalProfit, summaryChanges.totalProfit), 0)}`}
         valueClassName="text-finance-red"
         isLoading={isLoading}
       />
@@ -61,8 +61,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       <MetricCard
         title="Margin"
         value={formatPercent(summary.averageMargin)}
-        change={summaryChanges.averageMargin ? renderChangeIndicator(summaryChanges.averageMargin) : undefined}
-        subtitle={formatPercent(summary.averageMargin - summaryChanges.averageMargin)}
+        change={renderChangeIndicator(summaryChanges.averageMargin)}
+        subtitle={`Previous: ${formatPercent(getPreviousValue(summary.averageMargin, summaryChanges.averageMargin))}`}
         isLoading={isLoading}
       />
       
@@ -70,8 +70,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       <MetricCard
         title="Packs"
         value={formatNumber(summary.totalPacks)}
-        change={summaryChanges.totalPacks ? renderChangeIndicator(summaryChanges.totalPacks) : undefined}
-        subtitle={formatNumber(getPreviousValue(summary.totalPacks, summaryChanges.totalPacks))}
+        change={renderChangeIndicator(summaryChanges.totalPacks)}
+        subtitle={`Previous: ${formatNumber(getPreviousValue(summary.totalPacks, summaryChanges.totalPacks))}`}
         isLoading={isLoading}
       />
     </div>

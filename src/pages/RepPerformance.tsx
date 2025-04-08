@@ -23,15 +23,16 @@ const RepPerformance = () => {
     getActiveData,
     sortData,
     handleSort,
-    isLoading
+    isLoading,
+    loadDataFromSupabase
   } = useRepPerformanceData();
-
+  
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
         <PerformanceHeader />
         
-        <ActionsHeader />
+        <ActionsHeader onRefresh={loadDataFromSupabase} />
 
         <PerformanceFilters
           includeReva={includeReva}
