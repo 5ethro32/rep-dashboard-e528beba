@@ -48,36 +48,36 @@ export const fetchRepPerformanceData = async () => {
     }
     if (revaDataFromDb && revaDataFromDb.length > 0) {
       console.log('Sample REVA data item:', revaDataFromDb[0]);
+      
+      // Log sub_rep values to help debug
+      const subReps = revaDataFromDb.map(item => item.sub_rep).filter(Boolean);
+      console.log('REVA sub_reps:', [...new Set(subReps)]);
     }
     if (wholesaleDataFromDb && wholesaleDataFromDb.length > 0) {
       console.log('Sample wholesale data item:', wholesaleDataFromDb[0]);
+      
+      // Log sub_rep values to help debug
+      const subReps = wholesaleDataFromDb.map(item => item.sub_rep).filter(Boolean);
+      console.log('WHOLESALE sub_reps:', [...new Set(subReps)]);
     }
     
-    // Process the data
+    // Process the retail data
     const processedRepData = processRepData(repDataFromDb as SalesDataItem[] || []);
-    const processedRevaData = processRepData(revaDataFromDb as SalesDataItem[] || []);
-    const processedWholesaleData = processRepData(wholesaleDataFromDb as SalesDataItem[] || []);
     
     // Calculate summary data
     const calculatedSummary = calculateSummaryFromData(processedRepData);
-    const calculatedRevaValues = calculateSummaryFromData(processedRevaData);
-    const calculatedWholesaleValues = calculateSummaryFromData(processedWholesaleData);
     
     // Log processed data
     console.log('Processed retail data:', processedRepData.length, 'items');
-    console.log('Processed REVA data:', processedRevaData.length, 'items');
-    console.log('Processed wholesale data:', processedWholesaleData.length, 'items');
     console.log('Retail summary:', calculatedSummary);
-    console.log('REVA summary:', calculatedRevaValues);
-    console.log('Wholesale summary:', calculatedWholesaleValues);
     
     return {
       repData: processedRepData,
-      revaData: processedRevaData,
-      wholesaleData: processedWholesaleData,
+      revaData: revaDataFromDb as SalesDataItem[] || [],
+      wholesaleData: wholesaleDataFromDb as SalesDataItem[] || [],
       baseSummary: calculatedSummary,
-      revaValues: calculatedRevaValues,
-      wholesaleValues: calculatedWholesaleValues
+      revaValues: {},
+      wholesaleValues: {}
     };
   } catch (error) {
     console.error('Error loading data from Supabase:', error);

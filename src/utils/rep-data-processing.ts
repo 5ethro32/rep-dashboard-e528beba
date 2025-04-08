@@ -1,3 +1,4 @@
+
 import { RepData, SalesDataItem, SummaryData } from "@/types/rep-performance.types";
 
 export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
@@ -96,81 +97,126 @@ export const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
 };
 
 export const getCombinedRepData = (
-  baseRepData: RepData[],
-  baseRevaData: RepData[],
-  baseWholesaleData: RepData[],
+  baseRetailData: RepData[],
+  baseRevaData: SalesDataItem[],
+  baseWholesaleData: SalesDataItem[],
   includeRetailData: boolean,
   includeRevaData: boolean,
   includeWholesaleData: boolean
 ): RepData[] => {
-  let combinedData: RepData[] = [];
+  // Create a map to store combined data for each rep
+  const repMap = new Map<string, {
+    rep: string;
+    spend: number;
+    profit: number;
+    packs: number;
+    activeAccounts: Set<string>;
+    totalAccounts: Set<string>;
+  }>();
   
+  // 1. First add retail data if included
   if (includeRetailData) {
     console.log("Including Retail data in combined data");
-    combinedData = JSON.parse(JSON.stringify(baseRepData));
+    
+    baseRetailData.forEach(rep => {
+      repMap.set(rep.rep, {
+        rep: rep.rep,
+        spend: rep.spend,
+        profit: rep.profit,
+        packs: rep.packs,
+        activeAccounts: new Set(Array(rep.activeAccounts).fill(null).map((_, i) => `retail_${rep.rep}_${i}`)),
+        totalAccounts: new Set(Array(rep.totalAccounts).fill(null).map((_, i) => `retail_${rep.rep}_${i}`))
+      });
+    });
   }
   
-  console.log("Starting combined data with retail data:", combinedData.length);
+  console.log("Starting combined data processing. Rep count:", repMap.size);
   
+  // 2. Process REVA data by sub_rep if included
   if (includeRevaData) {
     console.log("Including REVA data in combined data");
-    baseRevaData.forEach(revaItem => {
-      const repIndex = combinedData.findIndex((rep) => rep.rep === revaItem.rep);
+    
+    baseRevaData.forEach(item => {
+      if (!item.sub_rep) return; // Skip if no sub_rep
+      const subRep = item.sub_rep;
       
-      if (repIndex >= 0) {
-        const rep = combinedData[repIndex];
-        rep.spend += revaItem.spend;
-        rep.profit += revaItem.profit;
-        rep.packs += revaItem.packs;
-        
-        rep.margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
-        
-        rep.activeAccounts += revaItem.activeAccounts || 0;
-        rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
-        
-        rep.totalAccounts += revaItem.totalAccounts || 0;
-        rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
-        
-        if (rep.packs > 0) {
-          rep.profitPerPack = rep.profit / rep.packs;
-        }
-      } else {
-        if (revaItem.rep !== "REVA" && revaItem.rep !== "Reva") {
-          combinedData.push(revaItem);
-        }
+      const spend = Number(item.spend) || 0;
+      const profit = Number(item.profit) || 0;
+      const packs = Number(item.packs) || 0;
+      
+      if (!repMap.has(subRep)) {
+        repMap.set(subRep, {
+          rep: subRep,
+          spend: 0,
+          profit: 0,
+          packs: 0,
+          activeAccounts: new Set(),
+          totalAccounts: new Set()
+        });
       }
+      
+      const repData = repMap.get(subRep)!;
+      repData.spend += spend;
+      repData.profit += profit;
+      repData.packs += packs;
+      
+      if (spend > 0) {
+        repData.activeAccounts.add(`reva_${item.account_ref}`);
+      }
+      repData.totalAccounts.add(`reva_${item.account_ref}`);
     });
   }
   
+  // 3. Process WHOLESALE data by sub_rep if included
   if (includeWholesaleData) {
     console.log("Including Wholesale data in combined data");
-    baseWholesaleData.forEach(wholesaleItem => {
-      const repIndex = combinedData.findIndex((rep) => rep.rep === wholesaleItem.rep);
+    
+    baseWholesaleData.forEach(item => {
+      if (!item.sub_rep) return; // Skip if no sub_rep
+      const subRep = item.sub_rep;
       
-      if (repIndex >= 0) {
-        const rep = combinedData[repIndex];
-        rep.spend += wholesaleItem.spend;
-        rep.profit += wholesaleItem.profit;
-        rep.packs += wholesaleItem.packs;
-        
-        rep.margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
-        
-        rep.activeAccounts += wholesaleItem.activeAccounts || 0;
-        rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
-        
-        rep.totalAccounts += wholesaleItem.totalAccounts || 0;
-        rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
-        
-        if (rep.packs > 0) {
-          rep.profitPerPack = rep.profit / rep.packs;
-        }
-      } else {
-        if (wholesaleItem.rep !== "WHOLESALE" && wholesaleItem.rep !== "Wholesale") {
-          combinedData.push(wholesaleItem);
-        }
+      const spend = Number(item.spend) || 0;
+      const profit = Number(item.profit) || 0;
+      const packs = Number(item.packs) || 0;
+      
+      if (!repMap.has(subRep)) {
+        repMap.set(subRep, {
+          rep: subRep,
+          spend: 0,
+          profit: 0,
+          packs: 0,
+          activeAccounts: new Set(),
+          totalAccounts: new Set()
+        });
       }
+      
+      const repData = repMap.get(subRep)!;
+      repData.spend += spend;
+      repData.profit += profit;
+      repData.packs += packs;
+      
+      if (spend > 0) {
+        repData.activeAccounts.add(`wholesale_${item.account_ref}`);
+      }
+      repData.totalAccounts.add(`wholesale_${item.account_ref}`);
     });
   }
+  
+  // Convert the map to an array of RepData objects
+  const combinedData: RepData[] = Array.from(repMap.values()).map(rep => {
+    return {
+      rep: rep.rep,
+      spend: rep.spend,
+      profit: rep.profit,
+      margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
+      packs: rep.packs,
+      activeAccounts: rep.activeAccounts.size,
+      totalAccounts: rep.totalAccounts.size,
+      profitPerActiveShop: rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0,
+      profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
+      activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
+    };
+  });
   
   console.log("Final combined data length:", combinedData.length);
   return combinedData;
