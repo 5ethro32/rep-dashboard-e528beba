@@ -8,9 +8,15 @@ interface RepProfitShareProps {
   displayData: any[];
   repChanges: Record<string, any>;
   isLoading?: boolean;
+  showChangeIndicators?: boolean;
 }
 
-const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges, isLoading }) => {
+const RepProfitShare: React.FC<RepProfitShareProps> = ({ 
+  displayData, 
+  repChanges, 
+  isLoading,
+  showChangeIndicators = true
+}) => {
   const isMobile = useIsMobile();
   
   // Calculate total profit
@@ -133,6 +139,11 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
                   <div className="truncate">
                     <span className="font-medium">{getInitials(item.name)}</span> 
                     <span className="text-finance-gray ml-1">({item.value}%)</span>
+                    {showChangeIndicators && Math.abs(item.change) >= 1 && (
+                      <span className={`ml-1 ${item.change > 0 ? 'text-emerald-400' : 'text-finance-red'}`}>
+                        {item.change > 0 ? '↑' : '↓'}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}

@@ -77,6 +77,9 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     }
   };
 
+  // Only show change indicators if we're viewing March data (compared to February)
+  const showChangeIndicators = selectedMonth === 'March';
+
   return (
     <div className="mb-8 animate-slide-in-up">
       <Tabs defaultValue="overall" className="w-full">
@@ -101,6 +104,9 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                 </h2>
                 <p className="text-xs md:text-sm mb-3 md:mb-4 text-white/60">
                   {getTabDescription(tabValue)}
+                  {selectedMonth === 'February' && (
+                    <span className="ml-1 text-finance-gray italic">No comparison data available for January.</span>
+                  )}
                 </p>
                 <PerformanceTable 
                   displayData={sortData(getActiveData(tabValue))}
@@ -111,9 +117,10 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   formatCurrency={formatCurrency}
                   formatPercent={formatPercent}
                   formatNumber={formatNumber}
-                  renderChangeIndicator={renderChangeIndicator}
+                  renderChangeIndicator={showChangeIndicators ? renderChangeIndicator : () => null}
                   isLoading={isLoading}
                   getFebValue={getFebValue}
+                  showChangeIndicators={showChangeIndicators}
                 />
               </div>
             </div>
@@ -125,6 +132,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   repChanges={repChanges}
                   formatCurrency={formatCurrency}
                   isLoading={isLoading}
+                  showChangeIndicators={showChangeIndicators}
                 />
               </div>
               
@@ -133,6 +141,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}
                   isLoading={isLoading}
+                  showChangeIndicators={showChangeIndicators}
                 />
               </div>
               
@@ -142,6 +151,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   repChanges={repChanges}
                   formatPercent={formatPercent}
                   isLoading={isLoading}
+                  showChangeIndicators={showChangeIndicators}
                 />
               </div>
             </div>

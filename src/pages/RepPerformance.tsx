@@ -62,6 +62,7 @@ const RepPerformance = () => {
           includeRetail={includeRetail}
           includeReva={includeReva}
           includeWholesale={includeWholesale}
+          selectedMonth={selectedMonth}
         />
         
         <PerformanceContent

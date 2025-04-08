@@ -14,13 +14,15 @@ interface RepProfitChartProps {
   repChanges: Record<string, any>;
   formatCurrency: (value: number, decimals?: number) => string;
   isLoading?: boolean;
+  showChangeIndicators?: boolean;
 }
 
 const RepProfitChart: React.FC<RepProfitChartProps> = ({ 
   displayData, 
   repChanges, 
   formatCurrency,
-  isLoading 
+  isLoading,
+  showChangeIndicators = true
 }) => {
   const isMobile = useIsMobile();
   
@@ -53,18 +55,18 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
                       <TooltipTrigger asChild>
                         <div className="flex flex-col items-center">
                           <div className="relative">
-                            {Math.abs(change) >= 0.1 ? (
+                            {showChangeIndicators && Math.abs(change) >= 0.1 ? (
                               <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
                                 {change > 0 ? 
                                   <ChevronUp className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" /> : 
                                   <ChevronDown className="h-4 w-4 md:h-5 md:w-5 text-finance-red" />
                                 }
                               </div>
-                            ) : (
+                            ) : showChangeIndicators ? (
                               <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
                                 <Minus className="h-4 w-4 md:h-5 md:w-5 text-finance-gray font-bold" />
                               </div>
-                            )}
+                            ) : null}
                             <div 
                               className={`w-6 md:w-8 bg-gradient-to-t ${barColor} rounded-t-lg transition-all duration-500 ease-in-out hover:opacity-80 cursor-pointer`}
                               style={{ height: `${barHeight}px` }}
@@ -78,16 +80,18 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
                         <div className="p-1">
                           <p className="font-medium">{item.rep}</p>
                           <p>Profit: {formatCurrency(item.profit)}</p>
-                          {Math.abs(change) >= 0.1 ? (
+                          {showChangeIndicators && Math.abs(change) >= 0.1 ? (
                             <p className={change > 0 ? "text-emerald-400" : "text-finance-red"}>
                               Change: {change > 0 ? "+" : ""}{change.toFixed(1)}%
                             </p>
-                          ) : (
+                          ) : showChangeIndicators ? (
                             <p className="text-finance-gray">No change</p>
+                          ) : null}
+                          {showChangeIndicators && (
+                            <p className="text-finance-gray mt-1 text-xs">
+                              Previous: {formatCurrency(previousValue)}
+                            </p>
                           )}
-                          <p className="text-finance-gray mt-1 text-xs">
-                            Previous: {formatCurrency(previousValue)}
-                          </p>
                         </div>
                       </TooltipContent>
                     </Tooltip>
