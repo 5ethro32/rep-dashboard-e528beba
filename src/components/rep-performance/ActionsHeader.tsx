@@ -1,65 +1,28 @@
 
-import React from 'react';
-import { Database, RefreshCw, AlertCircle, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import UserProfileButton from "@/components/auth/UserProfileButton";
 
 interface ActionsHeaderProps {
-  onRefresh: () => Promise<boolean>;
-  isLoading?: boolean;
+  onRefresh: () => void;
+  isLoading: boolean;
 }
 
-const ActionsHeader: React.FC<ActionsHeaderProps> = ({ onRefresh, isLoading = false }) => {
-  const { toast } = useToast();
-
-  const handleConnectToDatabase = async () => {
-    try {
-      await onRefresh();
-      toast({
-        title: "Data loaded successfully",
-        description: "The latest data has been loaded from the database.",
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to load data",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Check if Supabase client is properly initialized
-  const isSupabaseConnected = Boolean(supabase);
-
+const ActionsHeader = ({ onRefresh, isLoading }: ActionsHeaderProps) => {
   return (
-    <div className="flex justify-between items-center mb-4">
-      <div className="flex items-center text-sm">
-        {isSupabaseConnected ? (
-          <div className="flex items-center text-green-400">
-            <Check className="h-4 w-4 mr-2" />
-            <span>Connected to Database</span>
-          </div>
-        ) : (
-          <div className="flex items-center text-amber-300">
-            <AlertCircle className="h-4 w-4 mr-2" />
-            <span>Database connection not available</span>
-          </div>
-        )}
-      </div>
-      <Button 
-        variant="outline" 
-        className="border-white/20 text-white hover:bg-white/10"
-        onClick={handleConnectToDatabase}
-        disabled={isLoading || !isSupabaseConnected}
+    <div className="flex justify-between items-center mb-6">
+      <Button
+        onClick={onRefresh}
+        variant="outline"
+        size="sm"
+        className="text-white border-white/20 hover:bg-white/10"
+        disabled={isLoading}
       >
-        {isLoading ? (
-          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Database className="mr-2 h-4 w-4" />
-        )}
-        {isLoading ? "Loading Data..." : "Load Data"}
+        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+        {isLoading ? 'Refreshing...' : 'Refresh Data'}
       </Button>
+      
+      <UserProfileButton />
     </div>
   );
 };
