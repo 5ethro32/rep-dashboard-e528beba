@@ -25,11 +25,16 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
   // Prepare data for the pie chart
   const chartData = displayData.map((item, index) => {
     const percentage = (item.profit / totalProfit) * 100;
+    const prevProfit = item.profit / (1 + (repChanges[item.rep]?.profit || 0) / 100);
+    const prevPercentage = (prevProfit / (totalProfit / (1 + (repChanges[item.rep]?.profit || 0) / 100))) * 100;
+    
     return {
       name: item.rep,
       value: Number(percentage.toFixed(1)),
       color: colors[index % colors.length],
       profit: item.profit,
+      prevProfit: prevProfit,
+      prevPercentage: Number(prevPercentage.toFixed(1)),
       change: repChanges[item.rep] ? repChanges[item.rep].profit : 0
     };
   });
@@ -52,6 +57,8 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
         value: Number(othersValue.toFixed(1)),
         color: "#6b7280",
         profit: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.profit, 0),
+        prevProfit: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.prevProfit, 0),
+        prevPercentage: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.prevPercentage, 0),
         change: 0
       });
     }
@@ -66,6 +73,8 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
           value: filteredData.slice(4).reduce((sum, item) => sum + item.value, 0),
           color: "#6b7280",
           profit: filteredData.slice(4).reduce((sum, item) => sum + item.profit, 0),
+          prevProfit: filteredData.slice(4).reduce((sum, item) => sum + item.prevProfit, 0),
+          prevPercentage: filteredData.slice(4).reduce((sum, item) => sum + item.prevPercentage, 0),
           change: 0
         }
       ]
@@ -79,6 +88,38 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     currency: 'GBP',
     maximumFractionDigits: 0
   });
+  
+  // Enhanced CustomTooltip component
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const item = payload[0].payload;
+      return (
+        <div className="bg-gray-800 p-2 border border-white/10 rounded-md text-xs md:text-sm shadow-lg backdrop-blur-sm">
+          <p className="text-white font-medium">{item.name}</p>
+          <p className="text-white/80">Current: {item.value}% ({item.profit.toLocaleString('en-GB', {
+            style: 'currency',
+            currency: 'GBP',
+            maximumFractionDigits: 0
+          })})</p>
+          {Math.abs(item.change) >= 0.1 ? (
+            <p className={item.change > 0 ? "text-emerald-400 text-xs" : "text-finance-red text-xs"}>
+              Change: {item.change > 0 ? "+" : ""}{item.change.toFixed(1)}%
+            </p>
+          ) : (
+            <p className="text-finance-gray text-xs">No change</p>
+          )}
+          <p className="text-finance-gray text-xs mt-1">
+            Previous: {item.prevPercentage}% ({item.prevProfit.toLocaleString('en-GB', {
+              style: 'currency',
+              currency: 'GBP',
+              maximumFractionDigits: 0
+            })})
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
   
   return (
     <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">

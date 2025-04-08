@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ChevronUp, ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, Loader2, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Tooltip,
@@ -52,12 +52,16 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
                       <TooltipTrigger asChild>
                         <div className="flex flex-col items-center">
                           <div className="relative">
-                            {Math.abs(change) >= 0.1 && (
+                            {Math.abs(change) >= 0.1 ? (
                               <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
                                 {change > 0 ? 
                                   <ChevronUp className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" /> : 
                                   <ChevronDown className="h-4 w-4 md:h-5 md:w-5 text-finance-red" />
                                 }
+                              </div>
+                            ) : (
+                              <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
+                                <Minus className="h-4 w-4 md:h-5 md:w-5 text-finance-gray font-bold" />
                               </div>
                             )}
                             <div 
@@ -67,17 +71,27 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
                           </div>
                           <div className="mt-2 text-2xs md:text-xs font-bold text-white/80">{repInitials}</div>
                           <div className="text-2xs md:text-xs text-finance-gray">{formatCurrency(item.profit, 0)}</div>
+                          {Math.abs(change) >= 0.1 && (
+                            <div className="text-2xs text-finance-gray">
+                              {formatCurrency(item.profit / (1 + (change || 0) / 100), 0)}
+                            </div>
+                          )}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent className="bg-gray-800 border-white/10 text-white">
                         <div className="p-1">
                           <p className="font-medium">{item.rep}</p>
                           <p>Profit: {formatCurrency(item.profit)}</p>
-                          {Math.abs(change) >= 0.1 && (
+                          {Math.abs(change) >= 0.1 ? (
                             <p className={change > 0 ? "text-emerald-400" : "text-finance-red"}>
                               Change: {change > 0 ? "+" : ""}{change.toFixed(1)}%
                             </p>
+                          ) : (
+                            <p className="text-finance-gray">No change</p>
                           )}
+                          <p className="text-finance-gray mt-1 text-xs">
+                            Previous: {formatCurrency(item.profit / (1 + (change || 0) / 100))}
+                          </p>
                         </div>
                       </TooltipContent>
                     </Tooltip>

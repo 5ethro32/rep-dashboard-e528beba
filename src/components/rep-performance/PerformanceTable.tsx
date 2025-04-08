@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
@@ -141,7 +140,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium">
                     <div className="flex items-center">
                       <span>{item.rep}</span>
-                      {rankChange !== 0 && (
+                      {rankChange !== 0 ? (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -162,6 +161,10 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
+                      ) : (
+                        <span className="ml-1.5 font-bold text-finance-gray">
+                          <Minus className="h-4 w-4" />
+                        </span>
                       )}
                     </div>
                   </TableCell>
@@ -171,8 +174,15 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                         <TooltipTrigger asChild>
                           <div className="flex items-center">
                             {formatCurrency(item.spend)}
-                            {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].spend, 'small') : (
-                              <span className="inline-flex items-center ml-1 text-finance-gray">
+                            {repChanges[item.rep] && Math.abs(repChanges[item.rep].spend) >= 0.1 ? (
+                              <div className="flex items-center ml-1">
+                                {renderChangeIndicator(repChanges[item.rep].spend, 'small')}
+                                <span className="text-2xs ml-1 text-finance-gray">
+                                  {formatCurrency(item.spend / (1 + (repChanges[item.rep]?.spend || 0) / 100), 0)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                 <Minus className="h-4 w-4" />
                               </span>
                             )}
@@ -193,8 +203,15 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                         <TooltipTrigger asChild>
                           <div className="flex items-center">
                             {formatCurrency(item.profit)}
-                            {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].profit, 'small') : (
-                              <span className="inline-flex items-center ml-1 text-finance-gray">
+                            {repChanges[item.rep] && Math.abs(repChanges[item.rep].profit) >= 0.1 ? (
+                              <div className="flex items-center ml-1">
+                                {renderChangeIndicator(repChanges[item.rep].profit, 'small')}
+                                <span className="text-2xs ml-1 text-finance-gray">
+                                  {formatCurrency(item.profit / (1 + (repChanges[item.rep]?.profit || 0) / 100), 0)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                 <Minus className="h-4 w-4" />
                               </span>
                             )}
@@ -215,8 +232,15 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                         <TooltipTrigger asChild>
                           <div className="flex items-center">
                             {formatPercent(item.margin)}
-                            {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].margin, 'small') : (
-                              <span className="inline-flex items-center ml-1 text-finance-gray">
+                            {repChanges[item.rep] && Math.abs(repChanges[item.rep].margin) >= 0.1 ? (
+                              <div className="flex items-center ml-1">
+                                {renderChangeIndicator(repChanges[item.rep].margin, 'small')}
+                                <span className="text-2xs ml-1 text-finance-gray">
+                                  {formatPercent(item.margin - (repChanges[item.rep]?.margin || 0))}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                 <Minus className="h-4 w-4" />
                               </span>
                             )}
@@ -239,8 +263,15 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                             <span className="text-emerald-500">{formatNumber(item.activeAccounts)}</span>
                             <span className="text-finance-gray mx-1"> / </span>
                             <span>{formatNumber(item.totalAccounts)}</span>
-                            {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].activeAccounts, 'small') : (
-                              <span className="inline-flex items-center ml-1 text-finance-gray">
+                            {repChanges[item.rep] && Math.abs(repChanges[item.rep].activeAccounts) >= 0.1 ? (
+                              <div className="flex items-center ml-1">
+                                {renderChangeIndicator(repChanges[item.rep].activeAccounts, 'small')}
+                                <span className="text-2xs ml-1 text-finance-gray">
+                                  {formatNumber(Math.round(item.activeAccounts / (1 + (repChanges[item.rep]?.activeAccounts || 0) / 100)))}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                 <Minus className="h-4 w-4" />
                               </span>
                             )}
@@ -261,8 +292,15 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                         <TooltipTrigger asChild>
                           <div className="flex items-center">
                             {formatNumber(item.packs)}
-                            {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].packs, 'small') : (
-                              <span className="inline-flex items-center ml-1 text-finance-gray">
+                            {repChanges[item.rep] && Math.abs(repChanges[item.rep].packs) >= 0.1 ? (
+                              <div className="flex items-center ml-1">
+                                {renderChangeIndicator(repChanges[item.rep].packs, 'small')}
+                                <span className="text-2xs ml-1 text-finance-gray">
+                                  {formatNumber(Math.round(item.packs / (1 + (repChanges[item.rep]?.packs || 0) / 100)))}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                 <Minus className="h-4 w-4" />
                               </span>
                             )}
