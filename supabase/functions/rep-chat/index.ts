@@ -205,6 +205,9 @@ When answering:
 3. When asked about top performers, specify which metric (profit, margin, packs) and include the actual values
 4. If data isn't available for a specific question, acknowledge that
 5. Always maintain a professional, helpful tone
+6. DO NOT FORMAT YOUR RESPONSE WITH MARKDOWN like **, *, or ## symbols
+7. Just use plain text formatting with normal punctuation
+8. Use simple formatting with dashes and numbers for lists
 
 Sample of the general data (first few records):
 ${JSON.stringify(salesData?.slice(0, 3) || 'No data available')}
