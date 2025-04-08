@@ -65,6 +65,12 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
               Margin {sortBy === 'margin' && (sortOrder === 'asc' ? '↑' : '↓')}
             </TableHead>
             <TableHead 
+              onClick={() => onSort('activeAccounts')}
+              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors"
+            >
+              Accounts {sortBy === 'activeAccounts' && (sortOrder === 'asc' ? '↑' : '↓')}
+            </TableHead>
+            <TableHead 
               onClick={() => onSort('packs')}
               className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors"
             >
@@ -75,7 +81,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={5} className="px-3 md:px-6 py-8 text-center">
+              <TableCell colSpan={6} className="px-3 md:px-6 py-8 text-center">
                 <div className="flex items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" />
                   <span>Loading data...</span>
@@ -108,6 +114,14 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                 </TableCell>
                 <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                   <div className="flex items-center">
+                    <span className="text-emerald-500">{formatNumber(item.activeAccounts)}</span>
+                    <span className="text-finance-gray">/</span>
+                    <span>{formatNumber(item.totalAccounts)}</span>
+                    {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].activeAccounts, 'small')}
+                  </div>
+                </TableCell>
+                <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
+                  <div className="flex items-center">
                     {formatNumber(item.packs)}
                     {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].packs, 'small')}
                   </div>
@@ -116,7 +130,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="px-3 md:px-6 py-2 md:py-4 text-center text-xs md:text-sm text-finance-gray">
+              <TableCell colSpan={6} className="px-3 md:px-6 py-2 md:py-4 text-center text-xs md:text-sm text-finance-gray">
                 No data available for the selected filters
               </TableCell>
             </TableRow>

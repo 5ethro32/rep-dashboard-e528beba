@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -98,17 +97,67 @@ export const useRepPerformanceData = () => {
       setRepData(data.repData);
       setRevaData(data.revaData);
       setWholesaleData(data.wholesaleData);
-      setBaseSummary(data.baseSummary);
-      setRevaValues(data.revaValues);
-      setWholesaleValues(data.wholesaleValues);
+      
+      // Fix: Add all required properties when setting SummaryData state
+      setBaseSummary({
+        totalSpend: data.baseSummary.totalSpend,
+        totalProfit: data.baseSummary.totalProfit,
+        totalPacks: data.baseSummary.totalPacks,
+        totalAccounts: data.baseSummary.totalAccounts,
+        activeAccounts: data.baseSummary.activeAccounts,
+        averageMargin: data.baseSummary.averageMargin
+      });
+      
+      setRevaValues({
+        totalSpend: data.revaValues.totalSpend,
+        totalProfit: data.revaValues.totalProfit,
+        totalPacks: data.revaValues.totalPacks,
+        totalAccounts: data.revaValues.totalAccounts,
+        activeAccounts: data.revaValues.activeAccounts,
+        averageMargin: data.revaValues.averageMargin
+      });
+      
+      setWholesaleValues({
+        totalSpend: data.wholesaleValues.totalSpend,
+        totalProfit: data.wholesaleValues.totalProfit,
+        totalPacks: data.wholesaleValues.totalPacks,
+        totalAccounts: data.wholesaleValues.totalAccounts,
+        activeAccounts: data.wholesaleValues.activeAccounts,
+        averageMargin: data.wholesaleValues.averageMargin
+      });
       
       // Update state with fetched data - previous month (February)
       setFebRepData(data.febRepData);
       setFebRevaData(data.febRevaData);
       setFebWholesaleData(data.febWholesaleData);
-      setFebBaseSummary(data.febBaseSummary);
-      setFebRevaValues(data.febRevaValues);
-      setFebWholesaleValues(data.febWholesaleValues);
+      
+      // Fix: Add all required properties for February SummaryData
+      setFebBaseSummary({
+        totalSpend: data.febBaseSummary.totalSpend,
+        totalProfit: data.febBaseSummary.totalProfit,
+        totalPacks: data.febBaseSummary.totalPacks,
+        totalAccounts: data.febBaseSummary.totalAccounts,
+        activeAccounts: data.febBaseSummary.activeAccounts,
+        averageMargin: data.febBaseSummary.averageMargin
+      });
+      
+      setFebRevaValues({
+        totalSpend: data.febRevaValues.totalSpend,
+        totalProfit: data.febRevaValues.totalProfit,
+        totalPacks: data.febRevaValues.totalPacks,
+        totalAccounts: data.febRevaValues.totalAccounts,
+        activeAccounts: data.febRevaValues.activeAccounts,
+        averageMargin: data.febRevaValues.averageMargin
+      });
+      
+      setFebWholesaleValues({
+        totalSpend: data.febWholesaleValues.totalSpend,
+        totalProfit: data.febWholesaleValues.totalProfit,
+        totalPacks: data.febWholesaleValues.totalPacks,
+        totalAccounts: data.febWholesaleValues.totalAccounts,
+        activeAccounts: data.febWholesaleValues.activeAccounts,
+        averageMargin: data.febWholesaleValues.averageMargin
+      });
       
       // Update changes
       setSummaryChanges(data.summaryChanges);
