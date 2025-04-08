@@ -25,7 +25,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: '1', 
-      content: "Hello! I'm your sales data assistant. Ask me anything about the rep performance data.", 
+      content: "Hello! I'm Vera, your sales data assistant. Ask me anything about rep performance data.\n\nTry questions like:\n- Who are the top performers this month?\n- Tell me about Craig McDowall's sales\n- Which reps have the highest margin?", 
       isUser: false, 
       timestamp: new Date() 
     }
@@ -127,9 +127,9 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
           >
             <span className="flex items-center">
               <Avatar className="h-6 w-6 mr-2">
-                <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">AI</AvatarFallback>
+                <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
               </Avatar>
-              Sales Data Assistant
+              Vera
             </span>
             {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
           </Button>
@@ -145,7 +145,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
                 >
                   {!msg.isUser && (
                     <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
-                      <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">AI</AvatarFallback>
+                      <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
                     </Avatar>
                   )}
                   
@@ -154,7 +154,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
                       msg.isUser 
                         ? 'bg-gradient-to-r from-rose-500 to-finance-red text-white' 
                         : 'bg-gray-800 text-gray-100'
-                    }`}
+                    } whitespace-pre-line`}
                   >
                     {msg.content}
                   </div>
@@ -170,7 +170,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
               {isLoading && (
                 <div className="flex justify-start">
                   <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
-                    <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">AI</AvatarFallback>
+                    <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
                   </Avatar>
                   <div className="bg-gray-800 text-gray-100 rounded-lg p-4">
                     <div className="flex space-x-2">
@@ -192,7 +192,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask about your sales data..."
+                  placeholder="Ask Vera about your sales data..."
                   className="min-h-[60px] resize-none bg-gray-800 border-gray-700 text-white"
                   disabled={isLoading}
                 />

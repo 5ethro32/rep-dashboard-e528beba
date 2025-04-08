@@ -14,6 +14,19 @@ const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = 'https://ukshnjjmsrhgvkwrzoah.supabase.co';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
+interface RepSummary {
+  name: string;
+  departments: string[];
+  totalSpend: number;
+  totalProfit: number;
+  margin: number;
+  totalPacks: number;
+  totalAccounts: number;
+  activeAccounts: number;
+  profitPerActiveAccount: number;
+  sampleTransactions: any[];
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -30,24 +43,31 @@ serve(async (req) => {
     // Create a Supabase client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Determine which table to query based on selected month
-    const month = selectedMonth || 'March'; // Default to March if not specified
-    const tableName = month.toLowerCase() === 'march' ? 'sales_data_march' : 'sales_data_februrary';
+    // Determine which tables to query based on selected month
+    const tables = {
+      'march': 'sales_data_march',
+      'february': 'sales_data_februrary'
+    };
+    
+    const month = selectedMonth?.toLowerCase() || 'march'; // Default to March if not specified
+    const tableName = tables[month] || tables.march;
     
     console.log(`Querying table: ${tableName} for month: ${month}`);
     
     // Get sales data for the specified month
     let salesData;
     let topSalesPeople;
-    let repDetails = null;
+    let repDetails: RepSummary | null = null;
 
     try {
       // Extract any rep name mentioned in the message for detailed lookup
-      const repNameMatch = message.match(/(?:about|on|for|by)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/i);
+      const repNameMatch = message.match(/(?:about|on|for|by)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i);
       const repName = repNameMatch ? repNameMatch[1] : null;
       
-      // If a specific rep is mentioned, get their details
+      // If a specific rep is mentioned, get their details across all departments
       if (repName) {
+        console.log(`Looking for data on rep: ${repName}`);
+        
         const { data: repData, error: repError } = await supabase
           .from(tableName)
           .select('*')
@@ -56,43 +76,101 @@ serve(async (req) => {
         if (repError) {
           console.error(`Error fetching data for rep ${repName}:`, repError);
         } else if (repData && repData.length > 0) {
-          // Calculate rep totals
-          const repTotals = repData.reduce((totals, record) => {
-            totals.spend += Number(record.Spend || 0);
-            totals.profit += Number(record.Profit || 0);
-            totals.packs += Number(record.Packs || 0);
-            
-            if (!totals.accounts.includes(record['Account Ref'])) {
-              totals.accounts.push(record['Account Ref']);
+          // Group by department to show the breakdown
+          const departmentData = repData.reduce((acc, record) => {
+            const dept = record.Department || 'Unknown';
+            if (!acc[dept]) {
+              acc[dept] = { 
+                spend: 0, 
+                profit: 0, 
+                packs: 0, 
+                accounts: new Set(), 
+                activeAccounts: new Set(),
+              };
             }
             
-            if (Number(record.Spend || 0) > 0 && !totals.activeAccounts.includes(record['Account Ref'])) {
-              totals.activeAccounts.push(record['Account Ref']);
+            const spend = Number(record.Spend || 0);
+            const profit = Number(record.Profit || 0);
+            const packs = Number(record.Packs || 0);
+            
+            acc[dept].spend += spend;
+            acc[dept].profit += profit;
+            acc[dept].packs += packs;
+            
+            if (record['Account Ref']) {
+              acc[dept].accounts.add(record['Account Ref']);
+              if (spend > 0) {
+                acc[dept].activeAccounts.add(record['Account Ref']);
+              }
             }
             
-            return totals;
-          }, { 
-            spend: 0, 
-            profit: 0, 
-            packs: 0, 
-            accounts: [], 
-            activeAccounts: [],
-            department: repData[0].Department || 'Unknown'
+            return acc;
+          }, {});
+          
+          // Calculate overall totals across all departments
+          let totalSpend = 0;
+          let totalProfit = 0;
+          let totalPacks = 0;
+          const allAccounts = new Set<string>();
+          const allActiveAccounts = new Set<string>();
+          const departments: string[] = [];
+          
+          Object.entries(departmentData).forEach(([dept, data]) => {
+            departments.push(dept);
+            totalSpend += data.spend;
+            totalProfit += data.profit;
+            totalPacks += data.packs;
+            
+            data.accounts.forEach(account => allAccounts.add(String(account)));
+            data.activeAccounts.forEach(account => allActiveAccounts.add(String(account)));
           });
           
+          // Find interesting sample transactions (non-zero values preferably)
+          const interestingTransactions = repData
+            .filter(record => Number(record.Spend || 0) > 0 || Number(record.Profit || 0) !== 0)
+            .slice(0, 2);
+          
+          // If we don't have enough interesting transactions, add some zero ones
+          if (interestingTransactions.length < 3) {
+            const zeroTransactions = repData
+              .filter(record => Number(record.Spend || 0) === 0 && Number(record.Profit || 0) === 0)
+              .slice(0, 3 - interestingTransactions.length);
+            
+            interestingTransactions.push(...zeroTransactions);
+          }
+          
+          // Ensure we have exactly 3 transactions or fewer if not enough data
+          const sampleTransactions = interestingTransactions.slice(0, 3);
+          
+          // Create the final rep summary
           repDetails = {
             name: repName,
-            department: repTotals.department,
-            totalSpend: repTotals.spend,
-            totalProfit: repTotals.profit,
-            margin: repTotals.spend > 0 ? (repTotals.profit / repTotals.spend) * 100 : 0,
-            totalPacks: repTotals.packs,
-            totalAccounts: repTotals.accounts.length,
-            activeAccounts: repTotals.activeAccounts.length,
-            sampleTransactions: repData.slice(0, 3) // First 3 transactions for context
+            departments: departments,
+            totalSpend: totalSpend,
+            totalProfit: totalProfit,
+            margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
+            totalPacks: totalPacks,
+            totalAccounts: allAccounts.size,
+            activeAccounts: allActiveAccounts.size,
+            profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0,
+            sampleTransactions: sampleTransactions
           };
           
-          console.log(`Found details for rep ${repName}:`, JSON.stringify(repDetails, null, 2));
+          // Also provide department breakdown for context
+          const departmentBreakdown = Object.entries(departmentData).map(([dept, data]) => ({
+            department: dept,
+            spend: data.spend,
+            profit: data.profit,
+            margin: data.spend > 0 ? (data.profit / data.spend) * 100 : 0,
+            packs: data.packs,
+            accounts: data.accounts.size,
+            activeAccounts: data.activeAccounts.size,
+          }));
+          
+          console.log(`Found details for rep ${repName}:`, JSON.stringify({
+            summary: repDetails,
+            departmentBreakdown
+          }, null, 2));
         } else {
           console.log(`No data found for rep ${repName}`);
         }
@@ -172,31 +250,40 @@ serve(async (req) => {
 
     // Prepare a system prompt with data context
     const systemPrompt = `
-You are a sales data analysis assistant specialized in helping sales managers understand their rep performance data.
-You have access to sales data for ${month} 2025.
+You are Vera, a sales data analysis assistant specialized in helping sales managers understand their rep performance data.
+You have access to sales data for ${selectedMonth || 'March'} 2025.
 
 Here's key information from the data:
-1. Top performers by profit in ${month} 2025:
-${JSON.stringify(topSalesPeople?.byProfit || 'Data unavailable', null, 2)}
+1. Top performers by profit in ${selectedMonth || 'March'} 2025:
+${JSON.stringify(topSalesPeople?.byProfit || 'Data unavailable')}
 
-2. Top performers by margin in ${month} 2025:
-${JSON.stringify(topSalesPeople?.byMargin || 'Data unavailable', null, 2)}
+2. Top performers by margin in ${selectedMonth || 'March'} 2025:
+${JSON.stringify(topSalesPeople?.byMargin || 'Data unavailable')}
 
-3. Top performers by packs sold in ${month} 2025:
-${JSON.stringify(topSalesPeople?.byPacks || 'Data unavailable', null, 2)}
+3. Top performers by packs sold in ${selectedMonth || 'March'} 2025:
+${JSON.stringify(topSalesPeople?.byPacks || 'Data unavailable')}
 
 ${repDetails ? `
 4. Specific details for ${repDetails.name}:
-- Department: ${repDetails.department}
-- Total Spend: ${repDetails.totalSpend}
-- Total Profit: ${repDetails.totalProfit}
-- Margin: ${repDetails.margin.toFixed(2)}%
-- Total Packs: ${repDetails.totalPacks}
-- Total Accounts: ${repDetails.totalAccounts}
-- Active Accounts: ${repDetails.activeAccounts}
 
-Sample transactions for ${repDetails.name}:
-${JSON.stringify(repDetails.sampleTransactions, null, 2)}
+Key Performance Metrics (Combined across ${repDetails.departments.join(', ')} departments):
+Total Spend: ${repDetails.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Total Profit: ${repDetails.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Margin: ${repDetails.margin.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
+Total Packs: ${repDetails.totalPacks.toLocaleString('en-US')}
+Total Accounts: ${repDetails.totalAccounts}
+Active Accounts: ${repDetails.activeAccounts}
+Profit per Active Account: ${repDetails.profitPerActiveAccount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+
+Sample transactions:
+${JSON.stringify(repDetails.sampleTransactions.map(t => ({
+  account: t['Account Name'],
+  spend: t.Spend,
+  cost: t.Cost,
+  profit: t.Profit,
+  margin: t.Margin,
+  packs: t.Packs
+})), null, 2)}
 ` : ''}
 
 When answering:
@@ -206,8 +293,10 @@ When answering:
 4. If data isn't available for a specific question, acknowledge that
 5. Always maintain a professional, helpful tone
 6. DO NOT FORMAT YOUR RESPONSE WITH MARKDOWN like **, *, or ## symbols
-7. Just use plain text formatting with normal punctuation
+7. Use plain text formatting with proper line breaks and paragraphs
 8. Use simple formatting with dashes and numbers for lists
+9. If responding about a specific rep, use proper paragraph breaks between sections
+10. Do not mention the department unless specifically asked - just give combined results
 
 Sample of the general data (first few records):
 ${JSON.stringify(salesData?.slice(0, 3) || 'No data available')}
