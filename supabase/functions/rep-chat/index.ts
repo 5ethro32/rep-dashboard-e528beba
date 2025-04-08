@@ -40,6 +40,12 @@ interface OverallMetrics {
   departmentBreakdown: any;
 }
 
+interface ComparisonMetrics {
+  month: string;
+  metrics: OverallMetrics | null;
+  repDetails: Record<string, RepSummary>;
+}
+
 // Determine if a string is a department name - case insensitive
 const isDepartment = (name: string): boolean => {
   if (!name) return false;
@@ -136,6 +142,287 @@ const fetchDepartmentData = async (supabase, tableName, department) => {
   return allData;
 };
 
+// Process data for a specific rep - consistently calculating totals across all departments
+const processRepData = (allData, repName) => {
+  if (!repName) return null;
+  
+  console.log(`Processing data for rep: ${repName}`);
+  
+  // Process the combined dataset for this rep (from both Rep and Sub-Rep columns)
+  const repData = allData.filter(record => {
+    return (record.Rep && record.Rep.toLowerCase().includes(repName.toLowerCase())) || 
+           (record['Sub-Rep'] && record['Sub-Rep'].toLowerCase().includes(repName.toLowerCase()));
+  });
+  
+  if (!repData || repData.length === 0) {
+    console.log(`No data found for rep ${repName}`);
+    return null;
+  }
+  
+  console.log(`Found ${repData.length} records for ${repName}`);
+  
+  // Group by department to show the breakdown
+  const departmentData = repData.reduce((acc, record) => {
+    const dept = record.Department || 'Unknown';
+    if (!acc[dept]) {
+      acc[dept] = { 
+        spend: 0, 
+        profit: 0, 
+        packs: 0, 
+        accounts: new Set(), 
+        activeAccounts: new Set(),
+      };
+    }
+    
+    const spend = Number(record.Spend || 0);
+    const profit = Number(record.Profit || 0);
+    const packs = Number(record.Packs || 0);
+    
+    acc[dept].spend += spend;
+    acc[dept].profit += profit;
+    acc[dept].packs += packs;
+    
+    if (record['Account Ref']) {
+      acc[dept].accounts.add(record['Account Ref']);
+      if (spend > 0) {
+        acc[dept].activeAccounts.add(record['Account Ref']);
+      }
+    }
+    
+    return acc;
+  }, {});
+  
+  // Calculate overall totals across all departments
+  let totalSpend = 0;
+  let totalProfit = 0;
+  let totalPacks = 0;
+  const allAccounts = new Set<string>();
+  const allActiveAccounts = new Set<string>();
+  const departments: string[] = [];
+  
+  Object.entries(departmentData).forEach(([dept, data]) => {
+    departments.push(dept);
+    totalSpend += data.spend;
+    totalProfit += data.profit;
+    totalPacks += data.packs;
+    
+    data.accounts.forEach(account => allAccounts.add(String(account)));
+    data.activeAccounts.forEach(account => allActiveAccounts.add(String(account)));
+  });
+  
+  // Create the final rep summary
+  const summary: RepSummary = {
+    name: repName,
+    departments: departments,
+    totalSpend: totalSpend,
+    totalProfit: totalProfit,
+    margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
+    totalPacks: totalPacks,
+    totalAccounts: allAccounts.size,
+    activeAccounts: allActiveAccounts.size,
+    profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0
+  };
+  
+  console.log(`Processed details for rep ${repName}:`, {
+    totalSpend: summary.totalSpend,
+    totalProfit: summary.totalProfit,
+    margin: summary.margin,
+    departments: summary.departments
+  });
+  
+  return summary;
+};
+
+// Process all data to get metrics for a month - consistently calculating across all data
+const processMonthData = (allData) => {
+  if (!allData || allData.length === 0) return null;
+  
+  // Calculate overall metrics
+  const metrics: OverallMetrics = {
+    totalSpend: 0,
+    totalProfit: 0,
+    averageMargin: 0,
+    totalPacks: 0,
+    totalAccounts: new Set<string>(),
+    activeAccounts: new Set<string>(),
+    topPerformersByProfit: [],
+    topPerformersByMargin: [],
+    bottomPerformersByProfit: [],
+    bottomPerformersByMargin: [],
+    departmentBreakdown: {}
+  };
+  
+  // Group by department for breakdown
+  const departmentBreakdown: Record<string, {
+    spend: number,
+    profit: number,
+    packs: number,
+    accounts: Set<string>,
+    activeAccounts: Set<string>
+  }> = {};
+  
+  // Aggregate data
+  allData.forEach(record => {
+    const dept = record.Department || 'Unknown';
+    const spend = Number(record.Spend || 0);
+    const profit = Number(record.Profit || 0);
+    const packs = Number(record.Packs || 0);
+    
+    // Add to overall totals
+    metrics.totalSpend += spend;
+    metrics.totalProfit += profit;
+    metrics.totalPacks += packs;
+    
+    // Track accounts
+    if (record['Account Ref']) {
+      metrics.totalAccounts.add(record['Account Ref']);
+      if (spend > 0) {
+        metrics.activeAccounts.add(record['Account Ref']);
+      }
+    }
+    
+    // Department breakdown
+    if (!departmentBreakdown[dept]) {
+      departmentBreakdown[dept] = {
+        spend: 0,
+        profit: 0,
+        packs: 0,
+        accounts: new Set<string>(),
+        activeAccounts: new Set<string>()
+      };
+    }
+    
+    departmentBreakdown[dept].spend += spend;
+    departmentBreakdown[dept].profit += profit;
+    departmentBreakdown[dept].packs += packs;
+    
+    if (record['Account Ref']) {
+      departmentBreakdown[dept].accounts.add(record['Account Ref']);
+      if (spend > 0) {
+        departmentBreakdown[dept].activeAccounts.add(record['Account Ref']);
+      }
+    }
+  });
+  
+  // Calculate average margin
+  metrics.averageMargin = metrics.totalSpend > 0 ? (metrics.totalProfit / metrics.totalSpend) * 100 : 0;
+  
+  // Format department breakdown for output
+  const formattedDeptBreakdown = Object.entries(departmentBreakdown).map(([dept, data]) => ({
+    department: dept,
+    spend: data.spend,
+    profit: data.profit,
+    margin: data.spend > 0 ? (data.profit / data.spend) * 100 : 0,
+    packs: data.packs,
+    accounts: data.accounts.size,
+    activeAccounts: data.activeAccounts.size
+  }));
+  
+  // Process sales reps - ONLY include actual reps, not departments
+  const repProfitMap = new Map<string, number>();
+  const repMarginMap = new Map<string, { spend: number, profit: number }>();
+  const repPacksMap = new Map<string, number>();
+  const repSet = new Set<string>();
+  
+  // First, gather all rep names (from both Rep and Sub-Rep fields)
+  allData.forEach(record => {
+    if (record.Rep && !isDepartment(record.Rep)) {
+      repSet.add(record.Rep);
+    }
+    if (record['Sub-Rep'] && record['Sub-Rep'].trim() !== '') {
+      repSet.add(record['Sub-Rep']);
+    }
+  });
+  
+  // Then, calculate totals for each rep (combining data where they appear as Rep or Sub-Rep)
+  Array.from(repSet).forEach(rep => {
+    let totalProfit = 0;
+    let totalSpend = 0;
+    let totalPacks = 0;
+    
+    // Add data where the person is listed as Rep
+    allData.forEach(record => {
+      if (record.Rep === rep) {
+        totalProfit += Number(record.Profit || 0);
+        totalSpend += Number(record.Spend || 0);
+        totalPacks += Number(record.Packs || 0);
+      }
+    });
+    
+    // Add data where the person is listed as Sub-Rep
+    allData.forEach(record => {
+      if (record['Sub-Rep'] === rep) {
+        totalProfit += Number(record.Profit || 0);
+        totalSpend += Number(record.Spend || 0);
+        totalPacks += Number(record.Packs || 0);
+      }
+    });
+    
+    repProfitMap.set(rep, totalProfit);
+    repMarginMap.set(rep, { 
+      spend: totalSpend, 
+      profit: totalProfit 
+    });
+    repPacksMap.set(rep, totalPacks);
+  });
+  
+  // Convert to arrays and sort for top performers
+  let topByProfit = Array.from(repProfitMap.entries())
+    .filter(([rep, profit]) => !isDepartment(rep) && profit > 0) // Filter out departments and zero profits
+    .map(([rep, profit]) => ({
+      rep,
+      profit
+    }))
+    .sort((a, b) => b.profit - a.profit)
+    .slice(0, 5);
+  
+  let topByMargin = Array.from(repMarginMap.entries())
+    .filter(([rep, { spend, profit }]) => !isDepartment(rep) && spend > 0 && profit > 0) // Filter valid entries
+    .map(([rep, { spend, profit }]) => ({
+      rep,
+      margin: spend > 0 ? (profit / spend) * 100 : 0
+    }))
+    .filter(item => item.margin > 0)
+    .sort((a, b) => b.margin - a.margin)
+    .slice(0, 5);
+  
+  // Get bottom performers (worst performers)
+  let bottomByProfit = Array.from(repProfitMap.entries())
+    .filter(([rep, profit]) => !isDepartment(rep) && profit !== 0) // Filter out departments and zero profits
+    .map(([rep, profit]) => ({
+      rep,
+      profit
+    }))
+    .sort((a, b) => a.profit - b.profit) // Sort ascending for worst
+    .slice(0, 5);
+  
+  let bottomByMargin = Array.from(repMarginMap.entries())
+    .filter(([rep, { spend, profit }]) => !isDepartment(rep) && spend > 0) // Filter valid entries
+    .map(([rep, { spend, profit }]) => ({
+      rep,
+      margin: spend > 0 ? (profit / spend) * 100 : 0
+    }))
+    .sort((a, b) => a.margin - b.margin) // Sort ascending for worst
+    .slice(0, 5);
+  
+  metrics.topPerformersByProfit = topByProfit;
+  metrics.topPerformersByMargin = topByMargin;
+  metrics.bottomPerformersByProfit = bottomByProfit;
+  metrics.bottomPerformersByMargin = bottomByMargin;
+  metrics.departmentBreakdown = formattedDeptBreakdown;
+  
+  console.log("Calculated overall metrics:", {
+    totalProfit: metrics.totalProfit,
+    totalSpend: metrics.totalSpend,
+    averageMargin: metrics.averageMargin,
+    totalAccounts: metrics.totalAccounts.size,
+    activeAccounts: metrics.activeAccounts.size,
+    departmentBreakdown: Object.keys(departmentBreakdown).length
+  });
+  
+  return metrics;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -158,536 +445,215 @@ serve(async (req) => {
       'february': 'sales_data_februrary'
     };
     
-    const month = selectedMonth?.toLowerCase() || 'march'; // Default to March if not specified
-    const tableName = tables[month] || tables.march;
+    // Gather data for both months for comparison
+    const marchData = await fetchAllData(supabase, tables.march);
+    const februaryData = await fetchAllData(supabase, tables.february);
     
-    console.log(`Querying table: ${tableName} for month: ${month}`);
+    console.log(`Fetched March data: ${marchData.length} records`);
+    console.log(`Fetched February data: ${februaryData.length} records`);
     
-    // Get sales data for the specified month
-    let salesData;
-    let topSalesPeople;
-    let repDetails: RepSummary | null = null;
-    let overallMetrics: OverallMetrics | null = null;
-
-    try {
-      // Check if the query is asking about overall metrics
-      const isOverallQuery = /total|overall|all|combined|everyone|across all|summary/i.test(message);
-      
-      // Check if the query is asking about a specific department
-      const departmentMatch = message.match(/(?:about|for|on|in|from)\s+(reva|retail|wholesale)/i);
-      const departmentName = departmentMatch ? departmentMatch[1] : null;
-      
-      // Extract any rep name mentioned in the message for detailed lookup
-      const repNameMatch = message.match(/(?:about|on|for|by)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
-      const repName = repNameMatch ? repNameMatch[1] : null;
-      
-      // Fetch all data for each department
-      console.log("Fetching data for all departments...");
-      let retailData = await fetchDepartmentData(supabase, tableName, 'RETAIL');
-      let revaData = await fetchDepartmentData(supabase, tableName, 'REVA');
-      let wholesaleData = await fetchDepartmentData(supabase, tableName, 'Wholesale');
-      
-      // Combine all department data
-      const allData = [...retailData, ...revaData, ...wholesaleData];
-      console.log(`Total combined records from all departments: ${allData.length}`);
-      
-      // If asking about overall metrics, get that data
-      if (isOverallQuery) {
-        console.log("Detected query for overall metrics");
-        
-        if (allData && allData.length > 0) {
-          // Calculate overall metrics
-          const metrics: OverallMetrics = {
-            totalSpend: 0,
-            totalProfit: 0,
-            averageMargin: 0,
-            totalPacks: 0,
-            totalAccounts: new Set<string>(),
-            activeAccounts: new Set<string>(),
-            topPerformersByProfit: [],
-            topPerformersByMargin: [],
-            bottomPerformersByProfit: [], // New field for worst performers
-            bottomPerformersByMargin: [], // New field for worst performers
-            departmentBreakdown: {}
-          };
-          
-          // Group by department for breakdown
-          const departmentBreakdown: Record<string, {
-            spend: number,
-            profit: number,
-            packs: number,
-            accounts: Set<string>,
-            activeAccounts: Set<string>
-          }> = {};
-          
-          // Aggregate data
-          allData.forEach(record => {
-            const dept = record.Department || 'Unknown';
-            const spend = Number(record.Spend || 0);
-            const profit = Number(record.Profit || 0);
-            const packs = Number(record.Packs || 0);
-            
-            // Add to overall totals
-            metrics.totalSpend += spend;
-            metrics.totalProfit += profit;
-            metrics.totalPacks += packs;
-            
-            // Track accounts
-            if (record['Account Ref']) {
-              metrics.totalAccounts.add(record['Account Ref']);
-              if (spend > 0) {
-                metrics.activeAccounts.add(record['Account Ref']);
-              }
-            }
-            
-            // Department breakdown
-            if (!departmentBreakdown[dept]) {
-              departmentBreakdown[dept] = {
-                spend: 0,
-                profit: 0,
-                packs: 0,
-                accounts: new Set<string>(),
-                activeAccounts: new Set<string>()
-              };
-            }
-            
-            departmentBreakdown[dept].spend += spend;
-            departmentBreakdown[dept].profit += profit;
-            departmentBreakdown[dept].packs += packs;
-            
-            if (record['Account Ref']) {
-              departmentBreakdown[dept].accounts.add(record['Account Ref']);
-              if (spend > 0) {
-                departmentBreakdown[dept].activeAccounts.add(record['Account Ref']);
-              }
-            }
-          });
-          
-          // Calculate average margin
-          metrics.averageMargin = metrics.totalSpend > 0 ? (metrics.totalProfit / metrics.totalSpend) * 100 : 0;
-          
-          // Format department breakdown for output
-          const formattedDeptBreakdown = Object.entries(departmentBreakdown).map(([dept, data]) => ({
-            department: dept,
-            spend: data.spend,
-            profit: data.profit,
-            margin: data.spend > 0 ? (data.profit / data.spend) * 100 : 0,
-            packs: data.packs,
-            accounts: data.accounts.size,
-            activeAccounts: data.activeAccounts.size
-          }));
-          
-          // Process sales reps - ONLY include actual reps, not departments
-          const repProfitMap = new Map<string, number>();
-          const repMarginMap = new Map<string, { spend: number, profit: number }>();
-          const repPacksMap = new Map<string, number>();
-          const repSet = new Set<string>();
-          
-          // First, gather all rep names (from both Rep and Sub-Rep fields)
-          allData.forEach(record => {
-            if (record.Rep && !isDepartment(record.Rep)) {
-              repSet.add(record.Rep);
-            }
-            if (record['Sub-Rep'] && record['Sub-Rep'].trim() !== '') {
-              repSet.add(record['Sub-Rep']);
-            }
-          });
-          
-          // Then, calculate totals for each rep (combining data where they appear as Rep or Sub-Rep)
-          Array.from(repSet).forEach(rep => {
-            let totalProfit = 0;
-            let totalSpend = 0;
-            let totalPacks = 0;
-            
-            // Add data where the person is listed as Rep
-            allData.forEach(record => {
-              if (record.Rep === rep) {
-                totalProfit += Number(record.Profit || 0);
-                totalSpend += Number(record.Spend || 0);
-                totalPacks += Number(record.Packs || 0);
-              }
-            });
-            
-            // Add data where the person is listed as Sub-Rep
-            allData.forEach(record => {
-              if (record['Sub-Rep'] === rep) {
-                totalProfit += Number(record.Profit || 0);
-                totalSpend += Number(record.Spend || 0);
-                totalPacks += Number(record.Packs || 0);
-              }
-            });
-            
-            repProfitMap.set(rep, totalProfit);
-            repMarginMap.set(rep, { 
-              spend: totalSpend, 
-              profit: totalProfit 
-            });
-            repPacksMap.set(rep, totalPacks);
-          });
-          
-          // Convert to arrays and sort for top performers
-          let topByProfit = Array.from(repProfitMap.entries())
-            .filter(([rep, profit]) => !isDepartment(rep) && profit > 0) // Filter out departments and zero profits
-            .map(([rep, profit]) => ({
-              rep,
-              profit
-            }))
-            .sort((a, b) => b.profit - a.profit)
-            .slice(0, 5);
-          
-          let topByMargin = Array.from(repMarginMap.entries())
-            .filter(([rep, { spend, profit }]) => !isDepartment(rep) && spend > 0 && profit > 0) // Filter valid entries
-            .map(([rep, { spend, profit }]) => ({
-              rep,
-              margin: spend > 0 ? (profit / spend) * 100 : 0
-            }))
-            .filter(item => item.margin > 0)
-            .sort((a, b) => b.margin - a.margin)
-            .slice(0, 5);
-          
-          // Get bottom performers (worst performers)
-          let bottomByProfit = Array.from(repProfitMap.entries())
-            .filter(([rep, profit]) => !isDepartment(rep) && profit !== 0) // Filter out departments and zero profits
-            .map(([rep, profit]) => ({
-              rep,
-              profit
-            }))
-            .sort((a, b) => a.profit - b.profit) // Sort ascending for worst
-            .slice(0, 5);
-          
-          let bottomByMargin = Array.from(repMarginMap.entries())
-            .filter(([rep, { spend, profit }]) => !isDepartment(rep) && spend > 0) // Filter valid entries
-            .map(([rep, { spend, profit }]) => ({
-              rep,
-              margin: spend > 0 ? (profit / spend) * 100 : 0
-            }))
-            .sort((a, b) => a.margin - b.margin) // Sort ascending for worst
-            .slice(0, 5);
-          
-          metrics.topPerformersByProfit = topByProfit;
-          metrics.topPerformersByMargin = topByMargin;
-          metrics.bottomPerformersByProfit = bottomByProfit;
-          metrics.bottomPerformersByMargin = bottomByMargin;
-          metrics.departmentBreakdown = formattedDeptBreakdown;
-          
-          overallMetrics = metrics;
-          
-          console.log("Calculated overall metrics:", {
-            totalProfit: metrics.totalProfit,
-            totalSpend: metrics.totalSpend,
-            averageMargin: metrics.averageMargin,
-            totalAccounts: metrics.totalAccounts.size,
-            activeAccounts: metrics.activeAccounts.size,
-            departmentBreakdown: Object.keys(departmentBreakdown).length
-          });
-        }
+    // Process month data for consistent metrics
+    const marchMetrics = processMonthData(marchData);
+    const februaryMetrics = processMonthData(februaryData);
+    
+    // Extract rep names from both months for processing
+    const allReps = new Set<string>();
+    [...marchData, ...februaryData].forEach(record => {
+      if (record.Rep && !isDepartment(record.Rep)) {
+        allReps.add(record.Rep);
       }
-      
-      // If asking about a specific department
-      if (departmentName) {
-        console.log(`Detected query about the ${departmentName} department`);
-        
-        // Normalize department name for case-insensitive matching
-        const normalizedDeptName = departmentName.toUpperCase();
-        let deptData = [];
-        
-        if (normalizedDeptName === 'REVA') {
-          deptData = revaData;
-        } else if (normalizedDeptName === 'WHOLESALE') {
-          deptData = wholesaleData;
-        } else if (normalizedDeptName === 'RETAIL') {
-          deptData = retailData;
-        }
-        
-        if (deptData && deptData.length > 0) {
-          console.log(`Found ${deptData.length} records for ${departmentName} department`);
-          
-          // Calculate department metrics
-          let totalSpend = 0;
-          let totalProfit = 0;
-          let totalPacks = 0;
-          const allAccounts = new Set<string>();
-          const activeAccounts = new Set<string>();
-          
-          deptData.forEach(record => {
-            const spend = Number(record.Spend || 0);
-            const profit = Number(record.Profit || 0);
-            const packs = Number(record.Packs || 0);
-            
-            totalSpend += spend;
-            totalProfit += profit;
-            totalPacks += packs;
-            
-            if (record['Account Ref']) {
-              allAccounts.add(record['Account Ref']);
-              if (spend > 0) {
-                activeAccounts.add(record['Account Ref']);
-              }
-            }
-          });
-          
-          // Create department summary
-          repDetails = {
-            name: departmentName,
-            departments: [departmentName],
-            totalSpend: totalSpend,
-            totalProfit: totalProfit,
-            margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
-            totalPacks: totalPacks,
-            totalAccounts: allAccounts.size,
-            activeAccounts: activeAccounts.size,
-            profitPerActiveAccount: activeAccounts.size > 0 ? totalProfit / activeAccounts.size : 0
-          };
-          
-          console.log(`Found details for department ${departmentName}:`, {
-            totalSpend: repDetails.totalSpend,
-            totalProfit: repDetails.totalProfit,
-            margin: repDetails.margin
-          });
-        } else {
-          console.log(`No data found for department ${departmentName}`);
-        }
+      if (record['Sub-Rep'] && record['Sub-Rep'].trim() !== '') {
+        allReps.add(record['Sub-Rep']);
       }
+    });
+    
+    // Process rep data for both months for consistency
+    const repDetails: Record<string, { 
+      march: RepSummary | null, 
+      february: RepSummary | null 
+    }> = {};
+    
+    Array.from(allReps).forEach(rep => {
+      const marchRepData = processRepData(marchData, rep);
+      const februaryRepData = processRepData(februaryData, rep);
       
-      // If a specific rep is mentioned, get their details across all departments
-      if (repName) {
-        console.log(`Looking for data on rep: ${repName}`);
-        
-        // Process the combined dataset for this rep (from both Rep and Sub-Rep columns)
-        const repData = allData.filter(record => {
-          return (record.Rep && record.Rep.toLowerCase().includes(repName.toLowerCase())) || 
-                 (record['Sub-Rep'] && record['Sub-Rep'].toLowerCase().includes(repName.toLowerCase()));
-        });
-        
-        if (repData && repData.length > 0) {
-          console.log(`Found ${repData.length} records for ${repName}`);
-          
-          // Group by department to show the breakdown
-          const departmentData = repData.reduce((acc, record) => {
-            const dept = record.Department || 'Unknown';
-            if (!acc[dept]) {
-              acc[dept] = { 
-                spend: 0, 
-                profit: 0, 
-                packs: 0, 
-                accounts: new Set(), 
-                activeAccounts: new Set(),
-              };
-            }
-            
-            const spend = Number(record.Spend || 0);
-            const profit = Number(record.Profit || 0);
-            const packs = Number(record.Packs || 0);
-            
-            acc[dept].spend += spend;
-            acc[dept].profit += profit;
-            acc[dept].packs += packs;
-            
-            if (record['Account Ref']) {
-              acc[dept].accounts.add(record['Account Ref']);
-              if (spend > 0) {
-                acc[dept].activeAccounts.add(record['Account Ref']);
-              }
-            }
-            
-            return acc;
-          }, {});
-          
-          // Calculate overall totals across all departments
-          let totalSpend = 0;
-          let totalProfit = 0;
-          let totalPacks = 0;
-          const allAccounts = new Set<string>();
-          const allActiveAccounts = new Set<string>();
-          const departments: string[] = [];
-          
-          Object.entries(departmentData).forEach(([dept, data]) => {
-            departments.push(dept);
-            totalSpend += data.spend;
-            totalProfit += data.profit;
-            totalPacks += data.packs;
-            
-            data.accounts.forEach(account => allAccounts.add(String(account)));
-            data.activeAccounts.forEach(account => allActiveAccounts.add(String(account)));
-          });
-          
-          // Create the final rep summary
-          repDetails = {
-            name: repName,
-            departments: departments,
-            totalSpend: totalSpend,
-            totalProfit: totalProfit,
-            margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
-            totalPacks: totalPacks,
-            totalAccounts: allAccounts.size,
-            activeAccounts: allActiveAccounts.size,
-            profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0
-          };
-          
-          console.log(`Found details for rep ${repName}:`, {
-            totalSpend: repDetails.totalSpend,
-            totalProfit: repDetails.totalProfit,
-            margin: repDetails.margin,
-            departments: repDetails.departments
-          });
-        } else {
-          console.log(`No data found for rep ${repName}`);
-        }
+      if (marchRepData || februaryRepData) {
+        repDetails[rep] = {
+          march: marchRepData,
+          february: februaryRepData
+        };
       }
-      
-      // Process all data to get top and bottom sales people by profit
-      const repProfits: Record<string, number> = {};
-      const repMargins: Record<string, { profit: number, spend: number }> = {};
-      
-      // First collect all rep names (whether in Rep or Sub-Rep columns)
-      // making sure to exclude departments like Wholesale and REVA
-      const allReps = new Set<string>();
-      allData.forEach(record => {
-        if (record.Rep && !isDepartment(record.Rep)) {
-          allReps.add(record.Rep);
-        }
-        if (record["Sub-Rep"] && record["Sub-Rep"].trim() !== '') {
-          allReps.add(record["Sub-Rep"]);
-        }
-      });
-      
-      // Calculate totals for each rep (combining both Rep and Sub-Rep appearances)
-      Array.from(allReps).forEach(repName => {
-        let totalProfit = 0;
-        let totalSpend = 0;
-        
-        // Add data where they appear as Rep
-        allData.forEach(record => {
-          if (record.Rep === repName) {
-            totalProfit += Number(record.Profit || 0);
-            totalSpend += Number(record.Spend || 0);
-          }
-        });
-        
-        // Add data where they appear as Sub-Rep
-        allData.forEach(record => {
-          if (record["Sub-Rep"] === repName) {
-            totalProfit += Number(record.Profit || 0);
-            totalSpend += Number(record.Spend || 0);
-          }
-        });
-        
-        repProfits[repName] = totalProfit;
-        repMargins[repName] = { profit: totalProfit, spend: totalSpend };
-      });
-      
-      // Sort and get top performers
-      const topByProfit = Object.entries(repProfits)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([rep, profit]) => ({ Rep: rep, Profit: profit, Department: "Combined" }));
-        
-      const topByMargin = Object.entries(repMargins)
-        .map(([rep, { profit, spend }]) => ({ 
-          Rep: rep, 
-          Margin: spend > 0 ? (profit / spend) * 100 : 0,
-          Department: "Combined"
-        }))
-        .sort((a, b) => b.Margin - a.Margin)
-        .slice(0, 5);
-
-      // Sort and get bottom performers
-      const bottomByProfit = Object.entries(repProfits)
-        .filter(([_, profit]) => profit !== 0) // Filter out zero profits for meaningful results
-        .sort((a, b) => a[1] - b[1])
-        .slice(0, 5)
-        .map(([rep, profit]) => ({ Rep: rep, Profit: profit, Department: "Combined" }));
-        
-      const bottomByMargin = Object.entries(repMargins)
-        .filter(([_, { spend }]) => spend > 0) // Filter for meaningful margins
-        .map(([rep, { profit, spend }]) => ({ 
-          Rep: rep, 
-          Margin: spend > 0 ? (profit / spend) * 100 : 0,
-          Department: "Combined"
-        }))
-        .sort((a, b) => a.Margin - b.Margin)
-        .slice(0, 5);
-      
-      topSalesPeople = {
-        byProfit: topByProfit,
-        byMargin: topByMargin,
-        bottomByProfit: bottomByProfit,
-        bottomByMargin: bottomByMargin
+    });
+    
+    // Calculate month-over-month changes for each rep
+    const repChanges: Record<string, {
+      profit: {
+        amount: number;
+        percent: number;
       };
+      margin: {
+        amount: number;
+      };
+    }> = {};
+    
+    Object.entries(repDetails).forEach(([rep, data]) => {
+      if (data.march && data.february) {
+        const profitChange = data.march.totalProfit - data.february.totalProfit;
+        const profitPercent = data.february.totalProfit !== 0 ? 
+          (profitChange / data.february.totalProfit) * 100 : 0;
+        
+        const marginChange = data.march.margin - data.february.margin;
+        
+        repChanges[rep] = {
+          profit: {
+            amount: profitChange,
+            percent: profitPercent
+          },
+          margin: {
+            amount: marginChange
+          }
+        };
+      }
+    });
+    
+    // Calculate overall month-over-month change
+    let monthOverMonthChange = null;
+    if (marchMetrics && februaryMetrics) {
+      const profitChange = marchMetrics.totalProfit - februaryMetrics.totalProfit;
+      const profitPercent = februaryMetrics.totalProfit !== 0 ?
+        (profitChange / februaryMetrics.totalProfit) * 100 : 0;
       
-      // Sample of general sales data for context (reduced to bare minimum)
-      salesData = allData.slice(0, 3);
-      
-      console.log(`Successfully processed sales data for ${month}`);
-      console.log("Top performers by profit:", JSON.stringify(topByProfit.slice(0, 3)));
-      console.log("Bottom performers by profit:", JSON.stringify(bottomByProfit.slice(0, 3)));
-      
-    } catch (error) {
-      console.error(`Error processing sales data from ${tableName}:`, error);
-      salesData = `Unable to process sales data from ${tableName}: ${error.message}`;
-      topSalesPeople = "Data unavailable";
+      monthOverMonthChange = {
+        profit: {
+          amount: profitChange,
+          percent: profitPercent
+        },
+        margin: {
+          amount: marchMetrics.averageMargin - februaryMetrics.averageMargin
+        }
+      };
     }
 
-    // Check if the message is asking about worst performers
+    // Extract any rep name mentioned in the message for detailed lookup
+    const repNameMatch = message.match(/(?:about|on|for|by|craig|murray|john|david|simon|laura|paul|steven)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i) || 
+                          message.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)'s/i);
+    let repName = repNameMatch ? repNameMatch[1] : null;
+    
+    // Special case: check for common names directly
+    const commonRepNames = ['Craig', 'Murray', 'John', 'David', 'Simon', 'Laura', 'Paul', 'Steven', 
+                           'Craig McDowall', 'Murray Glasgow'];
+    
+    for (const name of commonRepNames) {
+      if (message.toLowerCase().includes(name.toLowerCase())) {
+        repName = name;
+        break;
+      }
+    }
+    
+    // Determine if asking for top or bottom performers
+    const isAskingAboutTop = /top|best|highest|leading|most profitable/i.test(message);
     const isAskingAboutWorst = /worst|lowest|poorest|bottom|weakest/i.test(message);
-    const isAskingAboutPerformance = /perform|sales|profit|margin/i.test(message);
+    const isAskingComparison = /compare|comparison|versus|vs|difference|change|growth|increased|decreased/i.test(message);
+    
+    // Determine if asking about a specific month
+    const isAskingAboutMarch = /march/i.test(message);
+    const isAskingAboutFebruary = /february|feb/i.test(message);
+    
+    // Default to March if no month specified
+    const targetMonth = isAskingAboutFebruary ? 'february' : 'march';
 
     // Prepare a system prompt with data context
     const systemPrompt = `
 You are Vera, a sales data analysis assistant specialized in helping sales managers understand their rep performance data.
-You have access to sales data for ${selectedMonth || 'March'} 2025.
+You have access to sales data for both February and March 2025.
+
+IMPORTANT: Always provide CONSISTENT and ACCURATE data by using the combined totals across all departments (Retail, REVA, and Wholesale) for any rep mentioned.
 
 Here's key information from the data:
-1. Top performers by profit in ${selectedMonth || 'March'} 2025:
-${JSON.stringify(topSalesPeople?.byProfit || 'Data unavailable')}
 
-2. Top performers by margin in ${selectedMonth || 'March'} 2025:
-${JSON.stringify(topSalesPeople?.byMargin || 'Data unavailable')}
+1. Top performers by profit in March 2025:
+${JSON.stringify(marchMetrics?.topPerformersByProfit || 'Data unavailable')}
 
-3. Worst performers by profit in ${selectedMonth || 'March'} 2025:
-${JSON.stringify(topSalesPeople?.bottomByProfit || 'Data unavailable')}
+2. Top performers by margin in March 2025:
+${JSON.stringify(marchMetrics?.topPerformersByMargin || 'Data unavailable')}
 
-4. Worst performers by margin in ${selectedMonth || 'March'} 2025:
-${JSON.stringify(topSalesPeople?.bottomByMargin || 'Data unavailable')}
+3. Worst performers by profit in March 2025:
+${JSON.stringify(marchMetrics?.bottomPerformersByProfit || 'Data unavailable')}
 
-${overallMetrics ? `
-5. Overall metrics for ${selectedMonth || 'March'} 2025:
+4. Worst performers by margin in March 2025:
+${JSON.stringify(marchMetrics?.bottomPerformersByMargin || 'Data unavailable')}
 
-Total Spend: ${overallMetrics.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-Total Profit: ${overallMetrics.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-Average Margin: ${overallMetrics.averageMargin.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
-Total Packs: ${overallMetrics.totalPacks.toLocaleString('en-US')}
-Total Accounts: ${overallMetrics.totalAccounts.size}
-Active Accounts: ${overallMetrics.activeAccounts.size}
+5. Top performers by profit in February 2025:
+${JSON.stringify(februaryMetrics?.topPerformersByProfit || 'Data unavailable')}
 
-Department Breakdown:
-${JSON.stringify(overallMetrics.departmentBreakdown, null, 2)}
+6. Top performers by margin in February 2025:
+${JSON.stringify(februaryMetrics?.topPerformersByMargin || 'Data unavailable')}
 
-Top Performers by Profit:
-${JSON.stringify(overallMetrics.topPerformersByProfit, null, 2)}
+7. Worst performers by profit in February 2025:
+${JSON.stringify(februaryMetrics?.bottomPerformersByProfit || 'Data unavailable')}
 
-Bottom Performers by Profit:
-${JSON.stringify(overallMetrics.bottomPerformersByProfit, null, 2)}
+8. Worst performers by margin in February 2025:
+${JSON.stringify(februaryMetrics?.bottomPerformersByMargin || 'Data unavailable')}
 
-Top Performers by Margin:
-${JSON.stringify(overallMetrics.topPerformersByMargin, null, 2)}
+${marchMetrics ? `
+9. Overall metrics for March 2025:
 
-Bottom Performers by Margin:
-${JSON.stringify(overallMetrics.bottomPerformersByMargin, null, 2)}
+Total Spend: ${marchMetrics.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Total Profit: ${marchMetrics.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Average Margin: ${marchMetrics.averageMargin.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
+Total Packs: ${marchMetrics.totalPacks.toLocaleString('en-US')}
+Total Accounts: ${marchMetrics.totalAccounts.size}
+Active Accounts: ${marchMetrics.activeAccounts.size}
 ` : ''}
 
-${repDetails ? `
-6. Specific details for ${repDetails.name}:
+${februaryMetrics ? `
+10. Overall metrics for February 2025:
 
-Key Performance Metrics:
+Total Spend: ${februaryMetrics.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Total Profit: ${februaryMetrics.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Average Margin: ${februaryMetrics.averageMargin.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
+Total Packs: ${februaryMetrics.totalPacks.toLocaleString('en-US')}
+Total Accounts: ${februaryMetrics.totalAccounts.size}
+Active Accounts: ${februaryMetrics.activeAccounts.size}
+` : ''}
 
-Total Spend: ${repDetails.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-Total Profit: ${repDetails.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-Margin: ${repDetails.margin.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
-Total Packs: ${repDetails.totalPacks.toLocaleString('en-US')}
-Total Accounts: ${repDetails.totalAccounts}
-Active Accounts: ${repDetails.activeAccounts}
-Profit per Active Account: ${repDetails.profitPerActiveAccount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+${monthOverMonthChange ? `
+11. Month-over-Month Change (March vs February):
+
+Profit Change: ${monthOverMonthChange.profit.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${monthOverMonthChange.profit.percent.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%)
+Margin Change: ${monthOverMonthChange.margin.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
+` : ''}
+
+${repName && repDetails[repName] ? `
+12. Specific details for ${repName}:
+
+FEBRUARY 2025 DATA:
+${repDetails[repName].february ? `
+Total Spend: ${repDetails[repName].february.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Total Profit: ${repDetails[repName].february.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Margin: ${repDetails[repName].february.margin.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
+Total Packs: ${repDetails[repName].february.totalPacks.toLocaleString('en-US')}
+Total Accounts: ${repDetails[repName].february.totalAccounts}
+Active Accounts: ${repDetails[repName].february.activeAccounts}
+Departments: ${repDetails[repName].february.departments.join(', ')}
+` : 'No February data available'}
+
+MARCH 2025 DATA:
+${repDetails[repName].march ? `
+Total Spend: ${repDetails[repName].march.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Total Profit: ${repDetails[repName].march.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Margin: ${repDetails[repName].march.margin.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
+Total Packs: ${repDetails[repName].march.totalPacks.toLocaleString('en-US')}
+Total Accounts: ${repDetails[repName].march.totalAccounts}
+Active Accounts: ${repDetails[repName].march.activeAccounts}
+Departments: ${repDetails[repName].march.departments.join(', ')}
+` : 'No March data available'}
+
+${repDetails[repName].february && repDetails[repName].march ? `
+MONTH-OVER-MONTH CHANGE:
+Profit Change: ${(repDetails[repName].march.totalProfit - repDetails[repName].february.totalProfit).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${((repDetails[repName].march.totalProfit - repDetails[repName].february.totalProfit) / repDetails[repName].february.totalProfit * 100).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%)
+Margin Change: ${(repDetails[repName].march.margin - repDetails[repName].february.margin).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
+` : ''}
 ` : ''}
 
 When answering:
@@ -699,24 +665,25 @@ When answering:
 6. NEVER FORMAT YOUR RESPONSE WITH MARKDOWN or any formatting symbols
 7. Use plain text formatting with proper line breaks and paragraphs
 8. If responding about a specific rep, use proper paragraph breaks between sections
-9. Do not mention the department unless specifically asked - just give combined results across all departments
-10. For rep performance, combine data where they appear as both Rep and Sub-Rep
+9. FOR CONSISTENT ANSWERS - Make sure to use a rep's TOTAL profit/margin across ALL departments (Retail, REVA, Wholesale combined)
+10. When comparing February to March, always give the exact amounts and percentage changes
 11. NEVER refer to Wholesale or REVA as sales reps - they are departments, not individuals
-12. If someone asks about "worst" performers, make sure to provide the bottom performers by profit data
 
 IMPORTANT FORMATTING RULES:
 - ALWAYS use £ (pound sterling) as currency symbol, not $ or any other currency
 - Never use any markdown formatting such as bold, italic, or headers
 - Never use any special characters like ** or ## for formatting
 
-${isAskingAboutWorst && isAskingAboutPerformance ? 'IMPORTANT: This question is specifically asking about the WORST performers, so be sure to provide the bottom performers by profit from the data.' : ''}
+${isAskingAboutWorst ? 'IMPORTANT: This question is specifically asking about the WORST performers, so be sure to provide the bottom performers by profit from the data.' : ''}
+${isAskingAboutTop ? 'IMPORTANT: This question is specifically asking about the TOP performers, so be sure to provide the top performers by profit from the data.' : ''}
+${repName ? `IMPORTANT: The user is asking about ${repName}. Make sure to use CONSISTENT data from the detailed breakdown provided above, showing COMBINED totals across all departments.` : ''}
+${isAskingComparison ? 'IMPORTANT: The user is asking for a comparison between February and March. Provide data for both months and calculate the differences.' : ''}
 
 Department Structure Info:
-- Retail is made up of all reps other than Wholesale and REVA
-- REVA is a distinct department with its own reps
-- Wholesale is a distinct department with its own reps
-- Rep level data should combine both Rep and Sub-Rep appearances for a complete view of individual performance
-- Remember that "REVA", "Reva", and "reva" all refer to the same department (case-insensitive)
+- The data is structured across multiple departments: Retail, REVA, and Wholesale
+- Rep level data combines all departments for a complete view of individual performance
+- Total figures combine all departments for the most accurate picture
+- When reporting on a specific rep, ALWAYS include their combined total across all departments
     `;
 
     // Call OpenAI API
