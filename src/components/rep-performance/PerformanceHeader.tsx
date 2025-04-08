@@ -21,7 +21,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ selectedMonth, se
         <br />
         Perform<span className="font-normal italic">a</span>nce
         <br />
-        <span className="red-gradient-text">Dashboard</span>
+        <span className="text-finance-red">Dashboard</span>
       </h1>
       <div className="mt-4 md:mt-8 text-right">
         <DropdownMenu>

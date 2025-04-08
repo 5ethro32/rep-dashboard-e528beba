@@ -88,7 +88,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
             <TabsTrigger 
               key={tabValue}
               value={tabValue} 
-              className="data-[state=active]:red-gradient-bg data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2"
+              className="data-[state=active]:bg-finance-red data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2"
             >
               {getTabLabel(tabValue)}
             </TabsTrigger>

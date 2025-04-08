@@ -181,15 +181,6 @@
   .fade-in {
     animation: fadeIn 0.5s ease-out forwards;
   }
-
-  /* Gradient styles */
-  .red-gradient-text {
-    @apply bg-gradient-to-r from-finance-redGradient-from to-finance-redGradient-to bg-clip-text text-transparent;
-  }
-  
-  .red-gradient-bg {
-    @apply bg-gradient-to-r from-finance-redGradient-from to-finance-redGradient-to;
-  }
   
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
