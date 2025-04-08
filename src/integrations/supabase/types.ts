@@ -60,6 +60,57 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_data_feb: {
+        Row: {
+          account_name: string
+          account_ref: string
+          cost: number
+          credit: number
+          id: number
+          import_date: string | null
+          margin: number
+          packs: number
+          profit: number
+          rep_name: string
+          rep_type: string
+          reporting_period: string
+          spend: number
+          sub_rep: string | null
+        }
+        Insert: {
+          account_name: string
+          account_ref: string
+          cost?: number
+          credit?: number
+          id?: number
+          import_date?: string | null
+          margin?: number
+          packs?: number
+          profit?: number
+          rep_name: string
+          rep_type?: string
+          reporting_period: string
+          spend?: number
+          sub_rep?: string | null
+        }
+        Update: {
+          account_name?: string
+          account_ref?: string
+          cost?: number
+          credit?: number
+          id?: number
+          import_date?: string | null
+          margin?: number
+          packs?: number
+          profit?: number
+          rep_name?: string
+          rep_type?: string
+          reporting_period?: string
+          spend?: number
+          sub_rep?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       combined_rep_performance: {
