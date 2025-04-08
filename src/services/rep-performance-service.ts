@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -11,7 +12,7 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data from Supabase...');
     
-    // Use string literal for table name to bypass TypeScript restrictions
+    // Use a type assertion to access the sales_data_march table
     const { data: allDataFromDb, error: dataError } = await supabase
       .from('sales_data_march')
       .select('*');
@@ -24,7 +25,17 @@ export const fetchRepPerformanceData = async () => {
     }
     
     // Debug: Log the raw data structure from Supabase
-    console.log('Raw data sample:', allDataFromDb[0]);
+    if (allDataFromDb.length > 0) {
+      console.log('First raw data item:', allDataFromDb[0]);
+      
+      // Calculate the total raw profit to verify data
+      const rawTotalProfit = allDataFromDb.reduce((sum, item) => {
+        const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+        return sum + profit;
+      }, 0);
+      
+      console.log('Raw total profit from database:', rawTotalProfit);
+    }
     
     // Map the sales_data_march table fields to our standard format
     const mappedData = allDataFromDb.map((item: any) => {
@@ -34,7 +45,7 @@ export const fetchRepPerformanceData = async () => {
       const cost = typeof item.Cost === 'string' ? parseFloat(item.Cost) : Number(item.Cost || 0);
       const credit = typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0);
       const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
-      const packs = typeof item.Packs === 'string' ? parseInt(item.Packs) : Number(item.Packs || 0);
+      const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
       
       return {
         id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
@@ -49,7 +60,7 @@ export const fetchRepPerformanceData = async () => {
         profit: profit,
         margin: margin,
         packs: packs,
-        rep_type: item.Department || 'RETAIL',
+        rep_type: item.Department ? item.Department.toUpperCase() : 'RETAIL',
         import_date: new Date().toISOString()
       };
     });
@@ -58,19 +69,29 @@ export const fetchRepPerformanceData = async () => {
     if (mappedData.length > 0) {
       console.log('First mapped item:', mappedData[0]);
       
-      // Calculate total profit to verify data is mapped correctly
-      const totalProfit = mappedData.reduce((total, item) => total + item.profit, 0);
-      console.log('Total calculated profit from mapped data:', totalProfit);
+      // Calculate total profit to verify mapping is correct
+      const totalMappedProfit = mappedData.reduce((total, item) => total + item.profit, 0);
+      console.log('Total calculated profit from mapped data:', totalMappedProfit);
     }
     
-    // Separate data by rep_type
-    const repDataFromDb = mappedData.filter(item => item.rep_type.toUpperCase() === 'RETAIL');
-    const revaDataFromDb = mappedData.filter(item => item.rep_type.toUpperCase() === 'REVA');
-    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type.toUpperCase() === 'WHOLESALE');
+    // Separate data by rep_type (using uppercase for consistency)
+    const repDataFromDb = mappedData.filter(item => (item.rep_type || '').toUpperCase() === 'RETAIL');
+    const revaDataFromDb = mappedData.filter(item => (item.rep_type || '').toUpperCase() === 'REVA');
+    const wholesaleDataFromDb = mappedData.filter(item => (item.rep_type || '').toUpperCase() === 'WHOLESALE');
     
     console.log('Retail data count:', repDataFromDb.length);
     console.log('REVA data count:', revaDataFromDb.length);
     console.log('Wholesale data count:', wholesaleDataFromDb.length);
+    
+    // Log segment profits to verify data split
+    const retailProfit = repDataFromDb.reduce((sum, item) => sum + item.profit, 0);
+    const revaProfit = revaDataFromDb.reduce((sum, item) => sum + item.profit, 0);
+    const wholesaleProfit = wholesaleDataFromDb.reduce((sum, item) => sum + item.profit, 0);
+    
+    console.log('Retail total profit:', retailProfit);
+    console.log('REVA total profit:', revaProfit);
+    console.log('Wholesale total profit:', wholesaleProfit);
+    console.log('Combined segment profit:', retailProfit + revaProfit + wholesaleProfit);
     
     // Process the retail data to RepData format
     const processedRepData = processRepData(repDataFromDb as SalesDataItem[] || []);
