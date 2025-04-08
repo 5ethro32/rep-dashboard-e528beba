@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { createClient } from '@supabase/supabase-js';
@@ -110,11 +109,12 @@ export const useRepPerformanceData = () => {
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState(defaultRepChanges);
   
-  // Initialize Supabase client
-  const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL || '',
-    import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-  );
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  
+  const supabase = supabaseUrl && supabaseAnonKey ? 
+    createClient(supabaseUrl, supabaseAnonKey) : 
+    null;
 
   useEffect(() => {
     const storedData = localStorage.getItem('repPerformanceData');
@@ -138,32 +138,31 @@ export const useRepPerformanceData = () => {
     }
   }, []);
 
-  // Function to load data from Supabase
   const loadDataFromSupabase = async () => {
     setIsLoading(true);
     try {
-      // Get rep data
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized. Please check your environment variables.');
+      }
+      
       const { data: repDataFromDb, error: repError } = await supabase
         .from('rep_data')
         .select('*');
       
       if (repError) throw new Error(`Error fetching rep data: ${repError.message}`);
       
-      // Get REVA data
       const { data: revaDataFromDb, error: revaError } = await supabase
         .from('reva_data')
         .select('*');
       
       if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
       
-      // Get wholesale data
       const { data: wholesaleDataFromDb, error: wholesaleError } = await supabase
         .from('wholesale_data')
         .select('*');
       
       if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
       
-      // Get summary data
       const { data: summaryDataFromDb, error: summaryError } = await supabase
         .from('summary_data')
         .select('*')
@@ -171,7 +170,6 @@ export const useRepPerformanceData = () => {
       
       if (summaryError) throw new Error(`Error fetching summary data: ${summaryError.message}`);
       
-      // Get changes data
       const { data: changesDataFromDb, error: changesError } = await supabase
         .from('changes_data')
         .select('*')
@@ -179,7 +177,6 @@ export const useRepPerformanceData = () => {
       
       if (changesError) throw new Error(`Error fetching changes data: ${changesError.message}`);
 
-      // Process and format the data from Supabase
       const formattedRepData = repDataFromDb.map((item: any) => ({
         rep: item.rep,
         spend: parseFloat(item.spend),
@@ -219,16 +216,13 @@ export const useRepPerformanceData = () => {
         activeRatio: parseFloat(item.activeRatio)
       }));
 
-      // Update state with data from Supabase
       setRepData(formattedRepData);
       setRevaData(formattedRevaData);
       setWholesaleData(formattedWholesaleData);
       
-      // Update overall data
       const combinedData = getCombinedRepData();
       setOverallData(combinedData);
 
-      // Update summary values
       if (summaryDataFromDb) {
         setBaseSummary({
           totalSpend: parseFloat(summaryDataFromDb.totalSpend),
@@ -258,7 +252,6 @@ export const useRepPerformanceData = () => {
         });
       }
 
-      // Update changes data
       if (changesDataFromDb) {
         setSummaryChanges({
           totalSpend: parseFloat(changesDataFromDb.totalSpend),
@@ -269,13 +262,11 @@ export const useRepPerformanceData = () => {
           averageMargin: parseFloat(changesDataFromDb.averageMargin)
         });
 
-        // Convert rep changes object from database format
         const repChangeData = changesDataFromDb.repChanges ? 
           JSON.parse(changesDataFromDb.repChanges) : defaultRepChanges;
         setRepChanges(repChangeData);
       }
 
-      // Save to localStorage for offline use
       localStorage.setItem('repPerformanceData', JSON.stringify({
         overallData: combinedData,
         repData: formattedRepData,

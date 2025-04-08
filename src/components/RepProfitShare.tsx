@@ -2,13 +2,15 @@
 import React from 'react';
 import DonutChart from './DonutChart';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Loader2 } from 'lucide-react';
 
 interface RepProfitShareProps {
   displayData: any[];
   repChanges: Record<string, any>;
+  isLoading?: boolean;
 }
 
-const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges }) => {
+const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges, isLoading }) => {
   const isMobile = useIsMobile();
   
   // Calculate total profit
@@ -68,13 +70,22 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
   return (
     <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg">
       <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Share</h3>
-      <div className="h-60 md:h-80">
-        <DonutChart 
-          data={dataToUse}
-          innerValue={`${totalProfit.toLocaleString()}`}
-          innerLabel="Total Profit"
-        />
-      </div>
+      {isLoading ? (
+        <div className="h-60 md:h-80 flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-8 w-8 animate-spin mb-2" />
+            <span className="text-sm text-finance-gray">Loading data...</span>
+          </div>
+        </div>
+      ) : (
+        <div className="h-60 md:h-80">
+          <DonutChart 
+            data={dataToUse}
+            innerValue={`${totalProfit.toLocaleString()}`}
+            innerLabel="Total Profit"
+          />
+        </div>
+      )}
     </div>
   );
 };
