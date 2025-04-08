@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
 // Default data values
@@ -108,13 +109,6 @@ export const useRepPerformanceData = () => {
   const [wholesaleValues, setWholesaleValues] = useState(defaultWholesaleValues);
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState(defaultRepChanges);
-  
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-  
-  const supabase = supabaseUrl && supabaseAnonKey ? 
-    createClient(supabaseUrl, supabaseAnonKey) : 
-    null;
 
   useEffect(() => {
     const storedData = localStorage.getItem('repPerformanceData');
@@ -142,27 +136,31 @@ export const useRepPerformanceData = () => {
     setIsLoading(true);
     try {
       if (!supabase) {
-        throw new Error('Supabase client is not initialized. Please check your environment variables.');
+        throw new Error('Supabase client is not initialized.');
       }
       
+      // Fetch rep data
       const { data: repDataFromDb, error: repError } = await supabase
         .from('rep_data')
         .select('*');
       
       if (repError) throw new Error(`Error fetching rep data: ${repError.message}`);
       
+      // Fetch REVA data
       const { data: revaDataFromDb, error: revaError } = await supabase
         .from('reva_data')
         .select('*');
       
       if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
       
+      // Fetch wholesale data
       const { data: wholesaleDataFromDb, error: wholesaleError } = await supabase
         .from('wholesale_data')
         .select('*');
       
       if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
       
+      // Fetch summary data
       const { data: summaryDataFromDb, error: summaryError } = await supabase
         .from('summary_data')
         .select('*')
@@ -170,6 +168,7 @@ export const useRepPerformanceData = () => {
       
       if (summaryError) throw new Error(`Error fetching summary data: ${summaryError.message}`);
       
+      // Fetch changes data
       const { data: changesDataFromDb, error: changesError } = await supabase
         .from('changes_data')
         .select('*')
@@ -177,7 +176,8 @@ export const useRepPerformanceData = () => {
       
       if (changesError) throw new Error(`Error fetching changes data: ${changesError.message}`);
 
-      const formattedRepData = repDataFromDb.map((item: any) => ({
+      // Format the data
+      const formattedRepData = repDataFromDb ? repDataFromDb.map((item: any) => ({
         rep: item.rep,
         spend: parseFloat(item.spend),
         profit: parseFloat(item.profit),
@@ -188,9 +188,9 @@ export const useRepPerformanceData = () => {
         profitPerActiveShop: parseFloat(item.profitPerActiveShop),
         profitPerPack: parseFloat(item.profitPerPack),
         activeRatio: parseFloat(item.activeRatio)
-      }));
+      })) : [];
 
-      const formattedRevaData = revaDataFromDb.map((item: any) => ({
+      const formattedRevaData = revaDataFromDb ? revaDataFromDb.map((item: any) => ({
         rep: item.rep,
         spend: parseFloat(item.spend),
         profit: parseFloat(item.profit),
@@ -201,9 +201,9 @@ export const useRepPerformanceData = () => {
         profitPerActiveShop: parseFloat(item.profitPerActiveShop),
         profitPerPack: parseFloat(item.profitPerPack),
         activeRatio: parseFloat(item.activeRatio)
-      }));
+      })) : [];
 
-      const formattedWholesaleData = wholesaleDataFromDb.map((item: any) => ({
+      const formattedWholesaleData = wholesaleDataFromDb ? wholesaleDataFromDb.map((item: any) => ({
         rep: item.rep,
         spend: parseFloat(item.spend),
         profit: parseFloat(item.profit),
@@ -214,64 +214,78 @@ export const useRepPerformanceData = () => {
         profitPerActiveShop: parseFloat(item.profitPerActiveShop),
         profitPerPack: parseFloat(item.profitPerPack),
         activeRatio: parseFloat(item.activeRatio)
-      }));
+      })) : [];
 
-      setRepData(formattedRepData);
-      setRevaData(formattedRevaData);
-      setWholesaleData(formattedWholesaleData);
+      if (formattedRepData.length > 0) setRepData(formattedRepData);
+      if (formattedRevaData.length > 0) setRevaData(formattedRevaData);
+      if (formattedWholesaleData.length > 0) setWholesaleData(formattedWholesaleData);
       
-      const combinedData = getCombinedRepData();
+      // Update overall data
+      const combinedData = getCombinedRepData(
+        formattedRepData.length > 0 ? formattedRepData : repData,
+        formattedRevaData.length > 0 ? formattedRevaData : revaData,
+        formattedWholesaleData.length > 0 ? formattedWholesaleData : wholesaleData,
+        includeReva,
+        includeWholesale
+      );
       setOverallData(combinedData);
 
+      // Update summary data
       if (summaryDataFromDb) {
-        setBaseSummary({
+        const formattedSummary = {
           totalSpend: parseFloat(summaryDataFromDb.totalSpend),
           totalProfit: parseFloat(summaryDataFromDb.totalProfit),
           totalPacks: parseInt(summaryDataFromDb.totalPacks),
           totalAccounts: parseInt(summaryDataFromDb.totalAccounts),
           activeAccounts: parseInt(summaryDataFromDb.activeAccounts),
           averageMargin: parseFloat(summaryDataFromDb.averageMargin)
-        });
+        };
+        setBaseSummary(formattedSummary);
 
-        setRevaValues({
+        const formattedRevaValues = {
           totalSpend: parseFloat(summaryDataFromDb.revaSpend),
           totalProfit: parseFloat(summaryDataFromDb.revaProfit),
           totalPacks: parseInt(summaryDataFromDb.revaPacks),
           totalAccounts: parseInt(summaryDataFromDb.revaAccounts),
           activeAccounts: parseInt(summaryDataFromDb.revaActiveAccounts),
           averageMargin: parseFloat(summaryDataFromDb.revaMargin)
-        });
+        };
+        setRevaValues(formattedRevaValues);
 
-        setWholesaleValues({
+        const formattedWholesaleValues = {
           totalSpend: parseFloat(summaryDataFromDb.wholesaleSpend),
           totalProfit: parseFloat(summaryDataFromDb.wholesaleProfit),
           totalPacks: parseInt(summaryDataFromDb.wholesalePacks),
           totalAccounts: parseInt(summaryDataFromDb.wholesaleAccounts),
           activeAccounts: parseInt(summaryDataFromDb.wholesaleActiveAccounts),
           averageMargin: parseFloat(summaryDataFromDb.wholesaleMargin)
-        });
+        };
+        setWholesaleValues(formattedWholesaleValues);
       }
 
+      // Update changes data
       if (changesDataFromDb) {
-        setSummaryChanges({
+        const formattedSummaryChanges = {
           totalSpend: parseFloat(changesDataFromDb.totalSpend),
           totalProfit: parseFloat(changesDataFromDb.totalProfit),
           totalPacks: parseFloat(changesDataFromDb.totalPacks),
           totalAccounts: parseFloat(changesDataFromDb.totalAccounts),
           activeAccounts: parseFloat(changesDataFromDb.activeAccounts),
           averageMargin: parseFloat(changesDataFromDb.averageMargin)
-        });
+        };
+        setSummaryChanges(formattedSummaryChanges);
 
         const repChangeData = changesDataFromDb.repChanges ? 
           JSON.parse(changesDataFromDb.repChanges) : defaultRepChanges;
         setRepChanges(repChangeData);
       }
 
+      // Save data to localStorage
       localStorage.setItem('repPerformanceData', JSON.stringify({
         overallData: combinedData,
-        repData: formattedRepData,
-        revaData: formattedRevaData,
-        wholesaleData: formattedWholesaleData,
+        repData: formattedRepData.length > 0 ? formattedRepData : repData,
+        revaData: formattedRevaData.length > 0 ? formattedRevaData : revaData,
+        wholesaleData: formattedWholesaleData.length > 0 ? formattedWholesaleData : wholesaleData,
         baseSummary: summaryDataFromDb ? {
           totalSpend: parseFloat(summaryDataFromDb.totalSpend),
           totalProfit: parseFloat(summaryDataFromDb.totalProfit),
@@ -308,6 +322,7 @@ export const useRepPerformanceData = () => {
           JSON.parse(changesDataFromDb.repChanges) : repChanges
       }));
 
+      console.log("Successfully loaded data from Supabase");
       return true;
     } catch (error) {
       console.error('Error loading data from Supabase:', error);
@@ -322,11 +337,17 @@ export const useRepPerformanceData = () => {
     }
   };
 
-  const getCombinedRepData = () => {
-    const combinedData = JSON.parse(JSON.stringify(repData));
+  const getCombinedRepData = (
+    baseRepData = repData,
+    baseRevaData = revaData,
+    baseWholesaleData = wholesaleData,
+    includeRevaData = includeReva,
+    includeWholesaleData = includeWholesale
+  ) => {
+    const combinedData = JSON.parse(JSON.stringify(baseRepData));
     
-    if (includeReva) {
-      revaData.forEach(revaItem => {
+    if (includeRevaData) {
+      baseRevaData.forEach(revaItem => {
         const repIndex = combinedData.findIndex((rep: any) => rep.rep === revaItem.rep);
         
         if (repIndex >= 0) {
@@ -358,8 +379,8 @@ export const useRepPerformanceData = () => {
       });
     }
     
-    if (includeWholesale) {
-      wholesaleData.forEach(wholesaleItem => {
+    if (includeWholesaleData) {
+      baseWholesaleData.forEach(wholesaleItem => {
         const repIndex = combinedData.findIndex((rep: any) => rep.rep === wholesaleItem.rep);
         
         if (repIndex >= 0) {
