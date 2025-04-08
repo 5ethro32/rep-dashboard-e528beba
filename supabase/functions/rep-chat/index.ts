@@ -141,6 +141,24 @@ serve(async (req) => {
       }
     });
     
+    // Calculate individual retail rep performance
+    const retailRepPerformance: Record<string, any> = {};
+    
+    retailData.forEach(item => {
+      const rep = item.Rep;
+      if (!retailRepPerformance[rep]) {
+        retailRepPerformance[rep] = {
+          profit: 0,
+          spend: 0,
+          packs: 0
+        };
+      }
+      
+      retailRepPerformance[rep].profit += Number(item.Profit || 0);
+      retailRepPerformance[rep].spend += Number(item.Spend || 0);
+      retailRepPerformance[rep].packs += Number(item.Packs || 0);
+    });
+    
     // Format the data for OpenAI
     const formattedSummary = `
     Department Profits for ${selectedMonth} 2025:
@@ -187,6 +205,37 @@ serve(async (req) => {
     }
     else if (query.includes('total profit')) {
       reply = `The total profit across all departments for ${selectedMonth} 2025 is £${departmentProfits.Total.toLocaleString()}.`;
+    }
+    // General rep profit queries - handle any rep name
+    else if (query.includes('profit') && !query.includes('department') && !query.includes('wholesale') && !query.includes('reva')) {
+      // Extract potential rep name from the query
+      const repQuery = query.replace("'s profit", "").replace("profit", "").trim();
+      let foundRep = false;
+
+      // Check retail reps
+      for (const rep in retailRepPerformance) {
+        if (rep.toLowerCase().includes(repQuery)) {
+          reply = `${rep}'s retail profit for ${selectedMonth} 2025 is £${retailRepPerformance[rep].profit.toLocaleString()}.`;
+          foundRep = true;
+          break;
+        }
+      }
+
+      // Check sub-reps
+      if (!foundRep) {
+        for (const rep in subRepPerformance) {
+          if (rep.toLowerCase().includes(repQuery)) {
+            const totalProfit = subRepPerformance[rep].Total.profit;
+            reply = `${rep}'s total profit for ${selectedMonth} 2025 is £${totalProfit.toLocaleString()}.`;
+            foundRep = true;
+            break;
+          }
+        }
+      }
+
+      if (!foundRep) {
+        reply = `I couldn't find profit data for "${repQuery}" in the ${selectedMonth} 2025 data.`;
+      }
     }
     // Sub-rep specific queries
     else if (query.includes('craig') && query.includes('wholesale')) {
