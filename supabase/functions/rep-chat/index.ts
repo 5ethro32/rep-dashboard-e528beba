@@ -1,6 +1,9 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from "https://esm.sh/openai@3.2.1";
+
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 // Define CORS headers for browser access
 const corsHeaders = {
@@ -141,24 +144,6 @@ serve(async (req) => {
       }
     });
     
-    // Calculate individual retail rep performance
-    const retailRepPerformance: Record<string, any> = {};
-    
-    retailData.forEach(item => {
-      const rep = item.Rep;
-      if (!retailRepPerformance[rep]) {
-        retailRepPerformance[rep] = {
-          profit: 0,
-          spend: 0,
-          packs: 0
-        };
-      }
-      
-      retailRepPerformance[rep].profit += Number(item.Profit || 0);
-      retailRepPerformance[rep].spend += Number(item.Spend || 0);
-      retailRepPerformance[rep].packs += Number(item.Packs || 0);
-    });
-    
     // Format the data for OpenAI
     const formattedSummary = `
     Department Profits for ${selectedMonth} 2025:
@@ -186,115 +171,55 @@ serve(async (req) => {
     ).join('\n')}
     `;
 
-    // Without using the OpenAI API directly, we'll generate a simple response
-    // based on the user's query
-    let reply = "I don't have enough information to answer that query.";
-    
-    // Simple keyword matching for basic questions
-    const query = message.toLowerCase();
+    // Prepare the OpenAI API
+    const configuration = new Configuration({ apiKey: openAIApiKey });
+    const openai = new OpenAIApi(configuration);
 
-    // Department profit queries
-    if (query.includes('reva profit') || query.includes('reva department profit')) {
-      reply = `The total REVA profit for ${selectedMonth} 2025 is £${departmentProfits.REVA.toLocaleString()}.`;
-    } 
-    else if (query.includes('wholesale profit') || query.includes('wholesale department profit')) {
-      reply = `The total Wholesale profit for ${selectedMonth} 2025 is £${departmentProfits.Wholesale.toLocaleString()}.`;
-    }
-    else if (query.includes('retail profit') || query.includes('retail department profit')) {
-      reply = `The total Retail profit for ${selectedMonth} 2025 is £${departmentProfits.RETAIL.toLocaleString()}.`;
-    }
-    else if (query.includes('total profit')) {
-      reply = `The total profit across all departments for ${selectedMonth} 2025 is £${departmentProfits.Total.toLocaleString()}.`;
-    }
-    // General rep profit queries - handle any rep name
-    else if (query.includes('profit') && !query.includes('department') && !query.includes('wholesale') && !query.includes('reva')) {
-      // Extract potential rep name from the query
-      const repQuery = query.replace("'s profit", "").replace("profit", "").trim();
-      let foundRep = false;
-
-      // Check retail reps
-      for (const rep in retailRepPerformance) {
-        if (rep.toLowerCase().includes(repQuery)) {
-          reply = `${rep}'s retail profit for ${selectedMonth} 2025 is £${retailRepPerformance[rep].profit.toLocaleString()}.`;
-          foundRep = true;
-          break;
-        }
-      }
-
-      // Check sub-reps
-      if (!foundRep) {
-        for (const rep in subRepPerformance) {
-          if (rep.toLowerCase().includes(repQuery)) {
-            const totalProfit = subRepPerformance[rep].Total.profit;
-            reply = `${rep}'s total profit for ${selectedMonth} 2025 is £${totalProfit.toLocaleString()}.`;
-            foundRep = true;
-            break;
-          }
-        }
-      }
-
-      if (!foundRep) {
-        reply = `I couldn't find profit data for "${repQuery}" in the ${selectedMonth} 2025 data.`;
-      }
-    }
-    // Sub-rep specific queries
-    else if (query.includes('craig') && query.includes('wholesale')) {
-      const craigData = subRepPerformance['Craig'];
-      if (craigData && craigData.Wholesale) {
-        reply = `Craig's wholesale profit for ${selectedMonth} 2025 is £${craigData.Wholesale.profit.toLocaleString()}.`;
-      } else {
-        reply = `I don't have data for Craig in the Wholesale department for ${selectedMonth} 2025.`;
-      }
-    }
-    else if (query.includes('craig') && query.includes('reva')) {
-      const craigData = subRepPerformance['Craig'];
-      if (craigData && craigData.REVA) {
-        reply = `Craig's REVA profit for ${selectedMonth} 2025 is £${craigData.REVA.profit.toLocaleString()}.`;
-      } else {
-        reply = `I don't have data for Craig in the REVA department for ${selectedMonth} 2025.`;
-      }
-    }
-    else if (query.includes('craig') && query.includes('sales')) {
-      const craigData = subRepPerformance['Craig'];
-      if (craigData) {
-        reply = `Craig's sales performance for ${selectedMonth} 2025:\n
-- REVA Profit: £${craigData.REVA.profit.toLocaleString()}
-- REVA Revenue: £${craigData.REVA.spend.toLocaleString()}
-- Wholesale Profit: £${craigData.Wholesale.profit.toLocaleString()}
-- Wholesale Revenue: £${craigData.Wholesale.spend.toLocaleString()}
-- Total Profit: £${craigData.Total.profit.toLocaleString()}
-- Total Revenue: £${craigData.Total.spend.toLocaleString()}`;
-      } else {
-        reply = `I don't have sales data for Craig for ${selectedMonth} 2025.`;
-      }
-    }
-    // Account queries
-    else if (query.includes('account') && query.includes('knightswood')) {
-      const knightswoodAccount = Object.values(accountData || {}).find(
-        (account: any) => account.accountName && account.accountName.toLowerCase().includes('knightswood')
-      );
-      
-      if (knightswoodAccount) {
-        reply = `The account number for Knightswood is ${knightswoodAccount.accountRef}.`;
-      } else {
-        reply = `I couldn't find an account with the name Knightswood in the ${selectedMonth} 2025 data.`;
-      }
-    }
-    // Top performers query
-    else if (query.includes('top performer') || query.includes('best performer')) {
-      const topSubReps = Object.entries(subRepPerformance)
-        .map(([name, data]) => ({ name, profit: data.Total.profit }))
-        .sort((a, b) => b.profit - a.profit)
-        .slice(0, 3);
+    // Prepare the messages for the chat completion
+    const messages: ChatCompletionRequestMessage[] = [
+      {
+        role: "system",
+        content: `You are Vera, a financial data assistant for a pharmaceutical sales company.
         
-      reply = `The top performers for ${selectedMonth} 2025 are:\n${
-        topSubReps.map((rep, i) => `${i + 1}. ${rep.name} with a profit of £${rep.profit.toLocaleString()}`).join('\n')
-      }`;
-    }
-    // Fallback response
-    else {
-      reply = `I'm not sure how to answer that question about the ${selectedMonth} 2025 data. You can ask me about department profits, specific reps like Craig, account numbers, or top performers.`;
-    }
+        You can answer questions about sales performance data for ${selectedMonth} 2025.
+        
+        The data includes:
+        1. Rep performance across different departments (RETAIL, REVA, Wholesale)
+        2. Sub-Rep performance within REVA and Wholesale departments
+        3. Customer/account data with Account Names and Account References
+        
+        Important context:
+        - The "Rep" column contains the main rep name or department name (RETAIL, REVA, Wholesale)
+        - The "Sub-Rep" column contains individual reps working within REVA or Wholesale departments
+        - When asked about specific reps (like "Craig's wholesale profit"), look for data where the Department is "Wholesale" and the Sub-Rep is "Craig"
+        - The "Account Ref" is the customer account number (e.g., KN002 is the account number for "Knightswood Pharmacy")
+        - The "Account Name" contains the customer/shop name
+        
+        Be concise and specific in your answers. Format currency values with pound sign (£) and use comma separators for thousands. Round numbers appropriately for readability.
+        
+        When asked about customers or accounts:
+        - If asked about a "top customer," assume they mean by profit unless specified otherwise
+        - If asked for an "account number," provide the Account Ref for the specified Account Name
+        - If asked about a specific customer, search for partial matches in the Account Name field
+        
+        Here's the current data summary to help you answer questions:
+        ${formattedSummary}`
+      },
+      {
+        role: "user",
+        content: message
+      }
+    ];
+
+    // Call the OpenAI API
+    const completion = await openai.createChatCompletion({
+      model: "gpt-4-turbo-preview", // Use the latest model that's available
+      messages: messages,
+      temperature: 0.7,
+      max_tokens: 1000
+    });
+
+    const reply = completion.data.choices[0].message?.content || "I'm sorry, I couldn't process your request.";
 
     // Return the response
     return new Response(
