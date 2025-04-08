@@ -165,6 +165,10 @@ serve(async (req) => {
     let februaryOverallMetrics = null;
     let repComparisons = {};
     let monthlyComparison = {};
+    
+    // Variables to store top and worst performers data
+    let topPerformersByProfitIncrease = [];
+    let worstPerformersByProfitDecrease = [];
 
     try {
       // Fetch data from both months
@@ -258,7 +262,7 @@ serve(async (req) => {
       }
       
       // Create a list of top performers by profit increase
-      const topPerformersByProfitIncrease = Object.entries(repComparisons)
+      topPerformersByProfitIncrease = Object.entries(repComparisons)
         .filter(([rep, data]) => data.changes.profit > 0)
         .sort((a, b) => b[1].changes.profit - a[1].changes.profit)
         .slice(0, 5)
@@ -271,7 +275,7 @@ serve(async (req) => {
         }));
       
       // Create a list of worst performers by profit decrease
-      const worstPerformersByProfitDecrease = Object.entries(repComparisons)
+      worstPerformersByProfitDecrease = Object.entries(repComparisons)
         .filter(([rep, data]) => data.changes.profit < 0)
         .sort((a, b) => a[1].changes.profit - b[1].changes.profit)
         .slice(0, 5)
