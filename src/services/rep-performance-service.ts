@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -60,8 +59,8 @@ export const fetchRepPerformanceData = async () => {
         profit: profit,
         margin: margin,
         packs: packs,
-        // Preserve exact department case from the database
-        rep_type: item.Department || 'RETAIL',
+        // Normalize department case for consistency
+        rep_type: item.Department ? item.Department.toUpperCase() : 'RETAIL',
         import_date: new Date().toISOString()
       };
     });
@@ -83,11 +82,10 @@ export const fetchRepPerformanceData = async () => {
     });
     console.log('Department counts:', deptCounts);
     
-    // Separate data by rep_type (using CASE-SENSITIVE comparison)
-    // We need to carefully check for 'Wholesale' (W uppercase, rest lowercase)
+    // Separate data by rep_type (using normalized UPPERCASE comparison)
     const repDataFromDb = mappedData.filter(item => item.rep_type === 'RETAIL');
     const revaDataFromDb = mappedData.filter(item => item.rep_type === 'REVA');
-    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'Wholesale');
+    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'WHOLESALE');
     
     console.log('Retail data count:', repDataFromDb.length);
     console.log('REVA data count:', revaDataFromDb.length);
