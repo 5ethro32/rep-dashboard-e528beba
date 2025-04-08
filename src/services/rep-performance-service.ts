@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -12,12 +11,10 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data from Supabase...');
     
-    // Directly fetch data from sales_data_march table without specifying the table type
-    // This avoids TypeScript errors with the table name
+    // Use string literal for table name to bypass TypeScript restrictions
     const { data: allDataFromDb, error: dataError } = await supabase
       .from('sales_data_march')
-      .select('*')
-      .eq('reporting_period', 'March 2025');
+      .select('*');
     
     if (dataError) throw new Error(`Error fetching data: ${dataError.message}`);
     console.log('Data fetched:', allDataFromDb?.length || 0, 'rows');
@@ -29,7 +26,7 @@ export const fetchRepPerformanceData = async () => {
     // Map the sales_data_march table fields to our standard format
     const mappedData = allDataFromDb.map((item: any) => ({
       id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
-      reporting_period: 'March 2025',
+      reporting_period: 'March 2025', // Hardcode the reporting period since it's all March data
       rep_name: item.Rep || '',
       sub_rep: item['Sub-Rep'] || '',
       account_ref: item['Account Ref'] || '',
