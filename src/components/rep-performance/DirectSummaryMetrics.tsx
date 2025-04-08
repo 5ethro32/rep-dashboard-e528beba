@@ -18,12 +18,21 @@ interface DepartmentStats {
   margin: number;
 }
 
+interface RawQueryResult {
+  department: string;
+  sum: number;
+}
+
 const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({ 
   includeRetail, 
   includeReva, 
   includeWholesale 
 }) => {
   const [stats, setStats] = useState<DepartmentStats[]>([]);
+  const [rawRetailSum, setRawRetailSum] = useState<number | null>(null);
+  const [rawWholesaleSum, setRawWholesaleSum] = useState<number | null>(null);
+  const [rawRevaSum, setRawRevaSum] = useState<number | null>(null);
+  const [rawTotalSum, setRawTotalSum] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +60,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
           return;
         }
 
-        console.log('Direct Supabase raw data:', data);
+        console.log('Direct Supabase raw data (first 20 items):', data.slice(0, 20));
         
         // Group and calculate stats by department
         const deptMap = new Map<string, DepartmentStats>();
@@ -85,11 +94,54 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         console.log('Direct Supabase calculated stats by department:', deptStats);
         
         setStats(deptStats);
+        
+        // Run direct SQL queries for each department to compare results
+        await fetchRawDepartmentSums();
+        
       } catch (err) {
         console.error('Error fetching direct stats:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setIsLoading(false);
+      }
+    };
+    
+    const fetchRawDepartmentSums = async () => {
+      try {
+        // Total sum across all departments
+        const { data: totalData, error: totalError } = await supabase
+          .rpc('get_total_profit');
+          
+        if (totalError) throw new Error(`Total query error: ${totalError.message}`);
+        console.log('Raw SQL query result for ALL departments:', totalData);
+        setRawTotalSum(totalData);
+        
+        // RETAIL department sum
+        const { data: retailData, error: retailError } = await supabase
+          .rpc('get_retail_profit');
+          
+        if (retailError) throw new Error(`RETAIL query error: ${retailError.message}`);
+        console.log('Raw SQL query result for RETAIL department:', retailData);
+        setRawRetailSum(retailData);
+        
+        // Wholesale department sum
+        const { data: wholesaleData, error: wholesaleError } = await supabase
+          .rpc('get_wholesale_profit');
+          
+        if (wholesaleError) throw new Error(`Wholesale query error: ${wholesaleError.message}`);
+        console.log('Raw SQL query result for Wholesale department:', wholesaleData);
+        setRawWholesaleSum(wholesaleData);
+        
+        // REVA department sum
+        const { data: revaData, error: revaError } = await supabase
+          .rpc('get_reva_profit');
+          
+        if (revaError) throw new Error(`REVA query error: ${revaError.message}`);
+        console.log('Raw SQL query result for REVA department:', revaData);
+        setRawRevaSum(revaData);
+        
+      } catch (err) {
+        console.error('Error fetching raw department sums:', err);
       }
     };
 
@@ -130,12 +182,33 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
     <div className="mb-8">
       <div className="bg-amber-800/30 border border-amber-500/30 rounded-lg p-3 md:p-4 mb-4 text-sm">
         <p className="text-amber-200 font-medium">
-          Direct Supabase Query Results (Raw Data):
+          Direct SQL Query Results for Profit:
         </p>
         {error && <p className="text-red-400 mt-1">Error: {error}</p>}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 text-xs text-amber-200">
+          <div className="bg-amber-900/30 p-2 rounded">
+            <p className="font-medium">Total (ALL):</p>
+            <p>{rawTotalSum !== null ? formatCurrency(rawTotalSum, 2) : 'Loading...'}</p>
+          </div>
+          <div className="bg-amber-900/30 p-2 rounded">
+            <p className="font-medium">RETAIL:</p>
+            <p>{rawRetailSum !== null ? formatCurrency(rawRetailSum, 2) : 'Loading...'}</p>
+          </div>
+          <div className="bg-amber-900/30 p-2 rounded">
+            <p className="font-medium">Wholesale:</p>
+            <p>{rawWholesaleSum !== null ? formatCurrency(rawWholesaleSum, 2) : 'Loading...'}</p>
+          </div>
+          <div className="bg-amber-900/30 p-2 rounded">
+            <p className="font-medium">REVA:</p>
+            <p>{rawRevaSum !== null ? formatCurrency(rawRevaSum, 2) : 'Loading...'}</p>
+          </div>
+        </div>
+        <p className="text-amber-200 font-medium mt-3">
+          JS-Calculated Department Totals (from raw data):
+        </p>
         <pre className="text-xs text-amber-200 mt-1 overflow-x-auto">
           {stats.map(stat => 
-            `${stat.department}: Profit=${stat.total_profit.toFixed(2)}, Spend=${stat.total_spend.toFixed(2)}, Packs=${stat.total_packs}`
+            `${stat.department}: Profit=${formatCurrency(stat.total_profit, 2)}, Spend=${formatCurrency(stat.total_spend, 2)}, Packs=${stat.total_packs}`
           ).join('\n')}
         </pre>
       </div>
