@@ -13,6 +13,7 @@ interface Message {
   content: string;
   isUser: boolean;
   timestamp: Date;
+  examples?: string[]; // Added examples property for prompt messages
 }
 
 interface ChatInterfaceProps {
@@ -25,9 +26,14 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: '1', 
-      content: "Hello! I'm Vera, your sales data assistant. Ask me anything about rep performance data.\n\nTry questions like:\n- Who are the top performers this month?\n- Tell me about Craig McDowall's sales\n- Which reps have the highest margin?", 
+      content: "Hello! I'm Vera, your sales data assistant. Ask me anything about rep performance data.", 
       isUser: false, 
-      timestamp: new Date() 
+      timestamp: new Date(),
+      examples: [
+        "Who are the top performers this month?",
+        "Tell me about Craig McDowall's sales",
+        "Which reps have the highest margin?"
+      ]
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +55,17 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
       }, 100);
     }
   }, [isOpen]);
+
+  const handleExampleClick = (exampleText: string) => {
+    // Set the example text as the current message and submit
+    setMessage(exampleText);
+    
+    // Use setTimeout to let the state update before submitting
+    setTimeout(() => {
+      const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+      handleSubmit(fakeEvent);
+    }, 0);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,14 +166,30 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
                     </Avatar>
                   )}
                   
-                  <div 
-                    className={`max-w-[75%] rounded-lg p-3 ${
-                      msg.isUser 
-                        ? 'bg-gradient-to-r from-rose-500 to-finance-red text-white' 
-                        : 'bg-gray-800 text-gray-100'
-                    } whitespace-pre-line`}
-                  >
-                    {msg.content}
+                  <div className="flex flex-col max-w-[75%]">
+                    <div 
+                      className={`rounded-lg p-3 ${
+                        msg.isUser 
+                          ? 'bg-gradient-to-r from-rose-500 to-finance-red text-white' 
+                          : 'bg-gray-800 text-gray-100'
+                      } whitespace-pre-line`}
+                    >
+                      {msg.content}
+                    </div>
+                    
+                    {msg.examples && msg.examples.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {msg.examples.map((example, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleExampleClick(example)}
+                            className="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-full transition-colors whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                          >
+                            {example}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   
                   {msg.isUser && (
