@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Minus } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -97,33 +97,53 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                 <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                   <div className="flex items-center">
                     {formatCurrency(item.spend)}
-                    {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].spend, 'small')}
+                    {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].spend, 'small') : (
+                      <span className="inline-flex items-center ml-1 text-finance-gray">
+                        <Minus className="h-4 w-4" />
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-finance-red">
                   <div className="flex items-center">
                     {formatCurrency(item.profit)}
-                    {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].profit, 'small')}
+                    {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].profit, 'small') : (
+                      <span className="inline-flex items-center ml-1 text-finance-gray">
+                        <Minus className="h-4 w-4" />
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                   <div className="flex items-center">
                     {formatPercent(item.margin)}
-                    {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].margin, 'small')}
+                    {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].margin, 'small') : (
+                      <span className="inline-flex items-center ml-1 text-finance-gray">
+                        <Minus className="h-4 w-4" />
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                   <div className="flex items-center">
                     <span className="text-emerald-500">{formatNumber(item.activeAccounts)}</span>
-                    <span className="text-finance-gray">/</span>
+                    <span className="text-finance-gray mx-1">/</span>
                     <span>{formatNumber(item.totalAccounts)}</span>
-                    {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].activeAccounts, 'small')}
+                    {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].activeAccounts, 'small') : (
+                      <span className="inline-flex items-center ml-1 text-finance-gray">
+                        <Minus className="h-4 w-4" />
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                   <div className="flex items-center">
                     {formatNumber(item.packs)}
-                    {repChanges[item.rep] && renderChangeIndicator(repChanges[item.rep].packs, 'small')}
+                    {repChanges[item.rep] ? renderChangeIndicator(repChanges[item.rep].packs, 'small') : (
+                      <span className="inline-flex items-center ml-1 text-finance-gray">
+                        <Minus className="h-4 w-4" />
+                      </span>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

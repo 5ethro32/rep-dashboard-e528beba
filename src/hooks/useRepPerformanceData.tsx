@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -25,7 +24,6 @@ export const useRepPerformanceData = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Current month data
   const [overallData, setOverallData] = useState(defaultOverallData);
   const [repData, setRepData] = useState(defaultRepData);
   const [revaData, setRevaData] = useState(defaultRevaData);
@@ -34,7 +32,6 @@ export const useRepPerformanceData = () => {
   const [revaValues, setRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [wholesaleValues, setWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
-  // Previous month data (February)
   const [febRepData, setFebRepData] = useState(defaultRepData);
   const [febRevaData, setFebRevaData] = useState(defaultRevaData);
   const [febWholesaleData, setFebWholesaleData] = useState(defaultWholesaleData);
@@ -42,16 +39,13 @@ export const useRepPerformanceData = () => {
   const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
-  // Change data
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
 
-  // Load from localStorage on initialization
   useEffect(() => {
     const storedData = loadStoredRepPerformanceData();
     
     if (storedData) {
-      // Current month data
       setOverallData(storedData.overallData || defaultOverallData);
       setRepData(storedData.repData || defaultRepData);
       setRevaData(storedData.revaData || defaultRevaData);
@@ -60,7 +54,6 @@ export const useRepPerformanceData = () => {
       setRevaValues(storedData.revaValues || defaultRevaValues);
       setWholesaleValues(storedData.wholesaleValues || defaultWholesaleValues);
       
-      // Previous month data (February)
       setFebRepData(storedData.febRepData || defaultRepData);
       setFebRevaData(storedData.febRevaData || defaultRevaData);
       setFebWholesaleData(storedData.febWholesaleData || defaultWholesaleData);
@@ -68,13 +61,11 @@ export const useRepPerformanceData = () => {
       setFebRevaValues(storedData.febRevaValues || defaultRevaValues);
       setFebWholesaleValues(storedData.febWholesaleValues || defaultWholesaleValues);
       
-      // Change data
       setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
       setRepChanges(storedData.repChanges || defaultRepChanges);
     }
   }, []);
 
-  // Recalculate combined data when toggle or rep data changes
   useEffect(() => {
     console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale });
     const combinedData = getCombinedRepData(
@@ -91,15 +82,12 @@ export const useRepPerformanceData = () => {
   const loadDataFromSupabase = async () => {
     setIsLoading(true);
     try {
-      // Fetch data from Supabase
       const data = await fetchRepPerformanceData();
       
-      // Update state with fetched data - current month
       setRepData(data.repData);
       setRevaData(data.revaData);
       setWholesaleData(data.wholesaleData);
       
-      // Fix: Add all required properties when setting SummaryData state
       setBaseSummary({
         totalSpend: data.baseSummary.totalSpend,
         totalProfit: data.baseSummary.totalProfit,
@@ -127,12 +115,10 @@ export const useRepPerformanceData = () => {
         averageMargin: data.wholesaleValues.averageMargin
       });
       
-      // Update state with fetched data - previous month (February)
       setFebRepData(data.febRepData);
       setFebRevaData(data.febRevaData);
       setFebWholesaleData(data.febWholesaleData);
       
-      // Fix: Add all required properties for February SummaryData
       setFebBaseSummary({
         totalSpend: data.febBaseSummary.totalSpend,
         totalProfit: data.febBaseSummary.totalProfit,
@@ -160,11 +146,17 @@ export const useRepPerformanceData = () => {
         averageMargin: data.febWholesaleValues.averageMargin
       });
       
-      // Update changes
-      setSummaryChanges(data.summaryChanges);
+      setSummaryChanges({
+        totalSpend: data.summaryChanges.totalSpend,
+        totalProfit: data.summaryChanges.totalProfit,
+        totalPacks: data.summaryChanges.totalPacks,
+        averageMargin: data.summaryChanges.averageMargin,
+        totalAccounts: data.summaryChanges.totalAccounts || 0,
+        activeAccounts: data.summaryChanges.activeAccounts || 0
+      });
+      
       setRepChanges(data.repChanges);
       
-      // Calculate combined data based on current toggle states
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
@@ -175,9 +167,7 @@ export const useRepPerformanceData = () => {
       );
       setOverallData(combinedData);
 
-      // Save data to localStorage
       saveRepPerformanceData({
-        // Current month
         overallData: combinedData,
         repData: data.repData,
         revaData: data.revaData,
@@ -186,7 +176,6 @@ export const useRepPerformanceData = () => {
         revaValues: data.revaValues,
         wholesaleValues: data.wholesaleValues,
         
-        // Previous month
         febRepData: data.febRepData,
         febRevaData: data.febRevaData,
         febWholesaleData: data.febWholesaleData,
@@ -194,7 +183,6 @@ export const useRepPerformanceData = () => {
         febRevaValues: data.febRevaValues,
         febWholesaleValues: data.febWholesaleValues,
         
-        // Changes
         summaryChanges: data.summaryChanges,
         repChanges: data.repChanges
       });
@@ -245,7 +233,6 @@ export const useRepPerformanceData = () => {
     return sortRepData(data, sortBy, sortOrder);
   };
 
-  // Calculate summary based on toggle states
   const summary = calculateSummary(
     baseSummary, 
     revaValues, 
@@ -259,7 +246,6 @@ export const useRepPerformanceData = () => {
   console.log("Current summary changes:", summaryChanges);
 
   return {
-    // Toggle states
     includeRetail,
     setIncludeRetail,
     includeReva,
@@ -267,16 +253,13 @@ export const useRepPerformanceData = () => {
     includeWholesale,
     setIncludeWholesale,
     
-    // Sort states
     sortBy,
     sortOrder,
     
-    // Data
     summary,
     summaryChanges,
     repChanges,
     
-    // Actions
     getActiveData,
     sortData,
     handleSort,

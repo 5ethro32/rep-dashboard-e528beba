@@ -14,18 +14,15 @@ interface RepMarginComparisonProps {
 const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({ displayData, repChanges, formatPercent, isLoading }) => {
   const isMobile = useIsMobile();
   
-  // Filter data to remove any reps with 0 margin
-  const activeData = displayData.filter(item => item.margin > 0);
-  
   // Sort by margin (highest to lowest)
-  const sortedData = [...activeData].sort((a, b) => b.margin - a.margin);
+  const sortedData = [...displayData].sort((a, b) => b.margin - a.margin);
   
   // Only show top 8 on mobile, top 12 otherwise
   const limitedData = sortedData.slice(0, isMobile ? 5 : 8);
   
   // Calculate the average margin across all reps
-  const averageMargin = activeData.length > 0 ? 
-    activeData.reduce((sum, item) => sum + item.margin, 0) / activeData.length : 0;
+  const averageMargin = displayData.length > 0 ? 
+    displayData.reduce((sum, item) => sum + item.margin, 0) / displayData.length : 0;
     
   // REVA is typically red, default is purple, but we can adjust as needed
   const defaultBarColor = '#818cf8';
