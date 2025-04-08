@@ -81,13 +81,13 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
   }, [displayData, repChanges, sortBy, sortOrder, showChangeIndicators]);
   
   return (
-    <div className="overflow-x-auto -mx-3 md:mx-0 scrollbar-hide">
+    <div className="overflow-x-auto -mx-3 md:mx-0 scrollbar-hide relative">
       <Table>
         <TableHeader>
           <TableRow className="bg-black/20 hover:bg-black/30">
             <TableHead 
               onClick={() => onSort('rep')}
-              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors"
+              className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors sticky left-0 z-20 bg-gray-900/90 backdrop-blur-sm border-r border-white/5"
             >
               Rep {sortBy === 'rep' && (sortOrder === 'asc' ? '↑' : '↓')}
             </TableHead>
@@ -145,7 +145,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
               
               return (
                 <TableRow key={item.rep} className="hover:bg-white/5 transition-colors">
-                  <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium">
+                  <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium sticky left-0 z-10 bg-gray-900/90 backdrop-blur-sm border-r border-white/5">
                     <div className="flex items-center">
                       <span>{item.rep}</span>
                       {showChangeIndicators && rankChange !== 0 ? (
