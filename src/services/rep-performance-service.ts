@@ -23,27 +23,44 @@ export const fetchRepPerformanceData = async () => {
       throw new Error('No data found for the specified period.');
     }
     
-    // Map the sales_data_march table fields to our standard format
-    const mappedData = allDataFromDb.map((item: any) => ({
-      id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
-      reporting_period: 'March 2025', // Hardcode the reporting period since it's all March data
-      rep_name: item.Rep || '',
-      sub_rep: item['Sub-Rep'] || '',
-      account_ref: item['Account Ref'] || '',
-      account_name: item['Account Name'] || '',
-      spend: Number(item.Spend) || 0,
-      cost: Number(item.Cost) || 0,
-      credit: Number(item.Credit) || 0,
-      profit: Number(item.Profit) || 0,
-      margin: Number(item.Margin) || 0,
-      packs: Number(item.Packs) || 0,
-      rep_type: item.Department || 'RETAIL',
-      import_date: new Date().toISOString()
-    }));
+    // Debug: Log the raw data structure from Supabase
+    console.log('Raw data sample:', allDataFromDb[0]);
     
-    // Debug: Log the structure of the first item
+    // Map the sales_data_march table fields to our standard format
+    const mappedData = allDataFromDb.map((item: any) => {
+      // Parse numerical values properly, ensuring they're numbers and not strings
+      const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+      const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+      const cost = typeof item.Cost === 'string' ? parseFloat(item.Cost) : Number(item.Cost || 0);
+      const credit = typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0);
+      const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
+      const packs = typeof item.Packs === 'string' ? parseInt(item.Packs) : Number(item.Packs || 0);
+      
+      return {
+        id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
+        reporting_period: 'March 2025', // Hardcode the reporting period since it's all March data
+        rep_name: item.Rep || '',
+        sub_rep: item['Sub-Rep'] || '',
+        account_ref: item['Account Ref'] || '',
+        account_name: item['Account Name'] || '',
+        spend: spend,
+        cost: cost,
+        credit: credit,
+        profit: profit,
+        margin: margin,
+        packs: packs,
+        rep_type: item.Department || 'RETAIL',
+        import_date: new Date().toISOString()
+      };
+    });
+    
+    // Debug: Log the mapped data structure
     if (mappedData.length > 0) {
-      console.log('First item structure:', mappedData[0]);
+      console.log('First mapped item:', mappedData[0]);
+      
+      // Calculate total profit to verify data is mapped correctly
+      const totalProfit = mappedData.reduce((total, item) => total + item.profit, 0);
+      console.log('Total calculated profit from mapped data:', totalProfit);
     }
     
     // Separate data by rep_type
@@ -54,48 +71,6 @@ export const fetchRepPerformanceData = async () => {
     console.log('Retail data count:', repDataFromDb.length);
     console.log('REVA data count:', revaDataFromDb.length);
     console.log('Wholesale data count:', wholesaleDataFromDb.length);
-    
-    // Debugging: Log sample data and rep_name/rep_type values to identify inconsistencies
-    if (repDataFromDb.length > 0) {
-      console.log('Sample retail data item:', repDataFromDb[0]);
-      
-      // Check for case inconsistencies in retail data
-      const retailNameTypes = repDataFromDb.map(item => ({ 
-        rep_name: item.rep_name, 
-        rep_type: item.rep_type 
-      }));
-      console.log('Sample retail rep_name/rep_type pairs:', retailNameTypes.slice(0, 3));
-    }
-    
-    if (revaDataFromDb.length > 0) {
-      console.log('Sample REVA data item:', revaDataFromDb[0]);
-      
-      // Log sub_rep values to help debug
-      const subReps = revaDataFromDb.map(item => item.sub_rep).filter(Boolean);
-      console.log('REVA sub_reps:', [...new Set(subReps)]);
-      
-      // Check for case inconsistencies in REVA data
-      const revaNameTypes = revaDataFromDb.map(item => ({ 
-        rep_name: item.rep_name, 
-        rep_type: item.rep_type 
-      }));
-      console.log('Sample REVA rep_name/rep_type pairs:', revaNameTypes.slice(0, 3));
-    }
-    
-    if (wholesaleDataFromDb.length > 0) {
-      console.log('Sample wholesale data item:', wholesaleDataFromDb[0]);
-      
-      // Log sub_rep values to help debug
-      const subReps = wholesaleDataFromDb.map(item => item.sub_rep).filter(Boolean);
-      console.log('WHOLESALE sub_reps:', [...new Set(subReps)]);
-      
-      // Check for case inconsistencies in wholesale data
-      const wholesaleNameTypes = wholesaleDataFromDb.map(item => ({ 
-        rep_name: item.rep_name, 
-        rep_type: item.rep_type 
-      }));
-      console.log('Sample wholesale rep_name/rep_type pairs:', wholesaleNameTypes.slice(0, 3));
-    }
     
     // Process the retail data to RepData format
     const processedRepData = processRepData(repDataFromDb as SalesDataItem[] || []);
@@ -111,9 +86,14 @@ export const fetchRepPerformanceData = async () => {
     const revaSummary = calculateSummaryFromData(processedRevaData);
     const wholesaleSummary = calculateSummaryFromData(processedWholesaleData);
     
-    // Log processed data
-    console.log('Processed retail data:', processedRepData.length, 'items');
-    console.log('Retail summary:', calculatedSummary);
+    // Log calculated summary values
+    console.log('Retail summary calculated:', calculatedSummary);
+    console.log('REVA summary calculated:', revaSummary);
+    console.log('Wholesale summary calculated:', wholesaleSummary);
+    
+    // Log combined total profit for verification
+    const combinedTotalProfit = calculatedSummary.totalProfit + revaSummary.totalProfit + wholesaleSummary.totalProfit;
+    console.log('Combined total profit from all segments:', combinedTotalProfit);
     
     return {
       repData: processedRepData,
