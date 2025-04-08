@@ -60,7 +60,7 @@ export const fetchRepPerformanceData = async () => {
         profit: profit,
         margin: margin,
         packs: packs,
-        // IMPORTANT: Preserve exact department case from the database
+        // Preserve exact department case from the database
         rep_type: item.Department || 'RETAIL',
         import_date: new Date().toISOString()
       };
@@ -75,7 +75,16 @@ export const fetchRepPerformanceData = async () => {
       console.log('Total calculated profit from mapped data:', totalMappedProfit);
     }
     
+    // Count departments for debugging
+    const deptCounts = {};
+    mappedData.forEach(item => {
+      const dept = item.rep_type;
+      deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+    });
+    console.log('Department counts:', deptCounts);
+    
     // Separate data by rep_type (using CASE-SENSITIVE comparison)
+    // We need to carefully check for 'Wholesale' (W uppercase, rest lowercase)
     const repDataFromDb = mappedData.filter(item => item.rep_type === 'RETAIL');
     const revaDataFromDb = mappedData.filter(item => item.rep_type === 'REVA');
     const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'Wholesale');
