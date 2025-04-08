@@ -112,7 +112,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
       ) : (
         <div className="flex flex-col h-full">
           <div className="flex-1">
-            <div className="h-48 md:h-64 w-full mb-2 md:mb-4"> {/* Increased height from h-40/h-52 to h-48/h-64 (approx 15-20% increase) */}
+            <div className="h-52 md:h-72 w-full mb-2 md:mb-4"> {/* Increased height from h-48/h-64 to h-52/h-72 (another 10% increase) */}
               <DonutChart 
                 data={dataToUse}
                 innerValue={formattedProfit}
@@ -122,7 +122,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
           </div>
           
           {/* Legend */}
-          <div className="mt-auto overflow-y-auto max-h-28 md:max-h-32 scrollbar-none"> {/* Increased max height */}
+          <div className="mt-auto overflow-y-auto max-h-32 md:max-h-36 scrollbar-none"> {/* Increased max height */}
             <div className="grid grid-cols-2 gap-2 md:gap-3">
               {dataToUse.map((item, index) => (
                 <div key={index} className="flex items-center text-2xs md:text-xs">

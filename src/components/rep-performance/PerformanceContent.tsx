@@ -117,7 +117,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
-              <div className="h-60 md:h-80">
+              <div className="h-64 md:h-80">
                 <RepProfitChart 
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}
@@ -126,7 +126,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                 />
               </div>
               
-              <div className="h-60 md:h-80">
+              <div className="h-64 md:h-80"> {/* Increased height from h-60 to h-64 for mobile */}
                 <RepProfitShare 
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}
@@ -134,7 +134,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                 />
               </div>
               
-              <div className="h-60 md:h-80">
+              <div className="h-64 md:h-80">
                 <RepMarginComparison
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}
