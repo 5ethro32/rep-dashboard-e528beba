@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -24,6 +25,7 @@ export const useRepPerformanceData = () => {
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState('March');
   
   const [overallData, setOverallData] = useState(defaultOverallData);
   const [repData, setRepData] = useState(defaultRepData);
@@ -68,17 +70,64 @@ export const useRepPerformanceData = () => {
   }, []);
 
   useEffect(() => {
-    console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale });
+    console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale, selectedMonth });
+
+    // Use different data sources based on selectedMonth
+    let currentRepData = selectedMonth === 'March' ? repData : febRepData;
+    let currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
+    let currentWholesaleData = selectedMonth === 'March' ? wholesaleData : febWholesaleData;
+    
     const combinedData = getCombinedRepData(
-      repData,
-      revaData,
-      wholesaleData,
+      currentRepData,
+      currentRevaData,
+      currentWholesaleData,
       includeRetail,
       includeReva,
       includeWholesale
     );
+    
     setOverallData(combinedData);
-  }, [includeRetail, includeReva, includeWholesale, repData, revaData, wholesaleData]);
+
+    // If showing February data, reverse the changes direction
+    if (selectedMonth === 'February') {
+      // Invert the change percentages
+      const invertedChanges: Record<string, any> = {};
+      Object.keys(repChanges).forEach(rep => {
+        if (repChanges[rep]) {
+          invertedChanges[rep] = {
+            profit: repChanges[rep].profit ? -repChanges[rep].profit / (1 + repChanges[rep].profit / 100) * 100 : 0,
+            spend: repChanges[rep].spend ? -repChanges[rep].spend / (1 + repChanges[rep].spend / 100) * 100 : 0,
+            margin: -repChanges[rep].margin,
+            packs: repChanges[rep].packs ? -repChanges[rep].packs / (1 + repChanges[rep].packs / 100) * 100 : 0,
+            activeAccounts: repChanges[rep].activeAccounts ? -repChanges[rep].activeAccounts / (1 + repChanges[rep].activeAccounts / 100) * 100 : 0,
+            totalAccounts: repChanges[rep].totalAccounts ? -repChanges[rep].totalAccounts / (1 + repChanges[rep].totalAccounts / 100) * 100 : 0
+          };
+        }
+      });
+      
+      // Update summary changes by inverting them as well
+      const invertedSummaryChanges = {
+        totalSpend: summaryChanges.totalSpend ? -summaryChanges.totalSpend / (1 + summaryChanges.totalSpend / 100) * 100 : 0,
+        totalProfit: summaryChanges.totalProfit ? -summaryChanges.totalProfit / (1 + summaryChanges.totalProfit / 100) * 100 : 0,
+        averageMargin: -summaryChanges.averageMargin,
+        totalPacks: summaryChanges.totalPacks ? -summaryChanges.totalPacks / (1 + summaryChanges.totalPacks / 100) * 100 : 0,
+        totalAccounts: summaryChanges.totalAccounts ? -summaryChanges.totalAccounts / (1 + summaryChanges.totalAccounts / 100) * 100 : 0,
+        activeAccounts: summaryChanges.activeAccounts ? -summaryChanges.activeAccounts / (1 + summaryChanges.activeAccounts / 100) * 100 : 0
+      };
+      
+      // Temporarily update the changes when viewing February data
+      // (but don't save them permanently)
+      setSummaryChanges(invertedSummaryChanges);
+      setRepChanges(invertedChanges);
+    } else {
+      // Restore original changes from stored data when viewing March
+      const storedData = loadStoredRepPerformanceData();
+      if (storedData) {
+        setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
+        setRepChanges(storedData.repChanges || defaultRepChanges);
+      }
+    }
+  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData]);
 
   const loadDataFromSupabase = async () => {
     setIsLoading(true);
@@ -208,13 +257,18 @@ export const useRepPerformanceData = () => {
   };
 
   const getActiveData = (tabValue: string) => {
+    // Use different data sources based on selectedMonth
+    const currentRepData = selectedMonth === 'March' ? repData : febRepData;
+    const currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
+    const currentWholesaleData = selectedMonth === 'March' ? wholesaleData : febWholesaleData;
+    
     switch (tabValue) {
       case 'rep':
-        return includeRetail ? repData : [];
+        return includeRetail ? currentRepData : [];
       case 'reva':
-        return includeReva ? revaData : [];
+        return includeReva ? currentRevaData : [];
       case 'wholesale':
-        return includeWholesale ? wholesaleData : [];
+        return includeWholesale ? currentWholesaleData : [];
       case 'overall':
       default:
         return overallData;
@@ -234,10 +288,11 @@ export const useRepPerformanceData = () => {
     return sortRepData(data, sortBy, sortOrder);
   };
 
+  // Calculate summary based on selected month
   const summary = calculateSummary(
-    baseSummary, 
-    revaValues, 
-    wholesaleValues,
+    selectedMonth === 'March' ? baseSummary : febBaseSummary,
+    selectedMonth === 'March' ? revaValues : febRevaValues,
+    selectedMonth === 'March' ? wholesaleValues : febWholesaleValues,
     includeRetail,
     includeReva, 
     includeWholesale
@@ -249,47 +304,52 @@ export const useRepPerformanceData = () => {
   const getFebValue = (repName: string, metricType: string, currentValue: number, changePercent: number) => {
     if (!repName || Math.abs(changePercent) < 0.1) return '';
     
-    const febRetailRep = febRepData.find(rep => rep.rep === repName);
-    const febRevaRep = febRevaData.find(rep => rep.rep === repName);
-    const febWholesaleRep = febWholesaleData.find(rep => rep.rep === repName);
+    // For February, we use March data to show comparison
+    const comparisonRepData = selectedMonth === 'March' ? febRepData : repData;
+    const comparisonRevaData = selectedMonth === 'March' ? febRevaData : revaData;
+    const comparisonWholesaleData = selectedMonth === 'March' ? febWholesaleData : wholesaleData;
+    
+    const comparisonRetailRep = comparisonRepData.find(rep => rep.rep === repName);
+    const comparisonRevaRep = comparisonRevaData.find(rep => rep.rep === repName);
+    const comparisonWholesaleRep = comparisonWholesaleData.find(rep => rep.rep === repName);
     
     let previousValue = 0;
     
     switch (metricType) {
       case 'spend':
-        previousValue = (febRetailRep?.spend || 0) + 
-                        (includeReva ? (febRevaRep?.spend || 0) : 0) + 
-                        (includeWholesale ? (febWholesaleRep?.spend || 0) : 0);
+        previousValue = (comparisonRetailRep?.spend || 0) + 
+                        (includeReva ? (comparisonRevaRep?.spend || 0) : 0) + 
+                        (includeWholesale ? (comparisonWholesaleRep?.spend || 0) : 0);
         return formatCurrency(previousValue);
         
       case 'profit':
-        previousValue = (febRetailRep?.profit || 0) + 
-                        (includeReva ? (febRevaRep?.profit || 0) : 0) + 
-                        (includeWholesale ? (febWholesaleRep?.profit || 0) : 0);
+        previousValue = (comparisonRetailRep?.profit || 0) + 
+                        (includeReva ? (comparisonRevaRep?.profit || 0) : 0) + 
+                        (includeWholesale ? (comparisonWholesaleRep?.profit || 0) : 0);
         return formatCurrency(previousValue);
         
       case 'margin':
-        const totalFebSpend = (febRetailRep?.spend || 0) + 
-                             (includeReva ? (febRevaRep?.spend || 0) : 0) + 
-                             (includeWholesale ? (febWholesaleRep?.spend || 0) : 0);
+        const totalComparisonSpend = (comparisonRetailRep?.spend || 0) + 
+                             (includeReva ? (comparisonRevaRep?.spend || 0) : 0) + 
+                             (includeWholesale ? (comparisonWholesaleRep?.spend || 0) : 0);
                              
-        const totalFebProfit = (febRetailRep?.profit || 0) + 
-                              (includeReva ? (febRevaRep?.profit || 0) : 0) + 
-                              (includeWholesale ? (febWholesaleRep?.profit || 0) : 0);
+        const totalComparisonProfit = (comparisonRetailRep?.profit || 0) + 
+                              (includeReva ? (comparisonRevaRep?.profit || 0) : 0) + 
+                              (includeWholesale ? (comparisonWholesaleRep?.profit || 0) : 0);
                               
-        previousValue = totalFebSpend > 0 ? (totalFebProfit / totalFebSpend) * 100 : 0;
+        previousValue = totalComparisonSpend > 0 ? (totalComparisonProfit / totalComparisonSpend) * 100 : 0;
         return formatPercent(previousValue);
         
       case 'packs':
-        previousValue = (febRetailRep?.packs || 0) + 
-                        (includeReva ? (febRevaRep?.packs || 0) : 0) + 
-                        (includeWholesale ? (febWholesaleRep?.packs || 0) : 0);
+        previousValue = (comparisonRetailRep?.packs || 0) + 
+                        (includeReva ? (comparisonRevaRep?.packs || 0) : 0) + 
+                        (includeWholesale ? (comparisonWholesaleRep?.packs || 0) : 0);
         return formatNumber(previousValue);
         
       case 'activeAccounts':
-        previousValue = (febRetailRep?.activeAccounts || 0) + 
-                        (includeReva ? (febRevaRep?.activeAccounts || 0) : 0) + 
-                        (includeWholesale ? (febWholesaleRep?.activeAccounts || 0) : 0);
+        previousValue = (comparisonRetailRep?.activeAccounts || 0) + 
+                        (includeReva ? (comparisonRevaRep?.activeAccounts || 0) : 0) + 
+                        (includeWholesale ? (comparisonWholesaleRep?.activeAccounts || 0) : 0);
         return formatNumber(previousValue);
         
       default:
@@ -317,6 +377,8 @@ export const useRepPerformanceData = () => {
     handleSort,
     loadDataFromSupabase,
     isLoading,
-    getFebValue
+    getFebValue,
+    selectedMonth,
+    setSelectedMonth
   };
 };

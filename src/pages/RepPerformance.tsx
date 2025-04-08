@@ -27,7 +27,9 @@ const RepPerformance = () => {
     handleSort,
     isLoading,
     loadDataFromSupabase,
-    getFebValue
+    getFebValue,
+    selectedMonth,
+    setSelectedMonth
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
@@ -49,6 +51,8 @@ const RepPerformance = () => {
           setIncludeReva={setIncludeReva}
           includeWholesale={includeWholesale}
           setIncludeWholesale={setIncludeWholesale}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
         />
 
         <SummaryMetrics 
@@ -83,6 +87,7 @@ const RepPerformance = () => {
           }}
           isLoading={isLoading}
           getFebValue={getFebValue}
+          selectedMonth={selectedMonth}
         />
       </div>
     </div>

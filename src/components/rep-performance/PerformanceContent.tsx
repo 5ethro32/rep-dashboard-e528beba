@@ -21,6 +21,7 @@ interface PerformanceContentProps {
   renderChangeIndicator: (changeValue: number, size?: string, metricType?: string, repName?: string, metricValue?: number) => React.ReactNode;
   isLoading?: boolean;
   getFebValue: (repName: string, metricType: string, currentValue: number, changePercent: number) => string;
+  selectedMonth: string;
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -36,7 +37,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   formatNumber,
   renderChangeIndicator,
   isLoading,
-  getFebValue
+  getFebValue,
+  selectedMonth
 }) => {
   const isMobile = useIsMobile();
 
@@ -52,10 +54,10 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
 
   const getTabTitle = (tabValue: string) => {
     switch (tabValue) {
-      case 'overall': return 'Overall Rep Performance (Combined)';
-      case 'rep': return 'Retail Performance';
-      case 'reva': return 'REVA Performance';
-      case 'wholesale': return 'Wholesale Performance';
+      case 'overall': return `Overall Rep Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
+      case 'rep': return `Retail Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
+      case 'reva': return `REVA Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
+      case 'wholesale': return `Wholesale Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
       default: return '';
     }
   };
@@ -126,7 +128,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                 />
               </div>
               
-              <div className="lg:h-96 md:h-80 h-72"> {/* Increased container height to fit both chart and legend */}
+              <div className="lg:h-96 md:h-80 h-72">
                 <RepProfitShare 
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}
