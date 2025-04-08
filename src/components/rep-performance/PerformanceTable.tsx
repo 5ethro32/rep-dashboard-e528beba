@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
@@ -26,6 +27,7 @@ interface PerformanceTableProps {
   formatNumber: (value: number) => string;
   renderChangeIndicator: (changeValue: number, size?: string) => React.ReactNode;
   isLoading?: boolean;
+  getFebValue: (repName: string, metricType: string, currentValue: number, changePercent: number) => string;
 }
 
 const PerformanceTable: React.FC<PerformanceTableProps> = ({
@@ -38,7 +40,8 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
   formatPercent,
   formatNumber,
   renderChangeIndicator,
-  isLoading
+  isLoading,
+  getFebValue
 }) => {
   // Calculate the previous month's ranking based on the same sort criteria
   const prevRankings = useMemo(() => {
