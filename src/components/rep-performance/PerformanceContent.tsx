@@ -18,8 +18,9 @@ interface PerformanceContentProps {
   formatCurrency: (value: number, decimals?: number) => string;
   formatPercent: (value: number) => string;
   formatNumber: (value: number) => string;
-  renderChangeIndicator: (changeValue: number, size?: string) => React.ReactNode;
+  renderChangeIndicator: (changeValue: number, size?: string, metricType?: string, repName?: string, metricValue?: number) => React.ReactNode;
   isLoading?: boolean;
+  getFebValue: (repName: string, metricType: string, currentValue: number, changePercent: number) => string;
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -34,7 +35,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   formatPercent,
   formatNumber,
   renderChangeIndicator,
-  isLoading
+  isLoading,
+  getFebValue
 }) => {
   const isMobile = useIsMobile();
 
@@ -109,6 +111,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   formatNumber={formatNumber}
                   renderChangeIndicator={renderChangeIndicator}
                   isLoading={isLoading}
+                  getFebValue={getFebValue}
                 />
               </div>
             </div>

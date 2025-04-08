@@ -15,6 +15,7 @@ import {
   defaultSummaryChanges,
   defaultRepChanges
 } from '@/data/rep-performance-default-data';
+import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 export const useRepPerformanceData = () => {
   const [includeRetail, setIncludeRetail] = useState(true);
@@ -245,6 +246,57 @@ export const useRepPerformanceData = () => {
   console.log("Current summary values:", summary);
   console.log("Current summary changes:", summaryChanges);
 
+  const getFebValue = (repName: string, metricType: string, currentValue: number, changePercent: number) => {
+    if (!repName || Math.abs(changePercent) < 0.1) return '';
+    
+    const febRetailRep = febRepData.find(rep => rep.rep === repName);
+    const febRevaRep = febRevaData.find(rep => rep.rep === repName);
+    const febWholesaleRep = febWholesaleData.find(rep => rep.rep === repName);
+    
+    let previousValue = 0;
+    
+    switch (metricType) {
+      case 'spend':
+        previousValue = (febRetailRep?.spend || 0) + 
+                        (includeReva ? (febRevaRep?.spend || 0) : 0) + 
+                        (includeWholesale ? (febWholesaleRep?.spend || 0) : 0);
+        return formatCurrency(previousValue);
+        
+      case 'profit':
+        previousValue = (febRetailRep?.profit || 0) + 
+                        (includeReva ? (febRevaRep?.profit || 0) : 0) + 
+                        (includeWholesale ? (febWholesaleRep?.profit || 0) : 0);
+        return formatCurrency(previousValue);
+        
+      case 'margin':
+        const totalFebSpend = (febRetailRep?.spend || 0) + 
+                             (includeReva ? (febRevaRep?.spend || 0) : 0) + 
+                             (includeWholesale ? (febWholesaleRep?.spend || 0) : 0);
+                             
+        const totalFebProfit = (febRetailRep?.profit || 0) + 
+                              (includeReva ? (febRevaRep?.profit || 0) : 0) + 
+                              (includeWholesale ? (febWholesaleRep?.profit || 0) : 0);
+                              
+        previousValue = totalFebSpend > 0 ? (totalFebProfit / totalFebSpend) * 100 : 0;
+        return formatPercent(previousValue);
+        
+      case 'packs':
+        previousValue = (febRetailRep?.packs || 0) + 
+                        (includeReva ? (febRevaRep?.packs || 0) : 0) + 
+                        (includeWholesale ? (febWholesaleRep?.packs || 0) : 0);
+        return formatNumber(previousValue);
+        
+      case 'activeAccounts':
+        previousValue = (febRetailRep?.activeAccounts || 0) + 
+                        (includeReva ? (febRevaRep?.activeAccounts || 0) : 0) + 
+                        (includeWholesale ? (febWholesaleRep?.activeAccounts || 0) : 0);
+        return formatNumber(previousValue);
+        
+      default:
+        return '';
+    }
+  };
+
   return {
     includeRetail,
     setIncludeRetail,
@@ -264,6 +316,7 @@ export const useRepPerformanceData = () => {
     sortData,
     handleSort,
     loadDataFromSupabase,
-    isLoading
+    isLoading,
+    getFebValue
   };
 };

@@ -339,80 +339,85 @@ const calculateRepChanges = (
 ) => {
   const changes: Record<string, any> = {};
   
-  // Create a map of all previous month reps and their data
-  const previousRepsMap: Record<string, RepData> = {};
+  // Create maps for current and previous month data to simplify lookup
+  const currentRepMap: Record<string, {
+    spend: number;
+    profit: number;
+    margin: number;
+    packs: number;
+    activeAccounts: number;
+    totalAccounts: number;
+  }> = {};
   
-  // Add retail reps to the map
-  previousRetailReps.forEach(rep => {
-    previousRepsMap[rep.rep] = rep;
+  const previousRepMap: Record<string, {
+    spend: number;
+    profit: number;
+    margin: number;
+    packs: number;
+    activeAccounts: number;
+    totalAccounts: number;
+  }> = {};
+  
+  // Process all rep data first to create accurate maps
+  
+  // Current month maps - combine all department data for each rep
+  [...currentRetailReps, ...currentRevaReps.filter(r => r.rep !== 'REVA'), ...currentWholesaleReps.filter(r => r.rep !== 'Wholesale')]
+    .forEach(rep => {
+      if (!currentRepMap[rep.rep]) {
+        currentRepMap[rep.rep] = {
+          spend: 0,
+          profit: 0,
+          margin: 0,
+          packs: 0,
+          activeAccounts: 0,
+          totalAccounts: 0
+        };
+      }
+      
+      currentRepMap[rep.rep].spend += rep.spend;
+      currentRepMap[rep.rep].profit += rep.profit;
+      currentRepMap[rep.rep].packs += rep.packs;
+      currentRepMap[rep.rep].activeAccounts += rep.activeAccounts;
+      currentRepMap[rep.rep].totalAccounts += rep.totalAccounts;
+    });
+  
+  // Calculate margins correctly after aggregating all values
+  Object.keys(currentRepMap).forEach(rep => {
+    currentRepMap[rep].margin = currentRepMap[rep].spend > 0 ? 
+      (currentRepMap[rep].profit / currentRepMap[rep].spend * 100) : 0;
   });
   
-  // Add REVA reps to the map
-  previousRevaReps.forEach(rep => {
-    // Skip the "REVA" rep
-    if (rep.rep === 'REVA') return;
-    
-    if (previousRepsMap[rep.rep]) {
-      // If this rep already exists in the map (from retail), combine the values
-      const existingRep = previousRepsMap[rep.rep];
-      previousRepsMap[rep.rep] = {
-        ...existingRep,
-        spend: existingRep.spend + rep.spend,
-        profit: existingRep.profit + rep.profit,
-        packs: existingRep.packs + rep.packs,
-        activeAccounts: existingRep.activeAccounts + rep.activeAccounts,
-        totalAccounts: existingRep.totalAccounts + rep.totalAccounts,
-        // Recalculate margin
-        margin: (existingRep.spend + rep.spend) > 0 ? 
-          ((existingRep.profit + rep.profit) / (existingRep.spend + rep.spend) * 100) : 0
-      };
-    } else {
-      // If this is the first time we're seeing this rep, add them directly
-      previousRepsMap[rep.rep] = rep;
-    }
+  // Previous month maps - combine all department data for each rep
+  [...previousRetailReps, ...previousRevaReps.filter(r => r.rep !== 'REVA'), ...previousWholesaleReps.filter(r => r.rep !== 'Wholesale')]
+    .forEach(rep => {
+      if (!previousRepMap[rep.rep]) {
+        previousRepMap[rep.rep] = {
+          spend: 0,
+          profit: 0,
+          margin: 0,
+          packs: 0,
+          activeAccounts: 0,
+          totalAccounts: 0
+        };
+      }
+      
+      previousRepMap[rep.rep].spend += rep.spend;
+      previousRepMap[rep.rep].profit += rep.profit;
+      previousRepMap[rep.rep].packs += rep.packs;
+      previousRepMap[rep.rep].activeAccounts += rep.activeAccounts;
+      previousRepMap[rep.rep].totalAccounts += rep.totalAccounts;
+    });
+  
+  // Calculate margins correctly after aggregating all values
+  Object.keys(previousRepMap).forEach(rep => {
+    previousRepMap[rep].margin = previousRepMap[rep].spend > 0 ? 
+      (previousRepMap[rep].profit / previousRepMap[rep].spend * 100) : 0;
   });
   
-  // Add Wholesale reps to the map
-  previousWholesaleReps.forEach(rep => {
-    // Skip the "Wholesale" rep
-    if (rep.rep === 'Wholesale') return;
-    
-    if (previousRepsMap[rep.rep]) {
-      // If this rep already exists in the map, combine the values
-      const existingRep = previousRepsMap[rep.rep];
-      previousRepsMap[rep.rep] = {
-        ...existingRep,
-        spend: existingRep.spend + rep.spend,
-        profit: existingRep.profit + rep.profit,
-        packs: existingRep.packs + rep.packs,
-        activeAccounts: existingRep.activeAccounts + rep.activeAccounts,
-        totalAccounts: existingRep.totalAccounts + rep.totalAccounts,
-        // Recalculate margin
-        margin: (existingRep.spend + rep.spend) > 0 ? 
-          ((existingRep.profit + rep.profit) / (existingRep.spend + rep.spend) * 100) : 0
-      };
-    } else {
-      // If this is the first time we're seeing this rep, add them directly
-      previousRepsMap[rep.rep] = rep;
-    }
-  });
-  
-  // Process all current month retail reps and calculate changes
-  currentRetailReps.forEach(rep => {
-    const previous = previousRepsMap[rep.rep];
-    
-    if (!previous) {
-      // If this rep didn't exist in the previous month, set change to 100% for all metrics
-      changes[rep.rep] = {
-        profit: 100,
-        margin: 100,
-        spend: 100,
-        packs: 100,
-        activeAccounts: 100,
-        totalAccounts: 100
-      };
-      return;
-    }
+  // Now calculate percentage changes using the accurate maps
+  Object.keys(currentRepMap).forEach(rep => {
+    const current = currentRepMap[rep];
+    const previous = previousRepMap[rep];
     
     // Calculate percentage changes
     const calculatePercentageChange = (current: number, previous: number) => {
@@ -420,88 +425,24 @@ const calculateRepChanges = (
       return ((current - previous) / previous) * 100;
     };
     
-    changes[rep.rep] = {
-      profit: calculatePercentageChange(rep.profit, previous.profit),
-      margin: calculatePercentageChange(rep.margin, previous.margin),
-      spend: calculatePercentageChange(rep.spend, previous.spend),
-      packs: calculatePercentageChange(rep.packs, previous.packs),
-      activeAccounts: calculatePercentageChange(rep.activeAccounts, previous.activeAccounts),
-      totalAccounts: calculatePercentageChange(rep.totalAccounts, previous.totalAccounts)
-    };
-  });
-  
-  // Process all current month REVA reps
-  currentRevaReps.forEach(rep => {
-    // Skip the "REVA" rep
-    if (rep.rep === 'REVA') return;
-    
-    if (!changes[rep.rep]) {
-      const previous = previousRepsMap[rep.rep];
-      
-      if (!previous) {
-        // If this rep didn't exist in the previous month, set change to 100% for all metrics
-        changes[rep.rep] = {
-          profit: 100,
-          margin: 100,
-          spend: 100,
-          packs: 100,
-          activeAccounts: 100,
-          totalAccounts: 100
-        };
-        return;
-      }
-      
-      // Calculate percentage changes
-      const calculatePercentageChange = (current: number, previous: number) => {
-        if (previous === 0) return 0;
-        return ((current - previous) / previous) * 100;
+    if (!previous) {
+      // Rep didn't exist in February
+      changes[rep] = {
+        profit: 100,
+        spend: 100,
+        margin: 100,
+        packs: 100,
+        activeAccounts: 100,
+        totalAccounts: 100
       };
-      
-      changes[rep.rep] = {
-        profit: calculatePercentageChange(rep.profit, previous.profit),
-        margin: calculatePercentageChange(rep.margin, previous.margin),
-        spend: calculatePercentageChange(rep.spend, previous.spend),
-        packs: calculatePercentageChange(rep.packs, previous.packs),
-        activeAccounts: calculatePercentageChange(rep.activeAccounts, previous.activeAccounts),
-        totalAccounts: calculatePercentageChange(rep.totalAccounts, previous.totalAccounts)
-      };
-    }
-  });
-  
-  // Process all current month Wholesale reps
-  currentWholesaleReps.forEach(rep => {
-    // Skip the "Wholesale" rep
-    if (rep.rep === 'Wholesale') return;
-    
-    if (!changes[rep.rep]) {
-      const previous = previousRepsMap[rep.rep];
-      
-      if (!previous) {
-        // If this rep didn't exist in the previous month, set change to 100% for all metrics
-        changes[rep.rep] = {
-          profit: 100,
-          margin: 100,
-          spend: 100,
-          packs: 100,
-          activeAccounts: 100,
-          totalAccounts: 100
-        };
-        return;
-      }
-      
-      // Calculate percentage changes
-      const calculatePercentageChange = (current: number, previous: number) => {
-        if (previous === 0) return 0;
-        return ((current - previous) / previous) * 100;
-      };
-      
-      changes[rep.rep] = {
-        profit: calculatePercentageChange(rep.profit, previous.profit),
-        margin: calculatePercentageChange(rep.margin, previous.margin),
-        spend: calculatePercentageChange(rep.spend, previous.spend),
-        packs: calculatePercentageChange(rep.packs, previous.packs),
-        activeAccounts: calculatePercentageChange(rep.activeAccounts, previous.activeAccounts),
-        totalAccounts: calculatePercentageChange(rep.totalAccounts, previous.totalAccounts)
+    } else {
+      changes[rep] = {
+        profit: calculatePercentageChange(current.profit, previous.profit),
+        spend: calculatePercentageChange(current.spend, previous.spend),
+        margin: current.margin - previous.margin, // Margin is a percentage point difference
+        packs: calculatePercentageChange(current.packs, previous.packs),
+        activeAccounts: calculatePercentageChange(current.activeAccounts, previous.activeAccounts),
+        totalAccounts: calculatePercentageChange(current.totalAccounts, previous.totalAccounts)
       };
     }
   });

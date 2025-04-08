@@ -26,7 +26,8 @@ const RepPerformance = () => {
     sortData,
     handleSort,
     isLoading,
-    loadDataFromSupabase
+    loadDataFromSupabase,
+    getFebValue
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
@@ -67,13 +68,18 @@ const RepPerformance = () => {
           formatCurrency={formatCurrency}
           formatPercent={formatPercent}
           formatNumber={formatNumber}
-          renderChangeIndicator={(changeValue, size) => 
-            <RenderChangeIndicator 
-              changeValue={changeValue} 
-              size={size === "small" ? "small" : "large"} 
-            />
-          }
+          renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
+            const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
+            return (
+              <RenderChangeIndicator 
+                changeValue={changeValue} 
+                size={size === "small" ? "small" : "large"}
+                previousValue={previousValue}
+              />
+            );
+          }}
           isLoading={isLoading}
+          getFebValue={getFebValue}
         />
       </div>
     </div>
