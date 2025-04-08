@@ -17,7 +17,7 @@ export const fetchRepPerformanceData = async () => {
       .from('sales_data')
       .select('*')
       .eq('rep_type', 'RETAIL')
-      .eq('reporting_period', '2025-03');
+      .eq('reporting_period', 'March 2025');
     
     if (repError) throw new Error(`Error fetching rep data: ${repError.message}`);
     console.log('Retail data fetched:', repDataFromDb?.length || 0, 'rows');
@@ -27,7 +27,7 @@ export const fetchRepPerformanceData = async () => {
       .from('sales_data')
       .select('*')
       .eq('rep_type', 'REVA')
-      .eq('reporting_period', '2025-03');
+      .eq('reporting_period', 'March 2025');
     
     if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
     console.log('REVA data fetched:', revaDataFromDb?.length || 0, 'rows');
@@ -37,7 +37,7 @@ export const fetchRepPerformanceData = async () => {
       .from('sales_data')
       .select('*')
       .eq('rep_type', 'WHOLESALE')
-      .eq('reporting_period', '2025-03');
+      .eq('reporting_period', 'March 2025');
     
     if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
     console.log('Wholesale data fetched:', wholesaleDataFromDb?.length || 0, 'rows');
