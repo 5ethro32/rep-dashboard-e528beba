@@ -134,19 +134,20 @@ const defaultRepChanges: Record<string, {
 };
 
 export const useRepPerformanceData = () => {
+  const [includeRetail, setIncludeRetail] = useState(true);
   const [includeReva, setIncludeReva] = useState(true);
   const [includeWholesale, setIncludeWholesale] = useState(true);
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
   
-  const [overallData, setOverallData] = useState<RepData[]>(defaultOverallData);
-  const [repData, setRepData] = useState<RepData[]>(defaultRepData);
-  const [revaData, setRevaData] = useState<RepData[]>(defaultRevaData);
-  const [wholesaleData, setWholesaleData] = useState<RepData[]>(defaultWholesaleData);
-  const [baseSummary, setBaseSummary] = useState<SummaryData>(defaultBaseSummary);
-  const [revaValues, setRevaValues] = useState<SummaryData>(defaultRevaValues);
-  const [wholesaleValues, setWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  const [overallData, setOverallData] = useState(defaultOverallData);
+  const [repData, setRepData] = useState(defaultRepData);
+  const [revaData, setRevaData] = useState(defaultRevaData);
+  const [wholesaleData, setWholesaleData] = useState(defaultWholesaleData);
+  const [baseSummary, setBaseSummary] = useState(defaultBaseSummary);
+  const [revaValues, setRevaValues] = useState(defaultRevaValues);
+  const [wholesaleValues, setWholesaleValues] = useState(defaultWholesaleValues);
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState(defaultRepChanges);
 
@@ -173,16 +174,17 @@ export const useRepPerformanceData = () => {
   }, []);
 
   useEffect(() => {
-    console.log("Recalculating combined data based on toggle changes:", { includeReva, includeWholesale });
+    console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale });
     const combinedData = getCombinedRepData(
       repData,
       revaData,
       wholesaleData,
+      includeRetail,
       includeReva,
       includeWholesale
     );
     setOverallData(combinedData);
-  }, [includeReva, includeWholesale, repData, revaData, wholesaleData]);
+  }, [includeRetail, includeReva, includeWholesale, repData, revaData, wholesaleData]);
 
   const loadDataFromSupabase = async () => {
     setIsLoading(true);
@@ -232,6 +234,7 @@ export const useRepPerformanceData = () => {
         processedRepData,
         processedRevaData,
         processedWholesaleData,
+        includeRetail,
         includeReva,
         includeWholesale
       );
@@ -264,7 +267,7 @@ export const useRepPerformanceData = () => {
     }
   };
 
-  const processRepData = (salesData: SalesDataItem[]): RepData[] => {
+  const processRepData = (salesData) => {
     const repGrouped: Record<string, {
       rep: string;
       spend: number;
@@ -318,7 +321,7 @@ export const useRepPerformanceData = () => {
     });
   };
 
-  const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
+  const calculateSummaryFromData = (repData) => {
     let totalSpend = 0;
     let totalProfit = 0;
     let totalPacks = 0;
@@ -344,15 +347,21 @@ export const useRepPerformanceData = () => {
   };
 
   const getCombinedRepData = (
-    baseRepData: RepData[] = repData,
-    baseRevaData: RepData[] = revaData,
-    baseWholesaleData: RepData[] = wholesaleData,
+    baseRepData = repData,
+    baseRevaData = revaData,
+    baseWholesaleData = wholesaleData,
+    includeRetailData: boolean = includeRetail,
     includeRevaData: boolean = includeReva,
     includeWholesaleData: boolean = includeWholesale
-  ): RepData[] => {
-    const combinedData: RepData[] = JSON.parse(JSON.stringify(baseRepData));
+  ) => {
+    let combinedData = [];
     
-    console.log("Starting combined data with base retail data:", combinedData.length);
+    if (includeRetailData) {
+      console.log("Including Retail data in combined data");
+      combinedData = JSON.parse(JSON.stringify(baseRepData));
+    }
+    
+    console.log("Starting combined data with retail data:", combinedData.length);
     
     if (includeRevaData) {
       console.log("Including REVA data in combined data");
@@ -421,7 +430,7 @@ export const useRepPerformanceData = () => {
   const getActiveData = (tabValue: string) => {
     switch (tabValue) {
       case 'rep':
-        return repData;
+        return includeRetail ? repData : [];
       case 'reva':
         return includeReva ? revaData : [];
       case 'wholesale':
@@ -432,7 +441,7 @@ export const useRepPerformanceData = () => {
     }
   };
 
-  const sortData = (data: RepData[]) => {
+  const sortData = (data) => {
     return [...data].sort((a, b) => {
       const aValue = a[sortBy as keyof RepData] as number;
       const bValue = b[sortBy as keyof RepData] as number;
@@ -448,14 +457,15 @@ export const useRepPerformanceData = () => {
   const summary = calculateSummary(
     baseSummary, 
     revaValues, 
-    wholesaleValues, 
+    wholesaleValues,
+    includeRetail,
     includeReva, 
     includeWholesale
   );
 
   console.log("Current summary values:", summary);
 
-  const handleSort = (column: string) => {
+  const handleSort = (column) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -465,6 +475,8 @@ export const useRepPerformanceData = () => {
   };
 
   return {
+    includeRetail,
+    setIncludeRetail,
     includeReva,
     setIncludeReva,
     includeWholesale,

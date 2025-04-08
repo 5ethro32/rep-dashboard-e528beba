@@ -11,6 +11,8 @@ import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndica
 
 const RepPerformance = () => {
   const {
+    includeRetail,
+    setIncludeRetail,
     includeReva,
     setIncludeReva,
     includeWholesale, 
@@ -38,6 +40,8 @@ const RepPerformance = () => {
         />
 
         <PerformanceFilters
+          includeRetail={includeRetail}
+          setIncludeRetail={setIncludeRetail}
           includeReva={includeReva}
           setIncludeReva={setIncludeReva}
           includeWholesale={includeWholesale}

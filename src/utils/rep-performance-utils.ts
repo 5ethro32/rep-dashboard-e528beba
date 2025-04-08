@@ -1,4 +1,3 @@
-
 export const calculateSummary = (
   baseSummary: {
     totalSpend: number;
@@ -24,17 +23,25 @@ export const calculateSummary = (
     activeAccounts: number;
     averageMargin: number;
   },
+  includeRetail: boolean,
   includeReva: boolean,
   includeWholesale: boolean
 ) => {
-  // Use base (retail) values only, no adding until we check what's included
-  let totalSpend = baseSummary?.totalSpend || 0;
-  let totalProfit = baseSummary?.totalProfit || 0;
-  let totalPacks = baseSummary?.totalPacks || 0;
-  let totalAccounts = baseSummary?.totalAccounts || 0;
-  let activeAccounts = baseSummary?.activeAccounts || 0;
+  let totalSpend = 0;
+  let totalProfit = 0;
+  let totalPacks = 0;
+  let totalAccounts = 0;
+  let activeAccounts = 0;
   
-  console.log("Base Summary:", { totalSpend, totalProfit, totalPacks, totalAccounts, activeAccounts });
+  // Add base (retail) values if toggle is on
+  if (includeRetail && baseSummary) {
+    console.log("Adding Retail values:", baseSummary);
+    totalSpend += baseSummary.totalSpend || 0;
+    totalProfit += baseSummary.totalProfit || 0;
+    totalPacks += baseSummary.totalPacks || 0;
+    totalAccounts += baseSummary.totalAccounts || 0;
+    activeAccounts += baseSummary.activeAccounts || 0;
+  }
   
   // Add REVA values if toggle is on
   if (includeReva && revaValues) {
