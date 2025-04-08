@@ -19,23 +19,23 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
   const isMobile = useIsMobile();
   
   return (
-    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg">
+    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
       <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Distribution</h3>
       {isLoading ? (
-        <div className="h-60 md:h-80 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center">
             <Loader2 className="h-8 w-8 animate-spin mb-2" />
             <span className="text-sm text-finance-gray">Loading data...</span>
           </div>
         </div>
       ) : (
-        <div className="h-60 md:h-80 flex items-end justify-center">
-          <div className="w-full h-full flex items-end justify-center">
+        <div className="flex-1 flex items-end justify-center">
+          <div className="w-full h-full flex items-end justify-center overflow-x-auto px-1">
             <div className={`flex items-end ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
-              {displayData.map(item => {
+              {displayData.slice(0, 12).map(item => {
                 const repInitials = item.rep.split(' ').map((name: string) => name[0]).join('');
                 const maxProfit = displayData.reduce((max, item) => Math.max(max, item.profit), 0);
-                const barHeight = Math.max(20, (item.profit / maxProfit) * (isMobile ? 150 : 200));
+                const barHeight = Math.max(20, (item.profit / maxProfit) * (isMobile ? 150 : 180));
                 const change = repChanges[item.rep] ? repChanges[item.rep].profit : 0;
                 const barColor = 'from-finance-red to-finance-red/70';
                 
@@ -51,7 +51,7 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
                         </div>
                       )}
                       <div 
-                        className={`w-6 md:w-10 bg-gradient-to-t ${barColor} rounded-t-lg transition-all duration-500 ease-in-out`}
+                        className={`w-6 md:w-8 bg-gradient-to-t ${barColor} rounded-t-lg transition-all duration-500 ease-in-out`}
                         style={{ height: `${barHeight}px` }}
                       />
                     </div>

@@ -114,25 +114,31 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
-              <RepProfitChart 
-                displayData={sortData(getActiveData(tabValue))}
-                repChanges={repChanges}
-                formatCurrency={formatCurrency}
-                isLoading={isLoading}
-              />
+              <div className="h-60 md:h-80">
+                <RepProfitChart 
+                  displayData={sortData(getActiveData(tabValue))}
+                  repChanges={repChanges}
+                  formatCurrency={formatCurrency}
+                  isLoading={isLoading}
+                />
+              </div>
               
-              <RepProfitShare 
-                displayData={sortData(getActiveData(tabValue))}
-                repChanges={repChanges}
-                isLoading={isLoading}
-              />
+              <div className="h-60 md:h-80">
+                <RepProfitShare 
+                  displayData={sortData(getActiveData(tabValue))}
+                  repChanges={repChanges}
+                  isLoading={isLoading}
+                />
+              </div>
               
-              <RepMarginComparison
-                displayData={sortData(getActiveData(tabValue))}
-                repChanges={repChanges}
-                formatPercent={formatPercent}
-                isLoading={isLoading}
-              />
+              <div className="h-60 md:h-80">
+                <RepMarginComparison
+                  displayData={sortData(getActiveData(tabValue))}
+                  repChanges={repChanges}
+                  formatPercent={formatPercent}
+                  isLoading={isLoading}
+                />
+              </div>
             </div>
           </TabsContent>
         ))}

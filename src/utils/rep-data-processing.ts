@@ -62,12 +62,16 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
     };
   });
   
-  console.log(`Processed data into ${result.length} rep records`);
-  if (result.length > 0) {
-    console.log('Sample processed rep data:', result[0]);
+  const filteredResult = result.filter(rep => {
+    return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
+  });
+  
+  console.log(`Processed data into ${result.length} rep records, ${filteredResult.length} after filtering zero records`);
+  if (filteredResult.length > 0) {
+    console.log('Sample processed rep data:', filteredResult[0]);
   }
   
-  return result;
+  return filteredResult;
 };
 
 export const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
@@ -106,7 +110,6 @@ export const getCombinedRepData = (
   includeRevaData: boolean,
   includeWholesaleData: boolean
 ): RepData[] => {
-  // Create a map to store combined data for each rep
   const repMap = new Map<string, {
     rep: string;
     spend: number;
@@ -116,7 +119,6 @@ export const getCombinedRepData = (
     totalAccounts: Set<string>;
   }>();
   
-  // 1. First add retail data if included
   if (includeRetailData) {
     console.log("Including Retail data in combined data");
     
@@ -134,17 +136,14 @@ export const getCombinedRepData = (
   
   console.log("Starting combined data processing. Rep count:", repMap.size);
   
-  // 2. Add REVA data if included
   if (includeRevaData) {
     console.log("Including REVA data in combined data");
     
     revaData.forEach(rep => {
-      // Skip the REVA category itself as we don't want it in the overall view
       if (rep.rep === 'REVA') {
         return;
       }
       
-      // For REVA data, check if the rep exists in the map
       if (!repMap.has(rep.rep)) {
         repMap.set(rep.rep, {
           rep: rep.rep,
@@ -161,7 +160,6 @@ export const getCombinedRepData = (
       repData.profit += rep.profit;
       repData.packs += rep.packs;
       
-      // Create unique identifiers for REVA accounts
       const revaActiveAccounts = Array(rep.activeAccounts).fill(null)
         .map((_, i) => `reva_${rep.rep}_${i}`);
       const revaTotalAccounts = Array(rep.totalAccounts).fill(null)
@@ -172,17 +170,14 @@ export const getCombinedRepData = (
     });
   }
   
-  // 3. Add Wholesale data if included
   if (includeWholesaleData) {
     console.log("Including Wholesale data in combined data");
     
     wholesaleData.forEach(rep => {
-      // Skip the Wholesale category itself as we don't want it in the overall view
       if (rep.rep === 'Wholesale') {
         return;
       }
       
-      // For Wholesale data, check if the rep exists in the map
       if (!repMap.has(rep.rep)) {
         repMap.set(rep.rep, {
           rep: rep.rep,
@@ -199,7 +194,6 @@ export const getCombinedRepData = (
       repData.profit += rep.profit;
       repData.packs += rep.packs;
       
-      // Create unique identifiers for Wholesale accounts that don't conflict with REVA
       const wholesaleActiveAccounts = Array(rep.activeAccounts).fill(null)
         .map((_, i) => `wholesale_${rep.rep}_${i}`);
       const wholesaleTotalAccounts = Array(rep.totalAccounts).fill(null)
@@ -210,7 +204,6 @@ export const getCombinedRepData = (
     });
   }
   
-  // Convert the map to an array of RepData objects
   const combinedData: RepData[] = Array.from(repMap.values()).map(rep => {
     return {
       rep: rep.rep,
@@ -226,8 +219,12 @@ export const getCombinedRepData = (
     };
   });
   
-  console.log("Final combined data length:", combinedData.length);
-  return combinedData;
+  const filteredCombinedData = combinedData.filter(rep => {
+    return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
+  });
+  
+  console.log("Final combined data length:", combinedData.length, "filtered length:", filteredCombinedData.length);
+  return filteredCombinedData;
 };
 
 export const sortRepData = (data: RepData[], sortBy: string, sortOrder: string): RepData[] => {

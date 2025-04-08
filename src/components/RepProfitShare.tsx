@@ -68,17 +68,17 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
   const dataToUse = isMobile ? mobileData : filteredData;
   
   return (
-    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg">
+    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
       <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Share</h3>
       {isLoading ? (
-        <div className="h-60 md:h-80 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center">
             <Loader2 className="h-8 w-8 animate-spin mb-2" />
             <span className="text-sm text-finance-gray">Loading data...</span>
           </div>
         </div>
       ) : (
-        <div className="h-60 md:h-80">
+        <div className="flex-1 flex items-center justify-center w-full">
           <DonutChart 
             data={dataToUse}
             innerValue={`${totalProfit.toLocaleString()}`}
