@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -23,7 +24,6 @@ interface RepSummary {
   totalAccounts: number;
   activeAccounts: number;
   profitPerActiveAccount: number;
-  // Removed sampleTransactions to keep responses concise
 }
 
 interface OverallMetrics {
@@ -35,8 +35,8 @@ interface OverallMetrics {
   activeAccounts: Set<string>;
   topPerformersByProfit: any[];
   topPerformersByMargin: any[];
-  bottomPerformersByProfit: any[]; // Added for worst performers
-  bottomPerformersByMargin: any[]; // Added for worst performers
+  bottomPerformersByProfit: any[];
+  bottomPerformersByMargin: any[];
   departmentBreakdown: any;
 }
 
@@ -437,7 +437,6 @@ serve(async (req) => {
             totalAccounts: allAccounts.size,
             activeAccounts: activeAccounts.size,
             profitPerActiveAccount: activeAccounts.size > 0 ? totalProfit / activeAccounts.size : 0
-            // Removed sampleTransactions to keep responses concise
           };
           
           console.log(`Found details for department ${departmentName}:`, {
@@ -523,7 +522,6 @@ serve(async (req) => {
             totalAccounts: allAccounts.size,
             activeAccounts: allActiveAccounts.size,
             profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0
-            // Removed sampleTransactions to keep responses concise
           };
           
           console.log(`Found details for rep ${repName}:`, {
@@ -698,7 +696,7 @@ When answering:
 3. When asked about top or worst performers, specify which metric (profit, margin) and include the actual values
 4. If data isn't available for a specific question, acknowledge that
 5. DO NOT provide ANY sample transactions or unnecessary details that weren't asked for
-6. DO NOT FORMAT YOUR RESPONSE WITH MARKDOWN like **, *, or ## symbols
+6. NEVER FORMAT YOUR RESPONSE WITH MARKDOWN or any formatting symbols
 7. Use plain text formatting with proper line breaks and paragraphs
 8. If responding about a specific rep, use proper paragraph breaks between sections
 9. Do not mention the department unless specifically asked - just give combined results across all departments
@@ -706,7 +704,19 @@ When answering:
 11. NEVER refer to Wholesale or REVA as sales reps - they are departments, not individuals
 12. If someone asks about "worst" performers, make sure to provide the bottom performers by profit data
 
+IMPORTANT FORMATTING RULES:
+- ALWAYS use £ (pound sterling) as currency symbol, not $ or any other currency
+- Never use any markdown formatting such as bold, italic, or headers
+- Never use any special characters like ** or ## for formatting
+
 ${isAskingAboutWorst && isAskingAboutPerformance ? 'IMPORTANT: This question is specifically asking about the WORST performers, so be sure to provide the bottom performers by profit from the data.' : ''}
+
+Department Structure Info:
+- Retail is made up of all reps other than Wholesale and REVA
+- REVA is a distinct department with its own reps
+- Wholesale is a distinct department with its own reps
+- Rep level data should combine both Rep and Sub-Rep appearances for a complete view of individual performance
+- Remember that "REVA", "Reva", and "reva" all refer to the same department (case-insensitive)
     `;
 
     // Call OpenAI API
