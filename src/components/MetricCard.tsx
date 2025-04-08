@@ -26,7 +26,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
   className,
   valueClassName,
   icon,
-  isLoading
+  isLoading = false
 }) => {
   return (
     <Card className={cn("border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg", className)}>

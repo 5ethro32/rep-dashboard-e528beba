@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -150,6 +151,7 @@ export const useRepPerformanceData = () => {
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState(defaultRepChanges);
 
+  // Effect to load stored data on component mount
   useEffect(() => {
     const storedData = localStorage.getItem('repPerformanceData');
     
@@ -172,6 +174,18 @@ export const useRepPerformanceData = () => {
     }
   }, []);
 
+  // Update overall data whenever toggles change
+  useEffect(() => {
+    const combinedData = getCombinedRepData(
+      repData,
+      revaData,
+      wholesaleData,
+      includeReva,
+      includeWholesale
+    );
+    setOverallData(combinedData);
+  }, [includeReva, includeWholesale, repData, revaData, wholesaleData]);
+
   const loadDataFromSupabase = async () => {
     setIsLoading(true);
     try {
@@ -179,6 +193,7 @@ export const useRepPerformanceData = () => {
         throw new Error('Supabase client is not initialized.');
       }
       
+      // Fetch data from Supabase for each rep_type
       const { data: repDataFromDb, error: repError } = await supabase
         .from('sales_data')
         .select('*')
@@ -200,14 +215,17 @@ export const useRepPerformanceData = () => {
       
       if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
       
+      // Process fetched data
       const processedRepData = processRepData(repDataFromDb || []);
       const processedRevaData = processRepData(revaDataFromDb || []);
       const processedWholesaleData = processRepData(wholesaleDataFromDb || []);
       
+      // Update state with processed data
       setRepData(processedRepData);
       setRevaData(processedRevaData);
       setWholesaleData(processedWholesaleData);
       
+      // Calculate summary values for each data type
       const calculatedSummary = calculateSummaryFromData(processedRepData);
       const calculatedRevaValues = calculateSummaryFromData(processedRevaData);
       const calculatedWholesaleValues = calculateSummaryFromData(processedWholesaleData);
@@ -216,6 +234,7 @@ export const useRepPerformanceData = () => {
       setRevaValues(calculatedRevaValues);
       setWholesaleValues(calculatedWholesaleValues);
       
+      // Generate combined data based on toggle settings
       const combinedData = getCombinedRepData(
         processedRepData,
         processedRevaData,
@@ -225,6 +244,7 @@ export const useRepPerformanceData = () => {
       );
       setOverallData(combinedData);
 
+      // Save data to localStorage
       localStorage.setItem('repPerformanceData', JSON.stringify({
         overallData: combinedData,
         repData: processedRepData,
@@ -233,8 +253,8 @@ export const useRepPerformanceData = () => {
         baseSummary: calculatedSummary,
         revaValues: calculatedRevaValues,
         wholesaleValues: calculatedWholesaleValues,
-        summaryChanges: summaryChanges,
-        repChanges: repChanges
+        summaryChanges,
+        repChanges
       }));
 
       console.log("Successfully loaded data from Supabase");
@@ -253,6 +273,7 @@ export const useRepPerformanceData = () => {
   };
 
   const processRepData = (salesData: SalesDataItem[]): RepData[] => {
+    // Group data by rep name
     const repGrouped: Record<string, {
       rep: string;
       spend: number;
@@ -262,6 +283,7 @@ export const useRepPerformanceData = () => {
       totalAccounts: Set<string>;
     }> = {};
     
+    // Process each sales data item and group by rep
     salesData.forEach(item => {
       if (!repGrouped[item.rep_name]) {
         repGrouped[item.rep_name] = {
@@ -284,6 +306,7 @@ export const useRepPerformanceData = () => {
       repGrouped[item.rep_name].totalAccounts.add(item.account_ref);
     });
     
+    // Transform grouped data into RepData array
     return Object.values(repGrouped).map(rep => {
       const spend = rep.spend;
       const profit = rep.profit;
@@ -307,6 +330,7 @@ export const useRepPerformanceData = () => {
   };
 
   const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
+    // Calculate summary totals from rep data
     let totalSpend = 0;
     let totalProfit = 0;
     let totalPacks = 0;
@@ -338,8 +362,10 @@ export const useRepPerformanceData = () => {
     includeRevaData: boolean = includeReva,
     includeWholesaleData: boolean = includeWholesale
   ): RepData[] => {
+    // Start with base retail data
     const combinedData: RepData[] = JSON.parse(JSON.stringify(baseRepData));
     
+    // Add REVA data if toggle is on
     if (includeRevaData) {
       baseRevaData.forEach(revaItem => {
         const repIndex = combinedData.findIndex((rep) => rep.rep === revaItem.rep);
@@ -350,13 +376,13 @@ export const useRepPerformanceData = () => {
           rep.profit += revaItem.profit;
           rep.packs += revaItem.packs;
           
-          rep.margin = (rep.profit / rep.spend) * 100;
+          rep.margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
           
           rep.activeAccounts += revaItem.activeAccounts || 0;
-          rep.profitPerActiveShop = rep.profit / rep.activeAccounts;
+          rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
           
           rep.totalAccounts += revaItem.totalAccounts || 0;
-          rep.activeRatio = (rep.activeAccounts / rep.totalAccounts) * 100;
+          rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
           
           if (rep.packs > 0) {
             rep.profitPerPack = rep.profit / rep.packs;
@@ -369,6 +395,7 @@ export const useRepPerformanceData = () => {
       });
     }
     
+    // Add Wholesale data if toggle is on
     if (includeWholesaleData) {
       baseWholesaleData.forEach(wholesaleItem => {
         const repIndex = combinedData.findIndex((rep) => rep.rep === wholesaleItem.rep);
@@ -379,13 +406,13 @@ export const useRepPerformanceData = () => {
           rep.profit += wholesaleItem.profit;
           rep.packs += wholesaleItem.packs;
           
-          rep.margin = (rep.profit / rep.spend) * 100;
+          rep.margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
           
           rep.activeAccounts += wholesaleItem.activeAccounts || 0;
-          rep.profitPerActiveShop = rep.profit / rep.activeAccounts;
+          rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
           
           rep.totalAccounts += wholesaleItem.totalAccounts || 0;
-          rep.activeRatio = (rep.activeAccounts / rep.totalAccounts) * 100;
+          rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
           
           if (rep.packs > 0) {
             rep.profitPerPack = rep.profit / rep.packs;
@@ -402,6 +429,7 @@ export const useRepPerformanceData = () => {
   };
 
   const getActiveData = (tabValue: string) => {
+    // Return the appropriate data set based on tab value
     switch (tabValue) {
       case 'rep':
         return repData;
@@ -411,14 +439,15 @@ export const useRepPerformanceData = () => {
         return includeWholesale ? wholesaleData : [];
       case 'overall':
       default:
-        return getCombinedRepData();
+        return overallData;
     }
   };
 
   const sortData = (data: RepData[]) => {
+    // Sort data based on current sort settings
     return [...data].sort((a, b) => {
-      const aValue = a[sortBy];
-      const bValue = b[sortBy];
+      const aValue = a[sortBy as keyof RepData] as number;
+      const bValue = b[sortBy as keyof RepData] as number;
       
       if (sortOrder === 'asc') {
         return aValue > bValue ? 1 : -1;
@@ -428,9 +457,11 @@ export const useRepPerformanceData = () => {
     });
   };
 
+  // Calculate summary based on currently included data types
   const summary = calculateSummary(baseSummary, revaValues, wholesaleValues, includeReva, includeWholesale);
 
   const handleSort = (column: string) => {
+    // Update sort settings
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {

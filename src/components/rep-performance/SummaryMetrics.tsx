@@ -41,18 +41,18 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       {/* Revenue Card */}
       <MetricCard
         title="Revenue"
-        value={formatCurrency(summary.totalSpend, 0)}
+        value={formatCurrency(summary.totalSpend || 0, 0)}
         change={renderChangeIndicator(summaryChanges.totalSpend)}
-        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalSpend, summaryChanges.totalSpend), 0)}`}
+        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalSpend || 0, summaryChanges.totalSpend), 0)}`}
         isLoading={isLoading}
       />
       
       {/* Profit Card */}
       <MetricCard
         title="Profit"
-        value={formatCurrency(summary.totalProfit, 0)}
+        value={formatCurrency(summary.totalProfit || 0, 0)}
         change={renderChangeIndicator(summaryChanges.totalProfit)}
-        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalProfit, summaryChanges.totalProfit), 0)}`}
+        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalProfit || 0, summaryChanges.totalProfit), 0)}`}
         valueClassName="text-finance-red"
         isLoading={isLoading}
       />
@@ -60,18 +60,18 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       {/* Margin Card */}
       <MetricCard
         title="Margin"
-        value={formatPercent(summary.averageMargin)}
+        value={formatPercent(summary.averageMargin || 0)}
         change={renderChangeIndicator(summaryChanges.averageMargin)}
-        subtitle={`Previous: ${formatPercent(getPreviousValue(summary.averageMargin, summaryChanges.averageMargin))}`}
+        subtitle={`Previous: ${formatPercent(getPreviousValue(summary.averageMargin || 0, summaryChanges.averageMargin))}`}
         isLoading={isLoading}
       />
       
       {/* Packs Card */}
       <MetricCard
         title="Packs"
-        value={formatNumber(summary.totalPacks)}
+        value={formatNumber(summary.totalPacks || 0)}
         change={renderChangeIndicator(summaryChanges.totalPacks)}
-        subtitle={`Previous: ${formatNumber(getPreviousValue(summary.totalPacks, summaryChanges.totalPacks))}`}
+        subtitle={`Previous: ${formatNumber(getPreviousValue(summary.totalPacks || 0, summaryChanges.totalPacks))}`}
         isLoading={isLoading}
       />
     </div>

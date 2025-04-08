@@ -28,28 +28,28 @@ export const calculateSummary = (
   includeWholesale: boolean
 ) => {
   // Start with retail values (base without reva and wholesale)
-  let totalSpend = baseSummary.totalSpend;
-  let totalProfit = baseSummary.totalProfit;
-  let totalPacks = baseSummary.totalPacks;
-  let totalAccounts = baseSummary.totalAccounts;
-  let activeAccounts = baseSummary.activeAccounts;
+  let totalSpend = baseSummary.totalSpend || 0;
+  let totalProfit = baseSummary.totalProfit || 0;
+  let totalPacks = baseSummary.totalPacks || 0;
+  let totalAccounts = baseSummary.totalAccounts || 0;
+  let activeAccounts = baseSummary.activeAccounts || 0;
   
   // Add REVA values if toggle is on
-  if (includeReva) {
-    totalSpend += revaValues.totalSpend;
-    totalProfit += revaValues.totalProfit;
-    totalPacks += revaValues.totalPacks;
-    totalAccounts += revaValues.totalAccounts;
-    activeAccounts += revaValues.activeAccounts;
+  if (includeReva && revaValues) {
+    totalSpend += revaValues.totalSpend || 0;
+    totalProfit += revaValues.totalProfit || 0;
+    totalPacks += revaValues.totalPacks || 0;
+    totalAccounts += revaValues.totalAccounts || 0;
+    activeAccounts += revaValues.activeAccounts || 0;
   }
   
   // Add Wholesale values if toggle is on
-  if (includeWholesale) {
-    totalSpend += wholesaleValues.totalSpend;
-    totalProfit += wholesaleValues.totalProfit;
-    totalPacks += wholesaleValues.totalPacks;
-    totalAccounts += wholesaleValues.totalAccounts;
-    activeAccounts += wholesaleValues.activeAccounts;
+  if (includeWholesale && wholesaleValues) {
+    totalSpend += wholesaleValues.totalSpend || 0;
+    totalProfit += wholesaleValues.totalProfit || 0;
+    totalPacks += wholesaleValues.totalPacks || 0;
+    totalAccounts += wholesaleValues.totalAccounts || 0;
+    activeAccounts += wholesaleValues.activeAccounts || 0;
   }
   
   // Calculate average margin based on included values
