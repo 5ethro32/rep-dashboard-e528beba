@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -24,7 +23,7 @@ interface RepSummary {
   totalAccounts: number;
   activeAccounts: number;
   profitPerActiveAccount: number;
-  sampleTransactions: any[];
+  // Removed sampleTransactions to keep responses concise
 }
 
 interface OverallMetrics {
@@ -36,6 +35,8 @@ interface OverallMetrics {
   activeAccounts: Set<string>;
   topPerformersByProfit: any[];
   topPerformersByMargin: any[];
+  bottomPerformersByProfit: any[]; // Added for worst performers
+  bottomPerformersByMargin: any[]; // Added for worst performers
   departmentBreakdown: any;
 }
 
@@ -205,6 +206,8 @@ serve(async (req) => {
             activeAccounts: new Set<string>(),
             topPerformersByProfit: [],
             topPerformersByMargin: [],
+            bottomPerformersByProfit: [], // New field for worst performers
+            bottomPerformersByMargin: [], // New field for worst performers
             departmentBreakdown: {}
           };
           
@@ -274,9 +277,10 @@ serve(async (req) => {
             activeAccounts: data.activeAccounts.size
           }));
           
-          // Get top performers by profit - ONLY include actual reps, not departments
+          // Process sales reps - ONLY include actual reps, not departments
           const repProfitMap = new Map<string, number>();
           const repMarginMap = new Map<string, { spend: number, profit: number }>();
+          const repPacksMap = new Map<string, number>();
           const repSet = new Set<string>();
           
           // First, gather all rep names (from both Rep and Sub-Rep fields)
@@ -293,12 +297,14 @@ serve(async (req) => {
           Array.from(repSet).forEach(rep => {
             let totalProfit = 0;
             let totalSpend = 0;
+            let totalPacks = 0;
             
             // Add data where the person is listed as Rep
             allData.forEach(record => {
               if (record.Rep === rep) {
                 totalProfit += Number(record.Profit || 0);
                 totalSpend += Number(record.Spend || 0);
+                totalPacks += Number(record.Packs || 0);
               }
             });
             
@@ -307,6 +313,7 @@ serve(async (req) => {
               if (record['Sub-Rep'] === rep) {
                 totalProfit += Number(record.Profit || 0);
                 totalSpend += Number(record.Spend || 0);
+                totalPacks += Number(record.Packs || 0);
               }
             });
             
@@ -315,15 +322,21 @@ serve(async (req) => {
               spend: totalSpend, 
               profit: totalProfit 
             });
+            repPacksMap.set(rep, totalPacks);
           });
           
-          // Convert to arrays and sort
-          let topByProfit = Array.from(repProfitMap.entries()).map(([rep, profit]) => ({
-            rep,
-            profit
-          })).sort((a, b) => b.profit - a.profit).slice(0, 5);
+          // Convert to arrays and sort for top performers
+          let topByProfit = Array.from(repProfitMap.entries())
+            .filter(([rep, profit]) => !isDepartment(rep) && profit > 0) // Filter out departments and zero profits
+            .map(([rep, profit]) => ({
+              rep,
+              profit
+            }))
+            .sort((a, b) => b.profit - a.profit)
+            .slice(0, 5);
           
           let topByMargin = Array.from(repMarginMap.entries())
+            .filter(([rep, { spend, profit }]) => !isDepartment(rep) && spend > 0 && profit > 0) // Filter valid entries
             .map(([rep, { spend, profit }]) => ({
               rep,
               margin: spend > 0 ? (profit / spend) * 100 : 0
@@ -332,8 +345,29 @@ serve(async (req) => {
             .sort((a, b) => b.margin - a.margin)
             .slice(0, 5);
           
+          // Get bottom performers (worst performers)
+          let bottomByProfit = Array.from(repProfitMap.entries())
+            .filter(([rep, profit]) => !isDepartment(rep) && profit !== 0) // Filter out departments and zero profits
+            .map(([rep, profit]) => ({
+              rep,
+              profit
+            }))
+            .sort((a, b) => a.profit - b.profit) // Sort ascending for worst
+            .slice(0, 5);
+          
+          let bottomByMargin = Array.from(repMarginMap.entries())
+            .filter(([rep, { spend, profit }]) => !isDepartment(rep) && spend > 0) // Filter valid entries
+            .map(([rep, { spend, profit }]) => ({
+              rep,
+              margin: spend > 0 ? (profit / spend) * 100 : 0
+            }))
+            .sort((a, b) => a.margin - b.margin) // Sort ascending for worst
+            .slice(0, 5);
+          
           metrics.topPerformersByProfit = topByProfit;
           metrics.topPerformersByMargin = topByMargin;
+          metrics.bottomPerformersByProfit = bottomByProfit;
+          metrics.bottomPerformersByMargin = bottomByMargin;
           metrics.departmentBreakdown = formattedDeptBreakdown;
           
           overallMetrics = metrics;
@@ -402,8 +436,8 @@ serve(async (req) => {
             totalPacks: totalPacks,
             totalAccounts: allAccounts.size,
             activeAccounts: activeAccounts.size,
-            profitPerActiveAccount: activeAccounts.size > 0 ? totalProfit / activeAccounts.size : 0,
-            sampleTransactions: deptData.slice(0, 3)
+            profitPerActiveAccount: activeAccounts.size > 0 ? totalProfit / activeAccounts.size : 0
+            // Removed sampleTransactions to keep responses concise
           };
           
           console.log(`Found details for department ${departmentName}:`, {
@@ -478,23 +512,6 @@ serve(async (req) => {
             data.activeAccounts.forEach(account => allActiveAccounts.add(String(account)));
           });
           
-          // Find interesting sample transactions (non-zero values preferably)
-          const interestingTransactions = repData
-            .filter(record => Number(record.Spend || 0) > 0 || Number(record.Profit || 0) !== 0)
-            .slice(0, 2);
-          
-          // If we don't have enough interesting transactions, add some zero ones
-          if (interestingTransactions.length < 3) {
-            const zeroTransactions = repData
-              .filter(record => Number(record.Spend || 0) === 0 && Number(record.Profit || 0) === 0)
-              .slice(0, 3 - interestingTransactions.length);
-            
-            interestingTransactions.push(...zeroTransactions);
-          }
-          
-          // Ensure we have exactly 3 transactions or fewer if not enough data
-          const sampleTransactions = interestingTransactions.slice(0, 3);
-          
           // Create the final rep summary
           repDetails = {
             name: repName,
@@ -505,8 +522,8 @@ serve(async (req) => {
             totalPacks: totalPacks,
             totalAccounts: allAccounts.size,
             activeAccounts: allActiveAccounts.size,
-            profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0,
-            sampleTransactions: sampleTransactions
+            profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0
+            // Removed sampleTransactions to keep responses concise
           };
           
           console.log(`Found details for rep ${repName}:`, {
@@ -520,13 +537,9 @@ serve(async (req) => {
         }
       }
       
-      // Sample of general sales data for context
-      salesData = allData.slice(0, 20);
-      
-      // Process all data to get top sales people by profit - now excluding departments
+      // Process all data to get top and bottom sales people by profit
       const repProfits: Record<string, number> = {};
       const repMargins: Record<string, { profit: number, spend: number }> = {};
-      const repPacks: Record<string, number> = {};
       
       // First collect all rep names (whether in Rep or Sub-Rep columns)
       // making sure to exclude departments like Wholesale and REVA
@@ -544,14 +557,12 @@ serve(async (req) => {
       Array.from(allReps).forEach(repName => {
         let totalProfit = 0;
         let totalSpend = 0;
-        let totalPacks = 0;
         
         // Add data where they appear as Rep
         allData.forEach(record => {
           if (record.Rep === repName) {
             totalProfit += Number(record.Profit || 0);
             totalSpend += Number(record.Spend || 0);
-            totalPacks += Number(record.Packs || 0);
           }
         });
         
@@ -560,13 +571,11 @@ serve(async (req) => {
           if (record["Sub-Rep"] === repName) {
             totalProfit += Number(record.Profit || 0);
             totalSpend += Number(record.Spend || 0);
-            totalPacks += Number(record.Packs || 0);
           }
         });
         
         repProfits[repName] = totalProfit;
         repMargins[repName] = { profit: totalProfit, spend: totalSpend };
-        repPacks[repName] = totalPacks;
       });
       
       // Sort and get top performers
@@ -583,26 +592,47 @@ serve(async (req) => {
         }))
         .sort((a, b) => b.Margin - a.Margin)
         .slice(0, 5);
-        
-      const topByPacks = Object.entries(repPacks)
-        .sort((a, b) => b[1] - a[1])
+
+      // Sort and get bottom performers
+      const bottomByProfit = Object.entries(repProfits)
+        .filter(([_, profit]) => profit !== 0) // Filter out zero profits for meaningful results
+        .sort((a, b) => a[1] - b[1])
         .slice(0, 5)
-        .map(([rep, packs]) => ({ Rep: rep, Packs: packs, Department: "Combined" }));
+        .map(([rep, profit]) => ({ Rep: rep, Profit: profit, Department: "Combined" }));
+        
+      const bottomByMargin = Object.entries(repMargins)
+        .filter(([_, { spend }]) => spend > 0) // Filter for meaningful margins
+        .map(([rep, { profit, spend }]) => ({ 
+          Rep: rep, 
+          Margin: spend > 0 ? (profit / spend) * 100 : 0,
+          Department: "Combined"
+        }))
+        .sort((a, b) => a.Margin - b.Margin)
+        .slice(0, 5);
       
       topSalesPeople = {
         byProfit: topByProfit,
         byMargin: topByMargin,
-        byPacks: topByPacks
+        bottomByProfit: bottomByProfit,
+        bottomByMargin: bottomByMargin
       };
+      
+      // Sample of general sales data for context (reduced to bare minimum)
+      salesData = allData.slice(0, 3);
       
       console.log(`Successfully processed sales data for ${month}`);
       console.log("Top performers by profit:", JSON.stringify(topByProfit.slice(0, 3)));
+      console.log("Bottom performers by profit:", JSON.stringify(bottomByProfit.slice(0, 3)));
       
     } catch (error) {
       console.error(`Error processing sales data from ${tableName}:`, error);
       salesData = `Unable to process sales data from ${tableName}: ${error.message}`;
       topSalesPeople = "Data unavailable";
     }
+
+    // Check if the message is asking about worst performers
+    const isAskingAboutWorst = /worst|lowest|poorest|bottom|weakest/i.test(message);
+    const isAskingAboutPerformance = /perform|sales|profit|margin/i.test(message);
 
     // Prepare a system prompt with data context
     const systemPrompt = `
@@ -616,11 +646,14 @@ ${JSON.stringify(topSalesPeople?.byProfit || 'Data unavailable')}
 2. Top performers by margin in ${selectedMonth || 'March'} 2025:
 ${JSON.stringify(topSalesPeople?.byMargin || 'Data unavailable')}
 
-3. Top performers by packs sold in ${selectedMonth || 'March'} 2025:
-${JSON.stringify(topSalesPeople?.byPacks || 'Data unavailable')}
+3. Worst performers by profit in ${selectedMonth || 'March'} 2025:
+${JSON.stringify(topSalesPeople?.bottomByProfit || 'Data unavailable')}
+
+4. Worst performers by margin in ${selectedMonth || 'March'} 2025:
+${JSON.stringify(topSalesPeople?.bottomByMargin || 'Data unavailable')}
 
 ${overallMetrics ? `
-4. Overall metrics for ${selectedMonth || 'March'} 2025:
+5. Overall metrics for ${selectedMonth || 'March'} 2025:
 
 Total Spend: ${overallMetrics.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 Total Profit: ${overallMetrics.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -635,12 +668,18 @@ ${JSON.stringify(overallMetrics.departmentBreakdown, null, 2)}
 Top Performers by Profit:
 ${JSON.stringify(overallMetrics.topPerformersByProfit, null, 2)}
 
+Bottom Performers by Profit:
+${JSON.stringify(overallMetrics.bottomPerformersByProfit, null, 2)}
+
 Top Performers by Margin:
 ${JSON.stringify(overallMetrics.topPerformersByMargin, null, 2)}
+
+Bottom Performers by Margin:
+${JSON.stringify(overallMetrics.bottomPerformersByMargin, null, 2)}
 ` : ''}
 
 ${repDetails ? `
-${overallMetrics ? '5' : '4'}. Specific details for ${repDetails.name}:
+6. Specific details for ${repDetails.name}:
 
 Key Performance Metrics:
 
@@ -651,34 +690,23 @@ Total Packs: ${repDetails.totalPacks.toLocaleString('en-US')}
 Total Accounts: ${repDetails.totalAccounts}
 Active Accounts: ${repDetails.activeAccounts}
 Profit per Active Account: ${repDetails.profitPerActiveAccount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-
-Sample transactions:
-${JSON.stringify(repDetails.sampleTransactions.map(t => ({
-  account: t['Account Name'],
-  spend: t.Spend,
-  cost: t.Cost,
-  profit: t.Profit,
-  margin: t.Margin,
-  packs: t.Packs
-})), null, 2)}
 ` : ''}
 
 When answering:
-1. Be concise and specific, focusing on the data I've provided
+1. Be extremely CONCISE and DIRECT - only provide exactly what was asked for
 2. If asked about specific numbers, provide the exact figures from the data above
-3. When asked about top performers, specify which metric (profit, margin, packs) and include the actual values
+3. When asked about top or worst performers, specify which metric (profit, margin) and include the actual values
 4. If data isn't available for a specific question, acknowledge that
-5. Always maintain a professional, helpful tone
+5. DO NOT provide ANY sample transactions or unnecessary details that weren't asked for
 6. DO NOT FORMAT YOUR RESPONSE WITH MARKDOWN like **, *, or ## symbols
 7. Use plain text formatting with proper line breaks and paragraphs
-8. Use simple formatting with dashes and numbers for lists
-9. If responding about a specific rep, use proper paragraph breaks between sections
-10. Do not mention the department unless specifically asked - just give combined results across all departments
-11. For rep performance, combine data where they appear as both Rep and Sub-Rep
-12. NEVER refer to Wholesale or REVA as sales reps - they are departments, not individuals
+8. If responding about a specific rep, use proper paragraph breaks between sections
+9. Do not mention the department unless specifically asked - just give combined results across all departments
+10. For rep performance, combine data where they appear as both Rep and Sub-Rep
+11. NEVER refer to Wholesale or REVA as sales reps - they are departments, not individuals
+12. If someone asks about "worst" performers, make sure to provide the bottom performers by profit data
 
-Sample of the general data (first few records):
-${JSON.stringify(salesData?.slice(0, 3) || 'No data available')}
+${isAskingAboutWorst && isAskingAboutPerformance ? 'IMPORTANT: This question is specifically asking about the WORST performers, so be sure to provide the bottom performers by profit from the data.' : ''}
     `;
 
     // Call OpenAI API
