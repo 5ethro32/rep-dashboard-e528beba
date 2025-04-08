@@ -32,7 +32,10 @@ const RepPerformance = () => {
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
         <PerformanceHeader />
         
-        <ActionsHeader onRefresh={loadDataFromSupabase} />
+        <ActionsHeader 
+          onRefresh={loadDataFromSupabase}
+          isLoading={isLoading} 
+        />
 
         <PerformanceFilters
           includeReva={includeReva}

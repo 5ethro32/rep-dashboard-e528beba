@@ -3,16 +3,19 @@ import React from 'react';
 import { Database, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import { supabase } from "@/integrations/supabase/client";
 
-const ActionsHeader: React.FC = () => {
+interface ActionsHeaderProps {
+  onRefresh: () => Promise<boolean>;
+  isLoading?: boolean;
+}
+
+const ActionsHeader: React.FC<ActionsHeaderProps> = ({ onRefresh, isLoading = false }) => {
   const { toast } = useToast();
-  const { loadDataFromSupabase, isLoading } = useRepPerformanceData();
 
   const handleConnectToDatabase = async () => {
     try {
-      await loadDataFromSupabase();
+      await onRefresh();
       toast({
         title: "Data loaded successfully",
         description: "The latest data has been loaded from Supabase.",
