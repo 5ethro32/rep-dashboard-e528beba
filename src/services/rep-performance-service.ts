@@ -27,6 +27,13 @@ export const fetchRepPerformanceData = async () => {
     if (allDataFromDb.length > 0) {
       console.log('First raw data item:', allDataFromDb[0]);
       
+      // Log all unique Department values to debug case sensitivity issues
+      const departmentValues = new Set();
+      allDataFromDb.forEach(item => {
+        if (item.Department) departmentValues.add(item.Department);
+      });
+      console.log('All unique Department values in raw data:', [...departmentValues]);
+      
       // Calculate the total raw profit to verify data
       const rawTotalProfit = allDataFromDb.reduce((sum, item) => {
         const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
@@ -34,6 +41,18 @@ export const fetchRepPerformanceData = async () => {
       }, 0);
       
       console.log('Raw total profit from database:', rawTotalProfit);
+      
+      // Count rows and profit by department to debug
+      const deptStats = {};
+      allDataFromDb.forEach(item => {
+        const dept = item.Department || 'Unknown';
+        if (!deptStats[dept]) {
+          deptStats[dept] = { count: 0, profit: 0 };
+        }
+        deptStats[dept].count++;
+        deptStats[dept].profit += (typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0));
+      });
+      console.log('Department statistics (raw data):', deptStats);
     }
     
     // Map the sales_data_march table fields to our standard format
@@ -45,6 +64,9 @@ export const fetchRepPerformanceData = async () => {
       const credit = typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0);
       const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
       const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+      
+      // Store the original Department value to debug
+      const originalDept = item.Department;
       
       return {
         id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
@@ -59,8 +81,10 @@ export const fetchRepPerformanceData = async () => {
         profit: profit,
         margin: margin,
         packs: packs,
-        // Normalize department case for consistency
-        rep_type: item.Department ? item.Department.toUpperCase() : 'RETAIL',
+        // IMPORTANT: Keep the EXACT original Department value from database
+        // This is critical for filtering correctly
+        rep_type: originalDept || 'RETAIL',
+        original_dept: originalDept, // Add this for debugging
         import_date: new Date().toISOString()
       };
     });
@@ -80,18 +104,19 @@ export const fetchRepPerformanceData = async () => {
       const dept = item.rep_type;
       deptCounts[dept] = (deptCounts[dept] || 0) + 1;
     });
-    console.log('Department counts:', deptCounts);
+    console.log('Department counts in mapped data:', deptCounts);
     
-    // Separate data by rep_type (using normalized UPPERCASE comparison)
+    // Group data by original department value (not normalized)
+    // This preserves the exact case as in the database
     const repDataFromDb = mappedData.filter(item => item.rep_type === 'RETAIL');
     const revaDataFromDb = mappedData.filter(item => item.rep_type === 'REVA');
-    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'WHOLESALE');
+    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'Wholesale');
     
     console.log('Retail data count:', repDataFromDb.length);
     console.log('REVA data count:', revaDataFromDb.length);
     console.log('Wholesale data count:', wholesaleDataFromDb.length);
     
-    // Log segment profits to verify data split
+    // Log profit metrics to verify department filtering
     const retailProfit = repDataFromDb.reduce((sum, item) => sum + item.profit, 0);
     const revaProfit = revaDataFromDb.reduce((sum, item) => sum + item.profit, 0);
     const wholesaleProfit = wholesaleDataFromDb.reduce((sum, item) => sum + item.profit, 0);

@@ -42,7 +42,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
           />
         </div>
         <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg">
-          <Label htmlFor="include-wholesale" className="text-xs md:text-sm mr-2 text-white/90">Include WHOLESALE</Label>
+          <Label htmlFor="include-wholesale" className="text-xs md:text-sm mr-2 text-white/90">Include Wholesale</Label>
           <Switch 
             id="include-wholesale" 
             checked={includeWholesale}
