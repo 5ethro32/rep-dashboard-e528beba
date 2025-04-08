@@ -41,7 +41,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
             cx="50%"
             cy="50%"
             innerRadius="60%"
-            outerRadius="80%"
+            outerRadius="85%"
             paddingAngle={2}
             dataKey="value"
             startAngle={90}
@@ -63,7 +63,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
       
       {innerValue && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
-          <div className="text-base md:text-lg font-bold text-white">{innerValue}</div>
+          <div className="text-lg md:text-xl font-bold text-white">{innerValue}</div>
           {innerLabel && <div className="text-2xs md:text-xs text-finance-gray mt-0.5 opacity-80">{innerLabel}</div>}
         </div>
       )}

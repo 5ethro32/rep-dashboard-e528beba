@@ -30,7 +30,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     
     return {
       name: item.rep,
-      value: Number(percentage.toFixed(1)),
+      value: Number(percentage.toFixed(0)), // Changed to 0 decimal places
       color: colors[index % colors.length],
       profit: item.profit,
       prevProfit: prevProfit,
@@ -54,7 +54,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     if (othersValue > 0) {
       filteredData.push({
         name: "Others",
-        value: Number(othersValue.toFixed(1)),
+        value: Number(othersValue.toFixed(0)), // Changed to 0 decimal places
         color: "#6b7280",
         profit: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.profit, 0),
         prevProfit: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.prevProfit, 0),
@@ -89,6 +89,16 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     maximumFractionDigits: 0
   });
   
+  // Helper function to get initials from name
+  const getInitials = (name: string): string => {
+    if (name === "Others") return "Others";
+    
+    return name
+      .split(' ')
+      .map(part => part.charAt(0))
+      .join('');
+  };
+  
   return (
     <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
       <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Share</h3>
@@ -102,7 +112,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
       ) : (
         <div className="flex flex-col h-full">
           <div className="flex-1">
-            <div className="h-36 md:h-44 w-full mb-2 md:mb-4">
+            <div className="h-40 md:h-52 w-full mb-2 md:mb-4">
               <DonutChart 
                 data={dataToUse}
                 innerValue={formattedProfit}
@@ -112,8 +122,8 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
           </div>
           
           {/* Legend */}
-          <div className="mt-auto overflow-y-auto max-h-20 md:max-h-24 scrollbar-none">
-            <div className="grid grid-cols-2 gap-1">
+          <div className="mt-auto overflow-y-auto max-h-24 md:max-h-28 scrollbar-none">
+            <div className="grid grid-cols-2 gap-2">
               {dataToUse.map((item, index) => (
                 <div key={index} className="flex items-center text-2xs md:text-xs">
                   <div 
@@ -121,7 +131,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
                     style={{ backgroundColor: item.color }}
                   />
                   <div className="truncate">
-                    <span className="font-medium">{item.name}</span> 
+                    <span className="font-medium">{getInitials(item.name)}</span> 
                     <span className="text-finance-gray ml-1">({item.value}%)</span>
                   </div>
                 </div>

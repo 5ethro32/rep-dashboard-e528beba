@@ -18,7 +18,7 @@ const ActionsHeader: React.FC<ActionsHeaderProps> = ({ onRefresh, isLoading = fa
       await onRefresh();
       toast({
         title: "Data loaded successfully",
-        description: "The latest data has been loaded from Supabase.",
+        description: "The latest data has been loaded from the database.",
       });
     } catch (error) {
       toast({
@@ -38,12 +38,12 @@ const ActionsHeader: React.FC<ActionsHeaderProps> = ({ onRefresh, isLoading = fa
         {isSupabaseConnected ? (
           <div className="flex items-center text-green-400">
             <Check className="h-4 w-4 mr-2" />
-            <span>Connected to Supabase</span>
+            <span>Connected to Database</span>
           </div>
         ) : (
           <div className="flex items-center text-amber-300">
             <AlertCircle className="h-4 w-4 mr-2" />
-            <span>Supabase connection not available</span>
+            <span>Database connection not available</span>
           </div>
         )}
       </div>
@@ -58,7 +58,7 @@ const ActionsHeader: React.FC<ActionsHeaderProps> = ({ onRefresh, isLoading = fa
         ) : (
           <Database className="mr-2 h-4 w-4" />
         )}
-        {isLoading ? "Loading Data..." : "Load Data from Supabase"}
+        {isLoading ? "Loading Data..." : "Load Data"}
       </Button>
     </div>
   );
