@@ -39,8 +39,66 @@ serve(async (req) => {
     // Get sales data for the specified month
     let salesData;
     let topSalesPeople;
+    let repDetails = null;
+
     try {
-      // Get general sales data
+      // Extract any rep name mentioned in the message for detailed lookup
+      const repNameMatch = message.match(/(?:about|on|for|by)\s+([A-Z][a-z]+\s+[A-Z][a-z]+)/i);
+      const repName = repNameMatch ? repNameMatch[1] : null;
+      
+      // If a specific rep is mentioned, get their details
+      if (repName) {
+        const { data: repData, error: repError } = await supabase
+          .from(tableName)
+          .select('*')
+          .ilike('Rep', `%${repName}%`);
+        
+        if (repError) {
+          console.error(`Error fetching data for rep ${repName}:`, repError);
+        } else if (repData && repData.length > 0) {
+          // Calculate rep totals
+          const repTotals = repData.reduce((totals, record) => {
+            totals.spend += Number(record.Spend || 0);
+            totals.profit += Number(record.Profit || 0);
+            totals.packs += Number(record.Packs || 0);
+            
+            if (!totals.accounts.includes(record['Account Ref'])) {
+              totals.accounts.push(record['Account Ref']);
+            }
+            
+            if (Number(record.Spend || 0) > 0 && !totals.activeAccounts.includes(record['Account Ref'])) {
+              totals.activeAccounts.push(record['Account Ref']);
+            }
+            
+            return totals;
+          }, { 
+            spend: 0, 
+            profit: 0, 
+            packs: 0, 
+            accounts: [], 
+            activeAccounts: [],
+            department: repData[0].Department || 'Unknown'
+          });
+          
+          repDetails = {
+            name: repName,
+            department: repTotals.department,
+            totalSpend: repTotals.spend,
+            totalProfit: repTotals.profit,
+            margin: repTotals.spend > 0 ? (repTotals.profit / repTotals.spend) * 100 : 0,
+            totalPacks: repTotals.packs,
+            totalAccounts: repTotals.accounts.length,
+            activeAccounts: repTotals.activeAccounts.length,
+            sampleTransactions: repData.slice(0, 3) // First 3 transactions for context
+          };
+          
+          console.log(`Found details for rep ${repName}:`, JSON.stringify(repDetails, null, 2));
+        } else {
+          console.log(`No data found for rep ${repName}`);
+        }
+      }
+      
+      // Get general sales data (limited sample)
       const { data: generalData, error: generalError } = await supabase
         .from(tableName)
         .select('*')
@@ -87,6 +145,15 @@ serve(async (req) => {
         throw packsError;
       }
       
+      // Get unique reps with aggregated data
+      const { data: allReps, error: repsError } = await supabase.rpc('get_unique_reps_with_data', { 
+        table_name: tableName 
+      });
+      
+      if (repsError) {
+        console.error('Error fetching all reps data:', repsError);
+      }
+      
       salesData = generalData;
       topSalesPeople = {
         byProfit: topByProfit,
@@ -117,6 +184,20 @@ ${JSON.stringify(topSalesPeople?.byMargin || 'Data unavailable', null, 2)}
 
 3. Top performers by packs sold in ${month} 2025:
 ${JSON.stringify(topSalesPeople?.byPacks || 'Data unavailable', null, 2)}
+
+${repDetails ? `
+4. Specific details for ${repDetails.name}:
+- Department: ${repDetails.department}
+- Total Spend: ${repDetails.totalSpend}
+- Total Profit: ${repDetails.totalProfit}
+- Margin: ${repDetails.margin.toFixed(2)}%
+- Total Packs: ${repDetails.totalPacks}
+- Total Accounts: ${repDetails.totalAccounts}
+- Active Accounts: ${repDetails.activeAccounts}
+
+Sample transactions for ${repDetails.name}:
+${JSON.stringify(repDetails.sampleTransactions, null, 2)}
+` : ''}
 
 When answering:
 1. Be concise and specific, focusing on the data I've provided
