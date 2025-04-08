@@ -40,7 +40,7 @@ const UserProfileButton = () => {
         <span className="text-sm font-medium text-white">{user.email}</span>
       </div>
       <Avatar className="h-9 w-9 border border-white/10">
-        <AvatarFallback className="bg-finance-red text-white">
+        <AvatarFallback className="red-gradient-bg text-white">
           {userInitials}
         </AvatarFallback>
       </Avatar>

@@ -28,17 +28,32 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         <h2 className="text-sm font-medium mb-2 text-white/80">Include Data Sources</h2>
         <div className="flex flex-wrap gap-6">
           <div className="flex items-center space-x-2">
-            <Switch id="retail-toggle" checked={includeRetail} onCheckedChange={setIncludeRetail} />
+            <Switch 
+              id="retail-toggle" 
+              checked={includeRetail} 
+              onCheckedChange={setIncludeRetail}
+              className="data-[state=checked]:red-gradient-bg" 
+            />
             <Label htmlFor="retail-toggle" className="text-white/80 text-sm">Retail</Label>
           </div>
           
           <div className="flex items-center space-x-2">
-            <Switch id="reva-toggle" checked={includeReva} onCheckedChange={setIncludeReva} />
+            <Switch 
+              id="reva-toggle" 
+              checked={includeReva} 
+              onCheckedChange={setIncludeReva}
+              className="data-[state=checked]:red-gradient-bg" 
+            />
             <Label htmlFor="reva-toggle" className="text-white/80 text-sm">REVA</Label>
           </div>
           
           <div className="flex items-center space-x-2">
-            <Switch id="wholesale-toggle" checked={includeWholesale} onCheckedChange={setIncludeWholesale} />
+            <Switch 
+              id="wholesale-toggle" 
+              checked={includeWholesale} 
+              onCheckedChange={setIncludeWholesale}
+              className="data-[state=checked]:red-gradient-bg" 
+            />
             <Label htmlFor="wholesale-toggle" className="text-white/80 text-sm">Wholesale</Label>
           </div>
         </div>

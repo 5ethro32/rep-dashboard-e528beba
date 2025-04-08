@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -59,6 +58,10 @@ export default {
 				},
 				finance: {
 					red: '#ea384c',
+					redGradient: {
+						from: '#ff6b81',
+						to: '#d81937',
+					},
 					darkBg: '#121212',
 					darkSecondary: '#1A1F2C',
 					gray: '#8E9196',
@@ -74,6 +77,9 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				}
+			},
+			backgroundImage: {
+				'red-gradient': 'linear-gradient(135deg, var(--tw-gradient-stops))',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
