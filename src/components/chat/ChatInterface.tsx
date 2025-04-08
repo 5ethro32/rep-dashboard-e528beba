@@ -26,12 +26,13 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: '1', 
-      content: `Hello! I'm Vera, your sales data assistant. Ask me anything about ${selectedMonth} 2025 performance data.`, 
+      content: `Hello! I'm Vera, your sales data assistant. Ask me anything about February or March 2025 performance data.`, 
       isUser: false, 
       timestamp: new Date(),
       examples: [
         "Who are the top performers?",
-        "Tell me about Craig's sales"
+        "Tell me about Craig's sales",
+        "Compare February and March profit"
       ]
     }
   ]);
@@ -55,21 +56,8 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
     }
   }, [isOpen]);
 
-  // Update the welcome message when the selected month changes
-  useEffect(() => {
-    if (messages.length === 1 && messages[0].id === '1') {
-      setMessages([{ 
-        id: '1', 
-        content: `Hello! I'm Vera, your sales data assistant. Ask me anything about ${selectedMonth} 2025 performance data.`, 
-        isUser: false, 
-        timestamp: new Date(),
-        examples: [
-          "Who are the top performers?",
-          "Tell me about Craig's sales"
-        ]
-      }]);
-    }
-  }, [selectedMonth]);
+  // We don't need to update the welcome message based on selectedMonth anymore
+  // since Vera can now answer questions about both months
 
   const handleExampleClick = (exampleText: string) => {
     // Set the example text as the current message and submit
@@ -101,7 +89,8 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
     setIsLoading(true);
     
     try {
-      // Call Supabase Edge Function
+      // Call Supabase Edge Function - we still pass selectedMonth for context
+      // but the function will use data from both months
       const { data, error } = await supabase.functions.invoke('rep-chat', {
         body: {
           message: userQuery,

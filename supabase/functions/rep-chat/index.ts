@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -195,7 +196,7 @@ You can answer questions about either month, compare performance between months,
   }
 })
 
-// Helper functions remain the same
+// Helper functions for processing data
 function processRepData(data: any[]): Record<string, RepData> {
   const repMap: Record<string, RepData> = {}
   
