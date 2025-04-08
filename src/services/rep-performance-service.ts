@@ -105,7 +105,7 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Total combined data rows:', allDataFromDb.length);
     
-    // Map the data to our standard format
+    // Map the data to our standard format, handling special cases for REVA and Wholesale
     const mappedData = allDataFromDb.map((item: any) => {
       // Parse numerical values properly, ensuring they're numbers and not strings
       const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
@@ -115,11 +115,22 @@ export const fetchRepPerformanceData = async () => {
       const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
       const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
       
+      // Determine the rep name to use
+      // For REVA and Wholesale, use the Sub-Rep field if available instead of the Rep field
+      let repName = item.Rep || '';
+      const subRep = item['Sub-Rep'] || '';
+      const department = item.Department || 'RETAIL';
+      
+      // If this is a REVA or Wholesale item and we have a Sub-Rep, use that as the rep name
+      if ((department === 'REVA' || department === 'Wholesale') && subRep) {
+        repName = subRep;
+      }
+      
       return {
         id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
         reporting_period: 'March 2025',
-        rep_name: item.Rep || '',
-        sub_rep: item['Sub-Rep'] || '',
+        rep_name: repName,
+        sub_rep: subRep,
         account_ref: item['Account Ref'] || '',
         account_name: item['Account Name'] || '',
         spend: spend,
@@ -128,8 +139,8 @@ export const fetchRepPerformanceData = async () => {
         profit: profit,
         margin: margin,
         packs: packs,
-        rep_type: item.Department || 'RETAIL',
-        original_dept: item.Department,
+        rep_type: department,
+        original_dept: department,
         import_date: new Date().toISOString()
       };
     });

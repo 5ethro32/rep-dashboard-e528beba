@@ -59,7 +59,7 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
       totalAccounts: totalAccounts,
       profitPerActiveShop: activeAccounts > 0 ? profit / activeAccounts : 0,
       profitPerPack: packs > 0 ? profit / packs : 0,
-      activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
+      activeRatio: totalAccounts > 0 ? (activeAccounts.size / totalAccounts.size) * 100 : 0
     };
   });
   
@@ -140,6 +140,11 @@ export const getCombinedRepData = (
     console.log("Including REVA data in combined data");
     
     revaData.forEach(rep => {
+      // Skip the REVA category itself as we don't want it in the overall view
+      if (rep.rep === 'REVA') {
+        return;
+      }
+      
       // For REVA data, check if the rep exists in the map
       if (!repMap.has(rep.rep)) {
         repMap.set(rep.rep, {
@@ -173,6 +178,11 @@ export const getCombinedRepData = (
     console.log("Including Wholesale data in combined data");
     
     wholesaleData.forEach(rep => {
+      // Skip the Wholesale category itself as we don't want it in the overall view
+      if (rep.rep === 'Wholesale') {
+        return;
+      }
+      
       // For Wholesale data, check if the rep exists in the map
       if (!repMap.has(rep.rep)) {
         repMap.set(rep.rep, {
