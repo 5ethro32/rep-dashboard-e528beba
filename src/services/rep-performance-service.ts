@@ -275,6 +275,14 @@ const calculateSummaryChanges = (
                             (currentReva?.totalPacks || 0) + 
                             (currentWholesale?.totalPacks || 0);
   
+  const currentTotalAccounts = (currentRetail?.totalAccounts || 0) + 
+                               (currentReva?.totalAccounts || 0) + 
+                               (currentWholesale?.totalAccounts || 0);
+  
+  const currentActiveAccounts = (currentRetail?.activeAccounts || 0) + 
+                                (currentReva?.activeAccounts || 0) + 
+                                (currentWholesale?.activeAccounts || 0);
+  
   // Calculate average margin for current month (weighted by spend)
   const currentAverageMargin = currentTotalSpend > 0 ? 
     (currentTotalProfit / currentTotalSpend * 100) : 0;
@@ -292,6 +300,14 @@ const calculateSummaryChanges = (
                              (previousReva?.totalPacks || 0) + 
                              (previousWholesale?.totalPacks || 0);
   
+  const previousTotalAccounts = (previousRetail?.totalAccounts || 0) + 
+                                (previousReva?.totalAccounts || 0) + 
+                                (previousWholesale?.totalAccounts || 0);
+  
+  const previousActiveAccounts = (previousRetail?.activeAccounts || 0) + 
+                                 (previousReva?.activeAccounts || 0) + 
+                                 (previousWholesale?.activeAccounts || 0);
+  
   // Calculate average margin for previous month (weighted by spend)
   const previousAverageMargin = previousTotalSpend > 0 ? 
     (previousTotalProfit / previousTotalSpend * 100) : 0;
@@ -306,7 +322,9 @@ const calculateSummaryChanges = (
     totalSpend: calculatePercentageChange(currentTotalSpend, previousTotalSpend),
     totalProfit: calculatePercentageChange(currentTotalProfit, previousTotalProfit),
     averageMargin: calculatePercentageChange(currentAverageMargin, previousAverageMargin),
-    totalPacks: calculatePercentageChange(currentTotalPacks, previousTotalPacks)
+    totalPacks: calculatePercentageChange(currentTotalPacks, previousTotalPacks),
+    totalAccounts: calculatePercentageChange(currentTotalAccounts, previousTotalAccounts),
+    activeAccounts: calculatePercentageChange(currentActiveAccounts, previousActiveAccounts)
   };
 };
 
