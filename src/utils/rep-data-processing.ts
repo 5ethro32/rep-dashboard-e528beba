@@ -1,4 +1,3 @@
-
 import { RepData, SalesDataItem, SummaryData } from "@/types/rep-performance.types";
 
 export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
@@ -59,7 +58,7 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
       totalAccounts: totalAccounts,
       profitPerActiveShop: activeAccounts > 0 ? profit / activeAccounts : 0,
       profitPerPack: packs > 0 ? profit / packs : 0,
-      activeRatio: totalAccounts > 0 ? (activeAccounts.size / totalAccounts.size) * 100 : 0
+      activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
     };
   });
   
