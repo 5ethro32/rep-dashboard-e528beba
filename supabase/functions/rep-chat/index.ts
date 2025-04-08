@@ -27,6 +27,18 @@ interface RepSummary {
   sampleTransactions: any[];
 }
 
+interface OverallMetrics {
+  totalSpend: number;
+  totalProfit: number;
+  averageMargin: number;
+  totalPacks: number;
+  totalAccounts: Set<string>;
+  activeAccounts: Set<string>;
+  topPerformersByProfit: any[];
+  topPerformersByMargin: any[];
+  departmentBreakdown: any;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -58,11 +70,160 @@ serve(async (req) => {
     let salesData;
     let topSalesPeople;
     let repDetails: RepSummary | null = null;
+    let overallMetrics: OverallMetrics | null = null;
 
     try {
+      // Check if the query is asking about overall metrics
+      const isOverallQuery = /total|overall|all|combined|everyone|across all|summary/i.test(message);
+      
       // Extract any rep name mentioned in the message for detailed lookup
       const repNameMatch = message.match(/(?:about|on|for|by)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i);
       const repName = repNameMatch ? repNameMatch[1] : null;
+      
+      // If asking about overall metrics, get that data
+      if (isOverallQuery) {
+        console.log("Detected query for overall metrics");
+        
+        const { data: allData, error: allDataError } = await supabase
+          .from(tableName)
+          .select('*');
+        
+        if (allDataError) {
+          console.error(`Error fetching all data from ${tableName}:`, allDataError);
+          throw allDataError;
+        }
+        
+        if (allData && allData.length > 0) {
+          // Calculate overall metrics
+          const metrics: OverallMetrics = {
+            totalSpend: 0,
+            totalProfit: 0,
+            averageMargin: 0,
+            totalPacks: 0,
+            totalAccounts: new Set<string>(),
+            activeAccounts: new Set<string>(),
+            topPerformersByProfit: [],
+            topPerformersByMargin: [],
+            departmentBreakdown: {}
+          };
+          
+          // Group by department for breakdown
+          const departmentBreakdown: Record<string, {
+            spend: number,
+            profit: number,
+            packs: number,
+            accounts: Set<string>,
+            activeAccounts: Set<string>
+          }> = {};
+          
+          // Aggregate data
+          allData.forEach(record => {
+            const dept = record.Department || 'Unknown';
+            const spend = Number(record.Spend || 0);
+            const profit = Number(record.Profit || 0);
+            const packs = Number(record.Packs || 0);
+            
+            // Add to overall totals
+            metrics.totalSpend += spend;
+            metrics.totalProfit += profit;
+            metrics.totalPacks += packs;
+            
+            // Track accounts
+            if (record['Account Ref']) {
+              metrics.totalAccounts.add(record['Account Ref']);
+              if (spend > 0) {
+                metrics.activeAccounts.add(record['Account Ref']);
+              }
+            }
+            
+            // Department breakdown
+            if (!departmentBreakdown[dept]) {
+              departmentBreakdown[dept] = {
+                spend: 0,
+                profit: 0,
+                packs: 0,
+                accounts: new Set<string>(),
+                activeAccounts: new Set<string>()
+              };
+            }
+            
+            departmentBreakdown[dept].spend += spend;
+            departmentBreakdown[dept].profit += profit;
+            departmentBreakdown[dept].packs += packs;
+            
+            if (record['Account Ref']) {
+              departmentBreakdown[dept].accounts.add(record['Account Ref']);
+              if (spend > 0) {
+                departmentBreakdown[dept].activeAccounts.add(record['Account Ref']);
+              }
+            }
+          });
+          
+          // Calculate average margin
+          metrics.averageMargin = metrics.totalSpend > 0 ? (metrics.totalProfit / metrics.totalSpend) * 100 : 0;
+          
+          // Format department breakdown for output
+          const formattedDeptBreakdown = Object.entries(departmentBreakdown).map(([dept, data]) => ({
+            department: dept,
+            spend: data.spend,
+            profit: data.profit,
+            margin: data.spend > 0 ? (data.profit / data.spend) * 100 : 0,
+            packs: data.packs,
+            accounts: data.accounts.size,
+            activeAccounts: data.activeAccounts.size
+          }));
+          
+          // Get top performers by profit
+          const repProfitMap = new Map<string, number>();
+          const repMarginMap = new Map<string, { spend: number, profit: number }>();
+          
+          allData.forEach(record => {
+            const rep = record.Rep;
+            const profit = Number(record.Profit || 0);
+            const spend = Number(record.Spend || 0);
+            
+            if (!repProfitMap.has(rep)) {
+              repProfitMap.set(rep, 0);
+              repMarginMap.set(rep, { spend: 0, profit: 0 });
+            }
+            
+            repProfitMap.set(rep, repProfitMap.get(rep)! + profit);
+            repMarginMap.set(rep, { 
+              spend: repMarginMap.get(rep)!.spend + spend,
+              profit: repMarginMap.get(rep)!.profit + profit
+            });
+          });
+          
+          // Convert to arrays and sort
+          let topByProfit = Array.from(repProfitMap.entries()).map(([rep, profit]) => ({
+            rep,
+            profit
+          })).sort((a, b) => b.profit - a.profit).slice(0, 5);
+          
+          let topByMargin = Array.from(repMarginMap.entries())
+            .map(([rep, { spend, profit }]) => ({
+              rep,
+              margin: spend > 0 ? (profit / spend) * 100 : 0
+            }))
+            .filter(item => item.margin > 0)
+            .sort((a, b) => b.margin - a.margin)
+            .slice(0, 5);
+          
+          metrics.topPerformersByProfit = topByProfit;
+          metrics.topPerformersByMargin = topByMargin;
+          metrics.departmentBreakdown = formattedDeptBreakdown;
+          
+          overallMetrics = metrics;
+          
+          console.log("Calculated overall metrics:", {
+            totalProfit: metrics.totalProfit,
+            averageMargin: metrics.averageMargin,
+            totalAccounts: metrics.totalAccounts.size,
+            activeAccounts: metrics.activeAccounts.size,
+            departments: Object.keys(departmentBreakdown).length
+          });
+        }
+      }
       
       // If a specific rep is mentioned, get their details across all departments
       if (repName) {
@@ -223,15 +384,6 @@ serve(async (req) => {
         throw packsError;
       }
       
-      // Get unique reps with aggregated data
-      const { data: allReps, error: repsError } = await supabase.rpc('get_unique_reps_with_data', { 
-        table_name: tableName 
-      });
-      
-      if (repsError) {
-        console.error('Error fetching all reps data:', repsError);
-      }
-      
       salesData = generalData;
       topSalesPeople = {
         byProfit: topByProfit,
@@ -263,10 +415,31 @@ ${JSON.stringify(topSalesPeople?.byMargin || 'Data unavailable')}
 3. Top performers by packs sold in ${selectedMonth || 'March'} 2025:
 ${JSON.stringify(topSalesPeople?.byPacks || 'Data unavailable')}
 
+${overallMetrics ? `
+4. Overall metrics for ${selectedMonth || 'March'} 2025:
+
+Total Spend: ${overallMetrics.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Total Profit: ${overallMetrics.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+Average Margin: ${overallMetrics.averageMargin.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
+Total Packs: ${overallMetrics.totalPacks.toLocaleString('en-US')}
+Total Accounts: ${overallMetrics.totalAccounts.size}
+Active Accounts: ${overallMetrics.activeAccounts.size}
+
+Department Breakdown:
+${JSON.stringify(overallMetrics.departmentBreakdown, null, 2)}
+
+Top Performers by Profit:
+${JSON.stringify(overallMetrics.topPerformersByProfit, null, 2)}
+
+Top Performers by Margin:
+${JSON.stringify(overallMetrics.topPerformersByMargin, null, 2)}
+` : ''}
+
 ${repDetails ? `
-4. Specific details for ${repDetails.name}:
+${overallMetrics ? '5' : '4'}. Specific details for ${repDetails.name}:
 
 Key Performance Metrics (Combined across ${repDetails.departments.join(', ')} departments):
+
 Total Spend: ${repDetails.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 Total Profit: ${repDetails.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 Margin: ${repDetails.margin.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
