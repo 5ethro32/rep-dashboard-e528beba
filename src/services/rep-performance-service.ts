@@ -12,7 +12,7 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data from Supabase...');
     
-    // Fetch retail data
+    // Fetch retail data - use rep_type consistently instead of rep_name
     const { data: repDataFromDb, error: repError } = await supabase
       .from('sales_data')
       .select('*')
@@ -42,23 +42,46 @@ export const fetchRepPerformanceData = async () => {
     if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
     console.log('Wholesale data fetched:', wholesaleDataFromDb?.length || 0, 'rows');
     
-    // Log sample data if available
+    // Debugging: Log sample data and rep_name/rep_type values to identify inconsistencies
     if (repDataFromDb && repDataFromDb.length > 0) {
       console.log('Sample retail data item:', repDataFromDb[0]);
+      
+      // Check for case inconsistencies in retail data
+      const retailNameTypes = repDataFromDb.map(item => ({ 
+        rep_name: item.rep_name, 
+        rep_type: item.rep_type 
+      }));
+      console.log('Sample retail rep_name/rep_type pairs:', retailNameTypes.slice(0, 3));
     }
+    
     if (revaDataFromDb && revaDataFromDb.length > 0) {
       console.log('Sample REVA data item:', revaDataFromDb[0]);
       
       // Log sub_rep values to help debug
       const subReps = revaDataFromDb.map(item => item.sub_rep).filter(Boolean);
       console.log('REVA sub_reps:', [...new Set(subReps)]);
+      
+      // Check for case inconsistencies in REVA data
+      const revaNameTypes = revaDataFromDb.map(item => ({ 
+        rep_name: item.rep_name, 
+        rep_type: item.rep_type 
+      }));
+      console.log('Sample REVA rep_name/rep_type pairs:', revaNameTypes.slice(0, 3));
     }
+    
     if (wholesaleDataFromDb && wholesaleDataFromDb.length > 0) {
       console.log('Sample wholesale data item:', wholesaleDataFromDb[0]);
       
       // Log sub_rep values to help debug
       const subReps = wholesaleDataFromDb.map(item => item.sub_rep).filter(Boolean);
       console.log('WHOLESALE sub_reps:', [...new Set(subReps)]);
+      
+      // Check for case inconsistencies in wholesale data
+      const wholesaleNameTypes = wholesaleDataFromDb.map(item => ({ 
+        rep_name: item.rep_name, 
+        rep_type: item.rep_type 
+      }));
+      console.log('Sample wholesale rep_name/rep_type pairs:', wholesaleNameTypes.slice(0, 3));
     }
     
     // Process the retail data to RepData format

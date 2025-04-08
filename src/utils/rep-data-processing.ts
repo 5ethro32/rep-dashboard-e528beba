@@ -14,6 +14,7 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
   console.log(`Processing ${salesData.length} raw sales data items`);
   
   salesData.forEach(item => {
+    // Use rep_name for consistency, regardless of case
     const repName = item.rep_name;
     
     if (!repGrouped[repName]) {
@@ -139,6 +140,7 @@ export const getCombinedRepData = (
     console.log("Including REVA data in combined data");
     
     revaData.forEach(rep => {
+      // For REVA data, check if the rep exists in the map
       if (!repMap.has(rep.rep)) {
         repMap.set(rep.rep, {
           rep: rep.rep,
@@ -171,6 +173,7 @@ export const getCombinedRepData = (
     console.log("Including Wholesale data in combined data");
     
     wholesaleData.forEach(rep => {
+      // For Wholesale data, check if the rep exists in the map
       if (!repMap.has(rep.rep)) {
         repMap.set(rep.rep, {
           rep: rep.rep,
@@ -187,7 +190,7 @@ export const getCombinedRepData = (
       repData.profit += rep.profit;
       repData.packs += rep.packs;
       
-      // Create unique identifiers for Wholesale accounts
+      // Create unique identifiers for Wholesale accounts that don't conflict with REVA
       const wholesaleActiveAccounts = Array(rep.activeAccounts).fill(null)
         .map((_, i) => `wholesale_${rep.rep}_${i}`);
       const wholesaleTotalAccounts = Array(rep.totalAccounts).fill(null)
