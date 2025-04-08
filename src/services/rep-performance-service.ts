@@ -60,7 +60,8 @@ export const fetchRepPerformanceData = async () => {
         profit: profit,
         margin: margin,
         packs: packs,
-        rep_type: item.Department ? item.Department.toUpperCase() : 'RETAIL',
+        // IMPORTANT: Preserve exact department case from the database
+        rep_type: item.Department || 'RETAIL',
         import_date: new Date().toISOString()
       };
     });
@@ -74,10 +75,10 @@ export const fetchRepPerformanceData = async () => {
       console.log('Total calculated profit from mapped data:', totalMappedProfit);
     }
     
-    // Separate data by rep_type (using uppercase for consistency)
-    const repDataFromDb = mappedData.filter(item => (item.rep_type || '').toUpperCase() === 'RETAIL');
-    const revaDataFromDb = mappedData.filter(item => (item.rep_type || '').toUpperCase() === 'REVA');
-    const wholesaleDataFromDb = mappedData.filter(item => (item.rep_type || '').toUpperCase() === 'WHOLESALE');
+    // Separate data by rep_type (using CASE-SENSITIVE comparison)
+    const repDataFromDb = mappedData.filter(item => item.rep_type === 'RETAIL');
+    const revaDataFromDb = mappedData.filter(item => item.rep_type === 'REVA');
+    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'Wholesale');
     
     console.log('Retail data count:', repDataFromDb.length);
     console.log('REVA data count:', revaDataFromDb.length);

@@ -14,7 +14,7 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
   console.log(`Processing ${salesData.length} raw sales data items`);
   
   salesData.forEach(item => {
-    // Use rep_name for consistency, regardless of case
+    // Use rep_name for consistency
     const repName = item.rep_name;
     
     if (!repGrouped[repName]) {
