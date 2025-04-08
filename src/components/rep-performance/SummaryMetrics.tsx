@@ -36,6 +36,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
     return current / (1 + changePercent / 100);
   };
 
+  console.log("Rendering SummaryMetrics with data:", { summary, summaryChanges });
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
       {/* Revenue Card */}

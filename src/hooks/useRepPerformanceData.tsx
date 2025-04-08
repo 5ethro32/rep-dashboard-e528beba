@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,11 +77,11 @@ const defaultWholesaleData: RepData[] = [
 ];
 
 const defaultBaseSummary: SummaryData = {
-  totalSpend: 2056199.28,
-  totalProfit: 326951.32,
-  totalPacks: 1245291,
-  totalAccounts: 1067,
-  activeAccounts: 555,
+  totalSpend: 1419684.81,
+  totalProfit: 243554.15,
+  totalPacks: 851388,
+  totalAccounts: 904,
+  activeAccounts: 507,
   averageMargin: 15.90
 };
 
@@ -151,7 +150,6 @@ export const useRepPerformanceData = () => {
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState(defaultRepChanges);
 
-  // Effect to load stored data on component mount
   useEffect(() => {
     const storedData = localStorage.getItem('repPerformanceData');
     
@@ -174,8 +172,8 @@ export const useRepPerformanceData = () => {
     }
   }, []);
 
-  // Update overall data whenever toggles change
   useEffect(() => {
+    console.log("Recalculating combined data based on toggle changes:", { includeReva, includeWholesale });
     const combinedData = getCombinedRepData(
       repData,
       revaData,
@@ -193,7 +191,6 @@ export const useRepPerformanceData = () => {
         throw new Error('Supabase client is not initialized.');
       }
       
-      // Fetch data from Supabase for each rep_type
       const { data: repDataFromDb, error: repError } = await supabase
         .from('sales_data')
         .select('*')
@@ -215,17 +212,14 @@ export const useRepPerformanceData = () => {
       
       if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
       
-      // Process fetched data
       const processedRepData = processRepData(repDataFromDb || []);
       const processedRevaData = processRepData(revaDataFromDb || []);
       const processedWholesaleData = processRepData(wholesaleDataFromDb || []);
       
-      // Update state with processed data
       setRepData(processedRepData);
       setRevaData(processedRevaData);
       setWholesaleData(processedWholesaleData);
       
-      // Calculate summary values for each data type
       const calculatedSummary = calculateSummaryFromData(processedRepData);
       const calculatedRevaValues = calculateSummaryFromData(processedRevaData);
       const calculatedWholesaleValues = calculateSummaryFromData(processedWholesaleData);
@@ -234,7 +228,6 @@ export const useRepPerformanceData = () => {
       setRevaValues(calculatedRevaValues);
       setWholesaleValues(calculatedWholesaleValues);
       
-      // Generate combined data based on toggle settings
       const combinedData = getCombinedRepData(
         processedRepData,
         processedRevaData,
@@ -244,7 +237,6 @@ export const useRepPerformanceData = () => {
       );
       setOverallData(combinedData);
 
-      // Save data to localStorage
       localStorage.setItem('repPerformanceData', JSON.stringify({
         overallData: combinedData,
         repData: processedRepData,
@@ -273,7 +265,6 @@ export const useRepPerformanceData = () => {
   };
 
   const processRepData = (salesData: SalesDataItem[]): RepData[] => {
-    // Group data by rep name
     const repGrouped: Record<string, {
       rep: string;
       spend: number;
@@ -283,7 +274,6 @@ export const useRepPerformanceData = () => {
       totalAccounts: Set<string>;
     }> = {};
     
-    // Process each sales data item and group by rep
     salesData.forEach(item => {
       if (!repGrouped[item.rep_name]) {
         repGrouped[item.rep_name] = {
@@ -306,7 +296,6 @@ export const useRepPerformanceData = () => {
       repGrouped[item.rep_name].totalAccounts.add(item.account_ref);
     });
     
-    // Transform grouped data into RepData array
     return Object.values(repGrouped).map(rep => {
       const spend = rep.spend;
       const profit = rep.profit;
@@ -330,7 +319,6 @@ export const useRepPerformanceData = () => {
   };
 
   const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
-    // Calculate summary totals from rep data
     let totalSpend = 0;
     let totalProfit = 0;
     let totalPacks = 0;
@@ -362,11 +350,12 @@ export const useRepPerformanceData = () => {
     includeRevaData: boolean = includeReva,
     includeWholesaleData: boolean = includeWholesale
   ): RepData[] => {
-    // Start with base retail data
     const combinedData: RepData[] = JSON.parse(JSON.stringify(baseRepData));
     
-    // Add REVA data if toggle is on
+    console.log("Starting combined data with base retail data:", combinedData.length);
+    
     if (includeRevaData) {
+      console.log("Including REVA data in combined data");
       baseRevaData.forEach(revaItem => {
         const repIndex = combinedData.findIndex((rep) => rep.rep === revaItem.rep);
         
@@ -395,8 +384,8 @@ export const useRepPerformanceData = () => {
       });
     }
     
-    // Add Wholesale data if toggle is on
     if (includeWholesaleData) {
+      console.log("Including Wholesale data in combined data");
       baseWholesaleData.forEach(wholesaleItem => {
         const repIndex = combinedData.findIndex((rep) => rep.rep === wholesaleItem.rep);
         
@@ -425,11 +414,11 @@ export const useRepPerformanceData = () => {
       });
     }
     
+    console.log("Final combined data length:", combinedData.length);
     return combinedData;
   };
 
   const getActiveData = (tabValue: string) => {
-    // Return the appropriate data set based on tab value
     switch (tabValue) {
       case 'rep':
         return repData;
@@ -444,7 +433,6 @@ export const useRepPerformanceData = () => {
   };
 
   const sortData = (data: RepData[]) => {
-    // Sort data based on current sort settings
     return [...data].sort((a, b) => {
       const aValue = a[sortBy as keyof RepData] as number;
       const bValue = b[sortBy as keyof RepData] as number;
@@ -457,11 +445,17 @@ export const useRepPerformanceData = () => {
     });
   };
 
-  // Calculate summary based on currently included data types
-  const summary = calculateSummary(baseSummary, revaValues, wholesaleValues, includeReva, includeWholesale);
+  const summary = calculateSummary(
+    baseSummary, 
+    revaValues, 
+    wholesaleValues, 
+    includeReva, 
+    includeWholesale
+  );
+
+  console.log("Current summary values:", summary);
 
   const handleSort = (column: string) => {
-    // Update sort settings
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {

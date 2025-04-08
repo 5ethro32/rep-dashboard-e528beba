@@ -27,15 +27,18 @@ export const calculateSummary = (
   includeReva: boolean,
   includeWholesale: boolean
 ) => {
-  // Start with base (retail) values
+  // Use base (retail) values only, no adding until we check what's included
   let totalSpend = baseSummary?.totalSpend || 0;
   let totalProfit = baseSummary?.totalProfit || 0;
   let totalPacks = baseSummary?.totalPacks || 0;
   let totalAccounts = baseSummary?.totalAccounts || 0;
   let activeAccounts = baseSummary?.activeAccounts || 0;
   
+  console.log("Base Summary:", { totalSpend, totalProfit, totalPacks, totalAccounts, activeAccounts });
+  
   // Add REVA values if toggle is on
   if (includeReva && revaValues) {
+    console.log("Adding REVA values:", revaValues);
     totalSpend += revaValues.totalSpend || 0;
     totalProfit += revaValues.totalProfit || 0;
     totalPacks += revaValues.totalPacks || 0;
@@ -45,6 +48,7 @@ export const calculateSummary = (
   
   // Add Wholesale values if toggle is on
   if (includeWholesale && wholesaleValues) {
+    console.log("Adding Wholesale values:", wholesaleValues);
     totalSpend += wholesaleValues.totalSpend || 0;
     totalProfit += wholesaleValues.totalProfit || 0;
     totalPacks += wholesaleValues.totalPacks || 0;
@@ -55,7 +59,7 @@ export const calculateSummary = (
   // Calculate average margin based on included values
   const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
   
-  return {
+  const result = {
     totalSpend,
     totalProfit,
     totalPacks,
@@ -63,6 +67,9 @@ export const calculateSummary = (
     activeAccounts,
     averageMargin
   };
+  
+  console.log("Final calculated summary:", result);
+  return result;
 };
 
 export const formatCurrency = (value: number, decimals = 0) => {
