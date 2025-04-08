@@ -196,21 +196,24 @@ export const useRepPerformanceData = () => {
       const { data: repDataFromDb, error: repError } = await supabase
         .from('sales_data')
         .select('*')
-        .eq('rep_type', 'RETAIL');
+        .eq('rep_type', 'RETAIL')
+        .eq('reporting_period', '2025-03');
       
       if (repError) throw new Error(`Error fetching rep data: ${repError.message}`);
       
       const { data: revaDataFromDb, error: revaError } = await supabase
         .from('sales_data')
         .select('*')
-        .eq('rep_type', 'REVA');
+        .eq('rep_type', 'REVA')
+        .eq('reporting_period', '2025-03');
       
       if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
       
       const { data: wholesaleDataFromDb, error: wholesaleError } = await supabase
         .from('sales_data')
         .select('*')
-        .eq('rep_type', 'WHOLESALE');
+        .eq('rep_type', 'WHOLESALE')
+        .eq('reporting_period', '2025-03');
       
       if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
       
@@ -253,6 +256,10 @@ export const useRepPerformanceData = () => {
       }));
 
       console.log("Successfully loaded data from Supabase");
+      toast({
+        title: "Data loaded successfully",
+        description: "The latest performance data has been loaded.",
+      });
       return true;
     } catch (error) {
       console.error('Error loading data from Supabase:', error);
