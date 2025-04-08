@@ -18,6 +18,15 @@ const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({
 }) => {
   const isMobile = useIsMobile();
   
+  // Filter out any reps with zero values across all metrics
+  const filteredData = displayData.filter(item => 
+    item.margin > 0 || 
+    item.profit > 0 || 
+    item.spend > 0 || 
+    item.packs > 0 ||
+    item.activeAccounts > 0
+  );
+  
   return (
     <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
       <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Margin Comparison</h3>
@@ -30,9 +39,9 @@ const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({
         </div>
       ) : (
         <div className="flex-1 flex items-end justify-center">
-          <div className="w-full h-full flex items-end justify-center overflow-x-auto px-1">
+          <div className="w-full h-full flex items-end justify-center overflow-x-auto overflow-y-hidden px-1">
             <div className={`flex items-end ${isMobile ? 'space-x-1' : 'space-x-2'} pb-1`}>
-              {displayData.slice(0, isMobile ? 8 : 12).map(item => {
+              {filteredData.slice(0, isMobile ? 8 : 12).map(item => {
                 const repInitials = item.rep.split(' ').map((name: string) => name[0]).join('');
                 const maxHeight = isMobile ? 120 : 150;
                 const barHeight = Math.max(20, (item.margin / 32) * maxHeight);

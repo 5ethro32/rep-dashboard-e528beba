@@ -30,17 +30,17 @@ export const useRepPerformanceData = () => {
   const [repData, setRepData] = useState(defaultRepData);
   const [revaData, setRevaData] = useState(defaultRevaData);
   const [wholesaleData, setWholesaleData] = useState(defaultWholesaleData);
-  const [baseSummary, setBaseSummary] = useState(defaultBaseSummary);
-  const [revaValues, setRevaValues] = useState(defaultRevaValues);
-  const [wholesaleValues, setWholesaleValues] = useState(defaultWholesaleValues);
+  const [baseSummary, setBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [revaValues, setRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [wholesaleValues, setWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
   // Previous month data (February)
   const [febRepData, setFebRepData] = useState(defaultRepData);
   const [febRevaData, setFebRevaData] = useState(defaultRevaData);
   const [febWholesaleData, setFebWholesaleData] = useState(defaultWholesaleData);
-  const [febBaseSummary, setFebBaseSummary] = useState(defaultBaseSummary);
-  const [febRevaValues, setFebRevaValues] = useState(defaultRevaValues);
-  const [febWholesaleValues, setFebWholesaleValues] = useState(defaultWholesaleValues);
+  const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
   // Change data
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
