@@ -23,6 +23,43 @@ export const fetchRepPerformanceData = async () => {
     if (!allDataFromDb || allDataFromDb.length === 0) {
       throw new Error('No data found for the specified period.');
     }
+
+    // DIAGNOSTIC: Get total count from SQL directly for comparison
+    const { data: totalCountFromSql, error: countError } = await supabase
+      .rpc('get_total_count', {});
+      
+    if (!countError) {
+      console.log('SQL Direct Count:', totalCountFromSql);
+      console.log('JS allDataFromDb Count:', allDataFromDb.length);
+      
+      if (totalCountFromSql !== allDataFromDb.length) {
+        console.warn('WARNING: SQL count and JS data count do not match!');
+      }
+    }
+    
+    // DIAGNOSTIC: Get department counts directly from SQL
+    const { data: deptCountsFromSql, error: deptCountError } = await supabase
+      .rpc('get_department_counts', {});
+      
+    if (!deptCountError) {
+      console.log('Department counts from SQL:', deptCountsFromSql);
+    }
+    
+    // DIAGNOSTIC: Count wholesale records directly from SQL
+    const { data: wholesaleCountFromSql, error: wholesaleCountError } = await supabase
+      .rpc('get_wholesale_count', {});
+      
+    if (!wholesaleCountError) {
+      console.log('Wholesale count from SQL:', wholesaleCountFromSql);
+    }
+    
+    // DIAGNOSTIC: Get all unique Department values directly from SQL
+    const { data: uniqueDepartments, error: uniqueDeptsError } = await supabase
+      .rpc('get_unique_departments', {});
+      
+    if (!uniqueDeptsError) {
+      console.log('All unique Department values from SQL:', uniqueDepartments);
+    }
     
     // Debug: Log the raw data structure from Supabase
     if (allDataFromDb.length > 0) {
@@ -113,6 +150,20 @@ export const fetchRepPerformanceData = async () => {
     });
     console.log('Department profits after mapping:', mappedDeptProfits);
     
+    // DIAGNOSTIC: Let's compare the sum from JS vs what we get from SQL for Wholesale
+    const wholesaleSumFromJs = mappedData
+      .filter(item => item.rep_type === 'Wholesale')
+      .reduce((sum, item) => sum + item.profit, 0);
+      
+    console.log('Wholesale sum calculated in JS (strict match):', wholesaleSumFromJs);
+    
+    // Try with case-insensitive matching
+    const wholesaleSumFromJsCaseInsensitive = mappedData
+      .filter(item => item.rep_type && item.rep_type.toLowerCase() === 'wholesale')
+      .reduce((sum, item) => sum + item.profit, 0);
+      
+    console.log('Wholesale sum with case-insensitive match in JS:', wholesaleSumFromJsCaseInsensitive);
+    
     // IMPORTANT: Fix for inconsistent case in department names
     // We need to correctly identify all wholesale records
     // They may be stored with different cases (like "Wholesale", "wholesale", "WHOLESALE")
@@ -124,10 +175,40 @@ export const fetchRepPerformanceData = async () => {
       item.rep_type === 'REVA' || 
       item.rep_type.toUpperCase() === 'REVA');
       
-    const wholesaleDataFromDb = mappedData.filter(item => 
+    // DIAGNOSTIC: Get array of all wholesale records to check their values
+    const allWholesaleRecords = mappedData.filter(item => 
       item.rep_type === 'Wholesale' || 
       item.rep_type.toLowerCase() === 'wholesale' ||
       item.rep_type.toUpperCase() === 'WHOLESALE');
+    
+    // Log the first few wholesale records for debugging
+    if (allWholesaleRecords.length > 0) {
+      console.log('First 5 wholesale records:', allWholesaleRecords.slice(0, 5));
+      console.log('Wholesale records with highest profit:', 
+        [...allWholesaleRecords].sort((a, b) => b.profit - a.profit).slice(0, 5));
+    }
+    
+    // DIAGNOSTIC: Try fetching the wholesale directly via SQL
+    try {
+      const { data: directWholesaleData, error: directWholesaleError } = await supabase
+        .rpc('get_wholesale_data', {});
+        
+      if (!directWholesaleError && directWholesaleData) {
+        console.log('Direct wholesale data from SQL (first 5):', 
+          directWholesaleData.slice(0, 5));
+          
+        // Calculate the sum directly from this data
+        const directWholesaleSum = directWholesaleData.reduce(
+          (sum, item) => sum + Number(item.profit || 0), 0);
+          
+        console.log('Direct wholesale sum calculated from SQL data:', directWholesaleSum);
+      }
+    } catch (directError) {
+      console.error('Error fetching direct wholesale data:', directError);
+    }
+    
+    // Use the filtered data for further processing
+    const wholesaleDataFromDb = allWholesaleRecords;
     
     console.log('Retail data count:', repDataFromDb.length);
     console.log('REVA data count:', revaDataFromDb.length);
