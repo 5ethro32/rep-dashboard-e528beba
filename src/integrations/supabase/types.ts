@@ -260,6 +260,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_department_profit: {
+        Args: { dept: string }
+        Returns: number
+      }
       get_retail_profit: {
         Args: Record<PropertyKey, never>
         Returns: number
