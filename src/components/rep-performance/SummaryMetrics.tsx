@@ -17,9 +17,10 @@ interface SummaryMetricsProps {
     averageMargin: number;
     totalPacks: number;
   };
+  isLoading?: boolean;
 }
 
-const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges }) => {
+const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges, isLoading }) => {
   const renderChangeIndicator = (changeValue: number) => {
     const isPositive = changeValue > 0;
     
@@ -43,6 +44,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
         value={formatCurrency(summary.totalSpend, 0)}
         change={summaryChanges.totalSpend ? renderChangeIndicator(summaryChanges.totalSpend) : undefined}
         subtitle={formatCurrency(getPreviousValue(summary.totalSpend, summaryChanges.totalSpend), 0)}
+        isLoading={isLoading}
       />
       
       {/* Profit Card */}
@@ -52,6 +54,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
         change={summaryChanges.totalProfit ? renderChangeIndicator(summaryChanges.totalProfit) : undefined}
         subtitle={formatCurrency(getPreviousValue(summary.totalProfit, summaryChanges.totalProfit), 0)}
         valueClassName="text-finance-red"
+        isLoading={isLoading}
       />
       
       {/* Margin Card */}
@@ -60,6 +63,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
         value={formatPercent(summary.averageMargin)}
         change={summaryChanges.averageMargin ? renderChangeIndicator(summaryChanges.averageMargin) : undefined}
         subtitle={formatPercent(summary.averageMargin - summaryChanges.averageMargin)}
+        isLoading={isLoading}
       />
       
       {/* Packs Card */}
@@ -68,6 +72,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
         value={formatNumber(summary.totalPacks)}
         change={summaryChanges.totalPacks ? renderChangeIndicator(summaryChanges.totalPacks) : undefined}
         subtitle={formatNumber(getPreviousValue(summary.totalPacks, summaryChanges.totalPacks))}
+        isLoading={isLoading}
       />
     </div>
   );

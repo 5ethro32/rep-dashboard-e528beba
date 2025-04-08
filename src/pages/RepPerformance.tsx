@@ -22,7 +22,8 @@ const RepPerformance = () => {
     repChanges,
     getActiveData,
     sortData,
-    handleSort
+    handleSort,
+    isLoading
   } = useRepPerformanceData();
 
   return (
@@ -42,6 +43,7 @@ const RepPerformance = () => {
         <SummaryMetrics 
           summary={summary}
           summaryChanges={summaryChanges}
+          isLoading={isLoading}
         />
 
         <PerformanceContent
@@ -61,6 +63,7 @@ const RepPerformance = () => {
               size={size === "small" ? "small" : "large"} 
             />
           }
+          isLoading={isLoading}
         />
       </div>
     </div>

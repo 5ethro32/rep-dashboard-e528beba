@@ -19,6 +19,7 @@ interface PerformanceContentProps {
   formatPercent: (value: number) => string;
   formatNumber: (value: number) => string;
   renderChangeIndicator: (changeValue: number, size?: string) => React.ReactNode;
+  isLoading?: boolean;
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -32,7 +33,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   formatCurrency,
   formatPercent,
   formatNumber,
-  renderChangeIndicator
+  renderChangeIndicator,
+  isLoading
 }) => {
   const isMobile = useIsMobile();
 
@@ -75,8 +77,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     <div className="mb-8 animate-slide-in-up">
       <div className="bg-amber-800/30 border border-amber-500/30 rounded-lg p-3 md:p-4 mb-6 text-sm">
         <p className="text-amber-200">
-          <strong>Coming Soon:</strong> This dashboard will be connected to Supabase for real-time data integration. 
-          Currently using static sample data.
+          <strong>Connected to Supabase:</strong> This dashboard is now connected to Supabase for real-time data integration.
+          Click the "Refresh from Database" button to load the latest data.
         </p>
       </div>
       
@@ -113,6 +115,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   formatPercent={formatPercent}
                   formatNumber={formatNumber}
                   renderChangeIndicator={renderChangeIndicator}
+                  isLoading={isLoading}
                 />
               </div>
             </div>
@@ -122,17 +125,20 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                 displayData={sortData(getActiveData(tabValue))}
                 repChanges={repChanges}
                 formatCurrency={formatCurrency}
+                isLoading={isLoading}
               />
               
               <RepProfitShare 
                 displayData={sortData(getActiveData(tabValue))}
                 repChanges={repChanges}
+                isLoading={isLoading}
               />
               
               <RepMarginComparison
                 displayData={sortData(getActiveData(tabValue))}
                 repChanges={repChanges}
                 formatPercent={formatPercent}
+                isLoading={isLoading}
               />
             </div>
           </TabsContent>

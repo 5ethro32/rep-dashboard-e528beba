@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 
 interface PerformanceTableProps {
   displayData: any[];
@@ -11,6 +12,7 @@ interface PerformanceTableProps {
   formatPercent: (value: number) => string;
   formatNumber: (value: number) => string;
   renderChangeIndicator: (changeValue: number, size?: string) => React.ReactNode;
+  isLoading?: boolean;
 }
 
 const PerformanceTable: React.FC<PerformanceTableProps> = ({
@@ -22,7 +24,8 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
   formatCurrency,
   formatPercent,
   formatNumber,
-  renderChangeIndicator
+  renderChangeIndicator,
+  isLoading
 }) => {
   return (
     <div className="overflow-x-auto -mx-3 md:mx-0 scrollbar-hide">
@@ -62,7 +65,16 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
           </tr>
         </thead>
         <tbody className="divide-y divide-white/10">
-          {displayData.length > 0 ? (
+          {isLoading ? (
+            <tr>
+              <td colSpan={5} className="px-3 md:px-6 py-8 text-center">
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                  <span>Loading data...</span>
+                </div>
+              </td>
+            </tr>
+          ) : displayData.length > 0 ? (
             displayData.map((item) => (
               <tr key={item.rep} className="hover:bg-white/5 transition-colors">
                 <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium">
