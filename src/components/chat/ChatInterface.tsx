@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { SendIcon, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,22 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
       }, 100);
     }
   }, [isOpen]);
+
+  // Update the welcome message when the selected month changes
+  useEffect(() => {
+    if (messages.length === 1 && messages[0].id === '1') {
+      setMessages([{ 
+        id: '1', 
+        content: `Hello! I'm Vera, your sales data assistant. Ask me anything about ${selectedMonth} 2025 performance data.`, 
+        isUser: false, 
+        timestamp: new Date(),
+        examples: [
+          "Who are the top performers?",
+          "Tell me about Craig's sales"
+        ]
+      }]);
+    }
+  }, [selectedMonth]);
 
   const handleExampleClick = (exampleText: string) => {
     // Set the example text as the current message and submit
