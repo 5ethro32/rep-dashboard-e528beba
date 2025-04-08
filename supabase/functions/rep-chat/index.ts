@@ -44,6 +44,79 @@ const isDepartment = (name: string): boolean => {
   return ['RETAIL', 'REVA', 'Wholesale'].includes(name);
 };
 
+// Function to fetch all data from a table with pagination
+const fetchAllData = async (supabase, tableName, options = {}) => {
+  const PAGE_SIZE = 1000;
+  let allData = [];
+  let page = 0;
+  let hasMoreData = true;
+  
+  console.log(`Fetching all data from ${tableName} with pagination...`);
+  
+  while (hasMoreData) {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*', options)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    
+    if (error) {
+      console.error(`Error fetching data from ${tableName}, page ${page}:`, error);
+      throw error;
+    }
+    
+    if (data && data.length > 0) {
+      console.log(`Retrieved ${data.length} records from ${tableName}, page ${page}`);
+      allData = [...allData, ...data];
+      page++;
+      
+      // Check if we've fetched all available data
+      hasMoreData = data.length === PAGE_SIZE;
+    } else {
+      hasMoreData = false;
+    }
+  }
+  
+  console.log(`Completed fetching all data from ${tableName}, total records: ${allData.length}`);
+  return allData;
+};
+
+// Function to fetch all data from a specific department with pagination
+const fetchDepartmentData = async (supabase, tableName, department) => {
+  const PAGE_SIZE = 1000;
+  let allData = [];
+  let page = 0;
+  let hasMoreData = true;
+  
+  console.log(`Fetching all data for department ${department} from ${tableName}...`);
+  
+  while (hasMoreData) {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .eq('Department', department)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    
+    if (error) {
+      console.error(`Error fetching ${department} data from ${tableName}, page ${page}:`, error);
+      throw error;
+    }
+    
+    if (data && data.length > 0) {
+      console.log(`Retrieved ${data.length} ${department} records from ${tableName}, page ${page}`);
+      allData = [...allData, ...data];
+      page++;
+      
+      // Check if we've fetched all available data
+      hasMoreData = data.length === PAGE_SIZE;
+    } else {
+      hasMoreData = false;
+    }
+  }
+  
+  console.log(`Completed fetching all ${department} data from ${tableName}, total records: ${allData.length}`);
+  return allData;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -82,21 +155,27 @@ serve(async (req) => {
       const isOverallQuery = /total|overall|all|combined|everyone|across all|summary/i.test(message);
       
       // Extract any rep name mentioned in the message for detailed lookup
-      const repNameMatch = message.match(/(?:about|on|for|by)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i);
+      const repNameMatch = message.match(/(?:about|on|for|by)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
       const repName = repNameMatch ? repNameMatch[1] : null;
+      
+      // Fetch all data for the specific department
+      let retailData = [];
+      let revaData = [];
+      let wholesaleData = [];
+      
+      // Fetch all data by department to ensure complete data retrieval
+      console.log("Fetching data for all departments...");
+      retailData = await fetchDepartmentData(supabase, tableName, 'RETAIL');
+      revaData = await fetchDepartmentData(supabase, tableName, 'REVA');
+      wholesaleData = await fetchDepartmentData(supabase, tableName, 'Wholesale');
+      
+      // Combine all department data
+      const allData = [...retailData, ...revaData, ...wholesaleData];
+      console.log(`Total combined records from all departments: ${allData.length}`);
       
       // If asking about overall metrics, get that data
       if (isOverallQuery) {
         console.log("Detected query for overall metrics");
-        
-        const { data: allData, error: allDataError } = await supabase
-          .from(tableName)
-          .select('*');
-        
-        if (allDataError) {
-          console.error(`Error fetching all data from ${tableName}:`, allDataError);
-          throw allDataError;
-        }
         
         if (allData && allData.length > 0) {
           // Calculate overall metrics
@@ -244,10 +323,11 @@ serve(async (req) => {
           
           console.log("Calculated overall metrics:", {
             totalProfit: metrics.totalProfit,
+            totalSpend: metrics.totalSpend,
             averageMargin: metrics.averageMargin,
             totalAccounts: metrics.totalAccounts.size,
             activeAccounts: metrics.activeAccounts.size,
-            departments: Object.keys(departmentBreakdown).length
+            departmentBreakdown: Object.keys(departmentBreakdown).length
           });
         }
       }
@@ -256,154 +336,118 @@ serve(async (req) => {
       if (repName) {
         console.log(`Looking for data on rep: ${repName}`);
         
-        // Here we need to look for the rep name in both Rep and Sub-Rep fields
-        const { data: repAsMainRep, error: repAsMainError } = await supabase
-          .from(tableName)
-          .select('*')
-          .ilike('Rep', `%${repName}%`);
-
-        const { data: repAsSubRep, error: repAsSubError } = await supabase
-          .from(tableName)
-          .select('*')
-          .ilike('Sub-Rep', `%${repName}%`);
+        // Process the combined dataset for this rep (from both Rep and Sub-Rep columns)
+        const repData = allData.filter(record => {
+          return (record.Rep && record.Rep.toLowerCase().includes(repName.toLowerCase())) || 
+                 (record['Sub-Rep'] && record['Sub-Rep'].toLowerCase().includes(repName.toLowerCase()));
+        });
         
-        if (repAsMainError || repAsSubError) {
-          console.error(`Error fetching data for rep ${repName}:`, repAsMainError || repAsSubError);
-        } else {
-          // Combine results where the person appears as either Rep or Sub-Rep
-          const repData = [...(repAsMainRep || []), ...(repAsSubRep || [])];
+        if (repData && repData.length > 0) {
+          console.log(`Found ${repData.length} records for ${repName}`);
           
-          if (repData && repData.length > 0) {
-            // Group by department to show the breakdown
-            const departmentData = repData.reduce((acc, record) => {
-              const dept = record.Department || 'Unknown';
-              if (!acc[dept]) {
-                acc[dept] = { 
-                  spend: 0, 
-                  profit: 0, 
-                  packs: 0, 
-                  accounts: new Set(), 
-                  activeAccounts: new Set(),
-                };
-              }
-              
-              const spend = Number(record.Spend || 0);
-              const profit = Number(record.Profit || 0);
-              const packs = Number(record.Packs || 0);
-              
-              acc[dept].spend += spend;
-              acc[dept].profit += profit;
-              acc[dept].packs += packs;
-              
-              if (record['Account Ref']) {
-                acc[dept].accounts.add(record['Account Ref']);
-                if (spend > 0) {
-                  acc[dept].activeAccounts.add(record['Account Ref']);
-                }
-              }
-              
-              return acc;
-            }, {});
-            
-            // Calculate overall totals across all departments
-            let totalSpend = 0;
-            let totalProfit = 0;
-            let totalPacks = 0;
-            const allAccounts = new Set<string>();
-            const allActiveAccounts = new Set<string>();
-            const departments: string[] = [];
-            
-            Object.entries(departmentData).forEach(([dept, data]) => {
-              departments.push(dept);
-              totalSpend += data.spend;
-              totalProfit += data.profit;
-              totalPacks += data.packs;
-              
-              data.accounts.forEach(account => allAccounts.add(String(account)));
-              data.activeAccounts.forEach(account => allActiveAccounts.add(String(account)));
-            });
-            
-            // Find interesting sample transactions (non-zero values preferably)
-            const interestingTransactions = repData
-              .filter(record => Number(record.Spend || 0) > 0 || Number(record.Profit || 0) !== 0)
-              .slice(0, 2);
-            
-            // If we don't have enough interesting transactions, add some zero ones
-            if (interestingTransactions.length < 3) {
-              const zeroTransactions = repData
-                .filter(record => Number(record.Spend || 0) === 0 && Number(record.Profit || 0) === 0)
-                .slice(0, 3 - interestingTransactions.length);
-              
-              interestingTransactions.push(...zeroTransactions);
+          // Group by department to show the breakdown
+          const departmentData = repData.reduce((acc, record) => {
+            const dept = record.Department || 'Unknown';
+            if (!acc[dept]) {
+              acc[dept] = { 
+                spend: 0, 
+                profit: 0, 
+                packs: 0, 
+                accounts: new Set(), 
+                activeAccounts: new Set(),
+              };
             }
             
-            // Ensure we have exactly 3 transactions or fewer if not enough data
-            const sampleTransactions = interestingTransactions.slice(0, 3);
+            const spend = Number(record.Spend || 0);
+            const profit = Number(record.Profit || 0);
+            const packs = Number(record.Packs || 0);
             
-            // Create the final rep summary
-            repDetails = {
-              name: repName,
-              departments: departments,
-              totalSpend: totalSpend,
-              totalProfit: totalProfit,
-              margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
-              totalPacks: totalPacks,
-              totalAccounts: allAccounts.size,
-              activeAccounts: allActiveAccounts.size,
-              profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0,
-              sampleTransactions: sampleTransactions
-            };
+            acc[dept].spend += spend;
+            acc[dept].profit += profit;
+            acc[dept].packs += packs;
             
-            // Also provide department breakdown for context
-            const departmentBreakdown = Object.entries(departmentData).map(([dept, data]) => ({
-              department: dept,
-              spend: data.spend,
-              profit: data.profit,
-              margin: data.spend > 0 ? (data.profit / data.spend) * 100 : 0,
-              packs: data.packs,
-              accounts: data.accounts.size,
-              activeAccounts: data.activeAccounts.size,
-            }));
+            if (record['Account Ref']) {
+              acc[dept].accounts.add(record['Account Ref']);
+              if (spend > 0) {
+                acc[dept].activeAccounts.add(record['Account Ref']);
+              }
+            }
             
-            console.log(`Found details for rep ${repName}:`, JSON.stringify({
-              summary: repDetails,
-              departmentBreakdown
-            }, null, 2));
-          } else {
-            console.log(`No data found for rep ${repName}`);
+            return acc;
+          }, {});
+          
+          // Calculate overall totals across all departments
+          let totalSpend = 0;
+          let totalProfit = 0;
+          let totalPacks = 0;
+          const allAccounts = new Set<string>();
+          const allActiveAccounts = new Set<string>();
+          const departments: string[] = [];
+          
+          Object.entries(departmentData).forEach(([dept, data]) => {
+            departments.push(dept);
+            totalSpend += data.spend;
+            totalProfit += data.profit;
+            totalPacks += data.packs;
+            
+            data.accounts.forEach(account => allAccounts.add(String(account)));
+            data.activeAccounts.forEach(account => allActiveAccounts.add(String(account)));
+          });
+          
+          // Find interesting sample transactions (non-zero values preferably)
+          const interestingTransactions = repData
+            .filter(record => Number(record.Spend || 0) > 0 || Number(record.Profit || 0) !== 0)
+            .slice(0, 2);
+          
+          // If we don't have enough interesting transactions, add some zero ones
+          if (interestingTransactions.length < 3) {
+            const zeroTransactions = repData
+              .filter(record => Number(record.Spend || 0) === 0 && Number(record.Profit || 0) === 0)
+              .slice(0, 3 - interestingTransactions.length);
+            
+            interestingTransactions.push(...zeroTransactions);
           }
+          
+          // Ensure we have exactly 3 transactions or fewer if not enough data
+          const sampleTransactions = interestingTransactions.slice(0, 3);
+          
+          // Create the final rep summary
+          repDetails = {
+            name: repName,
+            departments: departments,
+            totalSpend: totalSpend,
+            totalProfit: totalProfit,
+            margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
+            totalPacks: totalPacks,
+            totalAccounts: allAccounts.size,
+            activeAccounts: allActiveAccounts.size,
+            profitPerActiveAccount: allActiveAccounts.size > 0 ? totalProfit / allActiveAccounts.size : 0,
+            sampleTransactions: sampleTransactions
+          };
+          
+          console.log(`Found details for rep ${repName}:`, {
+            totalSpend: repDetails.totalSpend,
+            totalProfit: repDetails.totalProfit,
+            margin: repDetails.margin,
+            departments: repDetails.departments
+          });
+        } else {
+          console.log(`No data found for rep ${repName}`);
         }
       }
       
-      // Get general sales data (limited sample)
-      const { data: generalData, error: generalError } = await supabase
-        .from(tableName)
-        .select('*')
-        .limit(20);
+      // Sample of general sales data for context
+      salesData = allData.slice(0, 20);
       
-      if (generalError) {
-        console.error('Error fetching general sales data:', generalError);
-        throw generalError;
-      }
-      
-      // Get top sales people by profit - now excluding departments like REVA and Wholesale
-      const { data: allSalesData, error: allSalesError } = await supabase
-        .from(tableName)
-        .select('Rep, Profit, Department, "Sub-Rep"');
-      
-      if (allSalesError) {
-        console.error('Error fetching sales data:', allSalesError);
-        throw allSalesError;
-      }
-      
-      // Process sales data to get top performers excluding departments
+      // Process all data to get top sales people by profit - now excluding departments
       const repProfits: Record<string, number> = {};
       const repMargins: Record<string, { profit: number, spend: number }> = {};
       const repPacks: Record<string, number> = {};
       
       // First collect all rep names (whether in Rep or Sub-Rep columns)
+      // making sure to exclude departments like Wholesale and REVA
       const allReps = new Set<string>();
-      allSalesData.forEach(record => {
+      allData.forEach(record => {
         if (record.Rep && !isDepartment(record.Rep)) {
           allReps.add(record.Rep);
         }
@@ -412,89 +456,34 @@ serve(async (req) => {
         }
       });
       
-      // Then calculate totals for each rep
+      // Calculate totals for each rep (combining both Rep and Sub-Rep appearances)
       Array.from(allReps).forEach(repName => {
         let totalProfit = 0;
         let totalSpend = 0;
         let totalPacks = 0;
         
         // Add data where they appear as Rep
-        allSalesData.forEach(record => {
+        allData.forEach(record => {
           if (record.Rep === repName) {
             totalProfit += Number(record.Profit || 0);
-            // We don't have Spend in this query so we'll need to extract it separately
+            totalSpend += Number(record.Spend || 0);
+            totalPacks += Number(record.Packs || 0);
           }
         });
         
         // Add data where they appear as Sub-Rep
-        allSalesData.forEach(record => {
+        allData.forEach(record => {
           if (record["Sub-Rep"] === repName) {
             totalProfit += Number(record.Profit || 0);
-            // We don't have Spend in this query so we'll need to extract it separately
+            totalSpend += Number(record.Spend || 0);
+            totalPacks += Number(record.Packs || 0);
           }
         });
         
         repProfits[repName] = totalProfit;
+        repMargins[repName] = { profit: totalProfit, spend: totalSpend };
+        repPacks[repName] = totalPacks;
       });
-      
-      // Now get spend data
-      const { data: spendData, error: spendError } = await supabase
-        .from(tableName)
-        .select('Rep, Spend, Department, "Sub-Rep"');
-        
-      if (!spendError) {
-        Array.from(allReps).forEach(repName => {
-          let totalSpend = 0;
-          
-          // Add data where they appear as Rep
-          spendData.forEach(record => {
-            if (record.Rep === repName) {
-              totalSpend += Number(record.Spend || 0);
-            }
-          });
-          
-          // Add data where they appear as Sub-Rep
-          spendData.forEach(record => {
-            if (record["Sub-Rep"] === repName) {
-              totalSpend += Number(record.Spend || 0);
-            }
-          });
-          
-          // Update margin data
-          if (!repMargins[repName]) {
-            repMargins[repName] = { profit: 0, spend: 0 };
-          }
-          repMargins[repName].spend = totalSpend;
-          repMargins[repName].profit = repProfits[repName] || 0;
-        });
-      }
-      
-      // Now get packs data
-      const { data: packsData, error: packsError } = await supabase
-        .from(tableName)
-        .select('Rep, Packs, Department, "Sub-Rep"');
-        
-      if (!packsError) {
-        Array.from(allReps).forEach(repName => {
-          let totalPacks = 0;
-          
-          // Add data where they appear as Rep
-          packsData.forEach(record => {
-            if (record.Rep === repName) {
-              totalPacks += Number(record.Packs || 0);
-            }
-          });
-          
-          // Add data where they appear as Sub-Rep
-          packsData.forEach(record => {
-            if (record["Sub-Rep"] === repName) {
-              totalPacks += Number(record.Packs || 0);
-            }
-          });
-          
-          repPacks[repName] = totalPacks;
-        });
-      }
       
       // Sort and get top performers
       const topByProfit = Object.entries(repProfits)
@@ -516,19 +505,18 @@ serve(async (req) => {
         .slice(0, 5)
         .map(([rep, packs]) => ({ Rep: rep, Packs: packs, Department: "Combined" }));
       
-      salesData = generalData;
       topSalesPeople = {
         byProfit: topByProfit,
         byMargin: topByMargin,
         byPacks: topByPacks
       };
       
-      console.log(`Successfully fetched ${salesData.length} records from ${tableName}`);
-      console.log(`Top performers:`, JSON.stringify(topSalesPeople, null, 2));
+      console.log(`Successfully processed sales data for ${month}`);
+      console.log("Top performers by profit:", JSON.stringify(topByProfit.slice(0, 3)));
       
     } catch (error) {
-      console.error(`Error fetching sales data from ${tableName}:`, error);
-      salesData = `Unable to fetch sales data from ${tableName}: ${error.message}`;
+      console.error(`Error processing sales data from ${tableName}:`, error);
+      salesData = `Unable to process sales data from ${tableName}: ${error.message}`;
       topSalesPeople = "Data unavailable";
     }
 
