@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -26,7 +25,7 @@ export const fetchRepPerformanceData = async () => {
 
     // DIAGNOSTIC: Get total count from SQL directly for comparison
     const { data: totalCountFromSql, error: countError } = await supabase
-      .rpc('get_total_count', {});
+      .rpc('get_total_count');
       
     if (!countError) {
       console.log('SQL Direct Count:', totalCountFromSql);
@@ -39,15 +38,15 @@ export const fetchRepPerformanceData = async () => {
     
     // DIAGNOSTIC: Get department counts directly from SQL
     const { data: deptCountsFromSql, error: deptCountError } = await supabase
-      .rpc('get_department_counts', {});
+      .rpc('get_department_counts');
       
-    if (!deptCountError) {
+    if (!deptCountError && deptCountsFromSql) {
       console.log('Department counts from SQL:', deptCountsFromSql);
     }
     
     // DIAGNOSTIC: Count wholesale records directly from SQL
     const { data: wholesaleCountFromSql, error: wholesaleCountError } = await supabase
-      .rpc('get_wholesale_count', {});
+      .rpc('get_wholesale_count');
       
     if (!wholesaleCountError) {
       console.log('Wholesale count from SQL:', wholesaleCountFromSql);
@@ -55,9 +54,9 @@ export const fetchRepPerformanceData = async () => {
     
     // DIAGNOSTIC: Get all unique Department values directly from SQL
     const { data: uniqueDepartments, error: uniqueDeptsError } = await supabase
-      .rpc('get_unique_departments', {});
+      .rpc('get_unique_departments');
       
-    if (!uniqueDeptsError) {
+    if (!uniqueDeptsError && uniqueDepartments) {
       console.log('All unique Department values from SQL:', uniqueDepartments);
     }
     
@@ -191,17 +190,22 @@ export const fetchRepPerformanceData = async () => {
     // DIAGNOSTIC: Try fetching the wholesale directly via SQL
     try {
       const { data: directWholesaleData, error: directWholesaleError } = await supabase
-        .rpc('get_wholesale_data', {});
+        .rpc('get_wholesale_data');
         
       if (!directWholesaleError && directWholesaleData) {
-        console.log('Direct wholesale data from SQL (first 5):', 
-          directWholesaleData.slice(0, 5));
-          
-        // Calculate the sum directly from this data
-        const directWholesaleSum = directWholesaleData.reduce(
-          (sum, item) => sum + Number(item.profit || 0), 0);
-          
-        console.log('Direct wholesale sum calculated from SQL data:', directWholesaleSum);
+        // Check if data is an array before using array methods
+        if (Array.isArray(directWholesaleData)) {
+          console.log('Direct wholesale data from SQL (first 5):', 
+            directWholesaleData.slice(0, 5));
+            
+          // Calculate the sum directly from this data
+          const directWholesaleSum = directWholesaleData.reduce(
+            (sum, item) => sum + Number(item.profit || 0), 0);
+            
+          console.log('Direct wholesale sum calculated from SQL data:', directWholesaleSum);
+        } else {
+          console.log('Direct wholesale data is not an array:', directWholesaleData);
+        }
       }
     } catch (directError) {
       console.error('Error fetching direct wholesale data:', directError);

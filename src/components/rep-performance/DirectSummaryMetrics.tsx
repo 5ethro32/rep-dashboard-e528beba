@@ -105,7 +105,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
       try {
         // Total sum across all departments
         const { data: totalData, error: totalError } = await supabase
-          .rpc('get_total_profit', {});
+          .rpc('get_total_profit');
           
         if (totalError) throw new Error(`Total query error: ${totalError.message}`);
         console.log('Raw SQL query result for ALL departments:', totalData);
@@ -113,7 +113,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         
         // RETAIL department sum
         const { data: retailData, error: retailError } = await supabase
-          .rpc('get_retail_profit', {});
+          .rpc('get_retail_profit');
           
         if (retailError) throw new Error(`RETAIL query error: ${retailError.message}`);
         console.log('Raw SQL query result for RETAIL department:', retailData);
@@ -121,7 +121,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         
         // Wholesale department sum
         const { data: wholesaleData, error: wholesaleError } = await supabase
-          .rpc('get_wholesale_profit', {});
+          .rpc('get_wholesale_profit');
           
         if (wholesaleError) throw new Error(`Wholesale query error: ${wholesaleError.message}`);
         console.log('Raw SQL query result for Wholesale department:', wholesaleData);
@@ -129,7 +129,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         
         // REVA department sum
         const { data: revaData, error: revaError } = await supabase
-          .rpc('get_reva_profit', {});
+          .rpc('get_reva_profit');
           
         if (revaError) throw new Error(`REVA query error: ${revaError.message}`);
         console.log('Raw SQL query result for REVA department:', revaData);
