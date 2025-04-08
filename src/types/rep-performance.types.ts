@@ -44,6 +44,8 @@ export interface RepChanges {
   profit: number;
   margin: number;
   packs: number;
+  activeAccounts: number; // Added this property
+  totalAccounts: number; // Added this property
   profitPerActiveShop: number;
   profitPerPack: number;
   activeRatio: number;
