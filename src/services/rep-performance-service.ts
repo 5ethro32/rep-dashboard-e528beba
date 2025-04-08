@@ -10,6 +10,9 @@ export const fetchRepPerformanceData = async () => {
       throw new Error('Supabase client is not initialized.');
     }
     
+    console.log('Fetching rep performance data from Supabase...');
+    
+    // Fetch retail data
     const { data: repDataFromDb, error: repError } = await supabase
       .from('sales_data')
       .select('*')
@@ -17,7 +20,9 @@ export const fetchRepPerformanceData = async () => {
       .eq('reporting_period', '2025-03');
     
     if (repError) throw new Error(`Error fetching rep data: ${repError.message}`);
+    console.log('Retail data fetched:', repDataFromDb?.length || 0, 'rows');
     
+    // Fetch REVA data
     const { data: revaDataFromDb, error: revaError } = await supabase
       .from('sales_data')
       .select('*')
@@ -25,7 +30,9 @@ export const fetchRepPerformanceData = async () => {
       .eq('reporting_period', '2025-03');
     
     if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
+    console.log('REVA data fetched:', revaDataFromDb?.length || 0, 'rows');
     
+    // Fetch wholesale data
     const { data: wholesaleDataFromDb, error: wholesaleError } = await supabase
       .from('sales_data')
       .select('*')
@@ -33,14 +40,36 @@ export const fetchRepPerformanceData = async () => {
       .eq('reporting_period', '2025-03');
     
     if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
+    console.log('Wholesale data fetched:', wholesaleDataFromDb?.length || 0, 'rows');
     
+    // Log sample data if available
+    if (repDataFromDb && repDataFromDb.length > 0) {
+      console.log('Sample retail data item:', repDataFromDb[0]);
+    }
+    if (revaDataFromDb && revaDataFromDb.length > 0) {
+      console.log('Sample REVA data item:', revaDataFromDb[0]);
+    }
+    if (wholesaleDataFromDb && wholesaleDataFromDb.length > 0) {
+      console.log('Sample wholesale data item:', wholesaleDataFromDb[0]);
+    }
+    
+    // Process the data
     const processedRepData = processRepData(repDataFromDb as SalesDataItem[] || []);
     const processedRevaData = processRepData(revaDataFromDb as SalesDataItem[] || []);
     const processedWholesaleData = processRepData(wholesaleDataFromDb as SalesDataItem[] || []);
     
+    // Calculate summary data
     const calculatedSummary = calculateSummaryFromData(processedRepData);
     const calculatedRevaValues = calculateSummaryFromData(processedRevaData);
     const calculatedWholesaleValues = calculateSummaryFromData(processedWholesaleData);
+    
+    // Log processed data
+    console.log('Processed retail data:', processedRepData.length, 'items');
+    console.log('Processed REVA data:', processedRevaData.length, 'items');
+    console.log('Processed wholesale data:', processedWholesaleData.length, 'items');
+    console.log('Retail summary:', calculatedSummary);
+    console.log('REVA summary:', calculatedRevaValues);
+    console.log('Wholesale summary:', calculatedWholesaleValues);
     
     return {
       repData: processedRepData,

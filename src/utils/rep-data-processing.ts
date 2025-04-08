@@ -1,4 +1,3 @@
-
 import { RepData, SalesDataItem, SummaryData } from "@/types/rep-performance.types";
 
 export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
@@ -10,6 +9,8 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
     activeAccounts: Set<string>;
     totalAccounts: Set<string>;
   }> = {};
+  
+  console.log(`Processing ${salesData.length} raw sales data items`);
   
   salesData.forEach(item => {
     if (!repGrouped[item.rep_name]) {
@@ -23,17 +24,21 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
       };
     }
     
-    repGrouped[item.rep_name].spend += Number(item.spend) || 0;
-    repGrouped[item.rep_name].profit += Number(item.profit) || 0;
-    repGrouped[item.rep_name].packs += Number(item.packs) || 0;
+    const spend = Number(item.spend) || 0;
+    const profit = Number(item.profit) || 0;
+    const packs = Number(item.packs) || 0;
     
-    if (Number(item.spend) > 0) {
+    repGrouped[item.rep_name].spend += spend;
+    repGrouped[item.rep_name].profit += profit;
+    repGrouped[item.rep_name].packs += packs;
+    
+    if (spend > 0) {
       repGrouped[item.rep_name].activeAccounts.add(item.account_ref);
     }
     repGrouped[item.rep_name].totalAccounts.add(item.account_ref);
   });
   
-  return Object.values(repGrouped).map(rep => {
+  const result = Object.values(repGrouped).map(rep => {
     const spend = rep.spend;
     const profit = rep.profit;
     const packs = rep.packs;
@@ -53,6 +58,13 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
       activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
     };
   });
+  
+  console.log(`Processed data into ${result.length} rep records`);
+  if (result.length > 0) {
+    console.log('Sample processed rep data:', result[0]);
+  }
+  
+  return result;
 };
 
 export const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
@@ -70,7 +82,7 @@ export const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
     totalAccounts += rep.totalAccounts;
   });
   
-  return {
+  const summary = {
     totalSpend,
     totalProfit,
     totalPacks,
@@ -78,6 +90,9 @@ export const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
     activeAccounts: totalActiveAccounts,
     averageMargin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0
   };
+  
+  console.log('Calculated summary:', summary);
+  return summary;
 };
 
 export const getCombinedRepData = (

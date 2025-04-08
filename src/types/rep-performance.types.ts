@@ -23,6 +23,11 @@ export interface SalesDataItem {
   account_name: string;
   reporting_period: string;
   sub_rep?: string;
+  // Add any additional fields from your Supabase table
+  cost?: number;
+  credit?: number;
+  margin?: number;
+  import_date?: string;
 }
 
 export interface SummaryData {
