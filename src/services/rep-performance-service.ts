@@ -12,38 +12,48 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data from Supabase...');
     
-    // Fetch retail data - use rep_type consistently instead of rep_name
-    const { data: repDataFromDb, error: repError } = await supabase
-      .from('sales_data')
+    // Fetch data from sales_data_march table
+    const { data: allDataFromDb, error: dataError } = await supabase
+      .from('sales_data_march')
       .select('*')
-      .eq('rep_type', 'RETAIL')
       .eq('reporting_period', 'March 2025');
     
-    if (repError) throw new Error(`Error fetching rep data: ${repError.message}`);
-    console.log('Retail data fetched:', repDataFromDb?.length || 0, 'rows');
+    if (dataError) throw new Error(`Error fetching data: ${dataError.message}`);
+    console.log('Data fetched:', allDataFromDb?.length || 0, 'rows');
     
-    // Fetch REVA data
-    const { data: revaDataFromDb, error: revaError } = await supabase
-      .from('sales_data')
-      .select('*')
-      .eq('rep_type', 'REVA')
-      .eq('reporting_period', 'March 2025');
+    if (!allDataFromDb || allDataFromDb.length === 0) {
+      throw new Error('No data found for the specified period.');
+    }
     
-    if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
-    console.log('REVA data fetched:', revaDataFromDb?.length || 0, 'rows');
+    // Map data to standard format expected by our app
+    const mappedData = allDataFromDb.map(item => ({
+      id: parseInt(item.id) || 0,
+      reporting_period: 'March 2025',
+      rep_name: item.Rep,
+      sub_rep: item['Sub-Rep'],
+      account_ref: item['Account Ref'] || '',
+      account_name: item['Account Name'] || '',
+      spend: Number(item.Spend) || 0,
+      cost: Number(item.Cost) || 0,
+      credit: Number(item.Credit) || 0,
+      profit: Number(item.Profit) || 0,
+      margin: Number(item.Margin) || 0,
+      packs: Number(item.Packs) || 0,
+      rep_type: item.Department || 'RETAIL',
+      import_date: new Date().toISOString()
+    }));
     
-    // Fetch wholesale data
-    const { data: wholesaleDataFromDb, error: wholesaleError } = await supabase
-      .from('sales_data')
-      .select('*')
-      .eq('rep_type', 'WHOLESALE')
-      .eq('reporting_period', 'March 2025');
+    // Separate data by rep_type
+    const repDataFromDb = mappedData.filter(item => item.rep_type.toUpperCase() === 'RETAIL');
+    const revaDataFromDb = mappedData.filter(item => item.rep_type.toUpperCase() === 'REVA');
+    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type.toUpperCase() === 'WHOLESALE');
     
-    if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
-    console.log('Wholesale data fetched:', wholesaleDataFromDb?.length || 0, 'rows');
+    console.log('Retail data count:', repDataFromDb.length);
+    console.log('REVA data count:', revaDataFromDb.length);
+    console.log('Wholesale data count:', wholesaleDataFromDb.length);
     
     // Debugging: Log sample data and rep_name/rep_type values to identify inconsistencies
-    if (repDataFromDb && repDataFromDb.length > 0) {
+    if (repDataFromDb.length > 0) {
       console.log('Sample retail data item:', repDataFromDb[0]);
       
       // Check for case inconsistencies in retail data
@@ -54,7 +64,7 @@ export const fetchRepPerformanceData = async () => {
       console.log('Sample retail rep_name/rep_type pairs:', retailNameTypes.slice(0, 3));
     }
     
-    if (revaDataFromDb && revaDataFromDb.length > 0) {
+    if (revaDataFromDb.length > 0) {
       console.log('Sample REVA data item:', revaDataFromDb[0]);
       
       // Log sub_rep values to help debug
@@ -69,7 +79,7 @@ export const fetchRepPerformanceData = async () => {
       console.log('Sample REVA rep_name/rep_type pairs:', revaNameTypes.slice(0, 3));
     }
     
-    if (wholesaleDataFromDb && wholesaleDataFromDb.length > 0) {
+    if (wholesaleDataFromDb.length > 0) {
       console.log('Sample wholesale data item:', wholesaleDataFromDb[0]);
       
       // Log sub_rep values to help debug
