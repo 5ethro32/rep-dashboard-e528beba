@@ -75,13 +75,6 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
 
   return (
     <div className="mb-8 animate-slide-in-up">
-      <div className="bg-amber-800/30 border border-amber-500/30 rounded-lg p-3 md:p-4 mb-6 text-sm">
-        <p className="text-amber-200">
-          <strong>Connected to Supabase:</strong> This dashboard is now connected to Supabase for real-time data integration.
-          Click the "Refresh from Database" button to load the latest data.
-        </p>
-      </div>
-      
       <Tabs defaultValue="overall" className="w-full">
         <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
           {tabValues.map((tabValue) => (
