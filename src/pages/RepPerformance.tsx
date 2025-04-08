@@ -1,3 +1,4 @@
+
 import React from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -8,9 +9,6 @@ import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-perform
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
-import RepProfitChart from '@/components/RepProfitChart';
-import RepMarginComparison from '@/components/RepMarginComparison';
-import RepProfitShare from '@/components/RepProfitShare';
 
 const RepPerformance = () => {
   const {
@@ -33,7 +31,6 @@ const RepPerformance = () => {
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
-  const topReps = sortData([...activeData]).slice(0, 8);
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -66,28 +63,6 @@ const RepPerformance = () => {
           includeWholesale={includeWholesale}
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <RepProfitChart 
-            displayData={topReps} 
-            repChanges={repChanges}
-            formatCurrency={formatCurrency}
-            isLoading={isLoading}
-          />
-          
-          <RepMarginComparison 
-            displayData={topReps} 
-            repChanges={repChanges}
-            formatPercent={formatPercent}
-            isLoading={isLoading}
-          />
-          
-          <RepProfitShare 
-            displayData={topReps} 
-            repChanges={repChanges}
-            isLoading={isLoading}
-          />
-        </div>
-
         <PerformanceContent
           tabValues={['overall', 'rep', 'reva', 'wholesale']}
           getActiveData={getActiveData}
