@@ -14,9 +14,11 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
   console.log(`Processing ${salesData.length} raw sales data items`);
   
   salesData.forEach(item => {
-    if (!repGrouped[item.rep_name]) {
-      repGrouped[item.rep_name] = {
-        rep: item.rep_name,
+    const repName = item.rep_name;
+    
+    if (!repGrouped[repName]) {
+      repGrouped[repName] = {
+        rep: repName,
         spend: 0,
         profit: 0,
         packs: 0,
@@ -29,14 +31,14 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
     const profit = Number(item.profit) || 0;
     const packs = Number(item.packs) || 0;
     
-    repGrouped[item.rep_name].spend += spend;
-    repGrouped[item.rep_name].profit += profit;
-    repGrouped[item.rep_name].packs += packs;
+    repGrouped[repName].spend += spend;
+    repGrouped[repName].profit += profit;
+    repGrouped[repName].packs += packs;
     
     if (spend > 0) {
-      repGrouped[item.rep_name].activeAccounts.add(item.account_ref);
+      repGrouped[repName].activeAccounts.add(item.account_ref);
     }
-    repGrouped[item.rep_name].totalAccounts.add(item.account_ref);
+    repGrouped[repName].totalAccounts.add(item.account_ref);
   });
   
   const result = Object.values(repGrouped).map(rep => {
@@ -97,9 +99,9 @@ export const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
 };
 
 export const getCombinedRepData = (
-  baseRetailData: RepData[],
-  baseRevaData: SalesDataItem[],
-  baseWholesaleData: SalesDataItem[],
+  retailData: RepData[],
+  revaData: RepData[],
+  wholesaleData: RepData[],
   includeRetailData: boolean,
   includeRevaData: boolean,
   includeWholesaleData: boolean
@@ -118,7 +120,7 @@ export const getCombinedRepData = (
   if (includeRetailData) {
     console.log("Including Retail data in combined data");
     
-    baseRetailData.forEach(rep => {
+    retailData.forEach(rep => {
       repMap.set(rep.rep, {
         rep: rep.rep,
         spend: rep.spend,
@@ -132,21 +134,14 @@ export const getCombinedRepData = (
   
   console.log("Starting combined data processing. Rep count:", repMap.size);
   
-  // 2. Process REVA data by sub_rep if included
+  // 2. Add REVA data if included
   if (includeRevaData) {
     console.log("Including REVA data in combined data");
     
-    baseRevaData.forEach(item => {
-      if (!item.sub_rep) return; // Skip if no sub_rep
-      const subRep = item.sub_rep;
-      
-      const spend = Number(item.spend) || 0;
-      const profit = Number(item.profit) || 0;
-      const packs = Number(item.packs) || 0;
-      
-      if (!repMap.has(subRep)) {
-        repMap.set(subRep, {
-          rep: subRep,
+    revaData.forEach(rep => {
+      if (!repMap.has(rep.rep)) {
+        repMap.set(rep.rep, {
+          rep: rep.rep,
           spend: 0,
           profit: 0,
           packs: 0,
@@ -155,33 +150,30 @@ export const getCombinedRepData = (
         });
       }
       
-      const repData = repMap.get(subRep)!;
-      repData.spend += spend;
-      repData.profit += profit;
-      repData.packs += packs;
+      const repData = repMap.get(rep.rep)!;
+      repData.spend += rep.spend;
+      repData.profit += rep.profit;
+      repData.packs += rep.packs;
       
-      if (spend > 0) {
-        repData.activeAccounts.add(`reva_${item.account_ref}`);
-      }
-      repData.totalAccounts.add(`reva_${item.account_ref}`);
+      // Create unique identifiers for REVA accounts
+      const revaActiveAccounts = Array(rep.activeAccounts).fill(null)
+        .map((_, i) => `reva_${rep.rep}_${i}`);
+      const revaTotalAccounts = Array(rep.totalAccounts).fill(null)
+        .map((_, i) => `reva_${rep.rep}_${i}`);
+        
+      revaActiveAccounts.forEach(account => repData.activeAccounts.add(account));
+      revaTotalAccounts.forEach(account => repData.totalAccounts.add(account));
     });
   }
   
-  // 3. Process WHOLESALE data by sub_rep if included
+  // 3. Add Wholesale data if included
   if (includeWholesaleData) {
     console.log("Including Wholesale data in combined data");
     
-    baseWholesaleData.forEach(item => {
-      if (!item.sub_rep) return; // Skip if no sub_rep
-      const subRep = item.sub_rep;
-      
-      const spend = Number(item.spend) || 0;
-      const profit = Number(item.profit) || 0;
-      const packs = Number(item.packs) || 0;
-      
-      if (!repMap.has(subRep)) {
-        repMap.set(subRep, {
-          rep: subRep,
+    wholesaleData.forEach(rep => {
+      if (!repMap.has(rep.rep)) {
+        repMap.set(rep.rep, {
+          rep: rep.rep,
           spend: 0,
           profit: 0,
           packs: 0,
@@ -190,15 +182,19 @@ export const getCombinedRepData = (
         });
       }
       
-      const repData = repMap.get(subRep)!;
-      repData.spend += spend;
-      repData.profit += profit;
-      repData.packs += packs;
+      const repData = repMap.get(rep.rep)!;
+      repData.spend += rep.spend;
+      repData.profit += rep.profit;
+      repData.packs += rep.packs;
       
-      if (spend > 0) {
-        repData.activeAccounts.add(`wholesale_${item.account_ref}`);
-      }
-      repData.totalAccounts.add(`wholesale_${item.account_ref}`);
+      // Create unique identifiers for Wholesale accounts
+      const wholesaleActiveAccounts = Array(rep.activeAccounts).fill(null)
+        .map((_, i) => `wholesale_${rep.rep}_${i}`);
+      const wholesaleTotalAccounts = Array(rep.totalAccounts).fill(null)
+        .map((_, i) => `wholesale_${rep.rep}_${i}`);
+        
+      wholesaleActiveAccounts.forEach(account => repData.activeAccounts.add(account));
+      wholesaleTotalAccounts.forEach(account => repData.totalAccounts.add(account));
     });
   }
   

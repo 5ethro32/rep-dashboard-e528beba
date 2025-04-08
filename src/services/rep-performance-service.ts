@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { SalesDataItem } from '@/types/rep-performance.types';
+import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData } from '@/utils/rep-data-processing';
 
 export const fetchRepPerformanceData = async () => {
@@ -61,11 +61,19 @@ export const fetchRepPerformanceData = async () => {
       console.log('WHOLESALE sub_reps:', [...new Set(subReps)]);
     }
     
-    // Process the retail data
+    // Process the retail data to RepData format
     const processedRepData = processRepData(repDataFromDb as SalesDataItem[] || []);
     
     // Calculate summary data
     const calculatedSummary = calculateSummaryFromData(processedRepData);
+    
+    // Process REVA and Wholesale data
+    const processedRevaData = processRepData(revaDataFromDb as SalesDataItem[] || []);
+    const processedWholesaleData = processRepData(wholesaleDataFromDb as SalesDataItem[] || []);
+    
+    // Calculate summaries for REVA and Wholesale
+    const revaSummary = calculateSummaryFromData(processedRevaData);
+    const wholesaleSummary = calculateSummaryFromData(processedWholesaleData);
     
     // Log processed data
     console.log('Processed retail data:', processedRepData.length, 'items');
@@ -73,11 +81,11 @@ export const fetchRepPerformanceData = async () => {
     
     return {
       repData: processedRepData,
-      revaData: revaDataFromDb as SalesDataItem[] || [],
-      wholesaleData: wholesaleDataFromDb as SalesDataItem[] || [],
+      revaData: processedRevaData,
+      wholesaleData: processedWholesaleData,
       baseSummary: calculatedSummary,
-      revaValues: {},
-      wholesaleValues: {}
+      revaValues: revaSummary,
+      wholesaleValues: wholesaleSummary
     };
   } catch (error) {
     console.error('Error loading data from Supabase:', error);
