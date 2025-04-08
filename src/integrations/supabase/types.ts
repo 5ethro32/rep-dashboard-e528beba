@@ -229,6 +229,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_department_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_retail_profit: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -237,9 +241,25 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_total_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       get_total_profit: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_unique_departments: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_wholesale_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_wholesale_data: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       get_wholesale_profit: {
         Args: Record<PropertyKey, never>
