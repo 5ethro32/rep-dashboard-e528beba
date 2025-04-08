@@ -66,6 +66,13 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     : filteredData;
   
   const dataToUse = isMobile ? mobileData : filteredData;
+
+  // Format the total profit for display
+  const formattedProfit = totalProfit.toLocaleString('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    maximumFractionDigits: 0
+  });
   
   return (
     <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
@@ -79,11 +86,13 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center w-full">
-          <DonutChart 
-            data={dataToUse}
-            innerValue={`${totalProfit.toLocaleString()}`}
-            innerLabel="Total Profit"
-          />
+          <div className="w-full h-full max-h-52 md:max-h-64 overflow-hidden">
+            <DonutChart 
+              data={dataToUse}
+              innerValue={formattedProfit}
+              innerLabel="Total Profit"
+            />
+          </div>
         </div>
       )}
     </div>

@@ -31,10 +31,11 @@ const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({
       ) : (
         <div className="flex-1 flex items-end justify-center">
           <div className="w-full h-full flex items-end justify-center overflow-x-auto px-1">
-            <div className={`flex items-end ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
-              {displayData.slice(0, 12).map(item => {
+            <div className={`flex items-end ${isMobile ? 'space-x-1' : 'space-x-2'} pb-1`}>
+              {displayData.slice(0, isMobile ? 8 : 12).map(item => {
                 const repInitials = item.rep.split(' ').map((name: string) => name[0]).join('');
-                const barHeight = Math.max(20, (item.margin / 32) * (isMobile ? 150 : 180));
+                const maxHeight = isMobile ? 120 : 150;
+                const barHeight = Math.max(20, (item.margin / 32) * maxHeight);
                 const change = repChanges[item.rep] ? repChanges[item.rep].margin : 0;
                 const barColor = 'from-blue-600 to-blue-400';
                 

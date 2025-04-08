@@ -25,6 +25,7 @@ export const useRepPerformanceData = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
   
+  // Current month data
   const [overallData, setOverallData] = useState(defaultOverallData);
   const [repData, setRepData] = useState(defaultRepData);
   const [revaData, setRevaData] = useState(defaultRevaData);
@@ -32,6 +33,16 @@ export const useRepPerformanceData = () => {
   const [baseSummary, setBaseSummary] = useState(defaultBaseSummary);
   const [revaValues, setRevaValues] = useState(defaultRevaValues);
   const [wholesaleValues, setWholesaleValues] = useState(defaultWholesaleValues);
+  
+  // Previous month data (February)
+  const [febRepData, setFebRepData] = useState(defaultRepData);
+  const [febRevaData, setFebRevaData] = useState(defaultRevaData);
+  const [febWholesaleData, setFebWholesaleData] = useState(defaultWholesaleData);
+  const [febBaseSummary, setFebBaseSummary] = useState(defaultBaseSummary);
+  const [febRevaValues, setFebRevaValues] = useState(defaultRevaValues);
+  const [febWholesaleValues, setFebWholesaleValues] = useState(defaultWholesaleValues);
+  
+  // Change data
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
 
@@ -40,6 +51,7 @@ export const useRepPerformanceData = () => {
     const storedData = loadStoredRepPerformanceData();
     
     if (storedData) {
+      // Current month data
       setOverallData(storedData.overallData || defaultOverallData);
       setRepData(storedData.repData || defaultRepData);
       setRevaData(storedData.revaData || defaultRevaData);
@@ -47,6 +59,16 @@ export const useRepPerformanceData = () => {
       setBaseSummary(storedData.baseSummary || defaultBaseSummary);
       setRevaValues(storedData.revaValues || defaultRevaValues);
       setWholesaleValues(storedData.wholesaleValues || defaultWholesaleValues);
+      
+      // Previous month data (February)
+      setFebRepData(storedData.febRepData || defaultRepData);
+      setFebRevaData(storedData.febRevaData || defaultRevaData);
+      setFebWholesaleData(storedData.febWholesaleData || defaultWholesaleData);
+      setFebBaseSummary(storedData.febBaseSummary || defaultBaseSummary);
+      setFebRevaValues(storedData.febRevaValues || defaultRevaValues);
+      setFebWholesaleValues(storedData.febWholesaleValues || defaultWholesaleValues);
+      
+      // Change data
       setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
       setRepChanges(storedData.repChanges || defaultRepChanges);
     }
@@ -72,13 +94,25 @@ export const useRepPerformanceData = () => {
       // Fetch data from Supabase
       const data = await fetchRepPerformanceData();
       
-      // Update state with fetched data
+      // Update state with fetched data - current month
       setRepData(data.repData);
       setRevaData(data.revaData);
       setWholesaleData(data.wholesaleData);
       setBaseSummary(data.baseSummary);
       setRevaValues(data.revaValues);
       setWholesaleValues(data.wholesaleValues);
+      
+      // Update state with fetched data - previous month (February)
+      setFebRepData(data.febRepData);
+      setFebRevaData(data.febRevaData);
+      setFebWholesaleData(data.febWholesaleData);
+      setFebBaseSummary(data.febBaseSummary);
+      setFebRevaValues(data.febRevaValues);
+      setFebWholesaleValues(data.febWholesaleValues);
+      
+      // Update changes
+      setSummaryChanges(data.summaryChanges);
+      setRepChanges(data.repChanges);
       
       // Calculate combined data based on current toggle states
       const combinedData = getCombinedRepData(
@@ -93,6 +127,7 @@ export const useRepPerformanceData = () => {
 
       // Save data to localStorage
       saveRepPerformanceData({
+        // Current month
         overallData: combinedData,
         repData: data.repData,
         revaData: data.revaData,
@@ -100,14 +135,24 @@ export const useRepPerformanceData = () => {
         baseSummary: data.baseSummary,
         revaValues: data.revaValues,
         wholesaleValues: data.wholesaleValues,
-        summaryChanges,
-        repChanges
+        
+        // Previous month
+        febRepData: data.febRepData,
+        febRevaData: data.febRevaData,
+        febWholesaleData: data.febWholesaleData,
+        febBaseSummary: data.febBaseSummary,
+        febRevaValues: data.febRevaValues,
+        febWholesaleValues: data.febWholesaleValues,
+        
+        // Changes
+        summaryChanges: data.summaryChanges,
+        repChanges: data.repChanges
       });
 
       console.log("Successfully loaded data from Supabase");
       toast({
         title: "Data loaded successfully",
-        description: "The latest performance data has been loaded.",
+        description: "The latest performance data has been loaded with February comparison.",
       });
       return true;
     } catch (error) {
@@ -161,6 +206,7 @@ export const useRepPerformanceData = () => {
   );
 
   console.log("Current summary values:", summary);
+  console.log("Current summary changes:", summaryChanges);
 
   return {
     // Toggle states
