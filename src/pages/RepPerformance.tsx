@@ -95,7 +95,7 @@ const RepPerformance = () => {
           selectedMonth={selectedMonth}
         />
       </div>
-      <ChatInterface />
+      <ChatInterface selectedMonth={selectedMonth} />
     </div>
   );
 };

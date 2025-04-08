@@ -1,1 +1,5 @@
+
 project_id = "ukshnjjmsrhgvkwrzoah"
+
+[functions.rep-chat]
+verify_jwt = false

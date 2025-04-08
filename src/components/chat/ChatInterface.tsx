@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -13,7 +15,11 @@ interface Message {
   timestamp: Date;
 }
 
-const ChatInterface = () => {
+interface ChatInterfaceProps {
+  selectedMonth?: string;
+}
+
+const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([
@@ -28,6 +34,7 @@ const ChatInterface = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { toast } = useToast();
   
   // Scroll to bottom of messages when messages change
   useEffect(() => {
@@ -57,21 +64,50 @@ const ChatInterface = () => {
     };
     
     setMessages(prev => [...prev, userMessage]);
+    const userQuery = message;
     setMessage('');
     setIsLoading(true);
     
-    // Mock response - in a real implementation, this would call the LLM API via Supabase
-    setTimeout(() => {
+    try {
+      // Call Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('rep-chat', {
+        body: {
+          message: userQuery,
+          selectedMonth
+        }
+      });
+
+      if (error) throw new Error(error.message);
+      
+      // Add assistant response to chat
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `This is a placeholder response. In the actual implementation, I would analyze the sales data and provide insights based on your question: "${message}"`,
+        content: data?.reply || "Sorry, I couldn't process your request. Please try again.",
         isUser: false,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, botMessage]);
+    } catch (err) {
+      console.error('Error calling chat function:', err);
+      toast({
+        title: "Error",
+        description: "Failed to get response from assistant. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm having trouble connecting to the server. Please try again in a moment.",
+        isUser: false,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
