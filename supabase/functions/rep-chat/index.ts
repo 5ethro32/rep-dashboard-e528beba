@@ -39,9 +39,23 @@ interface OverallMetrics {
   departmentBreakdown: any;
 }
 
-// Determine if a string is a department name
+// Determine if a string is a department name - case insensitive
 const isDepartment = (name: string): boolean => {
-  return ['RETAIL', 'REVA', 'Wholesale'].includes(name);
+  if (!name) return false;
+  const upperName = name.toUpperCase();
+  return ['RETAIL', 'REVA', 'WHOLESALE'].includes(upperName);
+};
+
+// Function to normalize department name - ensure consistent casing
+const normalizeDepartmentName = (name: string): string => {
+  if (!name) return '';
+  const upperName = name.toUpperCase();
+  
+  if (upperName === 'RETAIL') return 'RETAIL';
+  if (upperName === 'REVA') return 'REVA';
+  if (upperName === 'WHOLESALE') return 'Wholesale'; // Keep original casing for Wholesale
+  
+  return name;
 };
 
 // Function to fetch all data from a table with pagination
@@ -87,22 +101,26 @@ const fetchDepartmentData = async (supabase, tableName, department) => {
   let page = 0;
   let hasMoreData = true;
   
-  console.log(`Fetching all data for department ${department} from ${tableName}...`);
+  // Normalize department name for consistent lookup
+  const normalizedDept = normalizeDepartmentName(department);
+  
+  console.log(`Fetching all data for department ${normalizedDept} from ${tableName}...`);
   
   while (hasMoreData) {
+    // Use ilike for case-insensitive matching
     const { data, error } = await supabase
       .from(tableName)
       .select('*')
-      .eq('Department', department)
+      .ilike('Department', normalizedDept)
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
     
     if (error) {
-      console.error(`Error fetching ${department} data from ${tableName}, page ${page}:`, error);
+      console.error(`Error fetching ${normalizedDept} data from ${tableName}, page ${page}:`, error);
       throw error;
     }
     
     if (data && data.length > 0) {
-      console.log(`Retrieved ${data.length} ${department} records from ${tableName}, page ${page}`);
+      console.log(`Retrieved ${data.length} ${normalizedDept} records from ${tableName}, page ${page}`);
       allData = [...allData, ...data];
       page++;
       
@@ -113,7 +131,7 @@ const fetchDepartmentData = async (supabase, tableName, department) => {
     }
   }
   
-  console.log(`Completed fetching all ${department} data from ${tableName}, total records: ${allData.length}`);
+  console.log(`Completed fetching all ${normalizedDept} data from ${tableName}, total records: ${allData.length}`);
   return allData;
 };
 
@@ -154,20 +172,19 @@ serve(async (req) => {
       // Check if the query is asking about overall metrics
       const isOverallQuery = /total|overall|all|combined|everyone|across all|summary/i.test(message);
       
+      // Check if the query is asking about a specific department
+      const departmentMatch = message.match(/(?:about|for|on|in|from)\s+(reva|retail|wholesale)/i);
+      const departmentName = departmentMatch ? departmentMatch[1] : null;
+      
       // Extract any rep name mentioned in the message for detailed lookup
       const repNameMatch = message.match(/(?:about|on|for|by)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
       const repName = repNameMatch ? repNameMatch[1] : null;
       
-      // Fetch all data for the specific department
-      let retailData = [];
-      let revaData = [];
-      let wholesaleData = [];
-      
-      // Fetch all data by department to ensure complete data retrieval
+      // Fetch all data for each department
       console.log("Fetching data for all departments...");
-      retailData = await fetchDepartmentData(supabase, tableName, 'RETAIL');
-      revaData = await fetchDepartmentData(supabase, tableName, 'REVA');
-      wholesaleData = await fetchDepartmentData(supabase, tableName, 'Wholesale');
+      let retailData = await fetchDepartmentData(supabase, tableName, 'RETAIL');
+      let revaData = await fetchDepartmentData(supabase, tableName, 'REVA');
+      let wholesaleData = await fetchDepartmentData(supabase, tableName, 'Wholesale');
       
       // Combine all department data
       const allData = [...retailData, ...revaData, ...wholesaleData];
@@ -329,6 +346,73 @@ serve(async (req) => {
             activeAccounts: metrics.activeAccounts.size,
             departmentBreakdown: Object.keys(departmentBreakdown).length
           });
+        }
+      }
+      
+      // If asking about a specific department
+      if (departmentName) {
+        console.log(`Detected query about the ${departmentName} department`);
+        
+        // Normalize department name for case-insensitive matching
+        const normalizedDeptName = departmentName.toUpperCase();
+        let deptData = [];
+        
+        if (normalizedDeptName === 'REVA') {
+          deptData = revaData;
+        } else if (normalizedDeptName === 'WHOLESALE') {
+          deptData = wholesaleData;
+        } else if (normalizedDeptName === 'RETAIL') {
+          deptData = retailData;
+        }
+        
+        if (deptData && deptData.length > 0) {
+          console.log(`Found ${deptData.length} records for ${departmentName} department`);
+          
+          // Calculate department metrics
+          let totalSpend = 0;
+          let totalProfit = 0;
+          let totalPacks = 0;
+          const allAccounts = new Set<string>();
+          const activeAccounts = new Set<string>();
+          
+          deptData.forEach(record => {
+            const spend = Number(record.Spend || 0);
+            const profit = Number(record.Profit || 0);
+            const packs = Number(record.Packs || 0);
+            
+            totalSpend += spend;
+            totalProfit += profit;
+            totalPacks += packs;
+            
+            if (record['Account Ref']) {
+              allAccounts.add(record['Account Ref']);
+              if (spend > 0) {
+                activeAccounts.add(record['Account Ref']);
+              }
+            }
+          });
+          
+          // Create department summary
+          repDetails = {
+            name: departmentName,
+            departments: [departmentName],
+            totalSpend: totalSpend,
+            totalProfit: totalProfit,
+            margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
+            totalPacks: totalPacks,
+            totalAccounts: allAccounts.size,
+            activeAccounts: activeAccounts.size,
+            profitPerActiveAccount: activeAccounts.size > 0 ? totalProfit / activeAccounts.size : 0,
+            sampleTransactions: deptData.slice(0, 3)
+          };
+          
+          console.log(`Found details for department ${departmentName}:`, {
+            totalSpend: repDetails.totalSpend,
+            totalProfit: repDetails.totalProfit,
+            margin: repDetails.margin
+          });
+        } else {
+          console.log(`No data found for department ${departmentName}`);
         }
       }
       
