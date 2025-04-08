@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
@@ -76,6 +77,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     }
   };
 
+  // Only show change indicators if we're viewing March data (compared to February)
   const showChangeIndicators = selectedMonth === 'March';
 
   return (

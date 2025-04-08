@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { SendIcon, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,13 +25,12 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: '1', 
-      content: `Hello! I'm Vera, your sales data assistant. Ask me anything about February or March 2025 performance data.`, 
+      content: "Hello! I'm Vera, your sales data assistant. Ask me anything about rep performance data.", 
       isUser: false, 
       timestamp: new Date(),
       examples: [
         "Who are the top performers?",
-        "Tell me about Craig's sales",
-        "Compare February and March profit"
+        "Tell me about Craig's sales"
       ]
     }
   ]);
@@ -55,9 +53,6 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
       }, 100);
     }
   }, [isOpen]);
-
-  // We don't need to update the welcome message based on selectedMonth anymore
-  // since Vera can now answer questions about both months
 
   const handleExampleClick = (exampleText: string) => {
     // Set the example text as the current message and submit
@@ -89,8 +84,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
     setIsLoading(true);
     
     try {
-      // Call Supabase Edge Function - we still pass selectedMonth for context
-      // but the function will use data from both months
+      // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('rep-chat', {
         body: {
           message: userQuery,
