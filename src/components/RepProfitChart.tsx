@@ -45,6 +45,7 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
                 const barHeight = Math.max(20, (item.profit / maxProfit) * maxHeight);
                 const change = repChanges[item.rep] ? repChanges[item.rep].profit : 0;
                 const barColor = 'from-finance-red to-finance-red/70';
+                const previousValue = item.profit / (1 + (change || 0) / 100);
                 
                 return (
                   <TooltipProvider key={item.rep}>
@@ -71,11 +72,6 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
                           </div>
                           <div className="mt-2 text-2xs md:text-xs font-bold text-white/80">{repInitials}</div>
                           <div className="text-2xs md:text-xs text-finance-gray">{formatCurrency(item.profit, 0)}</div>
-                          {Math.abs(change) >= 0.1 && (
-                            <div className="text-2xs text-finance-gray">
-                              {formatCurrency(item.profit / (1 + (change || 0) / 100), 0)}
-                            </div>
-                          )}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent className="bg-gray-800 border-white/10 text-white">
@@ -90,7 +86,7 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
                             <p className="text-finance-gray">No change</p>
                           )}
                           <p className="text-finance-gray mt-1 text-xs">
-                            Previous: {formatCurrency(item.profit / (1 + (change || 0) / 100))}
+                            Previous: {formatCurrency(previousValue)}
                           </p>
                         </div>
                       </TooltipContent>

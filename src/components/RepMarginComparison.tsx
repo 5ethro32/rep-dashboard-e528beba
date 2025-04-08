@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ChevronUp, ChevronDown, Percent, Loader2, Info, Minus } from 'lucide-react';
+import { ChevronUp, ChevronDown, Loader2, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Tooltip,
@@ -50,6 +50,7 @@ const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({ displayData, 
                 const barHeight = Math.max(20, (item.margin / maxMargin) * maxHeight);
                 const change = repChanges[item.rep] ? repChanges[item.rep].margin : 0;
                 const barColor = 'from-blue-500 to-blue-600/70'; // Keep the blue color
+                const previousValue = item.margin - (change || 0);
                 
                 return (
                   <TooltipProvider key={item.rep}>
@@ -76,11 +77,6 @@ const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({ displayData, 
                           </div>
                           <div className="mt-2 text-2xs md:text-xs font-bold text-white/80">{repInitials}</div>
                           <div className="text-2xs md:text-xs text-finance-gray">{formatPercent(item.margin)}</div>
-                          {Math.abs(change) >= 0.1 && (
-                            <div className="text-2xs text-finance-gray">
-                              {formatPercent(item.margin - (change || 0))}
-                            </div>
-                          )}
                         </div>
                       </TooltipTrigger>
                       <TooltipContent className="bg-gray-800 border-white/10 text-white">
@@ -95,7 +91,7 @@ const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({ displayData, 
                             <p className="text-finance-gray">No change</p>
                           )}
                           <p className="text-finance-gray mt-1 text-xs">
-                            Previous: {formatPercent(item.margin - (change || 0))}
+                            Previous: {formatPercent(previousValue)}
                           </p>
                         </div>
                       </TooltipContent>

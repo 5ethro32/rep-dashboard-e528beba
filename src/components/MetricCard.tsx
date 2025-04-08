@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowDown, ArrowUp, Loader2 } from 'lucide-react';
+import { TrendingDown, TrendingUp, Loader2 } from 'lucide-react';
 
 interface MetricCardProps {
   title: string;
@@ -50,8 +50,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
                     change.type === 'increase' ? 'text-emerald-500' : 
                     change.type === 'decrease' ? 'text-finance-red' : 'text-finance-gray'
                   )}>
-                    {change.type === 'increase' && <ArrowUp className="mr-1 h-3 w-3" />}
-                    {change.type === 'decrease' && <ArrowDown className="mr-1 h-3 w-3" />}
+                    {change.type === 'increase' && <TrendingUp className="mr-1 h-3 w-3" />}
+                    {change.type === 'decrease' && <TrendingDown className="mr-1 h-3 w-3" />}
                     {change.value}
                   </div>
                 )}

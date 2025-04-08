@@ -24,7 +24,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
     <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 justify-between gap-4 mb-8 animate-slide-in-up">
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg">
-          <Label htmlFor="include-retail" className="text-xs md:text-sm mr-2 text-white/90">Include RETAIL</Label>
+          <Label htmlFor="include-retail" className="text-xs md:text-sm mr-2 text-white/90">Retail</Label>
           <Switch 
             id="include-retail" 
             checked={includeRetail} 
@@ -33,7 +33,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
           />
         </div>
         <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg">
-          <Label htmlFor="include-reva" className="text-xs md:text-sm mr-2 text-white/90">Include REVA</Label>
+          <Label htmlFor="include-reva" className="text-xs md:text-sm mr-2 text-white/90">Reva</Label>
           <Switch 
             id="include-reva" 
             checked={includeReva} 
@@ -42,7 +42,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
           />
         </div>
         <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg">
-          <Label htmlFor="include-wholesale" className="text-xs md:text-sm mr-2 text-white/90">Include Wholesale</Label>
+          <Label htmlFor="include-wholesale" className="text-xs md:text-sm mr-2 text-white/90">Wholesale</Label>
           <Switch 
             id="include-wholesale" 
             checked={includeWholesale}

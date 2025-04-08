@@ -89,38 +89,6 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     maximumFractionDigits: 0
   });
   
-  // Enhanced CustomTooltip component
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const item = payload[0].payload;
-      return (
-        <div className="bg-gray-800 p-2 border border-white/10 rounded-md text-xs md:text-sm shadow-lg backdrop-blur-sm">
-          <p className="text-white font-medium">{item.name}</p>
-          <p className="text-white/80">Current: {item.value}% ({item.profit.toLocaleString('en-GB', {
-            style: 'currency',
-            currency: 'GBP',
-            maximumFractionDigits: 0
-          })})</p>
-          {Math.abs(item.change) >= 0.1 ? (
-            <p className={item.change > 0 ? "text-emerald-400 text-xs" : "text-finance-red text-xs"}>
-              Change: {item.change > 0 ? "+" : ""}{item.change.toFixed(1)}%
-            </p>
-          ) : (
-            <p className="text-finance-gray text-xs">No change</p>
-          )}
-          <p className="text-finance-gray text-xs mt-1">
-            Previous: {item.prevPercentage}% ({item.prevProfit.toLocaleString('en-GB', {
-              style: 'currency',
-              currency: 'GBP',
-              maximumFractionDigits: 0
-            })})
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-  
   return (
     <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
       <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Share</h3>
@@ -132,13 +100,33 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center w-full">
-          <div className="w-full h-full max-h-52 md:max-h-64 overflow-hidden">
-            <DonutChart 
-              data={dataToUse}
-              innerValue={formattedProfit}
-              innerLabel="Total Profit"
-            />
+        <div className="flex flex-col h-full">
+          <div className="flex-1">
+            <div className="h-36 md:h-44 w-full mb-2 md:mb-4">
+              <DonutChart 
+                data={dataToUse}
+                innerValue={formattedProfit}
+                innerLabel="Total Profit"
+              />
+            </div>
+          </div>
+          
+          {/* Legend */}
+          <div className="mt-auto overflow-y-auto max-h-20 md:max-h-24 scrollbar-none">
+            <div className="grid grid-cols-2 gap-1">
+              {dataToUse.map((item, index) => (
+                <div key={index} className="flex items-center text-2xs md:text-xs">
+                  <div 
+                    className="w-2 h-2 md:w-3 md:h-3 rounded-full mr-1" 
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <div className="truncate">
+                    <span className="font-medium">{item.name}</span> 
+                    <span className="text-finance-gray ml-1">({item.value}%)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

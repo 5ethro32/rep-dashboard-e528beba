@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
@@ -138,6 +137,9 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
               const previousRank = prevRankings[item.rep] || currentRank;
               const rankChange = previousRank - currentRank;
               
+              // Check if active accounts match total accounts for displaying dash instead of down arrow
+              const accountsMatch = item.activeAccounts === item.totalAccounts;
+              
               return (
                 <TableRow key={item.rep} className="hover:bg-white/5 transition-colors">
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium">
@@ -266,17 +268,23 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                             <span className="text-emerald-500">{formatNumber(item.activeAccounts)}</span>
                             <span className="text-finance-gray mx-1"> / </span>
                             <span>{formatNumber(item.totalAccounts)}</span>
-                            {repChanges[item.rep] && Math.abs(repChanges[item.rep].activeAccounts) >= 0.1 ? (
-                              <div className="flex items-center ml-1">
-                                {renderChangeIndicator(repChanges[item.rep].activeAccounts, 'small')}
-                                <span className="text-2xs ml-1 text-finance-gray">
-                                  {formatNumber(Math.round(item.activeAccounts / (1 + (repChanges[item.rep]?.activeAccounts || 0) / 100)))}
-                                </span>
-                              </div>
-                            ) : (
+                            {accountsMatch ? (
                               <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                 <Minus className="h-4 w-4" />
                               </span>
+                            ) : (
+                              repChanges[item.rep] && Math.abs(repChanges[item.rep].activeAccounts) >= 0.1 ? (
+                                <div className="flex items-center ml-1">
+                                  {renderChangeIndicator(repChanges[item.rep].activeAccounts, 'small')}
+                                  <span className="text-2xs ml-1 text-finance-gray">
+                                    {formatNumber(Math.round(item.activeAccounts / (1 + (repChanges[item.rep]?.activeAccounts || 0) / 100)))}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
+                                  <Minus className="h-4 w-4" />
+                                </span>
+                              )
                             )}
                           </div>
                         </TooltipTrigger>

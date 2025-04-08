@@ -20,6 +20,11 @@ const CustomTooltip = ({ active, payload }: any) => {
       <div className="bg-gray-800 p-2 border border-white/10 rounded-md text-xs md:text-sm shadow-lg backdrop-blur-sm">
         <p className="text-white font-medium">{payload[0].name}</p>
         <p className="text-white/80">{`${payload[0].value}%`}</p>
+        <p className="text-white/80">{payload[0].payload.profit.toLocaleString('en-GB', {
+          style: 'currency',
+          currency: 'GBP',
+          maximumFractionDigits: 0
+        })}</p>
       </div>
     );
   }
@@ -58,8 +63,8 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
       
       {innerValue && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
-          <div className="text-lg md:text-xl font-bold text-white">{innerValue}</div>
-          {innerLabel && <div className="text-xs md:text-sm text-finance-gray mt-1 opacity-80">{innerLabel}</div>}
+          <div className="text-base md:text-lg font-bold text-white">{innerValue}</div>
+          {innerLabel && <div className="text-2xs md:text-xs text-finance-gray mt-0.5 opacity-80">{innerLabel}</div>}
         </div>
       )}
     </div>
