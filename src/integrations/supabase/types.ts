@@ -184,7 +184,22 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      get_retail_profit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_reva_profit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_total_profit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_wholesale_profit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

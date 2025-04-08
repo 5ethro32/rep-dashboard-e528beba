@@ -18,11 +18,6 @@ interface DepartmentStats {
   margin: number;
 }
 
-interface RawQueryResult {
-  department: string;
-  sum: number;
-}
-
 const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({ 
   includeRetail, 
   includeReva, 
