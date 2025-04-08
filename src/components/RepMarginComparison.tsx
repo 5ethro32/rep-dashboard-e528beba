@@ -1,7 +1,13 @@
 
 import React from 'react';
-import { ChevronUp, ChevronDown, Percent, Loader2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, Percent, Loader2, Info } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 
 interface RepMarginComparisonProps {
   displayData: any[];
@@ -46,24 +52,41 @@ const RepMarginComparison: React.FC<RepMarginComparisonProps> = ({ displayData, 
                 const barColor = 'from-blue-500 to-blue-600/70'; // Keep the blue color
                 
                 return (
-                  <div key={item.rep} className="flex flex-col items-center">
-                    <div className="relative">
-                      {Math.abs(change) >= 0.1 && (
-                        <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
-                          {change > 0 ? 
-                            <ChevronUp className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" /> : 
-                            <ChevronDown className="h-4 w-4 md:h-5 md:w-5 text-finance-red" />
-                          }
+                  <TooltipProvider key={item.rep}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex flex-col items-center">
+                          <div className="relative">
+                            {Math.abs(change) >= 0.1 && (
+                              <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
+                                {change > 0 ? 
+                                  <ChevronUp className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" /> : 
+                                  <ChevronDown className="h-4 w-4 md:h-5 md:w-5 text-finance-red" />
+                                }
+                              </div>
+                            )}
+                            <div 
+                              className={`w-6 md:w-8 bg-gradient-to-t ${barColor} rounded-t-lg transition-all duration-500 ease-in-out hover:opacity-80 cursor-pointer`}
+                              style={{ height: `${barHeight}px` }}
+                            />
+                          </div>
+                          <div className="mt-2 text-2xs md:text-xs font-bold text-white/80">{repInitials}</div>
+                          <div className="text-2xs md:text-xs text-finance-gray">{formatPercent(item.margin)}</div>
                         </div>
-                      )}
-                      <div 
-                        className={`w-6 md:w-8 bg-gradient-to-t ${barColor} rounded-t-lg transition-all duration-500 ease-in-out`}
-                        style={{ height: `${barHeight}px` }}
-                      />
-                    </div>
-                    <div className="mt-2 text-2xs md:text-xs font-bold text-white/80">{repInitials}</div>
-                    <div className="text-2xs md:text-xs text-finance-gray">{formatPercent(item.margin)}</div>
-                  </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-gray-800 border-white/10 text-white">
+                        <div className="p-1">
+                          <p className="font-medium">{item.rep}</p>
+                          <p>Margin: {formatPercent(item.margin)}</p>
+                          {Math.abs(change) >= 0.1 && (
+                            <p className={change > 0 ? "text-emerald-400" : "text-finance-red"}>
+                              Change: {change > 0 ? "+" : ""}{formatPercent(change).replace("%", "")}%
+                            </p>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 );
               })}
             </div>

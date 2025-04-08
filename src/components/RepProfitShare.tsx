@@ -28,7 +28,9 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     return {
       name: item.rep,
       value: Number(percentage.toFixed(1)),
-      color: colors[index % colors.length]
+      color: colors[index % colors.length],
+      profit: item.profit,
+      change: repChanges[item.rep] ? repChanges[item.rep].profit : 0
     };
   });
   
@@ -48,7 +50,9 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
       filteredData.push({
         name: "Others",
         value: Number(othersValue.toFixed(1)),
-        color: "#6b7280"
+        color: "#6b7280",
+        profit: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.profit, 0),
+        change: 0
       });
     }
   }
@@ -60,7 +64,9 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
         {
           name: "Others",
           value: filteredData.slice(4).reduce((sum, item) => sum + item.value, 0),
-          color: "#6b7280"
+          color: "#6b7280",
+          profit: filteredData.slice(4).reduce((sum, item) => sum + item.profit, 0),
+          change: 0
         }
       ]
     : filteredData;

@@ -48,7 +48,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
               <Cell 
                 key={`cell-${index}`} 
                 fill={entry.color} 
-                className="transition-all duration-300 ease-in-out"
+                className="transition-all duration-300 ease-in-out cursor-pointer hover:opacity-80"
               />
             ))}
           </Pie>
@@ -58,7 +58,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
       
       {innerValue && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
-          <div className="text-2xl md:text-3xl font-bold text-white">{innerValue}</div>
+          <div className="text-xl md:text-2xl font-bold text-white">{innerValue}</div>
           {innerLabel && <div className="text-xs md:text-sm text-finance-gray mt-1 opacity-80">{innerLabel}</div>}
         </div>
       )}
