@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -48,11 +47,10 @@ serve(async (req) => {
 
     console.log(`Processing query: "${message}" for month: ${selectedMonth}`)
     
-    // Determine the data table based on selected month
-    const dataTable = selectedMonth.toLowerCase() === 'february' ? 
-      'sales_data_februrary' : 'sales_data_march'
+    // We'll always fetch both months' data regardless of the selected month
+    // This way Vera can answer questions about either month or compare them
     
-    // Get both March and February data for comparison regardless of selected month
+    // Get March data
     const { data: marchData, error: marchError } = await supabase
       .from('sales_data_march')
       .select('*')
@@ -61,6 +59,7 @@ serve(async (req) => {
       throw new Error(`Error fetching March data: ${marchError.message}`)
     }
 
+    // Get February data
     const { data: februaryData, error: febError } = await supabase
       .from('sales_data_februrary')
       .select('*')
@@ -71,32 +70,20 @@ serve(async (req) => {
 
     console.log(`Fetched ${marchData.length} records from March data and ${februaryData.length} records from February data`)
 
-    // Query the selected month's data first
-    const currentMonthData = selectedMonth.toLowerCase() === 'february' ? februaryData : marchData
-    const otherMonthData = selectedMonth.toLowerCase() === 'february' ? marchData : februaryData
-
-    // Process data to get rep performance, considering both Rep and Sub-Rep columns
-    const repPerformance = processRepData(currentMonthData)
-    const otherMonthRepPerformance = processRepData(otherMonthData)
+    // Process rep data for both months
+    const marchRepPerformance = processRepData(marchData)
+    const februaryRepPerformance = processRepData(februaryData)
     
-    // Process department data
-    const departmentData = processDepartmentData(currentMonthData)
-    const otherMonthDepartmentData = processDepartmentData(otherMonthData)
+    // Process department data for both months
+    const marchDepartmentData = processDepartmentData(marchData)
+    const februaryDepartmentData = processDepartmentData(februaryData)
 
     // Calculate changes between months
-    const repChanges = calculateRepChanges(
-      repPerformance, 
-      otherMonthRepPerformance, 
-      selectedMonth.toLowerCase() === 'february' ? 'march' : 'february'
-    )
+    const repChanges = calculateRepChanges(marchRepPerformance, februaryRepPerformance)
+    const departmentChanges = calculateDepartmentChanges(marchDepartmentData, februaryDepartmentData)
 
-    const departmentChanges = calculateDepartmentChanges(
-      departmentData, 
-      otherMonthDepartmentData,
-      selectedMonth.toLowerCase() === 'february' ? 'march' : 'february'
-    )
-
-    const topPerformers = Object.entries(repPerformance)
+    // Top performers from both months
+    const marchTopPerformers = Object.entries(marchRepPerformance)
       .filter(([name]) => !['RETAIL', 'REVA', 'Wholesale'].includes(name))
       .sort((a, b) => b[1].profit - a[1].profit)
       .slice(0, 5)
@@ -106,26 +93,31 @@ serve(async (req) => {
         change: repChanges[name]?.profitChange || 0
       }))
     
-    const topMargins = Object.entries(repPerformance)
+    const februaryTopPerformers = Object.entries(februaryRepPerformance)
       .filter(([name]) => !['RETAIL', 'REVA', 'Wholesale'].includes(name))
-      .sort((a, b) => b[1].margin - a[1].margin)
+      .sort((a, b) => b[1].profit - a[1].profit)
       .slice(0, 5)
       .map(([name, data]) => ({ 
         name,
-        margin: data.margin,
-        change: repChanges[name]?.marginChange || 0
+        profit: data.profit
       }))
-
-    // Create context for AI response
+    
+    // Create context for AI response that includes data from both months
     const context = {
-      currentMonth: selectedMonth,
-      comparisonMonth: selectedMonth.toLowerCase() === 'february' ? 'March' : 'February',
-      repPerformance,
-      departmentData,
-      topPerformers,
-      topMargins,
-      repChanges,
-      departmentChanges
+      marchData: {
+        repPerformance: marchRepPerformance,
+        departmentData: marchDepartmentData,
+        topPerformers: marchTopPerformers,
+      },
+      februaryData: {
+        repPerformance: februaryRepPerformance,
+        departmentData: februaryDepartmentData,
+        topPerformers: februaryTopPerformers,
+      },
+      changes: {
+        reps: repChanges,
+        departments: departmentChanges
+      }
     }
 
     // Get ChatGPT response
@@ -140,18 +132,19 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are Vera, a retail sales data assistant. You help analyze sales rep performance data.
+            content: `You are Vera, a retail sales data assistant. You help analyze sales rep performance data for February and March 2025.
 
 IMPORTANT GUIDELINES:
-- Focus your answers on the sales data for ${selectedMonth} 2025
+- You have access to BOTH February 2025 and March 2025 data - use whichever is most relevant to the query
+- You can compare data between months whenever relevant
 - Use £ for all currency values (not $ or any other currency)
 - All numbers should be formatted appropriately (use commas for thousands)
-- Never format your responses with markdown 
+- Never format your responses with markdown
 - Keep responses concise and conversational
 - Avoid phrases like "Based on the data provided" or "According to the data"
 - Present the most important insights first
 - Always specify amounts in your responses
-- If asked about changes or comparisons, use the comparative data between ${selectedMonth} and ${selectedMonth.toLowerCase() === 'february' ? 'March' : 'February'}
+- When asked about changes or comparisons, focus on the differences between February and March
 
 IMPORTANT DEPARTMENT/REP INFORMATION:
 - There are three departments: Retail, REVA, and Wholesale
@@ -160,7 +153,7 @@ IMPORTANT DEPARTMENT/REP INFORMATION:
 - When providing rep performance, always specify their department if relevant
 - Never confuse the department names (Retail/REVA/Wholesale) with individual rep names
 
-You have access to complete sales data for both February and March 2025.`
+You can answer questions about either month, compare performance between months, or provide insights on month-over-month changes.`
           },
           {
             role: 'user',
@@ -176,9 +169,7 @@ You have access to complete sales data for both February and March 2025.`
     const reply = result.choices?.[0]?.message?.content || "I'm sorry, I couldn't analyze that data properly."
 
     return new Response(
-      JSON.stringify({
-        reply
-      }),
+      JSON.stringify({ reply }),
       {
         headers: {
           ...corsHeaders,
@@ -204,7 +195,7 @@ You have access to complete sales data for both February and March 2025.`
   }
 })
 
-// Helper function to process raw data into rep performance metrics
+// Helper functions remain the same
 function processRepData(data: any[]): Record<string, RepData> {
   const repMap: Record<string, RepData> = {}
   
@@ -282,7 +273,6 @@ function processRepData(data: any[]): Record<string, RepData> {
   return repMap;
 }
 
-// Helper function to process department data
 function processDepartmentData(data: any[]): Record<string, DepartmentData> {
   const deptMap: Record<string, DepartmentData> = {}
   const accountsPerDept: Record<string, Set<string>> = {}
@@ -322,17 +312,15 @@ function processDepartmentData(data: any[]): Record<string, DepartmentData> {
   return deptMap;
 }
 
-// Helper function for calculating changes between months
 function calculateRepChanges(
-  currentMonthData: Record<string, RepData>,
-  comparisonMonthData: Record<string, RepData>,
-  comparisonMonthName: string
+  marchData: Record<string, RepData>,
+  februaryData: Record<string, RepData>
 ): Record<string, any> {
   const changes: Record<string, any> = {};
   
   // Calculate changes for all reps in current month
-  Object.entries(currentMonthData).forEach(([name, data]) => {
-    const comparisonData = comparisonMonthData[name];
+  Object.entries(marchData).forEach(([name, data]) => {
+    const comparisonData = februaryData[name];
     
     if (comparisonData) {
       changes[name] = {
@@ -341,7 +329,7 @@ function calculateRepChanges(
         marginChange: data.margin - comparisonData.margin,
         packsChange: calculatePercentageChange(data.packs, comparisonData.packs),
         accountsChange: calculatePercentageChange(data.accounts, comparisonData.accounts),
-        comparisonMonth: comparisonMonthName,
+        comparisonMonth: 'February',
         comparisonProfit: comparisonData.profit,
         comparisonSpend: comparisonData.spend,
         comparisonMargin: comparisonData.margin,
@@ -355,7 +343,7 @@ function calculateRepChanges(
         marginChange: data.margin,
         packsChange: 100,
         accountsChange: 100,
-        comparisonMonth: comparisonMonthName,
+        comparisonMonth: 'February',
         newRep: true
       };
     }
@@ -364,16 +352,14 @@ function calculateRepChanges(
   return changes;
 }
 
-// Helper function for calculating department changes
 function calculateDepartmentChanges(
-  currentMonthData: Record<string, DepartmentData>,
-  comparisonMonthData: Record<string, DepartmentData>,
-  comparisonMonthName: string
+  marchData: Record<string, DepartmentData>,
+  februaryData: Record<string, DepartmentData>
 ): Record<string, any> {
   const changes: Record<string, any> = {};
   
-  Object.entries(currentMonthData).forEach(([name, data]) => {
-    const comparisonData = comparisonMonthData[name];
+  Object.entries(marchData).forEach(([name, data]) => {
+    const comparisonData = februaryData[name];
     
     if (comparisonData) {
       changes[name] = {
@@ -382,7 +368,7 @@ function calculateDepartmentChanges(
         marginChange: data.margin - comparisonData.margin,
         packsChange: calculatePercentageChange(data.totalPacks, comparisonData.totalPacks),
         accountsChange: calculatePercentageChange(data.totalAccounts, comparisonData.totalAccounts),
-        comparisonMonth: comparisonMonthName,
+        comparisonMonth: 'February',
         comparisonProfit: comparisonData.totalProfit,
         comparisonSpend: comparisonData.totalSpend,
         comparisonMargin: comparisonData.margin,
@@ -395,7 +381,7 @@ function calculateDepartmentChanges(
         marginChange: data.margin,
         packsChange: 100,
         accountsChange: 100,
-        comparisonMonth: comparisonMonthName,
+        comparisonMonth: 'February',
         newDepartment: true
       };
     }
@@ -404,13 +390,11 @@ function calculateDepartmentChanges(
   return changes;
 }
 
-// Helper function to calculate percentage change
 function calculatePercentageChange(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
   return ((current - previous) / previous) * 100;
 }
 
-// Helper function to safely parse numeric values
 function parseNumeric(value: any): number {
   if (value === null || value === undefined) return 0;
   if (typeof value === 'number') return value;
