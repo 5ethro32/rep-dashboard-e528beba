@@ -126,7 +126,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                 />
               </div>
               
-              <div className="h-64 md:h-80"> {/* Increased height from h-60 to h-64 for mobile */}
+              <div className="lg:h-96 md:h-80 h-72"> {/* Increased container height to fit both chart and legend */}
                 <RepProfitShare 
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}
