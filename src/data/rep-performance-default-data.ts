@@ -77,14 +77,14 @@ export const defaultSummaryChanges: SummaryData = {
 };
 
 export const defaultRepChanges: RepChangesRecord = {
-  "Clare Quinn": { spend: -13.97, profit: 23.17, margin: 43.17, packs: -10.76, profitPerActiveShop: 14.43, profitPerPack: 38.03, activeRatio: 6.36 },
-  "Craig McDowall": { spend: 18.28, profit: 19.44, margin: 0.98, packs: 0.60, profitPerActiveShop: 28.79, profitPerPack: 18.72, activeRatio: -12.72 },
-  "Ged Thomas": { spend: -4.21, profit: 4.25, margin: 8.84, packs: -14.71, profitPerActiveShop: 7.24, profitPerPack: 22.14, activeRatio: -3.80 },
-  "Jonny Cunningham": { spend: 3.11, profit: 70.82, margin: 65.67, packs: 2.84, profitPerActiveShop: 101.88, profitPerPack: 66.10, activeRatio: -16.15 },
-  "Michael McKay": { spend: 15.55, profit: 45.26, margin: 25.71, packs: 8.70, profitPerActiveShop: 59.09, profitPerPack: 33.63, activeRatio: -9.17 },
-  "Pete Dhillon": { spend: -13.56, profit: -0.59, margin: 15.00, packs: -27.31, profitPerActiveShop: 2.02, profitPerPack: 36.75, activeRatio: -3.46 },
-  "Stuart Geddes": { spend: -11.2, profit: -5.95, margin: 5.90, packs: -37.00, profitPerActiveShop: -7.66, profitPerPack: 49.30, activeRatio: -1.08 },
-  "Louise Skiba": { spend: -1.11, profit: 2.94, margin: 4.09, packs: -3.86, profitPerActiveShop: -7.36, profitPerPack: 7.07, activeRatio: -5.97 },
-  "Mike Cooper": { spend: 11.78, profit: -20.33, margin: -28.73, packs: 117.82, profitPerActiveShop: -28.25, profitPerPack: -63.41, activeRatio: 11.11 },
-  "Murray Glasgow": { spend: 100, profit: 100, margin: 100, packs: 100, profitPerActiveShop: 100, profitPerPack: 100, activeRatio: 100 }
+  "Clare Quinn": { spend: -13.97, profit: 23.17, margin: 43.17, packs: -10.76, activeAccounts: -5.0, totalAccounts: 2.5, profitPerActiveShop: 14.43, profitPerPack: 38.03, activeRatio: 6.36 },
+  "Craig McDowall": { spend: 18.28, profit: 19.44, margin: 0.98, packs: 0.60, activeAccounts: -3.2, totalAccounts: 4.1, profitPerActiveShop: 28.79, profitPerPack: 18.72, activeRatio: -12.72 },
+  "Ged Thomas": { spend: -4.21, profit: 4.25, margin: 8.84, packs: -14.71, activeAccounts: 1.5, totalAccounts: 0.0, profitPerActiveShop: 7.24, profitPerPack: 22.14, activeRatio: -3.80 },
+  "Jonny Cunningham": { spend: 3.11, profit: 70.82, margin: 65.67, packs: 2.84, activeAccounts: 8.3, totalAccounts: -2.2, profitPerActiveShop: 101.88, profitPerPack: 66.10, activeRatio: -16.15 },
+  "Michael McKay": { spend: 15.55, profit: 45.26, margin: 25.71, packs: 8.70, activeAccounts: 4.8, totalAccounts: 3.2, profitPerActiveShop: 59.09, profitPerPack: 33.63, activeRatio: -9.17 },
+  "Pete Dhillon": { spend: -13.56, profit: -0.59, margin: 15.00, packs: -27.31, activeAccounts: -6.2, totalAccounts: 2.8, profitPerActiveShop: 2.02, profitPerPack: 36.75, activeRatio: -3.46 },
+  "Stuart Geddes": { spend: -11.2, profit: -5.95, margin: 5.90, packs: -37.00, activeAccounts: -1.8, totalAccounts: 1.4, profitPerActiveShop: -7.66, profitPerPack: 49.30, activeRatio: -1.08 },
+  "Louise Skiba": { spend: -1.11, profit: 2.94, margin: 4.09, packs: -3.86, activeAccounts: 0.0, totalAccounts: 0.0, profitPerActiveShop: -7.36, profitPerPack: 7.07, activeRatio: -5.97 },
+  "Mike Cooper": { spend: 11.78, profit: -20.33, margin: -28.73, packs: 117.82, activeAccounts: 11.1, totalAccounts: 0.0, profitPerActiveShop: -28.25, profitPerPack: -63.41, activeRatio: 11.11 },
+  "Murray Glasgow": { spend: 100, profit: 100, margin: 100, packs: 100, activeAccounts: 100, totalAccounts: 100, profitPerActiveShop: 100, profitPerPack: 100, activeRatio: 100 }
 };
