@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Message {
   id: string;
@@ -20,13 +21,14 @@ interface ChatInterfaceProps {
   selectedMonth?: string;
 }
 
-const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
+const ChatInterface = ({ selectedMonth: defaultMonth = 'March' }: ChatInterfaceProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(defaultMonth);
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: '1', 
-      content: "Hello! I'm Vera, your sales data assistant. Ask me anything about rep performance data.", 
+      content: `Hello! I'm Vera, your sales data assistant. Ask me anything about ${defaultMonth} 2025 performance data.`, 
       isUser: false, 
       timestamp: new Date(),
       examples: [
@@ -169,6 +171,17 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
         
         <CollapsibleContent>
           <div className="flex flex-col h-96">
+            <div className="p-2 border-b border-white/10">
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-full bg-gray-800 text-white border-gray-700">
+                  <SelectValue placeholder="Select Month" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 text-white border-gray-700">
+                  <SelectItem value="March">March 2025</SelectItem>
+                  <SelectItem value="February">February 2025</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex-grow overflow-y-auto p-4 space-y-4">
               {messages.map((msg) => (
                 <div 
