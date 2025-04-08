@@ -55,6 +55,9 @@ const RepPerformance = () => {
           summary={summary}
           summaryChanges={summaryChanges}
           isLoading={isLoading}
+          includeRetail={includeRetail}
+          includeReva={includeReva}
+          includeWholesale={includeWholesale}
         />
         
         <PerformanceContent

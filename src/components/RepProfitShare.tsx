@@ -30,7 +30,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     
     return {
       name: item.rep,
-      value: Number(percentage.toFixed(0)), // Changed to 0 decimal places
+      value: Math.round(percentage), // Round to 0 decimal places
       color: colors[index % colors.length],
       profit: item.profit,
       prevProfit: prevProfit,
@@ -54,7 +54,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
     if (othersValue > 0) {
       filteredData.push({
         name: "Others",
-        value: Number(othersValue.toFixed(0)), // Changed to 0 decimal places
+        value: Math.round(othersValue), // Round to 0 decimal places
         color: "#6b7280",
         profit: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.profit, 0),
         prevProfit: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.prevProfit, 0),
@@ -91,7 +91,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
   
   // Helper function to get initials from name
   const getInitials = (name: string): string => {
-    if (name === "Others") return "Others";
+    if (name === "Others") return "OT";
     
     return name
       .split(' ')
@@ -112,7 +112,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
       ) : (
         <div className="flex flex-col h-full">
           <div className="flex-1">
-            <div className="h-40 md:h-52 w-full mb-2 md:mb-4">
+            <div className="h-48 md:h-64 w-full mb-2 md:mb-4"> {/* Increased height from h-40/h-52 to h-48/h-64 (approx 15-20% increase) */}
               <DonutChart 
                 data={dataToUse}
                 innerValue={formattedProfit}
@@ -122,8 +122,8 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({ displayData, repChanges
           </div>
           
           {/* Legend */}
-          <div className="mt-auto overflow-y-auto max-h-24 md:max-h-28 scrollbar-none">
-            <div className="grid grid-cols-2 gap-2">
+          <div className="mt-auto overflow-y-auto max-h-28 md:max-h-32 scrollbar-none"> {/* Increased max height */}
+            <div className="grid grid-cols-2 gap-2 md:gap-3">
               {dataToUse.map((item, index) => (
                 <div key={index} className="flex items-center text-2xs md:text-xs">
                   <div 

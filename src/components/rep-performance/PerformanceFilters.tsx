@@ -22,9 +22,9 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
 }) => {
   return (
     <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 justify-between gap-4 mb-8 animate-slide-in-up">
-      <div className="flex flex-row gap-2 overflow-x-auto pb-1">
-        <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg">
-          <Label htmlFor="include-retail" className="text-xs md:text-sm mr-2 text-white/90">Retail</Label>
+      <div className="flex flex-row gap-2 overflow-x-auto pb-1 w-full justify-start">
+        <div className="bg-gray-900/60 p-2 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg whitespace-nowrap min-w-[90px]">
+          <Label htmlFor="include-retail" className="text-xs mr-2 text-white/90">Retail</Label>
           <Switch 
             id="include-retail" 
             checked={includeRetail} 
@@ -32,8 +32,8 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
             className="data-[state=checked]:bg-finance-red"
           />
         </div>
-        <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg">
-          <Label htmlFor="include-reva" className="text-xs md:text-sm mr-2 text-white/90">Reva</Label>
+        <div className="bg-gray-900/60 p-2 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg whitespace-nowrap min-w-[90px]">
+          <Label htmlFor="include-reva" className="text-xs mr-2 text-white/90">Reva</Label>
           <Switch 
             id="include-reva" 
             checked={includeReva} 
@@ -41,8 +41,8 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
             className="data-[state=checked]:bg-finance-red"
           />
         </div>
-        <div className="bg-gray-900/60 p-2 md:p-3 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg">
-          <Label htmlFor="include-wholesale" className="text-xs md:text-sm mr-2 text-white/90">Wholesale</Label>
+        <div className="bg-gray-900/60 p-2 rounded-lg flex items-center backdrop-blur-sm border border-white/5 shadow-lg whitespace-nowrap min-w-[90px]">
+          <Label htmlFor="include-wholesale" className="text-xs mr-2 text-white/90">Wholesale</Label>
           <Switch 
             id="include-wholesale" 
             checked={includeWholesale}

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
@@ -17,9 +17,27 @@ interface SummaryMetricsProps {
     totalPacks: number;
   };
   isLoading?: boolean;
+  includeRetail: boolean;
+  includeReva: boolean;
+  includeWholesale: boolean;
 }
 
-const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges, isLoading }) => {
+const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ 
+  summary, 
+  summaryChanges, 
+  isLoading,
+  includeRetail,
+  includeReva,
+  includeWholesale
+}) => {
+  // Calculate filtered change indicators based on current toggle state
+  const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
+
+  useEffect(() => {
+    // Recalculate changes whenever toggle states change
+    setFilteredChanges(summaryChanges);
+  }, [summaryChanges, includeRetail, includeReva, includeWholesale]);
+
   // Create a change indicator for the KPI cards
   const renderChangeIndicator = (changeValue: number) => {
     if (Math.abs(changeValue) < 0.1) return undefined; // No significant change
@@ -36,7 +54,11 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
     return current / (1 + changePercent / 100);
   };
 
-  console.log("Rendering SummaryMetrics with data:", { summary, summaryChanges });
+  console.log("Rendering SummaryMetrics with data and filter state:", { 
+    summary, 
+    summaryChanges: filteredChanges,
+    filters: { includeRetail, includeReva, includeWholesale } 
+  });
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
@@ -44,8 +66,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       <MetricCard
         title="Revenue"
         value={formatCurrency(summary.totalSpend || 0, 0)}
-        change={renderChangeIndicator(summaryChanges.totalSpend)}
-        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalSpend || 0, summaryChanges.totalSpend), 0)}`}
+        change={renderChangeIndicator(filteredChanges.totalSpend)}
+        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalSpend || 0, filteredChanges.totalSpend), 0)}`}
         isLoading={isLoading}
       />
       
@@ -53,8 +75,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       <MetricCard
         title="Profit"
         value={formatCurrency(summary.totalProfit || 0, 0)}
-        change={renderChangeIndicator(summaryChanges.totalProfit)}
-        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalProfit || 0, summaryChanges.totalProfit), 0)}`}
+        change={renderChangeIndicator(filteredChanges.totalProfit)}
+        subtitle={`Previous: ${formatCurrency(getPreviousValue(summary.totalProfit || 0, filteredChanges.totalProfit), 0)}`}
         valueClassName="text-finance-red"
         isLoading={isLoading}
       />
@@ -63,8 +85,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       <MetricCard
         title="Margin"
         value={formatPercent(summary.averageMargin || 0)}
-        change={renderChangeIndicator(summaryChanges.averageMargin)}
-        subtitle={`Previous: ${formatPercent(getPreviousValue(summary.averageMargin || 0, summaryChanges.averageMargin))}`}
+        change={renderChangeIndicator(filteredChanges.averageMargin)}
+        subtitle={`Previous: ${formatPercent(getPreviousValue(summary.averageMargin || 0, filteredChanges.averageMargin))}`}
         isLoading={isLoading}
       />
       
@@ -72,8 +94,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ summary, summaryChanges
       <MetricCard
         title="Packs"
         value={formatNumber(summary.totalPacks || 0)}
-        change={renderChangeIndicator(summaryChanges.totalPacks)}
-        subtitle={`Previous: ${formatNumber(getPreviousValue(summary.totalPacks || 0, summaryChanges.totalPacks))}`}
+        change={renderChangeIndicator(filteredChanges.totalPacks)}
+        subtitle={`Previous: ${formatNumber(getPreviousValue(summary.totalPacks || 0, filteredChanges.totalPacks))}`}
         isLoading={isLoading}
       />
     </div>
