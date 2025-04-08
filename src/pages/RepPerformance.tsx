@@ -8,6 +8,7 @@ import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-perform
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
+import ChatInterface from '@/components/chat/ChatInterface';
 
 const RepPerformance = () => {
   const {
@@ -94,6 +95,7 @@ const RepPerformance = () => {
           selectedMonth={selectedMonth}
         />
       </div>
+      <ChatInterface />
     </div>
   );
 };
