@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Database, RefreshCw, AlertCircle } from 'lucide-react';
+import { Database, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
@@ -34,7 +34,7 @@ const ActionsHeader: React.FC = () => {
       <div className="flex items-center text-sm">
         {isSupabaseConnected ? (
           <div className="flex items-center text-green-400">
-            <Database className="h-4 w-4 mr-2" />
+            <Check className="h-4 w-4 mr-2" />
             <span>Connected to Supabase</span>
           </div>
         ) : (
@@ -55,7 +55,7 @@ const ActionsHeader: React.FC = () => {
         ) : (
           <Database className="mr-2 h-4 w-4" />
         )}
-        {isLoading ? "Loading Data..." : "Refresh from Database"}
+        {isLoading ? "Loading Data..." : "Load Data from Supabase"}
       </Button>
     </div>
   );

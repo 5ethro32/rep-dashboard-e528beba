@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
-// Default data values
+// Default data values - keeping the existing mock data as fallback
 const defaultOverallData = [
   { rep: "Clare Quinn", spend: 174152.39, profit: 22951.81, margin: 13.18, packs: 105432, activeAccounts: 42, totalAccounts: 81, profitPerActiveShop: 546.47, profitPerPack: 0.22, activeRatio: 51.85 },
   { rep: "Craig McDowall", spend: 607269.54, profit: 75999.24, margin: 12.51, packs: 327729, activeAccounts: 127, totalAccounts: 291, profitPerActiveShop: 598.42, profitPerPack: 0.23, activeRatio: 43.64 },
@@ -139,187 +138,70 @@ export const useRepPerformanceData = () => {
         throw new Error('Supabase client is not initialized.');
       }
       
-      // Fetch rep data
+      // Fetch rep data from sales_data where rep_type is RETAIL
       const { data: repDataFromDb, error: repError } = await supabase
-        .from('rep_data')
-        .select('*');
+        .from('sales_data')
+        .select('*')
+        .eq('rep_type', 'RETAIL');
       
       if (repError) throw new Error(`Error fetching rep data: ${repError.message}`);
       
-      // Fetch REVA data
+      // Fetch REVA data from sales_data where rep_type is REVA
       const { data: revaDataFromDb, error: revaError } = await supabase
-        .from('reva_data')
-        .select('*');
+        .from('sales_data')
+        .select('*')
+        .eq('rep_type', 'REVA');
       
       if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
       
-      // Fetch wholesale data
+      // Fetch wholesale data from sales_data where rep_type is WHOLESALE
       const { data: wholesaleDataFromDb, error: wholesaleError } = await supabase
-        .from('wholesale_data')
-        .select('*');
+        .from('sales_data')
+        .select('*')
+        .eq('rep_type', 'WHOLESALE');
       
       if (wholesaleError) throw new Error(`Error fetching wholesale data: ${wholesaleError.message}`);
       
-      // Fetch summary data
-      const { data: summaryDataFromDb, error: summaryError } = await supabase
-        .from('summary_data')
-        .select('*')
-        .single();
+      // Process and format data
+      const processedRepData = processRepData(repDataFromDb || []);
+      const processedRevaData = processRepData(revaDataFromDb || []);
+      const processedWholesaleData = processRepData(wholesaleDataFromDb || []);
       
-      if (summaryError) throw new Error(`Error fetching summary data: ${summaryError.message}`);
+      // Update state with processed data
+      setRepData(processedRepData);
+      setRevaData(processedRevaData);
+      setWholesaleData(processedWholesaleData);
       
-      // Fetch changes data
-      const { data: changesDataFromDb, error: changesError } = await supabase
-        .from('changes_data')
-        .select('*')
-        .single();
+      // Calculate summary data
+      const calculatedSummary = calculateSummaryFromData(processedRepData);
+      const calculatedRevaValues = calculateSummaryFromData(processedRevaData);
+      const calculatedWholesaleValues = calculateSummaryFromData(processedWholesaleData);
       
-      if (changesError) throw new Error(`Error fetching changes data: ${changesError.message}`);
-
-      // Format the data
-      const formattedRepData = repDataFromDb ? repDataFromDb.map((item: any) => ({
-        rep: item.rep,
-        spend: parseFloat(item.spend),
-        profit: parseFloat(item.profit),
-        margin: parseFloat(item.margin),
-        packs: parseInt(item.packs),
-        activeAccounts: parseInt(item.activeAccounts),
-        totalAccounts: parseInt(item.totalAccounts),
-        profitPerActiveShop: parseFloat(item.profitPerActiveShop),
-        profitPerPack: parseFloat(item.profitPerPack),
-        activeRatio: parseFloat(item.activeRatio)
-      })) : [];
-
-      const formattedRevaData = revaDataFromDb ? revaDataFromDb.map((item: any) => ({
-        rep: item.rep,
-        spend: parseFloat(item.spend),
-        profit: parseFloat(item.profit),
-        margin: parseFloat(item.margin),
-        packs: parseInt(item.packs),
-        activeAccounts: parseInt(item.activeAccounts),
-        totalAccounts: parseInt(item.totalAccounts),
-        profitPerActiveShop: parseFloat(item.profitPerActiveShop),
-        profitPerPack: parseFloat(item.profitPerPack),
-        activeRatio: parseFloat(item.activeRatio)
-      })) : [];
-
-      const formattedWholesaleData = wholesaleDataFromDb ? wholesaleDataFromDb.map((item: any) => ({
-        rep: item.rep,
-        spend: parseFloat(item.spend),
-        profit: parseFloat(item.profit),
-        margin: parseFloat(item.margin),
-        packs: parseInt(item.packs),
-        activeAccounts: parseInt(item.activeAccounts),
-        totalAccounts: parseInt(item.totalAccounts),
-        profitPerActiveShop: parseFloat(item.profitPerActiveShop),
-        profitPerPack: parseFloat(item.profitPerPack),
-        activeRatio: parseFloat(item.activeRatio)
-      })) : [];
-
-      if (formattedRepData.length > 0) setRepData(formattedRepData);
-      if (formattedRevaData.length > 0) setRevaData(formattedRevaData);
-      if (formattedWholesaleData.length > 0) setWholesaleData(formattedWholesaleData);
+      setBaseSummary(calculatedSummary);
+      setRevaValues(calculatedRevaValues);
+      setWholesaleValues(calculatedWholesaleValues);
       
       // Update overall data
       const combinedData = getCombinedRepData(
-        formattedRepData.length > 0 ? formattedRepData : repData,
-        formattedRevaData.length > 0 ? formattedRevaData : revaData,
-        formattedWholesaleData.length > 0 ? formattedWholesaleData : wholesaleData,
+        processedRepData,
+        processedRevaData,
+        processedWholesaleData,
         includeReva,
         includeWholesale
       );
       setOverallData(combinedData);
 
-      // Update summary data
-      if (summaryDataFromDb) {
-        const formattedSummary = {
-          totalSpend: parseFloat(summaryDataFromDb.totalSpend),
-          totalProfit: parseFloat(summaryDataFromDb.totalProfit),
-          totalPacks: parseInt(summaryDataFromDb.totalPacks),
-          totalAccounts: parseInt(summaryDataFromDb.totalAccounts),
-          activeAccounts: parseInt(summaryDataFromDb.activeAccounts),
-          averageMargin: parseFloat(summaryDataFromDb.averageMargin)
-        };
-        setBaseSummary(formattedSummary);
-
-        const formattedRevaValues = {
-          totalSpend: parseFloat(summaryDataFromDb.revaSpend),
-          totalProfit: parseFloat(summaryDataFromDb.revaProfit),
-          totalPacks: parseInt(summaryDataFromDb.revaPacks),
-          totalAccounts: parseInt(summaryDataFromDb.revaAccounts),
-          activeAccounts: parseInt(summaryDataFromDb.revaActiveAccounts),
-          averageMargin: parseFloat(summaryDataFromDb.revaMargin)
-        };
-        setRevaValues(formattedRevaValues);
-
-        const formattedWholesaleValues = {
-          totalSpend: parseFloat(summaryDataFromDb.wholesaleSpend),
-          totalProfit: parseFloat(summaryDataFromDb.wholesaleProfit),
-          totalPacks: parseInt(summaryDataFromDb.wholesalePacks),
-          totalAccounts: parseInt(summaryDataFromDb.wholesaleAccounts),
-          activeAccounts: parseInt(summaryDataFromDb.wholesaleActiveAccounts),
-          averageMargin: parseFloat(summaryDataFromDb.wholesaleMargin)
-        };
-        setWholesaleValues(formattedWholesaleValues);
-      }
-
-      // Update changes data
-      if (changesDataFromDb) {
-        const formattedSummaryChanges = {
-          totalSpend: parseFloat(changesDataFromDb.totalSpend),
-          totalProfit: parseFloat(changesDataFromDb.totalProfit),
-          totalPacks: parseFloat(changesDataFromDb.totalPacks),
-          totalAccounts: parseFloat(changesDataFromDb.totalAccounts),
-          activeAccounts: parseFloat(changesDataFromDb.activeAccounts),
-          averageMargin: parseFloat(changesDataFromDb.averageMargin)
-        };
-        setSummaryChanges(formattedSummaryChanges);
-
-        const repChangeData = changesDataFromDb.repChanges ? 
-          JSON.parse(changesDataFromDb.repChanges) : defaultRepChanges;
-        setRepChanges(repChangeData);
-      }
-
       // Save data to localStorage
       localStorage.setItem('repPerformanceData', JSON.stringify({
         overallData: combinedData,
-        repData: formattedRepData.length > 0 ? formattedRepData : repData,
-        revaData: formattedRevaData.length > 0 ? formattedRevaData : revaData,
-        wholesaleData: formattedWholesaleData.length > 0 ? formattedWholesaleData : wholesaleData,
-        baseSummary: summaryDataFromDb ? {
-          totalSpend: parseFloat(summaryDataFromDb.totalSpend),
-          totalProfit: parseFloat(summaryDataFromDb.totalProfit),
-          totalPacks: parseInt(summaryDataFromDb.totalPacks),
-          totalAccounts: parseInt(summaryDataFromDb.totalAccounts),
-          activeAccounts: parseInt(summaryDataFromDb.activeAccounts),
-          averageMargin: parseFloat(summaryDataFromDb.averageMargin)
-        } : baseSummary,
-        revaValues: summaryDataFromDb ? {
-          totalSpend: parseFloat(summaryDataFromDb.revaSpend),
-          totalProfit: parseFloat(summaryDataFromDb.revaProfit),
-          totalPacks: parseInt(summaryDataFromDb.revaPacks),
-          totalAccounts: parseInt(summaryDataFromDb.revaAccounts),
-          activeAccounts: parseInt(summaryDataFromDb.revaActiveAccounts),
-          averageMargin: parseFloat(summaryDataFromDb.revaMargin)
-        } : revaValues,
-        wholesaleValues: summaryDataFromDb ? {
-          totalSpend: parseFloat(summaryDataFromDb.wholesaleSpend),
-          totalProfit: parseFloat(summaryDataFromDb.wholesaleProfit),
-          totalPacks: parseInt(summaryDataFromDb.wholesalePacks),
-          totalAccounts: parseInt(summaryDataFromDb.wholesaleAccounts),
-          activeAccounts: parseInt(summaryDataFromDb.wholesaleActiveAccounts),
-          averageMargin: parseFloat(summaryDataFromDb.wholesaleMargin)
-        } : wholesaleValues,
-        summaryChanges: changesDataFromDb ? {
-          totalSpend: parseFloat(changesDataFromDb.totalSpend),
-          totalProfit: parseFloat(changesDataFromDb.totalProfit),
-          totalPacks: parseFloat(changesDataFromDb.totalPacks),
-          totalAccounts: parseFloat(changesDataFromDb.totalAccounts),
-          activeAccounts: parseFloat(changesDataFromDb.activeAccounts),
-          averageMargin: parseFloat(changesDataFromDb.averageMargin)
-        } : summaryChanges,
-        repChanges: changesDataFromDb?.repChanges ? 
-          JSON.parse(changesDataFromDb.repChanges) : repChanges
+        repData: processedRepData,
+        revaData: processedRevaData,
+        wholesaleData: processedWholesaleData,
+        baseSummary: calculatedSummary,
+        revaValues: calculatedRevaValues,
+        wholesaleValues: calculatedWholesaleValues,
+        summaryChanges: summaryChanges,
+        repChanges: repChanges
       }));
 
       console.log("Successfully loaded data from Supabase");
@@ -335,6 +217,83 @@ export const useRepPerformanceData = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Process sales_data into format needed by the app
+  const processRepData = (salesData) => {
+    // Group sales by rep_name
+    const repGrouped = {};
+    
+    salesData.forEach(item => {
+      if (!repGrouped[item.rep_name]) {
+        repGrouped[item.rep_name] = {
+          rep: item.rep_name,
+          spend: 0,
+          profit: 0,
+          packs: 0,
+          activeAccounts: new Set(),
+          totalAccounts: new Set(),
+        };
+      }
+      
+      repGrouped[item.rep_name].spend += Number(item.spend) || 0;
+      repGrouped[item.rep_name].profit += Number(item.profit) || 0;
+      repGrouped[item.rep_name].packs += Number(item.packs) || 0;
+      
+      // Track unique accounts
+      if (Number(item.spend) > 0) {
+        repGrouped[item.rep_name].activeAccounts.add(item.account_ref);
+      }
+      repGrouped[item.rep_name].totalAccounts.add(item.account_ref);
+    });
+    
+    // Convert to array and calculate derived metrics
+    return Object.values(repGrouped).map(rep => {
+      const spend = rep.spend;
+      const profit = rep.profit;
+      const packs = rep.packs;
+      const activeAccounts = rep.activeAccounts.size;
+      const totalAccounts = rep.totalAccounts.size;
+      
+      return {
+        rep: rep.rep,
+        spend: spend,
+        profit: profit,
+        margin: spend > 0 ? (profit / spend) * 100 : 0,
+        packs: packs,
+        activeAccounts: activeAccounts,
+        totalAccounts: totalAccounts,
+        profitPerActiveShop: activeAccounts > 0 ? profit / activeAccounts : 0,
+        profitPerPack: packs > 0 ? profit / packs : 0,
+        activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
+      };
+    });
+  };
+
+  // Calculate summary metrics from rep data
+  const calculateSummaryFromData = (repData) => {
+    let totalSpend = 0;
+    let totalProfit = 0;
+    let totalPacks = 0;
+    let totalActiveAccounts = 0;
+    let totalAccounts = 0;
+    
+    repData.forEach(rep => {
+      totalSpend += rep.spend;
+      totalProfit += rep.profit;
+      totalPacks += rep.packs;
+      totalActiveAccounts += rep.activeAccounts;
+      totalAccounts += rep.totalAccounts;
+    });
+    
+    return {
+      totalSpend,
+      totalProfit,
+      totalPacks,
+      totalAccounts,
+      activeAccounts: totalActiveAccounts,
+      averageMargin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0
+    };
   };
 
   const getCombinedRepData = (
@@ -415,7 +374,7 @@ export const useRepPerformanceData = () => {
     return combinedData;
   };
 
-  const getActiveData = (tabValue: string) => {
+  const getActiveData = (tabValue) => {
     switch (tabValue) {
       case 'rep':
         return repData;
@@ -429,7 +388,7 @@ export const useRepPerformanceData = () => {
     }
   };
 
-  const sortData = (data: any[]) => {
+  const sortData = (data) => {
     return [...data].sort((a, b) => {
       const aValue = a[sortBy];
       const bValue = b[sortBy];
@@ -444,7 +403,7 @@ export const useRepPerformanceData = () => {
 
   const summary = calculateSummary(baseSummary, revaValues, wholesaleValues, includeReva, includeWholesale);
 
-  const handleSort = (column: string) => {
+  const handleSort = (column) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
