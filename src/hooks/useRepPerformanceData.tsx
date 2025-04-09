@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
-import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/rep-performance-service';
+import { fetchRepPerformanceData, fetchAprilMTDData, saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/rep-performance-service';
 import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 import {
   defaultOverallData,
@@ -16,7 +15,6 @@ import {
   defaultSummaryChanges,
   defaultRepChanges
 } from '@/data/rep-performance-default-data';
-import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 export const useRepPerformanceData = () => {
   const [includeRetail, setIncludeRetail] = useState(true);
@@ -25,7 +23,7 @@ export const useRepPerformanceData = () => {
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState('March');
+  const [selectedMonth, setSelectedMonth] = useState('March 2025');
   
   const [overallData, setOverallData] = useState(defaultOverallData);
   const [repData, setRepData] = useState(defaultRepData);
@@ -41,6 +39,13 @@ export const useRepPerformanceData = () => {
   const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  
+  const [aprilRepData, setAprilRepData] = useState(defaultRepData);
+  const [aprilRevaData, setAprilRevaData] = useState(defaultRevaData);
+  const [aprilWholesaleData, setAprilWholesaleData] = useState(defaultWholesaleData);
+  const [aprilBaseSummary, setAprilBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [aprilRevaValues, setAprilRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [aprilWholesaleValues, setAprilWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
@@ -66,16 +71,32 @@ export const useRepPerformanceData = () => {
       
       setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
       setRepChanges(storedData.repChanges || defaultRepChanges);
+      
+      if (storedData.aprilRepData) setAprilRepData(storedData.aprilRepData);
+      if (storedData.aprilRevaData) setAprilRevaData(storedData.aprilRevaData);
+      if (storedData.aprilWholesaleData) setAprilWholesaleData(storedData.aprilWholesaleData);
+      if (storedData.aprilBaseSummary) setAprilBaseSummary(storedData.aprilBaseSummary);
+      if (storedData.aprilRevaValues) setAprilRevaValues(storedData.aprilRevaValues);
+      if (storedData.aprilWholesaleValues) setAprilWholesaleValues(storedData.aprilWholesaleValues);
     }
   }, []);
 
   useEffect(() => {
     console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale, selectedMonth });
 
-    // Use different data sources based on selectedMonth
-    let currentRepData = selectedMonth === 'March' ? repData : febRepData;
-    let currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
-    let currentWholesaleData = selectedMonth === 'March' ? wholesaleData : febWholesaleData;
+    let currentRepData = repData;
+    let currentRevaData = revaData;
+    let currentWholesaleData = wholesaleData;
+    
+    if (selectedMonth === 'February 2025') {
+      currentRepData = febRepData;
+      currentRevaData = febRevaData;
+      currentWholesaleData = febWholesaleData;
+    } else if (selectedMonth === 'April 2025 MTD') {
+      currentRepData = aprilRepData;
+      currentRevaData = aprilRevaData;
+      currentWholesaleData = aprilWholesaleData;
+    }
     
     const combinedData = getCombinedRepData(
       currentRepData,
@@ -88,9 +109,7 @@ export const useRepPerformanceData = () => {
     
     setOverallData(combinedData);
 
-    // If showing February data, reverse the changes direction
-    if (selectedMonth === 'February') {
-      // Invert the change percentages
+    if (selectedMonth === 'February 2025') {
       const invertedChanges: Record<string, any> = {};
       Object.keys(repChanges).forEach(rep => {
         if (repChanges[rep]) {
@@ -105,7 +124,6 @@ export const useRepPerformanceData = () => {
         }
       });
       
-      // Update summary changes by inverting them as well
       const invertedSummaryChanges = {
         totalSpend: summaryChanges.totalSpend ? -summaryChanges.totalSpend / (1 + summaryChanges.totalSpend / 100) * 100 : 0,
         totalProfit: summaryChanges.totalProfit ? -summaryChanges.totalProfit / (1 + summaryChanges.totalProfit / 100) * 100 : 0,
@@ -115,19 +133,23 @@ export const useRepPerformanceData = () => {
         activeAccounts: summaryChanges.activeAccounts ? -summaryChanges.activeAccounts / (1 + summaryChanges.activeAccounts / 100) * 100 : 0
       };
       
-      // Temporarily update the changes when viewing February data
-      // (but don't save them permanently)
       setSummaryChanges(invertedSummaryChanges);
       setRepChanges(invertedChanges);
+    } else if (selectedMonth === 'April 2025 MTD') {
+      const storedData = loadStoredRepPerformanceData();
+      if (storedData) {
+        setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
+        setRepChanges(storedData.repChanges || defaultRepChanges);
+      }
     } else {
-      // Restore original changes from stored data when viewing March
       const storedData = loadStoredRepPerformanceData();
       if (storedData) {
         setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
         setRepChanges(storedData.repChanges || defaultRepChanges);
       }
     }
-  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData]);
+  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, 
+      febRepData, febRevaData, febWholesaleData, aprilRepData, aprilRevaData, aprilWholesaleData]);
 
   const loadDataFromSupabase = async () => {
     setIsLoading(true);
@@ -217,6 +239,17 @@ export const useRepPerformanceData = () => {
       );
       setOverallData(combinedData);
 
+      const aprilData = await fetchAprilMTDData();
+      
+      if (aprilData) {
+        setAprilRepData(aprilData.repData);
+        setAprilRevaData(aprilData.revaData);
+        setAprilWholesaleData(aprilData.wholesaleData);
+        setAprilBaseSummary(aprilData.baseSummary);
+        setAprilRevaValues(aprilData.revaValues);
+        setAprilWholesaleValues(aprilData.wholesaleValues);
+      }
+      
       saveRepPerformanceData({
         overallData: combinedData,
         repData: data.repData,
@@ -233,6 +266,13 @@ export const useRepPerformanceData = () => {
         febRevaValues: data.febRevaValues,
         febWholesaleValues: data.febWholesaleValues,
         
+        aprilRepData: aprilData.repData,
+        aprilRevaData: aprilData.revaData,
+        aprilWholesaleData: aprilData.wholesaleData,
+        aprilBaseSummary: aprilData.baseSummary,
+        aprilRevaValues: aprilData.revaValues,
+        aprilWholesaleValues: aprilData.wholesaleValues,
+        
         summaryChanges: data.summaryChanges,
         repChanges: data.repChanges
       });
@@ -240,7 +280,7 @@ export const useRepPerformanceData = () => {
       console.log("Successfully loaded data from Supabase");
       toast({
         title: "Data loaded successfully",
-        description: "The latest performance data has been loaded with February comparison.",
+        description: "The latest performance data has been loaded including April MTD.",
       });
       return true;
     } catch (error) {
@@ -257,10 +297,12 @@ export const useRepPerformanceData = () => {
   };
 
   const getActiveData = (tabValue: string) => {
-    // Use different data sources based on selectedMonth
-    const currentRepData = selectedMonth === 'March' ? repData : febRepData;
-    const currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
-    const currentWholesaleData = selectedMonth === 'March' ? wholesaleData : febWholesaleData;
+    const currentRepData = selectedMonth === 'February 2025' ? febRepData : 
+                           selectedMonth === 'April 2025 MTD' ? aprilRepData : repData;
+    const currentRevaData = selectedMonth === 'February 2025' ? febRevaData : 
+                            selectedMonth === 'April 2025 MTD' ? aprilRevaData : revaData;
+    const currentWholesaleData = selectedMonth === 'February 2025' ? febWholesaleData : 
+                                 selectedMonth === 'April 2025 MTD' ? aprilWholesaleData : wholesaleData;
     
     switch (tabValue) {
       case 'rep':
@@ -288,11 +330,16 @@ export const useRepPerformanceData = () => {
     return sortRepData(data, sortBy, sortOrder);
   };
 
-  // Calculate summary based on selected month
   const summary = calculateSummary(
-    selectedMonth === 'March' ? baseSummary : febBaseSummary,
-    selectedMonth === 'March' ? revaValues : febRevaValues,
-    selectedMonth === 'March' ? wholesaleValues : febWholesaleValues,
+    selectedMonth === 'February 2025' ? febBaseSummary : 
+    selectedMonth === 'April 2025 MTD' ? aprilBaseSummary : baseSummary,
+    
+    selectedMonth === 'February 2025' ? febRevaValues : 
+    selectedMonth === 'April 2025 MTD' ? aprilRevaValues : revaValues,
+    
+    selectedMonth === 'February 2025' ? febWholesaleValues : 
+    selectedMonth === 'April 2025 MTD' ? aprilWholesaleValues : wholesaleValues,
+    
     includeRetail,
     includeReva, 
     includeWholesale
@@ -304,10 +351,9 @@ export const useRepPerformanceData = () => {
   const getFebValue = (repName: string, metricType: string, currentValue: number, changePercent: number) => {
     if (!repName || Math.abs(changePercent) < 0.1) return '';
     
-    // For February, we use March data to show comparison
-    const comparisonRepData = selectedMonth === 'March' ? febRepData : repData;
-    const comparisonRevaData = selectedMonth === 'March' ? febRevaData : revaData;
-    const comparisonWholesaleData = selectedMonth === 'March' ? febWholesaleData : wholesaleData;
+    const comparisonRepData = selectedMonth === 'February 2025' ? febRepData : repData;
+    const comparisonRevaData = selectedMonth === 'February 2025' ? febRevaData : revaData;
+    const comparisonWholesaleData = selectedMonth === 'February 2025' ? febWholesaleData : wholesaleData;
     
     const comparisonRetailRep = comparisonRepData.find(rep => rep.rep === repName);
     const comparisonRevaRep = comparisonRevaData.find(rep => rep.rep === repName);

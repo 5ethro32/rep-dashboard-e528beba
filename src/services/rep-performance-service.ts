@@ -483,6 +483,156 @@ const fetchAllDepartmentData = async (department: string, tableName: "sales_data
   return { data: allData, error: null };
 };
 
+export const fetchAprilMTDData = async () => {
+  try {
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized.');
+    }
+    
+    console.log('Fetching April MTD performance data from Supabase...');
+    
+    // APRIL MTD DATA FETCHING
+    // RETAIL data
+    const { data: retailData, error: retailError } = await fetchAllAprilMTDData('RETAIL');
+    if (retailError) throw new Error(`Error fetching April RETAIL data: ${retailError.message}`);
+    console.log('Fetched April RETAIL records:', retailData?.length || 0);
+    
+    // REVA data
+    const { data: revaData, error: revaError } = await fetchAllAprilMTDData('REVA');
+    if (revaError) throw new Error(`Error fetching April REVA data: ${revaError.message}`);
+    console.log('Fetched April REVA records:', revaData?.length || 0);
+    
+    // Wholesale data
+    const { data: wholesaleData, error: wholesaleError } = await fetchAllAprilMTDData('Wholesale');
+    if (wholesaleError) throw new Error(`Error fetching April Wholesale data: ${wholesaleError.message}`);
+    console.log('Fetched April Wholesale records:', wholesaleData?.length || 0);
+    
+    // Count total records for verification
+    const totalCount = (retailData?.length || 0) + (revaData?.length || 0) + (wholesaleData?.length || 0);
+    console.log('Total fetched records (April MTD):', totalCount);
+    
+    // Combine all April data
+    const allDataFromDb = [...(retailData || []), ...(revaData || []), ...(wholesaleData || [])];
+    
+    if (!allDataFromDb || allDataFromDb.length === 0) {
+      console.log('No April MTD data found, returning default values');
+      return {
+        repData: [],
+        revaData: [],
+        wholesaleData: [],
+        baseSummary: {
+          totalSpend: 0,
+          totalProfit: 0,
+          totalPacks: 0,
+          totalAccounts: 0,
+          activeAccounts: 0,
+          averageMargin: 0
+        },
+        revaValues: {
+          totalSpend: 0,
+          totalProfit: 0,
+          totalPacks: 0,
+          totalAccounts: 0,
+          activeAccounts: 0,
+          averageMargin: 0
+        },
+        wholesaleValues: {
+          totalSpend: 0,
+          totalProfit: 0,
+          totalPacks: 0,
+          totalAccounts: 0,
+          activeAccounts: 0,
+          averageMargin: 0
+        }
+      };
+    }
+    
+    console.log('Total combined April MTD data rows:', allDataFromDb.length);
+    
+    // Map the data to our standard format
+    const mappedData = allDataFromDb.map((item: any) => {
+      // Parse numerical values properly
+      const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+      const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+      const cost = typeof item.Cost === 'string' ? parseFloat(item.Cost) : Number(item.Cost || 0);
+      const credit = typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0);
+      const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
+      const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+      
+      // Determine the rep name to use
+      let repName = item.Rep || '';
+      const subRep = item['Sub-Rep'] || '';
+      const department = item.Department || 'RETAIL';
+      
+      // If this is a REVA or Wholesale item and we have a Sub-Rep, use that as the rep name
+      if ((department === 'REVA' || department === 'Wholesale') && subRep) {
+        repName = subRep;
+      }
+      
+      return {
+        id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
+        reporting_period: 'April 2025 MTD',
+        rep_name: repName,
+        sub_rep: subRep,
+        account_ref: item['Account Ref'] || '',
+        account_name: item['Account Name'] || '',
+        spend: spend,
+        cost: cost,
+        credit: credit,
+        profit: profit,
+        margin: margin,
+        packs: packs,
+        rep_type: department,
+        original_dept: department,
+        import_date: new Date().toISOString()
+      };
+    });
+    
+    // Filter data by department for further processing
+    const repDataFromDb = mappedData.filter(item => item.rep_type === 'RETAIL');
+    const revaDataFromDb = mappedData.filter(item => item.rep_type === 'REVA');
+    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'Wholesale');
+    
+    // Process the data to RepData format
+    const processedRepData = processRepData(repDataFromDb as SalesDataItem[] || []);
+    const processedRevaData = processRepData(revaDataFromDb as SalesDataItem[] || []);
+    const processedWholesaleData = processRepData(wholesaleDataFromDb as SalesDataItem[] || []);
+    
+    // Calculate summary data
+    const calculatedSummary = calculateSummaryFromData(processedRepData);
+    const revaSummary = calculateSummaryFromData(processedRevaData);
+    const wholesaleSummary = calculateSummaryFromData(processedWholesaleData);
+    
+    return {
+      repData: processedRepData,
+      revaData: processedRevaData,
+      wholesaleData: processedWholesaleData,
+      baseSummary: calculatedSummary,
+      revaValues: revaSummary,
+      wholesaleValues: wholesaleSummary
+    };
+  } catch (error) {
+    console.error('Error loading April MTD data from Supabase:', error);
+    toast({
+      title: "Error loading April MTD data",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive",
+    });
+    throw error;
+  }
+};
+
+// Helper function to fetch all records for a specific department from the mtd_daily table
+const fetchAllAprilMTDData = async (department: string) => {
+  // Use raw query to bypass types
+  const { data, error } = await supabase
+    .from('mtd_daily')
+    .select('*')
+    .eq('Department', department);
+  
+  return { data, error };
+};
+
 export const saveRepPerformanceData = (data: any) => {
   try {
     localStorage.setItem('repPerformanceData', JSON.stringify(data));
