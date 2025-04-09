@@ -21,30 +21,31 @@ const AccountPerformance = () => {
       setIsLoading(true);
       try {
         // Determine which tables to fetch from based on the selected month
-        let currentTable: string;
-        let previousTable: string;
+        // We need to use exact table names that match Supabase types
+        let currentTable: "mtd_daily" | "sales_data_daily" | "sales_data_februrary";
+        let previousTable: "mtd_daily" | "sales_data_daily" | "sales_data_februrary" | null;
         
         switch (selectedMonth) {
           case 'April':
-            currentTable = 'mtd_daily'; // April data
-            previousTable = 'sales_data_daily'; // March data
+            currentTable = "mtd_daily"; // April data
+            previousTable = "sales_data_daily"; // March data
             break;
           case 'March':
-            currentTable = 'sales_data_daily'; // March data
-            previousTable = 'sales_data_februrary'; // February data
+            currentTable = "sales_data_daily"; // March data
+            previousTable = "sales_data_februrary"; // February data
             break;
           case 'February':
-            currentTable = 'sales_data_februrary'; // February data
-            previousTable = ''; // No January data available
+            currentTable = "sales_data_februrary"; // February data
+            previousTable = null; // No January data available
             break;
           default:
-            currentTable = 'sales_data_daily'; // Default to March
-            previousTable = 'sales_data_februrary'; // Default to February
+            currentTable = "sales_data_daily"; // Default to March
+            previousTable = "sales_data_februrary"; // Default to February
         }
         
-        console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable}`);
+        console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
         
-        // Fetch current month data
+        // Fetch current month data using the exact table name
         const { data: currentData, error: currentError } = await supabase
           .from(currentTable)
           .select('*');
