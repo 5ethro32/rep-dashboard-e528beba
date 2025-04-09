@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -43,7 +42,6 @@ export const useRepPerformanceData = () => {
   const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
-  // Add April data states
   const [aprRepData, setAprRepData] = useState(defaultRepData);
   const [aprRevaData, setAprRevaData] = useState(defaultRevaData);
   const [aprWholesaleData, setAprWholesaleData] = useState(defaultWholesaleData);
@@ -73,7 +71,6 @@ export const useRepPerformanceData = () => {
       setFebRevaValues(storedData.febRevaValues || defaultRevaValues);
       setFebWholesaleValues(storedData.febWholesaleValues || defaultWholesaleValues);
       
-      // Load April data if available
       setAprRepData(storedData.aprRepData || defaultRepData);
       setAprRevaData(storedData.aprRevaData || defaultRevaData);
       setAprWholesaleData(storedData.aprWholesaleData || defaultWholesaleData);
@@ -85,7 +82,6 @@ export const useRepPerformanceData = () => {
       setRepChanges(storedData.repChanges || defaultRepChanges);
     }
     
-    // If April is selected by default, load April data
     if (selectedMonth === 'April') {
       loadAprilData();
     }
@@ -94,7 +90,6 @@ export const useRepPerformanceData = () => {
   useEffect(() => {
     console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale, selectedMonth });
 
-    // Use different data sources based on selectedMonth
     let currentRepData = repData;
     let currentRevaData = revaData;
     let currentWholesaleData = wholesaleData;
@@ -120,9 +115,7 @@ export const useRepPerformanceData = () => {
     
     setOverallData(combinedData);
 
-    // If showing February data, reverse the changes direction
     if (selectedMonth === 'February') {
-      // Invert the change percentages
       const invertedChanges: Record<string, any> = {};
       Object.keys(repChanges).forEach(rep => {
         if (repChanges[rep]) {
@@ -137,7 +130,6 @@ export const useRepPerformanceData = () => {
         }
       });
       
-      // Update summary changes by inverting them as well
       const invertedSummaryChanges = {
         totalSpend: summaryChanges.totalSpend ? -summaryChanges.totalSpend / (1 + summaryChanges.totalSpend / 100) * 100 : 0,
         totalProfit: summaryChanges.totalProfit ? -summaryChanges.totalProfit / (1 + summaryChanges.totalProfit / 100) * 100 : 0,
@@ -147,19 +139,13 @@ export const useRepPerformanceData = () => {
         activeAccounts: summaryChanges.activeAccounts ? -summaryChanges.activeAccounts / (1 + summaryChanges.activeAccounts / 100) * 100 : 0
       };
       
-      // Temporarily update the changes when viewing February data
-      // (but don't save them permanently)
       setSummaryChanges(invertedSummaryChanges);
       setRepChanges(invertedChanges);
     } else if (selectedMonth === 'April') {
-      // For April, compare with March data
-      // This is similar to the existing February logic but comparing April to March instead
       const aprilToMarchChanges: Record<string, any> = {};
       
-      // Calculate changes from March to April for each rep
       Object.keys(repChanges).forEach(rep => {
         if (repChanges[rep]) {
-          // Find rep in both April and March data
           const aprRep = combinedData.find(r => r.rep === rep);
           const marRep = getCombinedRepData(
             repData,
@@ -171,7 +157,6 @@ export const useRepPerformanceData = () => {
           ).find(r => r.rep === rep);
           
           if (aprRep && marRep) {
-            // Calculate percentage changes
             const profitChange = marRep.profit > 0 ? ((aprRep.profit - marRep.profit) / marRep.profit) * 100 : 0;
             const spendChange = marRep.spend > 0 ? ((aprRep.spend - marRep.spend) / marRep.spend) * 100 : 0;
             const marginChange = aprRep.margin - marRep.margin;
@@ -193,7 +178,6 @@ export const useRepPerformanceData = () => {
         }
       });
       
-      // Calculate summary changes from March to April
       const aprSummary = calculateSummary(
         aprBaseSummary,
         aprRevaValues,
@@ -226,11 +210,9 @@ export const useRepPerformanceData = () => {
           ((aprSummary.activeAccounts - marSummary.activeAccounts) / marSummary.activeAccounts) * 100 : 0
       };
       
-      // Update the changes for April view
       setSummaryChanges(aprilSummaryChanges);
       setRepChanges(aprilToMarchChanges);
     } else {
-      // Restore original changes from stored data when viewing March
       const storedData = loadStoredRepPerformanceData();
       if (storedData) {
         setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
@@ -239,16 +221,47 @@ export const useRepPerformanceData = () => {
     }
   }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData, aprRepData, aprRevaData, aprWholesaleData]);
 
-  // Load April data from mtd_daily
   const loadAprilData = async () => {
     setIsLoading(true);
     try {
-      // Fetch data from mtd_daily table
-      const { data: mtdData, error: mtdError } = await supabase
+      const { count, error: countError } = await supabase
         .from('mtd_daily')
-        .select('*');
+        .select('*', { count: 'exact', head: true });
       
-      if (mtdError) throw new Error(`Error fetching April data: ${mtdError.message}`);
+      if (countError) throw new Error(`Error getting count: ${countError.message}`);
+      
+      if (!count || count === 0) {
+        toast({
+          title: "No April data found",
+          description: "The MTD Daily table appears to be empty.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return false;
+      }
+      
+      console.log(`Found ${count} total records in mtd_daily`);
+      
+      let allRecords = [];
+      const pageSize = 1000;
+      const pages = Math.ceil(count / pageSize);
+      
+      for (let page = 0; page < pages; page++) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('mtd_daily')
+          .select('*')
+          .range(from, to);
+        
+        if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
+        if (pageData) allRecords = [...allRecords, ...pageData];
+        
+        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records`);
+      }
+      
+      const mtdData = allRecords;
       
       if (!mtdData || mtdData.length === 0) {
         toast({
@@ -262,9 +275,7 @@ export const useRepPerformanceData = () => {
       
       console.log('Fetched April MTD records:', mtdData.length);
       
-      // Transform mtd_daily data to match expected format
       const transformData = (data: any[]): RepData[] => {
-        // Group by Rep
         const repMap = new Map<string, RepData>();
         
         data.forEach(item => {
@@ -297,7 +308,6 @@ export const useRepPerformanceData = () => {
           currentRep.profit += profit;
           currentRep.packs += packs;
           
-          // Track unique accounts
           if (item["Account Ref"]) {
             currentRep.totalAccounts += 1;
             if (spend > 0) {
@@ -305,15 +315,12 @@ export const useRepPerformanceData = () => {
             }
           }
           
-          // Update margin after spend and profit are updated
           currentRep.margin = currentRep.spend > 0 ? (currentRep.profit / currentRep.spend) * 100 : 0;
           
           repMap.set(repName, currentRep);
         });
         
-        // Calculate derived metrics
         return Array.from(repMap.values()).map(rep => {
-          // Calculate the derived properties
           rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
           rep.profitPerPack = rep.packs > 0 ? rep.profit / rep.packs : 0;
           rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
@@ -321,58 +328,20 @@ export const useRepPerformanceData = () => {
         });
       };
       
-      // Group data by department
       const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
       const revaData = mtdData.filter(item => item.Department === 'REVA');
       const wholesaleData = mtdData.filter(item => 
         item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
       );
       
-      // Transform data by department
       const aprRetailData = transformData(retailData);
       const aprRevaData = transformData(revaData);
       const aprWholesaleData = transformData(wholesaleData);
-      
-      // Calculate summary values for each department
-      const calculateDeptSummary = (data: any[]): SummaryData => {
-        let totalSpend = 0;
-        let totalProfit = 0;
-        let totalPacks = 0;
-        const accountsSet = new Set<string>();
-        const activeAccountsSet = new Set<string>();
-        
-        data.forEach(item => {
-          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
-          
-          totalSpend += spend;
-          totalProfit += profit;
-          totalPacks += packs;
-          
-          if (item["Account Ref"]) {
-            accountsSet.add(item["Account Ref"]);
-            if (spend > 0) {
-              activeAccountsSet.add(item["Account Ref"]);
-            }
-          }
-        });
-        
-        return {
-          totalSpend,
-          totalProfit,
-          totalPacks,
-          totalAccounts: accountsSet.size,
-          activeAccounts: activeAccountsSet.size,
-          averageMargin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0
-        };
-      };
       
       const aprRetailSummary = calculateDeptSummary(retailData);
       const aprRevaSummary = calculateDeptSummary(revaData);
       const aprWholesaleSummary = calculateDeptSummary(wholesaleData);
       
-      // Set April data states
       setAprRepData(aprRetailData);
       setAprRevaData(aprRevaData);
       setAprWholesaleData(aprWholesaleData);
@@ -380,7 +349,6 @@ export const useRepPerformanceData = () => {
       setAprRevaValues(aprRevaSummary);
       setAprWholesaleValues(aprWholesaleSummary);
       
-      // Combine all April data
       const combinedAprilData = getCombinedRepData(
         aprRetailData,
         aprRevaData,
@@ -390,7 +358,6 @@ export const useRepPerformanceData = () => {
         includeWholesale
       );
       
-      // Save April data to localStorage
       const currentData = loadStoredRepPerformanceData() || {};
       saveRepPerformanceData({
         ...currentData,
@@ -408,7 +375,7 @@ export const useRepPerformanceData = () => {
       
       toast({
         title: "April data loaded successfully",
-        description: "April MTD data has been loaded from the mtd_daily table.",
+        description: `Loaded ${mtdData.length} April MTD records from the database.`,
       });
       
       return true;
@@ -537,7 +504,6 @@ export const useRepPerformanceData = () => {
         repChanges: data.repChanges
       });
 
-      // Load April data as well
       await loadAprilData();
       
       console.log("Successfully loaded data from Supabase");
@@ -560,7 +526,6 @@ export const useRepPerformanceData = () => {
   };
 
   const getActiveData = (tabValue: string) => {
-    // Use different data sources based on selectedMonth
     let currentRepData = repData;
     let currentRevaData = revaData;
     let currentWholesaleData = wholesaleData;
@@ -601,7 +566,6 @@ export const useRepPerformanceData = () => {
     return sortRepData(data, sortBy, sortOrder);
   };
 
-  // Calculate summary based on selected month
   const summary = calculateSummary(
     selectedMonth === 'March' ? baseSummary : 
     selectedMonth === 'February' ? febBaseSummary : aprBaseSummary,
@@ -614,14 +578,9 @@ export const useRepPerformanceData = () => {
     includeWholesale
   );
 
-  console.log("Current summary values:", summary);
-  console.log("Current summary changes:", summaryChanges);
-
   const getFebValue = (repName: string, metricType: string, currentValue: number, changePercent: number) => {
     if (!repName || Math.abs(changePercent) < 0.1) return '';
     
-    // For February, we use March data to show comparison
-    // For April, we use March data to show comparison
     const comparisonRepData = 
       selectedMonth === 'March' ? febRepData : 
       selectedMonth === 'April' ? repData : febRepData;
@@ -634,7 +593,6 @@ export const useRepPerformanceData = () => {
       selectedMonth === 'March' ? febWholesaleData : 
       selectedMonth === 'April' ? wholesaleData : febWholesaleData;
     
-    // Find the rep in each comparison dataset
     const comparisonRetailRep = comparisonRepData.find(r => r.rep === repName);
     const comparisonRevaRep = comparisonRevaData.find(r => r.rep === repName);
     const comparisonWholesaleRep = comparisonWholesaleData.find(r => r.rep === repName);
