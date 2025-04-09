@@ -39,7 +39,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
       try {
         // Query to get aggregated stats by department
         const { data, error } = await supabase
-          .from('sales_data_march')
+          .from('mtd_daily')
           .select(`
             "Department",
             "Profit",
@@ -99,33 +99,61 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
     
     const fetchRawDepartmentSums = async () => {
       try {
-        // Total sum across all departments
-        const { data: totalData, error: totalError } = await supabase
-          .rpc('get_total_profit');
-          
-        if (totalError) throw new Error(`Total query error: ${totalError.message}`);
-        setRawTotalSum(totalData);
-        
-        // RETAIL department sum
+        // Instead of using the SQL functions which may be looking at sales_data_march table,
+        // we'll aggregate directly from mtd_daily
         const { data: retailData, error: retailError } = await supabase
-          .rpc('get_retail_profit');
+          .from('mtd_daily')
+          .select('Profit')
+          .eq('Department', 'RETAIL');
           
         if (retailError) throw new Error(`RETAIL query error: ${retailError.message}`);
-        setRawRetailSum(retailData);
+        
+        let retailSum = 0;
+        if (retailData && retailData.length > 0) {
+          retailSum = retailData.reduce((sum, row) => {
+            const profit = typeof row.Profit === 'string' ? parseFloat(row.Profit) : Number(row.Profit || 0);
+            return sum + profit;
+          }, 0);
+        }
+        setRawRetailSum(retailSum);
         
         // Wholesale department sum
         const { data: wholesaleData, error: wholesaleError } = await supabase
-          .rpc('get_wholesale_profit');
+          .from('mtd_daily')
+          .select('Profit')
+          .eq('Department', 'Wholesale');
           
         if (wholesaleError) throw new Error(`Wholesale query error: ${wholesaleError.message}`);
-        setRawWholesaleSum(wholesaleData);
+        
+        let wholesaleSum = 0;
+        if (wholesaleData && wholesaleData.length > 0) {
+          wholesaleSum = wholesaleData.reduce((sum, row) => {
+            const profit = typeof row.Profit === 'string' ? parseFloat(row.Profit) : Number(row.Profit || 0);
+            return sum + profit;
+          }, 0);
+        }
+        setRawWholesaleSum(wholesaleSum);
         
         // REVA department sum
         const { data: revaData, error: revaError } = await supabase
-          .rpc('get_reva_profit');
+          .from('mtd_daily')
+          .select('Profit')
+          .eq('Department', 'REVA');
           
         if (revaError) throw new Error(`REVA query error: ${revaError.message}`);
-        setRawRevaSum(revaData);
+        
+        let revaSum = 0;
+        if (revaData && revaData.length > 0) {
+          revaSum = revaData.reduce((sum, row) => {
+            const profit = typeof row.Profit === 'string' ? parseFloat(row.Profit) : Number(row.Profit || 0);
+            return sum + profit;
+          }, 0);
+        }
+        setRawRevaSum(revaSum);
+        
+        // Total sum
+        const totalSum = retailSum + wholesaleSum + revaSum;
+        setRawTotalSum(totalSum);
         
       } catch (err) {
         console.error('Error fetching raw department sums:', err);

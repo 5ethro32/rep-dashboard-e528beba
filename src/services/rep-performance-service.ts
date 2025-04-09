@@ -451,7 +451,7 @@ const calculateRepChanges = (
 };
 
 // Helper function to fetch all records for a specific department from a specific table
-const fetchAllDepartmentData = async (department: string, tableName: "sales_data_march" | "sales_data_februrary") => {
+const fetchAllDepartmentData = async (department: string, tableName: "sales_data_februrary" | "sales_data_march") => {
   // This function fetches data in chunks to avoid pagination limits
   const PAGE_SIZE = 1000;
   let allData: any[] = [];
