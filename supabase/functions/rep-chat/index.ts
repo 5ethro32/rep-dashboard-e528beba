@@ -500,7 +500,8 @@ serve(async (req) => {
 
     // Determine which tables to query based on selected month
     const tables = {
-      'march': 'sales_data_march',
+      'april': 'mtd_daily',
+      'march': 'sales_data',
       'february': 'sales_data_februrary'
     };
     
