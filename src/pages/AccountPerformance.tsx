@@ -78,8 +78,16 @@ const AccountPerformance = () => {
         setPreviousMonthRawData(previousData);
         
         // Calculate active accounts
-        const currentActiveAccounts = new Set(currentData?.map(item => item.account_name)).size || 0;
-        const previousActiveAccounts = new Set(previousData?.map(item => item.account_name)).size || 0;
+        const currentActiveAccounts = new Set(currentData?.map(item => {
+          // Handle different column naming between tables
+          return item["Account Name"] || item.account_name;
+        }).filter(Boolean)).size || 0;
+        
+        const previousActiveAccounts = new Set(previousData?.map(item => {
+          // Handle different column naming between tables
+          return item["Account Name"] || item.account_name;
+        }).filter(Boolean)).size || 0;
+        
         setActiveAccounts({
           current: currentActiveAccounts,
           previous: previousActiveAccounts
@@ -87,27 +95,28 @@ const AccountPerformance = () => {
         
         // Calculate top rep by profit
         if (currentData && currentData.length > 0) {
-          // Group by rep and sum profit
-          const repProfits = currentData.reduce((acc, item) => {
-            const rep = item.rep_name;
-            if (!acc[rep]) acc[rep] = 0;
-            acc[rep] += Number(item.profit) || 0;
-            return acc;
-          }, {});
+          // Group by rep and sum profits
+          const repProfits = new Map();
           
-          // Find rep with highest profit
-          let topRepName = '';
-          let maxProfit = 0;
-          Object.entries(repProfits).forEach(([rep, profit]) => {
-            if (Number(profit) > maxProfit) {
-              maxProfit = Number(profit);
-              topRepName = rep;
+          currentData.forEach(item => {
+            // Handle different column naming conventions between tables
+            const repName = item.Rep || item.rep_name || '';
+            const profit = typeof item.Profit === 'number' ? item.Profit : 
+                           (typeof item.profit === 'number' ? item.profit : 0);
+            
+            if (repName) {
+              const currentProfit = repProfits.get(repName) || 0;
+              repProfits.set(repName, currentProfit + profit);
             }
           });
           
-          setTopRep({
-            name: topRepName,
-            profit: maxProfit
+          // Find rep with highest profit
+          let maxProfit = 0;
+          repProfits.forEach((profit, rep) => {
+            if (profit > maxProfit) {
+              maxProfit = profit;
+              topRep = { name: rep, profit: maxProfit };
+            }
           });
         }
       } catch (error) {
