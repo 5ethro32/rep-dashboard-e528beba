@@ -63,6 +63,26 @@ export const fetchRepPerformanceData = async () => {
     if (febWholesaleError) throw new Error(`Error fetching February Wholesale data: ${febWholesaleError.message}`);
     console.log('Fetched February Wholesale records:', febWholesaleData?.length || 0);
     
+    // APRIL DATA FETCHING (from sales_data_daily table)
+    // RETAIL data from April
+    const { data: aprilRetailData, error: aprilRetailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_daily');
+    if (aprilRetailError) throw new Error(`Error fetching April RETAIL data: ${aprilRetailError.message}`);
+    console.log('Fetched April RETAIL records:', aprilRetailData?.length || 0);
+    
+    // REVA data from April
+    const { data: aprilRevaData, error: aprilRevaError } = await fetchAllDepartmentData('REVA', 'sales_data_daily');
+    if (aprilRevaError) throw new Error(`Error fetching April REVA data: ${aprilRevaError.message}`);
+    console.log('Fetched April REVA records:', aprilRevaData?.length || 0);
+    
+    // Wholesale data from April
+    const { data: aprilWholesaleData, error: aprilWholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_daily');
+    if (aprilWholesaleError) throw new Error(`Error fetching April Wholesale data: ${aprilWholesaleError.message}`);
+    console.log('Fetched April Wholesale records:', aprilWholesaleData?.length || 0);
+    
+    // Count total records for verification - April
+    const totalAprilCount = (aprilRetailData?.length || 0) + (aprilRevaData?.length || 0) + (aprilWholesaleData?.length || 0);
+    console.log('Total fetched records (April):', totalAprilCount);
+    
     // Count total records for verification - March
     const totalCount = (retailData?.length || 0) + (revaData?.length || 0) + (wholesaleData?.length || 0);
     console.log('Total fetched records (March):', totalCount);
@@ -83,6 +103,10 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Total combined data rows (March):', allDataFromDb.length);
     console.log('Total combined data rows (February):', allFebDataFromDb.length || 0);
+    
+    // Process all April data
+    const allAprilDataFromDb = [...(aprilRetailData || []), ...(aprilRevaData || []), ...(aprilWholesaleData || [])];
+    console.log('Total combined data rows (April):', allAprilDataFromDb.length || 0);
     
     // Map the data to our standard format, handling special cases for REVA and Wholesale
     // March data mapping
@@ -161,6 +185,42 @@ export const fetchRepPerformanceData = async () => {
       };
     });
     
+    // Map the April data to our standard format
+    const mappedAprilData = allAprilDataFromDb.map((item: any) => {
+      const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+      const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+      const cost = typeof item.Cost === 'string' ? parseFloat(item.Cost) : Number(item.Cost || 0);
+      const credit = typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0);
+      const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
+      const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+      
+      let repName = item.Rep || '';
+      const subRep = item['Sub-Rep'] || '';
+      const department = item.Department || 'RETAIL';
+      
+      if ((department === 'REVA' || department === 'Wholesale') && subRep) {
+        repName = subRep;
+      }
+      
+      return {
+        id: item.id ? (typeof item.id === 'string' ? parseInt(item.id) : item.id) : 0,
+        reporting_period: 'April 2025',
+        rep_name: repName,
+        sub_rep: subRep,
+        account_ref: item['Account Ref'] || '',
+        account_name: item['Account Name'] || '',
+        spend: spend,
+        cost: cost,
+        credit: credit,
+        profit: profit,
+        margin: margin,
+        packs: packs,
+        rep_type: department,
+        original_dept: department,
+        import_date: new Date().toISOString()
+      };
+    });
+    
     // Filter data by department for further processing - March data
     const repDataFromDb = mappedData.filter(item => item.rep_type === 'RETAIL');
     const revaDataFromDb = mappedData.filter(item => item.rep_type === 'REVA');
@@ -170,6 +230,11 @@ export const fetchRepPerformanceData = async () => {
     const febRepDataFromDb = mappedFebData.filter(item => item.rep_type === 'RETAIL');
     const febRevaDataFromDb = mappedFebData.filter(item => item.rep_type === 'REVA');
     const febWholesaleDataFromDb = mappedFebData.filter(item => item.rep_type === 'Wholesale');
+    
+    // Filter April data by department for further processing
+    const aprilRepDataFromDb = mappedAprilData.filter(item => item.rep_type === 'RETAIL');
+    const aprilRevaDataFromDb = mappedAprilData.filter(item => item.rep_type === 'REVA');
+    const aprilWholesaleDataFromDb = mappedAprilData.filter(item => item.rep_type === 'Wholesale');
     
     // Process the data to RepData format - March data
     const processedRepData = processRepData(repDataFromDb as SalesDataItem[] || []);
@@ -181,6 +246,11 @@ export const fetchRepPerformanceData = async () => {
     const processedFebRevaData = processRepData(febRevaDataFromDb as SalesDataItem[] || []);
     const processedFebWholesaleData = processRepData(febWholesaleDataFromDb as SalesDataItem[] || []);
     
+    // Process the data to RepData format - April data
+    const processedAprilRepData = processRepData(aprilRepDataFromDb as SalesDataItem[] || []);
+    const processedAprilRevaData = processRepData(aprilRevaDataFromDb as SalesDataItem[] || []);
+    const processedAprilWholesaleData = processRepData(aprilWholesaleDataFromDb as SalesDataItem[] || []);
+    
     // Calculate summary data - March
     const calculatedSummary = calculateSummaryFromData(processedRepData);
     const revaSummary = calculateSummaryFromData(processedRevaData);
@@ -190,6 +260,11 @@ export const fetchRepPerformanceData = async () => {
     const calculatedFebSummary = calculateSummaryFromData(processedFebRepData);
     const revaFebSummary = calculateSummaryFromData(processedFebRevaData);
     const wholesaleFebSummary = calculateSummaryFromData(processedFebWholesaleData);
+    
+    // Calculate summary data - April
+    const calculatedAprilSummary = calculateSummaryFromData(processedAprilRepData);
+    const revaAprilSummary = calculateSummaryFromData(processedAprilRevaData);
+    const wholesaleAprilSummary = calculateSummaryFromData(processedAprilWholesaleData);
     
     // Calculate percentage changes between February and March
     const summaryChanges = calculateSummaryChanges(
@@ -228,6 +303,14 @@ export const fetchRepPerformanceData = async () => {
       febRevaValues: revaFebSummary,
       febWholesaleValues: wholesaleFebSummary,
       
+      // April month data
+      aprilRepData: processedAprilRepData,
+      aprilRevaData: processedAprilRevaData,
+      aprilWholesaleData: processedAprilWholesaleData,
+      aprilBaseSummary: calculatedAprilSummary,
+      aprilRevaValues: revaAprilSummary,
+      aprilWholesaleValues: wholesaleAprilSummary,
+      
       // Changes between months
       summaryChanges,
       repChanges
@@ -241,6 +324,39 @@ export const fetchRepPerformanceData = async () => {
     });
     throw error;
   }
+};
+
+// Helper function to fetch all records for a specific department from a specific table
+const fetchAllDepartmentData = async (department: string, tableName: "sales_data_march" | "sales_data_februrary" | "sales_data_daily") => {
+  // This function fetches data in chunks to avoid pagination limits
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let page = 0;
+  let hasMoreData = true;
+  
+  while (hasMoreData) {
+    const { data, error, count } = await supabase
+      .from(tableName)
+      .select('*', { count: 'exact' })
+      .eq('Department', department)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    
+    if (error) {
+      return { data: null, error };
+    }
+    
+    if (data && data.length > 0) {
+      allData = [...allData, ...data];
+      page++;
+      
+      // Check if we've fetched all available data
+      hasMoreData = data.length === PAGE_SIZE;
+    } else {
+      hasMoreData = false;
+    }
+  }
+  
+  return { data: allData, error: null };
 };
 
 // Helper function to calculate total profit from a dataset
@@ -448,39 +564,6 @@ const calculateRepChanges = (
   });
   
   return changes;
-};
-
-// Helper function to fetch all records for a specific department from a specific table
-const fetchAllDepartmentData = async (department: string, tableName: "sales_data_march" | "sales_data_februrary") => {
-  // This function fetches data in chunks to avoid pagination limits
-  const PAGE_SIZE = 1000;
-  let allData: any[] = [];
-  let page = 0;
-  let hasMoreData = true;
-  
-  while (hasMoreData) {
-    const { data, error, count } = await supabase
-      .from(tableName)
-      .select('*', { count: 'exact' })
-      .eq('Department', department)
-      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-    
-    if (error) {
-      return { data: null, error };
-    }
-    
-    if (data && data.length > 0) {
-      allData = [...allData, ...data];
-      page++;
-      
-      // Check if we've fetched all available data
-      hasMoreData = data.length === PAGE_SIZE;
-    } else {
-      hasMoreData = false;
-    }
-  }
-  
-  return { data: allData, error: null };
 };
 
 export const saveRepPerformanceData = (data: any) => {

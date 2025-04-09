@@ -87,6 +87,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_data_daily: {
+        Row: {
+          "Account Name": string | null
+          "Account Ref": string | null
+          Cost: number | null
+          Credit: number | null
+          Department: string | null
+          id: string
+          Margin: number | null
+          Packs: number | null
+          Profit: number | null
+          Rep: string
+          Spend: number | null
+          "Sub-Rep": string | null
+        }
+        Insert: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Update: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep?: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Relationships: []
+      }
       sales_data_feb: {
         Row: {
           account_name: string
@@ -259,6 +304,10 @@ export type Database = {
       get_department_counts: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_department_profit: {
+        Args: { dept: string }
+        Returns: number
       }
       get_retail_profit: {
         Args: Record<PropertyKey, never>

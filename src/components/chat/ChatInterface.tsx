@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { SendIcon, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,7 +26,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: '1', 
-      content: "Hello! I'm Vera, your sales data assistant. Ask me anything about February and March 2025 performance data.", 
+      content: `Hello! I'm Vera, your sales data assistant. Ask me anything about February, March, and April 2025 performance data.`, 
       isUser: false, 
       timestamp: new Date(),
       examples: [
