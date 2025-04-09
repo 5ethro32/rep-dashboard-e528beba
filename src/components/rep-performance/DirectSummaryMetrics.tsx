@@ -39,19 +39,25 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
       try {
         // Fetch retail data
         const { data: retailData, error: retailError } = await supabase
-          .rpc('get_april_mtd_data_by_department', { dept: 'RETAIL' });
+          .from('mtd_daily')
+          .select('*')
+          .eq('Department', 'RETAIL');
         
         if (retailError) throw new Error(`RETAIL query error: ${retailError.message}`);
         
         // Fetch REVA data
         const { data: revaData, error: revaError } = await supabase
-          .rpc('get_april_mtd_data_by_department', { dept: 'REVA' });
+          .from('mtd_daily')
+          .select('*')
+          .eq('Department', 'REVA');
           
         if (revaError) throw new Error(`REVA query error: ${revaError.message}`);
         
         // Fetch wholesale data
         const { data: wholesaleData, error: wholesaleError } = await supabase
-          .rpc('get_april_mtd_data_by_department', { dept: 'Wholesale' });
+          .from('mtd_daily')
+          .select('*')
+          .eq('Department', 'Wholesale');
           
         if (wholesaleError) throw new Error(`Wholesale query error: ${wholesaleError.message}`);
         
@@ -67,9 +73,15 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         
         combinedData.forEach(item => {
           const dept = item.Department || 'Unknown';
-          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          // Type-safe conversion of values from database
+          const spend = typeof item.Spend === 'number' ? item.Spend : 
+                         typeof item.Spend === 'string' ? parseFloat(item.Spend) : 0;
+                         
+          const profit = typeof item.Profit === 'number' ? item.Profit : 
+                          typeof item.Profit === 'string' ? parseFloat(item.Profit) : 0;
+                          
+          const packs = typeof item.Packs === 'number' ? item.Packs : 
+                         typeof item.Packs === 'string' ? parseInt(item.Packs) : 0;
           
           if (!deptMap.has(dept)) {
             deptMap.set(dept, {
