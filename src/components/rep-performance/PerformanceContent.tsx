@@ -53,10 +53,10 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
 
   const getTabTitle = (tabValue: string) => {
     switch (tabValue) {
-      case 'overall': return `Overall Rep Performance (${selectedMonth} ${selectedMonth === 'April' ? '2025 MTD' : '2025'})`;
-      case 'rep': return `Retail Performance (${selectedMonth} ${selectedMonth === 'April' ? '2025 MTD' : '2025'})`;
-      case 'reva': return `REVA Performance (${selectedMonth} ${selectedMonth === 'April' ? '2025 MTD' : '2025'})`;
-      case 'wholesale': return `Wholesale Performance (${selectedMonth} ${selectedMonth === 'April' ? '2025 MTD' : '2025'})`;
+      case 'overall': return `Overall Rep Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
+      case 'rep': return `Retail Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
+      case 'reva': return `REVA Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
+      case 'wholesale': return `Wholesale Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
       default: return '';
     }
   };
@@ -76,7 +76,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     }
   };
 
-  const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April';
+  // Only show change indicators if we're viewing March data (compared to February)
+  const showChangeIndicators = selectedMonth === 'March';
 
   return (
     <div className="mb-8 animate-slide-in-up">

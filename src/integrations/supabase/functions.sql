@@ -1,3 +1,4 @@
+
 -- Function to get the total count of records
 CREATE OR REPLACE FUNCTION public.get_total_count()
 RETURNS integer
@@ -441,54 +442,3 @@ BEGIN
   RETURN result;
 END;
 $$;
-
--- Function to get MTD data by department
-CREATE OR REPLACE FUNCTION public.get_mtd_data_by_department(dept TEXT)
-RETURNS SETOF json
-LANGUAGE plpgsql
-AS $function$
-BEGIN
-  RETURN QUERY
-  SELECT json_build_object(
-    'id', id,
-    'Department', "Department",
-    'Rep', "Rep",
-    'Sub-Rep', "Sub-Rep",
-    'Account Ref', "Account Ref",
-    'Account Name', "Account Name",
-    'Spend', "Spend",
-    'Cost', "Cost", 
-    'Credit', "Credit",
-    'Profit', "Profit",
-    'Margin', "Margin",
-    'Packs', "Packs"
-  )
-  FROM mtd_sales
-  WHERE "Department" = dept;
-END;
-$function$;
-
--- Function to get all MTD data
-CREATE OR REPLACE FUNCTION public.get_all_mtd_data()
-RETURNS SETOF json
-LANGUAGE plpgsql
-AS $function$
-BEGIN
-  RETURN QUERY
-  SELECT json_build_object(
-    'id', id,
-    'Department', "Department",
-    'Rep', "Rep",
-    'Sub-Rep', "Sub-Rep",
-    'Account Ref', "Account Ref",
-    'Account Name', "Account Name",
-    'Spend', "Spend",
-    'Cost', "Cost", 
-    'Credit', "Credit",
-    'Profit', "Profit",
-    'Margin', "Margin",
-    'Packs', "Packs"
-  )
-  FROM mtd_sales;
-END;
-$function$;

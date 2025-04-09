@@ -9,51 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      mtd_sales: {
-        Row: {
-          "Account Name": string | null
-          "Account Ref": string | null
-          Cost: number | null
-          Credit: number | null
-          Department: string | null
-          id: string
-          Margin: number | null
-          Packs: number | null
-          Profit: number | null
-          Rep: string
-          Spend: number | null
-          "Sub-Rep": string | null
-        }
-        Insert: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
-        }
-        Update: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep?: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
@@ -129,51 +84,6 @@ export type Database = {
           reporting_period?: string
           spend?: number
           sub_rep?: string | null
-        }
-        Relationships: []
-      }
-      sales_data_daily: {
-        Row: {
-          "Account Name": string | null
-          "Account Ref": string | null
-          Cost: number | null
-          Credit: number | null
-          Department: string | null
-          id: string
-          Margin: number | null
-          Packs: number | null
-          Profit: number | null
-          Rep: string
-          Spend: number | null
-          "Sub-Rep": string | null
-        }
-        Insert: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
-        }
-        Update: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep?: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
         }
         Relationships: []
       }
@@ -349,10 +259,6 @@ export type Database = {
       get_department_counts: {
         Args: Record<PropertyKey, never>
         Returns: Json
-      }
-      get_department_profit: {
-        Args: { dept: string }
-        Returns: number
       }
       get_retail_profit: {
         Args: Record<PropertyKey, never>

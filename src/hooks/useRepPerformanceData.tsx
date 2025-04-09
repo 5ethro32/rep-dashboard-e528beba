@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -41,13 +42,6 @@ export const useRepPerformanceData = () => {
   const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
-  const [aprilRepData, setAprilRepData] = useState(defaultRepData);
-  const [aprilRevaData, setAprilRevaData] = useState(defaultRevaData);
-  const [aprilWholesaleData, setAprilWholesaleData] = useState(defaultWholesaleData);
-  const [aprilBaseSummary, setAprilBaseSummary] = useState<SummaryData>(defaultBaseSummary);
-  const [aprilRevaValues, setAprilRevaValues] = useState<SummaryData>(defaultRevaValues);
-  const [aprilWholesaleValues, setAprilWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
-  
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
 
@@ -70,13 +64,6 @@ export const useRepPerformanceData = () => {
       setFebRevaValues(storedData.febRevaValues || defaultRevaValues);
       setFebWholesaleValues(storedData.febWholesaleValues || defaultWholesaleValues);
       
-      setAprilRepData(storedData.aprilRepData || defaultRepData);
-      setAprilRevaData(storedData.aprilRevaData || defaultRevaData);
-      setAprilWholesaleData(storedData.aprilWholesaleData || defaultWholesaleData);
-      setAprilBaseSummary(storedData.aprilBaseSummary || defaultBaseSummary);
-      setAprilRevaValues(storedData.aprilRevaValues || defaultRevaValues);
-      setAprilWholesaleValues(storedData.aprilWholesaleValues || defaultWholesaleValues);
-      
       setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
       setRepChanges(storedData.repChanges || defaultRepChanges);
     }
@@ -86,19 +73,9 @@ export const useRepPerformanceData = () => {
     console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale, selectedMonth });
 
     // Use different data sources based on selectedMonth
-    let currentRepData = repData;
-    let currentRevaData = revaData;
-    let currentWholesaleData = wholesaleData;
-    
-    if (selectedMonth === 'February') {
-      currentRepData = febRepData;
-      currentRevaData = febRevaData;
-      currentWholesaleData = febWholesaleData;
-    } else if (selectedMonth === 'April') {
-      currentRepData = aprilRepData;
-      currentRevaData = aprilRevaData;
-      currentWholesaleData = aprilWholesaleData;
-    }
+    let currentRepData = selectedMonth === 'March' ? repData : febRepData;
+    let currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
+    let currentWholesaleData = selectedMonth === 'March' ? wholesaleData : febWholesaleData;
     
     const combinedData = getCombinedRepData(
       currentRepData,
@@ -111,7 +88,7 @@ export const useRepPerformanceData = () => {
     
     setOverallData(combinedData);
 
-    // Handle changes calculation for different months
+    // If showing February data, reverse the changes direction
     if (selectedMonth === 'February') {
       // Invert the change percentages
       const invertedChanges: Record<string, any> = {};
@@ -142,75 +119,6 @@ export const useRepPerformanceData = () => {
       // (but don't save them permanently)
       setSummaryChanges(invertedSummaryChanges);
       setRepChanges(invertedChanges);
-    } else if (selectedMonth === 'April') {
-      // For April data, compare against March
-      const marchToAprilChanges: Record<string, any> = {};
-      Object.keys(repChanges).forEach(rep => {
-        if (repChanges[rep]) {
-          // Calculate reverse changes from March to April (similar logic as February but comparing to March)
-          marchToAprilChanges[rep] = {
-            profit: calculatePercentChange(
-              getRepMetricValue(aprilRepData, aprilRevaData, aprilWholesaleData, rep, 'profit', includeRetail, includeReva, includeWholesale),
-              getRepMetricValue(repData, revaData, wholesaleData, rep, 'profit', includeRetail, includeReva, includeWholesale)
-            ),
-            spend: calculatePercentChange(
-              getRepMetricValue(aprilRepData, aprilRevaData, aprilWholesaleData, rep, 'spend', includeRetail, includeReva, includeWholesale),
-              getRepMetricValue(repData, revaData, wholesaleData, rep, 'spend', includeRetail, includeReva, includeWholesale)
-            ),
-            margin: getMarginChange(
-              getRepMetricValue(aprilRepData, aprilRevaData, aprilWholesaleData, rep, 'profit', includeRetail, includeReva, includeWholesale),
-              getRepMetricValue(aprilRepData, aprilRevaData, aprilWholesaleData, rep, 'spend', includeRetail, includeReva, includeWholesale),
-              getRepMetricValue(repData, revaData, wholesaleData, rep, 'profit', includeRetail, includeReva, includeWholesale),
-              getRepMetricValue(repData, revaData, wholesaleData, rep, 'spend', includeRetail, includeReva, includeWholesale)
-            ),
-            packs: calculatePercentChange(
-              getRepMetricValue(aprilRepData, aprilRevaData, aprilWholesaleData, rep, 'packs', includeRetail, includeReva, includeWholesale),
-              getRepMetricValue(repData, revaData, wholesaleData, rep, 'packs', includeRetail, includeReva, includeWholesale)
-            ),
-            activeAccounts: calculatePercentChange(
-              getRepMetricValue(aprilRepData, aprilRevaData, aprilWholesaleData, rep, 'activeAccounts', includeRetail, includeReva, includeWholesale),
-              getRepMetricValue(repData, revaData, wholesaleData, rep, 'activeAccounts', includeRetail, includeReva, includeWholesale)
-            ),
-            totalAccounts: calculatePercentChange(
-              getRepMetricValue(aprilRepData, aprilRevaData, aprilWholesaleData, rep, 'totalAccounts', includeRetail, includeReva, includeWholesale),
-              getRepMetricValue(repData, revaData, wholesaleData, rep, 'totalAccounts', includeRetail, includeReva, includeWholesale)
-            )
-          };
-        }
-      });
-      
-      // Calculate April vs March summary changes
-      const aprilVsMarchSummaryChanges = {
-        totalSpend: calculatePercentChange(
-          calculateTotalMetric(aprilBaseSummary, aprilRevaValues, aprilWholesaleValues, 'totalSpend', includeRetail, includeReva, includeWholesale),
-          calculateTotalMetric(baseSummary, revaValues, wholesaleValues, 'totalSpend', includeRetail, includeReva, includeWholesale)
-        ),
-        totalProfit: calculatePercentChange(
-          calculateTotalMetric(aprilBaseSummary, aprilRevaValues, aprilWholesaleValues, 'totalProfit', includeRetail, includeReva, includeWholesale),
-          calculateTotalMetric(baseSummary, revaValues, wholesaleValues, 'totalProfit', includeRetail, includeReva, includeWholesale)
-        ),
-        totalPacks: calculatePercentChange(
-          calculateTotalMetric(aprilBaseSummary, aprilRevaValues, aprilWholesaleValues, 'totalPacks', includeRetail, includeReva, includeWholesale),
-          calculateTotalMetric(baseSummary, revaValues, wholesaleValues, 'totalPacks', includeRetail, includeReva, includeWholesale)
-        ),
-        averageMargin: getAverageMarginChange(
-          aprilBaseSummary, aprilRevaValues, aprilWholesaleValues,
-          baseSummary, revaValues, wholesaleValues,
-          includeRetail, includeReva, includeWholesale
-        ),
-        totalAccounts: calculatePercentChange(
-          calculateTotalMetric(aprilBaseSummary, aprilRevaValues, aprilWholesaleValues, 'totalAccounts', includeRetail, includeReva, includeWholesale),
-          calculateTotalMetric(baseSummary, revaValues, wholesaleValues, 'totalAccounts', includeRetail, includeReva, includeWholesale)
-        ),
-        activeAccounts: calculatePercentChange(
-          calculateTotalMetric(aprilBaseSummary, aprilRevaValues, aprilWholesaleValues, 'activeAccounts', includeRetail, includeReva, includeWholesale),
-          calculateTotalMetric(baseSummary, revaValues, wholesaleValues, 'activeAccounts', includeRetail, includeReva, includeWholesale)
-        )
-      };
-      
-      // Temporarily update the changes when viewing April data
-      setSummaryChanges(aprilVsMarchSummaryChanges);
-      setRepChanges(marchToAprilChanges);
     } else {
       // Restore original changes from stored data when viewing March
       const storedData = loadStoredRepPerformanceData();
@@ -219,12 +127,7 @@ export const useRepPerformanceData = () => {
         setRepChanges(storedData.repChanges || defaultRepChanges);
       }
     }
-  }, [
-    includeRetail, includeReva, includeWholesale, selectedMonth, 
-    repData, revaData, wholesaleData, 
-    febRepData, febRevaData, febWholesaleData,
-    aprilRepData, aprilRevaData, aprilWholesaleData
-  ]);
+  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData]);
 
   const loadDataFromSupabase = async () => {
     setIsLoading(true);
@@ -293,37 +196,6 @@ export const useRepPerformanceData = () => {
         averageMargin: data.febWholesaleValues.averageMargin
       });
       
-      setAprilRepData(data.aprilRepData);
-      setAprilRevaData(data.aprilRevaData);
-      setAprilWholesaleData(data.aprilWholesaleData);
-      
-      setAprilBaseSummary({
-        totalSpend: data.aprilBaseSummary?.totalSpend || 0,
-        totalProfit: data.aprilBaseSummary?.totalProfit || 0,
-        totalPacks: data.aprilBaseSummary?.totalPacks || 0,
-        totalAccounts: data.aprilBaseSummary?.totalAccounts || 0,
-        activeAccounts: data.aprilBaseSummary?.activeAccounts || 0,
-        averageMargin: data.aprilBaseSummary?.averageMargin || 0
-      });
-      
-      setAprilRevaValues({
-        totalSpend: data.aprilRevaValues?.totalSpend || 0,
-        totalProfit: data.aprilRevaValues?.totalProfit || 0,
-        totalPacks: data.aprilRevaValues?.totalPacks || 0,
-        totalAccounts: data.aprilRevaValues?.totalAccounts || 0,
-        activeAccounts: data.aprilRevaValues?.activeAccounts || 0,
-        averageMargin: data.aprilRevaValues?.averageMargin || 0
-      });
-      
-      setAprilWholesaleValues({
-        totalSpend: data.aprilWholesaleValues?.totalSpend || 0,
-        totalProfit: data.aprilWholesaleValues?.totalProfit || 0,
-        totalPacks: data.aprilWholesaleValues?.totalPacks || 0,
-        totalAccounts: data.aprilWholesaleValues?.totalAccounts || 0,
-        activeAccounts: data.aprilWholesaleValues?.activeAccounts || 0,
-        averageMargin: data.aprilWholesaleValues?.averageMargin || 0
-      });
-      
       setSummaryChanges({
         totalSpend: data.summaryChanges.totalSpend,
         totalProfit: data.summaryChanges.totalProfit,
@@ -361,13 +233,6 @@ export const useRepPerformanceData = () => {
         febRevaValues: data.febRevaValues,
         febWholesaleValues: data.febWholesaleValues,
         
-        aprilRepData: data.aprilRepData,
-        aprilRevaData: data.aprilRevaData,
-        aprilWholesaleData: data.aprilWholesaleData,
-        aprilBaseSummary: data.aprilBaseSummary,
-        aprilRevaValues: data.aprilRevaValues,
-        aprilWholesaleValues: data.aprilWholesaleValues,
-        
         summaryChanges: data.summaryChanges,
         repChanges: data.repChanges
       });
@@ -393,19 +258,9 @@ export const useRepPerformanceData = () => {
 
   const getActiveData = (tabValue: string) => {
     // Use different data sources based on selectedMonth
-    let currentRepData = repData;
-    let currentRevaData = revaData;
-    let currentWholesaleData = wholesaleData;
-    
-    if (selectedMonth === 'February') {
-      currentRepData = febRepData;
-      currentRevaData = febRevaData;
-      currentWholesaleData = febWholesaleData;
-    } else if (selectedMonth === 'April') {
-      currentRepData = aprilRepData;
-      currentRevaData = aprilRevaData;
-      currentWholesaleData = aprilWholesaleData;
-    }
+    const currentRepData = selectedMonth === 'March' ? repData : febRepData;
+    const currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
+    const currentWholesaleData = selectedMonth === 'March' ? wholesaleData : febWholesaleData;
     
     switch (tabValue) {
       case 'rep':
@@ -433,83 +288,11 @@ export const useRepPerformanceData = () => {
     return sortRepData(data, sortBy, sortOrder);
   };
 
-  // Helper functions for calculating changes between months
-  const getRepMetricValue = (repData: RepData[], revaData: RepData[], wholesaleData: RepData[], rep: string, metric: string, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean): number => {
-    let value = 0;
-    
-    if (includeRetail) {
-      const retailRep = repData.find(r => r.rep === rep);
-      if (retailRep && retailRep[metric as keyof RepData]) {
-        value += Number(retailRep[metric as keyof RepData]) || 0;
-      }
-    }
-    
-    if (includeReva) {
-      const revaRep = revaData.find(r => r.rep === rep);
-      if (revaRep && revaRep[metric as keyof RepData]) {
-        value += Number(revaRep[metric as keyof RepData]) || 0;
-      }
-    }
-    
-    if (includeWholesale) {
-      const wholesaleRep = wholesaleData.find(r => r.rep === rep);
-      if (wholesaleRep && wholesaleRep[metric as keyof RepData]) {
-        value += Number(wholesaleRep[metric as keyof RepData]) || 0;
-      }
-    }
-    
-    return value;
-  };
-  
-  const calculatePercentChange = (current: number, previous: number): number => {
-    if (previous === 0) return 0;
-    return ((current - previous) / previous) * 100;
-  };
-  
-  const getMarginChange = (currentProfit: number, currentSpend: number, previousProfit: number, previousSpend: number): number => {
-    const currentMargin = currentSpend > 0 ? (currentProfit / currentSpend) * 100 : 0;
-    const previousMargin = previousSpend > 0 ? (previousProfit / previousSpend) * 100 : 0;
-    return currentMargin - previousMargin;  // Return raw percentage point difference
-  };
-  
-  const calculateTotalMetric = (retailSummary: SummaryData, revaSummary: SummaryData, wholesaleSummary: SummaryData, metric: keyof SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean): number => {
-    let total = 0;
-    
-    if (includeRetail) {
-      total += Number(retailSummary[metric]) || 0;
-    }
-    
-    if (includeReva) {
-      total += Number(revaSummary[metric]) || 0;
-    }
-    
-    if (includeWholesale) {
-      total += Number(wholesaleSummary[metric]) || 0;
-    }
-    
-    return total;
-  };
-  
-  const getAverageMarginChange = (
-    currentRetail: SummaryData, currentReva: SummaryData, currentWholesale: SummaryData,
-    previousRetail: SummaryData, previousReva: SummaryData, previousWholesale: SummaryData,
-    includeRetail: boolean, includeReva: boolean, includeWholesale: boolean
-  ): number => {
-    const currentTotalSpend = calculateTotalMetric(currentRetail, currentReva, currentWholesale, 'totalSpend', includeRetail, includeReva, includeWholesale);
-    const currentTotalProfit = calculateTotalMetric(currentRetail, currentReva, currentWholesale, 'totalProfit', includeRetail, includeReva, includeWholesale);
-    const previousTotalSpend = calculateTotalMetric(previousRetail, previousReva, previousWholesale, 'totalSpend', includeRetail, includeReva, includeWholesale);
-    const previousTotalProfit = calculateTotalMetric(previousRetail, previousReva, previousWholesale, 'totalProfit', includeRetail, includeReva, includeWholesale);
-    
-    const currentMargin = currentTotalSpend > 0 ? (currentTotalProfit / currentTotalSpend) * 100 : 0;
-    const previousMargin = previousTotalSpend > 0 ? (previousTotalProfit / previousTotalSpend) * 100 : 0;
-    
-    return currentMargin - previousMargin;  // Return raw percentage point difference
-  };
-
+  // Calculate summary based on selected month
   const summary = calculateSummary(
-    selectedMonth === 'March' ? baseSummary : (selectedMonth === 'February' ? febBaseSummary : aprilBaseSummary),
-    selectedMonth === 'March' ? revaValues : (selectedMonth === 'February' ? febRevaValues : aprilRevaValues),
-    selectedMonth === 'March' ? wholesaleValues : (selectedMonth === 'February' ? febWholesaleValues : aprilWholesaleValues),
+    selectedMonth === 'March' ? baseSummary : febBaseSummary,
+    selectedMonth === 'March' ? revaValues : febRevaValues,
+    selectedMonth === 'March' ? wholesaleValues : febWholesaleValues,
     includeRetail,
     includeReva, 
     includeWholesale
