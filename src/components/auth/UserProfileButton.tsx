@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { LogOut, User } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 const UserProfileButton = () => {
   const { user, signOut } = useAuth();
@@ -32,15 +32,11 @@ const UserProfileButton = () => {
   
   if (!user) return null;
   
-  // Force a specific email for the demo, as requested
-  const displayEmail = "ejethro@avergenerics.co.uk";
+  // Just use the initial without displaying email
   const userInitials = "J";
   
   return (
     <div className="flex items-center gap-4">
-      <div className="hidden md:flex flex-col items-end">
-        <span className="text-sm font-medium text-white">{displayEmail}</span>
-      </div>
       <Avatar className="h-9 w-9 border border-white/10 bg-finance-red text-white">
         <AvatarFallback className="bg-finance-red text-white">
           {userInitials}
