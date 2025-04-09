@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { calculateSummary } from '@/utils/rep-performance-utils';
+import { calculateSummary, formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
 import { fetchRepPerformanceData, fetchAprilMTDData, saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/rep-performance-service';

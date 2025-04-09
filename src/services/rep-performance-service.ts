@@ -624,13 +624,16 @@ export const fetchAprilMTDData = async () => {
 
 // Helper function to fetch all records for a specific department from the mtd_daily table
 const fetchAllAprilMTDData = async (department: string) => {
-  // Use raw query to bypass types
-  const { data, error } = await supabase
-    .from('mtd_daily')
-    .select('*')
-    .eq('Department', department);
-  
-  return { data, error };
+  try {
+    // Use raw SQL query to avoid TypeScript type errors with mtd_daily table
+    const { data, error } = await supabase
+      .rpc('get_april_mtd_data_by_department', { dept: department });
+    
+    return { data: data || [], error };
+  } catch (err) {
+    console.error("Error in fetchAllAprilMTDData:", err);
+    return { data: [], error: err instanceof Error ? err : new Error("Unknown error") };
+  }
 };
 
 export const saveRepPerformanceData = (data: any) => {
