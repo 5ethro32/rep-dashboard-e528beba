@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const RepPerformance = () => {
   const {
@@ -38,35 +39,36 @@ const RepPerformance = () => {
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
+  const isMobile = useIsMobile();
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
+        <div className="flex justify-end pt-4">
+          <UserProfileButton />
+        </div>
+        
         <PerformanceHeader 
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
         />
         
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
           <ActionsHeader 
             onRefresh={loadDataFromSupabase}
             isLoading={isLoading} 
           />
           
-          <div className="flex items-center gap-4">
-            <Link to="/account-performance">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Account Analysis
-              </Button>
-            </Link>
-            
-            <UserProfileButton />
-          </div>
+          <Link to="/account-performance">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Account Analysis
+            </Button>
+          </Link>
         </div>
 
         <PerformanceFilters

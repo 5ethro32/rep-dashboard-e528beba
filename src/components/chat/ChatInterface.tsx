@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { SendIcon, ChevronUp, ChevronDown } from 'lucide-react';
+import { SendIcon, ChevronUp, ChevronDown, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,17 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { GradientAvatar, GradientAvatarFallback } from '@/components/ui/gradient-avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 interface Message {
   id: string;
@@ -43,6 +54,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // Scroll to bottom of messages when messages change
   useEffect(() => {
@@ -136,6 +148,122 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
     }
   };
 
+  const renderChatContent = () => (
+    <div className="flex flex-col h-96">
+      <div className="flex-grow overflow-y-auto p-4 space-y-4">
+        {messages.map((msg) => (
+          <div 
+            key={msg.id} 
+            className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
+          >
+            {!msg.isUser && (
+              <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
+                <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
+              </Avatar>
+            )}
+            
+            <div className="flex flex-col max-w-[75%]">
+              <div 
+                className={`rounded-lg p-3 ${
+                  msg.isUser 
+                    ? 'bg-gradient-to-r from-finance-red to-rose-700 text-white' 
+                    : 'bg-gray-800 text-gray-100'
+                } whitespace-pre-line`}
+              >
+                {msg.content}
+              </div>
+              
+              {msg.examples && msg.examples.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {msg.examples.map((example, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleExampleClick(example)}
+                      className="px-3 py-1.5 text-sm bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {msg.isUser && (
+              <GradientAvatar className="h-8 w-8 ml-2 flex-shrink-0 mt-1">
+                <GradientAvatarFallback className="text-white text-xs">U</GradientAvatarFallback>
+              </GradientAvatar>
+            )}
+          </div>
+        ))}
+        
+        {isLoading && (
+          <div className="flex justify-start">
+            <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
+              <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
+            </Avatar>
+            <div className="bg-gray-800 text-gray-100 rounded-lg p-4">
+              <div className="flex space-x-2">
+                <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '600ms' }}></div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
+      </div>
+      
+      <form onSubmit={handleSubmit} className="border-t border-white/10 p-3">
+        <div className="flex items-end gap-2">
+          <Textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask Vera about your sales data..."
+            className="min-h-[60px] resize-none bg-gray-800 border-gray-700 text-white"
+            disabled={isLoading}
+          />
+          <Button 
+            type="submit" 
+            size="icon" 
+            className="h-10 w-10 rounded-full bg-gradient-to-r from-finance-red to-rose-700 text-white"
+            disabled={isLoading || !message.trim()}
+          >
+            <SendIcon className="h-5 w-5" />
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+
+  // Mobile version uses a floating button with a drawer
+  if (isMobile) {
+    return (
+      <Drawer>
+        <DrawerTrigger asChild>
+          <Button 
+            className="fixed bottom-4 right-4 h-14 w-14 rounded-full bg-gradient-to-r from-finance-red to-rose-700 text-white shadow-lg z-50 flex items-center justify-center"
+            size="icon"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </Button>
+        </DrawerTrigger>
+        <DrawerContent className="bg-gray-900/95 backdrop-blur-lg border border-white/10 p-0 max-h-[80vh]">
+          <div className="p-3 border-b border-white/10 bg-gradient-to-r from-finance-red to-rose-700 flex items-center">
+            <Avatar className="h-6 w-6 mr-2">
+              <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
+            </Avatar>
+            <span className="font-medium text-white">Vera</span>
+          </div>
+          {renderChatContent()}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  // Desktop version uses the existing collapsible panel
   return (
     <div className="fixed bottom-0 right-4 z-50 w-96 bg-gray-900/90 backdrop-blur-lg border border-white/10 rounded-t-lg shadow-lg">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -155,93 +283,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
         </CollapsibleTrigger>
         
         <CollapsibleContent>
-          <div className="flex flex-col h-96">
-            <div className="flex-grow overflow-y-auto p-4 space-y-4">
-              {messages.map((msg) => (
-                <div 
-                  key={msg.id} 
-                  className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
-                >
-                  {!msg.isUser && (
-                    <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
-                      <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
-                    </Avatar>
-                  )}
-                  
-                  <div className="flex flex-col max-w-[75%]">
-                    <div 
-                      className={`rounded-lg p-3 ${
-                        msg.isUser 
-                          ? 'bg-gradient-to-r from-finance-red to-rose-700 text-white' 
-                          : 'bg-gray-800 text-gray-100'
-                      } whitespace-pre-line`}
-                    >
-                      {msg.content}
-                    </div>
-                    
-                    {msg.examples && msg.examples.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {msg.examples.map((example, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleExampleClick(example)}
-                            className="px-3 py-1.5 text-sm bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
-                          >
-                            {example}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {msg.isUser && (
-                    <GradientAvatar className="h-8 w-8 ml-2 flex-shrink-0 mt-1">
-                      <GradientAvatarFallback className="text-white text-xs">U</GradientAvatarFallback>
-                    </GradientAvatar>
-                  )}
-                </div>
-              ))}
-              
-              {isLoading && (
-                <div className="flex justify-start">
-                  <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
-                    <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
-                  </Avatar>
-                  <div className="bg-gray-800 text-gray-100 rounded-lg p-4">
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '600ms' }}></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </div>
-            
-            <form onSubmit={handleSubmit} className="border-t border-white/10 p-3">
-              <div className="flex items-end gap-2">
-                <Textarea
-                  ref={textareaRef}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask Vera about your sales data..."
-                  className="min-h-[60px] resize-none bg-gray-800 border-gray-700 text-white"
-                  disabled={isLoading}
-                />
-                <Button 
-                  type="submit" 
-                  size="icon" 
-                  className="h-10 w-10 rounded-full bg-gradient-to-r from-finance-red to-rose-700 text-white"
-                  disabled={isLoading || !message.trim()}
-                >
-                  <SendIcon className="h-5 w-5" />
-                </Button>
-              </div>
-            </form>
-          </div>
+          {renderChatContent()}
         </CollapsibleContent>
       </Collapsible>
     </div>

@@ -5,12 +5,14 @@ import AccountPerformanceComparison from '@/components/rep-performance/AccountPe
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Users, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import ChatInterface from '@/components/chat/ChatInterface';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import UserProfileButton from '@/components/auth/UserProfileButton';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Create a type for our available tables to ensure type safety
 type AllowedTable = 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' | 'sales_data' | 'sales_data_feb';
@@ -20,6 +22,9 @@ const AccountPerformance = () => {
   const [currentMonthRawData, setCurrentMonthRawData] = useState<any[]>([]);
   const [previousMonthRawData, setPreviousMonthRawData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeAccounts, setActiveAccounts] = useState({ current: 0, previous: 0 });
+  const [topRep, setTopRep] = useState({ name: '', profit: 0 });
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const fetchComparisonData = async () => {
@@ -71,6 +76,40 @@ const AccountPerformance = () => {
         
         setCurrentMonthRawData(currentData || []);
         setPreviousMonthRawData(previousData);
+        
+        // Calculate active accounts
+        const currentActiveAccounts = new Set(currentData?.map(item => item.account_name)).size || 0;
+        const previousActiveAccounts = new Set(previousData?.map(item => item.account_name)).size || 0;
+        setActiveAccounts({
+          current: currentActiveAccounts,
+          previous: previousActiveAccounts
+        });
+        
+        // Calculate top rep by profit
+        if (currentData && currentData.length > 0) {
+          // Group by rep and sum profit
+          const repProfits = currentData.reduce((acc, item) => {
+            const rep = item.rep_name;
+            if (!acc[rep]) acc[rep] = 0;
+            acc[rep] += Number(item.profit) || 0;
+            return acc;
+          }, {});
+          
+          // Find rep with highest profit
+          let topRepName = '';
+          let maxProfit = 0;
+          Object.entries(repProfits).forEach(([rep, profit]) => {
+            if (Number(profit) > maxProfit) {
+              maxProfit = Number(profit);
+              topRepName = rep;
+            }
+          });
+          
+          setTopRep({
+            name: topRepName,
+            profit: maxProfit
+          });
+        }
       } catch (error) {
         console.error('Error fetching comparison data:', error);
         toast({
@@ -89,7 +128,7 @@ const AccountPerformance = () => {
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 pt-4">
           <Link to="/rep-performance">
             <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -110,6 +149,42 @@ const AccountPerformance = () => {
           <p className="text-white/60">
             Compare all accounts performance between months to identify declining or improving accounts.
           </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-xl">
+                <Users className="h-5 w-5 mr-2 text-finance-red" />
+                Active Accounts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{activeAccounts.current}</div>
+              {activeAccounts.previous > 0 && (
+                <div className={`text-sm ${activeAccounts.current >= activeAccounts.previous ? 'text-green-500' : 'text-finance-red'}`}>
+                  {activeAccounts.current > activeAccounts.previous 
+                    ? `+${activeAccounts.current - activeAccounts.previous} from previous month` 
+                    : activeAccounts.current < activeAccounts.previous 
+                      ? `-${activeAccounts.previous - activeAccounts.current} from previous month`
+                      : "No change from previous month"}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center text-xl">
+                <Award className="h-5 w-5 mr-2 text-finance-red" />
+                Top Rep by Profit
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{topRep.name}</div>
+              <div className="text-sm text-white/70">{formatCurrency(topRep.profit)} in {selectedMonth}</div>
+            </CardContent>
+          </Card>
         </div>
         
         <AccountSummaryCards

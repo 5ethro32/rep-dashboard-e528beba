@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import UserProfileButton from "@/components/auth/UserProfileButton";
 
 interface ActionsHeaderProps {
   onRefresh: () => void;
