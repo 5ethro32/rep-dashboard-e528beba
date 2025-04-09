@@ -37,14 +37,14 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
       setError(null);
       
       try {
-        // Query to get aggregated stats by department
+        // Query to get aggregated stats by department - use sales_data table instead of sales_data_march
         const { data, error } = await supabase
-          .from('sales_data_march')
+          .from('sales_data')
           .select(`
-            "Department",
-            "Profit",
-            "Spend",
-            "Packs"
+            rep_type,
+            profit,
+            spend,
+            packs
           `);
 
         if (error) throw new Error(error.message);
@@ -59,10 +59,10 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         const deptMap = new Map<string, DepartmentStats>();
         
         data.forEach(item => {
-          const dept = item.Department || 'Unknown';
-          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          const dept = item.rep_type || 'Unknown';
+          const spend = typeof item.spend === 'string' ? parseFloat(item.spend) : Number(item.spend || 0);
+          const profit = typeof item.profit === 'string' ? parseFloat(item.profit) : Number(item.profit || 0);
+          const packs = typeof item.packs === 'string' ? parseInt(item.packs as string) : Number(item.packs || 0);
           
           if (!deptMap.has(dept)) {
             deptMap.set(dept, {
