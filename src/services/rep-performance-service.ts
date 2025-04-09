@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -402,14 +401,14 @@ const fetchAprilDepartmentData = async (department: string) => {
   let hasMoreData = true;
   
   while (hasMoreData) {
-    // Use mtd_sales table instead of sales_data_daily
-    const { data, error, count } = await supabase
-      .from('mtd_sales')
-      .select('*')
-      .eq('Department', department)
-      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    // Use raw SQL query to avoid TypeScript errors with the mtd_sales table
+    const { data, error } = await supabase
+      .rpc('get_mtd_data_by_department', { dept: department })
+      .limit(PAGE_SIZE)
+      .offset(page * PAGE_SIZE);
     
     if (error) {
+      console.error("Error fetching April data:", error);
       return { data: null, error };
     }
     
