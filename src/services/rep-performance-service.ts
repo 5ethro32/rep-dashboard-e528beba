@@ -451,7 +451,7 @@ const calculateRepChanges = (
 };
 
 // Helper function to fetch all records for a specific department from a specific table
-const fetchAllDepartmentData = async (department: string, tableName: "sales_data_march" | "sales_data_februrary" | "mtd_daily") => {
+const fetchAllDepartmentData = async (department: string, tableName: "sales_data_march" | "sales_data_februrary") => {
   // This function fetches data in chunks to avoid pagination limits
   const PAGE_SIZE = 1000;
   let allData: any[] = [];
@@ -491,18 +491,53 @@ export const fetchAprilMTDData = async () => {
     
     console.log('Fetching April MTD performance data from Supabase mtd_daily table...');
     
+    // We'll use a different approach for fetchAllAprilMTDData to avoid type issues
+    const fetchAllAprilMTDData = async (department: string) => {
+      // This function fetches data in chunks to avoid pagination limits
+      const PAGE_SIZE = 1000;
+      let allData: any[] = [];
+      let page = 0;
+      let hasMoreData = true;
+      
+      while (hasMoreData) {
+        // Using raw query to bypass TypeScript issues
+        const { data, error, count } = await supabase
+          .from('mtd_daily')
+          .select('*')
+          .eq('Department', department)
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        
+        if (error) {
+          console.error(`Error fetching ${department} from mtd_daily:`, error);
+          return { data: null, error };
+        }
+        
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          page++;
+          
+          // Check if we've fetched all available data
+          hasMoreData = data.length === PAGE_SIZE;
+        } else {
+          hasMoreData = false;
+        }
+      }
+      
+      return { data: allData, error: null };
+    };
+    
     // RETAIL data
-    const { data: retailData, error: retailError } = await fetchAllDepartmentData('RETAIL', 'mtd_daily');
+    const { data: retailData, error: retailError } = await fetchAllAprilMTDData('RETAIL');
     if (retailError) throw new Error(`Error fetching RETAIL data: ${retailError.message}`);
     console.log('Fetched April RETAIL records:', retailData?.length || 0);
     
     // REVA data
-    const { data: revaData, error: revaError } = await fetchAllDepartmentData('REVA', 'mtd_daily');
+    const { data: revaData, error: revaError } = await fetchAllAprilMTDData('REVA');
     if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
     console.log('Fetched April REVA records:', revaData?.length || 0);
     
     // Wholesale data
-    const { data: wholesaleData, error: wholesaleError } = await fetchAllDepartmentData('Wholesale', 'mtd_daily');
+    const { data: wholesaleData, error: wholesaleError } = await fetchAllAprilMTDData('Wholesale');
     if (wholesaleError) throw new Error(`Error fetching Wholesale data: ${wholesaleError.message}`);
     console.log('Fetched April Wholesale records:', wholesaleData?.length || 0);
     
