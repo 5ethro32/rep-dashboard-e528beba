@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -458,6 +459,8 @@ const fetchDepartmentData = async (department: string, isMarch: boolean) => {
   let page = 0;
   let hasMoreData = true;
   
+  // Use explicit table name strings rather than dynamic ones
+  // This avoids TypeScript's deep type instantiation error
   const tableName = isMarch ? 'sales_data' : 'sales_data_februrary';
   
   while (hasMoreData) {
@@ -466,15 +469,15 @@ const fetchDepartmentData = async (department: string, isMarch: boolean) => {
     if (isMarch) {
       // For March data from sales_data table
       query = supabase
-        .from(tableName)
-        .select('*', { count: 'exact' })
+        .from(tableName as 'sales_data')
+        .select('*')
         .eq('rep_type', department)
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
     } else {
       // For February data from sales_data_februrary table
       query = supabase
-        .from(tableName)
-        .select('*', { count: 'exact' })
+        .from(tableName as 'sales_data_februrary')
+        .select('*')
         .eq('Department', department)
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
     }
