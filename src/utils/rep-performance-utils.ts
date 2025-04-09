@@ -1,4 +1,3 @@
-
 export const calculateSummary = (
   baseSummary: {
     totalSpend: number;
@@ -78,6 +77,49 @@ export const calculateSummary = (
   
   console.log("Final calculated summary:", result);
   return result;
+};
+
+export const calculateDeptSummary = (departmentData: any[]): {
+  totalSpend: number;
+  totalProfit: number;
+  totalPacks: number;
+  totalAccounts: number;
+  activeAccounts: number;
+  averageMargin: number;
+} => {
+  let totalSpend = 0;
+  let totalProfit = 0;
+  let totalPacks = 0;
+  const accountRefs = new Set<string>();
+  const activeAccountRefs = new Set<string>();
+  
+  departmentData.forEach(item => {
+    const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+    const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+    const packs = typeof item.Packs === 'string' ? parseInt(item.Packs) : Number(item.Packs || 0);
+    
+    totalSpend += spend;
+    totalProfit += profit;
+    totalPacks += packs;
+    
+    if (item["Account Ref"]) {
+      accountRefs.add(item["Account Ref"]);
+      if (spend > 0) {
+        activeAccountRefs.add(item["Account Ref"]);
+      }
+    }
+  });
+  
+  const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+  
+  return {
+    totalSpend,
+    totalProfit,
+    totalPacks,
+    totalAccounts: accountRefs.size,
+    activeAccounts: activeAccountRefs.size,
+    averageMargin
+  };
 };
 
 export const formatCurrency = (value: number, decimals = 0) => {
