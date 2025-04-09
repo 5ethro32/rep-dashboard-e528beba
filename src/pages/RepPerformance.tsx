@@ -9,7 +9,6 @@ import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import ChatInterface from '@/components/chat/ChatInterface';
-import DirectSummaryMetrics from '@/components/rep-performance/DirectSummaryMetrics';
 
 const RepPerformance = () => {
   const {
@@ -68,12 +67,6 @@ const RepPerformance = () => {
           includeReva={includeReva}
           includeWholesale={includeWholesale}
           selectedMonth={selectedMonth}
-        />
-        
-        <DirectSummaryMetrics
-          includeRetail={includeRetail}
-          includeReva={includeReva}
-          includeWholesale={includeWholesale}
         />
         
         <PerformanceContent

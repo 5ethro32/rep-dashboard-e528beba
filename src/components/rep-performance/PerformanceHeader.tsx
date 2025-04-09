@@ -29,7 +29,13 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ selectedMonth, se
             {selectedMonth} 2025
             <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-gray-800 border-gray-700">
+          <DropdownMenuContent className="bg-gray-800 border-gray-700 z-50">
+            <DropdownMenuItem 
+              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
+              onClick={() => setSelectedMonth('April')}
+            >
+              April 2025
+            </DropdownMenuItem>
             <DropdownMenuItem 
               className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
               onClick={() => setSelectedMonth('March')}

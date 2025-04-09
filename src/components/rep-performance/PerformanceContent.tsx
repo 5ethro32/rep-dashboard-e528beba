@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
@@ -53,10 +54,10 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
 
   const getTabTitle = (tabValue: string) => {
     switch (tabValue) {
-      case 'overall': return `Overall Rep Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
-      case 'rep': return `Retail Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
-      case 'reva': return `REVA Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
-      case 'wholesale': return `Wholesale Performance (${selectedMonth} ${selectedMonth === 'March' ? '2025' : '2025'})`;
+      case 'overall': return `Overall Rep Performance (${selectedMonth} 2025)`;
+      case 'rep': return `Retail Performance (${selectedMonth} 2025)`;
+      case 'reva': return `REVA Performance (${selectedMonth} 2025)`;
+      case 'wholesale': return `Wholesale Performance (${selectedMonth} 2025)`;
       default: return '';
     }
   };
@@ -76,8 +77,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     }
   };
 
-  // Only show change indicators if we're viewing March data (compared to February)
-  const showChangeIndicators = selectedMonth === 'March';
+  // Only show change indicators if we're comparing to previous months
+  const showChangeIndicators = selectedMonth !== 'February';
 
   return (
     <div className="mb-8 animate-slide-in-up">
