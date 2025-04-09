@@ -112,12 +112,17 @@ const AccountPerformance = () => {
           
           // Find rep with highest profit
           let maxProfit = 0;
+          let topRepName = '';
+          
           repProfits.forEach((profit, rep) => {
             if (profit > maxProfit) {
               maxProfit = profit;
-              topRep = { name: rep, profit: maxProfit };
+              topRepName = rep;
             }
           });
+          
+          // Use setTopRep instead of direct assignment
+          setTopRep({ name: topRepName, profit: maxProfit });
         }
       } catch (error) {
         console.error('Error fetching comparison data:', error);
