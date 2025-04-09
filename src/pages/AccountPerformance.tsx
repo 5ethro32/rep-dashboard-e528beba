@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -23,15 +22,15 @@ const AccountPerformance = () => {
         // Determine which tables to fetch from based on the selected month
         // We need to use exact table names that match Supabase types
         let currentTable: "mtd_daily" | "sales_data_daily" | "sales_data_februrary";
-        let previousTable: "mtd_daily" | "sales_data_daily" | "sales_data_februrary" | null;
+        let previousTable: "mtd_daily" | "sales_data_daily" | "sales_data_februrary" | "sales_data" | null;
         
         switch (selectedMonth) {
           case 'April':
             currentTable = "mtd_daily"; // April data
-            previousTable = "sales_data_daily"; // March data
+            previousTable = "sales_data"; // March data - Updated to sales_data instead of sales_data_daily
             break;
           case 'March':
-            currentTable = "sales_data_daily"; // March data
+            currentTable = "sales_data"; // March data - Updated to sales_data instead of sales_data_daily
             previousTable = "sales_data_februrary"; // February data
             break;
           case 'February':
@@ -39,7 +38,7 @@ const AccountPerformance = () => {
             previousTable = null; // No January data available
             break;
           default:
-            currentTable = "sales_data_daily"; // Default to March
+            currentTable = "sales_data"; // Default to March - Updated to sales_data instead of sales_data_daily
             previousTable = "sales_data_februrary"; // Default to February
         }
         

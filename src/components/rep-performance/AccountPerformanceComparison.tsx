@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
@@ -56,7 +55,10 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     
     // Extract unique rep names from the data
     const repNames = Array.from(new Set(
-      currentMonthData.map((item: any) => item.Rep || item["Rep"] || '')
+      currentMonthData.map((item: any) => {
+        // Handle different column naming conventions between tables
+        return item.Rep || item.rep_name || '';
+      })
     )).filter(Boolean);
     
     return repNames.sort();
@@ -69,11 +71,17 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     
     // Filter data for the selected rep
     const currentRepAccounts = currentMonthData.filter(
-      (item: any) => (item.Rep || item["Rep"]) === selectedRep
+      (item: any) => {
+        const repName = item.Rep || item.rep_name || '';
+        return repName === selectedRep;
+      }
     );
     
     const previousRepAccounts = previousMonthData?.filter(
-      (item: any) => (item.Rep || item["Rep"]) === selectedRep
+      (item: any) => {
+        const repName = item.Rep || item.rep_name || '';
+        return repName === selectedRep;
+      }
     ) || [];
     
     console.log(`Filtered data for ${selectedRep}: ${selectedMonth} accounts: ${currentRepAccounts.length}, Previous month accounts: ${previousRepAccounts.length}`);
@@ -83,12 +91,16 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     
     // Process current month data
     currentRepAccounts.forEach((account: any) => {
-      const accountName = account["Account Name"] || '';
-      const accountRef = account["Account Ref"] || '';
+      const accountName = account["Account Name"] || account.account_name || '';
+      const accountRef = account["Account Ref"] || account.account_ref || '';
       const key = `${accountName}-${accountRef}`;
+      
+      // Handle different column naming conventions between tables
       const profit = typeof account.Profit === 'string' 
         ? parseFloat(account.Profit) 
-        : Number(account.Profit || 0);
+        : typeof account.profit === 'string'
+          ? parseFloat(account.profit)
+          : Number(account.Profit || account.profit || 0);
       
       accountMap.set(key, {
         accountName,
@@ -102,12 +114,16 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     
     // Process previous month data and update comparisons
     previousRepAccounts.forEach((account: any) => {
-      const accountName = account["Account Name"] || '';
-      const accountRef = account["Account Ref"] || '';
+      const accountName = account["Account Name"] || account.account_name || '';
+      const accountRef = account["Account Ref"] || account.account_ref || '';
       const key = `${accountName}-${accountRef}`;
+      
+      // Handle different column naming conventions between tables
       const profit = typeof account.Profit === 'string' 
         ? parseFloat(account.Profit) 
-        : Number(account.Profit || 0);
+        : typeof account.profit === 'string'
+          ? parseFloat(account.profit)
+          : Number(account.Profit || account.profit || 0);
       
       if (accountMap.has(key)) {
         const existingAccount = accountMap.get(key)!;
@@ -195,7 +211,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
           <CardTitle className="text-lg md:text-xl text-white/90">
             <Skeleton className="h-8 w-1/3 bg-gray-800" />
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-white/60">
             <Skeleton className="h-4 w-2/3 bg-gray-800" />
           </CardDescription>
         </CardHeader>
