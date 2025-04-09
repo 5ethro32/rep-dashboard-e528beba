@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
-import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData, fetchAprilMTDData } from '@/services/rep-performance-service';
+import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/rep-performance-service';
 import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 import {
   defaultOverallData,
@@ -41,14 +42,6 @@ export const useRepPerformanceData = () => {
   const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
-  // New state for April MTD data
-  const [aprilRepData, setAprilRepData] = useState(defaultRepData);
-  const [aprilRevaData, setAprilRevaData] = useState(defaultRevaData);
-  const [aprilWholesaleData, setAprilWholesaleData] = useState(defaultWholesaleData);
-  const [aprilBaseSummary, setAprilBaseSummary] = useState<SummaryData>(defaultBaseSummary);
-  const [aprilRevaValues, setAprilRevaValues] = useState<SummaryData>(defaultRevaValues);
-  const [aprilWholesaleValues, setAprilWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
-  
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
 
@@ -71,14 +64,6 @@ export const useRepPerformanceData = () => {
       setFebRevaValues(storedData.febRevaValues || defaultRevaValues);
       setFebWholesaleValues(storedData.febWholesaleValues || defaultWholesaleValues);
       
-      // Load April data if available
-      setAprilRepData(storedData.aprilRepData || defaultRepData);
-      setAprilRevaData(storedData.aprilRevaData || defaultRevaData);
-      setAprilWholesaleData(storedData.aprilWholesaleData || defaultWholesaleData);
-      setAprilBaseSummary(storedData.aprilBaseSummary || defaultBaseSummary);
-      setAprilRevaValues(storedData.aprilRevaValues || defaultRevaValues);
-      setAprilWholesaleValues(storedData.aprilWholesaleValues || defaultWholesaleValues);
-      
       setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
       setRepChanges(storedData.repChanges || defaultRepChanges);
     }
@@ -88,23 +73,9 @@ export const useRepPerformanceData = () => {
     console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale, selectedMonth });
 
     // Use different data sources based on selectedMonth
-    let currentRepData = selectedMonth === 'March' 
-      ? repData 
-      : selectedMonth === 'February' 
-        ? febRepData 
-        : aprilRepData;
-        
-    let currentRevaData = selectedMonth === 'March' 
-      ? revaData 
-      : selectedMonth === 'February' 
-        ? febRevaData 
-        : aprilRevaData;
-        
-    let currentWholesaleData = selectedMonth === 'March' 
-      ? wholesaleData 
-      : selectedMonth === 'February' 
-        ? febWholesaleData 
-        : aprilWholesaleData;
+    let currentRepData = selectedMonth === 'March' ? repData : febRepData;
+    let currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
+    let currentWholesaleData = selectedMonth === 'March' ? wholesaleData : febWholesaleData;
     
     const combinedData = getCombinedRepData(
       currentRepData,
@@ -148,13 +119,6 @@ export const useRepPerformanceData = () => {
       // (but don't save them permanently)
       setSummaryChanges(invertedSummaryChanges);
       setRepChanges(invertedChanges);
-    } else if (selectedMonth === 'April') {
-      // For April, we show comparison with March
-      const storedData = loadStoredRepPerformanceData();
-      if (storedData) {
-        setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
-        setRepChanges(storedData.repChanges || defaultRepChanges);
-      }
     } else {
       // Restore original changes from stored data when viewing March
       const storedData = loadStoredRepPerformanceData();
@@ -163,51 +127,85 @@ export const useRepPerformanceData = () => {
         setRepChanges(storedData.repChanges || defaultRepChanges);
       }
     }
-  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData, aprilRepData, aprilRevaData, aprilWholesaleData]);
+  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData]);
 
   const loadDataFromSupabase = async () => {
     setIsLoading(true);
     try {
-      // Load March and February data
       const data = await fetchRepPerformanceData();
       
       setRepData(data.repData);
       setRevaData(data.revaData);
       setWholesaleData(data.wholesaleData);
-      setBaseSummary(data.baseSummary);
-      setRevaValues(data.revaValues);
-      setWholesaleValues(data.wholesaleValues);
+      
+      setBaseSummary({
+        totalSpend: data.baseSummary.totalSpend,
+        totalProfit: data.baseSummary.totalProfit,
+        totalPacks: data.baseSummary.totalPacks,
+        totalAccounts: data.baseSummary.totalAccounts,
+        activeAccounts: data.baseSummary.activeAccounts,
+        averageMargin: data.baseSummary.averageMargin
+      });
+      
+      setRevaValues({
+        totalSpend: data.revaValues.totalSpend,
+        totalProfit: data.revaValues.totalProfit,
+        totalPacks: data.revaValues.totalPacks,
+        totalAccounts: data.revaValues.totalAccounts,
+        activeAccounts: data.revaValues.activeAccounts,
+        averageMargin: data.revaValues.averageMargin
+      });
+      
+      setWholesaleValues({
+        totalSpend: data.wholesaleValues.totalSpend,
+        totalProfit: data.wholesaleValues.totalProfit,
+        totalPacks: data.wholesaleValues.totalPacks,
+        totalAccounts: data.wholesaleValues.totalAccounts,
+        activeAccounts: data.wholesaleValues.activeAccounts,
+        averageMargin: data.wholesaleValues.averageMargin
+      });
       
       setFebRepData(data.febRepData);
       setFebRevaData(data.febRevaData);
       setFebWholesaleData(data.febWholesaleData);
-      setFebBaseSummary(data.febBaseSummary);
-      setFebRevaValues(data.febRevaValues);
-      setFebWholesaleValues(data.febWholesaleValues);
       
-      setSummaryChanges(data.summaryChanges);
+      setFebBaseSummary({
+        totalSpend: data.febBaseSummary.totalSpend,
+        totalProfit: data.febBaseSummary.totalProfit,
+        totalPacks: data.febBaseSummary.totalPacks,
+        totalAccounts: data.febBaseSummary.totalAccounts,
+        activeAccounts: data.febBaseSummary.activeAccounts,
+        averageMargin: data.febBaseSummary.averageMargin
+      });
+      
+      setFebRevaValues({
+        totalSpend: data.febRevaValues.totalSpend,
+        totalProfit: data.febRevaValues.totalProfit,
+        totalPacks: data.febRevaValues.totalPacks,
+        totalAccounts: data.febRevaValues.totalAccounts,
+        activeAccounts: data.febRevaValues.activeAccounts,
+        averageMargin: data.febRevaValues.averageMargin
+      });
+      
+      setFebWholesaleValues({
+        totalSpend: data.febWholesaleValues.totalSpend,
+        totalProfit: data.febWholesaleValues.totalProfit,
+        totalPacks: data.febWholesaleValues.totalPacks,
+        totalAccounts: data.febWholesaleValues.totalAccounts,
+        activeAccounts: data.febWholesaleValues.activeAccounts,
+        averageMargin: data.febWholesaleValues.averageMargin
+      });
+      
+      setSummaryChanges({
+        totalSpend: data.summaryChanges.totalSpend,
+        totalProfit: data.summaryChanges.totalProfit,
+        totalPacks: data.summaryChanges.totalPacks,
+        averageMargin: data.summaryChanges.averageMargin,
+        totalAccounts: data.summaryChanges.totalAccounts || 0,
+        activeAccounts: data.summaryChanges.activeAccounts || 0
+      });
+      
       setRepChanges(data.repChanges);
-      
-      // Load April MTD data
-      try {
-        const aprilData = await fetchAprilMTDData();
-        
-        setAprilRepData(aprilData.repData);
-        setAprilRevaData(aprilData.revaData);
-        setAprilWholesaleData(aprilData.wholesaleData);
-        setAprilBaseSummary(aprilData.baseSummary);
-        setAprilRevaValues(aprilData.revaValues);
-        setAprilWholesaleValues(aprilData.wholesaleValues);
-        
-        console.log("Successfully loaded April MTD data from Supabase");
-      } catch (aprilError) {
-        console.error('Error loading April data:', aprilError);
-        toast({
-          title: "Error loading April data",
-          description: aprilError instanceof Error ? aprilError.message : "An unknown error occurred",
-          variant: "destructive",
-        });
-      }
       
       const combinedData = getCombinedRepData(
         data.repData,
@@ -235,13 +233,6 @@ export const useRepPerformanceData = () => {
         febRevaValues: data.febRevaValues,
         febWholesaleValues: data.febWholesaleValues,
         
-        aprilRepData: aprilRepData,
-        aprilRevaData: aprilRevaData,
-        aprilWholesaleData: aprilWholesaleData,
-        aprilBaseSummary: aprilBaseSummary,
-        aprilRevaValues: aprilRevaValues,
-        aprilWholesaleValues: aprilWholesaleValues,
-        
         summaryChanges: data.summaryChanges,
         repChanges: data.repChanges
       });
@@ -249,7 +240,7 @@ export const useRepPerformanceData = () => {
       console.log("Successfully loaded data from Supabase");
       toast({
         title: "Data loaded successfully",
-        description: "The latest performance data has been loaded with February and April comparison.",
+        description: "The latest performance data has been loaded with February comparison.",
       });
       return true;
     } catch (error) {
@@ -267,23 +258,9 @@ export const useRepPerformanceData = () => {
 
   const getActiveData = (tabValue: string) => {
     // Use different data sources based on selectedMonth
-    const currentRepData = selectedMonth === 'March' 
-      ? repData 
-      : selectedMonth === 'February' 
-        ? febRepData 
-        : aprilRepData;
-        
-    const currentRevaData = selectedMonth === 'March' 
-      ? revaData 
-      : selectedMonth === 'February' 
-        ? febRevaData 
-        : aprilRevaData;
-        
-    const currentWholesaleData = selectedMonth === 'March' 
-      ? wholesaleData 
-      : selectedMonth === 'February' 
-        ? febWholesaleData 
-        : aprilWholesaleData;
+    const currentRepData = selectedMonth === 'March' ? repData : febRepData;
+    const currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
+    const currentWholesaleData = selectedMonth === 'March' ? wholesaleData : febWholesaleData;
     
     switch (tabValue) {
       case 'rep':
@@ -313,24 +290,9 @@ export const useRepPerformanceData = () => {
 
   // Calculate summary based on selected month
   const summary = calculateSummary(
-    selectedMonth === 'March' 
-      ? baseSummary 
-      : selectedMonth === 'February' 
-        ? febBaseSummary 
-        : aprilBaseSummary,
-        
-    selectedMonth === 'March' 
-      ? revaValues 
-      : selectedMonth === 'February' 
-        ? febRevaValues 
-        : aprilRevaValues,
-        
-    selectedMonth === 'March' 
-      ? wholesaleValues 
-      : selectedMonth === 'February' 
-        ? febWholesaleValues 
-        : aprilWholesaleValues,
-        
+    selectedMonth === 'March' ? baseSummary : febBaseSummary,
+    selectedMonth === 'March' ? revaValues : febRevaValues,
+    selectedMonth === 'March' ? wholesaleValues : febWholesaleValues,
     includeRetail,
     includeReva, 
     includeWholesale
