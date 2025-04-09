@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -280,7 +281,10 @@ export const useRepPerformanceData = () => {
               packs: 0,
               margin: 0,
               activeAccounts: 0,
-              totalAccounts: 0
+              totalAccounts: 0,
+              profitPerActiveShop: 0,
+              profitPerPack: 0,
+              activeRatio: 0
             });
           }
           
@@ -307,7 +311,14 @@ export const useRepPerformanceData = () => {
           repMap.set(repName, currentRep);
         });
         
-        return Array.from(repMap.values());
+        // Calculate derived metrics
+        return Array.from(repMap.values()).map(rep => {
+          // Calculate the derived properties
+          rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
+          rep.profitPerPack = rep.packs > 0 ? rep.profit / rep.packs : 0;
+          rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
+          return rep;
+        });
       };
       
       // Group data by department
@@ -622,6 +633,11 @@ export const useRepPerformanceData = () => {
     const comparisonWholesaleData = 
       selectedMonth === 'March' ? febWholesaleData : 
       selectedMonth === 'April' ? wholesaleData : febWholesaleData;
+    
+    // Find the rep in each comparison dataset
+    const comparisonRetailRep = comparisonRepData.find(r => r.rep === repName);
+    const comparisonRevaRep = comparisonRevaData.find(r => r.rep === repName);
+    const comparisonWholesaleRep = comparisonWholesaleData.find(r => r.rep === repName);
     
     let previousValue = 0;
     
