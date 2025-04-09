@@ -25,7 +25,7 @@ export const useRepPerformanceData = () => {
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState('March');
+  const [selectedMonth, setSelectedMonth] = useState('April');
   
   const [overallData, setOverallData] = useState(defaultOverallData);
   const [repData, setRepData] = useState(defaultRepData);
@@ -82,9 +82,7 @@ export const useRepPerformanceData = () => {
       setRepChanges(storedData.repChanges || defaultRepChanges);
     }
     
-    if (selectedMonth === 'April') {
-      loadAprilData();
-    }
+    loadAprilData();
   }, []);
 
   useEffect(() => {

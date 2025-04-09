@@ -9,6 +9,9 @@ import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import ChatInterface from '@/components/chat/ChatInterface';
+import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
+import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
 
 const RepPerformance = () => {
   const {
@@ -32,6 +35,62 @@ const RepPerformance = () => {
     selectedMonth,
     setSelectedMonth
   } = useRepPerformanceData();
+  
+  const [currentMonthRawData, setCurrentMonthRawData] = useState<any[]>([]);
+  const [previousMonthRawData, setPreviousMonthRawData] = useState<any[]>([]);
+  const [isComparisonLoading, setIsComparisonLoading] = useState(false);
+  
+  useEffect(() => {
+    const fetchComparisonData = async () => {
+      setIsComparisonLoading(true);
+      try {
+        // Determine which tables to fetch from based on the selected month
+        let currentTable = '';
+        let previousTable = '';
+        
+        switch (selectedMonth) {
+          case 'April':
+            currentTable = 'mtd_daily';
+            previousTable = 'sales_data_daily'; // March data
+            break;
+          case 'March':
+            currentTable = 'sales_data_daily';
+            previousTable = 'sales_data_februrary'; // February data
+            break;
+          case 'February':
+            currentTable = 'sales_data_februrary';
+            previousTable = 'sales_data_februrary'; // No January data, use Feb as placeholder
+            break;
+          default:
+            currentTable = 'sales_data_daily';
+            previousTable = 'sales_data_februrary';
+        }
+        
+        // Fetch current month data
+        const { data: currentData, error: currentError } = await supabase
+          .from(currentTable)
+          .select('*');
+        
+        if (currentError) throw currentError;
+        
+        // Fetch previous month data
+        const { data: previousData, error: previousError } = await supabase
+          .from(previousTable)
+          .select('*');
+        
+        if (previousError) throw previousError;
+        
+        setCurrentMonthRawData(currentData || []);
+        setPreviousMonthRawData(previousData || []);
+      } catch (error) {
+        console.error('Error fetching comparison data:', error);
+      } finally {
+        setIsComparisonLoading(false);
+      }
+    };
+    
+    fetchComparisonData();
+  }, [selectedMonth]);
   
   const activeData = getActiveData('overall');
   
@@ -94,6 +153,20 @@ const RepPerformance = () => {
           getFebValue={getFebValue}
           selectedMonth={selectedMonth}
         />
+        
+        {/* New Account Performance Comparison Section */}
+        <div className="mb-12">
+          <h2 className="text-xl md:text-2xl font-semibold mb-4 text-white/90">
+            Account Performance Analysis
+          </h2>
+          <AccountPerformanceComparison 
+            currentMonthData={currentMonthRawData}
+            previousMonthData={previousMonthRawData}
+            isLoading={isComparisonLoading}
+            selectedMonth={selectedMonth}
+            formatCurrency={formatCurrency}
+          />
+        </div>
       </div>
       <ChatInterface selectedMonth={selectedMonth} />
     </div>

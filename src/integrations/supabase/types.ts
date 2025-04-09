@@ -346,6 +346,10 @@ export type Database = {
       }
     }
     Functions: {
+      clear_mtd_daily: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_april_mtd_data_by_department: {
         Args: { dept: string }
         Returns: Json
@@ -389,6 +393,10 @@ export type Database = {
       get_wholesale_profit: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      replace_mtd_daily: {
+        Args: { data: Json }
+        Returns: undefined
       }
     }
     Enums: {
