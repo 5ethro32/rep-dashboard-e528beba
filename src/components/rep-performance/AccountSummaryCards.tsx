@@ -1,7 +1,9 @@
 
 import React from 'react';
-import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Users, Award } from 'lucide-react';
 
 interface AccountSummaryCardsProps {
   currentMonthData: any[];
@@ -29,7 +31,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   
   const accountsChange = activeAccounts - previousActiveAccounts;
   const accountsChangePercent = previousActiveAccounts > 0 
-    ? ((accountsChange / previousActiveAccounts) * 100).toFixed(1) + '%'
+    ? ((accountsChange / previousActiveAccounts) * 100).toFixed(1)
     : 'N/A';
   
   // Find top rep by profit
@@ -62,26 +64,37 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <MetricCard
-        title="Active Accounts"
-        value={formatNumber(activeAccounts)}
-        change={{
-          value: accountsChangePercent,
-          type: accountsChange > 0 ? 'increase' : accountsChange < 0 ? 'decrease' : 'neutral'
-        }}
-        subtitle={`vs ${previousActiveAccounts} last month`}
-        isLoading={isLoading}
-        className="h-full"
-      />
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <Users size={16} className="text-[#ea384c] mr-2" />
+            Active Accounts
+          </div>
+          <div className="text-4xl font-bold mb-1">{formatNumber(activeAccounts)}</div>
+          <div className="flex items-center">
+            {accountsChange !== 0 && (
+              <Badge variant={accountsChange > 0 ? "default" : "destructive"} 
+                className={`text-xs font-medium ${accountsChange > 0 ? 'bg-green-500/20 text-green-500 hover:bg-green-500/20' : 'bg-[#ea384c]/20 text-[#ea384c] hover:bg-[#ea384c]/20'}`}>
+                {accountsChange > 0 ? '+' : ''}{accountsChange}
+              </Badge>
+            )}
+            <span className="text-xs text-white/50 ml-2">vs {previousActiveAccounts} last month</span>
+          </div>
+        </CardContent>
+      </Card>
       
-      <MetricCard
-        title="Top Rep (by Profit)"
-        value={topRep.name}
-        subtitle={`Total profit: ${formatCurrency(topRep.profit)}`}
-        isLoading={isLoading}
-        className="h-full"
-        valueClassName="text-xl md:text-2xl"
-      />
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <Award size={16} className="text-[#ea384c] mr-2" />
+            Top Rep (by Profit)
+          </div>
+          <div className="text-4xl font-bold mb-1">{topRep.name}</div>
+          <div className="text-sm text-white/50">
+            Total profit: {formatCurrency(topRep.profit)}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
