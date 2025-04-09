@@ -63,20 +63,20 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   }, [currentMonthData]);
   
   const accountComparisons = useMemo(() => {
-    if (!selectedRep || !currentMonthData || !previousMonthData) return [];
+    if (!selectedRep || !currentMonthData) return [];
     
-    console.log(`Processing data comparison for ${selectedRep}. Current month data: ${currentMonthData.length}, Previous month data: ${previousMonthData.length}`);
+    console.log(`Processing data comparison for ${selectedRep}. ${selectedMonth} data: ${currentMonthData.length}, Previous month data: ${previousMonthData?.length || 0}`);
     
     // Filter data for the selected rep
     const currentRepAccounts = currentMonthData.filter(
       (item: any) => (item.Rep || item["Rep"]) === selectedRep
     );
     
-    const previousRepAccounts = previousMonthData.filter(
+    const previousRepAccounts = previousMonthData?.filter(
       (item: any) => (item.Rep || item["Rep"]) === selectedRep
-    );
+    ) || [];
     
-    console.log(`Filtered data for ${selectedRep}: Current month accounts: ${currentRepAccounts.length}, Previous month accounts: ${previousRepAccounts.length}`);
+    console.log(`Filtered data for ${selectedRep}: ${selectedMonth} accounts: ${currentRepAccounts.length}, Previous month accounts: ${previousRepAccounts.length}`);
     
     // Group data by account
     const accountMap = new Map<string, AccountComparison>();
@@ -133,7 +133,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     
     // Convert to array
     return Array.from(accountMap.values());
-  }, [selectedRep, currentMonthData, previousMonthData]);
+  }, [selectedRep, currentMonthData, previousMonthData, selectedMonth]);
 
   // Filter accounts based on search term and filter type
   const filteredAccounts = useMemo(() => {
@@ -175,9 +175,9 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       setImprovingCount(improving);
       setDecliningCount(declining);
       
-      console.log(`Stats for ${selectedRep}: Total accounts: ${accountComparisons.length}, Improving: ${improving}, Declining: ${declining}`);
+      console.log(`Stats for ${selectedRep} in ${selectedMonth}: Total accounts: ${accountComparisons.length}, Improving: ${improving}, Declining: ${declining}`);
     }
-  }, [accountComparisons]);
+  }, [accountComparisons, selectedRep, selectedMonth]);
 
   const getPreviousMonthName = (currentMonth: string): string => {
     switch (currentMonth) {
@@ -211,6 +211,8 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     );
   }
 
+  const previousMonth = getPreviousMonthName(selectedMonth);
+
   return (
     <Card className="bg-gray-900/40 border-white/10 backdrop-blur-sm shadow-lg">
       <CardHeader>
@@ -218,7 +220,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
           Account Performance Comparison
         </CardTitle>
         <CardDescription className="text-white/60">
-          Compare all account performance between {selectedMonth} and {getPreviousMonthName(selectedMonth)}. 
+          Compare all account performance between {selectedMonth} and {previousMonth}. 
           Use filters to identify declining or improving accounts.
         </CardDescription>
       </CardHeader>
@@ -294,10 +296,10 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
                       <TableRow>
                         <TableHead className="text-white/70 w-1/3">Account</TableHead>
                         <TableHead className="text-white/70 text-right">
-                          Current: {selectedMonth} Profit
+                          {selectedMonth} Profit
                         </TableHead>
                         <TableHead className="text-white/70 text-right">
-                          Previous: {getPreviousMonthName(selectedMonth)} Profit
+                          {previousMonth} Profit
                         </TableHead>
                         <TableHead className="text-white/70 text-right">Change</TableHead>
                       </TableRow>

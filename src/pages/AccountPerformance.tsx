@@ -21,28 +21,28 @@ const AccountPerformance = () => {
       setIsLoading(true);
       try {
         // Determine which tables to fetch from based on the selected month
-        let currentTable: 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' = 'sales_data_daily';
-        let previousTable: 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' = 'sales_data_februrary';
+        let currentTable: string;
+        let previousTable: string;
         
         switch (selectedMonth) {
           case 'April':
-            currentTable = 'mtd_daily';
+            currentTable = 'mtd_daily'; // April data
             previousTable = 'sales_data_daily'; // March data
             break;
           case 'March':
-            currentTable = 'sales_data_daily';
+            currentTable = 'sales_data_daily'; // March data
             previousTable = 'sales_data_februrary'; // February data
             break;
           case 'February':
-            currentTable = 'sales_data_februrary';
-            previousTable = 'sales_data_februrary'; // No January data, use Feb as placeholder
+            currentTable = 'sales_data_februrary'; // February data
+            previousTable = ''; // No January data available
             break;
           default:
-            currentTable = 'sales_data_daily';
-            previousTable = 'sales_data_februrary';
+            currentTable = 'sales_data_daily'; // Default to March
+            previousTable = 'sales_data_februrary'; // Default to February
         }
         
-        console.log(`Fetching current month data from ${currentTable} and previous month data from ${previousTable}`);
+        console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable}`);
         
         // Fetch current month data
         const { data: currentData, error: currentError } = await supabase
@@ -51,17 +51,21 @@ const AccountPerformance = () => {
         
         if (currentError) throw currentError;
         
-        // Fetch previous month data
-        const { data: previousData, error: previousError } = await supabase
-          .from(previousTable)
-          .select('*');
+        // Fetch previous month data if available
+        let previousData = [];
+        if (previousTable) {
+          const { data: prevData, error: previousError } = await supabase
+            .from(previousTable)
+            .select('*');
+          
+          if (previousError) throw previousError;
+          previousData = prevData || [];
+        }
         
-        if (previousError) throw previousError;
-        
-        console.log(`Fetched ${currentData?.length || 0} records for current month and ${previousData?.length || 0} for previous month`);
+        console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} and ${previousData?.length || 0} for previous month`);
         
         setCurrentMonthRawData(currentData || []);
-        setPreviousMonthRawData(previousData || []);
+        setPreviousMonthRawData(previousData);
       } catch (error) {
         console.error('Error fetching comparison data:', error);
         toast({
