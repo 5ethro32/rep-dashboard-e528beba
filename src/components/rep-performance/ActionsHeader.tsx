@@ -21,8 +21,6 @@ const ActionsHeader = ({ onRefresh, isLoading }: ActionsHeaderProps) => {
         <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
         {isLoading ? 'Refreshing...' : 'Refresh Data'}
       </Button>
-      
-      <UserProfileButton />
     </div>
   );
 };

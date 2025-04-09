@@ -12,6 +12,7 @@ import ChatInterface from '@/components/chat/ChatInterface';
 import { Button } from '@/components/ui/button';
 import { BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import UserProfileButton from '@/components/auth/UserProfileButton';
 
 const RepPerformance = () => {
   const {
@@ -52,16 +53,20 @@ const RepPerformance = () => {
             isLoading={isLoading} 
           />
           
-          <Link to="/account-performance">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Account Analysis
-            </Button>
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/account-performance">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Account Analysis
+              </Button>
+            </Link>
+            
+            <UserProfileButton />
+          </div>
         </div>
 
         <PerformanceFilters

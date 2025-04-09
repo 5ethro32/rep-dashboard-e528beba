@@ -9,6 +9,8 @@ import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import ChatInterface from '@/components/chat/ChatInterface';
+import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
+import UserProfileButton from '@/components/auth/UserProfileButton';
 
 // Create a type for our available tables to ensure type safety
 type AllowedTable = 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' | 'sales_data' | 'sales_data_feb';
@@ -94,6 +96,8 @@ const AccountPerformance = () => {
               Back to Dashboard
             </Button>
           </Link>
+          
+          <UserProfileButton />
         </div>
         
         <PerformanceHeader 
@@ -107,6 +111,12 @@ const AccountPerformance = () => {
             Compare all accounts performance between months to identify declining or improving accounts.
           </p>
         </div>
+        
+        <AccountSummaryCards
+          currentMonthData={currentMonthRawData}
+          previousMonthData={previousMonthRawData}
+          isLoading={isLoading}
+        />
         
         <div className="mb-12">
           <AccountPerformanceComparison 
