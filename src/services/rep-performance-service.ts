@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -32,50 +33,50 @@ export const fetchRepPerformanceData = async () => {
     // MARCH DATA FETCHING
     // Instead of fetching all data at once, fetch by department to avoid pagination issues
     // RETAIL data
-    const { data: retailData, error: retailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_march');
+    const { data: retailData, error: retailError } = await fetchMarchDepartmentData('RETAIL');
     if (retailError) throw new Error(`Error fetching RETAIL data: ${retailError.message}`);
     console.log('Fetched RETAIL records:', retailData?.length || 0);
     
     // REVA data
-    const { data: revaData, error: revaError } = await fetchAllDepartmentData('REVA', 'sales_data_march');
+    const { data: revaData, error: revaError } = await fetchMarchDepartmentData('REVA');
     if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
     console.log('Fetched REVA records:', revaData?.length || 0);
     
     // Wholesale data
-    const { data: wholesaleData, error: wholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_march');
+    const { data: wholesaleData, error: wholesaleError } = await fetchMarchDepartmentData('Wholesale');
     if (wholesaleError) throw new Error(`Error fetching Wholesale data: ${wholesaleError.message}`);
     console.log('Fetched Wholesale records:', wholesaleData?.length || 0);
 
     // FEBRUARY DATA FETCHING
     // Fetching February data for comparison
     // RETAIL data from February
-    const { data: febRetailData, error: febRetailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_februrary');
+    const { data: febRetailData, error: febRetailError } = await fetchFebruaryDepartmentData('RETAIL');
     if (febRetailError) throw new Error(`Error fetching February RETAIL data: ${febRetailError.message}`);
     console.log('Fetched February RETAIL records:', febRetailData?.length || 0);
     
     // REVA data from February
-    const { data: febRevaData, error: febRevaError } = await fetchAllDepartmentData('REVA', 'sales_data_februrary');
+    const { data: febRevaData, error: febRevaError } = await fetchFebruaryDepartmentData('REVA');
     if (febRevaError) throw new Error(`Error fetching February REVA data: ${febRevaError.message}`);
     console.log('Fetched February REVA records:', febRevaData?.length || 0);
     
     // Wholesale data from February
-    const { data: febWholesaleData, error: febWholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_februrary');
+    const { data: febWholesaleData, error: febWholesaleError } = await fetchFebruaryDepartmentData('Wholesale');
     if (febWholesaleError) throw new Error(`Error fetching February Wholesale data: ${febWholesaleError.message}`);
     console.log('Fetched February Wholesale records:', febWholesaleData?.length || 0);
     
     // APRIL DATA FETCHING (from sales_data_daily table)
     // RETAIL data from April
-    const { data: aprilRetailData, error: aprilRetailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_daily');
+    const { data: aprilRetailData, error: aprilRetailError } = await fetchAprilDepartmentData('RETAIL');
     if (aprilRetailError) throw new Error(`Error fetching April RETAIL data: ${aprilRetailError.message}`);
     console.log('Fetched April RETAIL records:', aprilRetailData?.length || 0);
     
     // REVA data from April
-    const { data: aprilRevaData, error: aprilRevaError } = await fetchAllDepartmentData('REVA', 'sales_data_daily');
+    const { data: aprilRevaData, error: aprilRevaError } = await fetchAprilDepartmentData('REVA');
     if (aprilRevaError) throw new Error(`Error fetching April REVA data: ${aprilRevaError.message}`);
     console.log('Fetched April REVA records:', aprilRevaData?.length || 0);
     
     // Wholesale data from April
-    const { data: aprilWholesaleData, error: aprilWholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_daily');
+    const { data: aprilWholesaleData, error: aprilWholesaleError } = await fetchAprilDepartmentData('Wholesale');
     if (aprilWholesaleError) throw new Error(`Error fetching April Wholesale data: ${aprilWholesaleError.message}`);
     console.log('Fetched April Wholesale records:', aprilWholesaleData?.length || 0);
     
@@ -326,8 +327,8 @@ export const fetchRepPerformanceData = async () => {
   }
 };
 
-// Helper function to fetch all records for a specific department from a specific table
-const fetchAllDepartmentData = async (department: string, tableName: "sales_data_march" | "sales_data_februrary" | "sales_data_daily") => {
+// Helper function to fetch all records for a specific department from the March table
+const fetchMarchDepartmentData = async (department: string) => {
   // This function fetches data in chunks to avoid pagination limits
   const PAGE_SIZE = 1000;
   let allData: any[] = [];
@@ -336,8 +337,75 @@ const fetchAllDepartmentData = async (department: string, tableName: "sales_data
   
   while (hasMoreData) {
     const { data, error, count } = await supabase
-      .from(tableName)
+      .from('sales_data_march')
       .select('*', { count: 'exact' })
+      .eq('Department', department)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    
+    if (error) {
+      return { data: null, error };
+    }
+    
+    if (data && data.length > 0) {
+      allData = [...allData, ...data];
+      page++;
+      
+      // Check if we've fetched all available data
+      hasMoreData = data.length === PAGE_SIZE;
+    } else {
+      hasMoreData = false;
+    }
+  }
+  
+  return { data: allData, error: null };
+};
+
+// Helper function to fetch all records for a specific department from the February table
+const fetchFebruaryDepartmentData = async (department: string) => {
+  // This function fetches data in chunks to avoid pagination limits
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let page = 0;
+  let hasMoreData = true;
+  
+  while (hasMoreData) {
+    const { data, error, count } = await supabase
+      .from('sales_data_februrary')
+      .select('*', { count: 'exact' })
+      .eq('Department', department)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    
+    if (error) {
+      return { data: null, error };
+    }
+    
+    if (data && data.length > 0) {
+      allData = [...allData, ...data];
+      page++;
+      
+      // Check if we've fetched all available data
+      hasMoreData = data.length === PAGE_SIZE;
+    } else {
+      hasMoreData = false;
+    }
+  }
+  
+  return { data: allData, error: null };
+};
+
+// Helper function to fetch all records for a specific department from the April daily table
+const fetchAprilDepartmentData = async (department: string) => {
+  // This function fetches data in chunks to avoid pagination limits
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let page = 0;
+  let hasMoreData = true;
+  
+  while (hasMoreData) {
+    // Use raw query approach to avoid TypeScript errors with table name
+    const { data, error, count } = await supabase
+      .from('sales_data_daily')
+      .select('*')
       .eq('Department', department)
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
     
