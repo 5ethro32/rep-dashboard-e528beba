@@ -42,6 +42,8 @@ const AccountPerformance = () => {
             previousTable = 'sales_data_februrary';
         }
         
+        console.log(`Fetching current month data from ${currentTable} and previous month data from ${previousTable}`);
+        
         // Fetch current month data
         const { data: currentData, error: currentError } = await supabase
           .from(currentTable)
@@ -55,6 +57,8 @@ const AccountPerformance = () => {
           .select('*');
         
         if (previousError) throw previousError;
+        
+        console.log(`Fetched ${currentData?.length || 0} records for current month and ${previousData?.length || 0} for previous month`);
         
         setCurrentMonthRawData(currentData || []);
         setPreviousMonthRawData(previousData || []);

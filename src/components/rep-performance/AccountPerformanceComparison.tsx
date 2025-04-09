@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowDownIcon, ArrowUpIcon, SearchIcon, FilterIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, SearchIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,9 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   const [selectedRep, setSelectedRep] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('all'); // 'all', 'declining', 'improving'
-
+  const [improvingCount, setImprovingCount] = useState(0);
+  const [decliningCount, setDecliningCount] = useState(0);
+  
   const repOptions = useMemo(() => {
     if (!currentMonthData || currentMonthData.length === 0) return [];
     
@@ -63,6 +65,8 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   const accountComparisons = useMemo(() => {
     if (!selectedRep || !currentMonthData || !previousMonthData) return [];
     
+    console.log(`Processing data comparison for ${selectedRep}. Current month data: ${currentMonthData.length}, Previous month data: ${previousMonthData.length}`);
+    
     // Filter data for the selected rep
     const currentRepAccounts = currentMonthData.filter(
       (item: any) => (item.Rep || item["Rep"]) === selectedRep
@@ -71,6 +75,8 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     const previousRepAccounts = previousMonthData.filter(
       (item: any) => (item.Rep || item["Rep"]) === selectedRep
     );
+    
+    console.log(`Filtered data for ${selectedRep}: Current month accounts: ${currentRepAccounts.length}, Previous month accounts: ${previousRepAccounts.length}`);
     
     // Group data by account
     const accountMap = new Map<string, AccountComparison>();
@@ -160,6 +166,19 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     return filtered.sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
   }, [accountComparisons, searchTerm, filterType]);
 
+  useEffect(() => {
+    // Count improving and declining accounts
+    if (accountComparisons.length > 0) {
+      const improving = accountComparisons.filter(account => account.difference > 0).length;
+      const declining = accountComparisons.filter(account => account.difference < 0).length;
+      
+      setImprovingCount(improving);
+      setDecliningCount(declining);
+      
+      console.log(`Stats for ${selectedRep}: Total accounts: ${accountComparisons.length}, Improving: ${improving}, Declining: ${declining}`);
+    }
+  }, [accountComparisons]);
+
   const getPreviousMonthName = (currentMonth: string): string => {
     switch (currentMonth) {
       case 'April': return 'March';
@@ -245,7 +264,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
                 className={filterType === 'declining' ? 'bg-finance-red/20 text-finance-red' : 'bg-transparent border-white/10 text-white/70'}
               >
                 <ArrowDownIcon className="mr-1 h-4 w-4" />
-                Declining
+                Declining ({decliningCount})
               </Button>
               <Button 
                 variant={filterType === 'improving' ? 'default' : 'outline'} 
@@ -253,13 +272,21 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
                 className={filterType === 'improving' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-transparent border-white/10 text-white/70'}
               >
                 <ArrowUpIcon className="mr-1 h-4 w-4" />
-                Improving
+                Improving ({improvingCount})
               </Button>
             </div>
           </div>
 
           {selectedRep && (
             <>
+              <div className="text-sm text-white/60 py-2">
+                {accountComparisons.length > 0 && (
+                  <p>
+                    Showing data for {accountComparisons.length} accounts: {improvingCount} improving, {decliningCount} declining, {accountComparisons.length - improvingCount - decliningCount} unchanged
+                  </p>
+                )}
+              </div>
+              
               {filteredAccounts.length > 0 ? (
                 <div className="rounded-md border border-white/10 overflow-hidden">
                   <Table>
