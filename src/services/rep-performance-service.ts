@@ -63,7 +63,7 @@ export const fetchRepPerformanceData = async () => {
     if (febWholesaleError) throw new Error(`Error fetching February Wholesale data: ${febWholesaleError.message}`);
     console.log('Fetched February Wholesale records:', febWholesaleData?.length || 0);
     
-    // APRIL DATA FETCHING (from sales_data_daily table)
+    // APRIL DATA FETCHING (from mtd_sales table)
     // RETAIL data from April
     const { data: aprilRetailData, error: aprilRetailError } = await fetchAprilDepartmentData('RETAIL');
     if (aprilRetailError) throw new Error(`Error fetching April RETAIL data: ${aprilRetailError.message}`);
@@ -392,7 +392,7 @@ const fetchFebruaryDepartmentData = async (department: string) => {
   return { data: allData, error: null };
 };
 
-// Helper function to fetch all records for a specific department from the April daily table
+// Helper function to fetch all records for a specific department from the April mtd_sales table
 const fetchAprilDepartmentData = async (department: string) => {
   // This function fetches data in chunks to avoid pagination limits
   const PAGE_SIZE = 1000;
@@ -401,11 +401,14 @@ const fetchAprilDepartmentData = async (department: string) => {
   let hasMoreData = true;
   
   while (hasMoreData) {
-    // Use raw SQL query to avoid TypeScript errors with the mtd_sales table
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    
     const { data, error } = await supabase
-      .rpc('get_mtd_data_by_department', { dept: department })
-      .limit(PAGE_SIZE)
-      .offset(page * PAGE_SIZE);
+      .from('mtd_sales')
+      .select('*')
+      .eq('Department', department)
+      .range(from, to);
     
     if (error) {
       console.error("Error fetching April data:", error);
