@@ -402,9 +402,9 @@ const fetchAprilDepartmentData = async (department: string) => {
   let hasMoreData = true;
   
   while (hasMoreData) {
-    // Use raw query approach to avoid TypeScript errors with table name
+    // Use mtd_sales table instead of sales_data_daily
     const { data, error, count } = await supabase
-      .from('sales_data_daily')
+      .from('mtd_sales')
       .select('*')
       .eq('Department', department)
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);

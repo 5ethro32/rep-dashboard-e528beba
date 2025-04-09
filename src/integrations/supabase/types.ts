@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      mtd_sales: {
+        Row: {
+          "Account Name": string | null
+          "Account Ref": string | null
+          Cost: number | null
+          Credit: number | null
+          Department: string | null
+          id: string
+          Margin: number | null
+          Packs: number | null
+          Profit: number | null
+          Rep: string
+          Spend: number | null
+          "Sub-Rep": string | null
+        }
+        Insert: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Update: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep?: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -229,51 +274,6 @@ export type Database = {
         Relationships: []
       }
       sales_data_march: {
-        Row: {
-          "Account Name": string | null
-          "Account Ref": string | null
-          Cost: number | null
-          Credit: number | null
-          Department: string | null
-          id: string
-          Margin: number | null
-          Packs: number | null
-          Profit: number | null
-          Rep: string
-          Spend: number | null
-          "Sub-Rep": string | null
-        }
-        Insert: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
-        }
-        Update: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep?: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
-        }
-        Relationships: []
-      }
-      sales_rep_sales: {
         Row: {
           "Account Name": string | null
           "Account Ref": string | null
