@@ -1,7 +1,9 @@
+
 import React from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
+import DirectSummaryMetrics from '@/components/rep-performance/DirectSummaryMetrics';
 import PerformanceContent from '@/components/rep-performance/PerformanceContent';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
@@ -66,6 +68,12 @@ const RepPerformance = () => {
           includeReva={includeReva}
           includeWholesale={includeWholesale}
           selectedMonth={selectedMonth}
+        />
+        
+        <DirectSummaryMetrics 
+          includeRetail={includeRetail} 
+          includeReva={includeReva} 
+          includeWholesale={includeWholesale}
         />
         
         <PerformanceContent

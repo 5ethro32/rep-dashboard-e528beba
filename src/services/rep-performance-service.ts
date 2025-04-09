@@ -32,17 +32,17 @@ export const fetchRepPerformanceData = async () => {
     // MARCH DATA FETCHING
     // Instead of fetching all data at once, fetch by department to avoid pagination issues
     // RETAIL data
-    const { data: retailData, error: retailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_march');
+    const { data: retailData, error: retailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_februrary');
     if (retailError) throw new Error(`Error fetching RETAIL data: ${retailError.message}`);
     console.log('Fetched RETAIL records:', retailData?.length || 0);
     
     // REVA data
-    const { data: revaData, error: revaError } = await fetchAllDepartmentData('REVA', 'sales_data_march');
+    const { data: revaData, error: revaError } = await fetchAllDepartmentData('REVA', 'sales_data_februrary');
     if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
     console.log('Fetched REVA records:', revaData?.length || 0);
     
     // Wholesale data
-    const { data: wholesaleData, error: wholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_march');
+    const { data: wholesaleData, error: wholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_februrary');
     if (wholesaleError) throw new Error(`Error fetching Wholesale data: ${wholesaleError.message}`);
     console.log('Fetched Wholesale records:', wholesaleData?.length || 0);
 
@@ -451,7 +451,7 @@ const calculateRepChanges = (
 };
 
 // Helper function to fetch all records for a specific department from a specific table
-const fetchAllDepartmentData = async (department: string, tableName: "sales_data_februrary" | "sales_data_march") => {
+const fetchAllDepartmentData = async (department: string, tableName: "sales_data_februrary") => {
   // This function fetches data in chunks to avoid pagination limits
   const PAGE_SIZE = 1000;
   let allData: any[] = [];
