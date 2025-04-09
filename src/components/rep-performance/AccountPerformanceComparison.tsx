@@ -16,11 +16,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowDownIcon, ArrowUpIcon, TrendingDownIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, SearchIcon, FilterIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface AccountComparison {
   accountName: string;
+  accountRef: string;
   currentProfit: number;
   previousProfit: number;
   difference: number;
@@ -43,6 +46,8 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   formatCurrency
 }) => {
   const [selectedRep, setSelectedRep] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filterType, setFilterType] = useState<string>('all'); // 'all', 'declining', 'improving'
 
   const repOptions = useMemo(() => {
     if (!currentMonthData || currentMonthData.length === 0) return [];
@@ -81,10 +86,11 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       
       accountMap.set(key, {
         accountName,
+        accountRef,
         currentProfit: profit,
         previousProfit: 0,
-        difference: 0,
-        percentChange: 0
+        difference: profit,
+        percentChange: profit === 0 ? 0 : 100
       });
     });
     
@@ -110,6 +116,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
         // Account exists in previous month but not in current
         accountMap.set(key, {
           accountName,
+          accountRef,
           currentProfit: 0,
           previousProfit: profit,
           difference: -profit,
@@ -118,13 +125,40 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       }
     });
     
-    // Convert to array and filter for accounts that performed better last month
-    const comparisons = Array.from(accountMap.values())
-      .filter(account => account.difference < 0)
-      .sort((a, b) => a.difference - b.difference); // Sort by biggest drop first
-    
-    return comparisons;
+    // Convert to array
+    return Array.from(accountMap.values());
   }, [selectedRep, currentMonthData, previousMonthData]);
+
+  // Filter accounts based on search term and filter type
+  const filteredAccounts = useMemo(() => {
+    let filtered = accountComparisons;
+    
+    // Apply search filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(account => 
+        account.accountName.toLowerCase().includes(search) || 
+        account.accountRef.toLowerCase().includes(search)
+      );
+    }
+    
+    // Apply performance filter
+    switch (filterType) {
+      case 'declining':
+        filtered = filtered.filter(account => account.difference < 0);
+        break;
+      case 'improving':
+        filtered = filtered.filter(account => account.difference > 0);
+        break;
+      case 'all':
+      default:
+        // No additional filtering needed
+        break;
+    }
+    
+    // Sort by the largest absolute difference first
+    return filtered.sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
+  }, [accountComparisons, searchTerm, filterType]);
 
   const getPreviousMonthName = (currentMonth: string): string => {
     switch (currentMonth) {
@@ -165,74 +199,139 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
           Account Performance Comparison
         </CardTitle>
         <CardDescription className="text-white/60">
-          Accounts that performed better in {getPreviousMonthName(selectedMonth)} compared to {selectedMonth}. Identify opportunities for sales recovery.
+          Compare all account performance between {selectedMonth} and {getPreviousMonthName(selectedMonth)}. 
+          Use filters to identify declining or improving accounts.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <Select value={selectedRep} onValueChange={setSelectedRep}>
-            <SelectTrigger className="w-[250px] bg-gray-800 border-gray-700 text-white">
-              <SelectValue placeholder="Select a rep" />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700 text-white">
-              {repOptions.map(rep => (
-                <SelectItem key={rep} value={rep}>
-                  {rep}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {selectedRep && (
-          <>
-            {accountComparisons.length > 0 ? (
-              <div className="rounded-md border border-white/10 overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-gray-800/50">
-                    <TableRow>
-                      <TableHead className="text-white/70 w-1/3">Account</TableHead>
-                      <TableHead className="text-white/70 text-right">{selectedMonth} Profit</TableHead>
-                      <TableHead className="text-white/70 text-right">{getPreviousMonthName(selectedMonth)} Profit</TableHead>
-                      <TableHead className="text-white/70 text-right">Change</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {accountComparisons.slice(0, 10).map((account, index) => (
-                      <TableRow 
-                        key={index}
-                        className="border-b border-white/5 bg-gray-900/30 hover:bg-gray-800/40"
-                      >
-                        <TableCell className="font-medium text-white/80">{account.accountName}</TableCell>
-                        <TableCell className="text-right text-white/80">{formatCurrency(account.currentProfit, 0)}</TableCell>
-                        <TableCell className="text-right text-white/80">{formatCurrency(account.previousProfit, 0)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end">
-                            <span className="text-finance-red mr-1">{formatCurrency(account.difference, 0)}</span>
-                            <TrendingDownIcon size={16} className="text-finance-red" />
-                          </div>
-                          <div className="text-xs text-finance-red">
-                            ({account.percentChange.toFixed(1)}%)
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+        <div className="space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="md:w-1/3">
+              <Select value={selectedRep} onValueChange={setSelectedRep}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Select a rep" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  {repOptions.map(rep => (
+                    <SelectItem key={rep} value={rep}>
+                      {rep}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:w-1/3 relative">
+              <div className="relative">
+                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+                <Input 
+                  placeholder="Search accounts..." 
+                  className="pl-10 bg-gray-800 border-gray-700 text-white"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-            ) : (
-              <div className="text-center py-8 text-white/60">
-                {selectedRep && "No accounts found with declining performance."}
-              </div>
-            )}
-          </>
-        )}
-
-        {!selectedRep && (
-          <div className="text-center py-8 text-white/60">
-            Select a rep to view account performance comparisons
+            </div>
+            <div className="md:w-1/3 flex gap-2">
+              <Button 
+                variant={filterType === 'all' ? 'default' : 'outline'} 
+                onClick={() => setFilterType('all')}
+                className={filterType === 'all' ? 'bg-white/10' : 'bg-transparent border-white/10 text-white/70'}
+              >
+                All
+              </Button>
+              <Button 
+                variant={filterType === 'declining' ? 'default' : 'outline'} 
+                onClick={() => setFilterType('declining')}
+                className={filterType === 'declining' ? 'bg-finance-red/20 text-finance-red' : 'bg-transparent border-white/10 text-white/70'}
+              >
+                <ArrowDownIcon className="mr-1 h-4 w-4" />
+                Declining
+              </Button>
+              <Button 
+                variant={filterType === 'improving' ? 'default' : 'outline'} 
+                onClick={() => setFilterType('improving')}
+                className={filterType === 'improving' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-transparent border-white/10 text-white/70'}
+              >
+                <ArrowUpIcon className="mr-1 h-4 w-4" />
+                Improving
+              </Button>
+            </div>
           </div>
-        )}
+
+          {selectedRep && (
+            <>
+              {filteredAccounts.length > 0 ? (
+                <div className="rounded-md border border-white/10 overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-gray-800/50">
+                      <TableRow>
+                        <TableHead className="text-white/70 w-1/3">Account</TableHead>
+                        <TableHead className="text-white/70 text-right">{selectedMonth} Profit</TableHead>
+                        <TableHead className="text-white/70 text-right">{getPreviousMonthName(selectedMonth)} Profit</TableHead>
+                        <TableHead className="text-white/70 text-right">Change</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAccounts.map((account, index) => (
+                        <TableRow 
+                          key={index}
+                          className="border-b border-white/5 bg-gray-900/30 hover:bg-gray-800/40"
+                        >
+                          <TableCell className="font-medium text-white/80">
+                            <div>
+                              {account.accountName}
+                            </div>
+                            <div className="text-xs text-white/50">
+                              Ref: {account.accountRef}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right text-white/80">{formatCurrency(account.currentProfit, 0)}</TableCell>
+                          <TableCell className="text-right text-white/80">{formatCurrency(account.previousProfit, 0)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end">
+                              <span className={account.difference >= 0 ? "text-emerald-500 mr-1" : "text-finance-red mr-1"}>
+                                {formatCurrency(account.difference, 0)}
+                              </span>
+                              {account.difference > 0 ? (
+                                <ArrowUpIcon size={16} className="text-emerald-500" />
+                              ) : account.difference < 0 ? (
+                                <ArrowDownIcon size={16} className="text-finance-red" />
+                              ) : null}
+                            </div>
+                            <div className="text-xs text-white/60">
+                              {!isNaN(account.percentChange) && account.percentChange !== Infinity && account.percentChange !== -Infinity ? (
+                                <span className={account.percentChange >= 0 ? "text-emerald-500" : "text-finance-red"}>
+                                  ({account.percentChange.toFixed(1)}%)
+                                </span>
+                              ) : (
+                                <span>New/Lost</span>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-white/60">
+                  {searchTerm ? 
+                    "No accounts found matching your search criteria." : 
+                    filterType !== 'all' ? 
+                      `No ${filterType === 'declining' ? 'declining' : 'improving'} accounts found for ${selectedRep}.` :
+                      `No accounts found for ${selectedRep}.`
+                  }
+                </div>
+              )}
+            </>
+          )}
+
+          {!selectedRep && (
+            <div className="text-center py-8 text-white/60">
+              Select a rep to view all account performance comparisons
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
