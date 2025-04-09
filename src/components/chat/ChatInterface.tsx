@@ -38,14 +38,15 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: '1', 
-      content: "Hello! I'm Vera, your sales data assistant. Ask me anything about February and March 2025 performance data.", 
+      content: "Hello! I'm Vera, your sales data assistant. Ask me anything about February, March, or April 2025 performance data.", 
       isUser: false, 
       timestamp: new Date(),
       examples: [
         "Who are the top performers?",
         "Tell me about Craig's sales",
         "Compare February and March profit",
-        "How did Murray perform in February vs March?"
+        "How did Murray perform in February vs March?",
+        "Show me April's best reps by margin"
       ]
     }
   ]);
@@ -113,7 +114,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
       // Add assistant response to chat
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: data?.reply || "Sorry, I couldn't process your request. Please try again.",
+        content: data?.response || "Sorry, I couldn't process your request. Please try again.",
         isUser: false,
         timestamp: new Date()
       };
