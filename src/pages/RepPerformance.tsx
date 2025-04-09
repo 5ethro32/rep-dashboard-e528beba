@@ -10,7 +10,7 @@ import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import ChatInterface from '@/components/chat/ChatInterface';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, BarChart3 } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const RepPerformance = () => {
@@ -46,10 +46,23 @@ const RepPerformance = () => {
           setSelectedMonth={setSelectedMonth}
         />
         
-        <ActionsHeader 
-          onRefresh={loadDataFromSupabase}
-          isLoading={isLoading} 
-        />
+        <div className="flex justify-between items-center mb-4">
+          <ActionsHeader 
+            onRefresh={loadDataFromSupabase}
+            isLoading={isLoading} 
+          />
+          
+          <Link to="/account-performance">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Account Analysis
+            </Button>
+          </Link>
+        </div>
 
         <PerformanceFilters
           includeRetail={includeRetail}
@@ -97,17 +110,6 @@ const RepPerformance = () => {
           getFebValue={getFebValue}
           selectedMonth={selectedMonth}
         />
-        
-        {/* Navigation button to Account Performance page */}
-        <div className="mb-12">
-          <Link to="/account-performance">
-            <Button className="w-full bg-gradient-to-r from-finance-red/80 to-rose-700/80 hover:from-finance-red hover:to-rose-700 text-white">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              View Account Performance Analysis
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
       </div>
       <ChatInterface selectedMonth={selectedMonth} />
     </div>

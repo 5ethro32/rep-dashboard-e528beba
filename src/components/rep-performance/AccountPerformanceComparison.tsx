@@ -266,8 +266,12 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
                     <TableHeader className="bg-gray-800/50">
                       <TableRow>
                         <TableHead className="text-white/70 w-1/3">Account</TableHead>
-                        <TableHead className="text-white/70 text-right">{selectedMonth} Profit</TableHead>
-                        <TableHead className="text-white/70 text-right">{getPreviousMonthName(selectedMonth)} Profit</TableHead>
+                        <TableHead className="text-white/70 text-right">
+                          Current: {selectedMonth} Profit
+                        </TableHead>
+                        <TableHead className="text-white/70 text-right">
+                          Previous: {getPreviousMonthName(selectedMonth)} Profit
+                        </TableHead>
                         <TableHead className="text-white/70 text-right">Change</TableHead>
                       </TableRow>
                     </TableHeader>
