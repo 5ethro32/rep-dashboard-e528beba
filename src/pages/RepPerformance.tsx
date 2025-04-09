@@ -45,8 +45,8 @@ const RepPerformance = () => {
       setIsComparisonLoading(true);
       try {
         // Determine which tables to fetch from based on the selected month
-        let currentTable = '';
-        let previousTable = '';
+        let currentTable: 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' = 'sales_data_daily';
+        let previousTable: 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' = 'sales_data_februrary';
         
         switch (selectedMonth) {
           case 'April':
