@@ -38,6 +38,8 @@ interface OverallMetrics {
   bottomPerformersByProfit: any[];
   bottomPerformersByMargin: any[];
   departmentBreakdown: any;
+  topCustomers: any[];
+  accountRefMapping: Record<string, string>;
 }
 
 interface ComparisonMetrics {
@@ -249,7 +251,9 @@ const processMonthData = (allData) => {
     topPerformersByMargin: [],
     bottomPerformersByProfit: [],
     bottomPerformersByMargin: [],
-    departmentBreakdown: {}
+    departmentBreakdown: {},
+    topCustomers: [],
+    accountRefMapping: {}
   };
   
   // Group by department for breakdown
@@ -260,6 +264,19 @@ const processMonthData = (allData) => {
     accounts: Set<string>,
     activeAccounts: Set<string>
   }> = {};
+  
+  // Create customer tracking data structures
+  const customerProfitMap = new Map<string, {
+    accountName: string,
+    accountRef: string,
+    profit: number,
+    spend: number,
+    margin: number,
+    packs: number
+  }>();
+  
+  // Map account refs to account names
+  const accountRefToName = new Map<string, string>();
   
   // Aggregate data
   allData.forEach(record => {
@@ -278,6 +295,11 @@ const processMonthData = (allData) => {
       metrics.totalAccounts.add(record['Account Ref']);
       if (spend > 0) {
         metrics.activeAccounts.add(record['Account Ref']);
+      }
+      
+      // Map account ref to account name
+      if (record['Account Name'] && record['Account Ref']) {
+        accountRefToName.set(record['Account Ref'], record['Account Name']);
       }
     }
     
@@ -301,6 +323,28 @@ const processMonthData = (allData) => {
       if (spend > 0) {
         departmentBreakdown[dept].activeAccounts.add(record['Account Ref']);
       }
+    }
+    
+    // Track customer performance
+    if (record['Account Name'] && record['Account Ref']) {
+      const accountKey = record['Account Ref'];
+      
+      if (!customerProfitMap.has(accountKey)) {
+        customerProfitMap.set(accountKey, {
+          accountName: record['Account Name'],
+          accountRef: record['Account Ref'],
+          profit: 0,
+          spend: 0,
+          margin: 0,
+          packs: 0
+        });
+      }
+      
+      const customerData = customerProfitMap.get(accountKey)!;
+      customerData.profit += profit;
+      customerData.spend += spend;
+      customerData.packs += packs;
+      customerData.margin = customerData.spend > 0 ? (customerData.profit / customerData.spend) * 100 : 0;
     }
   });
   
@@ -405,11 +449,25 @@ const processMonthData = (allData) => {
     .sort((a, b) => a.margin - b.margin) // Sort ascending for worst
     .slice(0, 5);
   
+  // Process top customers
+  let topCustomers = Array.from(customerProfitMap.values())
+    .filter(customer => customer.profit > 0)
+    .sort((a, b) => b.profit - a.profit)
+    .slice(0, 10);
+  
+  // Convert account ref mapping to a simple object
+  const accountRefMapping: Record<string, string> = {};
+  accountRefToName.forEach((name, ref) => {
+    accountRefMapping[ref] = name;
+  });
+  
   metrics.topPerformersByProfit = topByProfit;
   metrics.topPerformersByMargin = topByMargin;
   metrics.bottomPerformersByProfit = bottomByProfit;
   metrics.bottomPerformersByMargin = bottomByMargin;
   metrics.departmentBreakdown = formattedDeptBreakdown;
+  metrics.topCustomers = topCustomers;
+  metrics.accountRefMapping = accountRefMapping;
   
   console.log("Calculated overall metrics:", {
     totalProfit: metrics.totalProfit,
@@ -417,7 +475,8 @@ const processMonthData = (allData) => {
     averageMargin: metrics.averageMargin,
     totalAccounts: metrics.totalAccounts.size,
     activeAccounts: metrics.activeAccounts.size,
-    departmentBreakdown: Object.keys(departmentBreakdown).length
+    departmentBreakdown: Object.keys(departmentBreakdown).length,
+    topCustomersCount: topCustomers.length
   });
   
   return metrics;
@@ -550,6 +609,14 @@ serve(async (req) => {
       }
     }
     
+    // Determine if asking about customers
+    const isAskingAboutCustomers = /customer|account|pharmacy|shop|store|knightswood|account ref|account number/i.test(message);
+    
+    // Check for specific account or customer
+    const accountNameMatch = message.match(/(?:for|about|at|in)\s+([A-Za-z0-9\s]+(?:Pharmacy|Ltd|Limited|Store|Shop))/i) ||
+                           message.match(/([A-Za-z0-9\s]+(?:Pharmacy|Ltd|Limited|Store|Shop))/i);
+    let customerName = accountNameMatch ? accountNameMatch[1].trim() : null;
+    
     // Determine if asking for top or bottom performers
     const isAskingAboutTop = /top|best|highest|leading|most profitable/i.test(message);
     const isAskingAboutWorst = /worst|lowest|poorest|bottom|weakest/i.test(message);
@@ -656,6 +723,33 @@ Margin Change: ${(repDetails[repName].march.margin - repDetails[repName].februar
 ` : ''}
 ` : ''}
 
+${marchMetrics && marchMetrics.topCustomers && marchMetrics.topCustomers.length > 0 ? `
+13. Top Customers by Profit in March 2025:
+${JSON.stringify(marchMetrics.topCustomers.slice(0, 10).map(customer => ({
+  accountName: customer.accountName,
+  accountRef: customer.accountRef,
+  profit: customer.profit.toFixed(2),
+  spend: customer.spend.toFixed(2),
+  margin: customer.margin.toFixed(2),
+  packs: customer.packs
+})))}
+` : ''}
+
+${februaryMetrics && februaryMetrics.topCustomers && februaryMetrics.topCustomers.length > 0 ? `
+14. Top Customers by Profit in February 2025:
+${JSON.stringify(februaryMetrics.topCustomers.slice(0, 10).map(customer => ({
+  accountName: customer.accountName,
+  accountRef: customer.accountRef,
+  profit: customer.profit.toFixed(2),
+  spend: customer.spend.toFixed(2),
+  margin: customer.margin.toFixed(2),
+  packs: customer.packs
+})))}
+` : ''}
+
+15. Account Reference to Name Mappings:
+${JSON.stringify(marchMetrics?.accountRefMapping ? Object.entries(marchMetrics.accountRefMapping).slice(0, 20) : 'Data unavailable')}
+
 When answering:
 1. Be extremely CONCISE and DIRECT - only provide exactly what was asked for
 2. If asked about specific numbers, provide the exact figures from the data above
@@ -669,6 +763,12 @@ When answering:
 10. When comparing February to March, always give the exact amounts and percentage changes
 11. NEVER refer to Wholesale or REVA as sales reps - they are departments, not individuals
 
+CUSTOMER DATA HANDLING:
+- When a user asks about customers or accounts, focus on the Account Name and Account Ref fields
+- If a user asks for the "account number" for a specific customer, they're looking for the Account Ref that matches the Account Name
+- If a user asks about top customers, provide the top customers by profit (default) unless they specify another metric
+- When a user mentions a customer by name, try to find it in the Account Name field and provide its details
+
 IMPORTANT FORMATTING RULES:
 - ALWAYS use £ (pound sterling) as currency symbol, not $ or any other currency
 - Never use any markdown formatting such as bold, italic, or headers
@@ -678,6 +778,8 @@ ${isAskingAboutWorst ? 'IMPORTANT: This question is specifically asking about th
 ${isAskingAboutTop ? 'IMPORTANT: This question is specifically asking about the TOP performers, so be sure to provide the top performers by profit from the data.' : ''}
 ${repName ? `IMPORTANT: The user is asking about ${repName}. Make sure to use CONSISTENT data from the detailed breakdown provided above, showing COMBINED totals across all departments.` : ''}
 ${isAskingComparison ? 'IMPORTANT: The user is asking for a comparison between February and March. Provide data for both months and calculate the differences.' : ''}
+${isAskingAboutCustomers ? 'IMPORTANT: The user is asking about customer data. Focus on providing accurate customer/account information from the Account Name and Account Ref fields.' : ''}
+${customerName ? `IMPORTANT: The user is specifically asking about the customer "${customerName}". Look for this customer in the Account Name field and provide its details.` : ''}
 
 Department Structure Info:
 - The data is structured across multiple departments: Retail, REVA, and Wholesale

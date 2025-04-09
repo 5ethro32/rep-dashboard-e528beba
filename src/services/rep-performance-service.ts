@@ -32,34 +32,34 @@ export const fetchRepPerformanceData = async () => {
     // MARCH DATA FETCHING
     // Instead of fetching all data at once, fetch by department to avoid pagination issues
     // RETAIL data
-    const { data: retailData, error: retailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_februrary', true); // Used sales_data_februrary for March data too
+    const { data: retailData, error: retailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_march');
     if (retailError) throw new Error(`Error fetching RETAIL data: ${retailError.message}`);
     console.log('Fetched RETAIL records:', retailData?.length || 0);
     
     // REVA data
-    const { data: revaData, error: revaError } = await fetchAllDepartmentData('REVA', 'sales_data_februrary', true); // Used sales_data_februrary for March data too
+    const { data: revaData, error: revaError } = await fetchAllDepartmentData('REVA', 'sales_data_march');
     if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
     console.log('Fetched REVA records:', revaData?.length || 0);
     
     // Wholesale data
-    const { data: wholesaleData, error: wholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_februrary', true); // Used sales_data_februrary for March data too
+    const { data: wholesaleData, error: wholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_march');
     if (wholesaleError) throw new Error(`Error fetching Wholesale data: ${wholesaleError.message}`);
     console.log('Fetched Wholesale records:', wholesaleData?.length || 0);
 
     // FEBRUARY DATA FETCHING
     // Fetching February data for comparison
     // RETAIL data from February
-    const { data: febRetailData, error: febRetailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_februrary', false);
+    const { data: febRetailData, error: febRetailError } = await fetchAllDepartmentData('RETAIL', 'sales_data_februrary');
     if (febRetailError) throw new Error(`Error fetching February RETAIL data: ${febRetailError.message}`);
     console.log('Fetched February RETAIL records:', febRetailData?.length || 0);
     
     // REVA data from February
-    const { data: febRevaData, error: febRevaError } = await fetchAllDepartmentData('REVA', 'sales_data_februrary', false);
+    const { data: febRevaData, error: febRevaError } = await fetchAllDepartmentData('REVA', 'sales_data_februrary');
     if (febRevaError) throw new Error(`Error fetching February REVA data: ${febRevaError.message}`);
     console.log('Fetched February REVA records:', febRevaData?.length || 0);
     
     // Wholesale data from February
-    const { data: febWholesaleData, error: febWholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_februrary', false);
+    const { data: febWholesaleData, error: febWholesaleError } = await fetchAllDepartmentData('Wholesale', 'sales_data_februrary');
     if (febWholesaleError) throw new Error(`Error fetching February Wholesale data: ${febWholesaleError.message}`);
     console.log('Fetched February Wholesale records:', febWholesaleData?.length || 0);
     
@@ -451,34 +451,19 @@ const calculateRepChanges = (
 };
 
 // Helper function to fetch all records for a specific department from a specific table
-const fetchAllDepartmentData = async (department: string, tableName: "sales_data_februrary", isMarch: boolean) => {
+const fetchAllDepartmentData = async (department: string, tableName: "sales_data_march" | "sales_data_februrary") => {
   // This function fetches data in chunks to avoid pagination limits
   const PAGE_SIZE = 1000;
   let allData: any[] = [];
   let page = 0;
   let hasMoreData = true;
   
-  console.log(`Fetching ${isMarch ? 'March' : 'February'} data for ${department} from ${tableName}`);
-  
   while (hasMoreData) {
-    let query = supabase
+    const { data, error, count } = await supabase
       .from(tableName)
       .select('*', { count: 'exact' })
-      .eq('Department', department);
-    
-    // Add a filter for March or February data
-    // Since both months use the same table, we need an additional filter
-    // This is a workaround since we don't have separate tables for March
-    if (isMarch) {
-      // Some condition to identify March data, e.g. based on a date field or other indicator
-      // For this example, let's assume we have Rep names prefixed differently in March data
-      query = query.like('Rep', 'M_%');
-    } else {
-      // For February data
-      query = query.like('Rep', 'F_%');
-    }
-    
-    const { data, error, count } = await query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      .eq('Department', department)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
     
     if (error) {
       return { data: null, error };
@@ -493,14 +478,6 @@ const fetchAllDepartmentData = async (department: string, tableName: "sales_data
     } else {
       hasMoreData = false;
     }
-  }
-  
-  // If this is March data, let's modify the reporting period in the data
-  if (isMarch) {
-    allData = allData.map(item => ({
-      ...item,
-      reporting_period: 'March 2025' // Add this field for consistency
-    }));
   }
   
   return { data: allData, error: null };

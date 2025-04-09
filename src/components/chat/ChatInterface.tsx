@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { GradientAvatar, GradientAvatarFallback } from '@/components/ui/gradient-avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -194,9 +195,9 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
                   </div>
                   
                   {msg.isUser && (
-                    <Avatar className="h-8 w-8 ml-2 flex-shrink-0 mt-1">
-                      <AvatarFallback className="bg-gradient-to-r from-finance-red to-rose-700 text-white text-xs">U</AvatarFallback>
-                    </Avatar>
+                    <GradientAvatar className="h-8 w-8 ml-2 flex-shrink-0 mt-1">
+                      <GradientAvatarFallback className="text-white text-xs">U</GradientAvatarFallback>
+                    </GradientAvatar>
                   )}
                 </div>
               ))}

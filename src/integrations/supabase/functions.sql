@@ -442,23 +442,3 @@ BEGIN
   RETURN result;
 END;
 $$;
-
--- Function to get April MTD data by department (new function for April data)
-CREATE OR REPLACE FUNCTION public.get_april_mtd_data_by_department(dept text)
-RETURNS json
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  result json;
-BEGIN
-  SELECT json_agg(row_to_json(t))
-  INTO result
-  FROM (
-    SELECT *
-    FROM mtd_daily
-    WHERE "Department" = dept
-  ) t;
-  
-  RETURN result;
-END;
-$$;

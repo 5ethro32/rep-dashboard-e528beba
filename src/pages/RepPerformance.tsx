@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -9,7 +8,6 @@ import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import ChatInterface from '@/components/chat/ChatInterface';
-import DirectSummaryMetrics from '@/components/rep-performance/DirectSummaryMetrics';
 
 const RepPerformance = () => {
   const {
@@ -36,9 +34,6 @@ const RepPerformance = () => {
   
   const activeData = getActiveData('overall');
   
-  // Only show DirectSummaryMetrics for April data
-  const showDirectMetrics = selectedMonth === 'April';
-  
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
@@ -62,14 +57,6 @@ const RepPerformance = () => {
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
         />
-
-        {showDirectMetrics && (
-          <DirectSummaryMetrics
-            includeRetail={includeRetail}
-            includeReva={includeReva}
-            includeWholesale={includeWholesale}
-          />
-        )}
 
         <SummaryMetrics 
           summary={summary}

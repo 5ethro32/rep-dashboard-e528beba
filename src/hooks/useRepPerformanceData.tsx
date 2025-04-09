@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -71,11 +72,6 @@ export const useRepPerformanceData = () => {
   useEffect(() => {
     console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale, selectedMonth });
 
-    // For April, we use DirectSummaryMetrics
-    if (selectedMonth === 'April') {
-      return;
-    }
-
     // Use different data sources based on selectedMonth
     let currentRepData = selectedMonth === 'March' ? repData : febRepData;
     let currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
@@ -123,7 +119,7 @@ export const useRepPerformanceData = () => {
       // (but don't save them permanently)
       setSummaryChanges(invertedSummaryChanges);
       setRepChanges(invertedChanges);
-    } else if (selectedMonth === 'March') {
+    } else {
       // Restore original changes from stored data when viewing March
       const storedData = loadStoredRepPerformanceData();
       if (storedData) {
@@ -131,7 +127,7 @@ export const useRepPerformanceData = () => {
         setRepChanges(storedData.repChanges || defaultRepChanges);
       }
     }
-  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData, repChanges, summaryChanges]);
+  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData]);
 
   const loadDataFromSupabase = async () => {
     setIsLoading(true);
@@ -261,11 +257,6 @@ export const useRepPerformanceData = () => {
   };
 
   const getActiveData = (tabValue: string) => {
-    // Return empty array for April since we're using DirectSummaryMetrics
-    if (selectedMonth === 'April') {
-      return [];
-    }
-    
     // Use different data sources based on selectedMonth
     const currentRepData = selectedMonth === 'March' ? repData : febRepData;
     const currentRevaData = selectedMonth === 'March' ? revaData : febRevaData;
@@ -298,31 +289,20 @@ export const useRepPerformanceData = () => {
   };
 
   // Calculate summary based on selected month
-  const summary = selectedMonth === 'April' ? 
-    // For April, return empty summary since we use DirectSummaryMetrics
-    {
-      totalSpend: 0,
-      totalProfit: 0,
-      averageMargin: 0,
-      totalPacks: 0,
-      totalAccounts: 0,
-      activeAccounts: 0
-    } :
-    // For February and March, calculate as before
-    calculateSummary(
-      selectedMonth === 'March' ? baseSummary : febBaseSummary,
-      selectedMonth === 'March' ? revaValues : febRevaValues,
-      selectedMonth === 'March' ? wholesaleValues : febWholesaleValues,
-      includeRetail,
-      includeReva, 
-      includeWholesale
-    );
+  const summary = calculateSummary(
+    selectedMonth === 'March' ? baseSummary : febBaseSummary,
+    selectedMonth === 'March' ? revaValues : febRevaValues,
+    selectedMonth === 'March' ? wholesaleValues : febWholesaleValues,
+    includeRetail,
+    includeReva, 
+    includeWholesale
+  );
 
   console.log("Current summary values:", summary);
   console.log("Current summary changes:", summaryChanges);
 
   const getFebValue = (repName: string, metricType: string, currentValue: number, changePercent: number) => {
-    if (selectedMonth === 'April' || !repName || Math.abs(changePercent) < 0.1) return '';
+    if (!repName || Math.abs(changePercent) < 0.1) return '';
     
     // For February, we use March data to show comparison
     const comparisonRepData = selectedMonth === 'March' ? febRepData : repData;
