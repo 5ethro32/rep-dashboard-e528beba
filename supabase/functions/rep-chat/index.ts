@@ -482,6 +482,53 @@ const processMonthData = (allData) => {
   return metrics;
 };
 
+// Fetch top performers using SQL functions for better optimization
+const fetchTopPerformers = async (supabase, month) => {
+  try {
+    let topProfitFunction, topMarginFunction;
+    
+    // Determine which SQL function to call based on the month
+    if (month === 'march') {
+      topProfitFunction = 'get_march_top_reps_by_profit';
+      topMarginFunction = 'get_march_top_reps_by_margin';
+    } else if (month === 'february') {
+      topProfitFunction = 'get_top_reps_by_profit';
+      topMarginFunction = 'get_top_reps_by_margin';
+    } else if (month === 'april') {
+      topProfitFunction = 'get_april_top_reps_by_profit';
+      topMarginFunction = 'get_april_top_reps_by_margin';
+    } else {
+      return null;
+    }
+    
+    // Fetch top performers by profit
+    const { data: topProfit, error: profitError } = await supabase
+      .rpc(topProfitFunction);
+      
+    if (profitError) {
+      console.error(`Error fetching top performers by profit for ${month}:`, profitError);
+      return null;
+    }
+    
+    // Fetch top performers by margin  
+    const { data: topMargin, error: marginError } = await supabase
+      .rpc(topMarginFunction);
+      
+    if (marginError) {
+      console.error(`Error fetching top performers by margin for ${month}:`, marginError);
+      return null;
+    }
+    
+    return {
+      topByProfit: topProfit || [],
+      topByMargin: topMargin || []
+    };
+  } catch (error) {
+    console.error(`Error fetching top performers for ${month}:`, error);
+    return null;
+  }
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -626,24 +673,31 @@ serve(async (req) => {
     // Determine if asking about a specific month
     const isAskingAboutMarch = /march/i.test(message);
     const isAskingAboutFebruary = /february|feb/i.test(message);
+    const isAskingAboutApril = /april/i.test(message);
     
     // Default to March if no month specified
-    const targetMonth = isAskingAboutFebruary ? 'february' : 'march';
+    const targetMonth = isAskingAboutFebruary ? 'february' : 
+                        isAskingAboutApril ? 'april' : 'march';
+
+    // Try to fetch top performers using SQL functions for better performance
+    const marchTopPerformers = await fetchTopPerformers(supabase, 'march');
+    const februaryTopPerformers = await fetchTopPerformers(supabase, 'february');
+    const aprilTopPerformers = await fetchTopPerformers(supabase, 'april');
 
     // Prepare a system prompt with data context
     const systemPrompt = `
 You are Vera, a sales data analysis assistant specialized in helping sales managers understand their rep performance data.
-You have access to sales data for both February and March 2025.
+You have access to sales data for February, March, and April 2025.
 
 IMPORTANT: Always provide CONSISTENT and ACCURATE data by using the combined totals across all departments (Retail, REVA, and Wholesale) for any rep mentioned.
 
 Here's key information from the data:
 
 1. Top performers by profit in March 2025:
-${JSON.stringify(marchMetrics?.topPerformersByProfit || 'Data unavailable')}
+${JSON.stringify(marchTopPerformers?.topByProfit || marchMetrics?.topPerformersByProfit || 'Data unavailable')}
 
 2. Top performers by margin in March 2025:
-${JSON.stringify(marchMetrics?.topPerformersByMargin || 'Data unavailable')}
+${JSON.stringify(marchTopPerformers?.topByMargin || marchMetrics?.topPerformersByMargin || 'Data unavailable')}
 
 3. Worst performers by profit in March 2025:
 ${JSON.stringify(marchMetrics?.bottomPerformersByProfit || 'Data unavailable')}
@@ -652,10 +706,10 @@ ${JSON.stringify(marchMetrics?.bottomPerformersByProfit || 'Data unavailable')}
 ${JSON.stringify(marchMetrics?.bottomPerformersByMargin || 'Data unavailable')}
 
 5. Top performers by profit in February 2025:
-${JSON.stringify(februaryMetrics?.topPerformersByProfit || 'Data unavailable')}
+${JSON.stringify(februaryTopPerformers?.topByProfit || februaryMetrics?.topPerformersByProfit || 'Data unavailable')}
 
 6. Top performers by margin in February 2025:
-${JSON.stringify(februaryMetrics?.topPerformersByMargin || 'Data unavailable')}
+${JSON.stringify(februaryTopPerformers?.topByMargin || februaryMetrics?.topPerformersByMargin || 'Data unavailable')}
 
 7. Worst performers by profit in February 2025:
 ${JSON.stringify(februaryMetrics?.bottomPerformersByProfit || 'Data unavailable')}
@@ -663,8 +717,14 @@ ${JSON.stringify(februaryMetrics?.bottomPerformersByProfit || 'Data unavailable'
 8. Worst performers by margin in February 2025:
 ${JSON.stringify(februaryMetrics?.bottomPerformersByMargin || 'Data unavailable')}
 
+9. Top performers by profit in April 2025:
+${JSON.stringify(aprilTopPerformers?.topByProfit || 'Data unavailable')}
+
+10. Top performers by margin in April 2025:
+${JSON.stringify(aprilTopPerformers?.topByMargin || 'Data unavailable')}
+
 ${marchMetrics ? `
-9. Overall metrics for March 2025:
+11. Overall metrics for March 2025:
 
 Total Spend: ${marchMetrics.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 Total Profit: ${marchMetrics.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -675,7 +735,7 @@ Active Accounts: ${marchMetrics.activeAccounts.size}
 ` : ''}
 
 ${februaryMetrics ? `
-10. Overall metrics for February 2025:
+12. Overall metrics for February 2025:
 
 Total Spend: ${februaryMetrics.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 Total Profit: ${februaryMetrics.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
@@ -686,14 +746,14 @@ Active Accounts: ${februaryMetrics.activeAccounts.size}
 ` : ''}
 
 ${monthOverMonthChange ? `
-11. Month-over-Month Change (March vs February):
+13. Month-over-Month Change (March vs February):
 
 Profit Change: ${monthOverMonthChange.profit.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${monthOverMonthChange.profit.percent.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%)
 Margin Change: ${monthOverMonthChange.margin.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}%
 ` : ''}
 
 ${repName && repDetails[repName] ? `
-12. Specific details for ${repName}:
+14. Specific details for ${repName}:
 
 FEBRUARY 2025 DATA:
 ${repDetails[repName].february ? `
@@ -725,7 +785,7 @@ Margin Change: ${(repDetails[repName].march.margin - repDetails[repName].februar
 ` : ''}
 
 ${marchMetrics && marchMetrics.topCustomers && marchMetrics.topCustomers.length > 0 ? `
-13. Top Customers by Profit in March 2025:
+15. Top Customers by Profit in March 2025:
 ${JSON.stringify(marchMetrics.topCustomers.slice(0, 10).map(customer => ({
   accountName: customer.accountName,
   accountRef: customer.accountRef,
@@ -737,7 +797,7 @@ ${JSON.stringify(marchMetrics.topCustomers.slice(0, 10).map(customer => ({
 ` : ''}
 
 ${februaryMetrics && februaryMetrics.topCustomers && februaryMetrics.topCustomers.length > 0 ? `
-14. Top Customers by Profit in February 2025:
+16. Top Customers by Profit in February 2025:
 ${JSON.stringify(februaryMetrics.topCustomers.slice(0, 10).map(customer => ({
   accountName: customer.accountName,
   accountRef: customer.accountRef,
@@ -748,7 +808,7 @@ ${JSON.stringify(februaryMetrics.topCustomers.slice(0, 10).map(customer => ({
 })))}
 ` : ''}
 
-15. Account Reference to Name Mappings:
+17. Account Reference to Name Mappings:
 ${JSON.stringify(marchMetrics?.accountRefMapping ? Object.entries(marchMetrics.accountRefMapping).slice(0, 20) : 'Data unavailable')}
 
 When answering:
@@ -775,72 +835,56 @@ IMPORTANT FORMATTING RULES:
 - Never use any markdown formatting such as bold, italic, or headers
 - Never use any special characters like ** or ## for formatting
 
-${isAskingAboutWorst ? 'IMPORTANT: This question is specifically asking about the WORST performers, so be sure to provide the bottom performers by profit from the data.' : ''}
-${isAskingAboutTop ? 'IMPORTANT: This question is specifically asking about the TOP performers, so be sure to provide the top performers by profit from the data.' : ''}
-${repName ? `IMPORTANT: The user is asking about ${repName}. Make sure to use CONSISTENT data from the detailed breakdown provided above, showing COMBINED totals across all departments.` : ''}
-${isAskingComparison ? 'IMPORTANT: The user is asking for a comparison between February and March. Provide data for both months and calculate the differences.' : ''}
-${isAskingAboutCustomers ? 'IMPORTANT: The user is asking about customer data. Focus on providing accurate customer/account information from the Account Name and Account Ref fields.' : ''}
-${customerName ? `IMPORTANT: The user is specifically asking about the customer "${customerName}". Look for this customer in the Account Name field and provide its details.` : ''}
+${isAskingAboutWorst ? 'IMPORTANT: This question is specifically asking about the worst performing reps. Focus on providing accurate figures about the poorest performers.' : ''}
+${isAskingAboutTop ? 'IMPORTANT: This question is specifically asking about the top performing reps. Focus on providing accurate figures about the best performers.' : ''}
+${isAskingAboutCustomers ? 'IMPORTANT: This question is specifically asking about customer data. Focus on providing accurate figures about accounts or pharmacies.' : ''}
+${isAskingComparison ? 'IMPORTANT: This question is asking for a comparison between months. Make sure to highlight the differences and percentage changes.' : ''}
+${isAskingAboutFebruary ? 'IMPORTANT: This question is specifically asking about February 2025 data.' : ''}
+${isAskingAboutMarch ? 'IMPORTANT: This question is specifically asking about March 2025 data.' : ''}
+${isAskingAboutApril ? 'IMPORTANT: This question is specifically asking about April 2025 data.' : ''}
+${customerName ? `IMPORTANT: This question is specifically asking about the customer "${customerName}". Try to find and provide relevant data for this account.` : ''}
+${repName ? `IMPORTANT: This question is specifically asking about rep "${repName}". Focus on providing accurate performance data for this individual across all departments.` : ''}
+`;
 
-Department Structure Info:
-- The data is structured across multiple departments: Retail, REVA, and Wholesale
-- Rep level data combines all departments for a complete view of individual performance
-- Total figures combine all departments for the most accurate picture
-- When reporting on a specific rep, ALWAYS include their combined total across all departments
-    `;
+    // Call OpenAI API to generate response
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key is not configured');
+    }
 
-    // Call OpenAI API
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4-0125-preview',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        temperature: 0.5,
-      }),
+        temperature: 0.2,
+        max_tokens: 1000
+      })
     });
 
     if (!openAIResponse.ok) {
       const errorData = await openAIResponse.json();
-      console.error('OpenAI API Error:', errorData);
-      throw new Error(`OpenAI API error: ${errorData?.error?.message || openAIResponse.statusText}`);
+      throw new Error(`OpenAI API error: ${JSON.stringify(errorData)}`);
     }
 
-    const data = await openAIResponse.json();
-    const assistantReply = data.choices[0].message.content;
+    const aiData = await openAIResponse.json();
+    const aiResponse = aiData.choices[0].message.content;
 
     return new Response(
-      JSON.stringify({ 
-        reply: assistantReply,
-        success: true 
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      JSON.stringify({ response: aiResponse }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error in rep-chat function:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message, 
-        success: false 
-      }),
-      { 
-        status: 500, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

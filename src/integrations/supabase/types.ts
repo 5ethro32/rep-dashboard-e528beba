@@ -354,6 +354,14 @@ export type Database = {
         Args: { dept: string }
         Returns: Json
       }
+      get_april_top_reps_by_margin: {
+        Args: { limit_count?: number }
+        Returns: Json
+      }
+      get_april_top_reps_by_profit: {
+        Args: { limit_count?: number }
+        Returns: Json
+      }
       get_department_counts: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -361,6 +369,14 @@ export type Database = {
       get_department_profit: {
         Args: { dept: string }
         Returns: number
+      }
+      get_march_top_reps_by_margin: {
+        Args: { limit_count?: number }
+        Returns: Json
+      }
+      get_march_top_reps_by_profit: {
+        Args: { limit_count?: number }
+        Returns: Json
       }
       get_retail_profit: {
         Args: Record<PropertyKey, never>
