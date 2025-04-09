@@ -42,10 +42,20 @@ export const fetchRepPerformanceData = async () => {
     if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
     console.log('Fetched REVA records:', revaData?.length || 0);
     
-    // Wholesale data
+    // Wholesale data - Note: In sales_data table, it might be "WHOLESALE" instead of "Wholesale"
     const { data: wholesaleData, error: wholesaleError } = await fetchDepartmentData('Wholesale', true);
     if (wholesaleError) throw new Error(`Error fetching Wholesale data: ${wholesaleError.message}`);
     console.log('Fetched Wholesale records:', wholesaleData?.length || 0);
+    
+    // If no wholesale data was found, try using "WHOLESALE" (all caps) as the department name
+    let finalWholesaleData = wholesaleData;
+    if (!wholesaleData || wholesaleData.length === 0) {
+      const { data: upperWholesaleData, error: upperWholesaleError } = await fetchDepartmentData('WHOLESALE', true);
+      if (!upperWholesaleError) {
+        finalWholesaleData = upperWholesaleData;
+        console.log('Fetched WHOLESALE (uppercase) records:', upperWholesaleData?.length || 0);
+      }
+    }
 
     // FEBRUARY DATA FETCHING
     // Fetching February data for comparison
@@ -65,7 +75,7 @@ export const fetchRepPerformanceData = async () => {
     console.log('Fetched February Wholesale records:', febWholesaleData?.length || 0);
     
     // Count total records for verification - March
-    const totalCount = (retailData?.length || 0) + (revaData?.length || 0) + (wholesaleData?.length || 0);
+    const totalCount = (retailData?.length || 0) + (revaData?.length || 0) + (finalWholesaleData?.length || 0);
     console.log('Total fetched records (March):', totalCount);
 
     // Count total records for verification - February
@@ -73,7 +83,7 @@ export const fetchRepPerformanceData = async () => {
     console.log('Total fetched records (February):', totalFebCount);
     
     // Process all March data
-    const allDataFromDb = [...(retailData || []), ...(revaData || []), ...(wholesaleData || [])];
+    const allDataFromDb = [...(retailData || []), ...(revaData || []), ...(finalWholesaleData || [])];
     
     // Process all February data
     const allFebDataFromDb = [...(febRetailData || []), ...(febRevaData || []), ...(febWholesaleData || [])];
@@ -103,7 +113,7 @@ export const fetchRepPerformanceData = async () => {
       const department = item.Department || 'RETAIL';
       
       // If this is a REVA or Wholesale item and we have a Sub-Rep, use that as the rep name
-      if ((department === 'REVA' || department === 'Wholesale') && subRep) {
+      if ((department === 'REVA' || department === 'Wholesale' || department === 'WHOLESALE') && subRep) {
         repName = subRep;
       }
       
@@ -165,7 +175,7 @@ export const fetchRepPerformanceData = async () => {
     // Filter data by department for further processing - March data
     const repDataFromDb = mappedData.filter(item => item.rep_type === 'RETAIL');
     const revaDataFromDb = mappedData.filter(item => item.rep_type === 'REVA');
-    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'Wholesale');
+    const wholesaleDataFromDb = mappedData.filter(item => item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE');
     
     // Filter data by department for further processing - February data
     const febRepDataFromDb = mappedFebData.filter(item => item.rep_type === 'RETAIL');

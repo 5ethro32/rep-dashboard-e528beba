@@ -37,7 +37,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
       setError(null);
       
       try {
-        // Query to get aggregated stats by department - use sales_data table instead of sales_data_march
+        // Query to get aggregated stats by department - use sales_data table
         const { data, error } = await supabase
           .from('sales_data')
           .select(`
@@ -59,7 +59,14 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         const deptMap = new Map<string, DepartmentStats>();
         
         data.forEach(item => {
-          const dept = item.rep_type || 'Unknown';
+          // Normalize department names
+          let dept = item.rep_type || 'Unknown';
+          
+          // Map both "Wholesale" and "WHOLESALE" to a single department name for consistency
+          if (dept === 'WHOLESALE') {
+            dept = 'Wholesale';
+          }
+          
           const spend = typeof item.spend === 'string' ? parseFloat(item.spend) : Number(item.spend || 0);
           const profit = typeof item.profit === 'string' ? parseFloat(item.profit) : Number(item.profit || 0);
           const packs = typeof item.packs === 'string' ? parseInt(item.packs as string) : Number(item.packs || 0);
@@ -85,6 +92,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         
         const deptStats = Array.from(deptMap.values());
         setStats(deptStats);
+        console.log('Fetched department stats:', deptStats);
         
         // Use direct SQL RPC calls for accurate department totals
         await fetchRawDepartmentSums();
