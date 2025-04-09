@@ -70,7 +70,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
             <Users size={16} className="text-[#ea384c] mr-2" />
             Active Accounts
           </div>
-          <div className="text-4xl font-bold mb-1">{formatNumber(activeAccounts)}</div>
+          <div className="text-2xl md:text-3xl font-bold mb-1">{formatNumber(activeAccounts)}</div>
           <div className="flex items-center">
             {accountsChange !== 0 && (
               <Badge variant={accountsChange > 0 ? "default" : "destructive"} 
@@ -89,7 +89,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
             <Award size={16} className="text-[#ea384c] mr-2" />
             Top Rep (by Profit)
           </div>
-          <div className="text-4xl font-bold mb-1">{topRep.name}</div>
+          <div className="text-2xl md:text-3xl font-bold mb-1">{topRep.name}</div>
           <div className="text-sm text-white/50">
             Total profit: {formatCurrency(topRep.profit)}
           </div>
