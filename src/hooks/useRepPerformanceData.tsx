@@ -280,15 +280,19 @@ export const useRepPerformanceData = () => {
       
       console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
       
-      const transformData = (data: any[], isDepartmentREVA = false): RepData[] => {
+      const transformData = (data: any[], isDepartmentData = false): RepData[] => {
         console.log(`Transforming ${data.length} records`);
         const repMap = new Map<string, RepData>();
         
         data.forEach(item => {
-          let repName = item.Rep;
+          let repName;
           
-          if (isDepartmentREVA && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+          if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
             repName = item['Sub-Rep'];
+          } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
+            return;
+          } else {
+            repName = item.Rep;
           }
           
           if (!repName) {
@@ -344,7 +348,7 @@ export const useRepPerformanceData = () => {
       
       const aprRetailData = transformData(retailData);
       const aprRevaData = transformData(revaData, true);
-      const aprWholesaleData = transformData(wholesaleData);
+      const aprWholesaleData = transformData(wholesaleData, true);
       
       console.log(`Transformed Rep Data - Retail: ${aprRetailData.length}, REVA: ${aprRevaData.length}, Wholesale: ${aprWholesaleData.length}`);
       
@@ -684,3 +688,5 @@ export const useRepPerformanceData = () => {
     setSelectedMonth
   };
 };
+
+export default useRepPerformanceData;
