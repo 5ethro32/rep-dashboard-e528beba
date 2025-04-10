@@ -1,23 +1,41 @@
-
 export const calculateSummary = (
-  baseSummary: any, 
-  revaValues: any, 
-  wholesaleValues: any,
+  baseSummary: {
+    totalSpend: number;
+    totalProfit: number;
+    totalPacks: number;
+    totalAccounts: number;
+    activeAccounts: number;
+    averageMargin: number;
+  },
+  revaValues: {
+    totalSpend: number;
+    totalProfit: number;
+    totalPacks: number;
+    totalAccounts: number;
+    activeAccounts: number;
+    averageMargin: number;
+  },
+  wholesaleValues: {
+    totalSpend: number;
+    totalProfit: number;
+    totalPacks: number;
+    totalAccounts: number;
+    activeAccounts: number;
+    averageMargin: number;
+  },
   includeRetail: boolean,
   includeReva: boolean,
   includeWholesale: boolean
-): any => {
-  console.log("Adding Retail values:", baseSummary);
-  console.log("Adding REVA values:", revaValues);
-  console.log("Adding Wholesale values:", wholesaleValues);
-  
+) => {
   let totalSpend = 0;
   let totalProfit = 0;
   let totalPacks = 0;
   let totalAccounts = 0;
   let activeAccounts = 0;
   
+  // Add base (retail) values if toggle is on
   if (includeRetail && baseSummary) {
+    console.log("Adding Retail values:", baseSummary);
     totalSpend += baseSummary.totalSpend || 0;
     totalProfit += baseSummary.totalProfit || 0;
     totalPacks += baseSummary.totalPacks || 0;
@@ -25,7 +43,9 @@ export const calculateSummary = (
     activeAccounts += baseSummary.activeAccounts || 0;
   }
   
+  // Add REVA values if toggle is on
   if (includeReva && revaValues) {
+    console.log("Adding REVA values:", revaValues);
     totalSpend += revaValues.totalSpend || 0;
     totalProfit += revaValues.totalProfit || 0;
     totalPacks += revaValues.totalPacks || 0;
@@ -33,7 +53,9 @@ export const calculateSummary = (
     activeAccounts += revaValues.activeAccounts || 0;
   }
   
+  // Add Wholesale values if toggle is on
   if (includeWholesale && wholesaleValues) {
+    console.log("Adding Wholesale values:", wholesaleValues);
     totalSpend += wholesaleValues.totalSpend || 0;
     totalProfit += wholesaleValues.totalProfit || 0;
     totalPacks += wholesaleValues.totalPacks || 0;
@@ -41,17 +63,20 @@ export const calculateSummary = (
     activeAccounts += wholesaleValues.activeAccounts || 0;
   }
   
-  const summary = {
+  // Calculate average margin based on included values
+  const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+  
+  const result = {
     totalSpend,
     totalProfit,
     totalPacks,
     totalAccounts,
     activeAccounts,
-    averageMargin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0
+    averageMargin
   };
   
-  console.log("Final calculated summary:", summary);
-  return summary;
+  console.log("Final calculated summary:", result);
+  return result;
 };
 
 export const calculateDeptSummary = (departmentData: any[]): {
@@ -112,17 +137,4 @@ export const formatPercent = (value: number) => {
 
 export const formatNumber = (value: number) => {
   return new Intl.NumberFormat('en-GB').format(value);
-};
-
-// Adding function that was missing in the hook's return statement
-export const loadDataFromSupabase = async () => {
-  try {
-    // This is just a placeholder function that can be imported into the hook
-    // The actual implementation is in the hook itself (loadAprilData)
-    console.log("This is a placeholder function - actual implementation in useRepPerformanceData hook");
-    return true;
-  } catch (error) {
-    console.error('Error loading data:', error);
-    return false;
-  }
 };

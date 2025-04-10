@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
@@ -40,24 +40,6 @@ const RepPerformance = () => {
   
   const activeData = getActiveData('overall');
   const isMobile = useIsMobile();
-  
-  // Add debugging to check the April data
-  useEffect(() => {
-    if (selectedMonth === 'April') {
-      console.log("Current month:", selectedMonth);
-      console.log("Summary metrics for April:", summary);
-      console.log("Active data for April (overall):", activeData);
-      
-      // Calculate total profit from activeData to see if it matches summary
-      const calculatedProfit = activeData.reduce((sum, item) => sum + item.profit, 0);
-      console.log("Total profit calculated from activeData:", calculatedProfit);
-      console.log("Total profit from summary:", summary.totalProfit);
-      
-      // Log data for top 3 reps in charts
-      const sortedData = [...activeData].sort((a, b) => b.profit - a.profit).slice(0, 3);
-      console.log("Top 3 reps profit data:", sortedData.map(item => ({ rep: item.rep, profit: item.profit })));
-    }
-  }, [activeData, selectedMonth, summary]);
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">

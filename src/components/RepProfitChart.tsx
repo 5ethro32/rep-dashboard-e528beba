@@ -1,14 +1,18 @@
 
 import React from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Loader2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, Loader2, Minus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Card } from '@/components/ui/card';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 
 interface RepProfitChartProps {
   displayData: any[];
   repChanges: Record<string, any>;
-  formatCurrency: (value: number) => string;
+  formatCurrency: (value: number, decimals?: number) => string;
   isLoading?: boolean;
   showChangeIndicators?: boolean;
 }
@@ -22,105 +26,83 @@ const RepProfitChart: React.FC<RepProfitChartProps> = ({
 }) => {
   const isMobile = useIsMobile();
   
-  // Sort data by profit descending
-  const sortedData = [...displayData]
-    .sort((a, b) => b.profit - a.profit)
-    .slice(0, 8); // Limit to top 8 reps
-  
-  // Prepare data for the chart
-  const chartData = sortedData.map((item) => {
-    // For April data, ensure we use consistent profit calculation as the summary card
-    const profitValue = item.profit || 0;
-    
-    return {
-      name: isMobile ? item.rep.substring(0, 2) : 
-            item.rep.length > 10 ? item.rep.substring(0, 8) + '...' : item.rep,
-      fullName: item.rep,
-      profit: profitValue,
-      change: repChanges[item.rep] ? repChanges[item.rep].profit : 0
-    };
-  });
-  
-  // Color handler function - red gradient for bars
-  const getColor = (index: number) => {
-    const colors = [
-      "#ef4444", "#f87171", "#fca5a5", "#fee2e2", "#b91c1c",
-      "#dc2626", "#991b1b", "#7f1d1d"
-    ];
-    return colors[index % colors.length];
-  };
-
-  // Custom tooltip formatter
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-gray-900/90 backdrop-blur-sm border border-white/10 rounded p-2 text-xs shadow-lg">
-          <p className="font-medium text-white">{data.fullName}</p>
-          <p className="text-finance-red">
-            {formatCurrency(data.profit)}
-          </p>
-          {showChangeIndicators && Math.abs(data.change) >= 1 && (
-            <p className={data.change > 0 ? 'text-emerald-400' : 'text-finance-red'}>
-              {data.change > 0 ? '+' : ''}{data.change.toFixed(1)}% vs prev month
-            </p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-  
-  // Handle display of chart for very small values
-  const minHeight = Math.max(...chartData.map(d => d.profit)) * 0.01;
-  
   return (
-    <Card className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full">
+    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
       <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Distribution</h3>
-      
       {isLoading ? (
-        <div className="flex-1 flex items-center justify-center h-full">
+        <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center">
             <Loader2 className="h-8 w-8 animate-spin mb-2" />
-            <span className="text-sm text-gray-400">Loading data...</span>
+            <span className="text-sm text-finance-gray">Loading data...</span>
           </div>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            margin={{ top: 5, right: 5, bottom: 20, left: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
-            <XAxis 
-              dataKey="name" 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#9ca3af', fontSize: isMobile ? 8 : 10 }}
-              dy={5}
-            />
-            <YAxis 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#9ca3af', fontSize: isMobile ? 8 : 10 }}
-              tickFormatter={(value) => formatCurrency(value).replace('£', '')}
-              width={isMobile ? 40 : 50}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
-            <Bar 
-              dataKey="profit" 
-              minPointSize={3}
-              barSize={isMobile ? 20 : 30}
-              radius={[4, 4, 0, 0]}
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getColor(index)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="flex-1 flex items-end justify-center">
+          <div className="w-full h-full flex items-end justify-center overflow-x-auto px-1">
+            <div className={`flex items-end ${isMobile ? 'space-x-1' : 'space-x-2'} pb-1`}>
+              {displayData.slice(0, isMobile ? 8 : 12).map(item => {
+                const repInitials = item.rep.split(' ').map((name: string) => name[0]).join('');
+                const maxProfit = displayData.reduce((max, item) => Math.max(max, item.profit), 0);
+                const maxHeight = isMobile ? 120 : 150;
+                const barHeight = Math.max(20, (item.profit / maxProfit) * maxHeight);
+                const change = repChanges[item.rep] ? repChanges[item.rep].profit : 0;
+                const barColor = 'from-finance-red to-finance-red/70';
+                const previousValue = item.profit / (1 + (change || 0) / 100);
+                
+                return (
+                  <TooltipProvider key={item.rep}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex flex-col items-center">
+                          <div className="relative">
+                            {showChangeIndicators && Math.abs(change) >= 0.1 ? (
+                              <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
+                                {change > 0 ? 
+                                  <ChevronUp className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" /> : 
+                                  <ChevronDown className="h-4 w-4 md:h-5 md:w-5 text-finance-red" />
+                                }
+                              </div>
+                            ) : showChangeIndicators ? (
+                              <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
+                                <Minus className="h-4 w-4 md:h-5 md:w-5 text-finance-gray font-bold" />
+                              </div>
+                            ) : null}
+                            <div 
+                              className={`w-6 md:w-8 bg-gradient-to-t ${barColor} rounded-t-lg transition-all duration-500 ease-in-out hover:opacity-80 cursor-pointer`}
+                              style={{ height: `${barHeight}px` }}
+                            />
+                          </div>
+                          <div className="mt-2 text-2xs md:text-xs font-bold text-white/80">{repInitials}</div>
+                          <div className="text-2xs md:text-xs text-finance-gray">{formatCurrency(item.profit, 0)}</div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-gray-800 border-white/10 text-white">
+                        <div className="p-1">
+                          <p className="font-medium">{item.rep}</p>
+                          <p>Profit: {formatCurrency(item.profit)}</p>
+                          {showChangeIndicators && Math.abs(change) >= 0.1 ? (
+                            <p className={change > 0 ? "text-emerald-400" : "text-finance-red"}>
+                              Change: {change > 0 ? "+" : ""}{change.toFixed(1)}%
+                            </p>
+                          ) : showChangeIndicators ? (
+                            <p className="text-finance-gray">No change</p>
+                          ) : null}
+                          {showChangeIndicators && (
+                            <p className="text-finance-gray mt-1 text-xs">
+                              Previous: {formatCurrency(previousValue)}
+                            </p>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
-    </Card>
+    </div>
   );
 };
 

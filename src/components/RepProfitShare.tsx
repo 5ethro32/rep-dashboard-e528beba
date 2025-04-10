@@ -19,12 +19,8 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
 }) => {
   const isMobile = useIsMobile();
   
-  // Calculate total profit - ensure the same calculation is used for April data
-  const totalProfit = displayData.reduce((sum, item) => sum + (item.profit || 0), 0);
-  
-  // Log the total profit to see what's being used in the chart
-  console.log("RepProfitShare - Total profit calculated:", totalProfit);
-  console.log("RepProfitShare - First 3 items in displayData:", displayData.slice(0, 3));
+  // Calculate total profit
+  const totalProfit = displayData.reduce((sum, item) => sum + item.profit, 0);
   
   // Colors for the chart - refined gradient of reds
   const colors = [
@@ -34,24 +30,15 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
   
   // Prepare data for the pie chart
   const chartData = displayData.map((item, index) => {
-    // Use consistent profit calculation as the metric card
-    const profitValue = item.profit || 0;
-    const percentage = totalProfit > 0 ? (profitValue / totalProfit) * 100 : 0;
-    
-    // Calculate previous profit values for change indicators
-    const prevProfit = repChanges[item.rep] && repChanges[item.rep].profit 
-      ? profitValue / (1 + (repChanges[item.rep]?.profit || 0) / 100)
-      : profitValue;
-    
-    const prevPercentage = totalProfit > 0 
-      ? (prevProfit / (totalProfit / (1 + (repChanges[item.rep]?.profit || 0) / 100))) * 100
-      : 0;
+    const percentage = (item.profit / totalProfit) * 100;
+    const prevProfit = item.profit / (1 + (repChanges[item.rep]?.profit || 0) / 100);
+    const prevPercentage = (prevProfit / (totalProfit / (1 + (repChanges[item.rep]?.profit || 0) / 100))) * 100;
     
     return {
       name: item.rep,
       value: Math.round(percentage), // Round to 0 decimal places
       color: colors[index % colors.length],
-      profit: profitValue,
+      profit: item.profit,
       prevProfit: prevProfit,
       prevPercentage: Number(prevPercentage.toFixed(1)),
       change: repChanges[item.rep] ? repChanges[item.rep].profit : 0
@@ -101,7 +88,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
   
   const dataToUse = isMobile ? mobileData : filteredData;
 
-  // Format the total profit for display - consistent with the metric card format
+  // Format the total profit for display
   const formattedProfit = totalProfit.toLocaleString('en-GB', {
     style: 'currency',
     currency: 'GBP',
@@ -131,7 +118,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
       ) : (
         <div className="flex flex-col h-full">
           <div className="flex-1">
-            <div className="h-48 md:h-64 w-full mb-2 md:mb-4">
+            <div className="h-48 md:h-64 w-full mb-2 md:mb-4"> {/* Adjusted height to better fit the card */}
               <DonutChart 
                 data={dataToUse}
                 innerValue={formattedProfit}
@@ -141,7 +128,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
           </div>
           
           {/* Legend */}
-          <div className="mt-auto overflow-y-auto max-h-40 md:max-h-44 scrollbar-none">
+          <div className="mt-auto overflow-y-auto max-h-40 md:max-h-44 scrollbar-none"> {/* Increased max height for legend */}
             <div className="grid grid-cols-2 gap-2 md:gap-3">
               {dataToUse.map((item, index) => (
                 <div key={index} className="flex items-center text-2xs md:text-xs">
