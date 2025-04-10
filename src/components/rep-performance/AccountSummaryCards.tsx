@@ -3,7 +3,7 @@ import React from 'react';
 import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Award } from 'lucide-react';
+import { Users, Award, Package, CreditCard } from 'lucide-react';
 
 interface AccountSummaryCardsProps {
   currentMonthData: any[];
@@ -36,10 +36,14 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   
   // Find top rep by combined profit across all departments
   let topRep = { name: 'No data', profit: 0 };
+  let topPacksRep = { name: 'No data', packs: 0 };
+  let topSpendRep = { name: 'No data', spend: 0 };
   
   if (currentMonthData.length > 0) {
-    // Group by rep and sum profits across all departments
+    // Group by rep and sum profits, packs, and spend across all departments
     const repProfits = new Map();
+    const repPacks = new Map();
+    const repSpends = new Map();
     
     currentMonthData.forEach(item => {
       // Extract the rep name with fallbacks for different column naming
@@ -47,24 +51,48 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       // Extract the sub-rep name with fallbacks for different column naming
       const subRepName = item["Sub-Rep"] || item.sub_rep || '';
       
-      // Handle profit calculation for the main rep
+      // Handle metric calculation for the main rep
       if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale') {
         const profit = typeof item.Profit === 'number' ? item.Profit : 
                       (typeof item.profit === 'number' ? item.profit : 0);
+        const packs = typeof item.Packs === 'number' ? item.Packs : 
+                     (typeof item.packs === 'number' ? item.packs : 0);
+        const spend = typeof item.Spend === 'number' ? item.Spend : 
+                     (typeof item.spend === 'number' ? item.spend : 0);
         
+        // Sum up profits
         const currentProfit = repProfits.get(repName) || 0;
         repProfits.set(repName, currentProfit + profit);
+        
+        // Sum up packs
+        const currentPacks = repPacks.get(repName) || 0;
+        repPacks.set(repName, currentPacks + packs);
+        
+        // Sum up spend
+        const currentSpend = repSpends.get(repName) || 0;
+        repSpends.set(repName, currentSpend + spend);
       }
       
-      // Also add profits for the sub-rep if present
+      // Also add metrics for the sub-rep if present
       if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale') {
-        // For sub-reps, we typically attribute a portion of the profit
-        // This may vary based on business rules, but for now we'll attribute the same profit
         const profit = typeof item.Profit === 'number' ? item.Profit : 
                       (typeof item.profit === 'number' ? item.profit : 0);
+        const packs = typeof item.Packs === 'number' ? item.Packs : 
+                     (typeof item.packs === 'number' ? item.packs : 0);
+        const spend = typeof item.Spend === 'number' ? item.Spend : 
+                     (typeof item.spend === 'number' ? item.spend : 0);
         
+        // Sum up profits for sub-rep
         const currentProfit = repProfits.get(subRepName) || 0;
         repProfits.set(subRepName, currentProfit + profit);
+        
+        // Sum up packs for sub-rep
+        const currentPacks = repPacks.get(subRepName) || 0;
+        repPacks.set(subRepName, currentPacks + packs);
+        
+        // Sum up spend for sub-rep
+        const currentSpend = repSpends.get(subRepName) || 0;
+        repSpends.set(subRepName, currentSpend + spend);
       }
     });
     
@@ -76,10 +104,28 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         topRep = { name: rep, profit: maxProfit };
       }
     });
+    
+    // Find rep with highest combined packs
+    let maxPacks = 0;
+    repPacks.forEach((packs, rep) => {
+      if (packs > maxPacks) {
+        maxPacks = packs;
+        topPacksRep = { name: rep, packs: maxPacks };
+      }
+    });
+    
+    // Find rep with highest combined spend
+    let maxSpend = 0;
+    repSpends.forEach((spend, rep) => {
+      if (spend > maxSpend) {
+        maxSpend = spend;
+        topSpendRep = { name: rep, spend: maxSpend };
+      }
+    });
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
@@ -108,6 +154,32 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
           <div className="text-2xl md:text-3xl font-bold mb-1">{topRep.name}</div>
           <div className="text-sm text-white/50">
             Total profit: {formatCurrency(topRep.profit)}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <Package size={16} className="text-[#ea384c] mr-2" />
+            Top Rep (by Packs)
+          </div>
+          <div className="text-2xl md:text-3xl font-bold mb-1">{topPacksRep.name}</div>
+          <div className="text-sm text-white/50">
+            Total packs: {formatNumber(topPacksRep.packs)}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <CreditCard size={16} className="text-[#ea384c] mr-2" />
+            Top Rep (by Spend)
+          </div>
+          <div className="text-2xl md:text-3xl font-bold mb-1">{topSpendRep.name}</div>
+          <div className="text-sm text-white/50">
+            Total spend: {formatCurrency(topSpendRep.spend)}
           </div>
         </CardContent>
       </Card>

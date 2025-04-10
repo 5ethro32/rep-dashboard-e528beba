@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -13,10 +12,8 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// Create a type for our available tables to ensure type safety
 type AllowedTable = 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' | 'sales_data' | 'sales_data_feb';
 
-// Define a generic data item type that covers the different column naming conventions
 type DataItem = {
   [key: string]: any;
   "Account Name"?: string;
@@ -44,38 +41,35 @@ const AccountPerformance = () => {
     const fetchComparisonData = async () => {
       setIsLoading(true);
       try {
-        // Determine which tables to fetch from based on the selected month
         let currentTable: AllowedTable;
         let previousTable: AllowedTable | null;
         
         switch (selectedMonth) {
           case 'April':
-            currentTable = "mtd_daily"; // April data
-            previousTable = "sales_data"; // March data
+            currentTable = "mtd_daily";
+            previousTable = "sales_data";
             break;
           case 'March':
-            currentTable = "sales_data"; // March data
-            previousTable = "sales_data_februrary"; // February data
+            currentTable = "sales_data";
+            previousTable = "sales_data_februrary";
             break;
           case 'February':
-            currentTable = "sales_data_februrary"; // February data
-            previousTable = null; // No January data available
+            currentTable = "sales_data_februrary";
+            previousTable = null;
             break;
           default:
-            currentTable = "sales_data"; // Default to March
-            previousTable = "sales_data_februrary"; // Default to February
+            currentTable = "sales_data";
+            previousTable = "sales_data_februrary";
         }
         
         console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
         
-        // Fetch current month data using the exact table name
         const { data: currentData, error: currentError } = await supabase
           .from(currentTable)
           .select('*');
         
         if (currentError) throw currentError;
         
-        // Fetch previous month data if available
         let previousData: DataItem[] = [];
         if (previousTable) {
           const { data: prevData, error: previousError } = await supabase
@@ -91,14 +85,11 @@ const AccountPerformance = () => {
         setCurrentMonthRawData(currentData || []);
         setPreviousMonthRawData(previousData);
         
-        // Calculate active accounts
         const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
-          // Handle different column naming between tables
           return item["Account Name"] || item.account_name;
         }).filter(Boolean)).size || 0;
         
         const previousActiveAccounts = new Set(previousData?.map((item: DataItem) => {
-          // Handle different column naming between tables
           return item["Account Name"] || item.account_name;
         }).filter(Boolean)).size || 0;
         
@@ -107,13 +98,10 @@ const AccountPerformance = () => {
           previous: previousActiveAccounts
         });
         
-        // Calculate top rep by profit
         if (currentData && currentData.length > 0) {
-          // Group by rep and sum profits
           const repProfits = new Map();
           
           currentData.forEach((item: DataItem) => {
-            // Handle different column naming conventions between tables
             const repName = item.Rep || item.rep_name || '';
             const profit = typeof item.Profit === 'number' ? item.Profit : 
                           (typeof item.profit === 'number' ? item.profit : 0);
@@ -124,7 +112,6 @@ const AccountPerformance = () => {
             }
           });
           
-          // Find rep with highest profit
           let maxProfit = 0;
           let topRepName = '';
           
@@ -135,7 +122,6 @@ const AccountPerformance = () => {
             }
           });
           
-          // Use setTopRep instead of direct assignment
           setTopRep({ name: topRepName, profit: maxProfit });
         }
       } catch (error) {
