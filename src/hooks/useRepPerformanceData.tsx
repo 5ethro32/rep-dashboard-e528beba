@@ -280,12 +280,16 @@ export const useRepPerformanceData = () => {
       
       console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
       
-      const transformData = (data: any[]): RepData[] => {
+      const transformData = (data: any[], isDepartmentREVA = false): RepData[] => {
         console.log(`Transforming ${data.length} records`);
         const repMap = new Map<string, RepData>();
         
         data.forEach(item => {
-          const repName = item.Rep;
+          let repName = item.Rep;
+          
+          if (isDepartmentREVA && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+            repName = item['Sub-Rep'];
+          }
           
           if (!repName) {
             console.log('Found item without Rep name:', item);
@@ -339,7 +343,7 @@ export const useRepPerformanceData = () => {
       };
       
       const aprRetailData = transformData(retailData);
-      const aprRevaData = transformData(revaData);
+      const aprRevaData = transformData(revaData, true);
       const aprWholesaleData = transformData(wholesaleData);
       
       console.log(`Transformed Rep Data - Retail: ${aprRetailData.length}, REVA: ${aprRevaData.length}, Wholesale: ${aprWholesaleData.length}`);
