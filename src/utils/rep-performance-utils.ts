@@ -1,3 +1,4 @@
+
 export const calculateSummary = (
   baseSummary: any, 
   revaValues: any, 
@@ -111,4 +112,17 @@ export const formatPercent = (value: number) => {
 
 export const formatNumber = (value: number) => {
   return new Intl.NumberFormat('en-GB').format(value);
+};
+
+// Adding function that was missing in the hook's return statement
+export const loadDataFromSupabase = async () => {
+  try {
+    // This is just a placeholder function that can be imported into the hook
+    // The actual implementation is in the hook itself (loadAprilData)
+    console.log("This is a placeholder function - actual implementation in useRepPerformanceData hook");
+    return true;
+  } catch (error) {
+    console.error('Error loading data:', error);
+    return false;
+  }
 };
