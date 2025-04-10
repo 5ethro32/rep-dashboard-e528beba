@@ -36,49 +36,63 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   
   // Find top rep by combined profit across all departments
   let topRep = { name: 'No data', profit: 0 };
-  
-  // Find top customer by packs and spend
-  let topCustomerByPacks = { name: 'No data', packs: 0 };
-  let topCustomerBySpend = { name: 'No data', spend: 0 };
+  let topPacksRep = { name: 'No data', packs: 0 };
+  let topSpendRep = { name: 'No data', spend: 0 };
   
   if (currentMonthData.length > 0) {
-    // Group by rep and sum profits across all departments
+    // Group by rep and sum profits, packs, and spend across all departments
     const repProfits = new Map();
-    
-    // Group by account (customer) for packs and spend
-    const accountPacks = new Map();
-    const accountSpends = new Map();
+    const repPacks = new Map();
+    const repSpends = new Map();
     
     currentMonthData.forEach(item => {
       // Extract the rep name with fallbacks for different column naming
       const repName = item.Rep || item.rep_name || '';
-      // Extract the account name with fallbacks for different column naming
-      const accountName = item["Account Name"] || item.account_name || '';
+      // Extract the sub-rep name with fallbacks for different column naming
+      const subRepName = item["Sub-Rep"] || item.sub_rep || '';
       
       // Handle metric calculation for the main rep
       if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale') {
         const profit = typeof item.Profit === 'number' ? item.Profit : 
                       (typeof item.profit === 'number' ? item.profit : 0);
-        
-        // Sum up profits
-        const currentProfit = repProfits.get(repName) || 0;
-        repProfits.set(repName, currentProfit + profit);
-      }
-      
-      // Handle metrics for customer analysis
-      if (accountName) {
         const packs = typeof item.Packs === 'number' ? item.Packs : 
                      (typeof item.packs === 'number' ? item.packs : 0);
         const spend = typeof item.Spend === 'number' ? item.Spend : 
                      (typeof item.spend === 'number' ? item.spend : 0);
         
-        // Sum up packs by account
-        const currentPacks = accountPacks.get(accountName) || 0;
-        accountPacks.set(accountName, currentPacks + packs);
+        // Sum up profits
+        const currentProfit = repProfits.get(repName) || 0;
+        repProfits.set(repName, currentProfit + profit);
         
-        // Sum up spend by account
-        const currentSpend = accountSpends.get(accountName) || 0;
-        accountSpends.set(accountName, currentSpend + spend);
+        // Sum up packs
+        const currentPacks = repPacks.get(repName) || 0;
+        repPacks.set(repName, currentPacks + packs);
+        
+        // Sum up spend
+        const currentSpend = repSpends.get(repName) || 0;
+        repSpends.set(repName, currentSpend + spend);
+      }
+      
+      // Also add metrics for the sub-rep if present
+      if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale') {
+        const profit = typeof item.Profit === 'number' ? item.Profit : 
+                      (typeof item.profit === 'number' ? item.profit : 0);
+        const packs = typeof item.Packs === 'number' ? item.Packs : 
+                     (typeof item.packs === 'number' ? item.packs : 0);
+        const spend = typeof item.Spend === 'number' ? item.Spend : 
+                     (typeof item.spend === 'number' ? item.spend : 0);
+        
+        // Sum up profits for sub-rep
+        const currentProfit = repProfits.get(subRepName) || 0;
+        repProfits.set(subRepName, currentProfit + profit);
+        
+        // Sum up packs for sub-rep
+        const currentPacks = repPacks.get(subRepName) || 0;
+        repPacks.set(subRepName, currentPacks + packs);
+        
+        // Sum up spend for sub-rep
+        const currentSpend = repSpends.get(subRepName) || 0;
+        repSpends.set(subRepName, currentSpend + spend);
       }
     });
     
@@ -91,21 +105,21 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       }
     });
     
-    // Find customer with highest packs
+    // Find rep with highest combined packs
     let maxPacks = 0;
-    accountPacks.forEach((packs, account) => {
+    repPacks.forEach((packs, rep) => {
       if (packs > maxPacks) {
         maxPacks = packs;
-        topCustomerByPacks = { name: account, packs: maxPacks };
+        topPacksRep = { name: rep, packs: maxPacks };
       }
     });
     
-    // Find customer with highest spend
+    // Find rep with highest combined spend
     let maxSpend = 0;
-    accountSpends.forEach((spend, account) => {
+    repSpends.forEach((spend, rep) => {
       if (spend > maxSpend) {
         maxSpend = spend;
-        topCustomerBySpend = { name: account, spend: maxSpend };
+        topSpendRep = { name: rep, spend: maxSpend };
       }
     });
   }
@@ -148,11 +162,11 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <Package size={16} className="text-[#ea384c] mr-2" />
-            Top Customer (by Packs)
+            Top Rep (by Packs)
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1 truncate" title={topCustomerByPacks.name}>{topCustomerByPacks.name}</div>
+          <div className="text-2xl md:text-3xl font-bold mb-1">{topPacksRep.name}</div>
           <div className="text-sm text-white/50">
-            Total packs: {formatNumber(topCustomerByPacks.packs)}
+            Total packs: {formatNumber(topPacksRep.packs)}
           </div>
         </CardContent>
       </Card>
@@ -161,11 +175,11 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <CreditCard size={16} className="text-[#ea384c] mr-2" />
-            Top Customer (by Spend)
+            Top Rep (by Spend)
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1 truncate" title={topCustomerBySpend.name}>{topCustomerBySpend.name}</div>
+          <div className="text-2xl md:text-3xl font-bold mb-1">{topSpendRep.name}</div>
           <div className="text-sm text-white/50">
-            Total spend: {formatCurrency(topCustomerBySpend.spend)}
+            Total spend: {formatCurrency(topSpendRep.spend)}
           </div>
         </CardContent>
       </Card>
