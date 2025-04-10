@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
@@ -15,10 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowDownIcon, ArrowUpIcon, SearchIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, SearchIcon, DollarSignIcon, PercentIcon, PackageIcon, ShoppingCartIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface AccountComparison {
   accountName: string;
@@ -27,6 +29,17 @@ interface AccountComparison {
   previousProfit: number;
   difference: number;
   percentChange: number;
+  currentMargin?: number;
+  previousMargin?: number;
+  marginDifference?: number;
+  currentPacks?: number;
+  previousPacks?: number;
+  packsDifference?: number;
+  packsPercentChange?: number;
+  currentSpend?: number;
+  previousSpend?: number;
+  spendDifference?: number;
+  spendPercentChange?: number;
 }
 
 interface AccountPerformanceComparisonProps {
@@ -49,6 +62,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   const [filterType, setFilterType] = useState<string>('all'); // 'all', 'declining', 'improving'
   const [improvingCount, setImprovingCount] = useState(0);
   const [decliningCount, setDecliningCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<string>('profit');
   
   const repOptions = useMemo(() => {
     if (!currentMonthData || currentMonthData.length === 0) return [];
@@ -101,6 +115,24 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
         : typeof account.profit === 'string'
           ? parseFloat(account.profit)
           : Number(account.Profit || account.profit || 0);
+
+      const margin = typeof account.Margin === 'string'
+        ? parseFloat(account.Margin)
+        : typeof account.margin === 'string'
+          ? parseFloat(account.margin)
+          : Number(account.Margin || account.margin || 0);
+
+      const packs = typeof account.Packs === 'string'
+        ? parseInt(account.Packs)
+        : typeof account.packs === 'string'
+          ? parseInt(account.packs)
+          : Number(account.Packs || account.packs || 0);
+
+      const spend = typeof account.Spend === 'string'
+        ? parseFloat(account.Spend)
+        : typeof account.spend === 'string'
+          ? parseFloat(account.spend)
+          : Number(account.Spend || account.spend || 0);
       
       accountMap.set(key, {
         accountName,
@@ -108,7 +140,18 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
         currentProfit: profit,
         previousProfit: 0,
         difference: profit,
-        percentChange: profit === 0 ? 0 : 100
+        percentChange: profit === 0 ? 0 : 100,
+        currentMargin: margin,
+        previousMargin: 0,
+        marginDifference: margin,
+        currentPacks: packs,
+        previousPacks: 0,
+        packsDifference: packs,
+        packsPercentChange: packs === 0 ? 0 : 100,
+        currentSpend: spend,
+        previousSpend: 0,
+        spendDifference: spend,
+        spendPercentChange: spend === 0 ? 0 : 100
       });
     });
     
@@ -124,6 +167,24 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
         : typeof account.profit === 'string'
           ? parseFloat(account.profit)
           : Number(account.Profit || account.profit || 0);
+
+      const margin = typeof account.Margin === 'string'
+        ? parseFloat(account.Margin)
+        : typeof account.margin === 'string'
+          ? parseFloat(account.margin)
+          : Number(account.Margin || account.margin || 0);
+
+      const packs = typeof account.Packs === 'string'
+        ? parseInt(account.Packs)
+        : typeof account.packs === 'string'
+          ? parseInt(account.packs)
+          : Number(account.Packs || account.packs || 0);
+
+      const spend = typeof account.Spend === 'string'
+        ? parseFloat(account.Spend)
+        : typeof account.spend === 'string'
+          ? parseFloat(account.spend)
+          : Number(account.Spend || account.spend || 0);
       
       if (accountMap.has(key)) {
         const existingAccount = accountMap.get(key)!;
@@ -132,6 +193,21 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
         existingAccount.percentChange = profit !== 0 
           ? ((existingAccount.currentProfit - profit) / Math.abs(profit)) * 100 
           : existingAccount.currentProfit > 0 ? 100 : 0;
+        
+        existingAccount.previousMargin = margin;
+        existingAccount.marginDifference = existingAccount.currentMargin! - margin;
+        
+        existingAccount.previousPacks = packs;
+        existingAccount.packsDifference = existingAccount.currentPacks! - packs;
+        existingAccount.packsPercentChange = packs !== 0
+          ? ((existingAccount.currentPacks! - packs) / Math.abs(packs)) * 100
+          : existingAccount.currentPacks! > 0 ? 100 : 0;
+        
+        existingAccount.previousSpend = spend;
+        existingAccount.spendDifference = existingAccount.currentSpend! - spend;
+        existingAccount.spendPercentChange = spend !== 0
+          ? ((existingAccount.currentSpend! - spend) / Math.abs(spend)) * 100
+          : existingAccount.currentSpend! > 0 ? 100 : 0;
         
         accountMap.set(key, existingAccount);
       } else {
@@ -142,7 +218,18 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
           currentProfit: 0,
           previousProfit: profit,
           difference: -profit,
-          percentChange: -100
+          percentChange: -100,
+          currentMargin: 0,
+          previousMargin: margin,
+          marginDifference: -margin,
+          currentPacks: 0,
+          previousPacks: packs,
+          packsDifference: -packs,
+          packsPercentChange: -100,
+          currentSpend: 0,
+          previousSpend: spend,
+          spendDifference: -spend,
+          spendPercentChange: -100
         });
       }
     });
@@ -164,13 +251,39 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       );
     }
     
-    // Apply performance filter
+    // Apply performance filter based on the active tab
     switch (filterType) {
       case 'declining':
-        filtered = filtered.filter(account => account.difference < 0);
+        switch (activeTab) {
+          case 'profit':
+            filtered = filtered.filter(account => account.difference < 0);
+            break;
+          case 'margin':
+            filtered = filtered.filter(account => account.marginDifference! < 0);
+            break;
+          case 'packs':
+            filtered = filtered.filter(account => account.packsDifference! < 0);
+            break;
+          case 'spend':
+            filtered = filtered.filter(account => account.spendDifference! < 0);
+            break;
+        }
         break;
       case 'improving':
-        filtered = filtered.filter(account => account.difference > 0);
+        switch (activeTab) {
+          case 'profit':
+            filtered = filtered.filter(account => account.difference > 0);
+            break;
+          case 'margin':
+            filtered = filtered.filter(account => account.marginDifference! > 0);
+            break;
+          case 'packs':
+            filtered = filtered.filter(account => account.packsDifference! > 0);
+            break;
+          case 'spend':
+            filtered = filtered.filter(account => account.spendDifference! > 0);
+            break;
+        }
         break;
       case 'all':
       default:
@@ -178,22 +291,54 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
         break;
     }
     
-    // Sort by the largest absolute difference first
-    return filtered.sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
-  }, [accountComparisons, searchTerm, filterType]);
+    // Sort by the largest absolute difference first based on the active tab
+    return filtered.sort((a, b) => {
+      switch (activeTab) {
+        case 'profit':
+          return Math.abs(b.difference) - Math.abs(a.difference);
+        case 'margin':
+          return Math.abs(b.marginDifference!) - Math.abs(a.marginDifference!);
+        case 'packs':
+          return Math.abs(b.packsDifference!) - Math.abs(a.packsDifference!);
+        case 'spend':
+          return Math.abs(b.spendDifference!) - Math.abs(a.spendDifference!);
+        default:
+          return Math.abs(b.difference) - Math.abs(a.difference);
+      }
+    });
+  }, [accountComparisons, searchTerm, filterType, activeTab]);
 
   useEffect(() => {
-    // Count improving and declining accounts
+    // Count improving and declining accounts based on the active tab
     if (accountComparisons.length > 0) {
-      const improving = accountComparisons.filter(account => account.difference > 0).length;
-      const declining = accountComparisons.filter(account => account.difference < 0).length;
+      let improving = 0;
+      let declining = 0;
+      
+      switch (activeTab) {
+        case 'profit':
+          improving = accountComparisons.filter(account => account.difference > 0).length;
+          declining = accountComparisons.filter(account => account.difference < 0).length;
+          break;
+        case 'margin':
+          improving = accountComparisons.filter(account => account.marginDifference! > 0).length;
+          declining = accountComparisons.filter(account => account.marginDifference! < 0).length;
+          break;
+        case 'packs':
+          improving = accountComparisons.filter(account => account.packsDifference! > 0).length;
+          declining = accountComparisons.filter(account => account.packsDifference! < 0).length;
+          break;
+        case 'spend':
+          improving = accountComparisons.filter(account => account.spendDifference! > 0).length;
+          declining = accountComparisons.filter(account => account.spendDifference! < 0).length;
+          break;
+      }
       
       setImprovingCount(improving);
       setDecliningCount(declining);
       
-      console.log(`Stats for ${selectedRep} in ${selectedMonth}: Total accounts: ${accountComparisons.length}, Improving: ${improving}, Declining: ${declining}`);
+      console.log(`Stats for ${selectedRep} in ${selectedMonth} (${activeTab}): Total accounts: ${accountComparisons.length}, Improving: ${improving}, Declining: ${declining}`);
     }
-  }, [accountComparisons, selectedRep, selectedMonth]);
+  }, [accountComparisons, selectedRep, selectedMonth, activeTab]);
 
   const getPreviousMonthName = (currentMonth: string): string => {
     switch (currentMonth) {
@@ -201,6 +346,31 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       case 'March': return 'February';
       case 'February': return 'January';
       default: return 'Previous Month';
+    }
+  };
+
+  // Format percentage with a + sign for positive values
+  const formatPercentageChange = (value: number) => {
+    if (isNaN(value) || value === Infinity || value === -Infinity) {
+      return 'New/Lost';
+    }
+    return value >= 0 ? `+${value.toFixed(1)}%` : `${value.toFixed(1)}%`;
+  };
+
+  // Helper function to format margin as a percentage
+  const formatMargin = (value: number) => {
+    if (isNaN(value)) return '0.0%';
+    return `${value.toFixed(1)}%`;
+  };
+
+  // Get column label based on the active tab
+  const getColumnLabel = () => {
+    switch (activeTab) {
+      case 'profit': return 'Profit';
+      case 'margin': return 'Margin';
+      case 'packs': return 'Packs';
+      case 'spend': return 'Spend';
+      default: return 'Profit';
     }
   };
 
@@ -297,81 +467,143 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
 
           {selectedRep && (
             <>
-              <div className="text-sm text-white/60 py-2">
-                {accountComparisons.length > 0 && (
-                  <p>
-                    Showing data for {accountComparisons.length} accounts: {improvingCount} improving, {decliningCount} declining, {accountComparisons.length - improvingCount - decliningCount} unchanged
-                  </p>
-                )}
-              </div>
-              
-              {filteredAccounts.length > 0 ? (
-                <div className="rounded-md border border-white/10 overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-gray-800/50">
-                      <TableRow>
-                        <TableHead className="text-white/70 w-1/3">Account</TableHead>
-                        <TableHead className="text-white/70 text-right">
-                          {selectedMonth} Profit
-                        </TableHead>
-                        <TableHead className="text-white/70 text-right">
-                          {previousMonth} Profit
-                        </TableHead>
-                        <TableHead className="text-white/70 text-right">Change</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAccounts.map((account, index) => (
-                        <TableRow 
-                          key={index}
-                          className="border-b border-white/5 bg-gray-900/30 hover:bg-gray-800/40"
-                        >
-                          <TableCell className="font-medium text-white/80">
-                            <div>
-                              {account.accountName}
-                            </div>
-                            <div className="text-xs text-white/50">
-                              Ref: {account.accountRef}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right text-white/80">{formatCurrency(account.currentProfit, 0)}</TableCell>
-                          <TableCell className="text-right text-white/80">{formatCurrency(account.previousProfit, 0)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end">
-                              <span className={account.difference >= 0 ? "text-emerald-500 mr-1" : "text-finance-red mr-1"}>
-                                {formatCurrency(account.difference, 0)}
-                              </span>
-                              {account.difference > 0 ? (
-                                <ArrowUpIcon size={16} className="text-emerald-500" />
-                              ) : account.difference < 0 ? (
-                                <ArrowDownIcon size={16} className="text-finance-red" />
-                              ) : null}
-                            </div>
-                            <div className="text-xs text-white/60">
-                              {!isNaN(account.percentChange) && account.percentChange !== Infinity && account.percentChange !== -Infinity ? (
-                                <span className={account.percentChange >= 0 ? "text-emerald-500" : "text-finance-red"}>
-                                  ({account.percentChange.toFixed(1)}%)
-                                </span>
-                              ) : (
-                                <span>New/Lost</span>
-                              )}
-                            </div>
-                          </TableCell>
+              <Tabs defaultValue="profit" value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid grid-cols-4 mb-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg">
+                  <TabsTrigger value="profit" className="flex items-center gap-1">
+                    <DollarSignIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Profit</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="margin" className="flex items-center gap-1">
+                    <PercentIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Margin</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="packs" className="flex items-center gap-1">
+                    <PackageIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Packs</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="spend" className="flex items-center gap-1">
+                    <ShoppingCartIcon className="h-4 w-4" />
+                    <span className="hidden sm:inline">Spend</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <div className="text-sm text-white/60 py-2">
+                  {accountComparisons.length > 0 && (
+                    <p>
+                      Showing {getColumnLabel()} data for {accountComparisons.length} accounts: {improvingCount} improving, {decliningCount} declining, {accountComparisons.length - improvingCount - decliningCount} unchanged
+                    </p>
+                  )}
+                </div>
+                
+                {filteredAccounts.length > 0 ? (
+                  <div className="rounded-md border border-white/10 overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-gray-800/50">
+                        <TableRow>
+                          <TableHead className="text-white/70 w-1/3">Account</TableHead>
+                          <TableHead className="text-white/70 text-right">
+                            {selectedMonth} {getColumnLabel()}
+                          </TableHead>
+                          <TableHead className="text-white/70 text-right">
+                            {previousMonth} {getColumnLabel()}
+                          </TableHead>
+                          <TableHead className="text-white/70 text-right">Change</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-white/60">
-                  {searchTerm ? 
-                    "No accounts found matching your search criteria." : 
-                    filterType !== 'all' ? 
-                      `No ${filterType === 'declining' ? 'declining' : 'improving'} accounts found for ${selectedRep}.` :
-                      `No accounts found for ${selectedRep}.`
-                  }
-                </div>
-              )}
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAccounts.map((account, index) => {
+                          // Determine which values to show based on active tab
+                          let currentValue, previousValue, difference, percentChange;
+                          let valueFormatter;
+                          
+                          switch (activeTab) {
+                            case 'profit':
+                              currentValue = account.currentProfit;
+                              previousValue = account.previousProfit;
+                              difference = account.difference;
+                              percentChange = account.percentChange;
+                              valueFormatter = (val: number) => formatCurrency(val, 0);
+                              break;
+                            case 'margin':
+                              currentValue = account.currentMargin || 0;
+                              previousValue = account.previousMargin || 0;
+                              difference = account.marginDifference || 0;
+                              percentChange = 0; // Not applicable for margin as it's already a percentage
+                              valueFormatter = formatMargin;
+                              break;
+                            case 'packs':
+                              currentValue = account.currentPacks || 0;
+                              previousValue = account.previousPacks || 0;
+                              difference = account.packsDifference || 0;
+                              percentChange = account.packsPercentChange || 0;
+                              valueFormatter = (val: number) => val.toLocaleString();
+                              break;
+                            case 'spend':
+                              currentValue = account.currentSpend || 0;
+                              previousValue = account.previousSpend || 0;
+                              difference = account.spendDifference || 0;
+                              percentChange = account.spendPercentChange || 0;
+                              valueFormatter = (val: number) => formatCurrency(val, 0);
+                              break;
+                            default:
+                              currentValue = account.currentProfit;
+                              previousValue = account.previousProfit;
+                              difference = account.difference;
+                              percentChange = account.percentChange;
+                              valueFormatter = (val: number) => formatCurrency(val, 0);
+                          }
+                          
+                          return (
+                            <TableRow 
+                              key={index}
+                              className="border-b border-white/5 bg-gray-900/30 hover:bg-gray-800/40"
+                            >
+                              <TableCell className="font-medium text-white/80">
+                                <div>
+                                  {account.accountName}
+                                </div>
+                                <div className="text-xs text-white/50">
+                                  Ref: {account.accountRef}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right text-white/80">{valueFormatter(currentValue)}</TableCell>
+                              <TableCell className="text-right text-white/80">{valueFormatter(previousValue)}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end">
+                                  <span className={difference >= 0 ? "text-emerald-500 mr-1" : "text-finance-red mr-1"}>
+                                    {activeTab === 'margin' ? formatMargin(difference) : valueFormatter(difference)}
+                                  </span>
+                                  {difference > 0 ? (
+                                    <ArrowUpIcon size={16} className="text-emerald-500" />
+                                  ) : difference < 0 ? (
+                                    <ArrowDownIcon size={16} className="text-finance-red" />
+                                  ) : null}
+                                </div>
+                                {activeTab !== 'margin' && (
+                                  <div className="text-xs text-white/60">
+                                    <span className={percentChange >= 0 ? "text-emerald-500" : "text-finance-red"}>
+                                      {formatPercentageChange(percentChange)}
+                                    </span>
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-white/60">
+                    {searchTerm ? 
+                      "No accounts found matching your search criteria." : 
+                      filterType !== 'all' ? 
+                        `No ${filterType === 'declining' ? 'declining' : 'improving'} ${getColumnLabel()} accounts found for ${selectedRep}.` :
+                        `No accounts found for ${selectedRep}.`
+                    }
+                  </div>
+                )}
+              </Tabs>
             </>
           )}
 
