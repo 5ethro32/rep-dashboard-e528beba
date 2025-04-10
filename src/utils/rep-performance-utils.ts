@@ -1,3 +1,4 @@
+
 export const calculateSummary = (
   baseSummary: {
     totalSpend: number;
@@ -93,7 +94,11 @@ export const calculateDeptSummary = (departmentData: any[]): {
   const accountRefs = new Set<string>();
   const activeAccountRefs = new Set<string>();
   
+  // Log the initial data count
+  console.log(`Processing ${departmentData.length} records in calculateDeptSummary`);
+  
   departmentData.forEach(item => {
+    // Parse values safely, ensuring we capture all data
     const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
     const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
     const packs = typeof item.Packs === 'string' ? parseInt(item.Packs) : Number(item.Packs || 0);
@@ -112,7 +117,7 @@ export const calculateDeptSummary = (departmentData: any[]): {
   
   const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
   
-  return {
+  const result = {
     totalSpend,
     totalProfit,
     totalPacks,
@@ -120,6 +125,11 @@ export const calculateDeptSummary = (departmentData: any[]): {
     activeAccounts: activeAccountRefs.size,
     averageMargin
   };
+  
+  // Log the results for debugging
+  console.log(`Department Summary Results:`, result);
+  
+  return result;
 };
 
 export const formatCurrency = (value: number, decimals = 0) => {

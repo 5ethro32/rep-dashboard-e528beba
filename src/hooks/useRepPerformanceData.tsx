@@ -260,6 +260,7 @@ export const useRepPerformanceData = () => {
       }
       
       const mtdData = allRecords;
+      console.log('Fetched April MTD records total count:', mtdData.length);
       
       if (!mtdData || mtdData.length === 0) {
         toast({
@@ -271,16 +272,25 @@ export const useRepPerformanceData = () => {
         return false;
       }
       
-      console.log('Fetched April MTD records:', mtdData.length);
+      const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
+      const revaData = mtdData.filter(item => item.Department === 'REVA');
+      const wholesaleData = mtdData.filter(item => 
+        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+      );
+      
+      console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
       
       const transformData = (data: any[]): RepData[] => {
+        console.log(`Transforming ${data.length} records`);
         const repMap = new Map<string, RepData>();
         
         data.forEach(item => {
           const repName = item.Rep;
-          const department = item.Department || 'RETAIL';
           
-          if (!repName) return;
+          if (!repName) {
+            console.log('Found item without Rep name:', item);
+            return;
+          }
           
           if (!repMap.has(repName)) {
             repMap.set(repName, {
@@ -298,6 +308,7 @@ export const useRepPerformanceData = () => {
           }
           
           const currentRep = repMap.get(repName)!;
+          
           const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
           const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
           const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
@@ -318,6 +329,7 @@ export const useRepPerformanceData = () => {
           repMap.set(repName, currentRep);
         });
         
+        console.log(`Transformed data into ${repMap.size} unique reps`);
         return Array.from(repMap.values()).map(rep => {
           rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
           rep.profitPerPack = rep.packs > 0 ? rep.profit / rep.packs : 0;
@@ -326,19 +338,20 @@ export const useRepPerformanceData = () => {
         });
       };
       
-      const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
-      const revaData = mtdData.filter(item => item.Department === 'REVA');
-      const wholesaleData = mtdData.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-      );
-      
       const aprRetailData = transformData(retailData);
       const aprRevaData = transformData(revaData);
       const aprWholesaleData = transformData(wholesaleData);
       
+      console.log(`Transformed Rep Data - Retail: ${aprRetailData.length}, REVA: ${aprRevaData.length}, Wholesale: ${aprWholesaleData.length}`);
+      
       const aprRetailSummary = calculateDeptSummary(retailData);
       const aprRevaSummary = calculateDeptSummary(revaData);
       const aprWholesaleSummary = calculateDeptSummary(wholesaleData);
+      
+      console.log('April Department Summaries:');
+      console.log('Retail:', aprRetailSummary);
+      console.log('REVA:', aprRevaSummary);
+      console.log('Wholesale:', aprWholesaleSummary);
       
       setAprRepData(aprRetailData);
       setAprRevaData(aprRevaData);
@@ -355,6 +368,9 @@ export const useRepPerformanceData = () => {
         includeReva,
         includeWholesale
       );
+      
+      console.log('Combined April Data length:', combinedAprilData.length);
+      console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
       
       const currentData = loadStoredRepPerformanceData() || {};
       saveRepPerformanceData({
@@ -657,7 +673,7 @@ export const useRepPerformanceData = () => {
     getActiveData,
     sortData,
     handleSort,
-    loadDataFromSupabase,
+    loadDataFromSupabase: loadAprilData,
     isLoading,
     getFebValue,
     selectedMonth,
