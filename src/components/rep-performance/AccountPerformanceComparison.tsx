@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
@@ -63,14 +62,14 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   const [improvingCount, setImprovingCount] = useState(0);
   const [decliningCount, setDecliningCount] = useState(0);
   const [activeTab, setActiveTab] = useState<string>('profit');
+  const [sortColumn, setSortColumn] = useState<string>('difference');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
   const repOptions = useMemo(() => {
     if (!currentMonthData || currentMonthData.length === 0) return [];
     
-    // Extract unique rep names from the data
     const repNames = Array.from(new Set(
       currentMonthData.map((item: any) => {
-        // Handle different column naming conventions between tables
         return item.Rep || item.rep_name || '';
       })
     )).filter(Boolean);
@@ -83,7 +82,6 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     
     console.log(`Processing data comparison for ${selectedRep}. ${selectedMonth} data: ${currentMonthData.length}, Previous month data: ${previousMonthData?.length || 0}`);
     
-    // Filter data for the selected rep
     const currentRepAccounts = currentMonthData.filter(
       (item: any) => {
         const repName = item.Rep || item.rep_name || '';
@@ -100,16 +98,13 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     
     console.log(`Filtered data for ${selectedRep}: ${selectedMonth} accounts: ${currentRepAccounts.length}, Previous month accounts: ${previousRepAccounts.length}`);
     
-    // Group data by account
     const accountMap = new Map<string, AccountComparison>();
     
-    // Process current month data
     currentRepAccounts.forEach((account: any) => {
       const accountName = account["Account Name"] || account.account_name || '';
       const accountRef = account["Account Ref"] || account.account_ref || '';
       const key = `${accountName}-${accountRef}`;
       
-      // Handle different column naming conventions between tables
       const profit = typeof account.Profit === 'string' 
         ? parseFloat(account.Profit) 
         : typeof account.profit === 'string'
@@ -155,13 +150,11 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       });
     });
     
-    // Process previous month data and update comparisons
     previousRepAccounts.forEach((account: any) => {
       const accountName = account["Account Name"] || account.account_name || '';
       const accountRef = account["Account Ref"] || account.account_ref || '';
       const key = `${accountName}-${accountRef}`;
       
-      // Handle different column naming conventions between tables
       const profit = typeof account.Profit === 'string' 
         ? parseFloat(account.Profit) 
         : typeof account.profit === 'string'
@@ -211,7 +204,6 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
         
         accountMap.set(key, existingAccount);
       } else {
-        // Account exists in previous month but not in current
         accountMap.set(key, {
           accountName,
           accountRef,
@@ -234,15 +226,21 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       }
     });
     
-    // Convert to array
     return Array.from(accountMap.values());
   }, [selectedRep, currentMonthData, previousMonthData, selectedMonth]);
 
-  // Filter accounts based on search term and filter type
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('desc');
+    }
+  };
+
   const filteredAccounts = useMemo(() => {
     let filtered = accountComparisons;
     
-    // Apply search filter
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(account => 
@@ -251,7 +249,6 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       );
     }
     
-    // Apply performance filter based on the active tab
     switch (filterType) {
       case 'declining':
         switch (activeTab) {
@@ -287,29 +284,103 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
         break;
       case 'all':
       default:
-        // No additional filtering needed
         break;
     }
     
-    // Sort by the largest absolute difference first based on the active tab
     return filtered.sort((a, b) => {
-      switch (activeTab) {
-        case 'profit':
-          return Math.abs(b.difference) - Math.abs(a.difference);
-        case 'margin':
-          return Math.abs(b.marginDifference!) - Math.abs(a.marginDifference!);
-        case 'packs':
-          return Math.abs(b.packsDifference!) - Math.abs(a.packsDifference!);
-        case 'spend':
-          return Math.abs(b.spendDifference!) - Math.abs(a.spendDifference!);
+      let compareValueA, compareValueB;
+      
+      switch (sortColumn) {
+        case 'accountName':
+          compareValueA = a.accountName.toLowerCase();
+          compareValueB = b.accountName.toLowerCase();
+          return sortDirection === 'asc' 
+            ? compareValueA.localeCompare(compareValueB)
+            : compareValueB.localeCompare(compareValueA);
+        
+        case 'currentValue':
+          switch (activeTab) {
+            case 'profit':
+              compareValueA = a.currentProfit;
+              compareValueB = b.currentProfit;
+              break;
+            case 'margin':
+              compareValueA = a.currentMargin || 0;
+              compareValueB = b.currentMargin || 0;
+              break;
+            case 'packs':
+              compareValueA = a.currentPacks || 0;
+              compareValueB = b.currentPacks || 0;
+              break;
+            case 'spend':
+              compareValueA = a.currentSpend || 0;
+              compareValueB = b.currentSpend || 0;
+              break;
+            default:
+              compareValueA = a.currentProfit;
+              compareValueB = b.currentProfit;
+          }
+          break;
+        
+        case 'previousValue':
+          switch (activeTab) {
+            case 'profit':
+              compareValueA = a.previousProfit;
+              compareValueB = b.previousProfit;
+              break;
+            case 'margin':
+              compareValueA = a.previousMargin || 0;
+              compareValueB = b.previousMargin || 0;
+              break;
+            case 'packs':
+              compareValueA = a.previousPacks || 0;
+              compareValueB = b.previousPacks || 0;
+              break;
+            case 'spend':
+              compareValueA = a.previousSpend || 0;
+              compareValueB = b.previousSpend || 0;
+              break;
+            default:
+              compareValueA = a.previousProfit;
+              compareValueB = b.previousProfit;
+          }
+          break;
+        
+        case 'difference':
         default:
-          return Math.abs(b.difference) - Math.abs(a.difference);
+          switch (activeTab) {
+            case 'profit':
+              compareValueA = a.difference;
+              compareValueB = b.difference;
+              break;
+            case 'margin':
+              compareValueA = a.marginDifference || 0;
+              compareValueB = b.marginDifference || 0;
+              break;
+            case 'packs':
+              compareValueA = a.packsDifference || 0;
+              compareValueB = b.packsDifference || 0;
+              break;
+            case 'spend':
+              compareValueA = a.spendDifference || 0;
+              compareValueB = b.spendDifference || 0;
+              break;
+            default:
+              compareValueA = a.difference;
+              compareValueB = b.difference;
+          }
       }
+      
+      if (sortColumn !== 'accountName') {
+        return sortDirection === 'asc' 
+          ? compareValueA - compareValueB
+          : compareValueB - compareValueA;
+      }
+      return 0;
     });
-  }, [accountComparisons, searchTerm, filterType, activeTab]);
+  }, [accountComparisons, searchTerm, filterType, activeTab, sortColumn, sortDirection]);
 
   useEffect(() => {
-    // Count improving and declining accounts based on the active tab
     if (accountComparisons.length > 0) {
       let improving = 0;
       let declining = 0;
@@ -349,7 +420,6 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     }
   };
 
-  // Format percentage with a + sign for positive values
   const formatPercentageChange = (value: number) => {
     if (isNaN(value) || value === Infinity || value === -Infinity) {
       return 'New/Lost';
@@ -357,13 +427,11 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     return value >= 0 ? `+${value.toFixed(1)}%` : `${value.toFixed(1)}%`;
   };
 
-  // Helper function to format margin as a percentage
   const formatMargin = (value: number) => {
     if (isNaN(value)) return '0.0%';
     return `${value.toFixed(1)}%`;
   };
 
-  // Get column label based on the active tab
   const getColumnLabel = () => {
     switch (activeTab) {
       case 'profit': return 'Profit';
@@ -372,6 +440,13 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       case 'spend': return 'Spend';
       default: return 'Profit';
     }
+  };
+
+  const renderSortIndicator = (column: string) => {
+    if (sortColumn === column) {
+      return sortDirection === 'asc' ? ' ↑' : ' ↓';
+    }
+    return '';
   };
 
   if (isLoading) {
@@ -500,19 +575,34 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
                     <Table>
                       <TableHeader className="bg-gray-800/50">
                         <TableRow>
-                          <TableHead className="text-white/70 w-1/3">Account</TableHead>
-                          <TableHead className="text-white/70 text-right">
-                            {selectedMonth} {getColumnLabel()}
+                          <TableHead 
+                            className="text-white/70 w-1/3 cursor-pointer hover:bg-white/5"
+                            onClick={() => handleSort('accountName')}
+                          >
+                            Account{renderSortIndicator('accountName')}
                           </TableHead>
-                          <TableHead className="text-white/70 text-right">
-                            {previousMonth} {getColumnLabel()}
+                          <TableHead 
+                            className="text-white/70 text-right cursor-pointer hover:bg-white/5"
+                            onClick={() => handleSort('currentValue')}
+                          >
+                            {selectedMonth} {getColumnLabel()}{renderSortIndicator('currentValue')}
                           </TableHead>
-                          <TableHead className="text-white/70 text-right">Change</TableHead>
+                          <TableHead 
+                            className="text-white/70 text-right cursor-pointer hover:bg-white/5"
+                            onClick={() => handleSort('previousValue')}
+                          >
+                            {previousMonth} {getColumnLabel()}{renderSortIndicator('previousValue')}
+                          </TableHead>
+                          <TableHead 
+                            className="text-white/70 text-right cursor-pointer hover:bg-white/5"
+                            onClick={() => handleSort('difference')}
+                          >
+                            Change{renderSortIndicator('difference')}
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredAccounts.map((account, index) => {
-                          // Determine which values to show based on active tab
                           let currentValue, previousValue, difference, percentChange;
                           let valueFormatter;
                           
@@ -528,7 +618,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
                               currentValue = account.currentMargin || 0;
                               previousValue = account.previousMargin || 0;
                               difference = account.marginDifference || 0;
-                              percentChange = 0; // Not applicable for margin as it's already a percentage
+                              percentChange = 0;
                               valueFormatter = formatMargin;
                               break;
                             case 'packs':
