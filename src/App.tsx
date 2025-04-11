@@ -10,7 +10,6 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
@@ -22,7 +21,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Navigate to="/rep-performance" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route 
               path="/rep-performance" 
