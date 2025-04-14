@@ -3,13 +3,8 @@ import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData } from '@/utils/rep-data-processing';
 
-type DepartmentDataResult = {
-  data: any[] | null;
-  error: Error | null;
-}
-
-type SupabaseQueryResult = {
-  data: Record<string, any>[] | null;
+interface DepartmentDataResult {
+  data: Array<Record<string, any>> | null;
   error: Error | null;
 }
 
@@ -18,17 +13,17 @@ const fetchDepartmentData = async (department: string, isMarch: boolean): Promis
   
   try {
     if (isMarch) {
-      const result: SupabaseQueryResult = await supabase
+      const { data, error } = await supabase
         .from(table)
         .select('*')
         .eq('rep_type', department);
-      return result;
+      return { data, error };
     } else {
-      const result: SupabaseQueryResult = await supabase
+      const { data, error } = await supabase
         .from(table)
         .select('*')
         .eq('Department', department);
-      return result;
+      return { data, error };
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
@@ -527,7 +522,7 @@ export const loadAprilData = async (
     
     console.log(`Found ${count} total records in mtd_daily`);
       
-    let allRecords = [];
+    let allRecords: Array<Record<string, any>> = [];
     const pageSize = 1000;
     const pages = Math.ceil(count / pageSize);
     
@@ -565,7 +560,7 @@ export const loadAprilData = async (
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     );
     
-    const transformData = (data: any[], isDepartmentData = false): RepData[] => {
+    const transformData = (data: Array<Record<string, any>>, isDepartmentData = false): RepData[] => {
       console.log(`Transforming ${data.length} records`);
       const repMap = new Map<string, RepData>();
         
