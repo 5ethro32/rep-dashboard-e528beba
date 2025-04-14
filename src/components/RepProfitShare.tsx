@@ -1,4 +1,3 @@
-
 import React from 'react';
 import DonutChart from './DonutChart';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -21,20 +20,14 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
   
   const totalProfit = displayData.reduce((sum, item) => sum + item.profit, 0);
   
-  // Enhanced color palette with better contrast
   const colors = [
+    "#dc2626",   // Bright Red
     "#ef4444",   // Red
-    "#f97316",   // Orange
-    "#eab308",   // Yellow
-    "#10b981",   // Green
-    "#0ea5e9",   // Light Blue
-    "#6366f1",   // Indigo
-    "#8b5cf6",   // Purple
-    "#ec4899",   // Pink
-    "#14b8a6",   // Teal
-    "#f43f5e",   // Rose
-    "#d946ef",   // Fuchsia
-    "#a855f7",   // Violet
+    "#f87171",   // Light Red
+    "#fca5a5",   // Soft Red
+    "#fee2e2",   // Very Light Red
+    "#991b1b",   // Dark Red
+    "#7f1d1d",   // Darkest Red
   ];
   
   const chartData = displayData.map((item, index) => {
@@ -101,12 +94,8 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
   const getInitials = (name: string): string => {
     if (name === "Others") return "OT";
     
-    // Split by spaces or hyphens to handle hyphenated names
-    const parts = name.split(/[\s-]+/);
-    
-    // Get first letter of each part, up to 3 letters
-    return parts
-      .slice(0, 3)
+    return name
+      .split(' ')
       .map(part => part.charAt(0))
       .join('')
       .toUpperCase();
@@ -134,23 +123,23 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
             </div>
           </div>
           
-          <div className="mt-auto overflow-y-auto max-h-48 md:max-h-52 scrollbar-none px-1">
-            <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-3 md:grid-cols-4 lg:grid-cols-5'} gap-2 md:gap-3`}>
+          <div className="mt-auto overflow-y-auto max-h-40 md:max-h-44 scrollbar-none">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
               {dataToUse.map((item, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center space-x-2 bg-gray-800/50 hover:bg-gray-800/80 transition-colors rounded-md p-2 text-xs md:text-sm border border-white/5"
+                  className="flex items-center space-x-2 bg-gray-900/50 rounded-md p-1.5 text-2xs md:text-xs"
                 >
                   <div 
-                    className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full flex-shrink-0" 
+                    className="w-3 h-3 md:w-4 md:h-4 rounded-full" 
                     style={{ backgroundColor: item.color }}
                   />
-                  <div className="flex-1 flex justify-between items-center min-w-0">
-                    <span className="font-medium truncate mr-1" title={item.name}>{getInitials(item.name)}</span>
-                    <div className="flex items-center">
-                      <span className="text-finance-gray whitespace-nowrap">{item.value}%</span>
+                  <div className="flex-1 flex justify-between items-center">
+                    <span className="font-medium truncate">{getInitials(item.name)}</span>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-finance-gray">({item.value}%)</span>
                       {showChangeIndicators && Math.abs(item.change) >= 1 && (
-                        <span className={`${item.change > 0 ? 'text-emerald-400' : 'text-finance-red'} ml-1`}>
+                        <span className={`${item.change > 0 ? 'text-emerald-400' : 'text-finance-red'}`}>
                           {item.change > 0 ? '↑' : '↓'}
                         </span>
                       )}
