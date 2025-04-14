@@ -12,21 +12,24 @@ const fetchDepartmentData = async (department: string, isMarch: boolean): Promis
   const table = isMarch ? 'sales_data' : 'sales_data_februrary';
   
   try {
+    let result;
+    
     if (isMarch) {
-      // Use type assertion to avoid deep type instantiation
-      const result = await supabase
+      result = await supabase
         .from(table)
         .select('*')
         .eq('rep_type', department);
-      return { data: result.data, error: result.error as Error };
     } else {
-      // Use type assertion to avoid deep type instantiation
-      const result = await supabase
+      result = await supabase
         .from(table)
         .select('*')
         .eq('Department', department);
-      return { data: result.data, error: result.error as Error };
     }
+    
+    return { 
+      data: result.data as Record<string, any>[] | null, 
+      error: result.error as Error | null 
+    };
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
     return { data: null, error: error as Error };
@@ -433,7 +436,6 @@ const calculateRepChanges = (
     };
     
     if (!previous) {
-      // Rep didn't exist in February
       changes[rep] = {
         profit: 100,
         spend: 100,
