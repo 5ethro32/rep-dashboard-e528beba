@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -10,9 +9,9 @@ type DepartmentDataResult = {
   error: Error | null;
 }
 
-// Define more specific types for Supabase query responses
-type SupabaseQueryResult = {
-  data: Record<string, any>[] | null;
+// Define a simple type for Supabase query responses to avoid excessive type instantiation
+interface SupabaseQueryResult {
+  data: any[] | null;
   error: Error | null;
 }
 
@@ -22,17 +21,17 @@ const fetchDepartmentData = async (department: string, isMarch: boolean): Promis
   
   try {
     if (isMarch) {
-      const result: SupabaseQueryResult = await supabase
+      const result = await supabase
         .from(table)
         .select('*')
         .eq('rep_type', department);
-      return result;
+      return result as DepartmentDataResult;
     } else {
-      const result: SupabaseQueryResult = await supabase
+      const result = await supabase
         .from(table)
         .select('*')
         .eq('Department', department);
-      return result;
+      return result as DepartmentDataResult;
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
@@ -646,6 +645,7 @@ export const loadAprilData = async (
     const lastAprWholesaleData = transformData(lastWholesaleData, true);
       
     console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
+    console.log(`Last MTD breakdown - Retail: ${lastRetailData.length}, REVA: ${lastRevaData.length}, Wholesale: ${lastWholesaleData.length}`);
       
     const aprRetailData = transformData(retailData);
     const aprRevaData = transformData(revaData, true);
@@ -679,39 +679,59 @@ export const loadAprilData = async (
     );
     
     const localRepChanges: Record<string, any> = {};
+    
+    const combinedLastMtdData = getCombinedRepData(
+      lastAprRetailData,
+      lastAprRevaData,
+      lastAprWholesaleData,
+      includeRetail,
+      includeReva,
+      includeWholesale
+    );
+    
+    combinedAprilData.forEach(aprRep => {
+      const lastRep = combinedLastMtdData.find(r => r.rep === aprRep.rep);
       
-    // Calculate rep changes between latest data and previous data
-    Object.keys(localRepChanges).forEach(rep => {
-      if (localRepChanges[rep]) {
-        const aprRep = combinedAprilData.find(r => r.rep === rep);
-        const lastRep = getCombinedRepData(
-          lastAprRetailData,
-          lastAprRevaData,
-          lastAprWholesaleData,
-          includeRetail,
-          includeReva,
-          includeWholesale
-        ).find(r => r.rep === rep);
-          
-        if (aprRep && lastRep) {
-          const profitChange = lastRep.profit > 0 ? ((aprRep.profit - lastRep.profit) / lastRep.profit) * 100 : 0;
-          const spendChange = lastRep.spend > 0 ? ((aprRep.spend - lastRep.spend) / lastRep.spend) * 100 : 0;
-          const marginChange = aprRep.margin - lastRep.margin;
-          const packsChange = lastRep.packs > 0 ? ((aprRep.packs - lastRep.packs) / lastRep.packs) * 100 : 0;
-          const activeAccountsChange = lastRep.activeAccounts > 0 ? 
-            ((aprRep.activeAccounts - lastRep.activeAccounts) / lastRep.activeAccounts) * 100 : 0;
-          const totalAccountsChange = lastRep.totalAccounts > 0 ? 
-            ((aprRep.totalAccounts - lastRep.totalAccounts) / lastRep.totalAccounts) * 100 : 0;
-            
-          localRepChanges[rep] = {
-            profit: profitChange,
-            spend: spendChange,
-            margin: marginChange,
-            packs: packsChange,
-            activeAccounts: activeAccountsChange,
-            totalAccounts: totalAccountsChange
-          };
-        }
+      if (lastRep) {
+        const profitChange = lastRep.profit > 0 ? ((aprRep.profit - lastRep.profit) / lastRep.profit) * 100 : 0;
+        const spendChange = lastRep.spend > 0 ? ((aprRep.spend - lastRep.spend) / lastRep.spend) * 100 : 0;
+        const marginChange = aprRep.margin - lastRep.margin;
+        const packsChange = lastRep.packs > 0 ? ((aprRep.packs - lastRep.packs) / lastRep.packs) * 100 : 0;
+        const activeAccountsChange = lastRep.activeAccounts > 0 ? 
+          ((aprRep.activeAccounts - lastRep.activeAccounts) / lastRep.activeAccounts) * 100 : 0;
+        const totalAccountsChange = lastRep.totalAccounts > 0 ? 
+          ((aprRep.totalAccounts - lastRep.totalAccounts) / lastRep.totalAccounts) * 100 : 0;
+        
+        localRepChanges[aprRep.rep] = {
+          profit: profitChange,
+          spend: spendChange,
+          margin: marginChange,
+          packs: packsChange,
+          activeAccounts: activeAccountsChange,
+          totalAccounts: totalAccountsChange
+        };
+      } else {
+        localRepChanges[aprRep.rep] = {
+          profit: 100,
+          spend: 100,
+          margin: aprRep.margin,
+          packs: 100,
+          activeAccounts: 100,
+          totalAccounts: 100
+        };
+      }
+    });
+    
+    combinedLastMtdData.forEach(lastRep => {
+      if (!combinedAprilData.find(r => r.rep === lastRep.rep)) {
+        localRepChanges[lastRep.rep] = {
+          profit: -100,
+          spend: -100,
+          margin: -lastRep.margin,
+          packs: -100,
+          activeAccounts: -100,
+          totalAccounts: -100
+        };
       }
     });
       
@@ -724,10 +744,14 @@ export const loadAprilData = async (
       includeWholesale
     );
       
+    const lastRetailSummary = calculateDeptSummary(lastRetailData);
+    const lastRevaSummary = calculateDeptSummary(lastRevaData);
+    const lastWholesaleSummary = calculateDeptSummary(lastWholesaleData);
+    
     const lastSummary = calculateSummary(
-      calculateDeptSummary(lastRetailData),
-      calculateDeptSummary(lastRevaData),
-      calculateDeptSummary(lastWholesaleData),
+      lastRetailSummary,
+      lastRevaSummary,
+      lastWholesaleSummary,
       includeRetail,
       includeReva,
       includeWholesale
@@ -752,6 +776,7 @@ export const loadAprilData = async (
     
     console.log('Combined April Data length:', combinedAprilData.length);
     console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
+    console.log('Comparison data source for April:', lastMtdData ? 'last_mtd_daily' : 'None available');
       
     const currentData = loadStoredRepPerformanceData() || {};
     saveRepPerformanceData({
@@ -766,7 +791,7 @@ export const loadAprilData = async (
       
     toast({
       title: "April data loaded successfully",
-      description: `Loaded ${mtdData.length} April MTD records from the database.`,
+      description: `Loaded ${mtdData.length} April MTD records with ${lastMtdData?.length || 0} comparison records`,
     });
       
     return true;
