@@ -3,14 +3,14 @@ import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData } from '@/utils/rep-data-processing';
 
-// Define the return type explicitly to avoid excessive type instantiation
-type DepartmentDataResult = {
+// Define a simple type for Supabase query responses to avoid excessive type instantiation
+interface SupabaseQueryResult {
   data: any[] | null;
   error: Error | null;
 }
 
-// Define a simple type for Supabase query responses to avoid excessive type instantiation
-interface SupabaseQueryResult {
+// Define the return type explicitly to avoid excessive type instantiation
+type DepartmentDataResult = {
   data: any[] | null;
   error: Error | null;
 }
