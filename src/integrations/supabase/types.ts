@@ -9,7 +9,7 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      last_mtd_daily: {
+      march_rolling: {
         Row: {
           "Account Name": string | null
           "Account Ref": string | null
