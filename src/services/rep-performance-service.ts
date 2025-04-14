@@ -3,20 +3,14 @@ import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData } from '@/utils/rep-data-processing';
 
-// Define a simple type for Supabase query responses to avoid excessive type instantiation
-interface SupabaseQueryResult {
-  data: any[] | null;
-  error: Error | null;
-}
-
-// Define the return type explicitly to avoid excessive type instantiation
-type DepartmentDataResult = {
+// Define simple interfaces to avoid excessive type instantiation
+interface QueryData {
   data: any[] | null;
   error: Error | null;
 }
 
 // Helper function to fetch department data from different tables
-const fetchDepartmentData = async (department: string, isMarch: boolean): Promise<DepartmentDataResult> => {
+const fetchDepartmentData = async (department: string, isMarch: boolean): Promise<QueryData> => {
   const table = isMarch ? 'sales_data' : 'sales_data_februrary';
   
   try {
@@ -25,13 +19,13 @@ const fetchDepartmentData = async (department: string, isMarch: boolean): Promis
         .from(table)
         .select('*')
         .eq('rep_type', department);
-      return result as DepartmentDataResult;
+      return result as QueryData;
     } else {
       const result = await supabase
         .from(table)
         .select('*')
         .eq('Department', department);
-      return result as DepartmentDataResult;
+      return result as QueryData;
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
@@ -439,7 +433,6 @@ const calculateRepChanges = (
     };
     
     if (!previous) {
-      // Rep didn't exist in February
       changes[rep] = {
         profit: 100,
         spend: 100,
