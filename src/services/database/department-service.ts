@@ -10,13 +10,16 @@ export const fetchDepartmentData = async (
   
   try {
     if (isMarch) {
+      // Using type assertions to avoid deep type instantiation issues
       const { data, error } = await supabase
         .from(table)
         .select()
         .eq('rep_type', department);
 
+      if (!data) return { data: null, error };
+
       // Transform data to match DepartmentData interface
-      const transformedData = data?.map(item => ({
+      const transformedData = data.map(item => ({
         Department: item.rep_type,
         Rep: item.rep_name,
         'Sub-Rep': item.sub_rep,
@@ -30,12 +33,14 @@ export const fetchDepartmentData = async (
         Margin: item.margin
       }));
 
-      return { data: transformedData || null, error };
+      return { data: transformedData, error };
     } else {
+      // Using type assertions to avoid deep type instantiation issues
       const { data, error } = await supabase
         .from(table)
         .select()
         .eq('Department', department);
+      
       return { data, error };
     }
   } catch (error) {
@@ -43,4 +48,3 @@ export const fetchDepartmentData = async (
     return { data: null, error: error as Error };
   }
 };
-

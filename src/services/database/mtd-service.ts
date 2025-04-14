@@ -22,24 +22,55 @@ export const loadAprilData = async (
 ) => {
   setIsLoading(true);
   try {
-    // Fetch current MTD data
-    const { data: mtdData, error: mtdError } = await supabase
+    const { count, error: countError } = await supabase
       .from('mtd_daily')
-      .select('*');
+      .select('*', { count: 'exact', head: true });
       
-    if (mtdError) throw new Error(`Error fetching MTD data: ${mtdError.message}`);
+    if (countError) throw new Error(`Error getting count: ${countError.message}`);
     
-    // Fetch last MTD data for comparison
-    const { data: lastMtdData, error: lastMtdError } = await supabase
-      .from('last_mtd_daily')
-      .select('*');
-      
-    if (lastMtdError) {
-      console.error('Error fetching last MTD data:', lastMtdError);
+    if (!count || count === 0) {
+      toast({
+        title: "No April data found",
+        description: "The MTD Daily table appears to be empty.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return false;
     }
     
-    console.log(`Found ${mtdData?.length || 0} total records in mtd_daily`);
+    // Get March data from march_rolling table instead of last_mtd_daily
+    const { data: marchData, error: marchError } = await supabase
+      .from('march_rolling')
+      .select('*');
+      
+    if (marchError) {
+      console.error('Error fetching March data:', marchError);
+    }
     
+    console.log(`Found ${count} total records in mtd_daily`);
+      
+    let allRecords: Record<string, any>[] = [];
+    const pageSize = 1000;
+    const pages = Math.ceil(count / pageSize);
+    
+    for (let page = 0; page < pages; page++) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+        
+      const { data: pageData, error: pageError } = await supabase
+        .from('mtd_daily')
+        .select('*')
+        .range(from, to);
+        
+      if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
+      if (pageData) allRecords = [...allRecords, ...pageData];
+        
+      console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records`);
+    }
+      
+    const mtdData = allRecords;
+    console.log('Fetched April MTD records total count:', mtdData.length);
+      
     if (!mtdData || mtdData.length === 0) {
       toast({
         title: "No April data found",
@@ -49,14 +80,14 @@ export const loadAprilData = async (
       setIsLoading(false);
       return false;
     }
-
+      
     const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
     const revaData = mtdData.filter(item => item.Department === 'REVA');
     const wholesaleData = mtdData.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     );
     
-    const transformData = (data: any[], isDepartmentData = false): RepData[] => {
+    const transformData = (data: Record<string, any>[], isDepartmentData = false): RepData[] => {
       console.log(`Transforming ${data.length} records`);
       const repMap = new Map<string, RepData>();
         
@@ -122,9 +153,9 @@ export const loadAprilData = async (
       });
     };
     
-    const lastRetailData = (lastMtdData || []).filter(item => !item.Department || item.Department === 'RETAIL');
-    const lastRevaData = (lastMtdData || []).filter(item => item.Department === 'REVA');
-    const lastWholesaleData = (lastMtdData || []).filter(item => 
+    const lastRetailData = (marchData || []).filter(item => !item.Department || item.Department === 'RETAIL');
+    const lastRevaData = (marchData || []).filter(item => item.Department === 'REVA');
+    const lastWholesaleData = (marchData || []).filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     );
     
@@ -133,7 +164,6 @@ export const loadAprilData = async (
     const lastAprWholesaleData = transformData(lastWholesaleData, true);
       
     console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
-    console.log(`Last MTD breakdown - Retail: ${lastRetailData.length}, REVA: ${lastRevaData.length}, Wholesale: ${lastWholesaleData.length}`);
       
     const aprRetailData = transformData(retailData);
     const aprRevaData = transformData(revaData, true);
@@ -166,21 +196,18 @@ export const loadAprilData = async (
       includeWholesale
     );
     
-    // Use lastMtdData for comparison calculations
     const localRepChanges: Record<string, any> = {};
-    
-    const combinedLastMtdData = getCombinedRepData(
-      lastAprRetailData,
-      lastAprRevaData,
-      lastAprWholesaleData,
-      includeRetail,
-      includeReva,
-      includeWholesale
-    );
-    
-    combinedAprilData.forEach(aprRep => {
-      const lastRep = combinedLastMtdData.find(r => r.rep === aprRep.rep);
       
+    combinedAprilData.forEach(aprRep => {
+      const lastRep = getCombinedRepData(
+        lastAprRetailData,
+        lastAprRevaData,
+        lastAprWholesaleData,
+        includeRetail,
+        includeReva,
+        includeWholesale
+      ).find(r => r.rep === aprRep.rep);
+          
       if (lastRep) {
         const profitChange = lastRep.profit > 0 ? ((aprRep.profit - lastRep.profit) / lastRep.profit) * 100 : 0;
         const spendChange = lastRep.spend > 0 ? ((aprRep.spend - lastRep.spend) / lastRep.spend) * 100 : 0;
@@ -190,36 +217,17 @@ export const loadAprilData = async (
           ((aprRep.activeAccounts - lastRep.activeAccounts) / lastRep.activeAccounts) * 100 : 0;
         const totalAccountsChange = lastRep.totalAccounts > 0 ? 
           ((aprRep.totalAccounts - lastRep.totalAccounts) / lastRep.totalAccounts) * 100 : 0;
-        
+            
         localRepChanges[aprRep.rep] = {
           profit: profitChange,
           spend: spendChange,
           margin: marginChange,
           packs: packsChange,
           activeAccounts: activeAccountsChange,
-          totalAccounts: totalAccountsChange
-        };
-      } else {
-        localRepChanges[aprRep.rep] = {
-          profit: 100,
-          spend: 100,
-          margin: aprRep.margin,
-          packs: 100,
-          activeAccounts: 100,
-          totalAccounts: 100
-        };
-      }
-    });
-    
-    combinedLastMtdData.forEach(lastRep => {
-      if (!combinedAprilData.find(r => r.rep === lastRep.rep)) {
-        localRepChanges[lastRep.rep] = {
-          profit: -100,
-          spend: -100,
-          margin: -lastRep.margin,
-          packs: -100,
-          activeAccounts: -100,
-          totalAccounts: -100
+          totalAccounts: totalAccountsChange,
+          profitPerActiveShop: 0,
+          profitPerPack: 0,
+          activeRatio: 0
         };
       }
     });
@@ -233,14 +241,10 @@ export const loadAprilData = async (
       includeWholesale
     );
       
-    const lastRetailSummary = calculateDeptSummary(lastRetailData);
-    const lastRevaSummary = calculateDeptSummary(lastRevaData);
-    const lastWholesaleSummary = calculateDeptSummary(lastWholesaleData);
-    
     const lastSummary = calculateSummary(
-      lastRetailSummary,
-      lastRevaSummary,
-      lastWholesaleSummary,
+      calculateDeptSummary(lastRetailData),
+      calculateDeptSummary(lastRevaData),
+      calculateDeptSummary(lastWholesaleData),
       includeRetail,
       includeReva,
       includeWholesale
@@ -262,10 +266,9 @@ export const loadAprilData = async (
       
     setSummaryChanges(aprilSummaryChanges);
     setRepChanges(localRepChanges);
-    
+      
     console.log('Combined April Data length:', combinedAprilData.length);
     console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
-    console.log('Comparison data source for April:', lastMtdData ? 'last_mtd_daily' : 'None available');
       
     const currentData = loadStoredRepPerformanceData() || {};
     saveRepPerformanceData({
@@ -280,7 +283,7 @@ export const loadAprilData = async (
       
     toast({
       title: "April data loaded successfully",
-      description: `Loaded ${mtdData.length} April MTD records with ${lastMtdData?.length || 0} comparison records`,
+      description: `Loaded ${mtdData.length} April MTD records with ${marchData?.length || 0} comparison records`,
     });
       
     return true;

@@ -29,4 +29,3 @@ export interface DepartmentData {
   credit?: string | number;
   margin?: string | number;
 }
-

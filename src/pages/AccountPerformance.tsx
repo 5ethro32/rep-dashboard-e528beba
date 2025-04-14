@@ -14,7 +14,7 @@ import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Define valid table names as a type for type safety
-type ValidTable = 'mtd_daily' | 'last_mtd_daily' | 'sales_data' | 'sales_data_februrary';
+type ValidTable = 'mtd_daily' | 'march_rolling' | 'sales_data' | 'sales_data_februrary';
 
 type DataItem = {
   [key: string]: any;
@@ -49,7 +49,7 @@ const AccountPerformance = () => {
         switch (selectedMonth) {
           case 'April':
             currentTable = "mtd_daily";
-            previousTable = "sales_data";
+            previousTable = "march_rolling";
             break;
           case 'March':
             currentTable = "sales_data";
