@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { RepData, SummaryData } from '@/types/rep-performance.types';
+import { saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/storage/local-storage-service';
 
 export const loadAprilData = async (
   setIsLoading: (loading: boolean) => void,
@@ -21,22 +22,14 @@ export const loadAprilData = async (
 ) => {
   setIsLoading(true);
   try {
-    const { count, error: countError } = await supabase
+    // Fetch current MTD data
+    const { data: mtdData, error: mtdError } = await supabase
       .from('mtd_daily')
-      .select('*', { count: 'exact', head: true });
+      .select('*');
       
-    if (countError) throw new Error(`Error getting count: ${countError.message}`);
+    if (mtdError) throw new Error(`Error fetching MTD data: ${mtdError.message}`);
     
-    if (!count || count === 0) {
-      toast({
-        title: "No April data found",
-        description: "The MTD Daily table appears to be empty.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return false;
-    }
-    
+    // Fetch last MTD data for comparison
     const { data: lastMtdData, error: lastMtdError } = await supabase
       .from('last_mtd_daily')
       .select('*');
@@ -45,30 +38,8 @@ export const loadAprilData = async (
       console.error('Error fetching last MTD data:', lastMtdError);
     }
     
-    console.log(`Found ${count} total records in mtd_daily`);
-      
-    let allRecords = [];
-    const pageSize = 1000;
-    const pages = Math.ceil(count / pageSize);
+    console.log(`Found ${mtdData?.length || 0} total records in mtd_daily`);
     
-    for (let page = 0; page < pages; page++) {
-      const from = page * pageSize;
-      const to = from + pageSize - 1;
-        
-      const { data: pageData, error: pageError } = await supabase
-        .from('mtd_daily')
-        .select('*')
-        .range(from, to);
-        
-      if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
-      if (pageData) allRecords = [...allRecords, ...pageData];
-        
-      console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records`);
-    }
-      
-    const mtdData = allRecords;
-    console.log('Fetched April MTD records total count:', mtdData.length);
-      
     if (!mtdData || mtdData.length === 0) {
       toast({
         title: "No April data found",
@@ -78,7 +49,7 @@ export const loadAprilData = async (
       setIsLoading(false);
       return false;
     }
-      
+
     const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
     const revaData = mtdData.filter(item => item.Department === 'REVA');
     const wholesaleData = mtdData.filter(item => 
@@ -195,6 +166,7 @@ export const loadAprilData = async (
       includeWholesale
     );
     
+    // Use lastMtdData for comparison calculations
     const localRepChanges: Record<string, any> = {};
     
     const combinedLastMtdData = getCombinedRepData(

@@ -12,13 +12,29 @@ export const fetchDepartmentData = async (
     if (isMarch) {
       const { data, error } = await supabase
         .from(table)
-        .select('*')
+        .select()
         .eq('rep_type', department);
-      return { data, error };
+
+      // Transform data to match DepartmentData interface
+      const transformedData = data?.map(item => ({
+        Department: item.rep_type,
+        Rep: item.rep_name,
+        'Sub-Rep': item.sub_rep,
+        'Account Ref': item.account_ref,
+        'Account Name': item.account_name,
+        Spend: item.spend,
+        Profit: item.profit,
+        Packs: item.packs,
+        Cost: item.cost,
+        Credit: item.credit,
+        Margin: item.margin
+      }));
+
+      return { data: transformedData || null, error };
     } else {
       const { data, error } = await supabase
         .from(table)
-        .select('*')
+        .select()
         .eq('Department', department);
       return { data, error };
     }
@@ -27,3 +43,4 @@ export const fetchDepartmentData = async (
     return { data: null, error: error as Error };
   }
 };
+
