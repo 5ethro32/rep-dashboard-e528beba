@@ -14,7 +14,7 @@ const VeraAI: React.FC = () => {
   return (
     <div className="flex h-screen bg-finance-darkBg text-white">
       {/* Sidebar */}
-      <Sidebar defaultCollapsed={false}>
+      <Sidebar>
         <SidebarHeader className="border-b border-gray-800">
           <div className="p-4">
             <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-500">
