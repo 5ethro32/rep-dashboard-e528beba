@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { QueryData, DepartmentData } from './types';
+import { QueryData, DepartmentData, SalesDataFebruary, SalesDataMarch } from './types';
 
 export const fetchDepartmentData = async (
   department: string, 
@@ -32,7 +32,7 @@ export const fetchDepartmentData = async (
       if (error) throw error;
       
       // Transform the February data to match our expected DepartmentData structure
-      const transformedData: DepartmentData[] = data?.map(item => ({
+      const transformedData: DepartmentData[] = data?.map((item: SalesDataFebruary) => ({
         id: item.id,
         rep_type: item.Department,
         rep_name: item.Rep,
