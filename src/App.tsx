@@ -10,7 +10,6 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import VeraAI from "./pages/VeraAI";
 
 const queryClient = new QueryClient();
 
@@ -37,14 +36,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AccountPerformance />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/vera-ai" 
-              element={
-                <ProtectedRoute>
-                  <VeraAI />
                 </ProtectedRoute>
               } 
             />

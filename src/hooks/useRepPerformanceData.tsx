@@ -52,9 +52,6 @@ export const useRepPerformanceData = () => {
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
 
-  const [currentMonthData, setCurrentMonthData] = useState<any[]>([]);
-  const [previousMonthData, setPreviousMonthData] = useState<any[]>([]);
-
   useEffect(() => {
     const storedData = loadStoredRepPerformanceData();
     
@@ -274,10 +271,6 @@ export const useRepPerformanceData = () => {
         setIsLoading(false);
         return false;
       }
-      
-      setCurrentMonthData(mtdData);
-      
-      setPreviousMonthData([]);
       
       const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
       const revaData = mtdData.filter(item => item.Department === 'REVA');
@@ -692,11 +685,7 @@ export const useRepPerformanceData = () => {
     isLoading,
     getFebValue,
     selectedMonth,
-    setSelectedMonth,
-    
-    currentMonthData,
-    previousMonthData,
-    formatCurrency
+    setSelectedMonth
   };
 };
 
