@@ -1,10 +1,20 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Home, BarChart2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
+import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
+import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 
 const AccountPerformance = () => {
+  const {
+    currentMonthData,
+    previousMonthData,
+    isLoading,
+    selectedMonth,
+    formatCurrency
+  } = useRepPerformanceData();
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -39,6 +49,15 @@ const AccountPerformance = () => {
           </Link>
         </div>
         
+        <div className="space-y-6">
+          <AccountPerformanceComparison 
+            currentMonthData={currentMonthData}
+            previousMonthData={previousMonthData}
+            isLoading={isLoading}
+            selectedMonth={selectedMonth}
+            formatCurrency={formatCurrency}
+          />
+        </div>
       </div>
     </div>
   );
