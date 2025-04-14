@@ -742,4 +742,42 @@ export const loadAprilData = async (
         ((aprSummary.totalPacks - lastSummary.totalPacks) / lastSummary.totalPacks) * 100 : 0,
       totalAccounts: lastSummary.totalAccounts > 0 ? 
         ((aprSummary.totalAccounts - lastSummary.totalAccounts) / lastSummary.totalAccounts) * 100 : 0,
-      activeAccounts: lastSummary.activeAccounts > 0
+      activeAccounts: lastSummary.activeAccounts > 0 ? 
+        ((aprSummary.activeAccounts - lastSummary.activeAccounts) / lastSummary.activeAccounts) * 100 : 0
+    };
+      
+    setSummaryChanges(aprilSummaryChanges);
+    setRepChanges(localRepChanges);
+    
+    console.log('Combined April Data length:', combinedAprilData.length);
+    console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
+      
+    const currentData = loadStoredRepPerformanceData() || {};
+    saveRepPerformanceData({
+      ...currentData,
+      aprRepData: aprRetailData,
+      aprRevaData: aprRevaData,
+      aprWholesaleData: aprWholesaleData,
+      aprBaseSummary: aprRetailSummary,
+      aprRevaValues: aprRevaSummary,
+      aprWholesaleValues: aprWholesaleSummary
+    });
+      
+    toast({
+      title: "April data loaded successfully",
+      description: `Loaded ${mtdData.length} April MTD records from the database.`,
+    });
+      
+    return true;
+  } catch (error) {
+    console.error('Error loading April data:', error);
+    toast({
+      title: "Error loading April data",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive",
+    });
+    return false;
+  } finally {
+    setIsLoading(false);
+  }
+};
