@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
@@ -76,6 +77,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     }
   };
 
+  // Only show change indicators if we're comparing to previous months
   const showChangeIndicators = selectedMonth !== 'February';
 
   return (
@@ -123,7 +125,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
               </div>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
               <div className="h-64 md:h-80">
                 <RepProfitChart 
                   displayData={sortData(getActiveData(tabValue))}
@@ -134,20 +136,20 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                 />
               </div>
               
-              <div className="h-64 md:h-80">
-                <RepMarginComparison
+              <div className="lg:h-96 md:h-80 h-72">
+                <RepProfitShare 
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}
-                  formatPercent={formatPercent}
                   isLoading={isLoading}
                   showChangeIndicators={showChangeIndicators}
                 />
               </div>
               
-              <div className="col-span-full lg:h-96 md:h-80 h-72">
-                <RepProfitShare 
+              <div className="h-64 md:h-80">
+                <RepMarginComparison
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}
+                  formatPercent={formatPercent}
                   isLoading={isLoading}
                   showChangeIndicators={showChangeIndicators}
                 />

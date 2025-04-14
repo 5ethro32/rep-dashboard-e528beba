@@ -12,7 +12,7 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-type ValidTable = 'mtd_daily' | 'march_rolling' | 'sales_data' | 'sales_data_februrary';
+type AllowedTable = 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' | 'sales_data' | 'sales_data_feb';
 
 type DataItem = {
   [key: string]: any;
@@ -41,13 +41,13 @@ const AccountPerformance = () => {
     const fetchComparisonData = async () => {
       setIsLoading(true);
       try {
-        let currentTable: ValidTable;
-        let previousTable: ValidTable | null;
+        let currentTable: AllowedTable;
+        let previousTable: AllowedTable | null;
         
         switch (selectedMonth) {
           case 'April':
             currentTable = "mtd_daily";
-            previousTable = "march_rolling";
+            previousTable = "sales_data";
             break;
           case 'March':
             currentTable = "sales_data";
@@ -70,7 +70,7 @@ const AccountPerformance = () => {
         
         if (currentError) throw currentError;
         
-        let previousData: any[] = [];
+        let previousData: DataItem[] = [];
         if (previousTable) {
           const { data: prevData, error: previousError } = await supabase
             .from(previousTable)
