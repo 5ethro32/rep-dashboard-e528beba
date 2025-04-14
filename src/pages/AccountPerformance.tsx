@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -13,7 +12,6 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// Define valid table names as a type for type safety
 type ValidTable = 'mtd_daily' | 'march_rolling' | 'sales_data' | 'sales_data_februrary';
 
 type DataItem = {
@@ -72,7 +70,7 @@ const AccountPerformance = () => {
         
         if (currentError) throw currentError;
         
-        let previousData: DataItem[] = [];
+        let previousData: any[] = [];
         if (previousTable) {
           const { data: prevData, error: previousError } = await supabase
             .from(previousTable)

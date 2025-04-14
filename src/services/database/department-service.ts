@@ -10,35 +10,42 @@ export const fetchDepartmentData = async (
   
   try {
     if (isMarch) {
-      // Using type assertions to avoid deep type instantiation issues
       const { data, error } = await supabase
         .from(table)
-        .select()
+        .select(`
+          id,
+          rep_type,
+          rep_name,
+          sub_rep,
+          account_ref,
+          account_name,
+          spend,
+          profit,
+          packs,
+          cost,
+          credit,
+          margin
+        `)
         .eq('rep_type', department);
 
-      if (!data) return { data: null, error };
-
-      // Transform data to match DepartmentData interface
-      const transformedData = data.map(item => ({
-        Department: item.rep_type,
-        Rep: item.rep_name,
-        'Sub-Rep': item.sub_rep,
-        'Account Ref': item.account_ref,
-        'Account Name': item.account_name,
-        Spend: item.spend,
-        Profit: item.profit,
-        Packs: item.packs,
-        Cost: item.cost,
-        Credit: item.credit,
-        Margin: item.margin
-      }));
-
-      return { data: transformedData, error };
+      return { data, error };
     } else {
-      // Using type assertions to avoid deep type instantiation issues
       const { data, error } = await supabase
         .from(table)
-        .select()
+        .select(`
+          id,
+          Department as rep_type,
+          Rep as rep_name,
+          "Sub-Rep" as sub_rep,
+          "Account Ref" as account_ref,
+          "Account Name" as account_name,
+          Spend as spend,
+          Profit as profit,
+          Packs as packs,
+          Cost as cost,
+          Credit as credit,
+          Margin as margin
+        `)
         .eq('Department', department);
       
       return { data, error };
@@ -48,3 +55,4 @@ export const fetchDepartmentData = async (
     return { data: null, error: error as Error };
   }
 };
+
