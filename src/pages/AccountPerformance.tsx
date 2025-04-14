@@ -12,8 +12,6 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-type AllowedTable = 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' | 'sales_data' | 'sales_data_feb';
-
 type DataItem = {
   [key: string]: any;
   "Account Name"?: string;
@@ -41,8 +39,8 @@ const AccountPerformance = () => {
     const fetchComparisonData = async () => {
       setIsLoading(true);
       try {
-        let currentTable: AllowedTable;
-        let previousTable: AllowedTable | null;
+        let currentTable: string;
+        let previousTable: string | null;
         
         switch (selectedMonth) {
           case 'April':

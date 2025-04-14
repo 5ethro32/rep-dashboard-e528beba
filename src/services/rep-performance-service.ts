@@ -654,10 +654,10 @@ export const loadAprilData = async (
       includeWholesale
     );
     
-    const aprilToLastChanges: Record<string, any> = {};
+    const localRepChanges: Record<string, any> = {};
       
-    Object.keys(repChanges).forEach(rep => {
-      if (repChanges[rep]) {
+    Object.keys(localRepChanges).forEach(rep => {
+      if (localRepChanges[rep]) {
         const aprRep = combinedAprilData.find(r => r.rep === rep);
         const lastRep = getCombinedRepData(
           lastAprRetailData,
@@ -678,7 +678,7 @@ export const loadAprilData = async (
           const totalAccountsChange = lastRep.totalAccounts > 0 ? 
             ((aprRep.totalAccounts - lastRep.totalAccounts) / lastRep.totalAccounts) * 100 : 0;
             
-          aprilToLastChanges[rep] = {
+          localRepChanges[rep] = {
             profit: profitChange,
             spend: spendChange,
             margin: marginChange,
@@ -723,7 +723,7 @@ export const loadAprilData = async (
     };
       
     setSummaryChanges(aprilSummaryChanges);
-    setRepChanges(aprilToLastChanges);
+    setRepChanges(localRepChanges);
     
     console.log('Combined April Data length:', combinedAprilData.length);
     console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
