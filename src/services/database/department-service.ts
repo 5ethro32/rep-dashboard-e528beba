@@ -10,49 +10,50 @@ export const fetchDepartmentData = async (
   
   try {
     if (isMarch) {
+      // For March data (sales_data table)
       const { data, error } = await supabase
         .from(table)
-        .select(`
-          id,
-          rep_type,
-          rep_name,
-          sub_rep,
-          account_ref,
-          account_name,
-          spend,
-          profit,
-          packs,
-          cost,
-          credit,
-          margin
-        `)
+        .select('*')
         .eq('rep_type', department);
 
-      return { data, error };
+      if (error) throw error;
+      
+      return { 
+        data: data as DepartmentData[], 
+        error: null 
+      };
     } else {
+      // For February data (sales_data_februrary table)
       const { data, error } = await supabase
         .from(table)
-        .select(`
-          id,
-          Department as rep_type,
-          Rep as rep_name,
-          "Sub-Rep" as sub_rep,
-          "Account Ref" as account_ref,
-          "Account Name" as account_name,
-          Spend as spend,
-          Profit as profit,
-          Packs as packs,
-          Cost as cost,
-          Credit as credit,
-          Margin as margin
-        `)
+        .select('*')
         .eq('Department', department);
       
-      return { data, error };
+      if (error) throw error;
+      
+      // Transform the February data to match our expected DepartmentData structure
+      const transformedData: DepartmentData[] = data?.map(item => ({
+        id: item.id,
+        rep_type: item.Department,
+        rep_name: item.Rep,
+        sub_rep: item["Sub-Rep"],
+        account_ref: item["Account Ref"],
+        account_name: item["Account Name"],
+        spend: item.Spend,
+        profit: item.Profit,
+        packs: item.Packs,
+        cost: item.Cost,
+        credit: item.Credit,
+        margin: item.Margin
+      })) || [];
+      
+      return { 
+        data: transformedData, 
+        error: null 
+      };
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
     return { data: null, error: error as Error };
   }
 };
-

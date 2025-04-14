@@ -5,7 +5,7 @@ export interface QueryData<T = any> {
 }
 
 export interface DepartmentData {
-  id: string | number;
+  id?: string | number;
   rep_type?: string;
   rep_name?: string;
   sub_rep?: string;
@@ -18,4 +18,3 @@ export interface DepartmentData {
   credit?: string | number;
   margin?: string | number;
 }
-
