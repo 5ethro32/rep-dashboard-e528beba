@@ -19,13 +19,13 @@ const fetchDepartmentData = async (department: string, isMarch: boolean): Promis
         .from(table)
         .select('*')
         .eq('rep_type', department);
-      return result as QueryData;
+      return { data: result.data, error: result.error };
     } else {
       const result = await supabase
         .from(table)
         .select('*')
         .eq('Department', department);
-      return result as QueryData;
+      return { data: result.data, error: result.error };
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
