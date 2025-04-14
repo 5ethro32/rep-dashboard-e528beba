@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -254,6 +253,298 @@ export const fetchRepPerformanceData = async () => {
   }
 };
 
+const loadAprilData = async () => {
+  setIsLoading(true);
+  try {
+    // First check if we have any current MTD data
+    const { count, error: countError } = await supabase
+      .from('mtd_daily')
+      .select('*', { count: 'exact', head: true });
+      
+    if (countError) throw new Error(`Error getting count: ${countError.message}`);
+    
+    if (!count || count === 0) {
+      toast({
+        title: "No April data found",
+        description: "The MTD Daily table appears to be empty.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return false;
+    }
+    
+    // Also get the last MTD data for comparison
+    const { data: lastMtdData, error: lastMtdError } = await supabase
+      .from('last_mtd_daily')
+      .select('*');
+      
+    if (lastMtdError) {
+      console.error('Error fetching last MTD data:', lastMtdError);
+    }
+    
+    console.log(`Found ${count} total records in mtd_daily`);
+      
+    let allRecords = [];
+    const pageSize = 1000;
+    const pages = Math.ceil(count / pageSize);
+    
+    for (let page = 0; page < pages; page++) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+        
+      const { data: pageData, error: pageError } = await supabase
+        .from('mtd_daily')
+        .select('*')
+        .range(from, to);
+        
+      if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
+      if (pageData) allRecords = [...allRecords, ...pageData];
+        
+      console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records`);
+    }
+      
+    const mtdData = allRecords;
+    console.log('Fetched April MTD records total count:', mtdData.length);
+      
+    if (!mtdData || mtdData.length === 0) {
+      toast({
+        title: "No April data found",
+        description: "The MTD Daily table appears to be empty.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return false;
+    }
+      
+    const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
+    const revaData = mtdData.filter(item => item.Department === 'REVA');
+    const wholesaleData = mtdData.filter(item => 
+      item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+    );
+    
+    const transformData = (data: any[], isDepartmentData = false): RepData[] => {
+      console.log(`Transforming ${data.length} records`);
+      const repMap = new Map<string, RepData>();
+        
+      data.forEach(item => {
+        let repName;
+          
+        if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+          repName = item['Sub-Rep'];
+        } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
+          return;
+        } else {
+          repName = item.Rep;
+        }
+          
+        if (!repName) {
+          console.log('Found item without Rep name:', item);
+          return;
+        }
+          
+        if (!repMap.has(repName)) {
+          repMap.set(repName, {
+            rep: repName,
+            spend: 0,
+            profit: 0,
+            packs: 0,
+            margin: 0,
+            activeAccounts: 0,
+            totalAccounts: 0,
+            profitPerActiveShop: 0,
+            profitPerPack: 0,
+            activeRatio: 0
+          });
+        }
+          
+        const currentRep = repMap.get(repName)!;
+          
+        const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+        const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+        const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          
+        currentRep.spend += spend;
+        currentRep.profit += profit;
+        currentRep.packs += packs;
+          
+        if (item["Account Ref"]) {
+          currentRep.totalAccounts += 1;
+          if (spend > 0) {
+            currentRep.activeAccounts += 1;
+          }
+        }
+          
+        currentRep.margin = currentRep.spend > 0 ? (currentRep.profit / currentRep.spend) * 100 : 0;
+          
+        repMap.set(repName, currentRep);
+      });
+        
+      console.log(`Transformed data into ${repMap.size} unique reps`);
+      return Array.from(repMap.values()).map(rep => {
+        rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
+        rep.profitPerPack = rep.packs > 0 ? rep.profit / rep.packs : 0;
+        rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
+        return rep;
+      });
+    };
+    
+    // Process the last MTD data for comparison
+    const lastRetailData = (lastMtdData || []).filter(item => !item.Department || item.Department === 'RETAIL');
+    const lastRevaData = (lastMtdData || []).filter(item => item.Department === 'REVA');
+    const lastWholesaleData = (lastMtdData || []).filter(item => 
+      item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+    );
+    
+    // Transform last MTD data
+    const lastAprRetailData = transformData(lastRetailData);
+    const lastAprRevaData = transformData(lastRevaData, true);
+    const lastAprWholesaleData = transformData(lastWholesaleData, true);
+      
+    console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
+      
+    const aprRetailData = transformData(retailData);
+    const aprRevaData = transformData(revaData, true);
+    const aprWholesaleData = transformData(wholesaleData, true);
+      
+    console.log(`Transformed Rep Data - Retail: ${aprRetailData.length}, REVA: ${aprRevaData.length}, Wholesale: ${aprWholesaleData.length}`);
+      
+    const aprRetailSummary = calculateDeptSummary(retailData);
+    const aprRevaSummary = calculateDeptSummary(revaData);
+    const aprWholesaleSummary = calculateDeptSummary(wholesaleData);
+      
+    console.log('April Department Summaries:');
+    console.log('Retail:', aprRetailSummary);
+    console.log('REVA:', aprRevaSummary);
+    console.log('Wholesale:', aprWholesaleSummary);
+      
+    setAprRepData(aprRetailData);
+    setAprRevaData(aprRevaData);
+    setAprWholesaleData(aprWholesaleData);
+    setAprBaseSummary(aprRetailSummary);
+    setAprRevaValues(aprRevaSummary);
+    setAprWholesaleValues(aprWholesaleSummary);
+      
+    const combinedAprilData = getCombinedRepData(
+      aprRetailData,
+      aprRevaData,
+      aprWholesaleData,
+      includeRetail,
+      includeReva,
+      includeWholesale
+    );
+    
+    // Calculate percentage changes between current and last MTD
+    
+    const aprilToLastChanges: Record<string, any> = {};
+      
+    Object.keys(repChanges).forEach(rep => {
+      if (repChanges[rep]) {
+        const aprRep = combinedAprilData.find(r => r.rep === rep);
+        const lastRep = getCombinedRepData(
+          lastAprRetailData,
+          lastAprRevaData,
+          lastAprWholesaleData,
+          includeRetail,
+          includeReva,
+          includeWholesale
+        ).find(r => r.rep === rep);
+          
+        if (aprRep && lastRep) {
+          const profitChange = lastRep.profit > 0 ? ((aprRep.profit - lastRep.profit) / lastRep.profit) * 100 : 0;
+          const spendChange = lastRep.spend > 0 ? ((aprRep.spend - lastRep.spend) / lastRep.spend) * 100 : 0;
+          const marginChange = aprRep.margin - lastRep.margin;
+          const packsChange = lastRep.packs > 0 ? ((aprRep.packs - lastRep.packs) / lastRep.packs) * 100 : 0;
+          const activeAccountsChange = lastRep.activeAccounts > 0 ? 
+            ((aprRep.activeAccounts - lastRep.activeAccounts) / lastRep.activeAccounts) * 100 : 0;
+          const totalAccountsChange = lastRep.totalAccounts > 0 ? 
+            ((aprRep.totalAccounts - lastRep.totalAccounts) / lastRep.totalAccounts) * 100 : 0;
+            
+          aprilToLastChanges[rep] = {
+            profit: profitChange,
+            spend: spendChange,
+            margin: marginChange,
+            packs: packsChange,
+            activeAccounts: activeAccountsChange,
+            totalAccounts: totalAccountsChange
+          };
+        }
+      }
+    });
+      
+    // Update the changes with the last MTD comparison for April
+    
+      
+    // Calculate summary changes against last MTD for April
+    const aprSummary = calculateSummary(
+      aprRetailSummary,
+      aprRevaSummary,
+      aprWholesaleSummary,
+      includeRetail,
+      includeReva,
+      includeWholesale
+    );
+      
+    const lastSummary = calculateSummary(
+      calculateDeptSummary(lastRetailData),
+      calculateDeptSummary(lastRevaData),
+      calculateDeptSummary(lastWholesaleData),
+      includeRetail,
+      includeReva,
+      includeWholesale
+    );
+      
+    const aprilSummaryChanges = {
+      totalSpend: lastSummary.totalSpend > 0 ? 
+        ((aprSummary.totalSpend - lastSummary.totalSpend) / lastSummary.totalSpend) * 100 : 0,
+      totalProfit: lastSummary.totalProfit > 0 ? 
+        ((aprSummary.totalProfit - lastSummary.totalProfit) / lastSummary.totalProfit) * 100 : 0,
+      averageMargin: aprSummary.averageMargin - lastSummary.averageMargin,
+      totalPacks: lastSummary.totalPacks > 0 ? 
+        ((aprSummary.totalPacks - lastSummary.totalPacks) / lastSummary.totalPacks) * 100 : 0,
+      totalAccounts: lastSummary.totalAccounts > 0 ? 
+        ((aprSummary.totalAccounts - lastSummary.totalAccounts) / lastSummary.totalAccounts) * 100 : 0,
+      activeAccounts: lastSummary.activeAccounts > 0 ? 
+        ((aprSummary.activeAccounts - lastSummary.activeAccounts) / lastSummary.activeAccounts) * 100 : 0
+    };
+      
+    setSummaryChanges(aprilSummaryChanges);
+    setRepChanges(aprilToLastChanges);
+    
+    console.log('Combined April Data length:', combinedAprilData.length);
+    console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
+      
+    const currentData = loadStoredRepPerformanceData() || {};
+    saveRepPerformanceData({
+      ...currentData,
+      aprRepData: aprRetailData,
+      aprRevaData: aprRevaData,
+      aprWholesaleData: aprWholesaleData,
+      aprBaseSummary: aprRetailSummary,
+      aprRevaValues: aprRevaSummary,
+      aprWholesaleValues: aprWholesaleSummary
+    });
+      
+    
+      
+    toast({
+      title: "April data loaded successfully",
+      description: `Loaded ${mtdData.length} April MTD records from the database.`,
+    });
+      
+    return true;
+  } catch (error) {
+    console.error('Error loading April data:', error);
+    toast({
+      title: "Error loading April data",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive",
+    });
+    return false;
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 // Helper function to calculate total profit from a dataset
 const calculateTotalProfit = (data: any[]): number => {
   return data.reduce((sum, item) => {
@@ -440,118 +731,4 @@ const calculateRepChanges = (
       // Rep didn't exist in February
       changes[rep] = {
         profit: 100,
-        spend: 100,
-        margin: 100,
-        packs: 100,
-        activeAccounts: 100,
-        totalAccounts: 100
-      };
-    } else {
-      changes[rep] = {
-        profit: calculatePercentageChange(current.profit, previous.profit),
-        spend: calculatePercentageChange(current.spend, previous.spend),
-        margin: current.margin - previous.margin, // Margin is a percentage point difference
-        packs: calculatePercentageChange(current.packs, previous.packs),
-        activeAccounts: calculatePercentageChange(current.activeAccounts, previous.activeAccounts),
-        totalAccounts: calculatePercentageChange(current.totalAccounts, previous.totalAccounts)
-      };
-    }
-  });
-  
-  return changes;
-};
-
-// Helper function to fetch all records for a specific department from the appropriate table
-const fetchDepartmentData = async (department: string, isMarch: boolean) => {
-  // This function fetches data in chunks to avoid pagination limits
-  const PAGE_SIZE = 1000;
-  let allData: any[] = [];
-  let page = 0;
-  let hasMoreData = true;
-  
-  // Use explicit table name strings rather than dynamic ones
-  // This avoids TypeScript's deep type instantiation error
-  const tableName = isMarch ? 'sales_data' : 'sales_data_februrary';
-  
-  while (hasMoreData) {
-    let query;
-    
-    if (isMarch) {
-      // For March data from sales_data table
-      query = supabase
-        .from(tableName as 'sales_data')
-        .select('*')
-        .eq('rep_type', department)
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-    } else {
-      // For February data from sales_data_februrary table
-      query = supabase
-        .from(tableName as 'sales_data_februrary')
-        .select('*')
-        .eq('Department', department)
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-    }
-    
-    const { data, error, count } = await query;
-    
-    if (error) {
-      return { data: null, error };
-    }
-    
-    // Transform the data to match expected format if we're using sales_data for March
-    if (isMarch && data) {
-      const transformedData = data.map(item => ({
-        id: item.id,
-        Rep: item.rep_name,
-        'Sub-Rep': item.sub_rep,
-        Department: item.rep_type,
-        'Account Ref': item.account_ref,
-        'Account Name': item.account_name,
-        Spend: item.spend,
-        Cost: item.cost,
-        Credit: item.credit,
-        Profit: item.profit,
-        Margin: item.margin,
-        Packs: item.packs
-      }));
-      
-      allData = [...allData, ...transformedData];
-    } else if (data) {
-      allData = [...allData, ...data];
-    }
-    
-    if (data && data.length > 0) {
-      page++;
-      
-      // Check if we've fetched all available data
-      hasMoreData = data.length === PAGE_SIZE;
-    } else {
-      hasMoreData = false;
-    }
-  }
-  
-  return { data: allData, error: null };
-};
-
-export const saveRepPerformanceData = (data: any) => {
-  try {
-    localStorage.setItem('repPerformanceData', JSON.stringify(data));
-    return true;
-  } catch (error) {
-    console.error('Error saving data to localStorage:', error);
-    return false;
-  }
-};
-
-export const loadStoredRepPerformanceData = () => {
-  try {
-    const storedData = localStorage.getItem('repPerformanceData');
-    if (storedData) {
-      return JSON.parse(storedData);
-    }
-    return null;
-  } catch (error) {
-    console.error('Error parsing stored data:', error);
-    return null;
-  }
-};
+        spend:
