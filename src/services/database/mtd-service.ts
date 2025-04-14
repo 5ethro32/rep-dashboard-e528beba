@@ -168,7 +168,6 @@ export const loadAprilData = async (
       includeWholesale
     );
     
-    // Use lastMtdData for comparison calculations
     const localRepChanges: Record<string, any> = {};
     
     const combinedLastMtdData = getCombinedRepData(

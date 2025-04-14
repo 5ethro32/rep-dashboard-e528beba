@@ -1,3 +1,4 @@
+
 import { saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/storage/local-storage-service';
 import { fetchDepartmentData } from './database/department-service';
 import { calculateTotalProfit, calculateSummaryChanges, calculateRepChanges } from './database/calculation-service';
@@ -16,13 +17,16 @@ export const fetchRepPerformanceData = async () => {
     console.log('Fetching rep performance data from Supabase...');
     
     const { data: retailProfitData, error: retailProfitError } = await supabase
-      .rpc('get_retail_profit');
+      .rpc('get_retail_profit')
+      .limit(2500); // Increased limit
     
     const { data: revaProfitData, error: revaProfitError } = await supabase
-      .rpc('get_reva_profit');
+      .rpc('get_reva_profit')
+      .limit(2500); // Increased limit
       
     const { data: wholesaleProfitData, error: wholesaleProfitError } = await supabase
-      .rpc('get_wholesale_profit');
+      .rpc('get_wholesale_profit')
+      .limit(2500); // Increased limit
 
     if (retailProfitError || revaProfitError || wholesaleProfitError) {
       console.error("Error fetching profit data:", { 
