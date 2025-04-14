@@ -528,7 +528,7 @@ export const loadAprilData = async (
     const pageSize = 1000;
     const pages = Math.ceil(count / pageSize);
     
-    for (let page = 0; page < pages++) {
+    for (let page = 0; page < pages; page++) {
       const from = page * pageSize;
       const to = from + pageSize - 1;
         
@@ -738,3 +738,39 @@ export const loadAprilData = async (
       activeAccounts: lastSummary.activeAccounts > 0 ? 
         ((aprSummary.activeAccounts - lastSummary.activeAccounts) / lastSummary.activeAccounts) * 100 : 0
     };
+      
+    setSummaryChanges(aprilSummaryChanges);
+    setRepChanges(localRepChanges);
+    
+    console.log('Combined April Data length:', combinedAprilData.length);
+    console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
+      
+    const currentData = loadStoredRepPerformanceData() || {};
+    saveRepPerformanceData({
+      ...currentData,
+      aprRepData: aprRetailData,
+      aprRevaData: aprRevaData,
+      aprWholesaleData: aprWholesaleData,
+      aprBaseSummary: aprRetailSummary,
+      aprRevaValues: aprRevaSummary,
+      aprWholesaleValues: aprWholesaleSummary
+    });
+      
+    toast({
+      title: "April data loaded successfully",
+      description: `Loaded ${mtdData.length} April MTD records from the database.`,
+    });
+      
+    return true;
+  } catch (error) {
+    console.error('Error loading April data:', error);
+    toast({
+      title: "Error loading April data",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive",
+    });
+    return false;
+  } finally {
+    setIsLoading(false);
+  }
+};
