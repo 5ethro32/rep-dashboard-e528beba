@@ -4,8 +4,14 @@ import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData } from '@/utils/rep-data-processing';
 
+// Define the return type explicitly to avoid excessive type instantiation
+type DepartmentDataResult = {
+  data: any[] | null;
+  error: Error | null;
+}
+
 // Helper function to fetch department data from different tables
-const fetchDepartmentData = async (department: string, isMarch: boolean) => {
+const fetchDepartmentData = async (department: string, isMarch: boolean): Promise<DepartmentDataResult> => {
   const table = isMarch ? 'sales_data' : 'sales_data_februrary';
   
   try {
@@ -24,7 +30,7 @@ const fetchDepartmentData = async (department: string, isMarch: boolean) => {
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
-    return { data: null, error };
+    return { data: null, error: error as Error };
   }
 };
 
