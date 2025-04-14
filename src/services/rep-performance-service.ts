@@ -10,23 +10,29 @@ type DepartmentDataResult = {
   error: Error | null;
 }
 
+// Define more specific types for Supabase query responses
+type SupabaseQueryResult = {
+  data: Record<string, any>[] | null;
+  error: Error | null;
+}
+
 // Helper function to fetch department data from different tables
 const fetchDepartmentData = async (department: string, isMarch: boolean): Promise<DepartmentDataResult> => {
   const table = isMarch ? 'sales_data' : 'sales_data_februrary';
   
   try {
     if (isMarch) {
-      const { data, error } = await supabase
+      const result: SupabaseQueryResult = await supabase
         .from(table)
         .select('*')
         .eq('rep_type', department);
-      return { data, error };
+      return result;
     } else {
-      const { data, error } = await supabase
+      const result: SupabaseQueryResult = await supabase
         .from(table)
         .select('*')
         .eq('Department', department);
-      return { data, error };
+      return result;
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
