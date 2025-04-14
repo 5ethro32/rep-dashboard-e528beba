@@ -6,14 +6,14 @@ import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
+import { formatCurrency } from '@/utils/rep-performance-utils';
 
 const AccountPerformance = () => {
   const {
     currentMonthData,
     previousMonthData,
     isLoading,
-    selectedMonth,
-    formatCurrency
+    selectedMonth
   } = useRepPerformanceData();
   
   return (
