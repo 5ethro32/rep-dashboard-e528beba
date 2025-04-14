@@ -1,4 +1,3 @@
-
 import React from 'react';
 import DonutChart from './DonutChart';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -19,16 +18,18 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
 }) => {
   const isMobile = useIsMobile();
   
-  // Calculate total profit
   const totalProfit = displayData.reduce((sum, item) => sum + item.profit, 0);
   
-  // Colors for the chart - refined gradient of reds
   const colors = [
-    "#ef4444", "#f87171", "#fca5a5", "#fee2e2", "#b91c1c",
-    "#dc2626", "#991b1b", "#7f1d1d", "#ef4444", "#dc2626"
+    "#dc2626",   // Bright Red
+    "#ef4444",   // Red
+    "#f87171",   // Light Red
+    "#fca5a5",   // Soft Red
+    "#fee2e2",   // Very Light Red
+    "#991b1b",   // Dark Red
+    "#7f1d1d",   // Darkest Red
   ];
   
-  // Prepare data for the pie chart
   const chartData = displayData.map((item, index) => {
     const percentage = (item.profit / totalProfit) * 100;
     const prevProfit = item.profit / (1 + (repChanges[item.rep]?.profit || 0) / 100);
@@ -36,7 +37,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
     
     return {
       name: item.rep,
-      value: Math.round(percentage), // Round to 0 decimal places
+      value: Math.round(percentage),
       color: colors[index % colors.length],
       profit: item.profit,
       prevProfit: prevProfit,
@@ -45,13 +46,10 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
     };
   });
   
-  // Sort data to show largest first
   chartData.sort((a, b) => b.value - a.value);
   
-  // Filter out very small values (less than 1%)
   const filteredData = chartData.filter(item => item.value >= 1);
   
-  // Group small values into "Others" if needed
   if (filteredData.length < chartData.length) {
     const othersValue = chartData
       .filter(item => item.value < 1)
@@ -60,7 +58,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
     if (othersValue > 0) {
       filteredData.push({
         name: "Others",
-        value: Math.round(othersValue), // Round to 0 decimal places
+        value: Math.round(othersValue),
         color: "#6b7280",
         profit: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.profit, 0),
         prevProfit: chartData.filter(item => item.value < 1).reduce((sum, item) => sum + item.prevProfit, 0),
@@ -70,7 +68,6 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
     }
   }
   
-  // For mobile, we might want to limit the number of slices shown
   const mobileData = isMobile && filteredData.length > 5 
     ? [
         ...filteredData.slice(0, 4), 
@@ -88,21 +85,20 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
   
   const dataToUse = isMobile ? mobileData : filteredData;
 
-  // Format the total profit for display
   const formattedProfit = totalProfit.toLocaleString('en-GB', {
     style: 'currency',
     currency: 'GBP',
     maximumFractionDigits: 0
   });
   
-  // Helper function to get initials from name
   const getInitials = (name: string): string => {
     if (name === "Others") return "OT";
     
     return name
       .split(' ')
       .map(part => part.charAt(0))
-      .join('');
+      .join('')
+      .toUpperCase();
   };
   
   return (
@@ -118,7 +114,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
       ) : (
         <div className="flex flex-col h-full">
           <div className="flex-1">
-            <div className="h-48 md:h-64 w-full mb-2 md:mb-4"> {/* Adjusted height to better fit the card */}
+            <div className="h-48 md:h-64 w-full mb-2 md:mb-4">
               <DonutChart 
                 data={dataToUse}
                 innerValue={formattedProfit}
@@ -127,23 +123,27 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
             </div>
           </div>
           
-          {/* Legend */}
-          <div className="mt-auto overflow-y-auto max-h-40 md:max-h-44 scrollbar-none"> {/* Increased max height for legend */}
-            <div className="grid grid-cols-2 gap-2 md:gap-3">
+          <div className="mt-auto overflow-y-auto max-h-40 md:max-h-44 scrollbar-none">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
               {dataToUse.map((item, index) => (
-                <div key={index} className="flex items-center text-2xs md:text-xs">
+                <div 
+                  key={index} 
+                  className="flex items-center space-x-2 bg-gray-900/50 rounded-md p-1.5 text-2xs md:text-xs"
+                >
                   <div 
-                    className="w-2 h-2 md:w-3 md:h-3 rounded-full mr-1" 
+                    className="w-3 h-3 md:w-4 md:h-4 rounded-full" 
                     style={{ backgroundColor: item.color }}
                   />
-                  <div className="truncate">
-                    <span className="font-medium">{getInitials(item.name)}</span> 
-                    <span className="text-finance-gray ml-1">({item.value}%)</span>
-                    {showChangeIndicators && Math.abs(item.change) >= 1 && (
-                      <span className={`ml-1 ${item.change > 0 ? 'text-emerald-400' : 'text-finance-red'}`}>
-                        {item.change > 0 ? '↑' : '↓'}
-                      </span>
-                    )}
+                  <div className="flex-1 flex justify-between items-center">
+                    <span className="font-medium truncate">{getInitials(item.name)}</span>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-finance-gray">({item.value}%)</span>
+                      {showChangeIndicators && Math.abs(item.change) >= 1 && (
+                        <span className={`${item.change > 0 ? 'text-emerald-400' : 'text-finance-red'}`}>
+                          {item.change > 0 ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
