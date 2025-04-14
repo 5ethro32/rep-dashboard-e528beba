@@ -37,13 +37,13 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   // Find top rep by combined profit across all departments
   const repMetrics = new Map();
   
-  if (currentMonthData.length > 0) {
+  if (currentMonthData && currentMonthData.length > 0) {
     currentMonthData.forEach(item => {
       // Extract the rep name with fallbacks for different column naming
       const repName = item.Rep || item.rep_name || '';
       
       // Skip department entries
-      if (repName === 'RETAIL' || repName === 'REVA' || repName === 'Wholesale') {
+      if (!repName || repName === 'RETAIL' || repName === 'REVA' || repName === 'Wholesale') {
         return;
       }
       
@@ -110,6 +110,9 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   let topPacksRep = { name: 'No data', packs: 0 };
   let topSpendRep = { name: 'No data', spend: 0 };
   
+  // Log the rep metrics for debugging
+  console.log('Top rep metrics calculated:', { topRep, topPacksRep, topSpendRep });
+  
   repMetrics.forEach((metrics, repName) => {
     // Check for top profit
     if (metrics.profit > topRep.profit) {
@@ -126,6 +129,8 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       topSpendRep = { name: repName, spend: metrics.spend };
     }
   });
+  
+  console.log('Top rep metrics calculated:', { topRep, topPacksRep, topSpendRep });
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
