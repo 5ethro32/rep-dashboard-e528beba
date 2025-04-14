@@ -22,17 +22,19 @@ export const loadAprilData = async (
 ) => {
   setIsLoading(true);
   try {
-    // Fetch current MTD data
+    // Fetch current MTD data with increased limit
     const { data: mtdData, error: mtdError } = await supabase
       .from('mtd_daily')
-      .select('*');
+      .select('*')
+      .limit(2500);
       
     if (mtdError) throw new Error(`Error fetching MTD data: ${mtdError.message}`);
     
-    // Fetch last MTD data for comparison
+    // Fetch last MTD data for comparison with increased limit
     const { data: lastMtdData, error: lastMtdError } = await supabase
       .from('last_mtd_daily')
-      .select('*');
+      .select('*')
+      .limit(2500);
       
     if (lastMtdError) {
       console.error('Error fetching last MTD data:', lastMtdError);

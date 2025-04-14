@@ -14,7 +14,8 @@ export const fetchDepartmentData = async (
     if (isMarch) {
       const { data, error } = await supabase
         .from(table)
-        .select();
+        .select()
+        .limit(2500); // Increased limit to handle more records
       
       if (data && department) {
         const filteredData = data.filter(item => 
@@ -63,7 +64,8 @@ export const fetchDepartmentData = async (
       if (table === 'sales_data_februrary') {
         const { data, error } = await supabase
           .from(lastAprilTable)  // Use last_mtd_daily for April comparisons
-          .select();
+          .select()
+          .limit(2500); // Increased limit for April comparison data
         
         if (data && department) {
           const filteredData = data.filter(item => 
@@ -77,7 +79,8 @@ export const fetchDepartmentData = async (
       } else {
         const { data, error } = await supabase
           .from(table)
-          .select();
+          .select()
+          .limit(2500); // Increased limit
         
         if (data && department) {
           const filteredData = data.filter(item => 
