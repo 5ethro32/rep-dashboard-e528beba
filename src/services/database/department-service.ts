@@ -7,6 +7,8 @@ export const fetchDepartmentData = async (
   isMarch: boolean
 ): Promise<QueryData<DepartmentData>> => {
   const table = isMarch ? 'sales_data' : 'sales_data_februrary';
+  const aprilTable = 'mtd_daily';
+  const lastAprilTable = 'last_mtd_daily';
   
   try {
     if (isMarch) {
@@ -57,19 +59,36 @@ export const fetchDepartmentData = async (
       
       return { data: null, error };
     } else {
-      const { data, error } = await supabase
-        .from(table)
-        .select();
-      
-      if (data && department) {
-        const filteredData = data.filter(item => 
-          'Department' in item && item.Department === department
-        );
+      // If we're dealing with April data
+      if (table === 'sales_data_februrary') {
+        const { data, error } = await supabase
+          .from(lastAprilTable)  // Use last_mtd_daily for April comparisons
+          .select();
         
-        return { data: filteredData as DepartmentData[], error };
+        if (data && department) {
+          const filteredData = data.filter(item => 
+            'Department' in item && item.Department === department
+          );
+          
+          return { data: filteredData as DepartmentData[], error };
+        }
+        
+        return { data: null, error };
+      } else {
+        const { data, error } = await supabase
+          .from(table)
+          .select();
+        
+        if (data && department) {
+          const filteredData = data.filter(item => 
+            'Department' in item && item.Department === department
+          );
+          
+          return { data: filteredData as DepartmentData[], error };
+        }
+        
+        return { data: null, error };
       }
-      
-      return { data: null, error };
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
