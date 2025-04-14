@@ -12,35 +12,67 @@ export const fetchDepartmentData = async (
     if (isMarch) {
       const { data, error } = await supabase
         .from(table)
-        .select()
-        .eq('rep_type', department);
+        .select();
+      
+      if (data && department) {
+        const filteredData = data.filter(item => 
+          'rep_type' in item && item.rep_type === department
+        );
+        
+        // Transform data to match DepartmentData interface
+        const transformedData = filteredData.map(item => {
+          if ('rep_type' in item) {
+            return {
+              Department: item.rep_type,
+              Rep: item.rep_name,
+              'Sub-Rep': item.sub_rep,
+              'Account Ref': item.account_ref,
+              'Account Name': item.account_name,
+              Spend: item.spend,
+              Profit: item.profit,
+              Packs: item.packs,
+              Cost: item.cost,
+              Credit: item.credit,
+              Margin: item.margin
+            } as DepartmentData;
+          } else {
+            return {
+              Department: item.Department,
+              Rep: item.Rep,
+              'Sub-Rep': item["Sub-Rep"],
+              'Account Ref': item["Account Ref"],
+              'Account Name': item["Account Name"],
+              Spend: item.Spend,
+              Profit: item.Profit,
+              Packs: item.Packs,
+              Cost: item.Cost,
+              Credit: item.Credit,
+              Margin: item.Margin
+            } as DepartmentData;
+          }
+        });
 
-      // Transform data to match DepartmentData interface
-      const transformedData = data?.map(item => ({
-        Department: item.rep_type,
-        Rep: item.rep_name,
-        'Sub-Rep': item.sub_rep,
-        'Account Ref': item.account_ref,
-        'Account Name': item.account_name,
-        Spend: item.spend,
-        Profit: item.profit,
-        Packs: item.packs,
-        Cost: item.cost,
-        Credit: item.credit,
-        Margin: item.margin
-      }));
-
-      return { data: transformedData || null, error };
+        return { data: transformedData, error };
+      } 
+      
+      return { data: null, error };
     } else {
       const { data, error } = await supabase
         .from(table)
-        .select()
-        .eq('Department', department);
-      return { data, error };
+        .select();
+      
+      if (data && department) {
+        const filteredData = data.filter(item => 
+          'Department' in item && item.Department === department
+        );
+        
+        return { data: filteredData as DepartmentData[], error };
+      }
+      
+      return { data: null, error };
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
     return { data: null, error: error as Error };
   }
 };
-
