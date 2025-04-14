@@ -34,11 +34,10 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     ? ((accountsChange / previousActiveAccounts) * 100).toFixed(1)
     : 'N/A';
   
-  // Create a map to aggregate metrics by rep across all departments
+  // Find top rep by combined profit across all departments
   const repMetrics = new Map();
   
   if (currentMonthData.length > 0) {
-    // First pass: process main rep data
     currentMonthData.forEach(item => {
       // Extract the rep name with fallbacks for different column naming
       const repName = item.Rep || item.rep_name || '';
@@ -72,7 +71,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       repData.spend += spend;
     });
     
-    // Second pass: process sub-rep data and add to the same totals
+    // Also account for when the rep is listed as a sub-rep
     currentMonthData.forEach(item => {
       // Extract the sub-rep name with fallbacks for different column naming
       const subRepName = item["Sub-Rep"] || item.sub_rep || '';
@@ -126,13 +125,6 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     if (metrics.spend > topSpendRep.spend) {
       topSpendRep = { name: repName, spend: metrics.spend };
     }
-  });
-
-  // For debugging
-  console.log(`Top rep metrics calculated:`, {
-    topRep,
-    topPacksRep,
-    topSpendRep
   });
 
   return (
