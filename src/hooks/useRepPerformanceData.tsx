@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
-import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/rep-performance-service';
+import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData, loadAprilData as loadAprilDataService } from '@/services/rep-performance-service';
 import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -220,198 +220,23 @@ export const useRepPerformanceData = () => {
   }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData, aprRepData, aprRevaData, aprWholesaleData]);
 
   const loadAprilData = async () => {
-    setIsLoading(true);
-    try {
-      const { count, error: countError } = await supabase
-        .from('mtd_daily')
-        .select('*', { count: 'exact', head: true });
-      
-      if (countError) throw new Error(`Error getting count: ${countError.message}`);
-      
-      if (!count || count === 0) {
-        toast({
-          title: "No April data found",
-          description: "The MTD Daily table appears to be empty.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return false;
-      }
-      
-      console.log(`Found ${count} total records in mtd_daily`);
-      
-      let allRecords = [];
-      const pageSize = 1000;
-      const pages = Math.ceil(count / pageSize);
-      
-      for (let page = 0; page < pages; page++) {
-        const from = page * pageSize;
-        const to = from + pageSize - 1;
-        
-        const { data: pageData, error: pageError } = await supabase
-          .from('mtd_daily')
-          .select('*')
-          .range(from, to);
-        
-        if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
-        if (pageData) allRecords = [...allRecords, ...pageData];
-        
-        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records`);
-      }
-      
-      const mtdData = allRecords;
-      console.log('Fetched April MTD records total count:', mtdData.length);
-      
-      if (!mtdData || mtdData.length === 0) {
-        toast({
-          title: "No April data found",
-          description: "The MTD Daily table appears to be empty.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return false;
-      }
-      
-      const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
-      const revaData = mtdData.filter(item => item.Department === 'REVA');
-      const wholesaleData = mtdData.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-      );
-      
-      console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
-      
-      const transformData = (data: any[], isDepartmentData = false): RepData[] => {
-        console.log(`Transforming ${data.length} records`);
-        const repMap = new Map<string, RepData>();
-        
-        data.forEach(item => {
-          let repName;
-          
-          if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
-            repName = item['Sub-Rep'];
-          } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
-            return;
-          } else {
-            repName = item.Rep;
-          }
-          
-          if (!repName) {
-            console.log('Found item without Rep name:', item);
-            return;
-          }
-          
-          if (!repMap.has(repName)) {
-            repMap.set(repName, {
-              rep: repName,
-              spend: 0,
-              profit: 0,
-              packs: 0,
-              margin: 0,
-              activeAccounts: 0,
-              totalAccounts: 0,
-              profitPerActiveShop: 0,
-              profitPerPack: 0,
-              activeRatio: 0
-            });
-          }
-          
-          const currentRep = repMap.get(repName)!;
-          
-          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
-          
-          currentRep.spend += spend;
-          currentRep.profit += profit;
-          currentRep.packs += packs;
-          
-          if (item["Account Ref"]) {
-            currentRep.totalAccounts += 1;
-            if (spend > 0) {
-              currentRep.activeAccounts += 1;
-            }
-          }
-          
-          currentRep.margin = currentRep.spend > 0 ? (currentRep.profit / currentRep.spend) * 100 : 0;
-          
-          repMap.set(repName, currentRep);
-        });
-        
-        console.log(`Transformed data into ${repMap.size} unique reps`);
-        return Array.from(repMap.values()).map(rep => {
-          rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
-          rep.profitPerPack = rep.packs > 0 ? rep.profit / rep.packs : 0;
-          rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
-          return rep;
-        });
-      };
-      
-      const aprRetailData = transformData(retailData);
-      const aprRevaData = transformData(revaData, true);
-      const aprWholesaleData = transformData(wholesaleData, true);
-      
-      console.log(`Transformed Rep Data - Retail: ${aprRetailData.length}, REVA: ${aprRevaData.length}, Wholesale: ${aprWholesaleData.length}`);
-      
-      const aprRetailSummary = calculateDeptSummary(retailData);
-      const aprRevaSummary = calculateDeptSummary(revaData);
-      const aprWholesaleSummary = calculateDeptSummary(wholesaleData);
-      
-      console.log('April Department Summaries:');
-      console.log('Retail:', aprRetailSummary);
-      console.log('REVA:', aprRevaSummary);
-      console.log('Wholesale:', aprWholesaleSummary);
-      
-      setAprRepData(aprRetailData);
-      setAprRevaData(aprRevaData);
-      setAprWholesaleData(aprWholesaleData);
-      setAprBaseSummary(aprRetailSummary);
-      setAprRevaValues(aprRevaSummary);
-      setAprWholesaleValues(aprWholesaleSummary);
-      
-      const combinedAprilData = getCombinedRepData(
-        aprRetailData,
-        aprRevaData,
-        aprWholesaleData,
-        includeRetail,
-        includeReva,
-        includeWholesale
-      );
-      
-      console.log('Combined April Data length:', combinedAprilData.length);
-      console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
-      
-      const currentData = loadStoredRepPerformanceData() || {};
-      saveRepPerformanceData({
-        ...currentData,
-        aprRepData: aprRetailData,
-        aprRevaData: aprRevaData,
-        aprWholesaleData: aprWholesaleData,
-        aprBaseSummary: aprRetailSummary,
-        aprRevaValues: aprRevaSummary,
-        aprWholesaleValues: aprWholesaleSummary
-      });
-      
-      if (selectedMonth === 'April') {
-        setOverallData(combinedAprilData);
-      }
-      
-      toast({
-        title: "April data loaded successfully",
-        description: `Loaded ${mtdData.length} April MTD records from the database.`,
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error loading April data:', error);
-      toast({
-        title: "Error loading April data",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+    return await loadAprilDataService(
+      setIsLoading,
+      setAprRepData,
+      setAprRevaData,
+      setAprWholesaleData,
+      setAprBaseSummary,
+      setAprRevaValues,
+      setAprWholesaleValues,
+      setSummaryChanges,
+      setRepChanges,
+      includeRetail,
+      includeReva,
+      includeWholesale,
+      getCombinedRepData,
+      calculateSummary,
+      calculateDeptSummary
+    );
   };
 
   const loadDataFromSupabase = async () => {
