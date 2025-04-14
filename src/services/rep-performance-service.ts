@@ -1,22 +1,18 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData } from '@/utils/rep-data-processing';
 
-// Define the return type explicitly to avoid excessive type instantiation
 type DepartmentDataResult = {
   data: any[] | null;
   error: Error | null;
 }
 
-// Define more specific types for Supabase query responses
 type SupabaseQueryResult = {
   data: Record<string, any>[] | null;
   error: Error | null;
 }
 
-// Helper function to fetch department data from different tables
 const fetchDepartmentData = async (department: string, isMarch: boolean): Promise<DepartmentDataResult> => {
   const table = isMarch ? 'sales_data' : 'sales_data_februrary';
   
@@ -680,38 +676,37 @@ export const loadAprilData = async (
     
     const localRepChanges: Record<string, any> = {};
       
-    // Calculate rep changes between latest data and previous data
-    Object.keys(localRepChanges).forEach(rep => {
-      if (localRepChanges[rep]) {
-        const aprRep = combinedAprilData.find(r => r.rep === rep);
-        const lastRep = getCombinedRepData(
-          lastAprRetailData,
-          lastAprRevaData,
-          lastAprWholesaleData,
-          includeRetail,
-          includeReva,
-          includeWholesale
-        ).find(r => r.rep === rep);
+    combinedAprilData.forEach(aprRep => {
+      const lastRep = getCombinedRepData(
+        lastAprRetailData,
+        lastAprRevaData,
+        lastAprWholesaleData,
+        includeRetail,
+        includeReva,
+        includeWholesale
+      ).find(r => r.rep === aprRep.rep);
           
-        if (aprRep && lastRep) {
-          const profitChange = lastRep.profit > 0 ? ((aprRep.profit - lastRep.profit) / lastRep.profit) * 100 : 0;
-          const spendChange = lastRep.spend > 0 ? ((aprRep.spend - lastRep.spend) / lastRep.spend) * 100 : 0;
-          const marginChange = aprRep.margin - lastRep.margin;
-          const packsChange = lastRep.packs > 0 ? ((aprRep.packs - lastRep.packs) / lastRep.packs) * 100 : 0;
-          const activeAccountsChange = lastRep.activeAccounts > 0 ? 
-            ((aprRep.activeAccounts - lastRep.activeAccounts) / lastRep.activeAccounts) * 100 : 0;
-          const totalAccountsChange = lastRep.totalAccounts > 0 ? 
-            ((aprRep.totalAccounts - lastRep.totalAccounts) / lastRep.totalAccounts) * 100 : 0;
+      if (lastRep) {
+        const profitChange = lastRep.profit > 0 ? ((aprRep.profit - lastRep.profit) / lastRep.profit) * 100 : 0;
+        const spendChange = lastRep.spend > 0 ? ((aprRep.spend - lastRep.spend) / lastRep.spend) * 100 : 0;
+        const marginChange = aprRep.margin - lastRep.margin;
+        const packsChange = lastRep.packs > 0 ? ((aprRep.packs - lastRep.packs) / lastRep.packs) * 100 : 0;
+        const activeAccountsChange = lastRep.activeAccounts > 0 ? 
+          ((aprRep.activeAccounts - lastRep.activeAccounts) / lastRep.activeAccounts) * 100 : 0;
+        const totalAccountsChange = lastRep.totalAccounts > 0 ? 
+          ((aprRep.totalAccounts - lastRep.totalAccounts) / lastRep.totalAccounts) * 100 : 0;
             
-          localRepChanges[rep] = {
-            profit: profitChange,
-            spend: spendChange,
-            margin: marginChange,
-            packs: packsChange,
-            activeAccounts: activeAccountsChange,
-            totalAccounts: totalAccountsChange
-          };
-        }
+        localRepChanges[aprRep.rep] = {
+          profit: profitChange,
+          spend: spendChange,
+          margin: marginChange,
+          packs: packsChange,
+          activeAccounts: activeAccountsChange,
+          totalAccounts: totalAccountsChange,
+          profitPerActiveShop: 0,
+          profitPerPack: 0,
+          activeRatio: 0
+        };
       }
     });
       
