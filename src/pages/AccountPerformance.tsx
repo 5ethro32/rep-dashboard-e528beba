@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -11,6 +12,9 @@ import ChatInterface from '@/components/chat/ChatInterface';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// Define valid table names as a type for type safety
+type ValidTable = 'mtd_daily' | 'last_mtd_daily' | 'sales_data' | 'sales_data_februrary';
 
 type DataItem = {
   [key: string]: any;
@@ -39,8 +43,8 @@ const AccountPerformance = () => {
     const fetchComparisonData = async () => {
       setIsLoading(true);
       try {
-        let currentTable: string;
-        let previousTable: string | null;
+        let currentTable: ValidTable;
+        let previousTable: ValidTable | null;
         
         switch (selectedMonth) {
           case 'April':

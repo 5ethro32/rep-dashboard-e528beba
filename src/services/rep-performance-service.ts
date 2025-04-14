@@ -1,8 +1,10 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData } from '@/utils/rep-data-processing';
 
+// Helper function to fetch department data from different tables
 const fetchDepartmentData = async (department: string, isMarch: boolean) => {
   const table = isMarch ? 'sales_data' : 'sales_data_februrary';
   
@@ -426,13 +428,17 @@ const calculateRepChanges = (
     };
     
     if (!previous) {
+      // Rep didn't exist in February
       changes[rep] = {
         profit: 100,
         spend: 100,
         margin: current.margin,
         packs: 100,
         activeAccounts: 100,
-        totalAccounts: 100
+        totalAccounts: 100,
+        profitPerActiveShop: 0,
+        profitPerPack: 0,
+        activeRatio: 0
       };
     } else {
       changes[rep] = {
@@ -441,7 +447,10 @@ const calculateRepChanges = (
         margin: current.margin - previous.margin,
         packs: calculatePercentageChange(current.packs, previous.packs),
         activeAccounts: calculatePercentageChange(current.activeAccounts, previous.activeAccounts),
-        totalAccounts: calculatePercentageChange(current.totalAccounts, previous.totalAccounts)
+        totalAccounts: calculatePercentageChange(current.totalAccounts, previous.totalAccounts),
+        profitPerActiveShop: 0,
+        profitPerPack: 0,
+        activeRatio: 0
       };
     }
   });
@@ -454,7 +463,10 @@ const calculateRepChanges = (
         margin: -previousRepMap[rep].margin,
         packs: -100,
         activeAccounts: -100,
-        totalAccounts: -100
+        totalAccounts: -100,
+        profitPerActiveShop: 0,
+        profitPerPack: 0,
+        activeRatio: 0
       };
     }
   });
@@ -656,6 +668,7 @@ export const loadAprilData = async (
     
     const localRepChanges: Record<string, any> = {};
       
+    // Calculate rep changes between latest data and previous data
     Object.keys(localRepChanges).forEach(rep => {
       if (localRepChanges[rep]) {
         const aprRep = combinedAprilData.find(r => r.rep === rep);
