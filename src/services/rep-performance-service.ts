@@ -4,7 +4,7 @@ import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.typ
 import { processRepData, calculateSummaryFromData } from '@/utils/rep-data-processing';
 
 interface DepartmentDataResult {
-  data: Array<Record<string, any>> | null;
+  data: Record<string, any>[] | null;
   error: Error | null;
 }
 
@@ -13,17 +13,19 @@ const fetchDepartmentData = async (department: string, isMarch: boolean): Promis
   
   try {
     if (isMarch) {
-      const { data, error } = await supabase
+      // Use type assertion to avoid deep type instantiation
+      const result = await supabase
         .from(table)
         .select('*')
         .eq('rep_type', department);
-      return { data, error };
+      return { data: result.data, error: result.error as Error };
     } else {
-      const { data, error } = await supabase
+      // Use type assertion to avoid deep type instantiation
+      const result = await supabase
         .from(table)
         .select('*')
         .eq('Department', department);
-      return { data, error };
+      return { data: result.data, error: result.error as Error };
     }
   } catch (error) {
     console.error(`Error fetching ${department} data:`, error);
@@ -522,11 +524,11 @@ export const loadAprilData = async (
     
     console.log(`Found ${count} total records in mtd_daily`);
       
-    let allRecords: Array<Record<string, any>> = [];
+    let allRecords: Record<string, any>[] = [];
     const pageSize = 1000;
     const pages = Math.ceil(count / pageSize);
     
-    for (let page = 0; page < pages; page++) {
+    for (let page = 0; page < pages++) {
       const from = page * pageSize;
       const to = from + pageSize - 1;
         
@@ -560,7 +562,7 @@ export const loadAprilData = async (
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     );
     
-    const transformData = (data: Array<Record<string, any>>, isDepartmentData = false): RepData[] => {
+    const transformData = (data: Record<string, any>[], isDepartmentData = false): RepData[] => {
       console.log(`Transforming ${data.length} records`);
       const repMap = new Map<string, RepData>();
         
@@ -736,39 +738,3 @@ export const loadAprilData = async (
       activeAccounts: lastSummary.activeAccounts > 0 ? 
         ((aprSummary.activeAccounts - lastSummary.activeAccounts) / lastSummary.activeAccounts) * 100 : 0
     };
-      
-    setSummaryChanges(aprilSummaryChanges);
-    setRepChanges(localRepChanges);
-    
-    console.log('Combined April Data length:', combinedAprilData.length);
-    console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
-      
-    const currentData = loadStoredRepPerformanceData() || {};
-    saveRepPerformanceData({
-      ...currentData,
-      aprRepData: aprRetailData,
-      aprRevaData: aprRevaData,
-      aprWholesaleData: aprWholesaleData,
-      aprBaseSummary: aprRetailSummary,
-      aprRevaValues: aprRevaSummary,
-      aprWholesaleValues: aprWholesaleSummary
-    });
-      
-    toast({
-      title: "April data loaded successfully",
-      description: `Loaded ${mtdData.length} April MTD records from the database.`,
-    });
-      
-    return true;
-  } catch (error) {
-    console.error('Error loading April data:', error);
-    toast({
-      title: "Error loading April data",
-      description: error instanceof Error ? error.message : "An unknown error occurred",
-      variant: "destructive",
-    });
-    return false;
-  } finally {
-    setIsLoading(false);
-  }
-};
