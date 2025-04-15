@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -12,7 +13,8 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-type AllowedTable = 'mtd_daily' | 'sales_data_daily' | 'sales_data_februrary' | 'sales_data' | 'sales_data_feb';
+// Update the type to only include valid table names from Supabase
+type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary';
 
 type DataItem = {
   [key: string]: any;
