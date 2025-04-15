@@ -65,11 +65,12 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const [open, setOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
 
-  // Filter customers based on search - ensuring customers is an array
+  // Filter customers based on search - ensuring customers is an array and handling undefined values safely
   const filteredCustomers = Array.isArray(customers) 
     ? customers
         .filter(customer => 
-          customer.account_name.toLowerCase().includes(customerSearch.toLowerCase()))
+          customer && customer.account_name && 
+          customer.account_name.toLowerCase().includes((customerSearch || '').toLowerCase()))
         .slice(0, 100) // Limit to 100 results for performance
     : [];
 
@@ -145,7 +146,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
                 <Command>
                   <CommandInput 
                     placeholder="Search customer..." 
-                    onValueChange={setCustomerSearch}
+                    onValueChange={(value) => setCustomerSearch(value || '')}
                   />
                   <CommandEmpty>No customer found.</CommandEmpty>
                   <CommandGroup className="max-h-64 overflow-y-auto">
