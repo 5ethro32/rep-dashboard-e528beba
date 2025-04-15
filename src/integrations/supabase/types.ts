@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customer_visits: {
+        Row: {
+          comments: string | null
+          contact_name: string | null
+          created_at: string | null
+          customer_name: string
+          customer_ref: string
+          date: string
+          has_order: boolean | null
+          id: string
+          profit: number | null
+          updated_at: string | null
+          user_id: string
+          visit_type: string
+        }
+        Insert: {
+          comments?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          customer_name: string
+          customer_ref: string
+          date: string
+          has_order?: boolean | null
+          id?: string
+          profit?: number | null
+          updated_at?: string | null
+          user_id: string
+          visit_type: string
+        }
+        Update: {
+          comments?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          customer_name?: string
+          customer_ref?: string
+          date?: string
+          has_order?: boolean | null
+          id?: string
+          profit?: number | null
+          updated_at?: string | null
+          user_id?: string
+          visit_type?: string
+        }
+        Relationships: []
+      }
       march_rolling: {
         Row: {
           "Account Name": string | null
@@ -264,6 +309,39 @@ export type Database = {
           Rep?: string
           Spend?: number | null
           "Sub-Rep"?: string | null
+        }
+        Relationships: []
+      }
+      week_plans: {
+        Row: {
+          created_at: string | null
+          customer_name: string
+          customer_ref: string
+          id: string
+          notes: string | null
+          planned_date: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_name: string
+          customer_ref: string
+          id?: string
+          notes?: string | null
+          planned_date: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_name?: string
+          customer_ref?: string
+          id?: string
+          notes?: string | null
+          planned_date?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

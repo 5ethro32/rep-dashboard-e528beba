@@ -1,23 +1,26 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, PlusCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
+import WeekPlanTab from '@/components/rep-tracker/WeekPlanTab';
+import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 import UserProfileButton from '@/components/auth/UserProfileButton';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const RepTracker: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isMobile = useIsMobile();
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showAddVisit, setShowAddVisit] = useState(false);
   
   // Calculate week start and end dates
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
@@ -31,7 +34,6 @@ const RepTracker: React.FC = () => {
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      // Fetch customers from sales_data or sales_data_februrary
       const { data: salesData, error } = await supabase
         .from('sales_data')
         .select('account_name, account_ref')
@@ -39,11 +41,9 @@ const RepTracker: React.FC = () => {
         .limit(1000);
       
       if (error) {
-        console.error('Error fetching customers:', error);
         throw error;
       }
       
-      // Remove duplicates - only unique account_ref values
       const uniqueCustomers = salesData.reduce((acc: any[], current) => {
         const x = acc.find(item => item.account_ref === current.account_ref);
         if (!x) {
@@ -152,25 +152,42 @@ const RepTracker: React.FC = () => {
         <div className="flex justify-end mb-6">
           <Button 
             className="bg-finance-red hover:bg-finance-red/80"
-            onClick={() => {
-              // TODO: Implement add visit functionality
-              toast({
-                title: "Coming soon",
-                description: "Add visit functionality will be implemented soon!"
-              });
-            }}
+            onClick={() => setShowAddVisit(true)}
           >
             <PlusCircle className="h-4 w-4 mr-2" />
             Add Visit
           </Button>
         </div>
         
-        {/* Customer Visits List */}
-        <CustomerVisitsList 
-          weekStartDate={weekStart} 
-          weekEndDate={weekEnd}
-          customers={customers || []} 
-          isLoadingCustomers={isLoadingCustomers}
+        {/* Tabs for Visits and Week Plan */}
+        <Tabs defaultValue="visits" className="space-y-6">
+          <TabsList className="bg-black/20 border-gray-800">
+            <TabsTrigger value="visits">Customer Visits</TabsTrigger>
+            <TabsTrigger value="week-plan">Week Plan</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="visits" className="mt-6">
+            <CustomerVisitsList 
+              weekStartDate={weekStart} 
+              weekEndDate={weekEnd}
+              customers={customers || []} 
+              isLoadingCustomers={isLoadingCustomers}
+            />
+          </TabsContent>
+          
+          <TabsContent value="week-plan" className="mt-6">
+            <WeekPlanTab 
+              weekStartDate={weekStart}
+              weekEndDate={weekEnd}
+            />
+          </TabsContent>
+        </Tabs>
+        
+        {/* Add Visit Dialog */}
+        <AddVisitDialog 
+          isOpen={showAddVisit}
+          onClose={() => setShowAddVisit(false)}
+          customers={customers || []}
         />
       </div>
     </div>

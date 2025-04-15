@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
   TableBody,
@@ -17,78 +19,21 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { Edit2, Trash2 } from 'lucide-react';
-
-interface Customer {
-  account_name: string;
-  account_ref: string;
-}
+import { Edit2, Trash2, ArrowUpDown } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 interface CustomerVisitsListProps {
   weekStartDate: Date;
   weekEndDate: Date;
-  customers: Customer[];
+  customers: Array<{
+    account_name: string;
+    account_ref: string;
+  }>;
   isLoadingCustomers: boolean;
 }
 
-// Sample data for demonstration purposes
-const sampleVisits = [
-  {
-    id: '1',
-    date: new Date('2025-02-10'),
-    type: 'Customer Visit',
-    customerName: 'Halliday Largs',
-    customerRef: 'HL001',
-    contact: 'David',
-    hasOrder: true,
-    profit: 110.00,
-    comments: 'Olanz 10mg, pro buccal, trazodones.',
-  },
-  {
-    id: '2',
-    date: new Date('2025-02-10'),
-    type: 'Customer Visit',
-    customerName: 'AA Hagan',
-    customerRef: 'AA002',
-    contact: 'Paul',
-    hasOrder: false,
-    profit: 0,
-    comments: 'Left aah offers. Followed up. Future potential REVA.',
-  },
-  {
-    id: '3',
-    date: new Date('2025-02-10'),
-    type: 'Customer Visit',
-    customerName: 'Reekie',
-    customerRef: 'RE003',
-    contact: 'Martyn',
-    hasOrder: true,
-    profit: 141.23,
-    comments: 'Olanz 10mg, traz 150 & 50mg.',
-  },
-  {
-    id: '4',
-    date: new Date('2025-02-11'),
-    type: 'Outbound Call',
-    customerName: 'TN Crosby',
-    customerRef: 'TN004',
-    contact: 'Michael',
-    hasOrder: true,
-    profit: 54.66,
-    comments: 'Olanz 10mg & 2.5 tran acid trazodones',
-  },
-  {
-    id: '5',
-    date: new Date('2025-02-13'),
-    type: 'Customer Visit',
-    customerName: 'Office in AM',
-    customerRef: 'OFFICE',
-    contact: '',
-    hasOrder: false,
-    profit: 0,
-    comments: '',
-  },
-];
+type SortField = 'date' | 'customer_name' | 'profit';
+type SortOrder = 'asc' | 'desc';
 
 const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   weekStartDate,
@@ -97,14 +42,50 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   isLoadingCustomers,
 }) => {
   const [filter, setFilter] = useState('all'); // 'all', 'ordered', 'no-order'
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  
+  // Fetch visits from Supabase
+  const { data: visits, isLoading } = useQuery({
+    queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customer_visits')
+        .select('*')
+        .gte('date', weekStartDate.toISOString())
+        .lte('date', weekEndDate.toISOString())
+        .order(sortField, { ascending: sortOrder === 'asc' });
+
+      if (error) throw error;
+      return data;
+    },
+    meta: {
+      onError: (error: Error) => {
+        toast({
+          title: 'Error',
+          description: 'Failed to load visits',
+          variant: 'destructive',
+        });
+      },
+    },
+  });
 
   // Filter visits based on selected filter
-  const filteredVisits = sampleVisits.filter(visit => {
+  const filteredVisits = visits?.filter(visit => {
     if (filter === 'all') return true;
-    if (filter === 'ordered') return visit.hasOrder;
-    if (filter === 'no-order') return !visit.hasOrder;
+    if (filter === 'ordered') return visit.has_order;
+    if (filter === 'no-order') return !visit.has_order;
     return true;
   });
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -130,53 +111,87 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
           <Table className="w-full">
             <TableHeader className="bg-black/30">
               <TableRow className="hover:bg-transparent border-b border-gray-800">
-                <TableHead className="text-white font-medium">Date</TableHead>
+                <TableHead className="text-white font-medium">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('date')}
+                    className="text-white font-medium hover:text-white"
+                  >
+                    Date
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
                 <TableHead className="text-white font-medium">Type</TableHead>
-                <TableHead className="text-white font-medium">Customer</TableHead>
+                <TableHead className="text-white font-medium">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('customer_name')}
+                    className="text-white font-medium hover:text-white"
+                  >
+                    Customer
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
                 <TableHead className="text-white font-medium">Contact</TableHead>
                 <TableHead className="text-white font-medium">Order</TableHead>
-                <TableHead className="text-white font-medium">Profit (£)</TableHead>
+                <TableHead className="text-white font-medium">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('profit')}
+                    className="text-white font-medium hover:text-white"
+                  >
+                    Profit (£)
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
                 <TableHead className="text-white font-medium">Comments</TableHead>
                 <TableHead className="text-white font-medium text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredVisits.map((visit) => (
-                <TableRow 
-                  key={visit.id}
-                  className="hover:bg-black/20 border-b border-gray-800 text-white"
-                >
-                  <TableCell>{visit.date.toLocaleDateString('en-GB')}</TableCell>
-                  <TableCell>{visit.type}</TableCell>
-                  <TableCell>{visit.customerName}</TableCell>
-                  <TableCell>{visit.contact}</TableCell>
-                  <TableCell>{visit.hasOrder ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>
-                    {visit.hasOrder ? formatCurrency(visit.profit) : 'N/A'}
-                  </TableCell>
-                  <TableCell className="max-w-[200px] truncate">
-                    {visit.comments}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-blue-400">
-                        <Edit2 className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-400">
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </div>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-4 text-white/60">
+                    Loading visits...
                   </TableCell>
                 </TableRow>
-              ))}
-              {filteredVisits.length === 0 && (
+              ) : filteredVisits?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-4 text-white/60">
                     No visits found for this week.
                   </TableCell>
                 </TableRow>
+              ) : (
+                filteredVisits?.map((visit) => (
+                  <TableRow 
+                    key={visit.id}
+                    className="hover:bg-black/20 border-b border-gray-800 text-white"
+                  >
+                    <TableCell>{new Date(visit.date).toLocaleDateString('en-GB')}</TableCell>
+                    <TableCell>{visit.visit_type}</TableCell>
+                    <TableCell>{visit.customer_name}</TableCell>
+                    <TableCell>{visit.contact_name}</TableCell>
+                    <TableCell>{visit.has_order ? 'Yes' : 'No'}</TableCell>
+                    <TableCell>
+                      {visit.has_order ? formatCurrency(visit.profit) : 'N/A'}
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate">
+                      {visit.comments}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-blue-400">
+                          <Edit2 className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-400">
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
