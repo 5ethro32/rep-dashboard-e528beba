@@ -18,14 +18,16 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
 }) => {
   // Calculate active accounts (accounts with spend > 0)
   const activeAccounts = currentMonthData.filter(item => {
+    // Check both upper and lowercase spend fields to handle different data formats
     const spend = typeof item.Spend === 'number' ? item.Spend : 
-                 (typeof item.spend === 'number' ? item.spend : 0);
+                 typeof item.spend === 'number' ? item.spend : 0;
     return spend > 0;
   }).length;
   
   const previousActiveAccounts = previousMonthData.filter(item => {
+    // Check both upper and lowercase spend fields to handle different data formats
     const spend = typeof item.Spend === 'number' ? item.Spend : 
-                 (typeof item.spend === 'number' ? item.spend : 0);
+                 typeof item.spend === 'number' ? item.spend : 0;
     return spend > 0;
   }).length;
   
@@ -46,19 +48,19 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     const repSpends = new Map();
     
     currentMonthData.forEach(item => {
-      // Extract the rep name with fallbacks for different column naming
+      // Extract the rep name with fallbacks for different column naming conventions
       const repName = item.Rep || item.rep_name || '';
       // Extract the sub-rep name with fallbacks for different column naming
       const subRepName = item["Sub-Rep"] || item.sub_rep || '';
       
-      // Handle metric calculation for the main rep
+      // Skip RETAIL, REVA, and Wholesale as they are department names, not reps
       if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale') {
         const profit = typeof item.Profit === 'number' ? item.Profit : 
-                      (typeof item.profit === 'number' ? item.profit : 0);
+                      typeof item.profit === 'number' ? item.profit : 0;
         const packs = typeof item.Packs === 'number' ? item.Packs : 
-                     (typeof item.packs === 'number' ? item.packs : 0);
+                     typeof item.packs === 'number' ? item.packs : 0;
         const spend = typeof item.Spend === 'number' ? item.Spend : 
-                     (typeof item.spend === 'number' ? item.spend : 0);
+                     typeof item.spend === 'number' ? item.spend : 0;
         
         // Sum up profits
         const currentProfit = repProfits.get(repName) || 0;
@@ -76,11 +78,11 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       // Also add metrics for the sub-rep if present
       if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale') {
         const profit = typeof item.Profit === 'number' ? item.Profit : 
-                      (typeof item.profit === 'number' ? item.profit : 0);
+                      typeof item.profit === 'number' ? item.profit : 0;
         const packs = typeof item.Packs === 'number' ? item.Packs : 
-                     (typeof item.packs === 'number' ? item.packs : 0);
+                     typeof item.packs === 'number' ? item.packs : 0;
         const spend = typeof item.Spend === 'number' ? item.Spend : 
-                     (typeof item.spend === 'number' ? item.spend : 0);
+                     typeof item.spend === 'number' ? item.spend : 0;
         
         // Sum up profits for sub-rep
         const currentProfit = repProfits.get(subRepName) || 0;

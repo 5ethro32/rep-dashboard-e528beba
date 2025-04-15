@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      march_rolling: {
+        Row: {
+          "Account Name": string | null
+          "Account Ref": string | null
+          Cost: number | null
+          Credit: number | null
+          Department: string | null
+          id: string
+          Margin: number | null
+          Packs: number | null
+          Profit: number | null
+          Rep: string
+          Spend: number | null
+          "Sub-Rep": string | null
+        }
+        Insert: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Update: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep?: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Relationships: []
+      }
       mtd_daily: {
         Row: {
           "Account Name": string | null
@@ -177,102 +222,6 @@ export type Database = {
         }
         Relationships: []
       }
-      sales_data_daily: {
-        Row: {
-          "Account Name": string | null
-          "Account Ref": string | null
-          Cost: number | null
-          Credit: number | null
-          Department: string | null
-          id: string
-          Margin: number | null
-          Packs: number | null
-          Profit: number | null
-          Rep: string
-          Spend: number | null
-          "Sub-Rep": string | null
-        }
-        Insert: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
-        }
-        Update: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep?: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
-        }
-        Relationships: []
-      }
-      sales_data_feb: {
-        Row: {
-          account_name: string
-          account_ref: string
-          cost: number
-          credit: number
-          id: number
-          import_date: string | null
-          margin: number
-          packs: number
-          profit: number
-          rep_name: string
-          rep_type: string
-          reporting_period: string
-          spend: number
-          sub_rep: string | null
-        }
-        Insert: {
-          account_name: string
-          account_ref: string
-          cost?: number
-          credit?: number
-          id?: number
-          import_date?: string | null
-          margin?: number
-          packs?: number
-          profit?: number
-          rep_name: string
-          rep_type?: string
-          reporting_period: string
-          spend?: number
-          sub_rep?: string | null
-        }
-        Update: {
-          account_name?: string
-          account_ref?: string
-          cost?: number
-          credit?: number
-          id?: number
-          import_date?: string | null
-          margin?: number
-          packs?: number
-          profit?: number
-          rep_name?: string
-          rep_type?: string
-          reporting_period?: string
-          spend?: number
-          sub_rep?: string | null
-        }
-        Relationships: []
-      }
       sales_data_februrary: {
         Row: {
           "Account Name": string | null
@@ -346,6 +295,10 @@ export type Database = {
       }
     }
     Functions: {
+      clear_last_mtd_daily: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       clear_mtd_daily: {
         Args: Record<PropertyKey, never>
         Returns: undefined
