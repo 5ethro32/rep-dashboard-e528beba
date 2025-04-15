@@ -21,16 +21,20 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Ensure customers is always an array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
+  // Only filter customers if we have a valid array with objects containing account_name
   const filteredCustomers = React.useMemo(() => {
+    if (safeCustomers.length === 0) return [];
+    
     return safeCustomers
       .filter(customer => {
         if (!customer || typeof customer !== 'object') return false;
         if (!customer.account_name || typeof customer.account_name !== 'string') return false;
         return customer.account_name.toLowerCase().includes((searchQuery || '').toLowerCase());
       })
-      .slice(0, 100);
+      .slice(0, 100); // Limit results for performance
   }, [safeCustomers, searchQuery]);
 
   return (
@@ -52,30 +56,27 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
             placeholder="Search customer..." 
             onValueChange={(value) => setSearchQuery(value || '')}
           />
-          {!filteredCustomers || filteredCustomers.length === 0 ? (
-            <CommandEmpty>No customer found.</CommandEmpty>
-          ) : (
-            <CommandGroup className="max-h-64 overflow-y-auto">
-              {filteredCustomers.map((customer) => (
-                <CommandItem
-                  key={customer.account_ref}
-                  value={customer.account_name}
-                  onSelect={() => {
-                    onSelect(customer.account_ref, customer.account_name);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {customer.account_name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
+          <CommandEmpty>No customer found.</CommandEmpty>
+          <CommandGroup className="max-h-64 overflow-y-auto">
+            {filteredCustomers.map((customer) => (
+              <CommandItem
+                key={customer.account_ref}
+                value={customer.account_name}
+                onSelect={() => {
+                  onSelect(customer.account_ref, customer.account_name);
+                  setOpen(false);
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {customer.account_name}
+              </CommandItem>
+            ))}
+          </CommandGroup>
         </Command>
       </PopoverContent>
     </Popover>
