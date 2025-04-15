@@ -59,7 +59,7 @@ interface VisitFormData {
 const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   isOpen,
   onClose,
-  customers,
+  customers = [],
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -74,11 +74,13 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   const [open, setOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
 
-  // Filter customers based on search
-  const filteredCustomers = customers
-    .filter(customer => 
-      customer.account_name.toLowerCase().includes(customerSearch.toLowerCase()))
-    .slice(0, 100); // Limit to 100 results for performance
+  // Filter customers based on search - ensuring customers is an array
+  const filteredCustomers = Array.isArray(customers) 
+    ? customers
+        .filter(customer => 
+          customer.account_name.toLowerCase().includes(customerSearch.toLowerCase()))
+        .slice(0, 100) // Limit to 100 results for performance
+    : [];
 
   const addVisitMutation = useMutation({
     mutationFn: async (data: VisitFormData) => {
@@ -256,7 +258,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={addVisitMutation.isPending}>
+            <Button type="submit" disabled={addPlanMutation.isPending}>
               {addVisitMutation.isPending ? 'Saving...' : 'Add Visit'}
             </Button>
           </DialogFooter>

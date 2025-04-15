@@ -49,7 +49,7 @@ interface PlanFormData {
 const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   isOpen,
   onClose,
-  customers,
+  customers = [],
   selectedDate,
 }) => {
   const { user } = useAuth();
@@ -65,11 +65,13 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const [open, setOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
 
-  // Filter customers based on search
-  const filteredCustomers = customers
-    .filter(customer => 
-      customer.account_name.toLowerCase().includes(customerSearch.toLowerCase()))
-    .slice(0, 100); // Limit to 100 results for performance
+  // Filter customers based on search - ensuring customers is an array
+  const filteredCustomers = Array.isArray(customers) 
+    ? customers
+        .filter(customer => 
+          customer.account_name.toLowerCase().includes(customerSearch.toLowerCase()))
+        .slice(0, 100) // Limit to 100 results for performance
+    : [];
 
   const addPlanMutation = useMutation({
     mutationFn: async (data: PlanFormData) => {
