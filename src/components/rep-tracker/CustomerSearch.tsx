@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -24,18 +24,6 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef<Array<HTMLDivElement | null>>([]);
-
-  // Focus the input when popover opens
-  useEffect(() => {
-    if (open && inputRef.current) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-    }
-    
-    // Reset highlighted index when opening/closing
-    setHighlightedIndex(-1);
-  }, [open]);
 
   // Ensure customers is always an array
   const safeCustomers = Array.isArray(customers) ? customers : [];
@@ -81,9 +69,9 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
     }
   };
 
-  // Handle customer selection - critical fix
+  // Handle customer selection
   const handleSelect = (ref: string, name: string) => {
-    console.log("Customer selected:", name, ref);
+    console.log("Customer selection triggered:", name, ref);
     onSelect(ref, name);
     setOpen(false);
     setSearchQuery('');
@@ -105,21 +93,20 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
   }, [filteredCustomers.length]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-          onClick={() => setOpen(true)}
-        >
-          {selectedCustomer || "Select customer..."}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
-        <div className="w-full">
+    <div className="relative w-full">
+      <Button
+        variant="outline"
+        role="combobox"
+        aria-expanded={open}
+        className="w-full justify-between"
+        onClick={() => setOpen(!open)}
+      >
+        {selectedCustomer || "Select customer..."}
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+      
+      {open && (
+        <div className="absolute top-full mt-1 w-full z-50 rounded-md border bg-popover shadow-lg">
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Input
@@ -129,6 +116,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               className="border-0 bg-transparent py-3 focus-visible:ring-0 focus-visible:ring-offset-0"
+              autoFocus
             />
           </div>
           
@@ -139,8 +127,10 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
                   <div
                     key={customer.account_ref}
                     ref={el => itemsRef.current[index] = el}
-                    // Critical fix: Making the click handler more direct & ensuring it doesn't get prevented
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log("Customer item clicked:", customer.account_name);
                       handleSelect(customer.account_ref, customer.account_name);
                     }}
                     className={cn(
@@ -158,7 +148,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
                         selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    {customer.account_name}
+                    <span>{customer.account_name}</span>
                   </div>
                 ))}
               </div>
@@ -167,7 +157,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
             )}
           </ScrollArea>
         </div>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   );
 }
