@@ -40,106 +40,164 @@ const AccountPerformance = () => {
   const isMobile = useIsMobile();
   
   useEffect(() => {
-    const fetchComparisonData = async () => {
-      setIsLoading(true);
-      try {
-        let currentTable: AllowedTable;
-        let previousTable: AllowedTable | null;
-        
-        switch (selectedMonth) {
-          case 'April':
-            currentTable = "mtd_daily";
-            previousTable = "sales_data";
-            break;
-          case 'March':
-            currentTable = "sales_data";
-            previousTable = "sales_data_februrary";
-            break;
-          case 'February':
-            currentTable = "sales_data_februrary";
-            previousTable = null;
-            break;
-          default:
-            currentTable = "sales_data";
-            previousTable = "sales_data_februrary";
-        }
-        
-        console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
-        
-        const { data: currentData, error: currentError } = await supabase
+    fetchComparisonData();
+  }, [selectedMonth]);
+  
+  const fetchComparisonData = async () => {
+    setIsLoading(true);
+    try {
+      let currentTable: AllowedTable;
+      let previousTable: AllowedTable | null;
+      
+      switch (selectedMonth) {
+        case 'April':
+          currentTable = "mtd_daily";
+          previousTable = "sales_data";
+          break;
+        case 'March':
+          currentTable = "sales_data";
+          previousTable = "sales_data_februrary";
+          break;
+        case 'February':
+          currentTable = "sales_data_februrary";
+          previousTable = null;
+          break;
+        default:
+          currentTable = "sales_data";
+          previousTable = "sales_data_februrary";
+      }
+      
+      console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
+      
+      // Fetch current month data
+      let currentData: DataItem[] = [];
+      if (currentTable === "sales_data") {
+        // For March data in sales_data
+        const { data, error } = await supabase
           .from(currentTable)
           .select('*');
         
-        if (currentError) throw currentError;
+        if (error) throw error;
         
-        let previousData: DataItem[] = [];
-        if (previousTable) {
-          const { data: prevData, error: previousError } = await supabase
+        // Transform to match expected format
+        currentData = data?.map((item: any) => ({
+          "Account Name": item.account_name,
+          "Account Ref": item.account_ref,
+          "Rep": item.rep_name,
+          "Sub-Rep": item.sub_rep,
+          "Profit": item.profit,
+          "Spend": item.spend,
+          "Margin": item.margin,
+          "Packs": item.packs,
+          "Department": item.rep_type
+        })) || [];
+      } else {
+        // For April (mtd_daily) or February data
+        const { data, error } = await supabase
+          .from(currentTable)
+          .select('*');
+        
+        if (error) throw error;
+        currentData = data || [];
+      }
+      
+      // Fetch previous month data if applicable
+      let previousData: DataItem[] = [];
+      if (previousTable) {
+        if (previousTable === "sales_data") {
+          // For March data as previous month
+          const { data, error } = await supabase
             .from(previousTable)
             .select('*');
           
-          if (previousError) throw previousError;
-          previousData = prevData || [];
+          if (error) throw error;
+          
+          // Transform to match expected format
+          previousData = data?.map((item: any) => ({
+            "Account Name": item.account_name,
+            "Account Ref": item.account_ref,
+            "Rep": item.rep_name,
+            "Sub-Rep": item.sub_rep,
+            "Profit": item.profit,
+            "Spend": item.spend,
+            "Margin": item.margin,
+            "Packs": item.packs,
+            "Department": item.rep_type
+          })) || [];
+        } else {
+          // For February data as previous month
+          const { data, error } = await supabase
+            .from(previousTable)
+            .select('*');
+          
+          if (error) throw error;
+          previousData = data || [];
         }
-        
-        console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} and ${previousData?.length || 0} for previous month`);
-        
-        setCurrentMonthRawData(currentData || []);
-        setPreviousMonthRawData(previousData);
-        
-        const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
-          return item["Account Name"] || item.account_name;
-        }).filter(Boolean)).size || 0;
-        
-        const previousActiveAccounts = new Set(previousData?.map((item: DataItem) => {
-          return item["Account Name"] || item.account_name;
-        }).filter(Boolean)).size || 0;
-        
-        setActiveAccounts({
-          current: currentActiveAccounts,
-          previous: previousActiveAccounts
-        });
-        
-        if (currentData && currentData.length > 0) {
-          const repProfits = new Map();
-          
-          currentData.forEach((item: DataItem) => {
-            const repName = item.Rep || item.rep_name || '';
-            const profit = typeof item.Profit === 'number' ? item.Profit : 
-                          (typeof item.profit === 'number' ? item.profit : 0);
-            
-            if (repName) {
-              const currentProfit = repProfits.get(repName) || 0;
-              repProfits.set(repName, currentProfit + profit);
-            }
-          });
-          
-          let maxProfit = 0;
-          let topRepName = '';
-          
-          repProfits.forEach((profit, rep) => {
-            if (profit > maxProfit) {
-              maxProfit = profit;
-              topRepName = rep;
-            }
-          });
-          
-          setTopRep({ name: topRepName, profit: maxProfit });
-        }
-      } catch (error) {
-        console.error('Error fetching comparison data:', error);
-        toast({
-          title: "Error loading data",
-          description: error instanceof Error ? error.message : "An unknown error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
       }
-    };
-    
-    fetchComparisonData();
-  }, [selectedMonth]);
+      
+      console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} and ${previousData?.length || 0} for previous month`);
+      
+      setCurrentMonthRawData(currentData || []);
+      setPreviousMonthRawData(previousData);
+      
+      // Calculate active accounts for current month
+      const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
+        return item["Account Name"] || item.account_name;
+      }).filter(Boolean)).size || 0;
+      
+      // Calculate active accounts for previous month
+      const previousActiveAccounts = new Set(previousData?.map((item: DataItem) => {
+        return item["Account Name"] || item.account_name;
+      }).filter(Boolean)).size || 0;
+      
+      setActiveAccounts({
+        current: currentActiveAccounts,
+        previous: previousActiveAccounts
+      });
+      
+      // Find top rep for current month
+      if (currentData && currentData.length > 0) {
+        const repProfits = new Map();
+        
+        currentData.forEach((item: DataItem) => {
+          const repName = item.Rep || item.rep_name || '';
+          const profit = typeof item.Profit === 'number' ? item.Profit : 
+                        (typeof item.profit === 'number' ? item.profit : 0);
+          
+          if (repName) {
+            const currentProfit = repProfits.get(repName) || 0;
+            repProfits.set(repName, currentProfit + profit);
+          }
+        });
+        
+        let maxProfit = 0;
+        let topRepName = '';
+        
+        repProfits.forEach((profit, rep) => {
+          if (profit > maxProfit) {
+            maxProfit = profit;
+            topRepName = rep;
+          }
+        });
+        
+        setTopRep({ name: topRepName, profit: maxProfit });
+      }
+      
+      toast({
+        title: "Data loaded successfully",
+        description: `Loaded ${currentData?.length || 0} records for ${selectedMonth}`,
+      });
+    } catch (error) {
+      console.error('Error fetching comparison data:', error);
+      toast({
+        title: "Error loading data",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -165,6 +223,17 @@ const AccountPerformance = () => {
           <p className="text-white/60">
             Compare all accounts performance between months to identify declining or improving accounts.
           </p>
+        </div>
+        
+        <div className="mb-4">
+          <Button 
+            onClick={fetchComparisonData} 
+            disabled={isLoading}
+            variant="default"
+            className="bg-finance-red hover:bg-finance-red/80"
+          >
+            {isLoading ? "Loading data..." : "Refresh Data"}
+          </Button>
         </div>
         
         <AccountSummaryCards
