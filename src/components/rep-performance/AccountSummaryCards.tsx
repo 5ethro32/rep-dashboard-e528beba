@@ -34,106 +34,95 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     ? ((accountsChange / previousActiveAccounts) * 100).toFixed(1)
     : 'N/A';
   
-  // Create a map to aggregate metrics by rep across all departments
-  const repMetrics = new Map();
-  
-  if (currentMonthData.length > 0) {
-    // First pass: process main rep data
-    currentMonthData.forEach(item => {
-      // Extract the rep name with fallbacks for different column naming
-      const repName = item.Rep || item.rep_name || '';
-      
-      // Skip department entries
-      if (repName === 'RETAIL' || repName === 'REVA' || repName === 'Wholesale') {
-        return;
-      }
-      
-      // Initialize rep data if not present
-      if (!repMetrics.has(repName)) {
-        repMetrics.set(repName, {
-          profit: 0,
-          packs: 0,
-          spend: 0
-        });
-      }
-      
-      // Extract metrics with fallbacks for different column naming
-      const profit = typeof item.Profit === 'number' ? item.Profit : 
-                    (typeof item.profit === 'number' ? item.profit : 0);
-      const packs = typeof item.Packs === 'number' ? item.Packs : 
-                    (typeof item.packs === 'number' ? item.packs : 0);
-      const spend = typeof item.Spend === 'number' ? item.Spend : 
-                    (typeof item.spend === 'number' ? item.spend : 0);
-      
-      // Update metrics
-      const repData = repMetrics.get(repName);
-      repData.profit += profit;
-      repData.packs += packs;
-      repData.spend += spend;
-    });
-    
-    // Second pass: process sub-rep data and add to the same totals
-    currentMonthData.forEach(item => {
-      // Extract the sub-rep name with fallbacks for different column naming
-      const subRepName = item["Sub-Rep"] || item.sub_rep || '';
-      
-      if (!subRepName || subRepName === 'RETAIL' || subRepName === 'REVA' || subRepName === 'Wholesale') {
-        return;
-      }
-      
-      // Initialize rep data if not present
-      if (!repMetrics.has(subRepName)) {
-        repMetrics.set(subRepName, {
-          profit: 0,
-          packs: 0,
-          spend: 0
-        });
-      }
-      
-      // Extract metrics with fallbacks for different column naming
-      const profit = typeof item.Profit === 'number' ? item.Profit : 
-                    (typeof item.profit === 'number' ? item.profit : 0);
-      const packs = typeof item.Packs === 'number' ? item.Packs : 
-                    (typeof item.packs === 'number' ? item.packs : 0);
-      const spend = typeof item.Spend === 'number' ? item.Spend : 
-                    (typeof item.spend === 'number' ? item.spend : 0);
-      
-      // Update metrics for sub-rep
-      const repData = repMetrics.get(subRepName);
-      repData.profit += profit;
-      repData.packs += packs;
-      repData.spend += spend;
-    });
-  }
-  
-  // Find top performers for each metric
+  // Find top rep by combined profit across all departments
   let topRep = { name: 'No data', profit: 0 };
   let topPacksRep = { name: 'No data', packs: 0 };
   let topSpendRep = { name: 'No data', spend: 0 };
   
-  repMetrics.forEach((metrics, repName) => {
-    // Check for top profit
-    if (metrics.profit > topRep.profit) {
-      topRep = { name: repName, profit: metrics.profit };
-    }
+  if (currentMonthData.length > 0) {
+    // Group by rep and sum profits, packs, and spend across all departments
+    const repProfits = new Map();
+    const repPacks = new Map();
+    const repSpends = new Map();
     
-    // Check for top packs
-    if (metrics.packs > topPacksRep.packs) {
-      topPacksRep = { name: repName, packs: metrics.packs };
-    }
+    currentMonthData.forEach(item => {
+      // Extract the rep name with fallbacks for different column naming
+      const repName = item.Rep || item.rep_name || '';
+      // Extract the sub-rep name with fallbacks for different column naming
+      const subRepName = item["Sub-Rep"] || item.sub_rep || '';
+      
+      // Handle metric calculation for the main rep
+      if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale') {
+        const profit = typeof item.Profit === 'number' ? item.Profit : 
+                      (typeof item.profit === 'number' ? item.profit : 0);
+        const packs = typeof item.Packs === 'number' ? item.Packs : 
+                     (typeof item.packs === 'number' ? item.packs : 0);
+        const spend = typeof item.Spend === 'number' ? item.Spend : 
+                     (typeof item.spend === 'number' ? item.spend : 0);
+        
+        // Sum up profits
+        const currentProfit = repProfits.get(repName) || 0;
+        repProfits.set(repName, currentProfit + profit);
+        
+        // Sum up packs
+        const currentPacks = repPacks.get(repName) || 0;
+        repPacks.set(repName, currentPacks + packs);
+        
+        // Sum up spend
+        const currentSpend = repSpends.get(repName) || 0;
+        repSpends.set(repName, currentSpend + spend);
+      }
+      
+      // Also add metrics for the sub-rep if present
+      if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale') {
+        const profit = typeof item.Profit === 'number' ? item.Profit : 
+                      (typeof item.profit === 'number' ? item.profit : 0);
+        const packs = typeof item.Packs === 'number' ? item.Packs : 
+                     (typeof item.packs === 'number' ? item.packs : 0);
+        const spend = typeof item.Spend === 'number' ? item.Spend : 
+                     (typeof item.spend === 'number' ? item.spend : 0);
+        
+        // Sum up profits for sub-rep
+        const currentProfit = repProfits.get(subRepName) || 0;
+        repProfits.set(subRepName, currentProfit + profit);
+        
+        // Sum up packs for sub-rep
+        const currentPacks = repPacks.get(subRepName) || 0;
+        repPacks.set(subRepName, currentPacks + packs);
+        
+        // Sum up spend for sub-rep
+        const currentSpend = repSpends.get(subRepName) || 0;
+        repSpends.set(subRepName, currentSpend + spend);
+      }
+    });
     
-    // Check for top spend
-    if (metrics.spend > topSpendRep.spend) {
-      topSpendRep = { name: repName, spend: metrics.spend };
-    }
-  });
-
-  // For debugging
-  console.log(`Top rep metrics calculated:`, {
-    topRep,
-    topPacksRep,
-    topSpendRep
-  });
+    // Find rep with highest combined profit
+    let maxProfit = 0;
+    repProfits.forEach((profit, rep) => {
+      if (profit > maxProfit) {
+        maxProfit = profit;
+        topRep = { name: rep, profit: maxProfit };
+      }
+    });
+    
+    // Find rep with highest combined packs
+    let maxPacks = 0;
+    repPacks.forEach((packs, rep) => {
+      if (packs > maxPacks) {
+        maxPacks = packs;
+        topPacksRep = { name: rep, packs: maxPacks };
+      }
+    });
+    
+    // Find rep with highest combined spend
+    let maxSpend = 0;
+    repSpends.forEach((spend, rep) => {
+      if (spend > maxSpend) {
+        maxSpend = spend;
+        topSpendRep = { name: rep, spend: maxSpend };
+      }
+    });
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
