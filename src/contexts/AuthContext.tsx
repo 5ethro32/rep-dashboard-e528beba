@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  isAdmin?: boolean; // Added to identify admin users
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,6 +17,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
     // First set up the auth state listener
@@ -23,6 +25,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        // Check if user has admin role
+        if (currentSession?.user) {
+          checkUserRole(currentSession.user.id);
+        } else {
+          setIsAdmin(false);
+        }
+        
         setLoading(false);
       }
     );
@@ -31,11 +41,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
+      // Check if user has admin role
+      if (currentSession?.user) {
+        checkUserRole(currentSession.user.id);
+      }
+      
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Function to check if user has admin role
+  const checkUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error checking user role:', error);
+        setIsAdmin(false);
+        return;
+      }
+      
+      setIsAdmin(data?.role === 'admin');
+    } catch (err) {
+      console.error('Error checking user role:', err);
+      setIsAdmin(false);
+    }
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -45,7 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     session,
     loading,
-    signOut
+    signOut,
+    isAdmin
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

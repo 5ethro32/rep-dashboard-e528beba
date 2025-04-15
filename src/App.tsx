@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import RepTracker from "./pages/RepTracker"; // Add new import
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AccountPerformance />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/rep-tracker" 
+              element={
+                <ProtectedRoute>
+                  <RepTracker />
                 </ProtectedRoute>
               } 
             />
