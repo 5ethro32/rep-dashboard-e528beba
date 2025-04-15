@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,9 +55,8 @@ const RepTracker: React.FC = () => {
       
       return uniqueCustomers;
     },
-    // Use onSettled to handle errors correctly in tanstack/react-query v5+
-    onSettled: (data, error) => {
-      if (error) {
+    meta: {
+      onError: (error: Error) => {
         console.error('Failed to fetch customers:', error);
         toast({
           title: 'Failed to load customers',
