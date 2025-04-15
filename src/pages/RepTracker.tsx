@@ -56,13 +56,16 @@ const RepTracker: React.FC = () => {
       
       return uniqueCustomers;
     },
-    onError: (error) => {
-      console.error('Failed to fetch customers:', error);
-      toast({
-        title: 'Failed to load customers',
-        description: 'Please try again later',
-        variant: 'destructive'
-      });
+    // Use onSettled to handle errors correctly in tanstack/react-query v5+
+    onSettled: (data, error) => {
+      if (error) {
+        console.error('Failed to fetch customers:', error);
+        toast({
+          title: 'Failed to load customers',
+          description: 'Please try again later',
+          variant: 'destructive'
+        });
+      }
     }
   });
   
