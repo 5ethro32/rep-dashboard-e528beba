@@ -258,7 +258,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={addPlanMutation.isPending}>
+            <Button type="submit" disabled={addVisitMutation.isPending}>
               {addVisitMutation.isPending ? 'Saving...' : 'Add Visit'}
             </Button>
           </DialogFooter>
