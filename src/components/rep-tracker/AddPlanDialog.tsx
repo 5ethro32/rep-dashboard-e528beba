@@ -65,18 +65,19 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const [open, setOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
 
-  // Ensure customers is always a valid array before filtering
+  // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  const filteredCustomers = safeCustomers
-    .filter(customer => 
-      customer && 
-      typeof customer === 'object' && 
-      customer.account_name && 
-      typeof customer.account_name === 'string' &&
-      customer.account_name.toLowerCase().includes((customerSearch || '').toLowerCase())
-    )
-    .slice(0, 100); // Limit to 100 results for performance
+  // Safe filtering with additional type checks
+  const filteredCustomers = React.useMemo(() => {
+    return safeCustomers
+      .filter(customer => {
+        if (!customer || typeof customer !== 'object') return false;
+        if (!customer.account_name || typeof customer.account_name !== 'string') return false;
+        return customer.account_name.toLowerCase().includes((customerSearch || '').toLowerCase());
+      })
+      .slice(0, 100); // Limit to 100 results for performance
+  }, [safeCustomers, customerSearch]);
 
   const addPlanMutation = useMutation({
     mutationFn: async (data: PlanFormData) => {
@@ -116,6 +117,37 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
     addPlanMutation.mutate(data);
   };
 
+  // Only render CommandGroup if there are customers to display
+  const renderCustomersList = () => {
+    if (!filteredCustomers || filteredCustomers.length === 0) {
+      return <CommandEmpty>No customer found.</CommandEmpty>;
+    }
+
+    return (
+      <CommandGroup className="max-h-64 overflow-y-auto">
+        {filteredCustomers.map((customer) => (
+          <CommandItem
+            key={customer.account_ref}
+            value={customer.account_name}
+            onSelect={() => {
+              setValue('customer_ref', customer.account_ref);
+              setValue('customer_name', customer.account_name);
+              setOpen(false);
+            }}
+          >
+            <Check
+              className={cn(
+                "mr-2 h-4 w-4",
+                watch('customer_name') === customer.account_name ? "opacity-100" : "opacity-0"
+              )}
+            />
+            {customer.account_name}
+          </CommandItem>
+        ))}
+      </CommandGroup>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -152,28 +184,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
                     placeholder="Search customer..." 
                     onValueChange={(value) => setCustomerSearch(value || '')}
                   />
-                  <CommandEmpty>No customer found.</CommandEmpty>
-                  <CommandGroup className="max-h-64 overflow-y-auto">
-                    {filteredCustomers.map((customer) => (
-                      <CommandItem
-                        key={customer.account_ref}
-                        value={customer.account_name}
-                        onSelect={() => {
-                          setValue('customer_ref', customer.account_ref);
-                          setValue('customer_name', customer.account_name);
-                          setOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            watch('customer_name') === customer.account_name ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {customer.account_name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
+                  {renderCustomersList()}
                 </Command>
               </PopoverContent>
             </Popover>
