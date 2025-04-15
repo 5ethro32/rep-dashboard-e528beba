@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils';
 interface AddPlanDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  customers: Array<{ account_name: string; account_ref: string }>;
+  customers?: Array<{ account_name: string; account_ref: string }>;
   selectedDate?: Date;
 }
 
@@ -65,14 +65,18 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const [open, setOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
 
-  // Filter customers based on search - ensuring customers is an array and handling undefined values safely
-  const filteredCustomers = Array.isArray(customers) 
-    ? customers
-        .filter(customer => 
-          customer && customer.account_name && 
-          customer.account_name.toLowerCase().includes((customerSearch || '').toLowerCase()))
-        .slice(0, 100) // Limit to 100 results for performance
-    : [];
+  // Ensure customers is always a valid array before filtering
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  
+  const filteredCustomers = safeCustomers
+    .filter(customer => 
+      customer && 
+      typeof customer === 'object' && 
+      customer.account_name && 
+      typeof customer.account_name === 'string' &&
+      customer.account_name.toLowerCase().includes((customerSearch || '').toLowerCase())
+    )
+    .slice(0, 100); // Limit to 100 results for performance
 
   const addPlanMutation = useMutation({
     mutationFn: async (data: PlanFormData) => {
