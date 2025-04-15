@@ -81,8 +81,9 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
     }
   };
 
-  // Handle customer selection
+  // Handle customer selection - critical fix
   const handleSelect = (ref: string, name: string) => {
+    console.log("Customer selected:", name, ref);
     onSelect(ref, name);
     setOpen(false);
     setSearchQuery('');
@@ -111,6 +112,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          onClick={() => setOpen(true)}
         >
           {selectedCustomer || "Select customer..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -137,7 +139,10 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
                   <div
                     key={customer.account_ref}
                     ref={el => itemsRef.current[index] = el}
-                    onClick={() => handleSelect(customer.account_ref, customer.account_name)}
+                    // Critical fix: Making the click handler more direct & ensuring it doesn't get prevented
+                    onClick={() => {
+                      handleSelect(customer.account_ref, customer.account_name);
+                    }}
                     className={cn(
                       "flex cursor-pointer items-center px-3 py-2 text-sm",
                       "hover:bg-accent hover:text-accent-foreground",
