@@ -23,13 +23,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,35 +32,33 @@ import { format } from 'date-fns';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface AddVisitDialogProps {
+interface AddPlanDialogProps {
   isOpen: boolean;
   onClose: () => void;
   customers: Array<{ account_name: string; account_ref: string }>;
+  selectedDate?: Date;
 }
 
-interface VisitFormData {
-  date: string;
+interface PlanFormData {
+  planned_date: string;
   customer_ref: string;
   customer_name: string;
-  contact_name: string;
-  visit_type: string;
-  has_order: boolean;
-  profit: number;
-  comments: string;
+  notes: string;
 }
 
-const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
+const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   isOpen,
   onClose,
   customers,
+  selectedDate,
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { register, handleSubmit, reset, setValue, watch } = useForm<VisitFormData>({
+  const defaultDate = selectedDate || new Date();
+  
+  const { register, handleSubmit, reset, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
-      date: format(new Date(), 'yyyy-MM-dd'), // Pre-populate with today's date
-      visit_type: 'Customer Visit',
-      has_order: false,
+      planned_date: format(defaultDate, 'yyyy-MM-dd'),
     }
   });
   
@@ -80,64 +71,57 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
       customer.account_name.toLowerCase().includes(customerSearch.toLowerCase()))
     .slice(0, 100); // Limit to 100 results for performance
 
-  const addVisitMutation = useMutation({
-    mutationFn: async (data: VisitFormData) => {
-      // Format date for database
-      const formattedDate = new Date(data.date);
-      formattedDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
-      
+  const addPlanMutation = useMutation({
+    mutationFn: async (data: PlanFormData) => {
       const { error } = await supabase
-        .from('customer_visits')
+        .from('week_plans')
         .insert([{ 
           ...data, 
           user_id: user?.id,
-          date: formattedDate.toISOString()
         }]);
 
       if (error) throw error;
     },
     meta: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['customer-visits'] });
+        queryClient.invalidateQueries({ queryKey: ['week-plans'] });
         toast({
-          title: 'Visit Added',
-          description: 'Customer visit has been recorded successfully.',
+          title: 'Plan Added',
+          description: 'Week plan has been added successfully.',
         });
         reset({
-          date: format(new Date(), 'yyyy-MM-dd'),
-          visit_type: 'Customer Visit',
-          has_order: false,
+          planned_date: format(defaultDate, 'yyyy-MM-dd'),
         });
         onClose();
       },
       onError: (error: Error) => {
-        console.error("Error adding visit:", error);
+        console.error("Error adding plan:", error);
         toast({
           title: 'Error',
-          description: 'Failed to add visit. Please try again.',
+          description: 'Failed to add plan. Please try again.',
           variant: 'destructive',
         });
       },
     },
   });
 
-  const onSubmit = (data: VisitFormData) => {
-    addVisitMutation.mutate(data);
+  const onSubmit = (data: PlanFormData) => {
+    addPlanMutation.mutate(data);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Customer Visit</DialogTitle>
+          <DialogTitle>Add Week Plan</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="planned_date">Date</Label>
             <Input
-              id="date"
+              id="planned_date"
               type="date"
-              {...register('date', { required: true })}
+              {...register('planned_date', { required: true })}
             />
           </div>
 
@@ -189,66 +173,11 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="contact_name">Contact Name</Label>
-            <Input
-              id="contact_name"
-              {...register('contact_name')}
-              placeholder="Optional"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="visit_type">Visit Type</Label>
-            <Select
-              defaultValue="Customer Visit"
-              onValueChange={(value) => setValue('visit_type', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Customer Visit">Customer Visit</SelectItem>
-                <SelectItem value="Outbound Call">Outbound Call</SelectItem>
-                <SelectItem value="Office">Office</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="has_order">Order Placed</Label>
-            <Select
-              defaultValue="false"
-              onValueChange={(value) => setValue('has_order', value === 'true')}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">Yes</SelectItem>
-                <SelectItem value="false">No</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {watch('has_order') && (
-            <div className="space-y-2">
-              <Label htmlFor="profit">Profit (£)</Label>
-              <Input
-                id="profit"
-                type="number"
-                step="0.01"
-                {...register('profit', { valueAsNumber: true })}
-                placeholder="0.00"
-              />
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="comments">Comments</Label>
+            <Label htmlFor="notes">Notes</Label>
             <Textarea
-              id="comments"
-              {...register('comments')}
-              placeholder="Optional"
+              id="notes"
+              {...register('notes')}
+              placeholder="Optional details about the planned visit"
             />
           </div>
 
@@ -256,8 +185,8 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={addVisitMutation.isPending}>
-              {addVisitMutation.isPending ? 'Saving...' : 'Add Visit'}
+            <Button type="submit" disabled={addPlanMutation.isPending}>
+              {addPlanMutation.isPending ? 'Saving...' : 'Add Plan'}
             </Button>
           </DialogFooter>
         </form>
@@ -266,4 +195,4 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   );
 };
 
-export default AddVisitDialog;
+export default AddPlanDialog;

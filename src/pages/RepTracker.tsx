@@ -179,6 +179,7 @@ const RepTracker: React.FC = () => {
             <WeekPlanTab 
               weekStartDate={weekStart}
               weekEndDate={weekEnd}
+              customers={customers || []}
             />
           </TabsContent>
         </Tabs>

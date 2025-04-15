@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit2, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import AddPlanDialog from './AddPlanDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface WeekPlan {
   id: string;
@@ -20,9 +31,14 @@ interface WeekPlan {
 const WeekPlanTab: React.FC<{
   weekStartDate: Date;
   weekEndDate: Date;
-}> = ({ weekStartDate, weekEndDate }) => {
+  customers: Array<{ account_name: string; account_ref: string }>;
+}> = ({ weekStartDate, weekEndDate, customers }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
   const { data: weekPlans, isLoading } = useQuery({
     queryKey: ['week-plans', weekStartDate, weekEndDate],
@@ -30,8 +46,8 @@ const WeekPlanTab: React.FC<{
       const { data, error } = await supabase
         .from('week_plans')
         .select('*')
-        .gte('planned_date', weekStartDate.toISOString())
-        .lte('planned_date', weekEndDate.toISOString())
+        .gte('planned_date', weekStartDate.toISOString().split('T')[0])
+        .lte('planned_date', weekEndDate.toISOString().split('T')[0])
         .order('planned_date');
 
       if (error) throw error;
@@ -48,6 +64,50 @@ const WeekPlanTab: React.FC<{
     },
   });
 
+  const deletePlanMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      const { error } = await supabase
+        .from('week_plans')
+        .delete()
+        .eq('id', planId);
+
+      if (error) throw error;
+    },
+    meta: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['week-plans'] });
+        toast({
+          title: 'Plan Deleted',
+          description: 'Week plan has been deleted successfully.',
+        });
+      },
+      onError: (error: Error) => {
+        toast({
+          title: 'Error',
+          description: 'Failed to delete plan',
+          variant: 'destructive',
+        });
+      },
+    },
+  });
+
+  const handleDelete = (planId: string) => {
+    setPlanToDelete(planId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (planToDelete) {
+      deletePlanMutation.mutate(planToDelete);
+    }
+    setDeleteConfirmOpen(false);
+  };
+
+  const handleAddPlan = (date?: Date) => {
+    setSelectedDate(date);
+    setIsAddPlanOpen(true);
+  };
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
@@ -55,13 +115,7 @@ const WeekPlanTab: React.FC<{
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Week Plan</h3>
         <Button 
-          onClick={() => {
-            // TODO: Implement add plan dialog
-            toast({
-              title: "Coming soon",
-              description: "Add plan functionality will be implemented soon!"
-            });
-          }}
+          onClick={() => handleAddPlan()}
           className="bg-finance-red hover:bg-finance-red/80"
         >
           <PlusCircle className="h-4 w-4 mr-2" />
@@ -80,9 +134,19 @@ const WeekPlanTab: React.FC<{
           return (
             <Card key={day} className="border-gray-800 bg-black/20">
               <CardContent className="p-4">
-                <h4 className="font-semibold mb-2 text-white">
-                  {day} - {format(currentDate, 'dd/MM')}
-                </h4>
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-semibold text-white">
+                    {day} - {format(currentDate, 'dd/MM')}
+                  </h4>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0"
+                    onClick={() => handleAddPlan(currentDate)}
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   {dayPlans.map(plan => (
                     <div 
@@ -94,10 +158,26 @@ const WeekPlanTab: React.FC<{
                         <p className="text-sm text-gray-400 mt-1">{plan.notes}</p>
                       )}
                       <div className="flex justify-end space-x-2 mt-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            // Edit functionality would go here
+                            toast({
+                              title: "Coming soon",
+                              description: "Edit plan functionality will be implemented soon!"
+                            });
+                          }}
+                        >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleDelete(plan.id)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -112,6 +192,30 @@ const WeekPlanTab: React.FC<{
           );
         })}
       </div>
+
+      <AddPlanDialog 
+        isOpen={isAddPlanOpen}
+        onClose={() => setIsAddPlanOpen(false)}
+        customers={customers}
+        selectedDate={selectedDate}
+      />
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Plan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this plan? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
