@@ -71,9 +71,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
         e.preventDefault();
         if (highlightedIndex >= 0 && highlightedIndex < filteredCustomers.length) {
           const selected = filteredCustomers[highlightedIndex];
-          onSelect(selected.account_ref, selected.account_name);
-          setOpen(false);
-          setSearchQuery('');
+          handleSelect(selected.account_ref, selected.account_name);
         }
         break;
       case 'Escape':
@@ -81,6 +79,13 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
         setOpen(false);
         break;
     }
+  };
+
+  // Handle customer selection
+  const handleSelect = (ref: string, name: string) => {
+    onSelect(ref, name);
+    setOpen(false);
+    setSearchQuery('');
   };
 
   // Scroll to highlighted item
@@ -132,11 +137,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
                   <div
                     key={customer.account_ref}
                     ref={el => itemsRef.current[index] = el}
-                    onClick={() => {
-                      onSelect(customer.account_ref, customer.account_name);
-                      setOpen(false);
-                      setSearchQuery('');
-                    }}
+                    onClick={() => handleSelect(customer.account_ref, customer.account_name)}
                     className={cn(
                       "flex cursor-pointer items-center px-3 py-2 text-sm",
                       "hover:bg-accent hover:text-accent-foreground",
