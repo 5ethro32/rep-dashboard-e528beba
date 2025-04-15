@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
@@ -39,107 +39,106 @@ const AccountPerformance = () => {
   const [topRep, setTopRep] = useState({ name: '', profit: 0 });
   const isMobile = useIsMobile();
   
-  useEffect(() => {
-    const fetchComparisonData = async () => {
-      setIsLoading(true);
-      try {
-        let currentTable: AllowedTable;
-        let previousTable: AllowedTable | null;
-        
-        switch (selectedMonth) {
-          case 'April':
-            currentTable = "mtd_daily";
-            previousTable = "sales_data";
-            break;
-          case 'March':
-            currentTable = "sales_data";
-            previousTable = "sales_data_februrary";
-            break;
-          case 'February':
-            currentTable = "sales_data_februrary";
-            previousTable = null;
-            break;
-          default:
-            currentTable = "sales_data";
-            previousTable = "sales_data_februrary";
-        }
-        
-        console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
-        
-        const { data: currentData, error: currentError } = await supabase
-          .from(currentTable)
+  // Remove the useEffect that was causing the error
+  // We'll fetch data on demand instead
+
+  const fetchDataForMonth = async (selectedMonth: string) => {
+    setIsLoading(true);
+    try {
+      let currentTable: AllowedTable;
+      let previousTable: AllowedTable | null;
+      
+      switch (selectedMonth) {
+        case 'April':
+          currentTable = "mtd_daily";
+          previousTable = "sales_data";
+          break;
+        case 'March':
+          currentTable = "sales_data";
+          previousTable = "sales_data_februrary";
+          break;
+        case 'February':
+          currentTable = "sales_data_februrary";
+          previousTable = null;
+          break;
+        default:
+          currentTable = "sales_data";
+          previousTable = "sales_data_februrary";
+      }
+      
+      console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
+      
+      const { data: currentData, error: currentError } = await supabase
+        .from(currentTable)
+        .select('*');
+      
+      if (currentError) throw currentError;
+      
+      let previousData: DataItem[] = [];
+      if (previousTable) {
+        const { data: prevData, error: previousError } = await supabase
+          .from(previousTable)
           .select('*');
         
-        if (currentError) throw currentError;
-        
-        let previousData: DataItem[] = [];
-        if (previousTable) {
-          const { data: prevData, error: previousError } = await supabase
-            .from(previousTable)
-            .select('*');
-          
-          if (previousError) throw previousError;
-          previousData = prevData || [];
-        }
-        
-        console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} and ${previousData?.length || 0} for previous month`);
-        
-        setCurrentMonthRawData(currentData || []);
-        setPreviousMonthRawData(previousData);
-        
-        const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
-          return item["Account Name"] || item.account_name;
-        }).filter(Boolean)).size || 0;
-        
-        const previousActiveAccounts = new Set(previousData?.map((item: DataItem) => {
-          return item["Account Name"] || item.account_name;
-        }).filter(Boolean)).size || 0;
-        
-        setActiveAccounts({
-          current: currentActiveAccounts,
-          previous: previousActiveAccounts
-        });
-        
-        if (currentData && currentData.length > 0) {
-          const repProfits = new Map();
-          
-          currentData.forEach((item: DataItem) => {
-            const repName = item.Rep || item.rep_name || '';
-            const profit = typeof item.Profit === 'number' ? item.Profit : 
-                          (typeof item.profit === 'number' ? item.profit : 0);
-            
-            if (repName) {
-              const currentProfit = repProfits.get(repName) || 0;
-              repProfits.set(repName, currentProfit + profit);
-            }
-          });
-          
-          let maxProfit = 0;
-          let topRepName = '';
-          
-          repProfits.forEach((profit, rep) => {
-            if (profit > maxProfit) {
-              maxProfit = profit;
-              topRepName = rep;
-            }
-          });
-          
-          setTopRep({ name: topRepName, profit: maxProfit });
-        }
-      } catch (error) {
-        console.error('Error fetching comparison data:', error);
-        toast({
-          title: "Error loading data",
-          description: error instanceof Error ? error.message : "An unknown error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+        if (previousError) throw previousError;
+        previousData = prevData || [];
       }
-    };
-    
-    fetchComparisonData();
-  }, [selectedMonth]);
+      
+      console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} and ${previousData?.length || 0} for previous month`);
+      
+      setCurrentMonthRawData(currentData || []);
+      setPreviousMonthRawData(previousData);
+      
+      const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
+        return item["Account Name"] || item.account_name;
+      }).filter(Boolean)).size || 0;
+      
+      const previousActiveAccounts = new Set(previousData?.map((item: DataItem) => {
+        return item["Account Name"] || item.account_name;
+      }).filter(Boolean)).size || 0;
+      
+      setActiveAccounts({
+        current: currentActiveAccounts,
+        previous: previousActiveAccounts
+      });
+      
+      if (currentData && currentData.length > 0) {
+        const repProfits = new Map();
+        
+        currentData.forEach((item: DataItem) => {
+          const repName = item.Rep || item.rep_name || '';
+          const profit = typeof item.Profit === 'number' ? item.Profit : 
+                        (typeof item.profit === 'number' ? item.profit : 0);
+          
+          if (repName) {
+            const currentProfit = repProfits.get(repName) || 0;
+            repProfits.set(repName, currentProfit + profit);
+          }
+        });
+        
+        let maxProfit = 0;
+        let topRepName = '';
+        
+        repProfits.forEach((profit, rep) => {
+          if (profit > maxProfit) {
+            maxProfit = profit;
+            topRepName = rep;
+          }
+        });
+        
+        setTopRep({ name: topRepName, profit: maxProfit });
+      }
+    } catch (error) {
+      console.error('Error fetching comparison data:', error);
+      toast({
+        title: "Error loading data",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -157,7 +156,10 @@ const AccountPerformance = () => {
         
         <PerformanceHeader 
           selectedMonth={selectedMonth}
-          setSelectedMonth={setSelectedMonth}
+          setSelectedMonth={(month) => {
+            setSelectedMonth(month);
+            fetchDataForMonth(month); // Fetch data when month changes
+          }}
         />
         
         <div className="mb-6">
@@ -165,6 +167,13 @@ const AccountPerformance = () => {
           <p className="text-white/60">
             Compare all accounts performance between months to identify declining or improving accounts.
           </p>
+          <Button 
+            variant="outline" 
+            className="mt-4 text-white/80 border-white/20"
+            onClick={() => fetchDataForMonth(selectedMonth)}
+          >
+            Load {selectedMonth} Data
+          </Button>
         </div>
         
         <AccountSummaryCards
