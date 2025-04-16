@@ -9,6 +9,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
 interface Customer {
   account_name: string;
@@ -62,9 +69,10 @@ export function ImprovedCustomerSelector({
     setSearchQuery('');
   };
 
+  // Using DropdownMenu instead of Popover for better mobile support
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
@@ -79,10 +87,10 @@ export function ImprovedCustomerSelector({
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </PopoverTrigger>
+      </DropdownMenuTrigger>
       
-      <PopoverContent 
-        className="w-[var(--radix-popover-trigger-width)] p-0 z-50 bg-background" 
+      <DropdownMenuContent 
+        className="w-[var(--radix-dropdown-menu-trigger-width)] p-0" 
         align="start"
         sideOffset={4}
       >
@@ -118,22 +126,21 @@ export function ImprovedCustomerSelector({
           )}
         </div>
         
-        {/* Customer list with native scrolling instead of ScrollArea */}
-        <div className="max-h-[300px] overflow-y-auto">
-          <div className="p-1">
-            {filteredCustomers.length > 0 ? (
-              filteredCustomers.map((customer) => {
+        {/* Customer list with scroll area */}
+        <ScrollArea className="max-h-[300px] overflow-y-auto">
+          {filteredCustomers.length > 0 ? (
+            <div className="p-1">
+              {filteredCustomers.map((customer) => {
                 const isSelected = selectedCustomer === customer.account_name;
                 
                 return (
-                  <Button
+                  <DropdownMenuItem
                     key={customer.account_ref}
-                    variant="ghost"
                     className={cn(
-                      "w-full justify-start text-left px-3 py-2 text-sm rounded-sm",
+                      "flex cursor-pointer items-center px-3 py-2 text-sm rounded-sm",
                       isSelected && "bg-accent text-accent-foreground"
                     )}
-                    onClick={() => selectCustomer(customer)}
+                    onSelect={() => selectCustomer(customer)}
                   >
                     <Check
                       className={cn(
@@ -142,17 +149,17 @@ export function ImprovedCustomerSelector({
                       )}
                     />
                     <span className="truncate">{customer.account_name}</span>
-                  </Button>
+                  </DropdownMenuItem>
                 );
-              })
-            ) : (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                No customers found
-              </div>
-            )}
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+              })}
+            </div>
+          ) : (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No customers found
+            </div>
+          )}
+        </ScrollArea>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
