@@ -138,25 +138,13 @@ const WeekPlanTab: React.FC<{
 
   const handleAddPlanSuccess = () => {
     setIsAddPlanOpen(false);
-    queryClient.invalidateQueries({ 
-      queryKey: ['week-plans'],
-      refetchType: 'all'
-    });
     refetch();
   };
 
   const handleEditPlanSuccess = () => {
     console.log("Edit plan success callback triggered");
     setIsEditPlanOpen(false);
-    queryClient.invalidateQueries({ 
-      queryKey: ['week-plans'],
-      refetchType: 'all'
-    });
     refetch();
-    toast({
-      title: 'Plan Updated',
-      description: 'Week plan has been updated successfully.',
-    });
   };
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];

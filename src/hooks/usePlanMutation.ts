@@ -107,3 +107,83 @@ export function usePlanMutation(onSuccess: () => void) {
     },
   });
 }
+
+// Add an update plan mutation function
+export function useUpdatePlanMutation(onSuccess: () => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: PlanFormData & { id: string }) => {
+      console.log("Attempting to update plan with data:", data);
+      
+      const { data: updatedData, error } = await supabase
+        .from('week_plans')
+        .update({
+          planned_date: data.planned_date,
+          customer_ref: data.customer_ref,
+          customer_name: data.customer_name,
+          notes: data.notes
+        })
+        .eq('id', data.id)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
+      
+      console.log("Plan updated successfully:", updatedData);
+      return updatedData;
+    },
+    meta: {
+      onSuccess: (updatedPlan) => {
+        console.log("Update mutation success callback with data:", updatedPlan);
+        
+        // Handle optimistic updates for the cache
+        const queryCache = queryClient.getQueryCache();
+        
+        // Find queries that might contain this data
+        const weekPlanQueries = queryCache.findAll({
+          predicate: query => {
+            return Array.isArray(query.queryKey) && query.queryKey[0] === 'week-plans';
+          }
+        });
+        
+        weekPlanQueries.forEach(query => {
+          const data = queryClient.getQueryData(query.queryKey);
+          
+          // Check if this is an array and update the plan in the cache
+          if (Array.isArray(data)) {
+            queryClient.setQueryData(
+              query.queryKey, 
+              data.map(plan => plan.id === updatedPlan.id ? updatedPlan : plan)
+            );
+          }
+        });
+        
+        // Immediately invalidate and refetch all week-plans queries
+        queryClient.invalidateQueries({ 
+          queryKey: ['week-plans'],
+          refetchType: 'all'
+        });
+        
+        toast({
+          title: 'Plan Updated',
+          description: 'Week plan has been updated successfully.',
+        });
+        
+        // Call the success callback to trigger additional UI updates
+        onSuccess();
+      },
+      onError: (error: Error) => {
+        console.error("Error updating plan:", error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update plan. Please try again.',
+          variant: 'destructive',
+        });
+      },
+    },
+  });
+}
