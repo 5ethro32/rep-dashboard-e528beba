@@ -68,7 +68,7 @@ const WeekPlanTab: React.FC<{
     // Set these options to ensure we always get fresh data
     refetchOnWindowFocus: true,
     staleTime: 0,
-    cacheTime: 0 // Disable cache to force fresh data every time
+    gcTime: 0 // This replaces cacheTime in React Query v5
   });
 
   const deletePlanMutation = useMutation({

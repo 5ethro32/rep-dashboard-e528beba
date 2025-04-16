@@ -31,7 +31,10 @@ export function usePlanMutation(onSuccess: () => void) {
         // Optimistically update all week-plans queries by adding the new plan
         // We'll update any query keys that start with 'week-plans'
         const queryCache = queryClient.getQueryCache();
-        const weekPlanQueries = queryCache.findAll(['week-plans']);
+        const weekPlanQueries = queryCache.findAll({
+          queryKey: ['week-plans'], 
+          exact: false
+        });
         
         weekPlanQueries.forEach(query => {
           const data = queryClient.getQueryData(query.queryKey);
