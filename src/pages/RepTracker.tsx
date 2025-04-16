@@ -14,6 +14,7 @@ import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
 import WeekPlanTab from '@/components/rep-tracker/WeekPlanTab';
 import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 import UserProfileButton from '@/components/auth/UserProfileButton';
+import { useVisitMetrics } from '@/hooks/useVisitMetrics';
 
 const RepTracker: React.FC = () => {
   const navigate = useNavigate();
@@ -24,12 +25,16 @@ const RepTracker: React.FC = () => {
   
   const queryClient = useQueryClient();
   
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
-  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 }); // Sunday
-
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekStartFormatted = format(weekStart, 'EEE do MMM yy');
   const weekEndFormatted = format(weekEnd, 'EEE do MMM yy');
-  
+
+  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate);
+  const previousWeekDate = new Date(weekStart);
+  previousWeekDate.setDate(previousWeekDate.getDate() - 7);
+  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate);
+
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
@@ -65,7 +70,7 @@ const RepTracker: React.FC = () => {
       }
     }
   });
-  
+
   const summaryData = {
     totalVisits: 17,
     totalProfit: 1540.62,
@@ -161,10 +166,19 @@ const RepTracker: React.FC = () => {
         </div>
         
         <WeeklySummary 
-          data={summaryData} 
-          previousData={previousWeekData}
+          data={currentWeekMetrics || {
+            totalVisits: 0,
+            totalProfit: 0,
+            totalOrders: 0,
+            conversionRate: 0,
+            dailyAvgProfit: 0,
+            avgProfitPerVisit: 0,
+            avgProfitPerOrder: 0
+          }}
+          previousData={previousWeekMetrics}
           weekStartDate={weekStart} 
-          weekEndDate={weekEnd} 
+          weekEndDate={weekEnd}
+          isLoading={isLoadingCurrentMetrics}
         />
         
         <div className="flex justify-end mb-6">

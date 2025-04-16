@@ -1,4 +1,3 @@
-
 import React from 'react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
@@ -24,10 +23,16 @@ interface WeeklySummaryProps {
   };
   weekStartDate: Date;
   weekEndDate: Date;
+  isLoading?: boolean;
 }
 
-const WeeklySummary: React.FC<WeeklySummaryProps> = ({ data, previousData, weekStartDate, weekEndDate }) => {
-  // Calculate percentage changes when previous data is available
+const WeeklySummary: React.FC<WeeklySummaryProps> = ({ 
+  data, 
+  previousData, 
+  weekStartDate, 
+  weekEndDate,
+  isLoading = false
+}) => {
   const calculateChange = (current: number, previous: number) => {
     if (!previous) return 0;
     return ((current - previous) / previous) * 100;
@@ -41,7 +46,6 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({ data, previousData, weekS
   return (
     <div className="mb-8 animate-slide-in-up">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {/* First row */}
         <MetricCard
           title="Total Visits"
           value={formatNumber(data.totalVisits)}
@@ -50,6 +54,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({ data, previousData, weekS
             type: getChangeType(calculateChange(data.totalVisits, previousData.totalVisits))
           } : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalVisits)}` : undefined}
+          isLoading={isLoading}
         />
         
         <MetricCard
@@ -61,6 +66,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({ data, previousData, weekS
           } : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.totalProfit)}` : undefined}
           valueClassName="text-finance-red"
+          isLoading={isLoading}
         />
         
         <MetricCard
@@ -71,21 +77,22 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({ data, previousData, weekS
             type: getChangeType(calculateChange(data.totalOrders, previousData.totalOrders))
           } : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalOrders)}` : undefined}
+          isLoading={isLoading}
         />
         
         <MetricCard
           title="Conversion Rate"
-          value={`${data.conversionRate}%`}
+          value={`${data.conversionRate.toFixed(1)}%`}
           change={previousData ? {
             value: `${Math.abs(calculateChange(data.conversionRate, previousData.conversionRate)).toFixed(1)}%`,
             type: getChangeType(calculateChange(data.conversionRate, previousData.conversionRate))
           } : undefined}
-          subtitle={previousData ? `Previous: ${previousData.conversionRate}%` : undefined}
+          subtitle={previousData ? `Previous: ${previousData.conversionRate.toFixed(1)}%` : undefined}
+          isLoading={isLoading}
         />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mt-4">
-        {/* Second row */}
         <MetricCard
           title="Daily Avg Profit"
           value={formatCurrency(data.dailyAvgProfit)}
@@ -94,6 +101,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({ data, previousData, weekS
             type: getChangeType(calculateChange(data.dailyAvgProfit, previousData.dailyAvgProfit))
           } : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.dailyAvgProfit)}` : undefined}
+          isLoading={isLoading}
         />
         
         <MetricCard
@@ -104,6 +112,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({ data, previousData, weekS
             type: getChangeType(calculateChange(data.avgProfitPerVisit, previousData.avgProfitPerVisit))
           } : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerVisit)}` : undefined}
+          isLoading={isLoading}
         />
         
         <MetricCard
@@ -114,6 +123,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({ data, previousData, weekS
             type: getChangeType(calculateChange(data.avgProfitPerOrder, previousData.avgProfitPerOrder))
           } : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerOrder)}` : undefined}
+          isLoading={isLoading}
         />
       </div>
     </div>
