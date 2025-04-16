@@ -135,7 +135,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         <MetricCard
           title={renderMetricWithTooltip(
             "Daily Avg Profit",
-            "Average profit generated per day during this week"
+            "Average profit generated per day with visits during this week"
           )}
           value={formatCurrency(data.dailyAvgProfit)}
           change={previousData ? calculateChange(data.dailyAvgProfit, previousData.dailyAvgProfit) : undefined}
@@ -147,7 +147,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         <MetricCard
           title={renderMetricWithTooltip(
             "Avg Profit Per Visit",
-            "Average profit generated per customer visit (Total Profit / Total Visits)"
+            "Average profit generated per customer visit (only Customer Visit type)"
           )}
           value={formatCurrency(data.avgProfitPerVisit)}
           change={previousData ? calculateChange(data.avgProfitPerVisit, previousData.avgProfitPerVisit) : undefined}

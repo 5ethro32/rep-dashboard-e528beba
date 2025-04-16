@@ -40,14 +40,21 @@ export const useVisitMetrics = (selectedDate: Date) => {
       // Calculate base metrics
       const totalVisits = visits.length;
       const totalProfit = visits.reduce((sum, visit) => sum + (visit.profit || 0), 0);
+      const customerVisitProfit = visits
+        .filter(visit => visit.type === 'Customer Visit')
+        .reduce((sum, visit) => sum + (visit.profit || 0), 0);
+      const customerVisitCount = visits.filter(visit => visit.type === 'Customer Visit').length;
       const totalOrders = visits.filter(visit => visit.has_order).length;
       const plannedVisits = plans.length;
       
+      // Count unique days with visits to calculate daily average profit
+      const uniqueVisitDays = new Set(visits.map(visit => visit.date?.split('T')[0])).size;
+      const daysWithVisits = uniqueVisitDays > 0 ? uniqueVisitDays : 1; // At least 1 day to avoid division by zero
+      
       // Calculate derived metrics
       const conversionRate = totalVisits ? (totalOrders / totalVisits) * 100 : 0;
-      const daysInRange = differenceInDays(weekEnd, weekStart) + 1;
-      const dailyAvgProfit = daysInRange ? totalProfit / daysInRange : 0;
-      const avgProfitPerVisit = totalVisits ? totalProfit / totalVisits : 0;
+      const dailyAvgProfit = totalProfit / daysWithVisits; // Calculate based on actual days with visits
+      const avgProfitPerVisit = customerVisitCount ? customerVisitProfit / customerVisitCount : 0; // Based only on Customer Visit type
       const avgProfitPerOrder = totalOrders ? totalProfit / totalOrders : 0;
 
       return {
