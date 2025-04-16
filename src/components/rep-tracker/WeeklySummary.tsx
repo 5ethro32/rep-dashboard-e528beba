@@ -73,24 +73,24 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <MetricCard
           title={renderMetricWithTooltip(
-            "Total Visits",
-            "Total number of customer visits conducted during this week"
-          )}
-          value={formatNumber(data.totalVisits)}
-          change={previousData ? calculateChange(data.totalVisits, previousData.totalVisits) : undefined}
-          subtitle={previousData ? `Previous: ${formatNumber(previousData.totalVisits)}` : undefined}
-          isLoading={isLoading}
-          className="h-full"
-        />
-        
-        <MetricCard
-          title={renderMetricWithTooltip(
             "Planned Visits",
             "Number of visits planned for this week"
           )}
           value={formatNumber(data.plannedVisits)}
           change={previousData ? calculateChange(data.plannedVisits, previousData.plannedVisits) : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.plannedVisits)}` : undefined}
+          isLoading={isLoading}
+          className="h-full"
+        />
+        
+        <MetricCard
+          title={renderMetricWithTooltip(
+            "Total Visits",
+            "Total number of customer visits conducted during this week"
+          )}
+          value={formatNumber(data.totalVisits)}
+          change={previousData ? calculateChange(data.totalVisits, previousData.totalVisits) : undefined}
+          subtitle={previousData ? `Previous: ${formatNumber(previousData.totalVisits)}` : undefined}
           isLoading={isLoading}
           className="h-full"
         />
