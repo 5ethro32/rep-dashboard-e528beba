@@ -117,43 +117,46 @@ const RepTracker: React.FC = () => {
           </p>
         </div>
         
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2 text-finance-red" />
-            <h2 className="text-lg font-semibold">
+            <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
+            <h2 className="text-base sm:text-lg font-semibold truncate">
               Week: {weekStartFormatted} - {weekEndFormatted}
             </h2>
           </div>
           
-          <div className="flex space-x-2">
+          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
             <Button 
               variant="outline" 
               size="sm"
+              className="w-full sm:w-auto text-xs sm:text-sm"
               onClick={() => {
                 setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
               }}
             >
-              Previous Week
+              Previous
             </Button>
             
             <Button 
               variant="outline" 
               size="sm"
+              className="w-full sm:w-auto text-xs sm:text-sm"
               onClick={() => {
                 setSelectedDate(new Date());
               }}
             >
-              Current Week
+              Current
             </Button>
             
             <Button 
               variant="outline" 
               size="sm"
+              className="w-full sm:w-auto text-xs sm:text-sm"
               onClick={() => {
                 setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
               }}
             >
-              Next Week
+              Next
             </Button>
           </div>
         </div>
