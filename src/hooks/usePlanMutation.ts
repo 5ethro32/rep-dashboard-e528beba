@@ -28,12 +28,18 @@ export function usePlanMutation(onSuccess: () => void) {
     },
     meta: {
       onSuccess: (newPlan) => {
-        // Optimistically update all week-plans queries by adding the new plan
-        // We'll update any query keys that start with 'week-plans'
+        // Get all relevant week-plans queries and update them optimistically
         const queryCache = queryClient.getQueryCache();
+        
+        // Find queries that might contain this data
         const weekPlanQueries = queryCache.findAll({
-          queryKey: ['week-plans'], 
-          exact: false
+          predicate: query => {
+            // Check if query key is an array and starts with 'week-plans'
+            if (Array.isArray(query.queryKey) && query.queryKey[0] === 'week-plans') {
+              return true;
+            }
+            return false;
+          }
         });
         
         weekPlanQueries.forEach(query => {

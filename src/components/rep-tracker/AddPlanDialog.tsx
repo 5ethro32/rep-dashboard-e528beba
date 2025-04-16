@@ -43,6 +43,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   });
 
   const addPlanMutation = usePlanMutation(() => {
+    // Reset the form first
     reset({
       planned_date: format(defaultDate, 'yyyy-MM-dd'),
       customer_ref: '',
@@ -51,7 +52,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
     });
     
     if (onSuccess) {
-      // Call the parent component's success handler for additional refresh
+      // Call the parent component's success handler for immediate update
       onSuccess();
     } else {
       onClose();
@@ -60,7 +61,13 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
 
   const onSubmit = (data: PlanFormData) => {
     if (!user?.id) return;
-    addPlanMutation.mutate({ ...data, user_id: user.id });
+    // We'll pass the date to the mutation function for accurate optimistic updates
+    const formattedDate = new Date(data.planned_date);
+    addPlanMutation.mutate({ 
+      ...data, 
+      user_id: user.id,
+      planned_date: formattedDate.toISOString().split('T')[0] 
+    });
   };
 
   return (

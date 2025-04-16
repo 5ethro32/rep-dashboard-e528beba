@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,18 +84,6 @@ const WeekPlanTab: React.FC<{
     },
     meta: {
       onSuccess: (deletedId) => {
-        // Optimistically update UI by filtering out the deleted plan
-        if (weekPlans) {
-          // Directly update the current query data
-          queryClient.setQueryData(
-            weekPlansQueryKey, 
-            (oldData: WeekPlan[] | undefined) => {
-              if (!oldData) return [];
-              return oldData.filter(plan => plan.id !== deletedId);
-            }
-          );
-        }
-        
         // Force an immediate refetch after deletion
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
@@ -152,7 +139,7 @@ const WeekPlanTab: React.FC<{
     // Close the dialog first
     setIsAddPlanOpen(false);
     
-    // Force an immediate refetch of all week plans data
+    // Force an immediate refetch of all week plans data and explicit refetch
     queryClient.invalidateQueries({ 
       queryKey: ['week-plans'],
       refetchType: 'all'
