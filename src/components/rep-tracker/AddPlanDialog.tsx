@@ -16,7 +16,7 @@ interface AddPlanDialogProps {
   onClose: () => void;
   customers?: Array<{ account_name: string; account_ref: string }>;
   selectedDate?: Date;
-  onSuccess?: () => void; // Added onSuccess prop
+  onSuccess?: () => void;
 }
 
 interface PlanFormData {
@@ -31,7 +31,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   onClose,
   customers = [],
   selectedDate,
-  onSuccess, // Added onSuccess prop
+  onSuccess,
 }) => {
   const { user } = useAuth();
   const defaultDate = selectedDate || new Date();
@@ -45,12 +45,17 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const addPlanMutation = usePlanMutation(() => {
     reset({
       planned_date: format(defaultDate, 'yyyy-MM-dd'),
+      customer_ref: '',
+      customer_name: '',
+      notes: '',
     });
+    
     // Call onSuccess callback if provided
     if (onSuccess) {
       onSuccess();
+    } else {
+      onClose();
     }
-    onClose();
   });
 
   const onSubmit = (data: PlanFormData) => {

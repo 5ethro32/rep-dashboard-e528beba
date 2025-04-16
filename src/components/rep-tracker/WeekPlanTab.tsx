@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -109,9 +110,8 @@ const WeekPlanTab: React.FC<{
 
   const handleAddPlanSuccess = () => {
     queryClient.invalidateQueries({ 
-      queryKey: ['week-plans'],
-      exact: false,
-      refetchType: 'all'
+      queryKey: ['week-plans', weekStartDate, weekEndDate],
+      exact: true
     });
     setIsAddPlanOpen(false);
   };
@@ -123,7 +123,7 @@ const WeekPlanTab: React.FC<{
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Week Plan</h3>
         <Button 
-          onClick={() => setIsAddPlanOpen(true)}
+          onClick={() => handleAddPlan()}
           className="bg-finance-red hover:bg-finance-red/80"
         >
           <PlusCircle className="h-4 w-4 mr-2" />

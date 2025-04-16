@@ -1,7 +1,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 
 interface PlanFormData {
@@ -24,11 +24,17 @@ export function usePlanMutation(onSuccess: () => void) {
     },
     meta: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['week-plans'] });
+        queryClient.invalidateQueries({ 
+          queryKey: ['week-plans'],
+          exact: false,
+          refetchType: 'all'
+        });
+        
         toast({
           title: 'Plan Added',
           description: 'Week plan has been added successfully.',
         });
+        
         onSuccess();
       },
       onError: (error: Error) => {
