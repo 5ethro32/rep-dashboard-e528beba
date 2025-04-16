@@ -5,10 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Calendar, PlusCircle } from 'lucide-react';
+import { ArrowLeft, Calendar } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
-import { toast } from '@/components/ui/use-toast';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
 import WeekPlanTab from '@/components/rep-tracker/WeekPlanTab';
@@ -84,7 +83,6 @@ const RepTracker: React.FC = () => {
       refetchType: 'all'
     });
     
-    setSelectedTab('visits');
     setShowAddVisit(false);
   };
 
@@ -177,16 +175,6 @@ const RepTracker: React.FC = () => {
           isLoading={isLoadingCurrentMetrics}
         />
         
-        <div className="flex justify-end mb-6">
-          <Button 
-            className="bg-finance-red hover:bg-finance-red/80"
-            onClick={() => setShowAddVisit(true)}
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add Visit
-          </Button>
-        </div>
-        
         <Tabs 
           value={selectedTab} 
           onValueChange={setSelectedTab} 
@@ -204,6 +192,7 @@ const RepTracker: React.FC = () => {
               customers={customers || []} 
               isLoadingCustomers={isLoadingCustomers}
               onDataChange={handleDataChange}
+              onAddVisit={() => setShowAddVisit(true)}
             />
           </TabsContent>
           

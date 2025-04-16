@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -108,6 +107,15 @@ const WeekPlanTab: React.FC<{
     setIsAddPlanOpen(true);
   };
 
+  const handleAddPlanSuccess = () => {
+    queryClient.invalidateQueries({ 
+      queryKey: ['week-plans'],
+      exact: false,
+      refetchType: 'all'
+    });
+    setIsAddPlanOpen(false);
+  };
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
@@ -115,7 +123,7 @@ const WeekPlanTab: React.FC<{
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Week Plan</h3>
         <Button 
-          onClick={() => handleAddPlan()}
+          onClick={() => setIsAddPlanOpen(true)}
           className="bg-finance-red hover:bg-finance-red/80"
         >
           <PlusCircle className="h-4 w-4 mr-2" />
@@ -163,7 +171,6 @@ const WeekPlanTab: React.FC<{
                           size="sm" 
                           className="h-8 w-8 p-0"
                           onClick={() => {
-                            // Edit functionality would go here
                             toast({
                               title: "Coming soon",
                               description: "Edit plan functionality will be implemented soon!"
@@ -198,6 +205,7 @@ const WeekPlanTab: React.FC<{
         onClose={() => setIsAddPlanOpen(false)}
         customers={customers}
         selectedDate={selectedDate}
+        onSuccess={handleAddPlanSuccess}
       />
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

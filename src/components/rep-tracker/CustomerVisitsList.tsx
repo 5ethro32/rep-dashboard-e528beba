@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { Edit2, Trash2, ArrowUpDown } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpDown, PlusCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { 
   AlertDialog,
@@ -41,6 +41,7 @@ interface CustomerVisitsListProps {
   }>;
   isLoadingCustomers: boolean;
   onDataChange?: () => void;
+  onAddVisit: () => void;
 }
 
 type SortField = 'date' | 'customer_name' | 'profit';
@@ -66,7 +67,8 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   weekEndDate,
   customers,
   isLoadingCustomers,
-  onDataChange
+  onDataChange,
+  onAddVisit
 }) => {
   const [filter, setFilter] = useState('all'); // 'all', 'ordered', 'no-order'
   const [sortField, setSortField] = useState<SortField>('date');
@@ -164,8 +166,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between mb-4">
         <h2 className="text-xl font-semibold mb-2 md:mb-0">Customer Visits</h2>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-white/60">Filter:</span>
+        <div className="flex items-center gap-4">
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-[150px] bg-black/30 border-gray-700 text-white">
               <SelectValue placeholder="Filter visits" />
@@ -176,6 +177,14 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
               <SelectItem value="no-order">No Orders</SelectItem>
             </SelectContent>
           </Select>
+          
+          <Button 
+            className="bg-finance-red hover:bg-finance-red/80"
+            onClick={onAddVisit}
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Visit
+          </Button>
         </div>
       </div>
 
