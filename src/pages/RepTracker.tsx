@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
+import WeekPlanTab from '@/components/rep-tracker/WeekPlanTab';
 import WeekPlanTabV2 from '@/components/rep-tracker/WeekPlanTabV2';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useVisitMetrics } from '@/hooks/useVisitMetrics';
@@ -20,7 +21,7 @@ const RepTracker: React.FC = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddVisit, setShowAddVisit] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('week-plan'); // Default to week-plan tab
+  const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
   
   const queryClient = useQueryClient();
   
@@ -95,7 +96,7 @@ const RepTracker: React.FC = () => {
   };
 
   const handleAddPlanSuccess = () => {
-    setSelectedTab('week-plan');
+    setSelectedTab('week-plan-v2');
   };
 
   return (
@@ -186,7 +187,8 @@ const RepTracker: React.FC = () => {
         >
           <TabsList className="bg-black/20 border-gray-800">
             <TabsTrigger value="visits">Customer Visits</TabsTrigger>
-            <TabsTrigger value="week-plan">Week Plan</TabsTrigger>
+            <TabsTrigger value="week-plan">Week Plan (Old)</TabsTrigger>
+            <TabsTrigger value="week-plan-v2">Week Plan V2</TabsTrigger>
           </TabsList>
           
           <TabsContent value="visits" className="mt-6">
@@ -201,10 +203,19 @@ const RepTracker: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="week-plan" className="mt-6">
+            <WeekPlanTab 
+              weekStartDate={weekStart}
+              weekEndDate={weekEnd}
+              customers={customers || []}
+            />
+          </TabsContent>
+          
+          <TabsContent value="week-plan-v2" className="mt-6">
             <WeekPlanTabV2 
               weekStartDate={weekStart}
               weekEndDate={weekEnd}
               customers={customers || []}
+              onAddPlanSuccess={handleAddPlanSuccess}
             />
           </TabsContent>
         </Tabs>
