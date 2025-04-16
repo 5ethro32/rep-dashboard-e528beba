@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -192,6 +193,7 @@ const RepTracker: React.FC = () => {
               customers={customers || []} 
               isLoadingCustomers={isLoadingCustomers}
               onDataChange={handleDataChange}
+              onAddVisit={() => setShowAddVisit(true)}
             />
           </TabsContent>
           
