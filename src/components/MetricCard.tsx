@@ -29,7 +29,15 @@ const MetricCard: React.FC<MetricCardProps> = ({
   isLoading = false
 }) => {
   return (
-    <Card className={cn("border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg", className)}>
+    <Card 
+      className={cn(
+        "border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg",
+        "transition-all duration-300 ease-in-out",
+        "hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02]", // Added hover effect
+        "will-change-transform", // Performance optimization
+        className
+      )}
+    >
       <CardContent className="p-4 md:p-5">
         <div className="flex flex-col space-y-2">
           <div className="text-xs md:text-sm font-medium text-finance-gray uppercase tracking-wider">{title}</div>
