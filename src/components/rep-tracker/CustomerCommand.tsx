@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Command,
   CommandEmpty,
@@ -25,41 +25,54 @@ export function CustomerCommand({
   onSelect,
   className 
 }: CustomerCommandProps) {
+  const [open, setOpen] = useState(false);
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
+  const handleSelect = (customer: { account_ref: string; account_name: string }) => {
+    onSelect(customer.account_ref, customer.account_name);
+    setOpen(false); // Close the command dialog after selection
+  };
+  
   return (
-    <Command className={cn("rounded-lg border shadow-md", className)}>
-      <CommandInput placeholder="Search customer..." className="border-none focus:ring-0" />
-      <CommandList>
-        <ScrollArea className="max-h-[200px]">
-          <CommandEmpty>No customer found.</CommandEmpty>
-          <CommandGroup>
-            {safeCustomers.map((customer) => (
-              <CommandItem
-                key={customer.account_ref}
-                value={customer.account_name}
-                onSelect={() => {
-                  onSelect(customer.account_ref, customer.account_name);
-                }}
-                className="flex items-center gap-2 cursor-pointer hover:bg-accent"
-              >
-                <div className="flex items-center gap-2 w-full">
-                  <Check
-                    className={cn(
-                      "h-4 w-4 flex-shrink-0",
-                      selectedCustomer === customer.account_name 
-                        ? "opacity-100" 
-                        : "opacity-0"
-                    )}
-                  />
-                  <span>{customer.account_name}</span>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </ScrollArea>
-      </CommandList>
+    <Command 
+      className={cn("rounded-lg border shadow-md", className)}
+      shouldFilter={true} // Ensure filtering works
+    >
+      <CommandInput 
+        placeholder="Search customer..." 
+        className="border-none focus:ring-0"
+        onFocus={() => setOpen(true)}
+      />
+      {open && (
+        <CommandList>
+          <ScrollArea className="max-h-[200px]">
+            <CommandEmpty>No customer found.</CommandEmpty>
+            <CommandGroup>
+              {safeCustomers.map((customer) => (
+                <CommandItem
+                  key={customer.account_ref}
+                  value={customer.account_name}
+                  onSelect={() => handleSelect(customer)}
+                  className="flex items-center gap-2 cursor-pointer hover:bg-accent"
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <Check
+                      className={cn(
+                        "h-4 w-4 flex-shrink-0",
+                        selectedCustomer === customer.account_name 
+                          ? "opacity-100" 
+                          : "opacity-0"
+                      )}
+                    />
+                    <span>{customer.account_name}</span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </ScrollArea>
+        </CommandList>
+      )}
     </Command>
   );
 }

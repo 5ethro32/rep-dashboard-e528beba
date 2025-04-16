@@ -119,7 +119,6 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   const handleCustomerSelect = (ref: string, name: string) => {
     setValue('customer_ref', ref);
     setValue('customer_name', name);
-    setTimeout(() => {}, 0);
   };
 
   const onSubmit = (data: VisitFormData) => {
