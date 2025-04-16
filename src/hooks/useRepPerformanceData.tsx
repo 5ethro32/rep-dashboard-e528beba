@@ -685,7 +685,19 @@ export const useRepPerformanceData = () => {
     isLoading,
     getFebValue,
     selectedMonth,
-    setSelectedMonth
+    setSelectedMonth,
+    
+    baseSummary,
+    revaValues,
+    wholesaleValues,
+    
+    aprBaseSummary,
+    aprRevaValues,
+    aprWholesaleValues,
+    
+    febBaseSummary,
+    febRevaValues,
+    febWholesaleValues
   };
 };
 

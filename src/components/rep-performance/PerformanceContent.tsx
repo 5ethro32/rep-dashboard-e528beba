@@ -5,6 +5,7 @@ import PerformanceTable from './PerformanceTable';
 import RepProfitChart from '@/components/RepProfitChart';
 import RepProfitShare from '@/components/RepProfitShare';
 import RepMarginComparison from '@/components/RepMarginComparison';
+import DepartmentProfitShare from '@/components/DepartmentProfitShare';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceContentProps {
@@ -30,6 +31,18 @@ interface PerformanceContentProps {
     totalAccounts?: number;
     activeAccounts?: number;
   };
+  includeRetail: boolean;
+  includeReva: boolean;
+  includeWholesale: boolean;
+  baseSummary?: {
+    totalProfit: number;
+  };
+  revaValues?: {
+    totalProfit: number;
+  };
+  wholesaleValues?: {
+    totalProfit: number;
+  };
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -47,7 +60,13 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   isLoading,
   getFebValue,
   selectedMonth,
-  summary
+  summary,
+  includeRetail,
+  includeReva,
+  includeWholesale,
+  baseSummary,
+  revaValues,
+  wholesaleValues
 }) => {
   const isMobile = useIsMobile();
 
@@ -133,7 +152,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
               </div>
             </div>
             
-            {/* New layout: Profit Distribution and Margin Comparison side by side */}
+            {/* Profit Distribution and Margin Comparison side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
               <div className="h-64 md:h-80">
                 <RepProfitChart 
@@ -156,8 +175,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
               </div>
             </div>
             
-            {/* Profit Share Donut chart on its own row with more height */}
-            <div className="mb-8">
+            {/* Profit Share charts side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
               <div className="h-80 md:h-96">
                 <RepProfitShare 
                   displayData={sortData(getActiveData(tabValue))}
@@ -165,6 +184,19 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   isLoading={isLoading}
                   showChangeIndicators={showChangeIndicators}
                   totalProfit={tabValue === 'overall' && selectedMonth === 'April' ? summary?.totalProfit : undefined}
+                />
+              </div>
+              
+              <div className="h-80 md:h-96">
+                <DepartmentProfitShare 
+                  retailProfit={(includeRetail && baseSummary?.totalProfit) || 0}
+                  revaProfit={(includeReva && revaValues?.totalProfit) || 0}
+                  wholesaleProfit={(includeWholesale && wholesaleValues?.totalProfit) || 0}
+                  totalProfit={summary?.totalProfit || 0}
+                  includeRetail={includeRetail}
+                  includeReva={includeReva}
+                  includeWholesale={includeWholesale}
+                  isLoading={isLoading}
                 />
               </div>
             </div>

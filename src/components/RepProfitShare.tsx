@@ -145,7 +145,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
   
   return (
     <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
-      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Share</h3>
+      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Share By Rep</h3>
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center">

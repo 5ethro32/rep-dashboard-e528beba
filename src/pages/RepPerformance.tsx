@@ -35,11 +35,22 @@ const RepPerformance = () => {
     loadDataFromSupabase,
     getFebValue,
     selectedMonth,
-    setSelectedMonth
+    setSelectedMonth,
+    baseSummary,
+    revaValues,
+    wholesaleValues,
+    aprBaseSummary,
+    aprRevaValues,
+    aprWholesaleValues,
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
   const isMobile = useIsMobile();
+  
+  // Determine which summary values to use based on selectedMonth
+  const currentBaseSummary = selectedMonth === 'April' ? aprBaseSummary : baseSummary;
+  const currentRevaValues = selectedMonth === 'April' ? aprRevaValues : revaValues;
+  const currentWholesaleValues = selectedMonth === 'April' ? aprWholesaleValues : wholesaleValues;
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -129,7 +140,13 @@ const RepPerformance = () => {
           isLoading={isLoading}
           getFebValue={getFebValue}
           selectedMonth={selectedMonth}
-          summary={summary} // Pass the summary prop
+          summary={summary}
+          includeRetail={includeRetail}
+          includeReva={includeReva}
+          includeWholesale={includeWholesale}
+          baseSummary={currentBaseSummary}
+          revaValues={currentRevaValues}
+          wholesaleValues={currentWholesaleValues}
         />
       </div>
       <ChatInterface selectedMonth={selectedMonth} />
