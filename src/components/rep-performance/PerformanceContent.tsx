@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
@@ -22,6 +21,14 @@ interface PerformanceContentProps {
   isLoading?: boolean;
   getFebValue: (repName: string, metricType: string, currentValue: number, changePercent: number) => string;
   selectedMonth: string;
+  summary?: {
+    totalSpend?: number;
+    totalProfit?: number;
+    totalPacks?: number;
+    averageMargin?: number;
+    totalAccounts?: number;
+    activeAccounts?: number;
+  };
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -38,7 +45,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   renderChangeIndicator,
   isLoading,
   getFebValue,
-  selectedMonth
+  selectedMonth,
+  summary
 }) => {
   const isMobile = useIsMobile();
 
@@ -52,7 +60,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     }
   };
 
-  const getTabTitle = (tabValue: string) => {
+  const getTabTitle = (tabValue: string, selectedMonth: string) => {
     switch (tabValue) {
       case 'overall': return `Overall Rep Performance (${selectedMonth} 2025)`;
       case 'rep': return `Retail Performance (${selectedMonth} 2025)`;
@@ -77,7 +85,6 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     }
   };
 
-  // Only show change indicators if we're comparing to previous months
   const showChangeIndicators = selectedMonth !== 'February';
 
   return (
@@ -100,7 +107,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
             <div className="bg-gray-900/40 rounded-lg border border-white/10 mb-6 md:mb-8 backdrop-blur-sm shadow-lg">
               <div className="p-3 md:p-6">
                 <h2 className="text-lg md:text-xl font-semibold mb-1 md:mb-2 text-white/90">
-                  {getTabTitle(tabValue)}
+                  {getTabTitle(tabValue, selectedMonth)}
                 </h2>
                 <p className="text-xs md:text-sm mb-3 md:mb-4 text-white/60">
                   {getTabDescription(tabValue)}
@@ -142,6 +149,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   repChanges={repChanges}
                   isLoading={isLoading}
                   showChangeIndicators={showChangeIndicators}
+                  totalProfit={tabValue === 'overall' && selectedMonth === 'April' ? summary?.totalProfit : undefined}
                 />
               </div>
               

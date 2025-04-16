@@ -9,18 +9,22 @@ interface RepProfitShareProps {
   repChanges: Record<string, any>;
   isLoading?: boolean;
   showChangeIndicators?: boolean;
+  totalProfit?: number; // Add this new prop
 }
 
 const RepProfitShare: React.FC<RepProfitShareProps> = ({ 
   displayData, 
   repChanges, 
   isLoading,
-  showChangeIndicators = true
+  showChangeIndicators = true,
+  totalProfit: providedTotalProfit // Use this prop if provided
 }) => {
   const isMobile = useIsMobile();
   
-  // Calculate total profit
-  const totalProfit = displayData.reduce((sum, item) => sum + item.profit, 0);
+  // Calculate total profit from displayData or use the provided value
+  const totalProfit = providedTotalProfit !== undefined 
+    ? providedTotalProfit 
+    : displayData.reduce((sum, item) => sum + item.profit, 0);
   
   // Colors for the chart - refined gradient of reds
   const colors = [

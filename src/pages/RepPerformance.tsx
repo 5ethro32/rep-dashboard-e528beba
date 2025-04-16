@@ -1,3 +1,4 @@
+
 import React from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -128,6 +129,7 @@ const RepPerformance = () => {
           isLoading={isLoading}
           getFebValue={getFebValue}
           selectedMonth={selectedMonth}
+          summary={summary} // Pass the summary prop
         />
       </div>
       <ChatInterface selectedMonth={selectedMonth} />
