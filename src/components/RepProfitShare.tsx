@@ -3,13 +3,14 @@ import React from 'react';
 import DonutChart from './DonutChart';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface RepProfitShareProps {
   displayData: any[];
   repChanges: Record<string, any>;
   isLoading?: boolean;
   showChangeIndicators?: boolean;
-  totalProfit?: number; // Add this new prop
+  totalProfit?: number;
 }
 
 const RepProfitShare: React.FC<RepProfitShareProps> = ({ 
@@ -17,7 +18,7 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
   repChanges, 
   isLoading,
   showChangeIndicators = true,
-  totalProfit: providedTotalProfit // Use this prop if provided
+  totalProfit: providedTotalProfit
 }) => {
   const isMobile = useIsMobile();
   
@@ -108,6 +109,39 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
       .map(part => part.charAt(0))
       .join('');
   };
+
+  // Split the legend items into left and right sides for desktop
+  // This creates a more balanced visual presentation
+  const splitLegendItems = () => {
+    if (isMobile) return { leftItems: dataToUse, rightItems: [] };
+    
+    const midPoint = Math.ceil(dataToUse.length / 2);
+    return {
+      leftItems: dataToUse.slice(0, midPoint),
+      rightItems: dataToUse.slice(midPoint)
+    };
+  };
+
+  const { leftItems, rightItems } = splitLegendItems();
+  
+  // Render a legend item - shared function for both layouts
+  const renderLegendItem = (item: any, index: number) => (
+    <div key={index} className="flex items-center text-2xs md:text-xs py-1">
+      <div 
+        className="w-2 h-2 md:w-3 md:h-3 rounded-full mr-1 flex-shrink-0" 
+        style={{ backgroundColor: item.color }}
+      />
+      <div className="truncate">
+        <span className="font-medium">{getInitials(item.name)}</span> 
+        <span className="text-finance-gray ml-1">({item.value}%)</span>
+        {showChangeIndicators && Math.abs(item.change) >= 1 && (
+          <span className={`ml-1 ${item.change > 0 ? 'text-emerald-400' : 'text-finance-red'}`}>
+            {item.change > 0 ? '↑' : '↓'}
+          </span>
+        )}
+      </div>
+    </div>
+  );
   
   return (
     <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
@@ -120,39 +154,52 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col h-full">
-          <div className="flex-1">
-            <div className="h-48 md:h-64 w-full mb-2 md:mb-4"> {/* Adjusted height to better fit the card */}
-              <DonutChart 
-                data={dataToUse}
-                innerValue={formattedProfit}
-                innerLabel="Total Profit"
-              />
-            </div>
-          </div>
-          
-          {/* Legend */}
-          <div className="mt-auto overflow-y-auto max-h-40 md:max-h-44 scrollbar-none"> {/* Increased max height for legend */}
-            <div className="grid grid-cols-2 gap-2 md:gap-3">
-              {dataToUse.map((item, index) => (
-                <div key={index} className="flex items-center text-2xs md:text-xs">
-                  <div 
-                    className="w-2 h-2 md:w-3 md:h-3 rounded-full mr-1" 
-                    style={{ backgroundColor: item.color }}
+        <div className="flex-1 flex flex-col h-full">
+          {/* Desktop layout - side-by-side */}
+          {!isMobile && (
+            <div className="flex h-full">
+              {/* Left side legend */}
+              <div className="w-1/4 pr-2 flex flex-col justify-center">
+                {leftItems.map((item, index) => renderLegendItem(item, index))}
+              </div>
+              
+              {/* Center chart */}
+              <div className="w-1/2">
+                <div className="h-full">
+                  <DonutChart 
+                    data={dataToUse}
+                    innerValue={formattedProfit}
+                    innerLabel="Total Profit"
                   />
-                  <div className="truncate">
-                    <span className="font-medium">{getInitials(item.name)}</span> 
-                    <span className="text-finance-gray ml-1">({item.value}%)</span>
-                    {showChangeIndicators && Math.abs(item.change) >= 1 && (
-                      <span className={`ml-1 ${item.change > 0 ? 'text-emerald-400' : 'text-finance-red'}`}>
-                        {item.change > 0 ? '↑' : '↓'}
-                      </span>
-                    )}
-                  </div>
                 </div>
-              ))}
+              </div>
+              
+              {/* Right side legend */}
+              <div className="w-1/4 pl-2 flex flex-col justify-center">
+                {rightItems.map((item, index) => renderLegendItem(item, index))}
+              </div>
             </div>
-          </div>
+          )}
+          
+          {/* Mobile layout - legend below chart */}
+          {isMobile && (
+            <>
+              <div className="h-48 mb-2">
+                <DonutChart 
+                  data={dataToUse}
+                  innerValue={formattedProfit}
+                  innerLabel="Total Profit"
+                />
+              </div>
+              
+              {/* Legend for mobile - scrollable */}
+              <div className="mt-auto overflow-y-auto max-h-40 scrollbar-none">
+                <div className="grid grid-cols-2 gap-2">
+                  {dataToUse.map((item, index) => renderLegendItem(item, index))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
