@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
@@ -45,7 +44,6 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const safeCustomers = Array.isArray(customers) ? customers : [];
 
   const addPlanMutation = usePlanMutation(() => {
-    // Reset the form first
     reset({
       planned_date: format(defaultDate, 'yyyy-MM-dd'),
       customer_ref: '',
@@ -53,12 +51,10 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
       notes: '',
     });
     
-    // Always call onSuccess (if provided) to ensure UI updates immediately
     if (onSuccess) {
       onSuccess();
     }
     
-    // Always close the dialog after successful submission
     onClose();
   });
 
@@ -69,7 +65,6 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
 
   const onSubmit = (data: PlanFormData) => {
     if (!user?.id) return;
-    // Format the date properly for the backend and optimistic updates
     const formattedDate = new Date(data.planned_date);
     addPlanMutation.mutate({ 
       ...data, 
@@ -91,6 +86,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
               id="planned_date"
               type="date"
               {...register('planned_date', { required: true })}
+              className="w-full"
             />
           </div>
 

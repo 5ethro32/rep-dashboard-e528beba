@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,7 +24,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
-import { format } from 'date-fns';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 
 interface AddVisitDialogProps {
@@ -143,6 +142,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
               id="date"
               type="date"
               {...register('date', { required: true })}
+              className="w-full"
             />
           </div>
 
