@@ -38,20 +38,23 @@ export function CustomerCommand({
             {safeCustomers.map((customer) => (
               <CommandItem
                 key={customer.account_ref}
+                value={customer.account_name}
                 onSelect={() => {
                   onSelect(customer.account_ref, customer.account_name);
                 }}
-                className="flex items-center gap-2 cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer hover:bg-accent"
               >
-                <Check
-                  className={cn(
-                    "h-4 w-4",
-                    selectedCustomer === customer.account_name 
-                      ? "opacity-100" 
-                      : "opacity-0"
-                  )}
-                />
-                <span>{customer.account_name}</span>
+                <div className="flex items-center gap-2 w-full">
+                  <Check
+                    className={cn(
+                      "h-4 w-4 flex-shrink-0",
+                      selectedCustomer === customer.account_name 
+                        ? "opacity-100" 
+                        : "opacity-0"
+                    )}
+                  />
+                  <span>{customer.account_name}</span>
+                </div>
               </CommandItem>
             ))}
           </CommandGroup>

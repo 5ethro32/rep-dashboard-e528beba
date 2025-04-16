@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -60,7 +59,6 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
     }
   });
 
-  // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
 
   const addVisitMutation = useMutation({
@@ -118,6 +116,12 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
     },
   });
 
+  const handleCustomerSelect = (ref: string, name: string) => {
+    setValue('customer_ref', ref);
+    setValue('customer_name', name);
+    setTimeout(() => {}, 0);
+  };
+
   const onSubmit = (data: VisitFormData) => {
     addVisitMutation.mutate(data);
   };
@@ -143,10 +147,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
             <CustomerCommand
               customers={safeCustomers}
               selectedCustomer={watch('customer_name')}
-              onSelect={(ref, name) => {
-                setValue('customer_ref', ref);
-                setValue('customer_name', name);
-              }}
+              onSelect={handleCustomerSelect}
             />
           </div>
 
