@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
@@ -73,7 +72,8 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
   const [visitToEdit, setVisitToEdit] = useState<Visit | null>(null);
   
-  // Fetch visits from Supabase
+  const queryClient = useQueryClient();
+
   const { data: visits, isLoading } = useQuery({
     queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder],
     queryFn: async () => {
@@ -98,7 +98,6 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     },
   });
 
-  // Delete visit mutation
   const deleteVisitMutation = useMutation({
     mutationFn: async (visitId: string) => {
       const { error } = await supabase
@@ -128,15 +127,12 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     },
   });
 
-  const queryClient = useQueryClient();
-
   const handleDeleteConfirm = () => {
     if (visitToDelete) {
       deleteVisitMutation.mutate(visitToDelete);
     }
   };
 
-  // Filter visits based on selected filter
   const filteredVisits = visits?.filter(visit => {
     if (filter === 'all') return true;
     if (filter === 'ordered') return visit.has_order;
@@ -274,7 +270,6 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         </div>
       </div>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!visitToDelete} onOpenChange={() => setVisitToDelete(null)}>
         <AlertDialogContent className="bg-gray-900 border border-gray-800">
           <AlertDialogHeader>
@@ -297,7 +292,6 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         </AlertDialogContent>
       </AlertDialog>
       
-      {/* Edit Visit Dialog */}
       {visitToEdit && (
         <EditVisitDialog
           isOpen={!!visitToEdit}
