@@ -96,7 +96,7 @@ const RepTracker: React.FC = () => {
     });
   };
 
-  // Function to ensure we switch to week-plan tab on plan addition
+  // Function that handles add plan success and ensures we switch to week-plan tab
   const handleAddPlanSuccess = () => {
     // Force switch to week-plan tab
     setSelectedTab('week-plan');

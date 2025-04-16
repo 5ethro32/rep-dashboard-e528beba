@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit2, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AddPlanDialog from './AddPlanDialog';
+import EditPlanDialog from './EditPlanDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +37,9 @@ const WeekPlanTab: React.FC<{
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
+  const [isEditPlanOpen, setIsEditPlanOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedPlan, setSelectedPlan] = useState<WeekPlan | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
@@ -139,6 +142,11 @@ const WeekPlanTab: React.FC<{
     setIsAddPlanOpen(true);
   };
 
+  const handleEditPlan = (plan: WeekPlan) => {
+    setSelectedPlan(plan);
+    setIsEditPlanOpen(true);
+  };
+
   const handleAddPlanSuccess = () => {
     // Close the dialog first
     setIsAddPlanOpen(false);
@@ -150,6 +158,15 @@ const WeekPlanTab: React.FC<{
     });
     
     // Explicitly refetch the current week's data
+    refetch();
+  };
+
+  const handleEditPlanSuccess = () => {
+    setIsEditPlanOpen(false);
+    queryClient.invalidateQueries({ 
+      queryKey: ['week-plans'],
+      refetchType: 'all'
+    });
     refetch();
   };
 
@@ -208,12 +225,7 @@ const WeekPlanTab: React.FC<{
                           variant="ghost" 
                           size="sm" 
                           className="h-8 w-8 p-0"
-                          onClick={() => {
-                            toast({
-                              title: "Coming soon",
-                              description: "Edit plan functionality will be implemented soon!"
-                            });
-                          }}
+                          onClick={() => handleEditPlan(plan)}
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -244,6 +256,14 @@ const WeekPlanTab: React.FC<{
         customers={customers}
         selectedDate={selectedDate}
         onSuccess={handleAddPlanSuccess}
+      />
+
+      <EditPlanDialog
+        isOpen={isEditPlanOpen}
+        onClose={() => setIsEditPlanOpen(false)}
+        plan={selectedPlan}
+        customers={customers}
+        onSuccess={handleEditPlanSuccess}
       />
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
