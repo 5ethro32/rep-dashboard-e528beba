@@ -1,6 +1,7 @@
+
 import React from 'react';
 import MetricCard from '@/components/MetricCard';
-import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
+import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 interface WeeklySummaryProps {
   data: {
@@ -34,13 +35,12 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
   isLoading = false
 }) => {
   const calculateChange = (current: number, previous: number) => {
-    if (!previous) return 0;
-    return ((current - previous) / previous) * 100;
-  };
-
-  const getChangeType = (change: number) => {
-    if (Math.abs(change) < 0.1) return 'neutral';
-    return change > 0 ? 'increase' : 'decrease';
+    if (!previous) return { value: '0%', type: 'neutral' as const };
+    const percentChange = ((current - previous) / previous) * 100;
+    return {
+      value: `${Math.abs(percentChange).toFixed(1)}%`,
+      type: percentChange > 0 ? 'increase' as const : percentChange < 0 ? 'decrease' as const : 'neutral' as const
+    };
   };
 
   return (
@@ -49,10 +49,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         <MetricCard
           title="Total Visits"
           value={formatNumber(data.totalVisits)}
-          change={previousData ? {
-            value: `${Math.abs(calculateChange(data.totalVisits, previousData.totalVisits)).toFixed(1)}%`,
-            type: getChangeType(calculateChange(data.totalVisits, previousData.totalVisits))
-          } : undefined}
+          change={previousData ? calculateChange(data.totalVisits, previousData.totalVisits) : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalVisits)}` : undefined}
           isLoading={isLoading}
         />
@@ -60,10 +57,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         <MetricCard
           title="Total Profit"
           value={formatCurrency(data.totalProfit)}
-          change={previousData ? {
-            value: `${Math.abs(calculateChange(data.totalProfit, previousData.totalProfit)).toFixed(1)}%`,
-            type: getChangeType(calculateChange(data.totalProfit, previousData.totalProfit))
-          } : undefined}
+          change={previousData ? calculateChange(data.totalProfit, previousData.totalProfit) : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.totalProfit)}` : undefined}
           valueClassName="text-finance-red"
           isLoading={isLoading}
@@ -72,10 +66,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         <MetricCard
           title="Total Orders"
           value={formatNumber(data.totalOrders)}
-          change={previousData ? {
-            value: `${Math.abs(calculateChange(data.totalOrders, previousData.totalOrders)).toFixed(1)}%`,
-            type: getChangeType(calculateChange(data.totalOrders, previousData.totalOrders))
-          } : undefined}
+          change={previousData ? calculateChange(data.totalOrders, previousData.totalOrders) : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalOrders)}` : undefined}
           isLoading={isLoading}
         />
@@ -83,10 +74,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         <MetricCard
           title="Conversion Rate"
           value={`${data.conversionRate.toFixed(1)}%`}
-          change={previousData ? {
-            value: `${Math.abs(calculateChange(data.conversionRate, previousData.conversionRate)).toFixed(1)}%`,
-            type: getChangeType(calculateChange(data.conversionRate, previousData.conversionRate))
-          } : undefined}
+          change={previousData ? calculateChange(data.conversionRate, previousData.conversionRate) : undefined}
           subtitle={previousData ? `Previous: ${previousData.conversionRate.toFixed(1)}%` : undefined}
           isLoading={isLoading}
         />
@@ -96,10 +84,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         <MetricCard
           title="Daily Avg Profit"
           value={formatCurrency(data.dailyAvgProfit)}
-          change={previousData ? {
-            value: `${Math.abs(calculateChange(data.dailyAvgProfit, previousData.dailyAvgProfit)).toFixed(1)}%`,
-            type: getChangeType(calculateChange(data.dailyAvgProfit, previousData.dailyAvgProfit))
-          } : undefined}
+          change={previousData ? calculateChange(data.dailyAvgProfit, previousData.dailyAvgProfit) : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.dailyAvgProfit)}` : undefined}
           isLoading={isLoading}
         />
@@ -107,10 +92,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         <MetricCard
           title="Avg Profit Per Visit"
           value={formatCurrency(data.avgProfitPerVisit)}
-          change={previousData ? {
-            value: `${Math.abs(calculateChange(data.avgProfitPerVisit, previousData.avgProfitPerVisit)).toFixed(1)}%`,
-            type: getChangeType(calculateChange(data.avgProfitPerVisit, previousData.avgProfitPerVisit))
-          } : undefined}
+          change={previousData ? calculateChange(data.avgProfitPerVisit, previousData.avgProfitPerVisit) : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerVisit)}` : undefined}
           isLoading={isLoading}
         />
@@ -118,10 +100,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         <MetricCard
           title="Avg Profit Per Order"
           value={formatCurrency(data.avgProfitPerOrder)}
-          change={previousData ? {
-            value: `${Math.abs(calculateChange(data.avgProfitPerOrder, previousData.avgProfitPerOrder)).toFixed(1)}%`,
-            type: getChangeType(calculateChange(data.avgProfitPerOrder, previousData.avgProfitPerOrder))
-          } : undefined}
+          change={previousData ? calculateChange(data.avgProfitPerOrder, previousData.avgProfitPerOrder) : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerOrder)}` : undefined}
           isLoading={isLoading}
         />
