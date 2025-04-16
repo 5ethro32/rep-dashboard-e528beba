@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
@@ -50,6 +51,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
     });
     
     if (onSuccess) {
+      // Call the parent component's success handler for additional refresh
       onSuccess();
     } else {
       onClose();

@@ -23,7 +23,7 @@ export function usePlanMutation(onSuccess: () => void) {
     },
     meta: {
       onSuccess: () => {
-        // Force a complete refresh of all week-plans queries
+        // Force a complete refresh of all week-plans queries with aggressive invalidation
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
           exact: false,
@@ -35,6 +35,7 @@ export function usePlanMutation(onSuccess: () => void) {
           description: 'Week plan has been added successfully.',
         });
         
+        // Call the success callback to trigger additional UI updates
         onSuccess();
       },
       onError: (error: Error) => {

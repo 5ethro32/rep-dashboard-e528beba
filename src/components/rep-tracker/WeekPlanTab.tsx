@@ -43,7 +43,7 @@ const WeekPlanTab: React.FC<{
   // Use a specific query key for the current week's data
   const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString()];
   
-  const { data: weekPlans, isLoading } = useQuery({
+  const { data: weekPlans, isLoading, refetch } = useQuery({
     queryKey: weekPlansQueryKey,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -65,8 +65,9 @@ const WeekPlanTab: React.FC<{
         });
       },
     },
-    // Force refetch on window focus to ensure data is always up to date
-    refetchOnWindowFocus: true
+    // Always ensure we have fresh data
+    refetchOnWindowFocus: true,
+    staleTime: 0
   });
 
   const deletePlanMutation = useMutation({
@@ -86,6 +87,9 @@ const WeekPlanTab: React.FC<{
           exact: false,
           refetchType: 'all'
         });
+        
+        // Explicitly refetch the current week's data
+        refetch();
         
         toast({
           title: 'Plan Deleted',
@@ -127,6 +131,9 @@ const WeekPlanTab: React.FC<{
       exact: false,
       refetchType: 'all'
     });
+    
+    // Explicitly refetch the current week's data
+    refetch();
     
     setIsAddPlanOpen(false);
   };
