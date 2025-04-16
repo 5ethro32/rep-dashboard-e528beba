@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { usePlanMutation } from '@/hooks/usePlanMutation';
 
 interface WeekPlan {
   id: string;
@@ -79,34 +80,33 @@ const WeekPlanTabV2: React.FC<{
       if (error) throw error;
       return planId;
     },
-    meta: {
-      onSuccess: (deletedPlanId) => {
-        // Optimistically update the cache
-        queryClient.setQueryData(
-          weekPlansQueryKey,
-          (old: WeekPlan[] | undefined) => old?.filter(plan => plan.id !== deletedPlanId) || []
-        );
+    onSuccess: (deletedPlanId) => {
+      // Optimistically update the cache
+      queryClient.setQueryData(
+        weekPlansQueryKey,
+        (old: WeekPlan[] | undefined) => old?.filter(plan => plan.id !== deletedPlanId) || []
+      );
 
-        // Then invalidate to ensure consistency
-        queryClient.invalidateQueries({ 
-          queryKey: ['week-plans'],
-          refetchType: 'all'
-        });
+      // Then invalidate to ensure consistency
+      queryClient.invalidateQueries({ 
+        queryKey: ['week-plans'],
+        exact: false,
+        refetchType: 'all'
+      });
 
-        toast({
-          title: 'Plan Deleted',
-          description: 'Week plan has been deleted successfully.',
-        });
+      toast({
+        title: 'Plan Deleted',
+        description: 'Week plan has been deleted successfully.',
+      });
 
-        setDeleteConfirmOpen(false);
-      },
-      onError: (error: Error) => {
-        toast({
-          title: 'Error',
-          description: 'Failed to delete plan',
-          variant: 'destructive',
-        });
-      },
+      setDeleteConfirmOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete plan',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -133,10 +133,12 @@ const WeekPlanTabV2: React.FC<{
 
   const handleAddPlanSuccess = () => {
     setIsAddPlanOpen(false);
+    // The invalidation is handled in the usePlanMutation hook
   };
 
   const handleEditPlanSuccess = () => {
     setIsEditPlanOpen(false);
+    // The invalidation is handled in the useUpdatePlanMutation hook
   };
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
