@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Info, Award } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
@@ -11,6 +10,14 @@ import {
 } from "@/components/ui/tooltip";
 
 interface WeeklySummaryProps {
+  totalVisits: number;
+  totalProfit: number;
+  totalOrders: number;
+  conversionRate: number;
+  dailyAvgProfit: number;
+  topProfitOrder: number;
+  avgProfitPerOrder: number;
+  plannedVisits: number;
   data: {
     totalVisits: number;
     totalProfit: number;
@@ -146,6 +153,18 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         
         <MetricCard
           title={renderMetricWithTooltip(
+            "Avg Profit Per Order",
+            "Average profit generated per order (Total Profit / Total Orders)"
+          )}
+          value={formatCurrency(data.avgProfitPerOrder)}
+          change={previousData ? calculateChange(data.avgProfitPerOrder, previousData.avgProfitPerOrder) : undefined}
+          subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerOrder)}` : undefined}
+          isLoading={isLoading}
+          className="h-full"
+        />
+        
+        <MetricCard
+          title={renderMetricWithTooltip(
             "Top Profit Order",
             "Highest profit amount from any single order this week"
           )}
@@ -155,18 +174,6 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           isLoading={isLoading}
           className="h-full"
           icon={<Award className="h-5 w-5 text-yellow-400" />}
-        />
-        
-        <MetricCard
-          title={renderMetricWithTooltip(
-            "Avg Profit Per Order",
-            "Average profit generated per order (Total Profit / Total Orders)"
-          )}
-          value={formatCurrency(data.avgProfitPerOrder)}
-          change={previousData ? calculateChange(data.avgProfitPerOrder, previousData.avgProfitPerOrder) : undefined}
-          subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerOrder)}` : undefined}
-          isLoading={isLoading}
-          className="h-full"
         />
       </div>
     </div>
