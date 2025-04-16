@@ -91,8 +91,7 @@ export function SimpleCustomerSelect({
           />
         </div>
         
-        {/* Updated ScrollArea implementation to match CustomerHistoryTable */}
-        <ScrollArea className="h-[300px]">
+        <ScrollArea className="h-[300px]" type="always">
           <div className="p-1">
             {filteredCustomers.length === 0 ? (
               <div className="text-center p-4 text-sm text-muted-foreground">

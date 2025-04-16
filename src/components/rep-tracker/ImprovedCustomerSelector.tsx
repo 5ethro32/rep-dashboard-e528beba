@@ -120,7 +120,7 @@ export function ImprovedCustomerSelector({
         </div>
         
         {/* Customer list with updated ScrollArea */}
-        <ScrollArea className="h-[300px]">
+        <ScrollArea className="h-[300px]" type="always">
           <div className="p-1">
             {filteredCustomers.length > 0 ? (
               filteredCustomers.map((customer) => {
