@@ -18,7 +18,7 @@ export const useVisitMetrics = (selectedDate: Date) => {
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
   return useQuery({
-    queryKey: ['visit-metrics', weekStart, weekEnd],
+    queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString()],
     queryFn: async (): Promise<VisitMetrics> => {
       const { data: visits, error } = await supabase
         .from('customer_visits')
@@ -49,6 +49,8 @@ export const useVisitMetrics = (selectedDate: Date) => {
         avgProfitPerVisit,
         avgProfitPerOrder
       };
-    }
+    },
+    staleTime: 0, // Consider data stale immediately
+    refetchInterval: 0 // Don't automatically refetch
   });
 };

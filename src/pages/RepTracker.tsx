@@ -71,27 +71,13 @@ const RepTracker: React.FC = () => {
     }
   });
 
-  const summaryData = {
-    totalVisits: 17,
-    totalProfit: 1540.62,
-    totalOrders: 12,
-    conversionRate: 71,
-    dailyAvgProfit: 256.77,
-    avgProfitPerVisit: 90.62,
-    avgProfitPerOrder: 128.39
-  };
-
-  const previousWeekData = {
-    totalVisits: 15,
-    totalProfit: 1320.50,
-    totalOrders: 10,
-    conversionRate: 67,
-    dailyAvgProfit: 220.08,
-    avgProfitPerVisit: 88.03,
-    avgProfitPerOrder: 132.05
-  };
-
   const handleAddVisitSuccess = () => {
+    queryClient.invalidateQueries({
+      queryKey: ['visit-metrics'],
+      exact: false,
+      refetchType: 'all'
+    });
+    
     queryClient.invalidateQueries({
       queryKey: ['customer-visits'],
       exact: false,
@@ -99,8 +85,15 @@ const RepTracker: React.FC = () => {
     });
     
     setSelectedTab('visits');
-    
     setShowAddVisit(false);
+  };
+
+  const handleDataChange = () => {
+    queryClient.invalidateQueries({
+      queryKey: ['visit-metrics'],
+      exact: false,
+      refetchType: 'all'
+    });
   };
 
   return (
@@ -207,6 +200,7 @@ const RepTracker: React.FC = () => {
               weekEndDate={weekEnd}
               customers={customers || []} 
               isLoadingCustomers={isLoadingCustomers}
+              onDataChange={handleDataChange}
             />
           </TabsContent>
           
@@ -222,6 +216,7 @@ const RepTracker: React.FC = () => {
         <AddVisitDialog 
           isOpen={showAddVisit}
           onClose={() => setShowAddVisit(false)}
+          onSuccess={handleAddVisitSuccess}
           customers={customers || []}
         />
       </div>

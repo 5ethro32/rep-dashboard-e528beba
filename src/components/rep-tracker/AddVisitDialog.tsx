@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -29,6 +28,7 @@ import { CustomerSelector } from './CustomerSelector';
 interface AddVisitDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   customers?: Array<{ account_name: string; account_ref: string }>;
 }
 
@@ -46,6 +46,7 @@ interface VisitFormData {
 const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   isOpen,
   onClose,
+  onSuccess,
   customers = [],
 }) => {
   const { user } = useAuth();
@@ -85,6 +86,13 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
         refetchType: 'all'
       });
       
+      // Also invalidate visit metrics to update the summary cards
+      queryClient.invalidateQueries({
+        queryKey: ['visit-metrics'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
       toast({
         title: 'Visit Added',
         description: 'Customer visit has been recorded successfully.',
@@ -95,6 +103,11 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
         visit_type: 'Customer Visit',
         has_order: false,
       });
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
       
       onClose(); // Explicitly close the dialog on success
     },

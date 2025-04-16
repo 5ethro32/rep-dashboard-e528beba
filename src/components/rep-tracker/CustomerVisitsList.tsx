@@ -40,6 +40,7 @@ interface CustomerVisitsListProps {
     account_ref: string;
   }>;
   isLoadingCustomers: boolean;
+  onDataChange?: () => void;
 }
 
 type SortField = 'date' | 'customer_name' | 'profit';
@@ -65,6 +66,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   weekEndDate,
   customers,
   isLoadingCustomers,
+  onDataChange
 }) => {
   const [filter, setFilter] = useState('all'); // 'all', 'ordered', 'no-order'
   const [sortField, setSortField] = useState<SortField>('date');
@@ -115,6 +117,10 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         exact: false,
         refetchType: 'all'
       });
+      
+      if (onDataChange) {
+        onDataChange();
+      }
       
       toast({
         title: 'Visit Deleted',
@@ -309,6 +315,10 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
               exact: false,
               refetchType: 'all'
             });
+            
+            if (onDataChange) {
+              onDataChange();
+            }
           }}
         />
       )}
