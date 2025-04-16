@@ -35,6 +35,7 @@ export function CustomerSelector({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Focus the input when popover opens
   useEffect(() => {
@@ -61,8 +62,11 @@ export function CustomerSelector({
         );
       });
 
-  // Handle customer selection
-  const handleCustomerSelect = (customer: Customer) => {
+  // Handle customer selection with explicit event handling
+  const handleCustomerSelect = (e: React.MouseEvent, customer: Customer) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
       setOpen(false);
@@ -84,7 +88,15 @@ export function CustomerSelector({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" sideOffset={4}>
+      <PopoverContent 
+        className="w-full p-0" 
+        sideOffset={4}
+        align="start"
+        style={{ 
+          width: 'var(--radix-popover-trigger-width)',
+          zIndex: 100
+        }}
+      >
         {isLoading ? (
           <div className="py-6 text-center text-sm">Loading customers...</div>
         ) : (
@@ -97,10 +109,18 @@ export function CustomerSelector({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="border-0 bg-transparent py-3 focus-visible:ring-0 focus-visible:ring-offset-0"
+                onClick={(e) => e.stopPropagation()}
               />
             </div>
             
-            <div className="max-h-72 overflow-y-auto">
+            <div 
+              ref={listRef}
+              className="max-h-72 overflow-y-auto"
+              style={{ 
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
               {filteredCustomers.length > 0 ? (
                 <div className="py-1">
                   {filteredCustomers.slice(0, 100).map((customer) => {
@@ -109,16 +129,21 @@ export function CustomerSelector({
                     const isSelected = selectedCustomer === customer.account_name;
                     
                     return (
-                      <Button
+                      <div
                         key={customer.account_ref}
-                        type="button"
-                        variant="ghost"
-                        onClick={() => handleCustomerSelect(customer)}
+                        onClick={(e) => handleCustomerSelect(e, customer)}
                         className={cn(
                           "flex w-full cursor-pointer items-center justify-start px-3 py-2 text-sm",
                           "hover:bg-accent hover:text-accent-foreground",
                           isSelected && "bg-accent text-accent-foreground"
                         )}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleCustomerSelect(e as unknown as React.MouseEvent, customer);
+                          }
+                        }}
                       >
                         <Check
                           className={cn(
@@ -127,7 +152,7 @@ export function CustomerSelector({
                           )}
                         />
                         <span>{customer.account_name}</span>
-                      </Button>
+                      </div>
                     );
                   })}
                 </div>
