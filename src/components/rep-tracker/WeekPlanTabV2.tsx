@@ -75,7 +75,9 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
           variant: 'destructive',
         });
       },
-    }
+    },
+    // Remove stale time and set refetch interval to zero to force refresh
+    staleTime: 0
   });
 
   const deletePlanMutation = useMutation({
@@ -145,12 +147,22 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
     if (onAddPlanSuccess) {
       onAddPlanSuccess();
     }
-    // The invalidation is handled in the usePlanMutation hook
+    
+    // Explicitly refresh the data
+    queryClient.invalidateQueries({ 
+      queryKey: weekPlansQueryKey,
+      refetchType: 'all'
+    });
   };
 
   const handleEditPlanSuccess = () => {
     setIsEditPlanOpen(false);
-    // The invalidation is handled in the useUpdatePlanMutation hook
+    
+    // Explicitly refresh the data
+    queryClient.invalidateQueries({ 
+      queryKey: weekPlansQueryKey, 
+      refetchType: 'all'
+    });
   };
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
