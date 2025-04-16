@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Info, Award } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
@@ -10,14 +11,6 @@ import {
 } from "@/components/ui/tooltip";
 
 interface WeeklySummaryProps {
-  totalVisits: number;
-  totalProfit: number;
-  totalOrders: number;
-  conversionRate: number;
-  dailyAvgProfit: number;
-  topProfitOrder: number;
-  avgProfitPerOrder: number;
-  plannedVisits: number;
   data: {
     totalVisits: number;
     totalProfit: number;
