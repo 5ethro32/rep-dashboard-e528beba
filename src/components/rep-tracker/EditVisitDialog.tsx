@@ -25,6 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { SimpleCustomerSelect } from './SimpleCustomerSelect';
+import DatePickerField from './DatePickerField';
 
 interface Visit {
   id: string;
@@ -147,14 +148,12 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
           <DialogTitle>Edit Customer Visit</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
-              {...register('date', { required: true })}
-            />
-          </div>
+          <DatePickerField
+            id="date"
+            label="Date"
+            value={watch('date')}
+            onChange={(date) => setValue('date', date)}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>

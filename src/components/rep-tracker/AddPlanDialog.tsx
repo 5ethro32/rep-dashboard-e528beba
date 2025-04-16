@@ -1,14 +1,14 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
+import DatePickerField from './DatePickerField';
 
 interface AddPlanDialogProps {
   isOpen: boolean;
@@ -37,7 +37,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   
   const { register, handleSubmit, reset, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
-      planned_date: format(defaultDate, 'yyyy-MM-dd'),
+      planned_date: defaultDate.toISOString().split('T')[0],
     }
   });
 
@@ -45,7 +45,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
 
   const addPlanMutation = usePlanMutation(() => {
     reset({
-      planned_date: format(defaultDate, 'yyyy-MM-dd'),
+      planned_date: defaultDate.toISOString().split('T')[0],
       customer_ref: '',
       customer_name: '',
       notes: '',
@@ -80,15 +80,12 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
           <DialogTitle>Add Week Plan</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="planned_date">Date</Label>
-            <Input
-              id="planned_date"
-              type="date"
-              {...register('planned_date', { required: true })}
-              className="w-full"
-            />
-          </div>
+          <DatePickerField
+            id="planned_date"
+            label="Date"
+            value={watch('planned_date')}
+            onChange={(date) => setValue('planned_date', date)}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>

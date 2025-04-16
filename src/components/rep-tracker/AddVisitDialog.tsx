@@ -1,6 +1,6 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
+import DatePickerField from './DatePickerField';
 
 interface AddVisitDialogProps {
   isOpen: boolean;
@@ -54,7 +55,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   const queryClient = useQueryClient();
   const { register, handleSubmit, reset, setValue, watch } = useForm<VisitFormData>({
     defaultValues: {
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: new Date().toISOString().split('T')[0],
       visit_type: 'Customer Visit',
       has_order: false,
     }
@@ -96,7 +97,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
       });
       
       reset({
-        date: format(new Date(), 'yyyy-MM-dd'),
+        date: new Date().toISOString().split('T')[0],
         visit_type: 'Customer Visit',
         has_order: false,
       });
@@ -136,15 +137,12 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
-              {...register('date', { required: true })}
-              className="w-full"
-            />
-          </div>
+          <DatePickerField
+            id="date"
+            label="Date"
+            value={watch('date')}
+            onChange={(date) => setValue('date', date)}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>

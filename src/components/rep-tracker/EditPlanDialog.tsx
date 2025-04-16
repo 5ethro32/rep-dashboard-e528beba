@@ -3,11 +3,11 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useUpdatePlanMutation } from '@/hooks/usePlanMutation';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
+import DatePickerField from './DatePickerField';
 
 interface EditPlanDialogProps {
   isOpen: boolean;
@@ -76,14 +76,12 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
           <DialogTitle>Edit Plan</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="planned_date">Date</Label>
-            <Input
-              id="planned_date"
-              type="date"
-              {...register('planned_date', { required: true })}
-            />
-          </div>
+          <DatePickerField
+            id="planned_date"
+            label="Date"
+            value={watch('planned_date')}
+            onChange={(date) => setValue('planned_date', date)}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
