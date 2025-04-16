@@ -91,7 +91,7 @@ export function SimpleCustomerSelect({
           />
         </div>
         
-        <ScrollArea className="h-[300px]" type="always">
+        <div className="max-h-[300px] overflow-y-auto">
           <div className="p-1">
             {filteredCustomers.length === 0 ? (
               <div className="text-center p-4 text-sm text-muted-foreground">
@@ -122,7 +122,7 @@ export function SimpleCustomerSelect({
               ))
             )}
           </div>
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );

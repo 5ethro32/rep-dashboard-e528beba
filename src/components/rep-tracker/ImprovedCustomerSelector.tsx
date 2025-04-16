@@ -9,7 +9,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Customer {
   account_name: string;
@@ -119,8 +118,8 @@ export function ImprovedCustomerSelector({
           )}
         </div>
         
-        {/* Customer list with updated ScrollArea */}
-        <ScrollArea className="h-[300px]" type="always">
+        {/* Customer list with native scrolling instead of ScrollArea */}
+        <div className="max-h-[300px] overflow-y-auto">
           <div className="p-1">
             {filteredCustomers.length > 0 ? (
               filteredCustomers.map((customer) => {
@@ -152,7 +151,7 @@ export function ImprovedCustomerSelector({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );
