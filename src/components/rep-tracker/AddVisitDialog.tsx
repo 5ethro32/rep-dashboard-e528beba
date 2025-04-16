@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import { CustomerSelector } from './CustomerSelector';
+import { CustomerCommand } from './CustomerCommand';
 
 interface AddVisitDialogProps {
   isOpen: boolean;
@@ -53,20 +53,16 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   const queryClient = useQueryClient();
   const { register, handleSubmit, reset, setValue, watch } = useForm<VisitFormData>({
     defaultValues: {
-      date: format(new Date(), 'yyyy-MM-dd'), // Pre-populate with today's date
+      date: format(new Date(), 'yyyy-MM-dd'),
       visit_type: 'Customer Visit',
       has_order: false,
     }
   });
 
-  // Ensure customers is always a valid array
-  const safeCustomers = Array.isArray(customers) ? customers : [];
-
   const addVisitMutation = useMutation({
     mutationFn: async (data: VisitFormData) => {
-      // Format date for database
       const formattedDate = new Date(data.date);
-      formattedDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+      formattedDate.setHours(12, 0, 0, 0);
       
       const { error } = await supabase
         .from('customer_visits')
@@ -79,14 +75,12 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
       if (error) throw error;
     },
     onSuccess: () => {
-      // Force an immediate refresh of the data
       queryClient.invalidateQueries({
         queryKey: ['customer-visits'],
         exact: false,
         refetchType: 'all'
       });
       
-      // Also invalidate visit metrics to update the summary cards
       queryClient.invalidateQueries({
         queryKey: ['visit-metrics'],
         exact: false,
@@ -104,12 +98,11 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
         has_order: false,
       });
       
-      // Call onSuccess callback if provided
       if (onSuccess) {
         onSuccess();
       }
       
-      onClose(); // Explicitly close the dialog on success
+      onClose();
     },
     onError: (error: Error) => {
       console.error("Error adding visit:", error);
@@ -143,7 +136,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <CustomerSelector 
+            <CustomerCommand
               customers={customers}
               selectedCustomer={watch('customer_name')}
               onSelect={(ref, name) => {
