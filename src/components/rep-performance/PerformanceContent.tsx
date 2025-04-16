@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
@@ -132,7 +133,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+            {/* New layout: Profit Distribution and Margin Comparison side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
               <div className="h-64 md:h-80">
                 <RepProfitChart 
                   displayData={sortData(getActiveData(tabValue))}
@@ -143,16 +145,6 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                 />
               </div>
               
-              <div className="lg:h-96 md:h-80 h-72">
-                <RepProfitShare 
-                  displayData={sortData(getActiveData(tabValue))}
-                  repChanges={repChanges}
-                  isLoading={isLoading}
-                  showChangeIndicators={showChangeIndicators}
-                  totalProfit={tabValue === 'overall' && selectedMonth === 'April' ? summary?.totalProfit : undefined}
-                />
-              </div>
-              
               <div className="h-64 md:h-80">
                 <RepMarginComparison
                   displayData={sortData(getActiveData(tabValue))}
@@ -160,6 +152,19 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   formatPercent={formatPercent}
                   isLoading={isLoading}
                   showChangeIndicators={showChangeIndicators}
+                />
+              </div>
+            </div>
+            
+            {/* Profit Share Donut chart on its own row with more height */}
+            <div className="mb-8">
+              <div className="h-80 md:h-96">
+                <RepProfitShare 
+                  displayData={sortData(getActiveData(tabValue))}
+                  repChanges={repChanges}
+                  isLoading={isLoading}
+                  showChangeIndicators={showChangeIndicators}
+                  totalProfit={tabValue === 'overall' && selectedMonth === 'April' ? summary?.totalProfit : undefined}
                 />
               </div>
             </div>
