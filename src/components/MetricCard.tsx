@@ -2,7 +2,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingDown, TrendingUp, Loader2 } from 'lucide-react';
+import LoadingState from './metric-card/LoadingState';
+import ChangeIndicator from './metric-card/ChangeIndicator';
 
 interface MetricCardProps {
   title: string;
@@ -33,8 +34,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
       className={cn(
         "border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg",
         "transition-all duration-300 ease-in-out",
-        "hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02]", // Added hover effect
-        "will-change-transform", // Performance optimization
+        "hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02]",
+        "will-change-transform",
         className
       )}
     >
@@ -44,26 +45,11 @@ const MetricCard: React.FC<MetricCardProps> = ({
           
           <div className="flex items-baseline gap-x-3">
             {isLoading ? (
-              <div className="flex items-center">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                <span className="text-sm text-finance-gray">Loading...</span>
-              </div>
+              <LoadingState />
             ) : (
               <>
                 <div className={cn("text-2xl md:text-3xl font-bold", valueClassName)}>{value}</div>
-                
-                {change && (
-                  <div className={cn(
-                    "flex items-center text-xs",
-                    change.type === 'increase' ? 'text-emerald-500' : 
-                    change.type === 'decrease' ? 'text-finance-red' : 'text-finance-gray'
-                  )}>
-                    {change.type === 'increase' && <TrendingUp className="mr-1 h-3 w-3" />}
-                    {change.type === 'decrease' && <TrendingDown className="mr-1 h-3 w-3" />}
-                    {change.value}
-                  </div>
-                )}
-                
+                {change && <ChangeIndicator type={change.type} value={change.value} />}
                 {icon && <div className="ml-auto">{icon}</div>}
               </>
             )}
