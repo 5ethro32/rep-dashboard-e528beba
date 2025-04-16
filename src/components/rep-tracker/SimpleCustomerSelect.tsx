@@ -89,38 +89,40 @@ export function SimpleCustomerSelect({
             }}
           />
         </div>
-        <ScrollArea className="max-h-[300px] overflow-y-auto">
-          <div className="p-1">
-            {filteredCustomers.length === 0 ? (
-              <div className="text-center p-4 text-sm text-muted-foreground">
-                No customer found.
-              </div>
-            ) : (
-              filteredCustomers.map((customer) => (
-                customer && customer.account_ref && customer.account_name ? (
-                  <Button
-                    key={customer.account_ref}
-                    variant="ghost"
-                    className={cn(
-                      "flex w-full items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-sm text-left",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
-                    )}
-                    onClick={() => handleSelect(customer)}
-                  >
-                    <Check
+        <div className="relative">
+          <ScrollArea className="h-[300px]" type="auto">
+            <div className="p-1">
+              {filteredCustomers.length === 0 ? (
+                <div className="text-center p-4 text-sm text-muted-foreground">
+                  No customer found.
+                </div>
+              ) : (
+                filteredCustomers.map((customer) => (
+                  customer && customer.account_ref && customer.account_name ? (
+                    <Button
+                      key={customer.account_ref}
+                      variant="ghost"
                       className={cn(
-                        "h-4 w-4",
-                        selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                        "flex w-full items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-sm text-left",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                       )}
-                    />
-                    <span className="truncate">{customer.account_name}</span>
-                  </Button>
-                ) : null
-              ))
-            )}
-          </div>
-        </ScrollArea>
+                      onClick={() => handleSelect(customer)}
+                    >
+                      <Check
+                        className={cn(
+                          "h-4 w-4",
+                          selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="truncate">{customer.account_name}</span>
+                    </Button>
+                  ) : null
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );

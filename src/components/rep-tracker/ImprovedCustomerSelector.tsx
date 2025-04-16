@@ -10,12 +10,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
 
 interface Customer {
   account_name: string;
@@ -69,7 +63,6 @@ export function ImprovedCustomerSelector({
     setSearchQuery('');
   };
 
-  // Using Popover instead of DropdownMenu for better control and styling
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -127,39 +120,41 @@ export function ImprovedCustomerSelector({
         </div>
         
         {/* Customer list with scroll area */}
-        <ScrollArea className="max-h-[300px] overflow-y-auto">
-          <div className="p-1">
-            {filteredCustomers.length > 0 ? (
-              filteredCustomers.map((customer) => {
-                const isSelected = selectedCustomer === customer.account_name;
-                
-                return (
-                  <Button
-                    key={customer.account_ref}
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start text-left px-3 py-2 text-sm rounded-sm",
-                      isSelected && "bg-accent text-accent-foreground"
-                    )}
-                    onClick={() => selectCustomer(customer)}
-                  >
-                    <Check
+        <div className="relative">
+          <ScrollArea className="h-[300px]" type="auto">
+            <div className="p-1">
+              {filteredCustomers.length > 0 ? (
+                filteredCustomers.map((customer) => {
+                  const isSelected = selectedCustomer === customer.account_name;
+                  
+                  return (
+                    <Button
+                      key={customer.account_ref}
+                      variant="ghost"
                       className={cn(
-                        "mr-2 h-4 w-4",
-                        isSelected ? "opacity-100" : "opacity-0"
+                        "w-full justify-start text-left px-3 py-2 text-sm rounded-sm",
+                        isSelected && "bg-accent text-accent-foreground"
                       )}
-                    />
-                    <span className="truncate">{customer.account_name}</span>
-                  </Button>
-                );
-              })
-            ) : (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                No customers found
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+                      onClick={() => selectCustomer(customer)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="truncate">{customer.account_name}</span>
+                    </Button>
+                  );
+                })
+              ) : (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  No customers found
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );
