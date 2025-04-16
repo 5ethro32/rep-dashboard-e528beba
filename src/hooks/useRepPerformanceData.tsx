@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -734,4 +735,77 @@ export const useRepPerformanceData = () => {
       case 'spend':
         previousValue = (comparisonRetailRep?.spend || 0) + 
                         (includeReva ? (comparisonRevaRep?.spend || 0) : 0) + 
-                        (includeWholesale ? (comparisonWholesaleRep?.
+                        (includeWholesale ? (comparisonWholesaleRep?.spend || 0) : 0);
+        break;
+      case 'profit':
+        previousValue = (comparisonRetailRep?.profit || 0) + 
+                        (includeReva ? (comparisonRevaRep?.profit || 0) : 0) + 
+                        (includeWholesale ? (comparisonWholesaleRep?.profit || 0) : 0);
+        break;
+      case 'packs':
+        previousValue = (comparisonRetailRep?.packs || 0) + 
+                        (includeReva ? (comparisonRevaRep?.packs || 0) : 0) + 
+                        (includeWholesale ? (comparisonWholesaleRep?.packs || 0) : 0);
+        break;
+      case 'margin':
+        const totalProfit = (comparisonRetailRep?.profit || 0) + 
+                          (includeReva ? (comparisonRevaRep?.profit || 0) : 0) + 
+                          (includeWholesale ? (comparisonWholesaleRep?.profit || 0) : 0);
+        
+        const totalSpend = (comparisonRetailRep?.spend || 0) + 
+                          (includeReva ? (comparisonRevaRep?.spend || 0) : 0) + 
+                          (includeWholesale ? (comparisonWholesaleRep?.spend || 0) : 0);
+        
+        previousValue = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+        break;
+      case 'activeAccounts':
+        previousValue = (comparisonRetailRep?.activeAccounts || 0) + 
+                        (includeReva ? (comparisonRevaRep?.activeAccounts || 0) : 0) + 
+                        (includeWholesale ? (comparisonWholesaleRep?.activeAccounts || 0) : 0);
+        break;
+      case 'totalAccounts':
+        previousValue = (comparisonRetailRep?.totalAccounts || 0) + 
+                        (includeReva ? (comparisonRevaRep?.totalAccounts || 0) : 0) + 
+                        (includeWholesale ? (comparisonWholesaleRep?.totalAccounts || 0) : 0);
+        break;
+      default:
+        return '';
+    }
+    
+    return previousValue > 0 
+      ? metricType === 'margin' 
+          ? formatPercent(previousValue)
+          : metricType === 'spend' || metricType === 'profit' 
+            ? formatCurrency(previousValue)
+            : formatNumber(previousValue)
+      : '';
+  };
+
+  return {
+    includeRetail,
+    setIncludeRetail,
+    includeReva,
+    setIncludeReva,
+    includeWholesale, 
+    setIncludeWholesale,
+    sortBy,
+    sortOrder,
+    summary,
+    summaryChanges,
+    repChanges,
+    getActiveData,
+    sortData,
+    handleSort,
+    isLoading,
+    loadDataFromSupabase,
+    getFebValue,
+    selectedMonth,
+    setSelectedMonth,
+    baseSummary,
+    revaValues,
+    wholesaleValues,
+    aprBaseSummary,
+    aprRevaValues,
+    aprWholesaleValues,
+  };
+};
