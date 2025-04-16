@@ -65,9 +65,10 @@ const WeekPlanTab: React.FC<{
         });
       },
     },
-    // Always ensure we have fresh data
+    // Set these options to ensure we always get fresh data
     refetchOnWindowFocus: true,
-    staleTime: 0
+    staleTime: 0,
+    cacheTime: 0 // Disable cache to force fresh data every time
   });
 
   const deletePlanMutation = useMutation({
@@ -78,9 +79,21 @@ const WeekPlanTab: React.FC<{
         .eq('id', planId);
 
       if (error) throw error;
+      
+      // Return the deleted plan ID for use in optimistic updates
+      return planId;
     },
     meta: {
-      onSuccess: () => {
+      onSuccess: (deletedId) => {
+        // Optimistically update UI by filtering out the deleted plan
+        queryClient.setQueryData(
+          weekPlansQueryKey, 
+          (oldData: WeekPlan[] | undefined) => {
+            if (!oldData) return [];
+            return oldData.filter(plan => plan.id !== deletedId);
+          }
+        );
+        
         // Force an immediate refetch after deletion
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
@@ -138,6 +151,7 @@ const WeekPlanTab: React.FC<{
     setIsAddPlanOpen(false);
   };
 
+  // Days of the week for the plan
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (

@@ -15,14 +15,31 @@ export function usePlanMutation(onSuccess: () => void) {
 
   return useMutation({
     mutationFn: async (data: PlanFormData & { user_id: string }) => {
-      const { error } = await supabase
+      const { data: insertedData, error } = await supabase
         .from('week_plans')
-        .insert([data]);
+        .insert([data])
+        .select('*')
+        .single();
 
       if (error) throw error;
+      
+      // Return the inserted data so we can use it for optimistic updates
+      return insertedData;
     },
     meta: {
-      onSuccess: () => {
+      onSuccess: (newPlan) => {
+        // Optimistically update all week-plans queries by adding the new plan
+        // We'll update any query keys that start with 'week-plans'
+        const queryCache = queryClient.getQueryCache();
+        const weekPlanQueries = queryCache.findAll(['week-plans']);
+        
+        weekPlanQueries.forEach(query => {
+          const data = queryClient.getQueryData(query.queryKey);
+          if (Array.isArray(data)) {
+            queryClient.setQueryData(query.queryKey, [...data, newPlan]);
+          }
+        });
+        
         // Force a complete refresh of all week-plans queries with aggressive invalidation
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
