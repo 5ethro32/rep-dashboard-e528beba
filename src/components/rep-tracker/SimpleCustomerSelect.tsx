@@ -73,12 +73,13 @@ export function SimpleCustomerSelect({
         align="start"
         sideOffset={4}
       >
-        <div className="border-b p-2">
+        <div className="flex items-center border-b p-2">
+          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <Input
             placeholder="Search customers..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            className="h-9"
+            className="h-9 border-none bg-transparent p-2 text-sm focus-visible:outline-none focus-visible:ring-0"
             autoComplete="off"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
@@ -89,40 +90,40 @@ export function SimpleCustomerSelect({
             }}
           />
         </div>
-        <div className="relative">
-          <ScrollArea className="h-[300px]" type="auto">
-            <div className="p-1">
-              {filteredCustomers.length === 0 ? (
-                <div className="text-center p-4 text-sm text-muted-foreground">
-                  No customer found.
-                </div>
-              ) : (
-                filteredCustomers.map((customer) => (
-                  customer && customer.account_ref && customer.account_name ? (
-                    <Button
-                      key={customer.account_ref}
-                      variant="ghost"
+        
+        {/* Updated ScrollArea implementation to match CustomerHistoryTable */}
+        <ScrollArea className="h-[300px]">
+          <div className="p-1">
+            {filteredCustomers.length === 0 ? (
+              <div className="text-center p-4 text-sm text-muted-foreground">
+                No customer found.
+              </div>
+            ) : (
+              filteredCustomers.map((customer) => (
+                customer && customer.account_ref && customer.account_name ? (
+                  <Button
+                    key={customer.account_ref}
+                    variant="ghost"
+                    className={cn(
+                      "flex w-full items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-sm text-left",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
+                    )}
+                    onClick={() => handleSelect(customer)}
+                  >
+                    <Check
                       className={cn(
-                        "flex w-full items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-sm text-left",
-                        "hover:bg-accent hover:text-accent-foreground",
-                        selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
+                        "h-4 w-4",
+                        selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
                       )}
-                      onClick={() => handleSelect(customer)}
-                    >
-                      <Check
-                        className={cn(
-                          "h-4 w-4",
-                          selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <span className="truncate">{customer.account_name}</span>
-                    </Button>
-                  ) : null
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </div>
+                    />
+                    <span className="truncate">{customer.account_name}</span>
+                  </Button>
+                ) : null
+              ))
+            )}
+          </div>
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   );

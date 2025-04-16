@@ -119,42 +119,40 @@ export function ImprovedCustomerSelector({
           )}
         </div>
         
-        {/* Customer list with scroll area */}
-        <div className="relative">
-          <ScrollArea className="h-[300px]" type="auto">
-            <div className="p-1">
-              {filteredCustomers.length > 0 ? (
-                filteredCustomers.map((customer) => {
-                  const isSelected = selectedCustomer === customer.account_name;
-                  
-                  return (
-                    <Button
-                      key={customer.account_ref}
-                      variant="ghost"
+        {/* Customer list with updated ScrollArea */}
+        <ScrollArea className="h-[300px]">
+          <div className="p-1">
+            {filteredCustomers.length > 0 ? (
+              filteredCustomers.map((customer) => {
+                const isSelected = selectedCustomer === customer.account_name;
+                
+                return (
+                  <Button
+                    key={customer.account_ref}
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start text-left px-3 py-2 text-sm rounded-sm",
+                      isSelected && "bg-accent text-accent-foreground"
+                    )}
+                    onClick={() => selectCustomer(customer)}
+                  >
+                    <Check
                       className={cn(
-                        "w-full justify-start text-left px-3 py-2 text-sm rounded-sm",
-                        isSelected && "bg-accent text-accent-foreground"
+                        "mr-2 h-4 w-4",
+                        isSelected ? "opacity-100" : "opacity-0"
                       )}
-                      onClick={() => selectCustomer(customer)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          isSelected ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <span className="truncate">{customer.account_name}</span>
-                    </Button>
-                  );
-                })
-              ) : (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  No customers found
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </div>
+                    />
+                    <span className="truncate">{customer.account_name}</span>
+                  </Button>
+                );
+              })
+            ) : (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                No customers found
+              </div>
+            )}
+          </div>
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   );
