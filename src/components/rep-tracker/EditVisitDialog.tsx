@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,9 +26,25 @@ import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { CustomerSelector } from './CustomerSelector';
 
-interface AddVisitDialogProps {
+interface Visit {
+  id: string;
+  date: string;
+  customer_name: string;
+  customer_ref: string;
+  contact_name?: string;
+  visit_type: string;
+  has_order: boolean;
+  profit?: number;
+  comments?: string;
+  user_id: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface EditVisitDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  visit: Visit;
   customers?: Array<{ account_name: string; account_ref: string }>;
 }
 
@@ -42,25 +59,35 @@ interface VisitFormData {
   comments: string;
 }
 
-const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
+const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
   isOpen,
   onClose,
+  visit,
   customers = [],
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { register, handleSubmit, reset, setValue, watch } = useForm<VisitFormData>({
+  
+  // Convert the date to yyyy-MM-dd format for the input
+  const formattedDate = format(new Date(visit.date), 'yyyy-MM-dd');
+  
+  const { register, handleSubmit, setValue, watch } = useForm<VisitFormData>({
     defaultValues: {
-      date: format(new Date(), 'yyyy-MM-dd'), // Pre-populate with today's date
-      visit_type: 'Customer Visit',
-      has_order: false,
+      date: formattedDate,
+      customer_ref: visit.customer_ref,
+      customer_name: visit.customer_name,
+      contact_name: visit.contact_name || '',
+      visit_type: visit.visit_type,
+      has_order: visit.has_order,
+      profit: visit.profit || 0,
+      comments: visit.comments || '',
     }
   });
 
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
 
-  const addVisitMutation = useMutation({
+  const updateVisitMutation = useMutation({
     mutationFn: async (data: VisitFormData) => {
       // Format date for database
       const formattedDate = new Date(data.date);
@@ -68,11 +95,12 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
       
       const { error } = await supabase
         .from('customer_visits')
-        .insert([{ 
+        .update({ 
           ...data, 
-          user_id: user?.id,
-          date: formattedDate.toISOString()
-        }]);
+          date: formattedDate.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', visit.id);
 
       if (error) throw error;
     },
@@ -80,21 +108,16 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['customer-visits'] });
         toast({
-          title: 'Visit Added',
-          description: 'Customer visit has been recorded successfully.',
+          title: 'Visit Updated',
+          description: 'Customer visit has been updated successfully.',
         });
-        reset({
-          date: format(new Date(), 'yyyy-MM-dd'),
-          visit_type: 'Customer Visit',
-          has_order: false,
-        });
-        onClose(); // Explicitly close the dialog on success
+        onClose();
       },
       onError: (error: Error) => {
-        console.error("Error adding visit:", error);
+        console.error("Error updating visit:", error);
         toast({
           title: 'Error',
-          description: 'Failed to add visit. Please try again.',
+          description: 'Failed to update visit. Please try again.',
           variant: 'destructive',
         });
       },
@@ -102,14 +125,14 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   });
 
   const onSubmit = (data: VisitFormData) => {
-    addVisitMutation.mutate(data);
+    updateVisitMutation.mutate(data);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Customer Visit</DialogTitle>
+          <DialogTitle>Edit Customer Visit</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
@@ -145,7 +168,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
           <div className="space-y-2">
             <Label htmlFor="visit_type">Visit Type</Label>
             <Select
-              defaultValue="Customer Visit"
+              defaultValue={visit.visit_type}
               onValueChange={(value) => setValue('visit_type', value)}
             >
               <SelectTrigger>
@@ -162,7 +185,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
           <div className="space-y-2">
             <Label htmlFor="has_order">Order Placed</Label>
             <Select
-              defaultValue="false"
+              defaultValue={visit.has_order ? 'true' : 'false'}
               onValueChange={(value) => setValue('has_order', value === 'true')}
             >
               <SelectTrigger>
@@ -201,8 +224,8 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={addVisitMutation.isPending}>
-              {addVisitMutation.isPending ? 'Saving...' : 'Add Visit'}
+            <Button type="submit" disabled={updateVisitMutation.isPending}>
+              {updateVisitMutation.isPending ? 'Saving...' : 'Update Visit'}
             </Button>
           </DialogFooter>
         </form>
@@ -211,4 +234,4 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   );
 };
 
-export default AddVisitDialog;
+export default EditVisitDialog;

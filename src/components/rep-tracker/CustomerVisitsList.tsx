@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
@@ -21,6 +21,17 @@ import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import { Edit2, Trash2, ArrowUpDown } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import EditVisitDialog from './EditVisitDialog';
 
 interface CustomerVisitsListProps {
   weekStartDate: Date;
@@ -35,6 +46,21 @@ interface CustomerVisitsListProps {
 type SortField = 'date' | 'customer_name' | 'profit';
 type SortOrder = 'asc' | 'desc';
 
+interface Visit {
+  id: string;
+  date: string;
+  customer_name: string;
+  customer_ref: string;
+  contact_name?: string;
+  visit_type: string;
+  has_order: boolean;
+  profit?: number;
+  comments?: string;
+  user_id: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   weekStartDate,
   weekEndDate,
@@ -44,6 +70,8 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   const [filter, setFilter] = useState('all'); // 'all', 'ordered', 'no-order'
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
+  const [visitToEdit, setVisitToEdit] = useState<Visit | null>(null);
   
   // Fetch visits from Supabase
   const { data: visits, isLoading } = useQuery({
@@ -57,7 +85,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         .order(sortField, { ascending: sortOrder === 'asc' });
 
       if (error) throw error;
-      return data;
+      return data as Visit[];
     },
     meta: {
       onError: (error: Error) => {
@@ -69,6 +97,44 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
       },
     },
   });
+
+  // Delete visit mutation
+  const deleteVisitMutation = useMutation({
+    mutationFn: async (visitId: string) => {
+      const { error } = await supabase
+        .from('customer_visits')
+        .delete()
+        .eq('id', visitId);
+
+      if (error) throw error;
+    },
+    meta: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['customer-visits'] });
+        toast({
+          title: 'Visit Deleted',
+          description: 'The visit has been successfully deleted.',
+        });
+        setVisitToDelete(null);
+      },
+      onError: (error: Error) => {
+        toast({
+          title: 'Error',
+          description: 'Failed to delete visit. Please try again.',
+          variant: 'destructive',
+        });
+        console.error("Error deleting visit:", error);
+      },
+    },
+  });
+
+  const queryClient = useQueryClient();
+
+  const handleDeleteConfirm = () => {
+    if (visitToDelete) {
+      deleteVisitMutation.mutate(visitToDelete);
+    }
+  };
 
   // Filter visits based on selected filter
   const filteredVisits = visits?.filter(visit => {
@@ -180,11 +246,21 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-blue-400">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-blue-400"
+                          onClick={() => setVisitToEdit(visit)}
+                        >
                           <Edit2 className="h-4 w-4" />
                           <span className="sr-only">Edit</span>
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-400">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-red-400"
+                          onClick={() => setVisitToDelete(visit.id)}
+                        >
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Delete</span>
                         </Button>
@@ -197,6 +273,39 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
           </Table>
         </div>
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!visitToDelete} onOpenChange={() => setVisitToDelete(null)}>
+        <AlertDialogContent className="bg-gray-900 border border-gray-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Confirm Delete</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete this visit record? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-gray-700 text-white hover:bg-gray-800">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-finance-red hover:bg-finance-red/80 text-white"
+            >
+              {deleteVisitMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Edit Visit Dialog */}
+      {visitToEdit && (
+        <EditVisitDialog
+          isOpen={!!visitToEdit}
+          onClose={() => setVisitToEdit(null)}
+          visit={visitToEdit}
+          customers={customers}
+        />
+      )}
     </div>
   );
 };
