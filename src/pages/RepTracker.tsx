@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,7 +96,6 @@ const RepTracker: React.FC = () => {
   };
 
   const handleAddPlanSuccess = () => {
-    // Immediately invalidate metrics to update planned visits count
     queryClient.invalidateQueries({
       queryKey: ['visit-metrics'],
       exact: false,
@@ -195,10 +193,19 @@ const RepTracker: React.FC = () => {
           className="space-y-6"
         >
           <TabsList className="bg-black/20 border-gray-800">
-            <TabsTrigger value="visits">Customer Visits</TabsTrigger>
             <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
+            <TabsTrigger value="visits">Customer Visits</TabsTrigger>
             <TabsTrigger value="customer-history">Customer History</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="week-plan-v2" className="mt-6">
+            <WeekPlanTabV2 
+              weekStartDate={weekStart}
+              weekEndDate={weekEnd}
+              customers={customers || []}
+              onAddPlanSuccess={handleAddPlanSuccess}
+            />
+          </TabsContent>
           
           <TabsContent value="visits" className="mt-6">
             <CustomerVisitsList 
@@ -208,15 +215,6 @@ const RepTracker: React.FC = () => {
               isLoadingCustomers={isLoadingCustomers}
               onDataChange={handleDataChange}
               onAddVisit={() => setShowAddVisit(true)}
-            />
-          </TabsContent>
-          
-          <TabsContent value="week-plan-v2" className="mt-6">
-            <WeekPlanTabV2 
-              weekStartDate={weekStart}
-              weekEndDate={weekEnd}
-              customers={customers || []}
-              onAddPlanSuccess={handleAddPlanSuccess}
             />
           </TabsContent>
           
