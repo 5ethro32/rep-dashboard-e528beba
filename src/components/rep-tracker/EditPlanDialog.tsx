@@ -1,15 +1,13 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/contexts/AuthContext';
-import { SimpleCustomerSelect } from './SimpleCustomerSelect';
 import { useUpdatePlanMutation } from '@/hooks/usePlanMutation';
+import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 
 interface EditPlanDialogProps {
   isOpen: boolean;
@@ -17,15 +15,16 @@ interface EditPlanDialogProps {
   plan: {
     id: string;
     planned_date: string;
-    customer_name: string;
     customer_ref: string;
-    notes: string | null;
-  } | null;
-  customers?: Array<{ account_name: string; account_ref: string }>;
+    customer_name: string;
+    notes: string;
+  };
+  customers: Array<{ account_name: string; account_ref: string }>;
   onSuccess?: () => void;
 }
 
 interface PlanFormData {
+  id: string;
   planned_date: string;
   customer_ref: string;
   customer_name: string;
@@ -39,38 +38,21 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
   customers = [],
   onSuccess,
 }) => {
-  const { user } = useAuth();
-  
-  // Initialize the form with the plan data when available
   const { register, handleSubmit, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
-      planned_date: plan?.planned_date ? format(new Date(plan.planned_date), 'yyyy-MM-dd') : '',
-      customer_ref: plan?.customer_ref || '',
-      customer_name: plan?.customer_name || '',
-      notes: plan?.notes || '',
-    }
+      id: plan.id,
+      planned_date: plan.planned_date,
+      customer_ref: plan.customer_ref,
+      customer_name: plan.customer_name,
+      notes: plan.notes || '',
+    },
   });
 
-  // Update form values when plan changes
-  React.useEffect(() => {
-    if (plan) {
-      setValue('planned_date', format(new Date(plan.planned_date), 'yyyy-MM-dd'));
-      setValue('customer_ref', plan.customer_ref);
-      setValue('customer_name', plan.customer_name);
-      setValue('notes', plan.notes || '');
-    }
-  }, [plan, setValue]);
-
-  const safeCustomers = Array.isArray(customers) ? customers : [];
-
   const updatePlanMutation = useUpdatePlanMutation(() => {
-    console.log("Update plan mutation success callback triggered");
-    // Close the dialog first
-    onClose();
-    // Then call the success callback if provided
     if (onSuccess) {
       onSuccess();
     }
+    onClose();
   });
 
   const handleCustomerSelect = (ref: string, name: string) => {
@@ -79,26 +61,14 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
   };
 
   const onSubmit = (data: PlanFormData) => {
-    if (!user?.id || !plan?.id) {
-      console.error("Missing user ID or plan ID");
-      return;
-    }
-    
-    console.log("Form submitted with data:", { ...data, id: plan.id });
-    
-    updatePlanMutation.mutate({ 
-      ...data, 
-      id: plan.id
-    });
+    updatePlanMutation.mutate(data);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose();
-    }}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Week Plan</DialogTitle>
+          <DialogTitle>Edit Plan</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
@@ -112,9 +82,9 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <SimpleCustomerSelect
-              customers={safeCustomers}
-              selectedCustomer={watch('customer_name') || ''}
+            <ImprovedCustomerSelector
+              customers={customers}
+              selectedCustomer={watch('customer_name')}
               onSelect={handleCustomerSelect}
             />
           </div>
@@ -132,12 +102,8 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={updatePlanMutation.isPending}
-              className="bg-finance-red hover:bg-finance-red/80"
-            >
-              {updatePlanMutation.isPending ? 'Saving...' : 'Save Changes'}
+            <Button type="submit" disabled={updatePlanMutation.isPending}>
+              {updatePlanMutation.isPending ? 'Saving...' : 'Update Plan'}
             </Button>
           </DialogFooter>
         </form>

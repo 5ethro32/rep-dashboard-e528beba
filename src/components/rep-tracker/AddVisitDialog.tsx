@@ -25,7 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import { SimpleCustomerSelect } from './SimpleCustomerSelect';
+import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 
 interface AddVisitDialogProps {
   isOpen: boolean;
@@ -148,7 +148,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <SimpleCustomerSelect
+            <ImprovedCustomerSelector
               customers={safeCustomers}
               selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}

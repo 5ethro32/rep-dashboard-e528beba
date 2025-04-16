@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { SimpleCustomerSelect } from './SimpleCustomerSelect';
+import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
 
 interface AddPlanDialogProps {
@@ -96,7 +96,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <SimpleCustomerSelect
+            <ImprovedCustomerSelector
               customers={safeCustomers}
               selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}
