@@ -15,19 +15,27 @@ export function usePlanMutation(onSuccess: () => void) {
 
   return useMutation({
     mutationFn: async (data: PlanFormData & { user_id: string }) => {
+      console.log("Attempting to create new plan with data:", data);
+      
       const { data: insertedData, error } = await supabase
         .from('week_plans')
         .insert([data])
         .select('*')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
       
+      console.log("Plan created successfully:", insertedData);
       // Return the inserted data so we can use it for optimistic updates
       return insertedData;
     },
     meta: {
       onSuccess: (newPlan) => {
+        console.log("Create mutation success callback with data:", newPlan);
+        
         // Get all relevant week-plans queries and update them optimistically
         const queryCache = queryClient.getQueryCache();
         

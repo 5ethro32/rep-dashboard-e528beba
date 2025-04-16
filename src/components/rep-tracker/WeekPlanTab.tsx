@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,9 +42,8 @@ const WeekPlanTab: React.FC<{
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
-  // Use a specific query key for the current week's data
   const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString()];
-  
+
   const { data: weekPlans, isLoading, refetch } = useQuery({
     queryKey: weekPlansQueryKey,
     queryFn: async () => {
@@ -68,10 +66,9 @@ const WeekPlanTab: React.FC<{
         });
       },
     },
-    // Set these options to ensure we always get fresh data
     refetchOnWindowFocus: true,
     staleTime: 0,
-    gcTime: 0 // This replaces cacheTime in React Query v5
+    gcTime: 0
   });
 
   const deletePlanMutation = useMutation({
@@ -83,25 +80,19 @@ const WeekPlanTab: React.FC<{
 
       if (error) throw error;
       
-      // Return the deleted plan ID for use in optimistic updates
       return planId;
     },
     meta: {
       onSuccess: (deletedId) => {
-        // Force an immediate refetch after deletion
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
           refetchType: 'all'
         });
-        
-        // Explicitly refetch the current week's plans
         refetch();
-        
         toast({
           title: 'Plan Deleted',
           description: 'Week plan has been deleted successfully.',
         });
-        
         setDeleteConfirmOpen(false);
       },
       onError: (error: Error) => {
@@ -121,7 +112,6 @@ const WeekPlanTab: React.FC<{
 
   const confirmDelete = () => {
     if (planToDelete) {
-      // Immediately update the UI (optimistic update)
       if (weekPlans) {
         queryClient.setQueryData(
           weekPlansQueryKey, 
@@ -131,8 +121,6 @@ const WeekPlanTab: React.FC<{
           }
         );
       }
-      
-      // Then perform the actual deletion
       deletePlanMutation.mutate(planToDelete);
     }
   };
@@ -143,34 +131,34 @@ const WeekPlanTab: React.FC<{
   };
 
   const handleEditPlan = (plan: WeekPlan) => {
+    console.log("Opening edit dialog for plan:", plan);
     setSelectedPlan(plan);
     setIsEditPlanOpen(true);
   };
 
   const handleAddPlanSuccess = () => {
-    // Close the dialog first
     setIsAddPlanOpen(false);
-    
-    // Force an immediate refetch of all week plans data and explicit refetch
     queryClient.invalidateQueries({ 
       queryKey: ['week-plans'],
       refetchType: 'all'
     });
-    
-    // Explicitly refetch the current week's data
     refetch();
   };
 
   const handleEditPlanSuccess = () => {
+    console.log("Edit plan success callback triggered");
     setIsEditPlanOpen(false);
     queryClient.invalidateQueries({ 
       queryKey: ['week-plans'],
       refetchType: 'all'
     });
     refetch();
+    toast({
+      title: 'Plan Updated',
+      description: 'Week plan has been updated successfully.',
+    });
   };
 
-  // Days of the week for the plan
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (

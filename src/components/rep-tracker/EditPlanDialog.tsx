@@ -68,6 +68,8 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
 
   const updatePlanMutation = useMutation({
     mutationFn: async (data: PlanFormData & { id: string }) => {
+      console.log("Attempting to update plan with data:", data);
+      
       const { data: updatedData, error } = await supabase
         .from('week_plans')
         .update({
@@ -80,12 +82,18 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
         .select('*')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
       
+      console.log("Plan updated successfully:", updatedData);
       return updatedData;
     },
     meta: {
       onSuccess: (updatedPlan) => {
+        console.log("Update mutation success callback with data:", updatedPlan);
+        
         // Invalidate and refetch all week-plans queries
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
@@ -122,7 +130,12 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
   };
 
   const onSubmit = (data: PlanFormData) => {
-    if (!user?.id || !plan?.id) return;
+    if (!user?.id || !plan?.id) {
+      console.error("Missing user ID or plan ID");
+      return;
+    }
+    
+    console.log("Form submitted with data:", { ...data, id: plan.id });
     
     updatePlanMutation.mutate({ 
       ...data, 
@@ -168,7 +181,11 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={updatePlanMutation.isPending}>
+            <Button 
+              type="submit" 
+              disabled={updatePlanMutation.isPending}
+              className="bg-finance-red hover:bg-finance-red/80"
+            >
               {updatePlanMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
