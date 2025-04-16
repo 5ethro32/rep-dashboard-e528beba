@@ -4,9 +4,9 @@ import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import {
   Tooltip,
-  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  TooltipContent,
 } from "@/components/ui/tooltip";
 
 interface WeeklySummaryProps {
@@ -18,6 +18,7 @@ interface WeeklySummaryProps {
     dailyAvgProfit: number;
     avgProfitPerVisit: number;
     avgProfitPerOrder: number;
+    plannedVisits: number;
   };
   previousData?: {
     totalVisits: number;
@@ -27,6 +28,7 @@ interface WeeklySummaryProps {
     dailyAvgProfit: number;
     avgProfitPerVisit: number;
     avgProfitPerOrder: number;
+    plannedVisits: number;
   };
   weekStartDate: Date;
   weekEndDate: Date;
@@ -76,6 +78,17 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           value={formatNumber(data.totalVisits)}
           change={previousData ? calculateChange(data.totalVisits, previousData.totalVisits) : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalVisits)}` : undefined}
+          isLoading={isLoading}
+        />
+        
+        <MetricCard
+          title={renderMetricWithTooltip(
+            "Planned Visits",
+            "Number of visits planned for this week"
+          )}
+          value={formatNumber(data.plannedVisits)}
+          change={previousData ? calculateChange(data.plannedVisits, previousData.plannedVisits) : undefined}
+          subtitle={previousData ? `Previous: ${formatNumber(previousData.plannedVisits)}` : undefined}
           isLoading={isLoading}
         />
         

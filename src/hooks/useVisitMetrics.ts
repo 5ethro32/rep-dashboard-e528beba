@@ -11,6 +11,7 @@ interface VisitMetrics {
   dailyAvgProfit: number;
   avgProfitPerVisit: number;
   avgProfitPerOrder: number;
+  plannedVisits: number;
 }
 
 export const useVisitMetrics = (selectedDate: Date) => {
@@ -20,18 +21,27 @@ export const useVisitMetrics = (selectedDate: Date) => {
   return useQuery({
     queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString()],
     queryFn: async (): Promise<VisitMetrics> => {
-      const { data: visits, error } = await supabase
-        .from('customer_visits')
-        .select('*')
-        .gte('date', weekStart.toISOString())
-        .lte('date', weekEnd.toISOString());
+      const [{ data: visits, error: visitsError }, { data: plans, error: plansError }] = await Promise.all([
+        supabase
+          .from('customer_visits')
+          .select('*')
+          .gte('date', weekStart.toISOString())
+          .lte('date', weekEnd.toISOString()),
+        supabase
+          .from('week_plans')
+          .select('*')
+          .gte('planned_date', weekStart.toISOString().split('T')[0])
+          .lte('planned_date', weekEnd.toISOString().split('T')[0])
+      ]);
 
-      if (error) throw error;
+      if (visitsError) throw visitsError;
+      if (plansError) throw plansError;
 
       // Calculate base metrics
       const totalVisits = visits.length;
       const totalProfit = visits.reduce((sum, visit) => sum + (visit.profit || 0), 0);
       const totalOrders = visits.filter(visit => visit.has_order).length;
+      const plannedVisits = plans.length;
       
       // Calculate derived metrics
       const conversionRate = totalVisits ? (totalOrders / totalVisits) * 100 : 0;
@@ -47,10 +57,11 @@ export const useVisitMetrics = (selectedDate: Date) => {
         conversionRate,
         dailyAvgProfit,
         avgProfitPerVisit,
-        avgProfitPerOrder
+        avgProfitPerOrder,
+        plannedVisits
       };
     },
-    staleTime: 0, // Consider data stale immediately
-    refetchInterval: 0 // Don't automatically refetch
+    staleTime: 0,
+    refetchInterval: 0
   });
 };
