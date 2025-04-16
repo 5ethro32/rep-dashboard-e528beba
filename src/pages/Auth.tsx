@@ -75,7 +75,7 @@ const Auth = () => {
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-2">
-            Sales <span className="text-finance-red italic ml-[-0.15em]">a</span>Performance
+            S<span className="text-finance-red italic">a</span>les Performance
           </h1>
           <p className="text-finance-gray">Secure access to sales data</p>
         </div>
