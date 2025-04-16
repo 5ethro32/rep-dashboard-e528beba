@@ -9,7 +9,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
-import WeekPlanTab from '@/components/rep-tracker/WeekPlanTab';
 import WeekPlanTabV2 from '@/components/rep-tracker/WeekPlanTabV2';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useVisitMetrics } from '@/hooks/useVisitMetrics';
@@ -187,8 +186,7 @@ const RepTracker: React.FC = () => {
         >
           <TabsList className="bg-black/20 border-gray-800">
             <TabsTrigger value="visits">Customer Visits</TabsTrigger>
-            <TabsTrigger value="week-plan">Week Plan (Old)</TabsTrigger>
-            <TabsTrigger value="week-plan-v2">Week Plan V2</TabsTrigger>
+            <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
           </TabsList>
           
           <TabsContent value="visits" className="mt-6">
@@ -199,14 +197,6 @@ const RepTracker: React.FC = () => {
               isLoadingCustomers={isLoadingCustomers}
               onDataChange={handleDataChange}
               onAddVisit={() => setShowAddVisit(true)}
-            />
-          </TabsContent>
-          
-          <TabsContent value="week-plan" className="mt-6">
-            <WeekPlanTab 
-              weekStartDate={weekStart}
-              weekEndDate={weekEnd}
-              customers={customers || []}
             />
           </TabsContent>
           
