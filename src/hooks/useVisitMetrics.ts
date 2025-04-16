@@ -41,9 +41,9 @@ export const useVisitMetrics = (selectedDate: Date) => {
       const totalVisits = visits.length;
       const totalProfit = visits.reduce((sum, visit) => sum + (visit.profit || 0), 0);
       const customerVisitProfit = visits
-        .filter(visit => visit.type === 'Customer Visit')
+        .filter(visit => visit.visit_type === 'Customer Visit')
         .reduce((sum, visit) => sum + (visit.profit || 0), 0);
-      const customerVisitCount = visits.filter(visit => visit.type === 'Customer Visit').length;
+      const customerVisitCount = visits.filter(visit => visit.visit_type === 'Customer Visit').length;
       const totalOrders = visits.filter(visit => visit.has_order).length;
       const plannedVisits = plans.length;
       
