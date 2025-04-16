@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -130,6 +132,9 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add Customer Visit</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Add details about your customer visit below.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
@@ -145,7 +150,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
             <Label htmlFor="customer">Customer</Label>
             <CustomerCommand
               customers={safeCustomers}
-              selectedCustomer={watch('customer_name')}
+              selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}
             />
           </div>

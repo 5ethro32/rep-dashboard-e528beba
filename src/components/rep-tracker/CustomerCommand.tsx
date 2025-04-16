@@ -27,14 +27,25 @@ export function CustomerCommand({
 }: CustomerCommandProps) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState(selectedCustomer || "");
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
+  
+  // Filter customers based on search query (handled manually to avoid cmdk issues)
+  const filteredCustomers = safeCustomers.filter(customer => 
+    customer.account_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   
   const handleSelect = (customer: { account_ref: string; account_name: string }) => {
     onSelect(customer.account_ref, customer.account_name);
     setInputValue(customer.account_name); // Update the input value when a customer is selected
     setOpen(false); // Close the command dialog after selection
+  };
+
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setSearchQuery(value);
   };
 
   // Update input value when selectedCustomer changes externally
@@ -47,24 +58,25 @@ export function CustomerCommand({
   return (
     <Command 
       className={cn("rounded-lg border shadow-md", className)}
-      shouldFilter={true} // Ensure filtering works
+      shouldFilter={false} // We'll handle filtering manually to avoid the undefined iterator error
     >
       <CommandInput 
         placeholder="Search customer..." 
         className="border-none focus:ring-0"
         value={inputValue}
-        onValueChange={setInputValue}
+        onValueChange={handleInputChange}
         onFocus={() => setOpen(true)}
       />
       {open && (
         <CommandList>
           <ScrollArea className="max-h-[200px]">
-            <CommandEmpty>No customer found.</CommandEmpty>
+            {filteredCustomers.length === 0 && (
+              <CommandEmpty>No customer found.</CommandEmpty>
+            )}
             <CommandGroup>
-              {safeCustomers.map((customer) => (
+              {filteredCustomers.map((customer) => (
                 <CommandItem
                   key={customer.account_ref}
-                  value={customer.account_name}
                   onSelect={() => handleSelect(customer)}
                   className="flex items-center gap-2 cursor-pointer hover:bg-accent"
                 >
