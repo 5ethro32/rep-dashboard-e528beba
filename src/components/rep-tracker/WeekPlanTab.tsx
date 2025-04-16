@@ -86,23 +86,22 @@ const WeekPlanTab: React.FC<{
     meta: {
       onSuccess: (deletedId) => {
         // Optimistically update UI by filtering out the deleted plan
-        queryClient.setQueryData(
-          weekPlansQueryKey, 
-          (oldData: WeekPlan[] | undefined) => {
-            if (!oldData) return [];
-            return oldData.filter(plan => plan.id !== deletedId);
-          }
-        );
+        if (weekPlans) {
+          // Directly update the current query data
+          queryClient.setQueryData(
+            weekPlansQueryKey, 
+            (oldData: WeekPlan[] | undefined) => {
+              if (!oldData) return [];
+              return oldData.filter(plan => plan.id !== deletedId);
+            }
+          );
+        }
         
         // Force an immediate refetch after deletion
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
-          exact: false,
           refetchType: 'all'
         });
-        
-        // Explicitly refetch the current week's data
-        refetch();
         
         toast({
           title: 'Plan Deleted',
@@ -128,6 +127,18 @@ const WeekPlanTab: React.FC<{
 
   const confirmDelete = () => {
     if (planToDelete) {
+      // Immediately update the UI (optimistic update)
+      if (weekPlans) {
+        queryClient.setQueryData(
+          weekPlansQueryKey, 
+          (oldData: WeekPlan[] | undefined) => {
+            if (!oldData) return [];
+            return oldData.filter(plan => plan.id !== planToDelete);
+          }
+        );
+      }
+      
+      // Then perform the actual deletion
       deletePlanMutation.mutate(planToDelete);
     }
   };
@@ -138,17 +149,17 @@ const WeekPlanTab: React.FC<{
   };
 
   const handleAddPlanSuccess = () => {
+    // Close the dialog first
+    setIsAddPlanOpen(false);
+    
     // Force an immediate refetch of all week plans data
     queryClient.invalidateQueries({ 
       queryKey: ['week-plans'],
-      exact: false,
       refetchType: 'all'
     });
     
     // Explicitly refetch the current week's data
     refetch();
-    
-    setIsAddPlanOpen(false);
   };
 
   // Days of the week for the plan
