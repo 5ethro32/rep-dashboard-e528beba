@@ -134,26 +134,13 @@ export function ImprovedCustomerSelector({
                 const isSelected = selectedCustomer === customer.account_name;
                 
                 return (
-                  <div
+                  <DropdownMenuItem
                     key={customer.account_ref}
                     className={cn(
                       "flex cursor-pointer items-center px-3 py-2 text-sm rounded-sm",
-                      "hover:bg-accent hover:text-accent-foreground",
                       isSelected && "bg-accent text-accent-foreground"
                     )}
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      selectCustomer(customer);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        selectCustomer(customer);
-                      }
-                    }}
+                    onSelect={() => selectCustomer(customer)}
                   >
                     <Check
                       className={cn(
@@ -162,7 +149,7 @@ export function ImprovedCustomerSelector({
                       )}
                     />
                     <span className="truncate">{customer.account_name}</span>
-                  </div>
+                  </DropdownMenuItem>
                 );
               })}
             </div>
