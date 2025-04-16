@@ -29,7 +29,7 @@ export function SimpleCustomerSelect({
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  // Filter customers based on search, with safety checks for null/undefined values
+  // Filter customers based on search, with safety checks
   const filteredCustomers = searchValue === '' 
     ? safeCustomers 
     : safeCustomers.filter(customer => {
@@ -37,7 +37,7 @@ export function SimpleCustomerSelect({
         return customer.account_name.toLowerCase().includes(searchValue.toLowerCase());
       });
 
-  // Handle selecting a customer with proper null checks
+  // Handle selecting a customer with proper safety checks
   const handleSelect = (customer: { account_name: string; account_ref: string }) => {
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
@@ -78,10 +78,12 @@ export function SimpleCustomerSelect({
           ) : (
             filteredCustomers.map((customer) => (
               customer && customer.account_ref && customer.account_name ? (
-                <div
+                <button
                   key={customer.account_ref}
+                  type="button"
                   className={cn(
-                    "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground",
+                    "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer text-left",
+                    "hover:bg-accent hover:text-accent-foreground",
                     selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                   )}
                   onClick={() => handleSelect(customer)}
@@ -92,8 +94,8 @@ export function SimpleCustomerSelect({
                       selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <span className="text-sm">{customer.account_name}</span>
-                </div>
+                  <span>{customer.account_name}</span>
+                </button>
               ) : null
             ))
           )}

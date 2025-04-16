@@ -68,11 +68,12 @@ export function CustomerCommand({
           <div className="p-1">
             {filteredCustomers.map((customer) => (
               customer && customer.account_ref && customer.account_name ? (
-                <div
+                <button
                   key={customer.account_ref}
+                  type="button"
                   onClick={() => handleSelect(customer)}
                   className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm",
+                    "flex w-full items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm text-left",
                     "hover:bg-accent hover:text-accent-foreground",
                     selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                   )}
@@ -84,7 +85,7 @@ export function CustomerCommand({
                     )}
                   />
                   <span>{customer.account_name}</span>
-                </div>
+                </button>
               ) : null
             ))}
           </div>
