@@ -40,7 +40,7 @@ export function CustomerSelector({
   useEffect(() => {
     if (open && inputRef.current) {
       setTimeout(() => {
-        inputRef.current.focus();
+        inputRef.current?.focus();
       }, 100);
     }
   }, [open]);
@@ -54,8 +54,21 @@ export function CustomerSelector({
     : safeCustomers.filter(customer => {
         if (!customer || typeof customer !== 'object') return false;
         const name = customer.account_name || '';
-        return name.toLowerCase().includes(searchQuery.toLowerCase());
+        const ref = customer.account_ref || '';
+        return (
+          name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          ref.toLowerCase().includes(searchQuery.toLowerCase())
+        );
       });
+
+  // Handle customer selection
+  const handleCustomerSelect = (customer: Customer) => {
+    if (customer && customer.account_ref && customer.account_name) {
+      onSelect(customer.account_ref, customer.account_name);
+      setOpen(false);
+      setSearchQuery('');
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -71,7 +84,7 @@ export function CustomerSelector({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent className="w-full p-0" sideOffset={4}>
         {isLoading ? (
           <div className="py-6 text-center text-sm">Loading customers...</div>
         ) : (
@@ -93,29 +106,28 @@ export function CustomerSelector({
                   {filteredCustomers.slice(0, 100).map((customer) => {
                     if (!customer || !customer.account_ref || !customer.account_name) return null;
                     
+                    const isSelected = selectedCustomer === customer.account_name;
+                    
                     return (
-                      <div
+                      <Button
                         key={customer.account_ref}
-                        onClick={() => {
-                          onSelect(customer.account_ref, customer.account_name);
-                          setOpen(false);
-                          setSearchQuery('');
-                        }}
+                        type="button"
+                        variant="ghost"
+                        onClick={() => handleCustomerSelect(customer)}
                         className={cn(
-                          "flex cursor-pointer items-center px-3 py-2 text-sm",
+                          "flex w-full cursor-pointer items-center justify-start px-3 py-2 text-sm",
                           "hover:bg-accent hover:text-accent-foreground",
-                          selectedCustomer === customer.account_name && 
-                          "bg-accent text-accent-foreground"
+                          isSelected && "bg-accent text-accent-foreground"
                         )}
                       >
                         <Check
                           className={cn(
                             "mr-2 h-4 w-4",
-                            selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                            isSelected ? "opacity-100" : "opacity-0"
                           )}
                         />
                         <span>{customer.account_name}</span>
-                      </div>
+                      </Button>
                     );
                   })}
                 </div>
