@@ -26,13 +26,23 @@ export function CustomerCommand({
   className 
 }: CustomerCommandProps) {
   const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(selectedCustomer || "");
+  
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
   const handleSelect = (customer: { account_ref: string; account_name: string }) => {
     onSelect(customer.account_ref, customer.account_name);
+    setInputValue(customer.account_name); // Update the input value when a customer is selected
     setOpen(false); // Close the command dialog after selection
   };
+
+  // Update input value when selectedCustomer changes externally
+  React.useEffect(() => {
+    if (selectedCustomer) {
+      setInputValue(selectedCustomer);
+    }
+  }, [selectedCustomer]);
   
   return (
     <Command 
@@ -42,6 +52,8 @@ export function CustomerCommand({
       <CommandInput 
         placeholder="Search customer..." 
         className="border-none focus:ring-0"
+        value={inputValue}
+        onValueChange={setInputValue}
         onFocus={() => setOpen(true)}
       />
       {open && (
