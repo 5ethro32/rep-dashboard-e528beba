@@ -40,7 +40,7 @@ const WeekPlanTab: React.FC<{
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
-  // Use a query key that includes the exact date range
+  // Use a specific query key for the current week's data
   const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString()];
   
   const { data: weekPlans, isLoading } = useQuery({
@@ -65,6 +65,8 @@ const WeekPlanTab: React.FC<{
         });
       },
     },
+    // Force refetch on window focus to ensure data is always up to date
+    refetchOnWindowFocus: true
   });
 
   const deletePlanMutation = useMutation({
@@ -78,16 +80,19 @@ const WeekPlanTab: React.FC<{
     },
     meta: {
       onSuccess: () => {
-        // Immediately refetch the week plans after deletion
+        // Force an immediate refetch after deletion
         queryClient.invalidateQueries({ 
-          queryKey: weekPlansQueryKey,
-          exact: true
+          queryKey: ['week-plans'],
+          exact: false,
+          refetchType: 'all'
         });
         
         toast({
           title: 'Plan Deleted',
           description: 'Week plan has been deleted successfully.',
         });
+        
+        setDeleteConfirmOpen(false);
       },
       onError: (error: Error) => {
         toast({
@@ -108,7 +113,6 @@ const WeekPlanTab: React.FC<{
     if (planToDelete) {
       deletePlanMutation.mutate(planToDelete);
     }
-    setDeleteConfirmOpen(false);
   };
 
   const handleAddPlan = (date?: Date) => {
@@ -117,10 +121,11 @@ const WeekPlanTab: React.FC<{
   };
 
   const handleAddPlanSuccess = () => {
-    // Force an immediate refetch of the week plans data
+    // Force an immediate refetch of all week plans data
     queryClient.invalidateQueries({ 
-      queryKey: weekPlansQueryKey,
-      exact: true
+      queryKey: ['week-plans'],
+      exact: false,
+      refetchType: 'all'
     });
     
     setIsAddPlanOpen(false);

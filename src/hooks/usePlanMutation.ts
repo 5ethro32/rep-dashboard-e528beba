@@ -23,7 +23,7 @@ export function usePlanMutation(onSuccess: () => void) {
     },
     meta: {
       onSuccess: () => {
-        // Invalidate all week-plans queries to ensure immediate updates
+        // Force a complete refresh of all week-plans queries
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
           exact: false,
