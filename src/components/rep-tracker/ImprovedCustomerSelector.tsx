@@ -69,10 +69,10 @@ export function ImprovedCustomerSelector({
     setSearchQuery('');
   };
 
-  // Using DropdownMenu instead of Popover for better mobile support
+  // Using Popover instead of DropdownMenu for better control and styling
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
@@ -87,10 +87,10 @@ export function ImprovedCustomerSelector({
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </DropdownMenuTrigger>
+      </PopoverTrigger>
       
-      <DropdownMenuContent 
-        className="w-[var(--radix-dropdown-menu-trigger-width)] p-0" 
+      <PopoverContent 
+        className="w-[var(--radix-popover-trigger-width)] p-0 z-50 bg-background" 
         align="start"
         sideOffset={4}
       >
@@ -128,19 +128,20 @@ export function ImprovedCustomerSelector({
         
         {/* Customer list with scroll area */}
         <ScrollArea className="max-h-[300px] overflow-y-auto">
-          {filteredCustomers.length > 0 ? (
-            <div className="p-1">
-              {filteredCustomers.map((customer) => {
+          <div className="p-1">
+            {filteredCustomers.length > 0 ? (
+              filteredCustomers.map((customer) => {
                 const isSelected = selectedCustomer === customer.account_name;
                 
                 return (
-                  <DropdownMenuItem
+                  <Button
                     key={customer.account_ref}
+                    variant="ghost"
                     className={cn(
-                      "flex cursor-pointer items-center px-3 py-2 text-sm rounded-sm",
+                      "w-full justify-start text-left px-3 py-2 text-sm rounded-sm",
                       isSelected && "bg-accent text-accent-foreground"
                     )}
-                    onSelect={() => selectCustomer(customer)}
+                    onClick={() => selectCustomer(customer)}
                   >
                     <Check
                       className={cn(
@@ -149,17 +150,17 @@ export function ImprovedCustomerSelector({
                       )}
                     />
                     <span className="truncate">{customer.account_name}</span>
-                  </DropdownMenuItem>
+                  </Button>
                 );
-              })}
-            </div>
-          ) : (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              No customers found
-            </div>
-          )}
+              })
+            ) : (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                No customers found
+              </div>
+            )}
+          </div>
         </ScrollArea>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverContent>
+    </Popover>
   );
 }

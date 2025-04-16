@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SimpleCustomerSelectProps {
   customers: Array<{ account_name: string; account_ref: string }>;
@@ -37,11 +38,15 @@ export function SimpleCustomerSelect({
         return customer.account_name.toLowerCase().includes(searchValue.toLowerCase());
       });
 
+  // Clear search when popover closes
+  useEffect(() => {
+    if (!open) {
+      setSearchValue('');
+    }
+  }, [open]);
+
   // Handle selecting a customer with proper safety checks
-  const handleSelect = (e: React.MouseEvent, customer: { account_name: string; account_ref: string }) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handleSelect = (customer: { account_name: string; account_ref: string }) => {
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
       setOpen(false);
@@ -64,14 +69,9 @@ export function SimpleCustomerSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="p-0 w-[var(--radix-popover-trigger-width)]" 
+        className="p-0 w-[var(--radix-popover-trigger-width)] bg-background z-50" 
         align="start"
         sideOffset={4}
-        onInteractOutside={(e) => {
-          // Only close if clicking outside the popover
-          e.preventDefault();
-        }}
-        style={{ zIndex: 100 }}
       >
         <div className="border-b p-2">
           <Input
@@ -81,39 +81,46 @@ export function SimpleCustomerSelect({
             className="h-9"
             autoComplete="off"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              // Prevent form submission on Enter key
+              if (e.key === 'Enter') {
+                e.preventDefault();
+              }
+            }}
           />
         </div>
-        <div className="max-h-[300px] overflow-y-auto p-1">
-          {filteredCustomers.length === 0 ? (
-            <div className="text-center p-4 text-sm text-muted-foreground">
-              No customer found.
-            </div>
-          ) : (
-            filteredCustomers.map((customer) => (
-              customer && customer.account_ref && customer.account_name ? (
-                <button
-                  key={customer.account_ref}
-                  type="button"
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer text-left",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
-                  )}
-                  onClick={(e) => handleSelect(e, customer)}
-                  onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
-                >
-                  <Check
+        <ScrollArea className="max-h-[300px] overflow-y-auto">
+          <div className="p-1">
+            {filteredCustomers.length === 0 ? (
+              <div className="text-center p-4 text-sm text-muted-foreground">
+                No customer found.
+              </div>
+            ) : (
+              filteredCustomers.map((customer) => (
+                customer && customer.account_ref && customer.account_name ? (
+                  <Button
+                    key={customer.account_ref}
+                    variant="ghost"
                     className={cn(
-                      "h-4 w-4",
-                      selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                      "flex w-full items-center justify-start gap-2 rounded-sm px-2 py-1.5 text-sm text-left",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                     )}
-                  />
-                  <span>{customer.account_name}</span>
-                </button>
-              ) : null
-            ))
-          )}
-        </div>
+                    onClick={() => handleSelect(customer)}
+                  >
+                    <Check
+                      className={cn(
+                        "h-4 w-4",
+                        selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <span className="truncate">{customer.account_name}</span>
+                  </Button>
+                ) : null
+              ))
+            )}
+          </div>
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   );
