@@ -45,7 +45,8 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
 
   return (
     <div className="mb-8 animate-slide-in-up">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      {/* Update the grid to be 2 columns on mobile, 4 on larger screens */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <MetricCard
           title="Total Visits"
           value={formatNumber(data.totalVisits)}
@@ -80,7 +81,8 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mt-4">
+      {/* Update the second grid to be 2 columns on mobile, 3 on larger screens */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mt-4">
         <MetricCard
           title="Daily Avg Profit"
           value={formatCurrency(data.dailyAvgProfit)}
@@ -103,6 +105,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           change={previousData ? calculateChange(data.avgProfitPerOrder, previousData.avgProfitPerOrder) : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerOrder)}` : undefined}
           isLoading={isLoading}
+          className="col-span-2 md:col-span-1" // Make the last card span 2 columns on mobile
         />
       </div>
     </div>
