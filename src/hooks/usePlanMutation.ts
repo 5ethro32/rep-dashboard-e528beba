@@ -140,7 +140,7 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
       onSuccess: (updatedPlan) => {
         console.log("Update mutation success callback with data:", updatedPlan);
         
-        // Handle optimistic updates for the cache
+        // Update the cache immediately for a responsive UI experience
         const queryCache = queryClient.getQueryCache();
         
         // Find queries that might contain this data
@@ -150,6 +150,7 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
           }
         });
         
+        // Update each relevant query in the cache
         weekPlanQueries.forEach(query => {
           const data = queryClient.getQueryData(query.queryKey);
           
@@ -162,18 +163,19 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
           }
         });
         
-        // Immediately invalidate and refetch all week-plans queries
+        // Then invalidate and refetch all week-plans queries to ensure data consistency
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
           refetchType: 'all'
         });
         
+        // Show toast notification like in Customer Visits
         toast({
           title: 'Plan Updated',
           description: 'Week plan has been updated successfully.',
         });
         
-        // Call the success callback to trigger additional UI updates
+        // Call the success callback after everything is done
         onSuccess();
       },
       onError: (error: Error) => {

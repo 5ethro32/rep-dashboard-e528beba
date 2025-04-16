@@ -65,12 +65,12 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
 
   const updatePlanMutation = useUpdatePlanMutation(() => {
     console.log("Update plan mutation success callback triggered");
-    // Call the success callback if provided
+    // Close the dialog first
+    onClose();
+    // Then call the success callback if provided
     if (onSuccess) {
       onSuccess();
     }
-    // Close the dialog
-    onClose();
   });
 
   const handleCustomerSelect = (ref: string, name: string) => {
@@ -93,7 +93,9 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Week Plan</DialogTitle>
