@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
-import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/rep-performance-service';
+import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData, fetchMarchRollingData } from '@/services/rep-performance-service';
 import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -199,9 +199,7 @@ export const useRepPerformanceData = () => {
       const mtdData = allRecords;
       console.log('Fetched April MTD records total count:', mtdData.length);
       
-      const { data: marchRollingData, error: marchRollingError } = await supabase
-        .from('march_rolling')
-        .select('*');
+      const { data: marchRollingData, error: marchRollingError } = await fetchMarchRollingData();
       
       if (marchRollingError) throw new Error(`Error fetching March rolling data: ${marchRollingError.message}`);
       

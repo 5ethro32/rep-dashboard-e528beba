@@ -533,6 +533,47 @@ const fetchDepartmentData = async (department: string, isMarch: boolean) => {
   return { data: allData, error: null };
 };
 
+// Helper function to fetch March rolling data with pagination
+export const fetchMarchRollingData = async () => {
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let page = 0;
+  let hasMoreData = true;
+  
+  console.log('Starting to fetch March Rolling data with pagination...');
+  
+  while (hasMoreData) {
+    try {
+      const { data, error, count } = await supabase
+        .from('march_rolling')
+        .select('*')
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      
+      if (error) {
+        console.error('Error fetching March Rolling data page', page, error);
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        allData = [...allData, ...data];
+        console.log(`Fetched March Rolling page ${page+1} with ${data.length} records. Total so far: ${allData.length}`);
+        page++;
+        
+        // Check if we've fetched all available data
+        hasMoreData = data.length === PAGE_SIZE;
+      } else {
+        hasMoreData = false;
+      }
+    } catch (error) {
+      console.error('Error in pagination loop for March Rolling data:', error);
+      hasMoreData = false;
+    }
+  }
+  
+  console.log(`Completed fetching March Rolling data. Total records: ${allData.length}`);
+  return { data: allData, error: null };
+};
+
 export const saveRepPerformanceData = (data: any) => {
   try {
     localStorage.setItem('repPerformanceData', JSON.stringify(data));
@@ -555,3 +596,4 @@ export const loadStoredRepPerformanceData = () => {
     return null;
   }
 };
+
