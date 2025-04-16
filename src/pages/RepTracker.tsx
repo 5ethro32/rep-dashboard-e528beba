@@ -15,6 +15,7 @@ import WeekPlanTab from '@/components/rep-tracker/WeekPlanTab';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useVisitMetrics } from '@/hooks/useVisitMetrics';
 import { toast } from '@/components/ui/use-toast';
+import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 
 const RepTracker: React.FC = () => {
   const navigate = useNavigate();
@@ -206,6 +207,15 @@ const RepTracker: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {showAddVisit && (
+        <AddVisitDialog
+          isOpen={showAddVisit}
+          onClose={() => setShowAddVisit(false)}
+          onSuccess={handleAddVisitSuccess}
+          customers={customers || []}
+        />
+      )}
     </div>
   );
 };
