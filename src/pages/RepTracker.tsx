@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,15 +21,12 @@ const RepTracker: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddVisit, setShowAddVisit] = useState(false);
   
-  // Calculate week start and end dates
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 }); // Sunday
 
-  // Format dates for display
   const weekStartFormatted = format(weekStart, 'EEE do MMM yy');
   const weekEndFormatted = format(weekEnd, 'EEE do MMM yy');
   
-  // Fetch customers data for dropdown selection
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
@@ -67,7 +63,6 @@ const RepTracker: React.FC = () => {
     }
   });
   
-  // Mock summary data - would be replaced with actual data from the database
   const summaryData = {
     totalVisits: 17,
     totalProfit: 1540.62,
@@ -77,7 +72,17 @@ const RepTracker: React.FC = () => {
     avgProfitPerVisit: 90.62,
     avgProfitPerOrder: 128.39
   };
-  
+
+  const previousWeekData = {
+    totalVisits: 15,
+    totalProfit: 1320.50,
+    totalOrders: 10,
+    conversionRate: 67,
+    dailyAvgProfit: 220.08,
+    avgProfitPerVisit: 88.03,
+    avgProfitPerOrder: 132.05
+  };
+
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
@@ -99,7 +104,6 @@ const RepTracker: React.FC = () => {
           </p>
         </div>
         
-        {/* Week Selection */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <Calendar className="h-5 w-5 mr-2 text-finance-red" />
@@ -141,14 +145,13 @@ const RepTracker: React.FC = () => {
           </div>
         </div>
         
-        {/* Weekly Summary */}
         <WeeklySummary 
           data={summaryData} 
+          previousData={previousWeekData}
           weekStartDate={weekStart} 
           weekEndDate={weekEnd} 
         />
         
-        {/* Add Visit Button */}
         <div className="flex justify-end mb-6">
           <Button 
             className="bg-finance-red hover:bg-finance-red/80"
@@ -159,7 +162,6 @@ const RepTracker: React.FC = () => {
           </Button>
         </div>
         
-        {/* Tabs for Visits and Week Plan */}
         <Tabs defaultValue="visits" className="space-y-6">
           <TabsList className="bg-black/20 border-gray-800">
             <TabsTrigger value="visits">Customer Visits</TabsTrigger>
@@ -184,7 +186,6 @@ const RepTracker: React.FC = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Add Visit Dialog */}
         <AddVisitDialog 
           isOpen={showAddVisit}
           onClose={() => setShowAddVisit(false)}
