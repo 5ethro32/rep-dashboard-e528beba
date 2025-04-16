@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
-import WeekPlanTab from '@/components/rep-tracker/WeekPlanTab';
+import WeekPlanTabV2 from '@/components/rep-tracker/WeekPlanTabV2';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useVisitMetrics } from '@/hooks/useVisitMetrics';
 import { toast } from '@/components/ui/use-toast';
@@ -96,12 +95,9 @@ const RepTracker: React.FC = () => {
     });
   };
 
-  // Function that handles add plan success and ensures we switch to week-plan tab
   const handleAddPlanSuccess = () => {
-    // Force switch to week-plan tab
     setSelectedTab('week-plan');
     
-    // Force refetch of queries
     queryClient.invalidateQueries({
       queryKey: ['week-plans'],
       refetchType: 'all'
@@ -211,7 +207,7 @@ const RepTracker: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="week-plan" className="mt-6">
-            <WeekPlanTab 
+            <WeekPlanTabV2 
               weekStartDate={weekStart}
               weekEndDate={weekEnd}
               customers={customers || []}
