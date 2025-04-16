@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,7 +28,16 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
   onChange,
   className,
 }) => {
+  const popoverRef = useRef<HTMLDivElement>(null);
   const selectedDate = value ? new Date(value) : new Date();
+  
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      onChange(format(date, 'yyyy-MM-dd'));
+      // Close the popover after date selection
+      popoverRef.current?.click();
+    }
+  };
   
   return (
     <div className={cn("space-y-2", className)}>
@@ -47,11 +56,15 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
             {value ? format(selectedDate, 'PPP') : <span>Pick a date</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-background" align="start">
+        <PopoverContent 
+          ref={popoverRef}
+          className="w-auto p-0 bg-background" 
+          align="start"
+        >
           <Calendar
             mode="single"
             selected={selectedDate}
-            onSelect={(date) => onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+            onSelect={handleDateSelect}
             initialFocus
             className="pointer-events-auto"
           />
