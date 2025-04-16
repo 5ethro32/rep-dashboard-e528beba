@@ -30,7 +30,10 @@ export function CustomerCommand({
     return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
   });
   
-  const handleSelect = (customer: { account_ref: string; account_name: string }) => {
+  const handleSelect = (e: React.MouseEvent, customer: { account_ref: string; account_name: string }) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
       setInputValue(customer.account_name); 
@@ -58,6 +61,7 @@ export function CustomerCommand({
           className="border-none focus:ring-0"
           value={inputValue}
           onChange={(e) => handleInputChange(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
         />
       </div>
       
@@ -71,7 +75,8 @@ export function CustomerCommand({
                 <button
                   key={customer.account_ref}
                   type="button"
-                  onClick={() => handleSelect(customer)}
+                  onClick={(e) => handleSelect(e, customer)}
+                  onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                   className={cn(
                     "flex w-full items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm text-left",
                     "hover:bg-accent hover:text-accent-foreground",

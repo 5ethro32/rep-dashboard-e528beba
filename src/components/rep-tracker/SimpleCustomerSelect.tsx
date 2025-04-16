@@ -38,7 +38,10 @@ export function SimpleCustomerSelect({
       });
 
   // Handle selecting a customer with proper safety checks
-  const handleSelect = (customer: { account_name: string; account_ref: string }) => {
+  const handleSelect = (e: React.MouseEvent, customer: { account_name: string; account_ref: string }) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
       setOpen(false);
@@ -60,7 +63,16 @@ export function SimpleCustomerSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start">
+      <PopoverContent 
+        className="p-0 w-[var(--radix-popover-trigger-width)]" 
+        align="start"
+        sideOffset={4}
+        onInteractOutside={(e) => {
+          // Only close if clicking outside the popover
+          e.preventDefault();
+        }}
+        style={{ zIndex: 100 }}
+      >
         <div className="border-b p-2">
           <Input
             placeholder="Search customers..."
@@ -68,6 +80,7 @@ export function SimpleCustomerSelect({
             onChange={(e) => setSearchValue(e.target.value)}
             className="h-9"
             autoComplete="off"
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
         <div className="max-h-[300px] overflow-y-auto p-1">
@@ -86,7 +99,8 @@ export function SimpleCustomerSelect({
                     "hover:bg-accent hover:text-accent-foreground",
                     selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                   )}
-                  onClick={() => handleSelect(customer)}
+                  onClick={(e) => handleSelect(e, customer)}
+                  onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                 >
                   <Check
                     className={cn(
