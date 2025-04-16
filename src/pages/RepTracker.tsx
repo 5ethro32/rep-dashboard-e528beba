@@ -11,9 +11,9 @@ import { format, startOfWeek, endOfWeek } from 'date-fns';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
 import WeekPlanTab from '@/components/rep-tracker/WeekPlanTab';
-import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useVisitMetrics } from '@/hooks/useVisitMetrics';
+import { toast } from '@/components/ui/use-toast';
 
 const RepTracker: React.FC = () => {
   const navigate = useNavigate();
@@ -192,7 +192,6 @@ const RepTracker: React.FC = () => {
               customers={customers || []} 
               isLoadingCustomers={isLoadingCustomers}
               onDataChange={handleDataChange}
-              onAddVisit={() => setShowAddVisit(true)}
             />
           </TabsContent>
           
@@ -204,13 +203,6 @@ const RepTracker: React.FC = () => {
             />
           </TabsContent>
         </Tabs>
-        
-        <AddVisitDialog 
-          isOpen={showAddVisit}
-          onClose={() => setShowAddVisit(false)}
-          onSuccess={handleAddVisitSuccess}
-          customers={customers || []}
-        />
       </div>
     </div>
   );
