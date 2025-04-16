@@ -200,7 +200,7 @@ export const useRepPerformanceData = () => {
       console.log('Fetched April MTD records total count:', mtdData.length);
       
       const { data: marchRollingData, error: marchRollingError } = await supabase
-        .from('sales_data')
+        .from('march_rolling')
         .select('*');
       
       if (marchRollingError) throw new Error(`Error fetching March rolling data: ${marchRollingError.message}`);
@@ -225,10 +225,10 @@ export const useRepPerformanceData = () => {
       
       console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
       
-      const marchRetailData = marchRollingData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || [];
-      const marchRevaData = marchRollingData?.filter(item => item.rep_type === 'REVA') || [];
+      const marchRetailData = marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
+      const marchRevaData = marchRollingData?.filter(item => item.Department === 'REVA') || [];
       const marchWholesaleData = marchRollingData?.filter(item => 
-        item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE'
+        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
       ) || [];
 
       const transformData = (data: any[], isDepartmentData = false): RepData[] => {
@@ -301,75 +301,9 @@ export const useRepPerformanceData = () => {
       const aprRevaData = transformData(revaData, true);
       const aprWholesaleData = transformData(wholesaleData, true);
       
-      const transformMarchData = (data: any[], isDepartmentData = false): RepData[] => {
-        console.log(`Transforming ${data.length} records`);
-        const repMap = new Map<string, RepData>();
-        
-        data.forEach(item => {
-          let repName;
-          
-          if (isDepartmentData && item['sub_rep'] && item['sub_rep'].trim() !== '') {
-            repName = item['sub_rep'];
-          } else if (item.rep_type === 'REVA' || item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE') {
-            return;
-          } else {
-            repName = item.rep_name;
-          }
-          
-          if (!repName) {
-            console.log('Found item without Rep name:', item);
-            return;
-          }
-          
-          if (!repMap.has(repName)) {
-            repMap.set(repName, {
-              rep: repName,
-              spend: 0,
-              profit: 0,
-              packs: 0,
-              margin: 0,
-              activeAccounts: 0,
-              totalAccounts: 0,
-              profitPerActiveShop: 0,
-              profitPerPack: 0,
-              activeRatio: 0
-            });
-          }
-          
-          const currentRep = repMap.get(repName)!;
-          
-          const spend = typeof item.spend === 'string' ? parseFloat(item.spend) : Number(item.spend || 0);
-          const profit = typeof item.profit === 'string' ? parseFloat(item.profit) : Number(item.profit || 0);
-          const packs = typeof item.packs === 'string' ? parseInt(item.packs as string) : Number(item.packs || 0);
-          
-          currentRep.spend += spend;
-          currentRep.profit += profit;
-          currentRep.packs += packs;
-          
-          if (item["account_ref"]) {
-            currentRep.totalAccounts += 1;
-            if (spend > 0) {
-              currentRep.activeAccounts += 1;
-            }
-          }
-          
-          currentRep.margin = currentRep.spend > 0 ? (currentRep.profit / currentRep.spend) * 100 : 0;
-          
-          repMap.set(repName, currentRep);
-        });
-        
-        console.log(`Transformed data into ${repMap.size} unique reps`);
-        return Array.from(repMap.values()).map(rep => {
-          rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
-          rep.profitPerPack = rep.packs > 0 ? rep.profit / rep.packs : 0;
-          rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
-          return rep;
-        });
-      };
-      
-      const marchRetailRepData = transformMarchData(marchRetailData);
-      const marchRevaRepData = transformMarchData(marchRevaData, true);
-      const marchWholesaleRepData = transformMarchData(marchWholesaleData, true);
+      const marchRetailRepData = transformData(marchRetailData);
+      const marchRevaRepData = transformData(marchRevaData, true);
+      const marchWholesaleRepData = transformData(marchWholesaleData, true);
       
       console.log(`Transformed Rep Data - Retail: ${aprRetailData.length}, REVA: ${aprRevaData.length}, Wholesale: ${aprWholesaleData.length}`);
       console.log(`Transformed March Rep Data - Retail: ${marchRetailRepData.length}, REVA: ${marchRevaRepData.length}, Wholesale: ${marchWholesaleRepData.length}`);
