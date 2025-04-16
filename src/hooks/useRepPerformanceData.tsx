@@ -231,7 +231,14 @@ export const useRepPerformanceData = () => {
 
       const transformData = (data: any[], isDepartmentData = false): RepData[] => {
         console.log(`Transforming ${data.length} records`);
-        const repMap = new Map<string, RepData>();
+        const repMap = new Map<string, {
+          rep: string;
+          spend: number;
+          profit: number;
+          packs: number;
+          activeAccounts: Set<string>;
+          totalAccounts: Set<string>;
+        }>();
         
         data.forEach(item => {
           let repName;
@@ -255,12 +262,8 @@ export const useRepPerformanceData = () => {
               spend: 0,
               profit: 0,
               packs: 0,
-              margin: 0,
-              activeAccounts: 0,
-              totalAccounts: 0,
-              profitPerActiveShop: 0,
-              profitPerPack: 0,
-              activeRatio: 0
+              activeAccounts: new Set(),
+              totalAccounts: new Set()
             });
           }
           
@@ -275,23 +278,34 @@ export const useRepPerformanceData = () => {
           currentRep.packs += packs;
           
           if (item["Account Ref"]) {
-            currentRep.totalAccounts += 1;
+            currentRep.totalAccounts.add(item["Account Ref"]);
             if (spend > 0) {
-              currentRep.activeAccounts += 1;
+              currentRep.activeAccounts.add(item["Account Ref"]);
             }
           }
-          
-          currentRep.margin = currentRep.spend > 0 ? (currentRep.profit / currentRep.spend) * 100 : 0;
           
           repMap.set(repName, currentRep);
         });
         
         console.log(`Transformed data into ${repMap.size} unique reps`);
         return Array.from(repMap.values()).map(rep => {
-          rep.profitPerActiveShop = rep.activeAccounts > 0 ? rep.profit / rep.activeAccounts : 0;
+          rep.profitPerActiveShop = rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0;
           rep.profitPerPack = rep.packs > 0 ? rep.profit / rep.packs : 0;
-          rep.activeRatio = rep.totalAccounts > 0 ? (rep.activeAccounts / rep.totalAccounts) * 100 : 0;
-          return rep;
+          rep.activeRatio = rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0;
+          return {
+            rep: rep.rep,
+            spend: rep.spend,
+            profit: rep.profit,
+            margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
+            packs: rep.packs,
+            activeAccounts: rep.activeAccounts.size,
+            totalAccounts: rep.totalAccounts.size,
+            profitPerActiveShop: rep.profitPerActiveShop,
+            profitPerPack: rep.profitPerPack,
+            activeRatio: rep.activeRatio
+          };
+        }).filter(rep => {
+          return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
         });
       };
       

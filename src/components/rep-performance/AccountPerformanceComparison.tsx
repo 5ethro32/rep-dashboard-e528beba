@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
@@ -68,10 +69,18 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   const repOptions = useMemo(() => {
     if (!currentMonthData || currentMonthData.length === 0) return [];
     
+    // Filter out reps with no data or zero metrics across the board
     const repNames = Array.from(new Set(
-      currentMonthData.map((item: any) => {
-        return item.Rep || item.rep_name || '';
-      })
+      currentMonthData
+        .filter(item => {
+          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          return spend > 0 || profit > 0 || packs > 0;
+        })
+        .map((item: any) => {
+          return item.Rep || item.rep_name || '';
+        })
     )).filter(Boolean);
     
     return repNames.sort();
@@ -82,10 +91,15 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     
     console.log(`Processing data comparison for ${selectedRep}. ${selectedMonth} data: ${currentMonthData.length}, Previous month data: ${previousMonthData?.length || 0}`);
     
+    // Filter out accounts with zero metrics for the selected rep
     const currentRepAccounts = currentMonthData.filter(
       (item: any) => {
         const repName = item.Rep || item.rep_name || '';
-        return repName === selectedRep;
+        const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+        const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+        const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+        
+        return repName === selectedRep && (spend > 0 || profit > 0 || packs > 0);
       }
     );
     

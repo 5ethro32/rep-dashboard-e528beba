@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -47,7 +46,6 @@ const RepPerformance = () => {
   const activeData = getActiveData('overall');
   const isMobile = useIsMobile();
   
-  // Determine which summary values to use based on selectedMonth
   const currentBaseSummary = selectedMonth === 'April' ? aprBaseSummary : baseSummary;
   const currentRevaValues = selectedMonth === 'April' ? aprRevaValues : revaValues;
   const currentWholesaleValues = selectedMonth === 'April' ? aprWholesaleValues : wholesaleValues;

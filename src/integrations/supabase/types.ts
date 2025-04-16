@@ -377,6 +377,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      clear_march_rolling: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       clear_mtd_daily: {
         Args: Record<PropertyKey, never>
         Returns: undefined

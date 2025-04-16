@@ -1,3 +1,4 @@
+
 import { RepData, SalesDataItem, SummaryData } from "@/types/rep-performance.types";
 
 export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
@@ -63,6 +64,7 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
   });
   
   const filteredResult = result.filter(rep => {
+    // Filter out reps with zero metrics (all values are zero)
     return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
   });
   
@@ -219,6 +221,7 @@ export const getCombinedRepData = (
     };
   });
   
+  // Filter out reps with zero metrics
   const filteredCombinedData = combinedData.filter(rep => {
     return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
   });
