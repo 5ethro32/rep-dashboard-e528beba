@@ -58,7 +58,7 @@ export function CustomerCommand({
   return (
     <Command 
       className={cn("rounded-lg border shadow-md", className)}
-      shouldFilter={false} // We'll handle filtering manually to avoid the undefined iterator error
+      shouldFilter={false} // We'll handle filtering manually
     >
       <CommandInput 
         placeholder="Search customer..." 
@@ -73,12 +73,13 @@ export function CustomerCommand({
             {filteredCustomers.length === 0 && (
               <CommandEmpty>No customer found.</CommandEmpty>
             )}
-            <CommandGroup>
+            <CommandGroup heading="Customers">
               {filteredCustomers.map((customer) => (
                 <CommandItem
                   key={customer.account_ref}
                   onSelect={() => handleSelect(customer)}
                   className="flex items-center gap-2 cursor-pointer hover:bg-accent"
+                  value={customer.account_name} // Explicitly provide value prop
                 >
                   <div className="flex items-center gap-2 w-full">
                     <Check

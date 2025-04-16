@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import { CustomerSelector } from './CustomerSelector';
+import { CustomerCommand } from './CustomerCommand';
 
 interface Visit {
   id: string;
@@ -130,6 +131,11 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
     },
   });
 
+  const handleCustomerSelect = (ref: string, name: string) => {
+    setValue('customer_ref', ref);
+    setValue('customer_name', name);
+  };
+
   const onSubmit = (data: VisitFormData) => {
     updateVisitMutation.mutate(data);
   };
@@ -152,13 +158,10 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <CustomerSelector 
-              customers={customers}
-              selectedCustomer={watch('customer_name')}
-              onSelect={(ref, name) => {
-                setValue('customer_ref', ref);
-                setValue('customer_name', name);
-              }}
+            <CustomerCommand 
+              customers={safeCustomers}
+              selectedCustomer={watch('customer_name') || ''}
+              onSelect={handleCustomerSelect}
             />
           </div>
 
