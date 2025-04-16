@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -89,6 +90,9 @@ const WeekPlanTab: React.FC<{
           queryKey: ['week-plans'],
           refetchType: 'all'
         });
+        
+        // Explicitly refetch the current week's plans
+        refetch();
         
         toast({
           title: 'Plan Deleted',

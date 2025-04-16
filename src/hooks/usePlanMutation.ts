@@ -73,7 +73,8 @@ export function usePlanMutation(onSuccess: () => void) {
           }
         });
         
-        // Force a complete refresh of all week-plans queries
+        // Immediately invalidate and refetch all week-plans queries
+        // This ensures the optimistic update is replaced with real data
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
           refetchType: 'all'

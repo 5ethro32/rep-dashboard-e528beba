@@ -22,7 +22,7 @@ const RepTracker: React.FC = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddVisit, setShowAddVisit] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('visits');
+  const [selectedTab, setSelectedTab] = useState('week-plan'); // Default to week-plan tab
   
   const queryClient = useQueryClient();
   
@@ -92,6 +92,18 @@ const RepTracker: React.FC = () => {
     queryClient.invalidateQueries({
       queryKey: ['visit-metrics'],
       exact: false,
+      refetchType: 'all'
+    });
+  };
+
+  // Function to ensure we switch to week-plan tab on plan addition
+  const handleAddPlanSuccess = () => {
+    // Force switch to week-plan tab
+    setSelectedTab('week-plan');
+    
+    // Force refetch of queries
+    queryClient.invalidateQueries({
+      queryKey: ['week-plans'],
       refetchType: 'all'
     });
   };

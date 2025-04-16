@@ -51,17 +51,18 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
       notes: '',
     });
     
+    // Always call onSuccess (if provided) to ensure UI updates immediately
     if (onSuccess) {
-      // Call the parent component's success handler for immediate update
       onSuccess();
-    } else {
-      onClose();
     }
+    
+    // Always close the dialog after successful submission
+    onClose();
   });
 
   const onSubmit = (data: PlanFormData) => {
     if (!user?.id) return;
-    // We'll pass the date to the mutation function for accurate optimistic updates
+    // Format the date properly for the backend and optimistic updates
     const formattedDate = new Date(data.planned_date);
     addPlanMutation.mutate({ 
       ...data, 
