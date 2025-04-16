@@ -18,7 +18,7 @@ interface EditPlanDialogProps {
     customer_ref: string;
     customer_name: string;
     notes: string;
-  };
+  } | null; // Make plan explicitly nullable
   customers: Array<{ account_name: string; account_ref: string }>;
   onSuccess?: () => void;
 }
@@ -38,6 +38,11 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
   customers = [],
   onSuccess,
 }) => {
+  // Add a safety check - if plan is null/undefined, don't render the dialog
+  if (!plan) {
+    return null;
+  }
+  
   const { register, handleSubmit, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
       id: plan.id,
