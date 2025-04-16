@@ -30,11 +30,19 @@ interface WeekPlan {
   notes: string | null;
 }
 
-const WeekPlanTabV2: React.FC<{
+interface WeekPlanTabV2Props {
   weekStartDate: Date;
   weekEndDate: Date;
   customers: Array<{ account_name: string; account_ref: string }>;
-}> = ({ weekStartDate, weekEndDate, customers }) => {
+  onAddPlanSuccess?: () => void; // Add the missing prop as optional
+}
+
+const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({ 
+  weekStartDate, 
+  weekEndDate, 
+  customers,
+  onAddPlanSuccess 
+}) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
@@ -133,6 +141,10 @@ const WeekPlanTabV2: React.FC<{
 
   const handleAddPlanSuccess = () => {
     setIsAddPlanOpen(false);
+    // Call the parent's success handler if provided
+    if (onAddPlanSuccess) {
+      onAddPlanSuccess();
+    }
     // The invalidation is handled in the usePlanMutation hook
   };
 
