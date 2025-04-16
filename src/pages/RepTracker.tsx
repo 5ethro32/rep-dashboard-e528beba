@@ -15,6 +15,7 @@ import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useVisitMetrics } from '@/hooks/useVisitMetrics';
 import { toast } from '@/components/ui/use-toast';
 import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
+import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable';
 
 const RepTracker: React.FC = () => {
   const navigate = useNavigate();
@@ -96,6 +97,13 @@ const RepTracker: React.FC = () => {
   };
 
   const handleAddPlanSuccess = () => {
+    // Immediately invalidate metrics to update planned visits count
+    queryClient.invalidateQueries({
+      queryKey: ['visit-metrics'],
+      exact: false,
+      refetchType: 'all'
+    });
+    
     setSelectedTab('week-plan-v2');
   };
 
@@ -189,6 +197,7 @@ const RepTracker: React.FC = () => {
           <TabsList className="bg-black/20 border-gray-800">
             <TabsTrigger value="visits">Customer Visits</TabsTrigger>
             <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
+            <TabsTrigger value="customer-history">Customer History</TabsTrigger>
           </TabsList>
           
           <TabsContent value="visits" className="mt-6">
@@ -209,6 +218,10 @@ const RepTracker: React.FC = () => {
               customers={customers || []}
               onAddPlanSuccess={handleAddPlanSuccess}
             />
+          </TabsContent>
+          
+          <TabsContent value="customer-history" className="mt-6">
+            <CustomerHistoryTable customers={customers || []} />
           </TabsContent>
         </Tabs>
       </div>

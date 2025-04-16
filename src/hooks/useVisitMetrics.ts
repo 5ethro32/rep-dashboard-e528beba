@@ -79,7 +79,11 @@ export const useVisitMetrics = (selectedDate: Date) => {
         plannedVisits
       };
     },
+    // Set staleTime to 0 to always re-fetch when a dependency changes
     staleTime: 0,
-    refetchInterval: 0
+    // Disable any background refresh - only fetch when explicitly asked
+    refetchInterval: 0,
+    // Don't cache result - always re-fetch from server
+    gcTime: 0
   });
 };
