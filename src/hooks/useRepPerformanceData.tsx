@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -238,6 +239,9 @@ export const useRepPerformanceData = () => {
           packs: number;
           activeAccounts: Set<string>;
           totalAccounts: Set<string>;
+          profitPerActiveShop: number;
+          profitPerPack: number;
+          activeRatio: number;
         }>();
         
         data.forEach(item => {
@@ -263,7 +267,10 @@ export const useRepPerformanceData = () => {
               profit: 0,
               packs: 0,
               activeAccounts: new Set(),
-              totalAccounts: new Set()
+              totalAccounts: new Set(),
+              profitPerActiveShop: 0,
+              profitPerPack: 0,
+              activeRatio: 0
             });
           }
           
@@ -289,17 +296,22 @@ export const useRepPerformanceData = () => {
         
         console.log(`Transformed data into ${repMap.size} unique reps`);
         return Array.from(repMap.values()).map(rep => {
-          rep.profitPerActiveShop = rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0;
+          // Calculate these values before returning the final object
+          const activeAccountsSize = rep.activeAccounts.size;
+          const totalAccountsSize = rep.totalAccounts.size;
+          
+          rep.profitPerActiveShop = activeAccountsSize > 0 ? rep.profit / activeAccountsSize : 0;
           rep.profitPerPack = rep.packs > 0 ? rep.profit / rep.packs : 0;
-          rep.activeRatio = rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0;
+          rep.activeRatio = totalAccountsSize > 0 ? (activeAccountsSize / totalAccountsSize) * 100 : 0;
+          
           return {
             rep: rep.rep,
             spend: rep.spend,
             profit: rep.profit,
             margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
             packs: rep.packs,
-            activeAccounts: rep.activeAccounts.size,
-            totalAccounts: rep.totalAccounts.size,
+            activeAccounts: activeAccountsSize,
+            totalAccounts: totalAccountsSize,
             profitPerActiveShop: rep.profitPerActiveShop,
             profitPerPack: rep.profitPerPack,
             activeRatio: rep.activeRatio
