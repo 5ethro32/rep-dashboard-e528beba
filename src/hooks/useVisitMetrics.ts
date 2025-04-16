@@ -44,7 +44,14 @@ export const useVisitMetrics = (selectedDate: Date) => {
         .filter(visit => visit.visit_type === 'Customer Visit')
         .reduce((sum, visit) => sum + (visit.profit || 0), 0);
       const customerVisitCount = visits.filter(visit => visit.visit_type === 'Customer Visit').length;
-      const totalOrders = visits.filter(visit => visit.has_order).length;
+      
+      // Only count visits where has_order is true
+      const visitsWithOrders = visits.filter(visit => visit.has_order);
+      const totalOrders = visitsWithOrders.length;
+      
+      // Calculate order-specific profit
+      const orderProfit = visitsWithOrders.reduce((sum, visit) => sum + (visit.profit || 0), 0);
+      
       const plannedVisits = plans.length;
       
       // Count unique days with visits to calculate daily average profit
@@ -55,7 +62,7 @@ export const useVisitMetrics = (selectedDate: Date) => {
       const conversionRate = totalVisits ? (totalOrders / totalVisits) * 100 : 0;
       const dailyAvgProfit = totalProfit / daysWithVisits; // Calculate based on actual days with visits
       const avgProfitPerVisit = customerVisitCount ? customerVisitProfit / customerVisitCount : 0; // Based only on Customer Visit type
-      const avgProfitPerOrder = totalOrders ? totalProfit / totalOrders : 0;
+      const avgProfitPerOrder = totalOrders ? orderProfit / totalOrders : 0; // Use profit specifically from orders with has_order=true
 
       return {
         totalVisits,
