@@ -10,6 +10,12 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
 interface Customer {
   account_name: string;
@@ -62,10 +68,11 @@ export function ImprovedCustomerSelector({
     setOpen(false);
     setSearchQuery('');
   };
-  
+
+  // Using DropdownMenu instead of Popover for better mobile support
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
@@ -80,13 +87,12 @@ export function ImprovedCustomerSelector({
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </PopoverTrigger>
+      </DropdownMenuTrigger>
       
-      <PopoverContent 
-        className="p-0 w-[var(--radix-popover-trigger-width)] max-w-[--radix-popover-content-available-width]" 
+      <DropdownMenuContent 
+        className="w-[var(--radix-dropdown-menu-trigger-width)] p-0" 
         align="start"
         sideOffset={4}
-        style={{ zIndex: 100 }}
       >
         {/* Search input with clear button */}
         <div className="flex items-center border-b p-2">
@@ -102,13 +108,18 @@ export function ImprovedCustomerSelector({
                 e.preventDefault();
               }
             }}
+            // Stop propagation to prevent dropdown from closing
+            onClick={(e) => e.stopPropagation()}
           />
           {searchQuery && (
             <Button
               variant="ghost"
               size="sm"
               className="h-5 w-5 p-0"
-              onClick={() => setSearchQuery('')}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSearchQuery('');
+              }}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -123,17 +134,25 @@ export function ImprovedCustomerSelector({
                 const isSelected = selectedCustomer === customer.account_name;
                 
                 return (
-                  <Button
+                  <div
                     key={customer.account_ref}
-                    variant="ghost"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
-                      "flex items-center px-2 py-1.5 text-sm",
+                      "flex cursor-pointer items-center px-3 py-2 text-sm rounded-sm",
+                      "hover:bg-accent hover:text-accent-foreground",
                       isSelected && "bg-accent text-accent-foreground"
                     )}
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       selectCustomer(customer);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectCustomer(customer);
+                      }
                     }}
                   >
                     <Check
@@ -143,7 +162,7 @@ export function ImprovedCustomerSelector({
                       )}
                     />
                     <span className="truncate">{customer.account_name}</span>
-                  </Button>
+                  </div>
                 );
               })}
             </div>
@@ -153,7 +172,7 @@ export function ImprovedCustomerSelector({
             </div>
           )}
         </ScrollArea>
-      </PopoverContent>
-    </Popover>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
