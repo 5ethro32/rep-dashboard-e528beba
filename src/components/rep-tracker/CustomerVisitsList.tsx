@@ -96,6 +96,8 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         });
       },
     },
+    refetchInterval: 0,
+    staleTime: 0,
   });
 
   const deleteVisitMutation = useMutation({
@@ -107,23 +109,26 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
 
       if (error) throw error;
     },
-    meta: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['customer-visits'] });
-        toast({
-          title: 'Visit Deleted',
-          description: 'The visit has been successfully deleted.',
-        });
-        setVisitToDelete(null);
-      },
-      onError: (error: Error) => {
-        toast({
-          title: 'Error',
-          description: 'Failed to delete visit. Please try again.',
-          variant: 'destructive',
-        });
-        console.error("Error deleting visit:", error);
-      },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
+      toast({
+        title: 'Visit Deleted',
+        description: 'The visit has been successfully deleted.',
+      });
+      setVisitToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete visit. Please try again.',
+        variant: 'destructive',
+      });
+      console.error("Error deleting visit:", error);
     },
   });
 
@@ -298,6 +303,13 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
           onClose={() => setVisitToEdit(null)}
           visit={visitToEdit}
           customers={customers}
+          onSuccess={() => {
+            queryClient.invalidateQueries({
+              queryKey: ['customer-visits'],
+              exact: false,
+              refetchType: 'all'
+            });
+          }}
         />
       )}
     </div>

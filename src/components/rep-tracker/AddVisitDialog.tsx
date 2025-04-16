@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -76,28 +77,34 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
 
       if (error) throw error;
     },
-    meta: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['customer-visits'] });
-        toast({
-          title: 'Visit Added',
-          description: 'Customer visit has been recorded successfully.',
-        });
-        reset({
-          date: format(new Date(), 'yyyy-MM-dd'),
-          visit_type: 'Customer Visit',
-          has_order: false,
-        });
-        onClose(); // Explicitly close the dialog on success
-      },
-      onError: (error: Error) => {
-        console.error("Error adding visit:", error);
-        toast({
-          title: 'Error',
-          description: 'Failed to add visit. Please try again.',
-          variant: 'destructive',
-        });
-      },
+    onSuccess: () => {
+      // Force an immediate refresh of the data
+      queryClient.invalidateQueries({
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
+      toast({
+        title: 'Visit Added',
+        description: 'Customer visit has been recorded successfully.',
+      });
+      
+      reset({
+        date: format(new Date(), 'yyyy-MM-dd'),
+        visit_type: 'Customer Visit',
+        has_order: false,
+      });
+      
+      onClose(); // Explicitly close the dialog on success
+    },
+    onError: (error: Error) => {
+      console.error("Error adding visit:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add visit. Please try again.',
+        variant: 'destructive',
+      });
     },
   });
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, PlusCircle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
@@ -20,6 +20,9 @@ const RepTracker: React.FC = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddVisit, setShowAddVisit] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('visits');
+  
+  const queryClient = useQueryClient();
   
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 }); // Sunday
@@ -81,6 +84,18 @@ const RepTracker: React.FC = () => {
     dailyAvgProfit: 220.08,
     avgProfitPerVisit: 88.03,
     avgProfitPerOrder: 132.05
+  };
+
+  const handleAddVisitSuccess = () => {
+    queryClient.invalidateQueries({
+      queryKey: ['customer-visits'],
+      exact: false,
+      refetchType: 'all'
+    });
+    
+    setSelectedTab('visits');
+    
+    setShowAddVisit(false);
   };
 
   return (
@@ -162,7 +177,11 @@ const RepTracker: React.FC = () => {
           </Button>
         </div>
         
-        <Tabs defaultValue="visits" className="space-y-6">
+        <Tabs 
+          value={selectedTab} 
+          onValueChange={setSelectedTab} 
+          className="space-y-6"
+        >
           <TabsList className="bg-black/20 border-gray-800">
             <TabsTrigger value="visits">Customer Visits</TabsTrigger>
             <TabsTrigger value="week-plan">Week Plan</TabsTrigger>

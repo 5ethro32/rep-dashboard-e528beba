@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -46,6 +45,7 @@ interface EditVisitDialogProps {
   onClose: () => void;
   visit: Visit;
   customers?: Array<{ account_name: string; account_ref: string }>;
+  onSuccess?: () => void;
 }
 
 interface VisitFormData {
@@ -64,11 +64,11 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
   onClose,
   visit,
   customers = [],
+  onSuccess,
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Convert the date to yyyy-MM-dd format for the input
   const formattedDate = format(new Date(visit.date), 'yyyy-MM-dd');
   
   const { register, handleSubmit, setValue, watch } = useForm<VisitFormData>({
@@ -84,14 +84,12 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
     }
   });
 
-  // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
 
   const updateVisitMutation = useMutation({
     mutationFn: async (data: VisitFormData) => {
-      // Format date for database
       const formattedDate = new Date(data.date);
-      formattedDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+      formattedDate.setHours(12, 0, 0, 0);
       
       const { error } = await supabase
         .from('customer_visits')
@@ -104,23 +102,31 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
 
       if (error) throw error;
     },
-    meta: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['customer-visits'] });
-        toast({
-          title: 'Visit Updated',
-          description: 'Customer visit has been updated successfully.',
-        });
-        onClose();
-      },
-      onError: (error: Error) => {
-        console.error("Error updating visit:", error);
-        toast({
-          title: 'Error',
-          description: 'Failed to update visit. Please try again.',
-          variant: 'destructive',
-        });
-      },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
+      toast({
+        title: 'Visit Updated',
+        description: 'Customer visit has been updated successfully.',
+      });
+      
+      onClose();
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+    },
+    onError: (error: Error) => {
+      console.error("Error updating visit:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update visit. Please try again.',
+        variant: 'destructive',
+      });
     },
   });
 
