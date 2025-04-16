@@ -6,7 +6,7 @@ import LoadingState from './metric-card/LoadingState';
 import ChangeIndicator from './metric-card/ChangeIndicator';
 
 interface MetricCardProps {
-  title: string;
+  title: React.ReactNode; // Changed from string to ReactNode
   value: string;
   change?: {
     value: string;
@@ -41,7 +41,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
     >
       <CardContent className="p-4 md:p-5">
         <div className="flex flex-col space-y-2">
-          <div className="text-xs md:text-sm font-medium text-finance-gray uppercase tracking-wider">{title}</div>
+          <div className="text-xs md:text-sm font-medium text-finance-gray uppercase tracking-wider">
+            {title}
+          </div>
           
           <div className="flex items-baseline gap-x-3">
             {isLoading ? (
