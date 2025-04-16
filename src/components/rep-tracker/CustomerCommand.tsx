@@ -30,7 +30,10 @@ export function CustomerCommand({
     return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
   });
   
-  const handleSelect = (customer: { account_ref: string; account_name: string }) => {
+  const handleSelect = (e: React.MouseEvent, customer: { account_ref: string; account_name: string }) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
       setInputValue(customer.account_name); 
@@ -62,23 +65,23 @@ export function CustomerCommand({
         />
       </div>
       
-      <ScrollArea className="h-[200px]">
+      <ScrollArea className="max-h-[200px]">
         {filteredCustomers.length === 0 ? (
           <div className="py-6 text-center text-sm">No customer found.</div>
         ) : (
           <div className="p-1">
             {filteredCustomers.map((customer) => (
               customer && customer.account_ref && customer.account_name ? (
-                <div
+                <button
                   key={customer.account_ref}
+                  type="button"
+                  onClick={(e) => handleSelect(e, customer)}
+                  onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                   className={cn(
                     "flex w-full items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm text-left",
                     "hover:bg-accent hover:text-accent-foreground",
                     selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                   )}
-                  onClick={() => handleSelect(customer)}
-                  role="option"
-                  aria-selected={selectedCustomer === customer.account_name}
                 >
                   <Check
                     className={cn(
@@ -87,7 +90,7 @@ export function CustomerCommand({
                     )}
                   />
                   <span>{customer.account_name}</span>
-                </div>
+                </button>
               ) : null
             ))}
           </div>

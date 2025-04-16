@@ -38,7 +38,10 @@ export function SimpleCustomerSelect({
       });
 
   // Handle selecting a customer with proper safety checks
-  const handleSelect = (customer: { account_name: string; account_ref: string }) => {
+  const handleSelect = (e: React.MouseEvent, customer: { account_name: string; account_ref: string }) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
       setOpen(false);
@@ -61,16 +64,14 @@ export function SimpleCustomerSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="p-0 max-h-[350px]" 
+        className="p-0 w-[var(--radix-popover-trigger-width)]" 
         align="start"
         sideOffset={4}
-        onInteractOutside={() => {}}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        style={{ 
-          width: 'var(--radix-popover-trigger-width)',
-          zIndex: 9999,
-          overflow: 'hidden' 
+        onInteractOutside={(e) => {
+          // Only close if clicking outside the popover
+          e.preventDefault();
         }}
+        style={{ zIndex: 100 }}
       >
         <div className="border-b p-2">
           <Input
@@ -78,17 +79,11 @@ export function SimpleCustomerSelect({
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             className="h-9"
-            onClick={(e) => e.stopPropagation()}
             autoComplete="off"
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
-        <div 
-          className="overflow-y-auto max-h-[280px]" 
-          style={{ 
-            overscrollBehavior: 'contain',
-            WebkitOverflowScrolling: 'touch'
-          }}
-        >
+        <div className="max-h-[300px] overflow-y-auto p-1">
           {filteredCustomers.length === 0 ? (
             <div className="text-center p-4 text-sm text-muted-foreground">
               No customer found.
@@ -96,16 +91,16 @@ export function SimpleCustomerSelect({
           ) : (
             filteredCustomers.map((customer) => (
               customer && customer.account_ref && customer.account_name ? (
-                <div
+                <button
                   key={customer.account_ref}
+                  type="button"
                   className={cn(
                     "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer text-left",
                     "hover:bg-accent hover:text-accent-foreground",
                     selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                   )}
-                  onClick={() => handleSelect(customer)}
-                  role="option"
-                  aria-selected={selectedCustomer === customer.account_name}
+                  onClick={(e) => handleSelect(e, customer)}
+                  onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                 >
                   <Check
                     className={cn(
@@ -114,7 +109,7 @@ export function SimpleCustomerSelect({
                     )}
                   />
                   <span>{customer.account_name}</span>
-                </div>
+                </button>
               ) : null
             ))
           )}

@@ -62,8 +62,11 @@ export function CustomerSelector({
         );
       });
 
-  // Handle customer selection
-  const handleCustomerSelect = (customer: Customer) => {
+  // Handle customer selection with explicit event handling
+  const handleCustomerSelect = (e: React.MouseEvent, customer: Customer) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
       setOpen(false);
@@ -89,12 +92,9 @@ export function CustomerSelector({
         className="w-full p-0" 
         sideOffset={4}
         align="start"
-        onInteractOutside={() => {}}
-        onOpenAutoFocus={(e) => e.preventDefault()}
         style={{ 
           width: 'var(--radix-popover-trigger-width)',
-          zIndex: 9999,
-          overflow: 'hidden'
+          zIndex: 100
         }}
       >
         {isLoading ? (
@@ -117,7 +117,7 @@ export function CustomerSelector({
               ref={listRef}
               className="max-h-72 overflow-y-auto"
               style={{ 
-                overscrollBehavior: 'contain',
+                overflowY: 'auto',
                 WebkitOverflowScrolling: 'touch'
               }}
             >
@@ -131,14 +131,19 @@ export function CustomerSelector({
                     return (
                       <div
                         key={customer.account_ref}
-                        onClick={() => handleCustomerSelect(customer)}
+                        onClick={(e) => handleCustomerSelect(e, customer)}
                         className={cn(
                           "flex w-full cursor-pointer items-center justify-start px-3 py-2 text-sm",
                           "hover:bg-accent hover:text-accent-foreground",
                           isSelected && "bg-accent text-accent-foreground"
                         )}
-                        role="option"
-                        aria-selected={isSelected}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleCustomerSelect(e as unknown as React.MouseEvent, customer);
+                          }
+                        }}
                       >
                         <Check
                           className={cn(
