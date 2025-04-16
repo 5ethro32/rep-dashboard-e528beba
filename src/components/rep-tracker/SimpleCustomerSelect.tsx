@@ -1,11 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 interface SimpleCustomerSelectProps {
   customers: Array<{ account_name: string; account_ref: string }>;
@@ -30,11 +29,22 @@ export function SimpleCustomerSelect({
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  // Filter customers based on search, with safety checks
+  // Filter customers based on search, with safety checks for null/undefined values
   const filteredCustomers = searchValue === '' 
     ? safeCustomers 
-    : safeCustomers.filter(customer => 
-        customer?.account_name?.toLowerCase().includes(searchValue.toLowerCase()));
+    : safeCustomers.filter(customer => {
+        if (!customer || typeof customer.account_name !== 'string') return false;
+        return customer.account_name.toLowerCase().includes(searchValue.toLowerCase());
+      });
+
+  // Handle selecting a customer with proper null checks
+  const handleSelect = (customer: { account_name: string; account_ref: string }) => {
+    if (customer && customer.account_ref && customer.account_name) {
+      onSelect(customer.account_ref, customer.account_name);
+      setOpen(false);
+      setSearchValue('');
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -51,41 +61,43 @@ export function SimpleCustomerSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start">
-        <Command>
-          <CommandInput 
-            placeholder="Search customers..." 
+        <div className="border-b p-2">
+          <Input
+            placeholder="Search customers..."
             value={searchValue}
-            onValueChange={setSearchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
             className="h-9"
+            autoComplete="off"
           />
-          <ScrollArea className="max-h-[300px]">
-            {filteredCustomers.length === 0 ? (
-              <CommandEmpty>No customer found.</CommandEmpty>
-            ) : (
-              <CommandGroup>
-                {filteredCustomers.map((customer) => (
-                  <CommandItem
-                    key={customer.account_ref}
-                    value={customer.account_name}
-                    onSelect={() => {
-                      onSelect(customer.account_ref, customer.account_name);
-                      setOpen(false);
-                      setSearchValue('');
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {customer.account_name}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </ScrollArea>
-        </Command>
+        </div>
+        <div className="max-h-[300px] overflow-y-auto p-1">
+          {filteredCustomers.length === 0 ? (
+            <div className="text-center p-4 text-sm text-muted-foreground">
+              No customer found.
+            </div>
+          ) : (
+            filteredCustomers.map((customer) => (
+              customer && customer.account_ref && customer.account_name ? (
+                <div
+                  key={customer.account_ref}
+                  className={cn(
+                    "flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground",
+                    selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
+                  )}
+                  onClick={() => handleSelect(customer)}
+                >
+                  <Check
+                    className={cn(
+                      "h-4 w-4",
+                      selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span className="text-sm">{customer.account_name}</span>
+                </div>
+              ) : null
+            ))
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );

@@ -1,15 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import { Check } from 'lucide-react';
+import { Check, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface CustomerCommandProps {
@@ -25,7 +18,6 @@ export function CustomerCommand({
   onSelect,
   className 
 }: CustomerCommandProps) {
-  const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState(selectedCustomer || "");
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -33,14 +25,16 @@ export function CustomerCommand({
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
   // Filter customers based on search query with null checks
-  const filteredCustomers = safeCustomers.filter(customer => 
-    customer?.account_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCustomers = safeCustomers.filter(customer => {
+    if (!customer || typeof customer.account_name !== 'string') return false;
+    return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
   
   const handleSelect = (customer: { account_ref: string; account_name: string }) => {
-    onSelect(customer.account_ref, customer.account_name);
-    setInputValue(customer.account_name); // Update the input value when a customer is selected
-    setOpen(false); // Close the command dialog after selection
+    if (customer && customer.account_ref && customer.account_name) {
+      onSelect(customer.account_ref, customer.account_name);
+      setInputValue(customer.account_name); 
+    }
   };
 
   const handleInputChange = (value: string) => {
@@ -56,48 +50,46 @@ export function CustomerCommand({
   }, [selectedCustomer]);
   
   return (
-    <Command 
-      className={cn("rounded-lg border shadow-md", className)}
-      shouldFilter={false} // We'll handle filtering manually
-    >
-      <CommandInput 
-        placeholder="Search customer..." 
-        className="border-none focus:ring-0"
-        value={inputValue}
-        onValueChange={handleInputChange}
-        onFocus={() => setOpen(true)}
-      />
-      {open && filteredCustomers && (
-        <CommandList>
-          <ScrollArea className="max-h-[200px]">
-            {filteredCustomers.length === 0 && (
-              <CommandEmpty>No customer found.</CommandEmpty>
-            )}
-            <CommandGroup heading="Customers">
-              {filteredCustomers.map((customer) => (
-                <CommandItem
+    <div className={cn("rounded-lg border shadow-md", className)}>
+      <div className="flex items-center border-b px-3">
+        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+        <Input 
+          placeholder="Search customer..." 
+          className="border-none focus:ring-0"
+          value={inputValue}
+          onChange={(e) => handleInputChange(e.target.value)}
+        />
+      </div>
+      
+      <ScrollArea className="max-h-[200px]">
+        {filteredCustomers.length === 0 ? (
+          <div className="py-6 text-center text-sm">No customer found.</div>
+        ) : (
+          <div className="p-1">
+            {filteredCustomers.map((customer) => (
+              customer && customer.account_ref && customer.account_name ? (
+                <div
                   key={customer.account_ref}
-                  onSelect={() => handleSelect(customer)}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-accent"
-                  value={customer.account_name}
+                  onClick={() => handleSelect(customer)}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
+                  )}
                 >
-                  <div className="flex items-center gap-2 w-full">
-                    <Check
-                      className={cn(
-                        "h-4 w-4 flex-shrink-0",
-                        selectedCustomer === customer.account_name 
-                          ? "opacity-100" 
-                          : "opacity-0"
-                      )}
-                    />
-                    <span>{customer.account_name}</span>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </ScrollArea>
-        </CommandList>
-      )}
-    </Command>
+                  <Check
+                    className={cn(
+                      "h-4 w-4 flex-shrink-0",
+                      selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span>{customer.account_name}</span>
+                </div>
+              ) : null
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+    </div>
   );
 }
