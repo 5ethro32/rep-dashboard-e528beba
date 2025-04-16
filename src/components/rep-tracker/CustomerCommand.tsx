@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Command,
   CommandEmpty,
@@ -21,7 +21,7 @@ interface CustomerCommandProps {
 
 export function CustomerCommand({ 
   customers = [], 
-  selectedCustomer,
+  selectedCustomer = '',
   onSelect,
   className 
 }: CustomerCommandProps) {
@@ -32,9 +32,9 @@ export function CustomerCommand({
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  // Filter customers based on search query (handled manually to avoid cmdk issues)
+  // Filter customers based on search query with null checks
   const filteredCustomers = safeCustomers.filter(customer => 
-    customer.account_name.toLowerCase().includes(searchQuery.toLowerCase())
+    customer?.account_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   const handleSelect = (customer: { account_ref: string; account_name: string }) => {
@@ -49,7 +49,7 @@ export function CustomerCommand({
   };
 
   // Update input value when selectedCustomer changes externally
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedCustomer) {
       setInputValue(selectedCustomer);
     }
@@ -67,7 +67,7 @@ export function CustomerCommand({
         onValueChange={handleInputChange}
         onFocus={() => setOpen(true)}
       />
-      {open && (
+      {open && filteredCustomers && (
         <CommandList>
           <ScrollArea className="max-h-[200px]">
             {filteredCustomers.length === 0 && (
@@ -79,7 +79,7 @@ export function CustomerCommand({
                   key={customer.account_ref}
                   onSelect={() => handleSelect(customer)}
                   className="flex items-center gap-2 cursor-pointer hover:bg-accent"
-                  value={customer.account_name} // Explicitly provide value prop
+                  value={customer.account_name}
                 >
                   <div className="flex items-center gap-2 w-full">
                     <Check

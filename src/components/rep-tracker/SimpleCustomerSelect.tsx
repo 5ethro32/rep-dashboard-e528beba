@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
@@ -27,14 +27,14 @@ export function SimpleCustomerSelect({
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   
-  // Ensure customers is always an array
+  // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  // Filter customers based on search
+  // Filter customers based on search, with safety checks
   const filteredCustomers = searchValue === '' 
     ? safeCustomers 
     : safeCustomers.filter(customer => 
-        customer.account_name.toLowerCase().includes(searchValue.toLowerCase()));
+        customer?.account_name?.toLowerCase().includes(searchValue.toLowerCase()));
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -59,28 +59,31 @@ export function SimpleCustomerSelect({
             className="h-9"
           />
           <ScrollArea className="max-h-[300px]">
-            <CommandEmpty>No customer found.</CommandEmpty>
-            <CommandGroup>
-              {filteredCustomers.map(customer => (
-                <CommandItem
-                  key={customer.account_ref}
-                  value={customer.account_name}
-                  onSelect={() => {
-                    onSelect(customer.account_ref, customer.account_name);
-                    setOpen(false);
-                    setSearchValue('');
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {customer.account_name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {filteredCustomers.length === 0 ? (
+              <CommandEmpty>No customer found.</CommandEmpty>
+            ) : (
+              <CommandGroup>
+                {filteredCustomers.map((customer) => (
+                  <CommandItem
+                    key={customer.account_ref}
+                    value={customer.account_name}
+                    onSelect={() => {
+                      onSelect(customer.account_ref, customer.account_name);
+                      setOpen(false);
+                      setSearchValue('');
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {customer.account_name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </ScrollArea>
         </Command>
       </PopoverContent>
