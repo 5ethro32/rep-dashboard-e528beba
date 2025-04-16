@@ -40,8 +40,11 @@ const WeekPlanTab: React.FC<{
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
+  // Use a query key that includes the exact date range
+  const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString()];
+  
   const { data: weekPlans, isLoading } = useQuery({
-    queryKey: ['week-plans', weekStartDate, weekEndDate],
+    queryKey: weekPlansQueryKey,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('week_plans')
@@ -75,7 +78,12 @@ const WeekPlanTab: React.FC<{
     },
     meta: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['week-plans'] });
+        // Immediately refetch the week plans after deletion
+        queryClient.invalidateQueries({ 
+          queryKey: weekPlansQueryKey,
+          exact: true
+        });
+        
         toast({
           title: 'Plan Deleted',
           description: 'Week plan has been deleted successfully.',
@@ -109,10 +117,12 @@ const WeekPlanTab: React.FC<{
   };
 
   const handleAddPlanSuccess = () => {
+    // Force an immediate refetch of the week plans data
     queryClient.invalidateQueries({ 
-      queryKey: ['week-plans', weekStartDate, weekEndDate],
+      queryKey: weekPlansQueryKey,
       exact: true
     });
+    
     setIsAddPlanOpen(false);
   };
 

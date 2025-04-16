@@ -2,7 +2,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { format } from 'date-fns';
 
 interface PlanFormData {
   planned_date: string;
@@ -24,6 +23,7 @@ export function usePlanMutation(onSuccess: () => void) {
     },
     meta: {
       onSuccess: () => {
+        // Invalidate all week-plans queries to ensure immediate updates
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
           exact: false,
