@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -413,7 +412,13 @@ export const useRepPerformanceData = () => {
               margin: aprRep.margin - marchRep.margin,
               packs: marchRep.packs > 0 ? ((aprRep.packs - marchRep.packs) / marchRep.packs) * 100 : 0,
               activeAccounts: marchRep.activeAccounts > 0 ? ((aprRep.activeAccounts - marchRep.activeAccounts) / marchRep.activeAccounts) * 100 : 0,
-              totalAccounts: marchRep.totalAccounts > 0 ? ((aprRep.totalAccounts - marchRep.totalAccounts) / marchRep.totalAccounts) * 100 : 0
+              totalAccounts: marchRep.totalAccounts > 0 ? ((aprRep.totalAccounts - marchRep.totalAccounts) / marchRep.totalAccounts) * 100 : 0,
+              profitPerActiveShop: marchRep.profitPerActiveShop > 0 ? 
+                ((aprRep.profitPerActiveShop - marchRep.profitPerActiveShop) / marchRep.profitPerActiveShop) * 100 : 0,
+              profitPerPack: marchRep.profitPerPack > 0 ? 
+                ((aprRep.profitPerPack - marchRep.profitPerPack) / marchRep.profitPerPack) * 100 : 0,
+              activeRatio: marchRep.activeRatio > 0 ? 
+                aprRep.activeRatio - marchRep.activeRatio : 0
             };
           }
         });
