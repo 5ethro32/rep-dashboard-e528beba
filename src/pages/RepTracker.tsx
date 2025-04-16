@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -171,7 +172,8 @@ const RepTracker: React.FC = () => {
             conversionRate: 0,
             dailyAvgProfit: 0,
             avgProfitPerVisit: 0,
-            avgProfitPerOrder: 0
+            avgProfitPerOrder: 0,
+            plannedVisits: 0
           }}
           previousData={previousWeekMetrics}
           weekStartDate={weekStart} 
