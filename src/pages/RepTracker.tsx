@@ -171,7 +171,7 @@ const RepTracker: React.FC = () => {
             totalOrders: 0,
             conversionRate: 0,
             dailyAvgProfit: 0,
-            avgProfitPerVisit: 0,
+            topProfitOrder: 0,
             avgProfitPerOrder: 0,
             plannedVisits: 0
           }}

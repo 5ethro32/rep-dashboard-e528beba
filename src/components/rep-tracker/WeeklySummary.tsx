@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Info } from 'lucide-react';
+import { Info, Award } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import {
@@ -17,7 +17,7 @@ interface WeeklySummaryProps {
     totalOrders: number;
     conversionRate: number;
     dailyAvgProfit: number;
-    avgProfitPerVisit: number;
+    topProfitOrder: number;
     avgProfitPerOrder: number;
     plannedVisits: number;
   };
@@ -27,7 +27,7 @@ interface WeeklySummaryProps {
     totalOrders: number;
     conversionRate: number;
     dailyAvgProfit: number;
-    avgProfitPerVisit: number;
+    topProfitOrder: number;
     avgProfitPerOrder: number;
     plannedVisits: number;
   };
@@ -146,14 +146,15 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         
         <MetricCard
           title={renderMetricWithTooltip(
-            "Avg Profit Per Visit",
-            "Average profit generated per customer visit (only Customer Visit type)"
+            "Top Profit Order",
+            "Highest profit amount from any single order this week"
           )}
-          value={formatCurrency(data.avgProfitPerVisit)}
-          change={previousData ? calculateChange(data.avgProfitPerVisit, previousData.avgProfitPerVisit) : undefined}
-          subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerVisit)}` : undefined}
+          value={formatCurrency(data.topProfitOrder)}
+          change={previousData ? calculateChange(data.topProfitOrder, previousData.topProfitOrder) : undefined}
+          subtitle={previousData ? `Previous: ${formatCurrency(previousData.topProfitOrder)}` : undefined}
           isLoading={isLoading}
           className="h-full"
+          icon={<Award className="h-5 w-5 text-yellow-400" />}
         />
         
         <MetricCard

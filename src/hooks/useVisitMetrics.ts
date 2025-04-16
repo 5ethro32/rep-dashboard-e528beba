@@ -9,7 +9,7 @@ interface VisitMetrics {
   totalOrders: number;
   conversionRate: number;
   dailyAvgProfit: number;
-  avgProfitPerVisit: number;
+  topProfitOrder: number;
   avgProfitPerOrder: number;
   plannedVisits: number;
 }
@@ -52,6 +52,11 @@ export const useVisitMetrics = (selectedDate: Date) => {
       // Calculate order-specific profit
       const orderProfit = visitsWithOrders.reduce((sum, visit) => sum + (visit.profit || 0), 0);
       
+      // Find top profit order
+      const topProfitOrder = visits.length > 0 
+        ? Math.max(...visits.map(visit => visit.profit || 0))
+        : 0;
+      
       const plannedVisits = plans.length;
       
       // Count unique days with visits to calculate daily average profit
@@ -61,7 +66,6 @@ export const useVisitMetrics = (selectedDate: Date) => {
       // Calculate derived metrics
       const conversionRate = totalVisits ? (totalOrders / totalVisits) * 100 : 0;
       const dailyAvgProfit = totalProfit / daysWithVisits; // Calculate based on actual days with visits
-      const avgProfitPerVisit = customerVisitCount ? customerVisitProfit / customerVisitCount : 0; // Based only on Customer Visit type
       const avgProfitPerOrder = totalOrders ? orderProfit / totalOrders : 0; // Use profit specifically from orders with has_order=true
 
       return {
@@ -70,7 +74,7 @@ export const useVisitMetrics = (selectedDate: Date) => {
         totalOrders,
         conversionRate,
         dailyAvgProfit,
-        avgProfitPerVisit,
+        topProfitOrder,
         avgProfitPerOrder,
         plannedVisits
       };
