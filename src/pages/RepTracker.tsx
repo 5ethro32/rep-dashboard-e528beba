@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +16,8 @@ import { useVisitMetrics } from '@/hooks/useVisitMetrics';
 import { toast } from '@/components/ui/use-toast';
 import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const RepTracker: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +25,7 @@ const RepTracker: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddVisit, setShowAddVisit] = useState(false);
   const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
+  const isMobile = useIsMobile();
   
   const queryClient = useQueryClient();
   
@@ -199,23 +203,47 @@ const RepTracker: React.FC = () => {
           </TabsList>
           
           <TabsContent value="week-plan-v2" className="mt-6">
-            <WeekPlanTabV2 
-              weekStartDate={weekStart}
-              weekEndDate={weekEnd}
-              customers={customers || []}
-              onAddPlanSuccess={handleAddPlanSuccess}
-            />
+            {isMobile ? (
+              <ScrollArea className="h-[calc(100vh-380px)]">
+                <WeekPlanTabV2 
+                  weekStartDate={weekStart}
+                  weekEndDate={weekEnd}
+                  customers={customers || []}
+                  onAddPlanSuccess={handleAddPlanSuccess}
+                />
+              </ScrollArea>
+            ) : (
+              <WeekPlanTabV2 
+                weekStartDate={weekStart}
+                weekEndDate={weekEnd}
+                customers={customers || []}
+                onAddPlanSuccess={handleAddPlanSuccess}
+              />
+            )}
           </TabsContent>
           
           <TabsContent value="visits" className="mt-6">
-            <CustomerVisitsList 
-              weekStartDate={weekStart} 
-              weekEndDate={weekEnd}
-              customers={customers || []} 
-              isLoadingCustomers={isLoadingCustomers}
-              onDataChange={handleDataChange}
-              onAddVisit={() => setShowAddVisit(true)}
-            />
+            {isMobile ? (
+              <ScrollArea className="h-[calc(100vh-380px)]">
+                <CustomerVisitsList 
+                  weekStartDate={weekStart} 
+                  weekEndDate={weekEnd}
+                  customers={customers || []} 
+                  isLoadingCustomers={isLoadingCustomers}
+                  onDataChange={handleDataChange}
+                  onAddVisit={() => setShowAddVisit(true)}
+                />
+              </ScrollArea>
+            ) : (
+              <CustomerVisitsList 
+                weekStartDate={weekStart} 
+                weekEndDate={weekEnd}
+                customers={customers || []} 
+                isLoadingCustomers={isLoadingCustomers}
+                onDataChange={handleDataChange}
+                onAddVisit={() => setShowAddVisit(true)}
+              />
+            )}
           </TabsContent>
           
           <TabsContent value="customer-history" className="mt-6">
