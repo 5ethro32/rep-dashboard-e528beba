@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Info } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
@@ -68,7 +69,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
   );
 
   return (
-    <div className="mb-8 animate-slide-in-up">
+    <div className="mb-8 animate-slide-in-up space-y-3 md:space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <MetricCard
           title={renderMetricWithTooltip(
@@ -79,6 +80,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           change={previousData ? calculateChange(data.totalVisits, previousData.totalVisits) : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalVisits)}` : undefined}
           isLoading={isLoading}
+          className="h-full"
         />
         
         <MetricCard
@@ -90,6 +92,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           change={previousData ? calculateChange(data.plannedVisits, previousData.plannedVisits) : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.plannedVisits)}` : undefined}
           isLoading={isLoading}
+          className="h-full"
         />
         
         <MetricCard
@@ -102,6 +105,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.totalProfit)}` : undefined}
           valueClassName="text-finance-red"
           isLoading={isLoading}
+          className="h-full"
         />
         
         <MetricCard
@@ -113,6 +117,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           change={previousData ? calculateChange(data.totalOrders, previousData.totalOrders) : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalOrders)}` : undefined}
           isLoading={isLoading}
+          className="h-full"
         />
         
         <MetricCard
@@ -124,10 +129,9 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           change={previousData ? calculateChange(data.conversionRate, previousData.conversionRate) : undefined}
           subtitle={previousData ? `Previous: ${previousData.conversionRate.toFixed(1)}%` : undefined}
           isLoading={isLoading}
+          className="h-full"
         />
-      </div>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mt-4">
+
         <MetricCard
           title={renderMetricWithTooltip(
             "Daily Avg Profit",
@@ -137,6 +141,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           change={previousData ? calculateChange(data.dailyAvgProfit, previousData.dailyAvgProfit) : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.dailyAvgProfit)}` : undefined}
           isLoading={isLoading}
+          className="h-full"
         />
         
         <MetricCard
@@ -148,6 +153,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           change={previousData ? calculateChange(data.avgProfitPerVisit, previousData.avgProfitPerVisit) : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerVisit)}` : undefined}
           isLoading={isLoading}
+          className="h-full"
         />
         
         <MetricCard
@@ -159,7 +165,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           change={previousData ? calculateChange(data.avgProfitPerOrder, previousData.avgProfitPerOrder) : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerOrder)}` : undefined}
           isLoading={isLoading}
-          className="col-span-2 md:col-span-1"
+          className="h-full"
         />
       </div>
     </div>
