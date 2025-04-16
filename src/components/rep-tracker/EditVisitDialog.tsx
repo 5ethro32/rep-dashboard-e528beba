@@ -24,7 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import { CustomerCommand } from './CustomerCommand';
+import { SimpleCustomerSelect } from './SimpleCustomerSelect';
 
 interface Visit {
   id: string;
@@ -158,7 +158,7 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <CustomerCommand 
+            <SimpleCustomerSelect 
               customers={safeCustomers}
               selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { CustomerSelector } from './CustomerSelector';
+import { SimpleCustomerSelect } from './SimpleCustomerSelect';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
 
 interface AddPlanDialogProps {
@@ -42,6 +42,8 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
     }
   });
 
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+
   const addPlanMutation = usePlanMutation(() => {
     // Reset the form first
     reset({
@@ -59,6 +61,11 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
     // Always close the dialog after successful submission
     onClose();
   });
+
+  const handleCustomerSelect = (ref: string, name: string) => {
+    setValue('customer_ref', ref);
+    setValue('customer_name', name);
+  };
 
   const onSubmit = (data: PlanFormData) => {
     if (!user?.id) return;
@@ -89,13 +96,10 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <CustomerSelector
-              customers={customers}
-              selectedCustomer={watch('customer_name')}
-              onSelect={(ref, name) => {
-                setValue('customer_ref', ref);
-                setValue('customer_name', name);
-              }}
+            <SimpleCustomerSelect
+              customers={safeCustomers}
+              selectedCustomer={watch('customer_name') || ''}
+              onSelect={handleCustomerSelect}
             />
           </div>
 
