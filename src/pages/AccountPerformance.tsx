@@ -49,12 +49,13 @@ const AccountPerformance = () => {
     let hasMoreData = true;
     
     while (hasMoreData) {
-      let query = supabase
+      // Use type assertion to avoid deep type inference issues
+      const query = supabase
         .from(table)
-        .select('*');
+        .select('*') as any;
       
       if (columnFilter) {
-        query = query.eq(columnFilter.column, columnFilter.value);
+        query.eq(columnFilter.column, columnFilter.value);
       }
       
       const { data, error } = await query
