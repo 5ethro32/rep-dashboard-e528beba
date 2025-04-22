@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -41,6 +42,38 @@ const AccountPerformance = () => {
     fetchComparisonData();
   }, [selectedMonth]);
   
+  const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: { column: string, value: string }) => {
+    const PAGE_SIZE = 1000;
+    let allRecords: any[] = [];
+    let page = 0;
+    let hasMoreData = true;
+    
+    while (hasMoreData) {
+      let query = supabase
+        .from(table)
+        .select('*');
+      
+      if (columnFilter) {
+        query = query.eq(columnFilter.column, columnFilter.value);
+      }
+      
+      const { data, error } = await query
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        allRecords = [...allRecords, ...data];
+        page++;
+        hasMoreData = data.length === PAGE_SIZE;
+      } else {
+        hasMoreData = false;
+      }
+    }
+    
+    return allRecords;
+  };
+  
   const fetchComparisonData = async () => {
     setIsLoading(true);
     try {
@@ -69,13 +102,9 @@ const AccountPerformance = () => {
       
       let currentData: DataItem[] = [];
       if (currentTable === "sales_data") {
-        const { data, error } = await supabase
-          .from(currentTable)
-          .select('*');
+        const rawData = await fetchAllRecordsFromTable(currentTable);
         
-        if (error) throw error;
-        
-        currentData = data?.map((item: any) => ({
+        currentData = rawData.map((item: any) => ({
           "Account Name": item.account_name,
           "Account Ref": item.account_ref,
           "Rep": item.rep_name,
@@ -85,26 +114,17 @@ const AccountPerformance = () => {
           "Margin": item.margin,
           "Packs": item.packs,
           "Department": item.rep_type
-        })) || [];
+        }));
       } else {
-        const { data, error } = await supabase
-          .from(currentTable)
-          .select('*');
-        
-        if (error) throw error;
-        currentData = data || [];
+        currentData = await fetchAllRecordsFromTable(currentTable);
       }
       
       let previousData: DataItem[] = [];
       if (previousTable) {
         if (previousTable === "sales_data") {
-          const { data, error } = await supabase
-            .from(previousTable)
-            .select('*');
+          const rawData = await fetchAllRecordsFromTable(previousTable);
           
-          if (error) throw error;
-          
-          previousData = data?.map((item: any) => ({
+          previousData = rawData.map((item: any) => ({
             "Account Name": item.account_name,
             "Account Ref": item.account_ref,
             "Rep": item.rep_name,
@@ -114,14 +134,9 @@ const AccountPerformance = () => {
             "Margin": item.margin,
             "Packs": item.packs,
             "Department": item.rep_type
-          })) || [];
+          }));
         } else {
-          const { data, error } = await supabase
-            .from(previousTable)
-            .select('*');
-          
-          if (error) throw error;
-          previousData = data || [];
+          previousData = await fetchAllRecordsFromTable(previousTable);
         }
       }
       
