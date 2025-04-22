@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -13,7 +12,6 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// Update the type to only include valid table names from Supabase
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary';
 
 type DataItem = {
@@ -69,17 +67,14 @@ const AccountPerformance = () => {
       
       console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
       
-      // Fetch current month data
       let currentData: DataItem[] = [];
       if (currentTable === "sales_data") {
-        // For March data in sales_data
         const { data, error } = await supabase
           .from(currentTable)
           .select('*');
         
         if (error) throw error;
         
-        // Transform to match expected format
         currentData = data?.map((item: any) => ({
           "Account Name": item.account_name,
           "Account Ref": item.account_ref,
@@ -92,7 +87,6 @@ const AccountPerformance = () => {
           "Department": item.rep_type
         })) || [];
       } else {
-        // For April (mtd_daily) or February data
         const { data, error } = await supabase
           .from(currentTable)
           .select('*');
@@ -101,18 +95,15 @@ const AccountPerformance = () => {
         currentData = data || [];
       }
       
-      // Fetch previous month data if applicable
       let previousData: DataItem[] = [];
       if (previousTable) {
         if (previousTable === "sales_data") {
-          // For March data as previous month
           const { data, error } = await supabase
             .from(previousTable)
             .select('*');
           
           if (error) throw error;
           
-          // Transform to match expected format
           previousData = data?.map((item: any) => ({
             "Account Name": item.account_name,
             "Account Ref": item.account_ref,
@@ -125,7 +116,6 @@ const AccountPerformance = () => {
             "Department": item.rep_type
           })) || [];
         } else {
-          // For February data as previous month
           const { data, error } = await supabase
             .from(previousTable)
             .select('*');
@@ -140,12 +130,10 @@ const AccountPerformance = () => {
       setCurrentMonthRawData(currentData || []);
       setPreviousMonthRawData(previousData);
       
-      // Calculate active accounts for current month
       const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
         return item["Account Name"] || item.account_name;
       }).filter(Boolean)).size || 0;
       
-      // Calculate active accounts for previous month
       const previousActiveAccounts = new Set(previousData?.map((item: DataItem) => {
         return item["Account Name"] || item.account_name;
       }).filter(Boolean)).size || 0;
@@ -155,7 +143,6 @@ const AccountPerformance = () => {
         previous: previousActiveAccounts
       });
       
-      // Find top rep for current month
       if (currentData && currentData.length > 0) {
         const repProfits = new Map();
         

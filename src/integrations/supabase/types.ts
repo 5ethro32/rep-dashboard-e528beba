@@ -144,51 +144,6 @@ export type Database = {
         }
         Relationships: []
       }
-      mtd_sales: {
-        Row: {
-          "Account Name": string | null
-          "Account Ref": string | null
-          Cost: number | null
-          Credit: number | null
-          Department: string | null
-          id: string
-          Margin: number | null
-          Packs: number | null
-          Profit: number | null
-          Rep: string
-          Spend: number | null
-          "Sub-Rep": string | null
-        }
-        Insert: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
-        }
-        Update: {
-          "Account Name"?: string | null
-          "Account Ref"?: string | null
-          Cost?: number | null
-          Credit?: number | null
-          Department?: string | null
-          id?: string
-          Margin?: number | null
-          Packs?: number | null
-          Profit?: number | null
-          Rep?: string
-          Spend?: number | null
-          "Sub-Rep"?: string | null
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
