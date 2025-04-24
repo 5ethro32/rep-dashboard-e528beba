@@ -84,7 +84,7 @@ const AccountPerformance = () => {
       switch (selectedMonth) {
         case 'April':
           currentTable = "mtd_daily";
-          previousTable = "sales_data";
+          previousTable = "march_rolling";  // Changed from "sales_data" to "march_rolling"
           break;
         case 'March':
           currentTable = "sales_data";
