@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -13,7 +12,7 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary';
+type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_rolling';
 
 type DataItem = {
   [key: string]: any;
@@ -49,7 +48,6 @@ const AccountPerformance = () => {
     let hasMoreData = true;
     
     while (hasMoreData) {
-      // Use type assertion to avoid deep type inference issues
       const query = supabase
         .from(table)
         .select('*') as any;
