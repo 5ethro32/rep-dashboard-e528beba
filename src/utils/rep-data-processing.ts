@@ -1,4 +1,3 @@
-
 import { RepData, SalesDataItem, SummaryData } from "@/types/rep-performance.types";
 
 export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
@@ -223,7 +222,8 @@ export const getCombinedRepData = (
   
   // Filter out reps with zero metrics
   const filteredCombinedData = combinedData.filter(rep => {
-    return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
+    return (rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0) 
+      && rep.rep !== 'ALL_RECORDS'; // Also exclude the ALL_RECORDS entry
   });
   
   console.log("Final combined data length:", combinedData.length, "filtered length:", filteredCombinedData.length);
@@ -241,4 +241,50 @@ export const sortRepData = (data: RepData[], sortBy: string, sortOrder: string):
       return aValue < bValue ? 1 : -1;
     }
   });
+};
+
+export const calculateRawMtdSummary = (rawData: any[]): SummaryData => {
+  let totalSpend = 0;
+  let totalProfit = 0;
+  let totalPacks = 0;
+  const accountRefs = new Set<string>();
+  const activeAccountRefs = new Set<string>();
+  
+  // Process each record directly without filtering
+  rawData.forEach(item => {
+    // Parse numeric values
+    const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+    const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+    const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+    
+    // Add to totals
+    totalSpend += spend;
+    totalProfit += profit;
+    totalPacks += packs;
+    
+    // Track accounts
+    if (item["Account Ref"]) {
+      accountRefs.add(item["Account Ref"]);
+      if (spend > 0) {
+        activeAccountRefs.add(item["Account Ref"]);
+      }
+    }
+  });
+  
+  console.log('Raw MTD Summary Calculation:', {
+    totalSpend,
+    totalProfit,
+    totalPacks,
+    accountsCount: accountRefs.size,
+    activeAccountsCount: activeAccountRefs.size
+  });
+  
+  return {
+    totalSpend,
+    totalProfit,
+    totalPacks,
+    totalAccounts: accountRefs.size,
+    activeAccounts: activeAccountRefs.size,
+    averageMargin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0
+  };
 };
