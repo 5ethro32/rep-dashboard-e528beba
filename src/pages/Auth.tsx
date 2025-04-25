@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,9 +17,10 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Function to validate if email has the correct domain
+  // Improved domain validation
   const isValidDomain = (email: string) => {
-    return email.toLowerCase().endsWith('@avergenerics.co.uk');
+    const domain = email.toLowerCase();
+    return domain.endsWith('@avergenerics.co.uk');
   };
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -28,9 +28,9 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      // Client-side domain check for early feedback
+      // Enhanced client-side domain check with specific error message
       if (!isValidDomain(email)) {
-        throw new Error('Only avergenerics.co.uk email addresses are allowed.');
+        throw new Error('Only @avergenerics.co.uk email addresses are allowed.');
       }
 
       if (isLogin) {
@@ -54,6 +54,9 @@ const Auth = () => {
           password,
           options: {
             emailRedirectTo: window.location.origin,
+            data: {
+              email_domain: 'avergenerics.co.uk' // Add domain info to metadata
+            }
           }
         });
         
