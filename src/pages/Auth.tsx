@@ -18,20 +18,12 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Improved domain validation
-  const isValidDomain = (email: string) => {
-    return email.toLowerCase().endsWith('@avergenerics.co.uk');
-  };
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      // Client-side domain validation to provide immediate feedback
-      if (!isValidDomain(email)) {
-        throw new Error('Only avergenerics.co.uk email addresses are allowed.');
-      }
+      console.log(`Attempting ${isLogin ? 'login' : 'signup'} with email: ${email}`);
       
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
@@ -53,7 +45,10 @@ const Auth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin
+            emailRedirectTo: window.location.origin,
+            data: {
+              email_domain: email.split('@')[1], // Add email domain as metadata
+            }
           }
         });
         
@@ -72,17 +67,21 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
+      
+      // Log the complete error for debugging
+      console.error('Full error object:', JSON.stringify(error, null, 2));
+      
       let errorMessage = error.message || "Authentication failed";
       
-      // Handle specific errors
+      // Handle specific errors with more user-friendly messages
       if (errorMessage.includes('avergenerics.co.uk')) {
         errorMessage = "Only avergenerics.co.uk email addresses are allowed.";
       } else if (errorMessage.includes('User already registered')) {
         errorMessage = "This email is already registered. Please sign in instead.";
       } else if (errorMessage.includes('Invalid login credentials')) {
         errorMessage = "Invalid email or password. Please try again.";
-      } else if (errorMessage.includes('saving new user')) {
-        errorMessage = "Registration failed. Please ensure you're using a valid avergenerics.co.uk email address.";
+      } else if (errorMessage.includes('saving new user') || errorMessage.includes('failed')) {
+        errorMessage = "Registration failed. Please ensure your email address is spelled correctly and try again.";
       }
       
       toast({
