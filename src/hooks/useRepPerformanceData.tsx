@@ -162,7 +162,7 @@ export const useRepPerformanceData = () => {
       console.group('Loading April Data');
       console.log('Getting all MTD Daily data without pagination...');
       
-      // Direct query for all mtd_daily records without any pagination or count check
+      // Direct query for all mtd_daily records without any pagination, range, or count limitations
       const { data: mtdData, error: mtdError } = await supabase
         .from('mtd_daily')
         .select('*');
@@ -212,13 +212,6 @@ export const useRepPerformanceData = () => {
       
       console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
       
-      // Safe handling of marchRollingData
-      const marchRetailData = marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
-      const marchRevaData = marchRollingData?.filter(item => item.Department === 'REVA') || [];
-      const marchWholesaleData = marchRollingData?.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-      ) || [];
-
       const transformData = (data: any[], isDepartmentData = false): RepData[] => {
         console.log(`Transforming ${data.length} records`);
         const repMap = new Map<string, {
@@ -308,6 +301,12 @@ export const useRepPerformanceData = () => {
       const aprRevaData = transformData(revaData, true);
       const aprWholesaleData = transformData(wholesaleData, true);
       
+      const marchRetailData = marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
+      const marchRevaData = marchRollingData?.filter(item => item.Department === 'REVA') || [];
+      const marchWholesaleData = marchRollingData?.filter(item => 
+        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+      ) || [];
+
       const marchRetailRepData = transformData(marchRetailData);
       const marchRevaRepData = transformData(marchRevaData, true);
       const marchWholesaleRepData = transformData(marchWholesaleData, true);

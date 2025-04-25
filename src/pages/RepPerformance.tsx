@@ -51,7 +51,7 @@ const RepPerformance = () => {
   const currentRevaValues = selectedMonth === 'April' ? (aprRevaValues || revaValues) : revaValues;
   const currentWholesaleValues = selectedMonth === 'April' ? (aprWholesaleValues || wholesaleValues) : wholesaleValues;
   
-  // Initial data loading
+  // Initial data loading - ensure all data is loaded
   useEffect(() => {
     loadDataFromSupabase();
   }, []);

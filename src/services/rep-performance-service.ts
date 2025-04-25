@@ -335,7 +335,7 @@ const loadAprilData = async () => {
     console.group('Loading April Data');
     console.log('Fetching all MTD Daily data without pagination...');
     
-    // Get all MTD data without pagination
+    // Get all MTD data without pagination or any limits
     const { data: mtdData, error: mtdError } = await supabase
       .from('mtd_daily')
       .select('*');
@@ -345,7 +345,7 @@ const loadAprilData = async () => {
       throw new Error(`Error fetching MTD Daily data: ${mtdError.message}`);
     }
     
-    // Get all March Rolling data without pagination
+    // Get all March Rolling data without pagination or limits
     const { data: marchRollingData, error: marchRollingError } = await supabase
       .from('march_rolling')
       .select('*');
