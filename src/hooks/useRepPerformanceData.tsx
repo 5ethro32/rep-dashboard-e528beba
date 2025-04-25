@@ -171,7 +171,7 @@ export const useRepPerformanceData = () => {
         throw new Error(`Error getting MTD Daily data: ${mtdCheckError.message}`);
       }
       
-      console.log(`MTD Daily table check - Records: ${mtdCheckData.length}`);
+      console.log(`MTD Daily table check - Records: ${mtdCheckData ? mtdCheckData.length : 0}`);
       
       console.log('Checking March Rolling table...');
       const { data: marchRollingData, error: marchRollingError } = await fetchMarchRollingData();
@@ -181,7 +181,7 @@ export const useRepPerformanceData = () => {
         throw new Error(`Error getting March Rolling data: ${marchRollingError.message}`);
       }
       
-      console.log(`March Rolling records: ${marchRollingData?.length || 0}`);
+      console.log(`March Rolling records: ${marchRollingData ? marchRollingData.length : 0}`);
       
       if (!mtdCheckData || mtdCheckData.length === 0) {
         console.warn('No records found in MTD Daily table');
@@ -217,14 +217,27 @@ export const useRepPerformanceData = () => {
       const mtdData = allRecords;
       console.log('Fetched April MTD records total count:', mtdData.length);
       
-      const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
-      const revaData = mtdData.filter(item => item.Department === 'REVA');
+      const retailData = mtdData.filter(item => item && (!item.Department || item.Department === 'RETAIL'));
+      const revaData = mtdData.filter(item => item && item.Department === 'REVA');
       const wholesaleData = mtdData.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+        item && (item.Department === 'Wholesale' || item.Department === 'WHOLESALE')
       );
       
       console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
       
+      if (!marchRollingData) {
+        console.warn('March Rolling data is null or undefined');
+        const marchRetailData = [];
+        const marchRevaData = [];
+        const marchWholesaleData = [];
+      } else {
+        const marchRetailData = marchRollingData.filter(item => item && (!item.Department || item.Department === 'RETAIL'));
+        const marchRevaData = marchRollingData.filter(item => item && item.Department === 'REVA');
+        const marchWholesaleData = marchRollingData.filter(item => 
+          item && (item.Department === 'Wholesale' || item.Department === 'WHOLESALE')
+        );
+      }
+
       const marchRetailData = marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
       const marchRevaData = marchRollingData?.filter(item => item.Department === 'REVA') || [];
       const marchWholesaleData = marchRollingData?.filter(item => 
@@ -232,7 +245,7 @@ export const useRepPerformanceData = () => {
       ) || [];
 
       const transformData = (data: any[], isDepartmentData = false): RepData[] => {
-        console.log(`Transforming ${data.length} records`);
+        console.log(`Transforming ${data ? data.length : 0} records`);
         const repMap = new Map<string, {
           rep: string;
           spend: number;
@@ -245,7 +258,17 @@ export const useRepPerformanceData = () => {
           activeRatio: number;
         }>();
         
+        if (!data || data.length === 0) {
+          console.log('No data to transform');
+          return [];
+        }
+        
         data.forEach(item => {
+          if (!item) {
+            console.log('Found null item in data');
+            return;
+          }
+          
           let repName;
           
           if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
