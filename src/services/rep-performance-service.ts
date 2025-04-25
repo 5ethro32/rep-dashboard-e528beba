@@ -29,52 +29,81 @@ export const fetchRepPerformanceData = async () => {
       });
     }
     
-    // MARCH DATA FETCHING
-    // Instead of fetching all data at once, fetch by department to avoid pagination issues
-    // RETAIL data
-    const { data: retailData, error: retailError } = await fetchDepartmentData('RETAIL', true);
-    if (retailError) throw new Error(`Error fetching RETAIL data: ${retailError.message}`);
-    console.log('Fetched RETAIL records:', retailData?.length || 0);
+    // MARCH DATA FETCHING - Use direct SQL queries to avoid pagination
+    // Instead of depending on the API to fetch all records, use direct SQL queries
+    const { data: retailDataDirect, error: retailDirectError } = await supabase.rpc(
+      'fetch_all_retail_data'
+    );
     
-    // REVA data
-    const { data: revaData, error: revaError } = await fetchDepartmentData('REVA', true);
-    if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
-    console.log('Fetched REVA records:', revaData?.length || 0);
-    
-    // Wholesale data - Note: In sales_data table, it might be "WHOLESALE" instead of "Wholesale"
-    const { data: wholesaleData, error: wholesaleError } = await fetchDepartmentData('Wholesale', true);
-    if (wholesaleError) throw new Error(`Error fetching Wholesale data: ${wholesaleError.message}`);
-    console.log('Fetched Wholesale records:', wholesaleData?.length || 0);
-    
-    // If no wholesale data was found, try using "WHOLESALE" (all caps) as the department name
-    let finalWholesaleData = wholesaleData;
-    if (!wholesaleData || wholesaleData.length === 0) {
-      const { data: upperWholesaleData, error: upperWholesaleError } = await fetchDepartmentData('WHOLESALE', true);
-      if (!upperWholesaleError) {
-        finalWholesaleData = upperWholesaleData;
-        console.log('Fetched WHOLESALE (uppercase) records:', upperWholesaleData?.length || 0);
-      }
+    if (retailDirectError) {
+      console.error("Direct SQL error for retail:", retailDirectError);
+      throw new Error(`Error fetching RETAIL data directly: ${retailDirectError.message}`);
     }
+    
+    const { data: revaDataDirect, error: revaDirectError } = await supabase.rpc(
+      'fetch_all_reva_data'
+    );
+    
+    if (revaDirectError) {
+      console.error("Direct SQL error for REVA:", revaDirectError);
+      throw new Error(`Error fetching REVA data directly: ${revaDirectError.message}`);
+    }
+    
+    const { data: wholesaleDataDirect, error: wholesaleDirectError } = await supabase.rpc(
+      'fetch_all_wholesale_data'
+    );
+    
+    if (wholesaleDirectError) {
+      console.error("Direct SQL error for Wholesale:", wholesaleDirectError);
+      throw new Error(`Error fetching Wholesale data directly: ${wholesaleDirectError.message}`);
+    }
+    
+    // Use the direct data if available, otherwise fall back to the old method
+    const retailData = retailDataDirect || (await fetchDepartmentData('RETAIL', true)).data || [];
+    const revaData = revaDataDirect || (await fetchDepartmentData('REVA', true)).data || [];
+    const wholesaleData = wholesaleDataDirect || await fetchAllWholesaleData();
+    
+    console.log('Fetched RETAIL records:', retailData?.length || 0);
+    console.log('Fetched REVA records:', revaData?.length || 0);
+    console.log('Fetched Wholesale records:', wholesaleData?.length || 0);
 
     // FEBRUARY DATA FETCHING
-    // Fetching February data for comparison
-    // RETAIL data from February
-    const { data: febRetailData, error: febRetailError } = await fetchDepartmentData('RETAIL', false);
-    if (febRetailError) throw new Error(`Error fetching February RETAIL data: ${febRetailError.message}`);
+    // Fetching February data for comparison - also using direct SQL where possible
+    const { data: febRetailDataDirect, error: febRetailDirectError } = await supabase.rpc(
+      'fetch_all_feb_retail_data'
+    );
+    
+    if (febRetailDirectError) {
+      console.error("Direct SQL error for Feb retail:", febRetailDirectError);
+    }
+    
+    const { data: febRevaDataDirect, error: febRevaDirectError } = await supabase.rpc(
+      'fetch_all_feb_reva_data'
+    );
+    
+    if (febRevaDirectError) {
+      console.error("Direct SQL error for Feb REVA:", febRevaDirectError);
+    }
+    
+    const { data: febWholesaleDataDirect, error: febWholesaleDirectError } = await supabase.rpc(
+      'fetch_all_feb_wholesale_data'
+    );
+    
+    if (febWholesaleDirectError) {
+      console.error("Direct SQL error for Feb Wholesale:", febWholesaleDirectError);
+    }
+    
+    // Use the direct data if available, otherwise fall back to the old method
+    const febRetailData = febRetailDataDirect || (await fetchDepartmentData('RETAIL', false)).data || [];
+    const febRevaData = febRevaDataDirect || (await fetchDepartmentData('REVA', false)).data || [];
+    const febWholesaleData = febWholesaleDataDirect || (await fetchDepartmentData('Wholesale', false)).data || [];
+    
     console.log('Fetched February RETAIL records:', febRetailData?.length || 0);
-    
-    // REVA data from February
-    const { data: febRevaData, error: febRevaError } = await fetchDepartmentData('REVA', false);
-    if (febRevaError) throw new Error(`Error fetching February REVA data: ${febRevaError.message}`);
     console.log('Fetched February REVA records:', febRevaData?.length || 0);
-    
-    // Wholesale data from February
-    const { data: febWholesaleData, error: febWholesaleError } = await fetchDepartmentData('Wholesale', false);
-    if (febWholesaleError) throw new Error(`Error fetching February Wholesale data: ${febWholesaleError.message}`);
     console.log('Fetched February Wholesale records:', febWholesaleData?.length || 0);
     
     // Count total records for verification - March
-    const totalCount = (retailData?.length || 0) + (revaData?.length || 0) + (finalWholesaleData?.length || 0);
+    const totalCount = (retailData?.length || 0) + (revaData?.length || 0) + (wholesaleData?.length || 0);
     console.log('Total fetched records (March):', totalCount);
 
     // Count total records for verification - February
@@ -82,7 +111,7 @@ export const fetchRepPerformanceData = async () => {
     console.log('Total fetched records (February):', totalFebCount);
     
     // Process all March data
-    const allDataFromDb = [...(retailData || []), ...(revaData || []), ...(finalWholesaleData || [])];
+    const allDataFromDb = [...(retailData || []), ...(revaData || []), ...(wholesaleData || [])];
     
     // Process all February data
     const allFebDataFromDb = [...(febRetailData || []), ...(febRevaData || []), ...(febWholesaleData || [])];
@@ -280,172 +309,289 @@ export const fetchRepPerformanceData = async () => {
   }
 };
 
+// Fetch ALL wholesale data, combining both 'Wholesale' and 'WHOLESALE' spellings
+const fetchAllWholesaleData = async () => {
+  try {
+    const { data: wholesaleData, error: wholesaleError } = await fetchDepartmentData('Wholesale', true);
+    if (wholesaleError) throw new Error(`Error fetching Wholesale data: ${wholesaleError.message}`);
+    
+    const { data: upperWholesaleData, error: upperWholesaleError } = await fetchDepartmentData('WHOLESALE', true);
+    if (upperWholesaleError) throw new Error(`Error fetching WHOLESALE data: ${upperWholesaleError.message}`);
+    
+    return [...(wholesaleData || []), ...(upperWholesaleData || [])];
+  } catch (error) {
+    console.error('Error fetching wholesale data:', error);
+    return [];
+  }
+};
+
 const fetchDepartmentData = async (department: string, isMarch: boolean) => {
   // This function fetches all records for a specific department without pagination limits
   const tableName = isMarch ? 'sales_data' : 'sales_data_februrary';
   
-  let query;
-  
-  if (isMarch) {
-    // For March data from sales_data table
-    query = supabase
-      .from(tableName as 'sales_data')
-      .select('*')
-      .eq('rep_type', department)
-      .limit(100000); // Explicitly set a very high limit to override default 1000
-  } else {
-    // For February data from sales_data_februrary table
-    query = supabase
-      .from(tableName as 'sales_data_februrary')
-      .select('*')
-      .eq('Department', department)
-      .limit(100000); // Explicitly set a very high limit to override default 1000
-  }
-  
-  const { data, error } = await query;
-  
-  if (error) {
-    return { data: null, error };
-  }
-  
-  // Transform the data to match expected format if we're using sales_data for March
-  if (isMarch && data) {
-    const transformedData = data.map(item => ({
-      id: item.id,
-      Rep: item.rep_name,
-      'Sub-Rep': item.sub_rep,
-      Department: item.rep_type,
-      'Account Ref': item.account_ref,
-      'Account Name': item.account_name,
-      Spend: item.spend,
-      Cost: item.cost,
-      Credit: item.credit,
-      Profit: item.profit,
-      Margin: item.margin,
-      Packs: item.packs
-    }));
+  try {
+    // Use direct SQL queries to bypass the 1000 record limit
+    const query = `
+      SELECT *
+      FROM ${tableName}
+      WHERE ${isMarch ? 'rep_type' : 'Department'} = '${department}'
+    `;
     
-    return { data: transformedData, error: null };
+    const { data, error, count } = await supabase.rpc('execute_unlimited_query', {
+      query_text: query
+    });
+    
+    if (error) {
+      console.error(`Error executing unlimited query for ${department}:`, error);
+      
+      // Fall back to the API method with increased limit as backup
+      let backupQuery;
+      if (isMarch) {
+        backupQuery = supabase
+          .from(tableName as 'sales_data')
+          .select('*')
+          .eq('rep_type', department)
+          .limit(999999); // Set an unrealistically high limit
+      } else {
+        backupQuery = supabase
+          .from(tableName as 'sales_data_februrary')
+          .select('*')
+          .eq('Department', department)
+          .limit(999999); // Set an unrealistically high limit
+      }
+      
+      const backupResult = await backupQuery;
+      console.log(`Fallback query for ${department} returned ${backupResult.data?.length || 0} records`);
+      
+      // Transform the data to match expected format if we're using sales_data for March
+      if (isMarch && backupResult.data) {
+        const transformedData = backupResult.data.map(item => ({
+          id: item.id,
+          Rep: item.rep_name,
+          'Sub-Rep': item.sub_rep,
+          Department: item.rep_type,
+          'Account Ref': item.account_ref,
+          'Account Name': item.account_name,
+          Spend: item.spend,
+          Cost: item.cost,
+          Credit: item.credit,
+          Profit: item.profit,
+          Margin: item.margin,
+          Packs: item.packs
+        }));
+        
+        return { data: transformedData, error: null };
+      }
+      
+      return { data: backupResult.data, error: null };
+    }
+    
+    console.log(`Direct SQL query for ${department} returned ${data?.length || 0} records`);
+    return { data, error: null };
+  } catch (directError) {
+    console.error(`Error in direct SQL approach for ${department}:`, directError);
+    
+    // Fall back to the original method with high limit as a last resort
+    try {
+      let lastResortQuery;
+      if (isMarch) {
+        lastResortQuery = supabase
+          .from(tableName as 'sales_data')
+          .select('*')
+          .eq('rep_type', department)
+          .limit(999999); // Set an unrealistically high limit
+      } else {
+        lastResortQuery = supabase
+          .from(tableName as 'sales_data_februrary')
+          .select('*')
+          .eq('Department', department)
+          .limit(999999); // Set an unrealistically high limit
+      }
+      
+      const lastResortResult = await lastResortQuery;
+      console.log(`Last resort query for ${department} returned ${lastResortResult.data?.length || 0} records`);
+      
+      // Transform the data to match expected format if we're using sales_data for March
+      if (isMarch && lastResortResult.data) {
+        const transformedData = lastResortResult.data.map(item => ({
+          id: item.id,
+          Rep: item.rep_name,
+          'Sub-Rep': item.sub_rep,
+          Department: item.rep_type,
+          'Account Ref': item.account_ref,
+          'Account Name': item.account_name,
+          Spend: item.spend,
+          Cost: item.cost,
+          Credit: item.credit,
+          Profit: item.profit,
+          Margin: item.margin,
+          Packs: item.packs
+        }));
+        
+        return { data: transformedData, error: null };
+      }
+      
+      return { data: lastResortResult.data, error: null };
+    } catch (lastError) {
+      console.error(`All methods failed for ${department}:`, lastError);
+      return { data: null, error: lastError };
+    }
   }
-  
-  return { data, error: null };
 };
 
-// Update loadAprilData to fetch all records without pagination
+// Update loadAprilData to use direct SQL for unlimited records
 const loadAprilData = async () => {
   try {
     console.group('Loading April Data');
-    console.log('Fetching all MTD Daily data without pagination...');
+    console.log('Getting all MTD Daily and March Rolling data with direct SQL...');
     
-    // Get all MTD data without pagination or any limits - EXPLICITLY set no-count to true
-    const { data: mtdData, error: mtdError } = await supabase
-      .from('mtd_daily')
-      .select('*', { count: 'exact' })
-      .limit(100000); // Explicitly set a very high limit to override default 1000
+    // Use direct SQL to get all MTD data
+    const { data: mtdDataDirect, error: mtdDirectError } = await supabase.rpc('fetch_all_mtd_data');
     
-    if (mtdError) {
-      console.error('Error fetching MTD Daily data:', mtdError);
-      throw new Error(`Error fetching MTD Daily data: ${mtdError.message}`);
-    }
-    
-    console.log(`Retrieved ${mtdData?.length || 0} MTD daily records`);
-    
-    // Get all March Rolling data without pagination or limits - EXPLICITLY set count to exact
-    const { data: marchRollingData, error: marchRollingError } = await supabase
-      .from('march_rolling')
-      .select('*', { count: 'exact' })
-      .limit(100000); // Explicitly set a very high limit to override default 1000
-    
-    if (marchRollingError) {
-      console.error('Error fetching March Rolling data:', marchRollingError);
-      throw new Error(`Error getting March Rolling data: ${marchRollingError.message}`);
-    }
-    
-    const mtdRecordCount = mtdData?.length || 0;
-    const marchRollingCount = marchRollingData?.length || 0;
-    
-    console.log(`Fetched ${mtdRecordCount} April MTD records and ${marchRollingCount} March rolling records with exact count and high limit`);
-    
-    // Check if we actually have data
-    if (!mtdData || mtdData.length === 0) {
-      console.log('No April data found in mtd_daily, using March data fallback');
-      return null;
-    }
-    
-    // Safe mapping of April data
-    const mappedAprilData = mtdData.map((item: any) => {
-      try {
-        // Parse numerical values properly, ensuring they're numbers and not strings
-        const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-        const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-        const cost = typeof item.Cost === 'string' ? parseFloat(item.Cost) : Number(item.Cost || 0);
-        const credit = typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0);
-        const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
-        const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+    if (mtdDirectError) {
+      console.error('Direct SQL error for MTD data:', mtdDirectError);
+      // Fall back to API approach with a very high limit
+      const { data: mtdData, error: mtdError } = await supabase
+        .from('mtd_daily')
+        .select('*')
+        .limit(999999); // Set an unrealistically high limit
+      
+      if (mtdError) {
+        console.error('Error fetching MTD Daily data:', mtdError);
+        throw new Error(`Error getting MTD Daily data: ${mtdError.message}`);
+      }
+      
+      console.log(`Fallback MTD query returned ${mtdData?.length || 0} records`);
+      
+      // Use direct SQL to get all march_rolling data
+      const { data: marchRollingDataDirect, error: marchRollingDirectError } = await supabase.rpc('fetch_all_march_rolling_data');
+      
+      if (marchRollingDirectError) {
+        console.error('Direct SQL error for March Rolling data:', marchRollingDirectError);
+        // Fall back to API approach with a very high limit
+        const { data: marchRollingData, error: marchRollingError } = await supabase
+          .from('march_rolling')
+          .select('*')
+          .limit(999999); // Set an unrealistically high limit
         
-        // Handle rep name and department safely
-        let repName = item.Rep || '';
-        const subRep = item['Sub-Rep'] || '';
-        const department = item.Department || 'RETAIL';
-        
-        if ((department === 'REVA' || department === 'Wholesale' || department === 'WHOLESALE') && subRep) {
-          repName = subRep;
+        if (marchRollingError) {
+          console.error('Error fetching March Rolling data:', marchRollingError);
+          throw new Error(`Error getting March Rolling data: ${marchRollingError.message}`);
         }
         
-        return {
-          id: item.id || 0,
-          reporting_period: 'April 2025',
-          rep_name: repName,
-          sub_rep: subRep,
-          account_ref: item['Account Ref'] || '',
-          account_name: item['Account Name'] || '',
-          spend: spend,
-          cost: cost,
-          credit: credit,
-          profit: profit,
-          margin: margin,
-          packs: packs,
-          rep_type: department,
-          original_dept: department,
-          import_date: new Date().toISOString()
-        };
-      } catch (itemError) {
-        console.error('Error processing April data item:', itemError, item);
-        return null;
+        console.log(`Fallback March Rolling query returned ${marchRollingData?.length || 0} records`);
+        
+        return processAprilData(mtdData || [], marchRollingData || []);
       }
-    }).filter(Boolean); // Remove any null items from mapping errors
+      
+      console.log(`Direct SQL March Rolling query returned ${marchRollingDataDirect?.length || 0} records`);
+      return processAprilData(mtdData || [], marchRollingDataDirect || []);
+    }
     
-    // Filter data by department
-    const aprilRetailData = mappedAprilData.filter(item => item.rep_type === 'RETAIL');
-    const aprilRevaData = mappedAprilData.filter(item => item.rep_type === 'REVA');
-    const aprilWholesaleData = mappedAprilData.filter(
-      item => item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE'
-    );
+    console.log(`Direct SQL MTD query returned ${mtdDataDirect?.length || 0} records`);
     
-    // Process the data to RepData format
-    const processedAprilRetailData = processRepData(aprilRetailData as SalesDataItem[] || []);
-    const processedAprilRevaData = processRepData(aprilRevaData as SalesDataItem[] || []);
-    const processedAprilWholesaleData = processRepData(aprilWholesaleData as SalesDataItem[] || []);
+    // Use direct SQL to get all march_rolling data
+    const { data: marchRollingDataDirect, error: marchRollingDirectError } = await supabase.rpc('fetch_all_march_rolling_data');
     
-    // Calculate summary data - April
-    const aprilRetailSummary = calculateSummaryFromData(processedAprilRetailData);
-    const aprilRevaSummary = calculateSummaryFromData(processedAprilRevaData);
-    const aprilWholesaleSummary = calculateSummaryFromData(processedAprilWholesaleData);
-    
-    return {
-      apr: {
-        repData: processedAprilRetailData,
-        revaData: processedAprilRevaData,
-        wholesaleData: processedAprilWholesaleData,
-        baseSummary: aprilRetailSummary,
-        revaValues: aprilRevaSummary,
-        wholesaleValues: aprilWholesaleSummary
+    if (marchRollingDirectError) {
+      console.error('Direct SQL error for March Rolling data:', marchRollingDirectError);
+      // Fall back to API approach with a very high limit
+      const { data: marchRollingData, error: marchRollingError } = await supabase
+        .from('march_rolling')
+        .select('*')
+        .limit(999999); // Set an unrealistically high limit
+      
+      if (marchRollingError) {
+        console.error('Error fetching March Rolling data:', marchRollingError);
+        throw new Error(`Error getting March Rolling data: ${marchRollingError.message}`);
       }
-    };
+      
+      console.log(`Fallback March Rolling query returned ${marchRollingData?.length || 0} records`);
+      
+      return processAprilData(mtdDataDirect || [], marchRollingData || []);
+    }
+    
+    console.log(`Direct SQL March Rolling query returned ${marchRollingDataDirect?.length || 0} records`);
+    
+    return processAprilData(mtdDataDirect || [], marchRollingDataDirect || []);
   } catch (error) {
     console.error('Error loading April data:', error);
     return null; // Return null to trigger fallback to March data
   }
+};
+
+// Helper function to process April data
+const processAprilData = (mtdData: any[], marchRollingData: any[]) => {
+  // Safe mapping of April data
+  const mappedAprilData = mtdData.map((item: any) => {
+    try {
+      // Parse numerical values properly, ensuring they're numbers and not strings
+      const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+      const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+      const cost = typeof item.Cost === 'string' ? parseFloat(item.Cost) : Number(item.Cost || 0);
+      const credit = typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0);
+      const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
+      const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+      
+      // Handle rep name and department safely
+      let repName = item.Rep || '';
+      const subRep = item['Sub-Rep'] || '';
+      const department = item.Department || 'RETAIL';
+      
+      if ((department === 'REVA' || department === 'Wholesale' || department === 'WHOLESALE') && subRep) {
+        repName = subRep;
+      }
+      
+      return {
+        id: item.id || 0,
+        reporting_period: 'April 2025',
+        rep_name: repName,
+        sub_rep: subRep,
+        account_ref: item['Account Ref'] || '',
+        account_name: item['Account Name'] || '',
+        spend: spend,
+        cost: cost,
+        credit: credit,
+        profit: profit,
+        margin: margin,
+        packs: packs,
+        rep_type: department,
+        original_dept: department,
+        import_date: new Date().toISOString()
+      };
+    } catch (itemError) {
+      console.error('Error processing April data item:', itemError, item);
+      return null;
+    }
+  }).filter(Boolean); // Remove any null items from mapping errors
+  
+  // Filter data by department
+  const aprilRetailData = mappedAprilData.filter(item => item.rep_type === 'RETAIL');
+  const aprilRevaData = mappedAprilData.filter(item => item.rep_type === 'REVA');
+  const aprilWholesaleData = mappedAprilData.filter(
+    item => item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE'
+  );
+  
+  // Process the data to RepData format
+  const processedAprilRetailData = processRepData(aprilRetailData as SalesDataItem[] || []);
+  const processedAprilRevaData = processRepData(aprilRevaData as SalesDataItem[] || []);
+  const processedAprilWholesaleData = processRepData(aprilWholesaleData as SalesDataItem[] || []);
+  
+  // Calculate summary data - April
+  const aprilRetailSummary = calculateSummaryFromData(processedAprilRetailData);
+  const aprilRevaSummary = calculateSummaryFromData(processedAprilRevaData);
+  const aprilWholesaleSummary = calculateSummaryFromData(processedAprilWholesaleData);
+  
+  return {
+    apr: {
+      repData: processedAprilRetailData,
+      revaData: processedAprilRevaData,
+      wholesaleData: processedAprilWholesaleData,
+      baseSummary: aprilRetailSummary,
+      revaValues: aprilRevaSummary,
+      wholesaleValues: aprilWholesaleSummary
+    }
+  };
 };
 
 // Helper function to calculate total profit from a dataset
@@ -589,91 +735,4 @@ const calculateRepChanges = (
   // Calculate margins correctly after aggregating all values
   Object.keys(currentRepMap).forEach(rep => {
     currentRepMap[rep].margin = currentRepMap[rep].spend > 0 ? 
-      (currentRepMap[rep].profit / currentRepMap[rep].spend * 100) : 0;
-  });
-  
-  // Previous month maps - combine all department data for each rep
-  [...previousRetailReps, ...previousRevaReps.filter(r => r.rep !== 'REVA'), ...previousWholesaleReps.filter(r => r.rep !== 'Wholesale')]
-    .forEach(rep => {
-      if (!previousRepMap[rep.rep]) {
-        previousRepMap[rep.rep] = {
-          spend: 0,
-          profit: 0,
-          margin: 0,
-          packs: 0,
-          activeAccounts: 0,
-          totalAccounts: 0
-        };
-      }
-      
-      previousRepMap[rep.rep].spend += rep.spend;
-      previousRepMap[rep.rep].profit += rep.profit;
-      previousRepMap[rep.rep].packs += rep.packs;
-      previousRepMap[rep.rep].activeAccounts += rep.activeAccounts;
-      previousRepMap[rep.rep].totalAccounts += rep.totalAccounts;
-    });
-  
-  // Calculate margins correctly after aggregating all values
-  Object.keys(previousRepMap).forEach(rep => {
-    previousRepMap[rep].margin = previousRepMap[rep].spend > 0 ? 
-      (previousRepMap[rep].profit / previousRepMap[rep].spend * 100) : 0;
-  });
-  
-  // Now calculate percentage changes using the accurate maps
-  Object.keys(currentRepMap).forEach(rep => {
-    const current = currentRepMap[rep];
-    const previous = previousRepMap[rep];
-    
-    // Calculate percentage changes
-    const calculatePercentageChange = (current: number, previous: number) => {
-      if (previous === 0) return 0;
-      return ((current - previous) / previous) * 100;
-    };
-    
-    if (!previous) {
-      // Rep didn't exist in February
-      changes[rep] = {
-        profit: 100,
-        spend: 100,
-        margin: 100,
-        packs: 100,
-        activeAccounts: 100,
-        totalAccounts: 100
-      };
-    } else {
-      changes[rep] = {
-        profit: calculatePercentageChange(current.profit, previous.profit),
-        spend: calculatePercentageChange(current.spend, previous.spend),
-        margin: current.margin - previous.margin, // Margin is a percentage point difference
-        packs: calculatePercentageChange(current.packs, previous.packs),
-        activeAccounts: calculatePercentageChange(current.activeAccounts, previous.activeAccounts),
-        totalAccounts: calculatePercentageChange(current.totalAccounts, previous.totalAccounts)
-      };
-    }
-  });
-  
-  return changes;
-};
-
-export const saveRepPerformanceData = (data: any) => {
-  try {
-    localStorage.setItem('repPerformanceData', JSON.stringify(data));
-    return true;
-  } catch (error) {
-    console.error('Error saving data to localStorage:', error);
-    return false;
-  }
-};
-
-export const loadStoredRepPerformanceData = () => {
-  try {
-    const storedData = localStorage.getItem('repPerformanceData');
-    if (storedData) {
-      return JSON.parse(storedData);
-    }
-    return null;
-  } catch (error) {
-    console.error('Error parsing stored data:', error);
-    return null;
-  }
-};
+      (currentRepMap[rep].profit / current
