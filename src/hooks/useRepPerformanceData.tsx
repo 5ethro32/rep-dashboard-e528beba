@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
-import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData, fetchMarchRollingData } from '@/services/rep-performance-service';
+import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/rep-performance-service';
 import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -160,46 +160,25 @@ export const useRepPerformanceData = () => {
     setIsLoading(true);
     try {
       console.group('Loading April Data');
-      console.log('Checking MTD Daily table...');
+      console.log('Getting all MTD Daily data without pagination...');
       
-      // Check total count first
-      const { count, error: countError } = await supabase
-        .from('mtd_daily')
-        .select('*', { count: 'exact', head: true });
-      
-      console.log('MTD Daily count check:', { count, error: countError });
-      
-      if (countError) {
-        console.error('Error querying MTD Daily count:', countError);
-        throw new Error(`Error getting MTD Daily count: ${countError.message}`);
-      }
-      
-      if (!count || count === 0) {
-        console.warn('No records found in MTD Daily table based on count query.');
-        toast({
-          title: "No April data found",
-          description: "The MTD Daily table appears to be empty. Using March data instead.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return false;
-      }
-      
-      // Get all data without using head: true which may be causing issues
+      // Direct query for all mtd_daily records without any pagination or count check
       const { data: mtdData, error: mtdError } = await supabase
         .from('mtd_daily')
         .select('*');
       
       if (mtdError) {
         console.error('Error fetching MTD Daily data:', mtdError);
-        throw new Error(`Error fetching MTD Daily data: ${mtdError.message}`);
+        throw new Error(`Error getting MTD Daily data: ${mtdError.message}`);
       }
       
       const mtdRecordCount = mtdData?.length || 0;
       console.log(`MTD Daily full data fetch - Records found: ${mtdRecordCount}`);
       
-      console.log('Checking March Rolling table...');
-      const { data: marchRollingData, error: marchRollingError } = await fetchMarchRollingData();
+      // Direct query for all march_rolling records without pagination
+      const { data: marchRollingData, error: marchRollingError } = await supabase
+        .from('march_rolling')
+        .select('*');
       
       if (marchRollingError) {
         console.error('Error fetching March Rolling data:', marchRollingError);
@@ -209,9 +188,9 @@ export const useRepPerformanceData = () => {
       const marchRollingCount = marchRollingData?.length || 0;
       console.log(`March Rolling records: ${marchRollingCount}`);
       
-      // If no mtd data is found after direct query, show error
+      // If no mtd data is found, show error
       if (!mtdData || mtdData.length === 0) {
-        console.warn('No records retrieved from MTD Daily table - Direct query');
+        console.warn('No records retrieved from MTD Daily table');
         
         toast({
           title: "No April data found",
@@ -222,7 +201,7 @@ export const useRepPerformanceData = () => {
         return false;
       }
       
-      console.log('Fetched April MTD records total count:', mtdData.length);
+      console.log('Fetched all April MTD records total count:', mtdData.length);
       console.log('Sample MTD data:', mtdData.slice(0, 3));
       
       const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
