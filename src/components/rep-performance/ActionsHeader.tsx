@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 interface ActionsHeaderProps {
   onRefresh: () => void;
@@ -33,12 +33,6 @@ const ActionsHeader: React.FC<ActionsHeaderProps> = ({
           </>
         )}
       </Button>
-      <div className="ml-3 flex items-center text-yellow-300">
-        <AlertCircle className="h-4 w-4 mr-1" />
-        <span className="text-xs font-medium">
-          Working to fix 1000 record limit - manual workaround in progress
-        </span>
-      </div>
     </div>
   );
 };

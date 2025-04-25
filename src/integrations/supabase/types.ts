@@ -340,6 +340,40 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      fetch_all_march_rolling_data: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          Spend: number
+          "Account Name": string
+          "Account Ref": string
+          Cost: number
+          id: string
+          Department: string
+          "Sub-Rep": string
+          Rep: string
+          Credit: number
+          Profit: number
+          Margin: number
+          Packs: number
+        }[]
+      }
+      fetch_all_mtd_data: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          Cost: number
+          id: string
+          Spend: number
+          Credit: number
+          Profit: number
+          Margin: number
+          Packs: number
+          Rep: string
+          "Sub-Rep": string
+          Department: string
+          "Account Ref": string
+          "Account Name": string
+        }[]
+      }
       get_april_mtd_data_by_department: {
         Args: { dept: string }
         Returns: Json
