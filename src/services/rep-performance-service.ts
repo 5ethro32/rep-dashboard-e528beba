@@ -280,27 +280,92 @@ export const fetchRepPerformanceData = async () => {
   }
 };
 
-// Helper function for loading April data with better error handling
+const fetchDepartmentData = async (department: string, isMarch: boolean) => {
+  // This function fetches all records for a specific department without pagination limits
+  const tableName = isMarch ? 'sales_data' : 'sales_data_februrary';
+  
+  let query;
+  
+  if (isMarch) {
+    // For March data from sales_data table
+    query = supabase
+      .from(tableName as 'sales_data')
+      .select('*')
+      .eq('rep_type', department);
+  } else {
+    // For February data from sales_data_februrary table
+    query = supabase
+      .from(tableName as 'sales_data_februrary')
+      .select('*')
+      .eq('Department', department);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    return { data: null, error };
+  }
+  
+  // Transform the data to match expected format if we're using sales_data for March
+  if (isMarch && data) {
+    const transformedData = data.map(item => ({
+      id: item.id,
+      Rep: item.rep_name,
+      'Sub-Rep': item.sub_rep,
+      Department: item.rep_type,
+      'Account Ref': item.account_ref,
+      'Account Name': item.account_name,
+      Spend: item.spend,
+      Cost: item.cost,
+      Credit: item.credit,
+      Profit: item.profit,
+      Margin: item.margin,
+      Packs: item.packs
+    }));
+    
+    return { data: transformedData, error: null };
+  }
+  
+  return { data, error: null };
+};
+
+// Update loadAprilData to use a single query without pagination
 const loadAprilData = async () => {
   try {
-    // Check for April data in mtd_daily table
-    const { data: aprilMtdData, error: aprilMtdError } = await supabase
+    console.group('Loading April Data');
+    console.log('Checking MTD Daily table...');
+    
+    // Get all MTD data without pagination
+    const { data: mtdData, error: mtdError } = await supabase
       .from('mtd_daily')
       .select('*');
     
-    if (aprilMtdError) {
-      console.error('Error loading April MTD data:', aprilMtdError);
-      throw aprilMtdError;
+    if (mtdError) {
+      console.error('Error fetching MTD Daily data:', mtdError);
+      throw new Error(`Error fetching MTD Daily data: ${mtdError.message}`);
     }
     
+    // Get all March Rolling data without pagination
+    const { data: marchRollingData, error: marchRollingError } = await supabase
+      .from('march_rolling')
+      .select('*');
+    
+    if (marchRollingError) {
+      console.error('Error fetching March Rolling data:', marchRollingError);
+      throw new Error(`Error getting March Rolling data: ${marchRollingError.message}`);
+    }
+    
+    // Check for April data in mtd_daily table
+    
+    
     // Check if we actually have data
-    if (!aprilMtdData || aprilMtdData.length === 0) {
+    if (!mtdData || mtdData.length === 0) {
       console.log('No April data found in mtd_daily, using March data fallback');
       return null;
     }
     
     // Safe mapping of April data
-    const mappedAprilData = aprilMtdData.map((item: any) => {
+    const mappedAprilData = mtdData.map((item: any) => {
       try {
         // Parse numerical values properly, ensuring they're numbers and not strings
         const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
@@ -583,76 +648,6 @@ const calculateRepChanges = (
 };
 
 // Helper function to fetch all records for a specific department from the appropriate table
-const fetchDepartmentData = async (department: string, isMarch: boolean) => {
-  // This function fetches data in chunks to avoid pagination limits
-  const PAGE_SIZE = 1000;
-  let allData: any[] = [];
-  let page = 0;
-  let hasMoreData = true;
-  
-  // Use explicit table name strings rather than dynamic ones
-  const tableName = isMarch ? 'sales_data' : 'sales_data_februrary';
-  
-  while (hasMoreData) {
-    let query;
-    
-    if (isMarch) {
-      // For March data from sales_data table
-      // Removed authentication-specific filtering
-      query = supabase
-        .from(tableName as 'sales_data')
-        .select('*')
-        .eq('rep_type', department)
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-    } else {
-      // For February data from sales_data_februrary table
-      query = supabase
-        .from(tableName as 'sales_data_februrary')
-        .select('*')
-        .eq('Department', department)
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-    }
-    
-    const { data, error, count } = await query;
-    
-    if (error) {
-      return { data: null, error };
-    }
-    
-    // Transform the data to match expected format if we're using sales_data for March
-    if (isMarch && data) {
-      const transformedData = data.map(item => ({
-        id: item.id,
-        Rep: item.rep_name,
-        'Sub-Rep': item.sub_rep,
-        Department: item.rep_type,
-        'Account Ref': item.account_ref,
-        'Account Name': item.account_name,
-        Spend: item.spend,
-        Cost: item.cost,
-        Credit: item.credit,
-        Profit: item.profit,
-        Margin: item.margin,
-        Packs: item.packs
-      }));
-      
-      allData = [...allData, ...transformedData];
-    } else if (data) {
-      allData = [...allData, ...data];
-    }
-    
-    if (data && data.length > 0) {
-      page++;
-      
-      // Check if we've fetched all available data
-      hasMoreData = data.length === PAGE_SIZE;
-    } else {
-      hasMoreData = false;
-    }
-  }
-  
-  return { data: allData, error: null };
-};
 
 // Helper function to fetch March rolling data with pagination
 export const fetchMarchRollingData = async () => {
