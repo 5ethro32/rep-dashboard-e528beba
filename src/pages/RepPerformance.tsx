@@ -155,7 +155,11 @@ const RepPerformance = () => {
           formatPercent={formatPercent}
           formatNumber={formatNumber}
           renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
-            const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
+            // Convert to number before passing since getFebValue now returns string
+            const previousValue = repName && metricType && metricValue !== undefined && changeValue !== undefined 
+              ? parseFloat(getFebValue(repName, metricType, metricValue, changeValue))
+              : 0;
+              
             return (
               <RenderChangeIndicator 
                 changeValue={changeValue} 

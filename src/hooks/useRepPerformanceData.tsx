@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
-import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData } from '@/services/rep-performance-service';
+import { fetchRepPerformanceData } from '@/services/rep-performance-service';
 import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -127,12 +127,13 @@ export const useRepPerformanceData = () => {
     }
   };
   
-  const getFebValue = (repName: string, metricType: string, metricValue: number, changeValue: number) => {
+  const getFebValue = (repName: string, metricType: string, metricValue: number, changeValue: number): string => {
     const rep = febRepData.find(rep => rep.rep === repName);
     if (rep) {
-      return rep[metricType as keyof RepData] as number;
+      const value = rep[metricType as keyof RepData] as number;
+      return value.toString();
     }
-    return metricValue - changeValue;
+    return (metricValue - changeValue).toString();
   };
   
   return {
