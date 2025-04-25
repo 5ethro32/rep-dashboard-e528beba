@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -50,15 +51,23 @@ const RepPerformance = () => {
   const currentRevaValues = selectedMonth === 'April' ? (aprRevaValues || revaValues) : revaValues;
   const currentWholesaleValues = selectedMonth === 'April' ? (aprWholesaleValues || wholesaleValues) : wholesaleValues;
   
+  // Initial data loading
   useEffect(() => {
-    if (selectedMonth === 'April' && (!aprBaseSummary || !aprRevaValues || !aprWholesaleValues)) {
-      console.log('Debug: April data is incomplete', { 
+    loadDataFromSupabase();
+  }, []);
+  
+  useEffect(() => {
+    // Debug data availability for April
+    if (selectedMonth === 'April') {
+      console.log('RepPerformance: April data check', { 
         aprBaseSummary: !!aprBaseSummary, 
         aprRevaValues: !!aprRevaValues, 
-        aprWholesaleValues: !!aprWholesaleValues 
+        aprWholesaleValues: !!aprWholesaleValues,
+        summary: summary,
+        activeDataLength: activeData?.length || 0
       });
     }
-  }, [selectedMonth, aprBaseSummary, aprRevaValues, aprWholesaleValues]);
+  }, [selectedMonth, aprBaseSummary, aprRevaValues, aprWholesaleValues, activeData, summary]);
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
