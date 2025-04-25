@@ -32,8 +32,8 @@ const UserProfileButton = () => {
   
   if (!user) return null;
   
-  // Just use the initial without displaying email
-  const userInitials = "J";
+  // Get the first letter of the email, converted to uppercase
+  const userInitials = user.email ? user.email[0].toUpperCase() : 'U';
   
   return (
     <div className="flex items-center gap-4">
