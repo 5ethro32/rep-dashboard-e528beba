@@ -10,7 +10,7 @@ import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import ChatInterface from '@/components/chat/ChatInterface';
 import { Button } from '@/components/ui/button';
-import { BarChart3, ClipboardList, AlertTriangle } from 'lucide-react';
+import { BarChart3, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -112,15 +112,6 @@ const RepPerformance = () => {
             </Link>
           </div>
         </div>
-        
-        {selectedMonth === 'April' && (
-          <div className="mb-4 p-3 bg-yellow-900/30 border border-yellow-600/30 rounded-md flex items-center">
-            <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0" />
-            <p className="text-xs text-yellow-200">
-              Working to bypass the 1000 record limit in Supabase. Your data may be incomplete until this is resolved. We're implementing direct SQL queries as a workaround.
-            </p>
-          </div>
-        )}
 
         <PerformanceFilters
           includeRetail={includeRetail}

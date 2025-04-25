@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -11,13 +12,14 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data using direct SQL functions...');
     
-    // Use our new SQL functions to get all data without pagination
+    // Use our SQL functions to get MTD data (April)
     const { data: mtdData, error: mtdError } = await supabase.rpc('fetch_all_mtd_data');
     if (mtdError) {
       console.error('Error fetching MTD data:', mtdError);
       throw new Error(`Error fetching MTD data: ${mtdError.message}`);
     }
     
+    // Use our SQL functions to get March rolling data
     const { data: marchRollingData, error: marchRollingError } = await supabase.rpc('fetch_all_march_rolling_data');
     if (marchRollingError) {
       console.error('Error fetching March Rolling data:', marchRollingError);
@@ -27,122 +29,20 @@ export const fetchRepPerformanceData = async () => {
     console.log('Total MTD records fetched:', mtdData?.length || 0);
     console.log('Total March Rolling records fetched:', marchRollingData?.length || 0);
     
-    // Process MTD data
-    const retailData = mtdData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
-    const revaData = mtdData?.filter(item => item.Department === 'REVA') || [];
-    const wholesaleData = mtdData?.filter(item => 
+    // Transform data into the format we need
+    // For April (MTD) data
+    const aprRetailData = processRawData(mtdData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
+    const aprRevaData = processRawData(mtdData?.filter(item => item.Department === 'REVA') || []);
+    const aprWholesaleData = processRawData(mtdData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-    ) || [];
+    ) || []);
     
-    console.log('April data breakdown:', {
-      retail: retailData.length,
-      reva: revaData.length,
-      wholesale: wholesaleData.length
-    });
-    
-    // Process March Rolling data
-    const marchRetailData = marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
-    const marchRevaData = marchRollingData?.filter(item => item.Department === 'REVA') || [];
-    const marchWholesaleData = marchRollingData?.filter(item => 
+    // For March (Rolling) data
+    const marchRetailData = processRawData(marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
+    const marchRevaData = processRawData(marchRollingData?.filter(item => item.Department === 'REVA') || []);
+    const marchWholesaleData = processRawData(marchRollingData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-    ) || [];
-    
-    console.log('March Rolling data breakdown:', {
-      retail: marchRetailData.length,
-      reva: marchRevaData.length,
-      wholesale: marchWholesaleData.length
-    });
-    
-    // Transform data
-    const processData = (data: any[]): RepData[] => {
-      const repMap = new Map<string, {
-        rep: string;
-        spend: number;
-        profit: number;
-        packs: number;
-        activeAccounts: Set<string>;
-        totalAccounts: Set<string>;
-        profitPerActiveShop: number;
-        profitPerPack: number;
-        activeRatio: number;
-      }>();
-      
-      data.forEach(item => {
-        let repName;
-        
-        if (item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
-          repName = item['Sub-Rep'];
-        } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
-          return;
-        } else {
-          repName = item.Rep;
-        }
-        
-        if (!repName) {
-          console.log('Found item without Rep name:', item);
-          return;
-        }
-        
-        if (!repMap.has(repName)) {
-          repMap.set(repName, {
-            rep: repName,
-            spend: 0,
-            profit: 0,
-            packs: 0,
-            activeAccounts: new Set(),
-            totalAccounts: new Set(),
-            profitPerActiveShop: 0,
-            profitPerPack: 0,
-            activeRatio: 0
-          });
-        }
-        
-        const currentRep = repMap.get(repName)!;
-        
-        const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-        const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-        const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
-        
-        currentRep.spend += spend;
-        currentRep.profit += profit;
-        currentRep.packs += packs;
-        
-        if (item["Account Ref"]) {
-          currentRep.totalAccounts.add(item["Account Ref"]);
-          if (spend > 0) {
-            currentRep.activeAccounts.add(item["Account Ref"]);
-          }
-        }
-        
-        repMap.set(repName, currentRep);
-      });
-      
-      return Array.from(repMap.values()).map(rep => {
-        const margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
-        
-        return {
-          rep: rep.rep,
-          spend: rep.spend,
-          profit: rep.profit,
-          margin: margin,
-          packs: rep.packs,
-          activeAccounts: rep.activeAccounts.size,
-          totalAccounts: rep.totalAccounts.size,
-          profitPerActiveShop: rep.profitPerActiveShop,
-          profitPerPack: rep.profitPerPack,
-          activeRatio: rep.activeRatio
-        };
-      });
-    };
-    
-    // Process all data sets
-    const aprRetailData = processData(retailData);
-    const aprRevaData = processData(revaData);
-    const aprWholesaleData = processData(wholesaleData);
-    
-    const marchRetailRepData = processData(marchRetailData);
-    const marchRevaRepData = processData(marchRevaData);
-    const marchWholesaleRepData = processData(marchWholesaleData);
+    ) || []);
     
     // Calculate summaries - April
     const aprRetailSummary = calculateSummaryFromData(aprRetailData);
@@ -150,22 +50,27 @@ export const fetchRepPerformanceData = async () => {
     const aprWholesaleSummary = calculateSummaryFromData(aprWholesaleData);
     
     // Calculate summaries - March
-    const marchRetailSummary = calculateSummaryFromData(marchRetailRepData);
-    const marchRevaSummary = calculateSummaryFromData(marchRevaRepData);
-    const marchWholesaleSummary = calculateSummaryFromData(marchWholesaleRepData);
+    const marchRetailSummary = calculateSummaryFromData(marchRetailData);
+    const marchRevaSummary = calculateSummaryFromData(marchRevaData);
+    const marchWholesaleSummary = calculateSummaryFromData(marchWholesaleData);
     
-    // Calculate percentage changes between February and March
-    const summaryChanges = {
-      totalSpend: 0,
-      totalProfit: 0,
-      averageMargin: 0,
-      totalPacks: 0,
-      totalAccounts: 0,
-      activeAccounts: 0
+    // Calculate changes between March and April
+    const calculateChanges = (april: number, march: number): number => {
+      if (march === 0) return 0;
+      return ((april - march) / march) * 100;
     };
-
+    
+    const summaryChanges = {
+      totalSpend: calculateChanges(aprRetailSummary.totalSpend, marchRetailSummary.totalSpend),
+      totalProfit: calculateChanges(aprRetailSummary.totalProfit, marchRetailSummary.totalProfit),
+      averageMargin: calculateChanges(aprRetailSummary.averageMargin, marchRetailSummary.averageMargin),
+      totalPacks: calculateChanges(aprRetailSummary.totalPacks, marchRetailSummary.totalPacks),
+      totalAccounts: calculateChanges(aprRetailSummary.totalAccounts, marchRetailSummary.totalAccounts),
+      activeAccounts: calculateChanges(aprRetailSummary.activeAccounts, marchRetailSummary.activeAccounts)
+    };
+    
     // Calculate rep-level changes
-    const repChanges = {};
+    const repChanges = calculateRepChanges(aprRetailData, marchRetailData);
     
     return {
       repData: aprRetailData,
@@ -175,9 +80,9 @@ export const fetchRepPerformanceData = async () => {
       revaValues: aprRevaSummary,
       wholesaleValues: aprWholesaleSummary,
       
-      febRepData: marchRetailRepData,
-      febRevaData: marchRevaRepData,
-      febWholesaleData: marchWholesaleRepData,
+      febRepData: marchRetailData,
+      febRevaData: marchRevaData,
+      febWholesaleData: marchWholesaleData,
       febBaseSummary: marchRetailSummary,
       febRevaValues: marchRevaSummary,
       febWholesaleValues: marchWholesaleSummary,
@@ -195,3 +100,108 @@ export const fetchRepPerformanceData = async () => {
     throw error;
   }
 };
+
+// Helper function to transform raw data from Supabase into RepData format
+function processRawData(rawData: any[]): RepData[] {
+  const repMap = new Map<string, {
+    rep: string;
+    spend: number;
+    profit: number;
+    packs: number;
+    activeAccounts: Set<string>;
+    totalAccounts: Set<string>;
+  }>();
+  
+  rawData.forEach(item => {
+    let repName;
+    
+    if (item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+      repName = item['Sub-Rep'];
+    } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
+      return;
+    } else {
+      repName = item.Rep;
+    }
+    
+    if (!repName) {
+      console.log('Found item without Rep name:', item);
+      return;
+    }
+    
+    if (!repMap.has(repName)) {
+      repMap.set(repName, {
+        rep: repName,
+        spend: 0,
+        profit: 0,
+        packs: 0,
+        activeAccounts: new Set(),
+        totalAccounts: new Set()
+      });
+    }
+    
+    const currentRep = repMap.get(repName)!;
+    
+    const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+    const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+    const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+    
+    currentRep.spend += spend;
+    currentRep.profit += profit;
+    currentRep.packs += packs;
+    
+    if (item["Account Ref"]) {
+      currentRep.totalAccounts.add(item["Account Ref"]);
+      if (spend > 0) {
+        currentRep.activeAccounts.add(item["Account Ref"]);
+      }
+    }
+  });
+  
+  return Array.from(repMap.values()).map(rep => {
+    const activeAccounts = rep.activeAccounts.size;
+    const totalAccounts = rep.totalAccounts.size;
+    
+    return {
+      rep: rep.rep,
+      spend: rep.spend,
+      profit: rep.profit,
+      margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
+      packs: rep.packs,
+      activeAccounts: activeAccounts,
+      totalAccounts: totalAccounts,
+      profitPerActiveShop: activeAccounts > 0 ? rep.profit / activeAccounts : 0,
+      profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
+      activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
+    };
+  });
+}
+
+// Helper function to calculate changes between two sets of rep data
+function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
+  const changes: Record<string, any> = {};
+  
+  currentData.forEach(current => {
+    const previous = previousData.find(prev => prev.rep === current.rep);
+    
+    if (previous) {
+      const calculateChange = (currentValue: number, previousValue: number) => {
+        if (previousValue === 0) return 0;
+        return ((currentValue - previousValue) / previousValue) * 100;
+      };
+      
+      changes[current.rep] = {
+        spend: calculateChange(current.spend, previous.spend),
+        profit: calculateChange(current.profit, previous.profit),
+        margin: calculateChange(current.margin, previous.margin),
+        packs: calculateChange(current.packs, previous.packs),
+        activeAccounts: calculateChange(current.activeAccounts, previous.activeAccounts),
+        totalAccounts: calculateChange(current.totalAccounts, previous.totalAccounts),
+        profitPerActiveShop: calculateChange(current.profitPerActiveShop, previous.profitPerActiveShop),
+        profitPerPack: calculateChange(current.profitPerPack, previous.profitPerPack),
+        activeRatio: calculateChange(current.activeRatio, previous.activeRatio)
+      };
+    }
+  });
+  
+  return changes;
+}

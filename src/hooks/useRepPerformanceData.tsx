@@ -78,6 +78,15 @@ export const useRepPerformanceData = () => {
       setSummaryChanges(data.summaryChanges);
       setRepChanges(data.repChanges);
       
+      if (selectedMonth === 'April') {
+        setAprRepData(data.repData);
+        setAprRevaData(data.revaData);
+        setAprWholesaleData(data.wholesaleData);
+        setAprBaseSummary(data.baseSummary);
+        setAprRevaValues(data.revaValues);
+        setAprWholesaleValues(data.wholesaleValues);
+      }
+      
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
@@ -128,8 +137,12 @@ export const useRepPerformanceData = () => {
   };
   
   const getFebValue = (repName: string, metricType: string, metricValue: number, changeValue: number): string => {
+    if (!repName || !metricType || metricValue === undefined || changeValue === undefined) {
+      return "0";
+    }
+    
     const rep = febRepData.find(rep => rep.rep === repName);
-    if (rep) {
+    if (rep && rep[metricType as keyof RepData] !== undefined) {
       const value = rep[metricType as keyof RepData] as number;
       return value.toString();
     }
