@@ -1,4 +1,3 @@
-
 -- Function to get the total count of records
 CREATE OR REPLACE FUNCTION public.get_total_count()
 RETURNS integer
@@ -441,4 +440,72 @@ BEGIN
   
   RETURN result;
 END;
+$$;
+
+-- Function to fetch all records from the mtd_daily table (April data)
+CREATE OR REPLACE FUNCTION public.fetch_all_mtd_data()
+RETURNS TABLE (
+  "Cost" numeric,
+  "id" text,
+  "Spend" numeric,
+  "Credit" numeric,
+  "Profit" numeric,
+  "Margin" numeric,
+  "Packs" numeric,
+  "Rep" text,
+  "Sub-Rep" text,
+  "Department" text,
+  "Account Ref" text,
+  "Account Name" text
+)
+LANGUAGE sql
+AS $$
+  SELECT 
+    "Cost", 
+    "id", 
+    "Spend", 
+    "Credit", 
+    "Profit", 
+    "Margin", 
+    "Packs", 
+    "Rep", 
+    "Sub-Rep", 
+    "Department", 
+    "Account Ref", 
+    "Account Name"
+  FROM mtd_daily;
+$$;
+
+-- Function to fetch all records from the march_rolling table (March data)
+CREATE OR REPLACE FUNCTION public.fetch_all_march_rolling_data()
+RETURNS TABLE (
+  "Cost" numeric,
+  "id" text,
+  "Spend" numeric,
+  "Credit" numeric,
+  "Profit" numeric,
+  "Margin" numeric,
+  "Packs" numeric,
+  "Rep" text,
+  "Sub-Rep" text,
+  "Department" text,
+  "Account Ref" text,
+  "Account Name" text
+)
+LANGUAGE sql
+AS $$
+  SELECT 
+    "Cost", 
+    "id", 
+    "Spend", 
+    "Credit", 
+    "Profit", 
+    "Margin", 
+    "Packs", 
+    "Rep", 
+    "Sub-Rep", 
+    "Department", 
+    "Account Ref", 
+    "Account Name"
+  FROM march_rolling;
 $$;
