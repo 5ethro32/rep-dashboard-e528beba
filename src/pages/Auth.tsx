@@ -28,11 +28,6 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      // Enhanced client-side domain check with specific error message
-      if (!isValidDomain(email)) {
-        throw new Error('Only @avergenerics.co.uk email addresses are allowed.');
-      }
-
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
