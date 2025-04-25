@@ -28,7 +28,7 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      // Check domain before attempting signup or login
+      // Client-side domain check for early feedback
       if (!isValidDomain(email)) {
         throw new Error('Only avergenerics.co.uk email addresses are allowed.');
       }
