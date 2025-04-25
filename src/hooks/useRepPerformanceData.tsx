@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -296,22 +295,16 @@ export const useRepPerformanceData = () => {
         
         console.log(`Transformed data into ${repMap.size} unique reps`);
         return Array.from(repMap.values()).map(rep => {
-          // Calculate these values before returning the final object
-          const activeAccountsSize = rep.activeAccounts.size;
-          const totalAccountsSize = rep.totalAccounts.size;
-          
-          rep.profitPerActiveShop = activeAccountsSize > 0 ? rep.profit / activeAccountsSize : 0;
-          rep.profitPerPack = rep.packs > 0 ? rep.profit / rep.packs : 0;
-          rep.activeRatio = totalAccountsSize > 0 ? (activeAccountsSize / totalAccountsSize) * 100 : 0;
+          const margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
           
           return {
             rep: rep.rep,
             spend: rep.spend,
             profit: rep.profit,
-            margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
+            margin: margin,
             packs: rep.packs,
-            activeAccounts: activeAccountsSize,
-            totalAccounts: totalAccountsSize,
+            activeAccounts: rep.activeAccounts.size,
+            totalAccounts: rep.totalAccounts.size,
             profitPerActiveShop: rep.profitPerActiveShop,
             profitPerPack: rep.profitPerPack,
             activeRatio: rep.activeRatio
