@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -175,7 +174,7 @@ export const useRepPerformanceData = () => {
       
       // Safely handle potentially null mtdCheckData
       const mtdRecordCount = mtdCheckData ? mtdCheckData.length : 0;
-      console.log(`MTD Daily table check - Records: ${mtdRecordCount}`);
+      console.log(`MTD Daily table check - Records found: ${mtdRecordCount}`);
       
       console.log('Checking March Rolling table...');
       const { data: marchRollingData, error: marchRollingError } = await fetchMarchRollingData();
@@ -188,12 +187,20 @@ export const useRepPerformanceData = () => {
       const marchRollingCount = marchRollingData?.length || 0;
       console.log(`March Rolling records: ${marchRollingCount}`);
       
-      // If no mtd data is found, we'll use default values and return early
+      // If no mtd data is found, log detailed info before warning
       if (!mtdCheckData || mtdCheckData.length === 0) {
-        console.warn('No records found in MTD Daily table');
+        console.warn('No records found in MTD Daily table - Detailed API Response:', { data: mtdCheckData });
+        
+        // Let's try a direct count query to verify the table
+        const { count, error: countError } = await supabase
+          .from('mtd_daily')
+          .select('*', { count: 'exact', head: true });
+          
+        console.log('Direct count check on mtd_daily table:', { count, error: countError });
+        
         toast({
           title: "No April data found",
-          description: "The MTD Daily table appears to be empty. Using March data instead.",
+          description: "The MTD Daily table appears to be empty or inaccessible. Using March data instead.",
           variant: "destructive",
         });
         setIsLoading(false);

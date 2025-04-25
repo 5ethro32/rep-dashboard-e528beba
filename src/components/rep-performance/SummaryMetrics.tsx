@@ -46,7 +46,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // Create a change indicator for the KPI cards
   const renderChangeIndicator = (changeValue: number) => {
     // Safety check to avoid NaN or null values
-    if (!showChangeIndicators || !changeValue || isNaN(changeValue) || Math.abs(changeValue) < 0.1) return undefined;
+    if (!showChangeIndicators || changeValue === undefined || changeValue === null || isNaN(changeValue) || Math.abs(changeValue) < 0.1) return undefined;
     
     return {
       value: `${Math.abs(changeValue).toFixed(1)}%`,
@@ -56,7 +56,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
 
   // Calculate previous value based on current value and percent change
   const getPreviousValue = (current: number, changePercent: number) => {
-    if (!showChangeIndicators || !changePercent || isNaN(changePercent) || Math.abs(changePercent) < 0.1) return current;
+    if (!showChangeIndicators || changePercent === undefined || changePercent === null || isNaN(changePercent) || Math.abs(changePercent) < 0.1) return current;
     return current / (1 + changePercent / 100);
   };
 
@@ -75,15 +75,30 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     showChangeIndicators 
   });
 
+  // Ensure we have valid data to prevent crashes
+  const safeTotal = {
+    spend: summary?.totalSpend || 0,
+    profit: summary?.totalProfit || 0,
+    margin: summary?.averageMargin || 0,
+    packs: summary?.totalPacks || 0
+  };
+
+  const safeChanges = {
+    spend: filteredChanges?.totalSpend || 0,
+    profit: filteredChanges?.totalProfit || 0, 
+    margin: filteredChanges?.averageMargin || 0,
+    packs: filteredChanges?.totalPacks || 0
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
       {/* Revenue Card */}
       <MetricCard
         title="Revenue"
-        value={formatCurrency(summary?.totalSpend || 0, 0)}
-        change={renderChangeIndicator(filteredChanges?.totalSpend)}
+        value={formatCurrency(safeTotal.spend, 0)}
+        change={renderChangeIndicator(safeChanges.spend)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary?.totalSpend || 0, filteredChanges?.totalSpend), 0)}` : 
+          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(safeTotal.spend, safeChanges.spend), 0)}` : 
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         isLoading={isLoading}
@@ -92,10 +107,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       {/* Profit Card */}
       <MetricCard
         title="Profit"
-        value={formatCurrency(summary?.totalProfit || 0, 0)}
-        change={renderChangeIndicator(filteredChanges?.totalProfit)}
+        value={formatCurrency(safeTotal.profit, 0)}
+        change={renderChangeIndicator(safeChanges.profit)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary?.totalProfit || 0, filteredChanges?.totalProfit), 0)}` :
+          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(safeTotal.profit, safeChanges.profit), 0)}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         valueClassName="text-finance-red"
@@ -105,10 +120,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       {/* Margin Card */}
       <MetricCard
         title="Margin"
-        value={formatPercent(summary?.averageMargin || 0)}
-        change={renderChangeIndicator(filteredChanges?.averageMargin)}
+        value={formatPercent(safeTotal.margin)}
+        change={renderChangeIndicator(safeChanges.margin)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatPercent(getPreviousValue(summary?.averageMargin || 0, filteredChanges?.averageMargin))}` :
+          `${getComparisonMonthText()}: ${formatPercent(getPreviousValue(safeTotal.margin, safeChanges.margin))}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         isLoading={isLoading}
@@ -117,10 +132,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       {/* Packs Card */}
       <MetricCard
         title="Packs"
-        value={formatNumber(summary?.totalPacks || 0)}
-        change={renderChangeIndicator(filteredChanges?.totalPacks)}
+        value={formatNumber(safeTotal.packs)}
+        change={renderChangeIndicator(safeChanges.packs)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatNumber(getPreviousValue(summary?.totalPacks || 0, filteredChanges?.totalPacks))}` :
+          `${getComparisonMonthText()}: ${formatNumber(getPreviousValue(safeTotal.packs, safeChanges.packs))}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         isLoading={isLoading}

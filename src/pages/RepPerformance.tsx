@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
@@ -46,9 +46,19 @@ const RepPerformance = () => {
   const activeData = getActiveData('overall');
   const isMobile = useIsMobile();
   
-  const currentBaseSummary = selectedMonth === 'April' ? aprBaseSummary : baseSummary;
-  const currentRevaValues = selectedMonth === 'April' ? aprRevaValues : revaValues;
-  const currentWholesaleValues = selectedMonth === 'April' ? aprWholesaleValues : wholesaleValues;
+  const currentBaseSummary = selectedMonth === 'April' ? (aprBaseSummary || baseSummary) : baseSummary;
+  const currentRevaValues = selectedMonth === 'April' ? (aprRevaValues || revaValues) : revaValues;
+  const currentWholesaleValues = selectedMonth === 'April' ? (aprWholesaleValues || wholesaleValues) : wholesaleValues;
+  
+  useEffect(() => {
+    if (selectedMonth === 'April' && (!aprBaseSummary || !aprRevaValues || !aprWholesaleValues)) {
+      console.log('Debug: April data is incomplete', { 
+        aprBaseSummary: !!aprBaseSummary, 
+        aprRevaValues: !!aprRevaValues, 
+        aprWholesaleValues: !!aprWholesaleValues 
+      });
+    }
+  }, [selectedMonth, aprBaseSummary, aprRevaValues, aprWholesaleValues]);
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
