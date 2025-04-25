@@ -23,14 +23,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        
-        // Check if user has admin role
-        if (currentSession?.user) {
-          checkUserRole(currentSession.user.id);
-        } else {
+        if (event === 'SIGNED_OUT') {
+          // Explicitly clear user and session state on sign out
+          setUser(null);
+          setSession(null);
           setIsAdmin(false);
+        } else {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          
+          // Check if user has admin role
+          if (currentSession?.user) {
+            checkUserRole(currentSession.user.id);
+          } else {
+            setIsAdmin(false);
+          }
         }
         
         setLoading(false);
@@ -76,7 +83,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
+    
+    // Explicitly clear state after signOut
+    setUser(null);
+    setSession(null);
+    setIsAdmin(false);
   };
 
   const value = {

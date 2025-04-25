@@ -5,11 +5,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const UserProfileButton = () => {
   const { user, signOut } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -19,6 +21,8 @@ const UserProfileButton = () => {
         title: "Signed out",
         description: "You have been successfully signed out."
       });
+      // Redirect to auth page after successful sign out
+      navigate('/auth');
     } catch (error: any) {
       toast({
         title: "Error",
