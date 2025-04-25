@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -162,6 +163,7 @@ export const useRepPerformanceData = () => {
       console.group('Loading April Data');
       console.log('Checking MTD Daily table...');
       
+      // Check if the mtd_daily table exists with a safer query approach
       const { data: mtdCheckData, error: mtdCheckError } = await supabase
         .from('mtd_daily')
         .select('*', { count: 'exact', head: true });
@@ -171,7 +173,9 @@ export const useRepPerformanceData = () => {
         throw new Error(`Error getting MTD Daily data: ${mtdCheckError.message}`);
       }
       
-      console.log(`MTD Daily table check - Records: ${mtdCheckData.length}`);
+      // Safely handle potentially null mtdCheckData
+      const mtdRecordCount = mtdCheckData ? mtdCheckData.length : 0;
+      console.log(`MTD Daily table check - Records: ${mtdRecordCount}`);
       
       console.log('Checking March Rolling table...');
       const { data: marchRollingData, error: marchRollingError } = await fetchMarchRollingData();
@@ -181,23 +185,29 @@ export const useRepPerformanceData = () => {
         throw new Error(`Error getting March Rolling data: ${marchRollingError.message}`);
       }
       
-      console.log(`March Rolling records: ${marchRollingData?.length || 0}`);
+      const marchRollingCount = marchRollingData?.length || 0;
+      console.log(`March Rolling records: ${marchRollingCount}`);
       
+      // If no mtd data is found, we'll use default values and return early
       if (!mtdCheckData || mtdCheckData.length === 0) {
         console.warn('No records found in MTD Daily table');
         toast({
           title: "No April data found",
-          description: "The MTD Daily table appears to be empty.",
+          description: "The MTD Daily table appears to be empty. Using March data instead.",
           variant: "destructive",
         });
+        setIsLoading(false);
         return false;
       }
       
       console.groupEnd();
       
       let allRecords = [];
+      // Be defensive here: make sure we have data before trying to calculate pagination
+      const recordCount = mtdCheckData?.length || 0;
       const pageSize = 1000;
-      const pages = Math.ceil(mtdCheckData.length / pageSize);
+      // Use Math.max to ensure we fetch at least one page even if recordCount is 0
+      const pages = Math.max(1, Math.ceil(recordCount / pageSize));
       
       for (let page = 0; page < pages; page++) {
         const from = page * pageSize;
@@ -209,13 +219,22 @@ export const useRepPerformanceData = () => {
           .range(from, to);
         
         if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
-        if (pageData) allRecords = [...allRecords, ...pageData];
-        
-        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records`);
+        // Make sure pageData exists before trying to spread it
+        if (pageData && pageData.length > 0) {
+          allRecords = [...allRecords, ...pageData];
+          console.log(`Fetched page ${page + 1}/${pages} with ${pageData.length} records`);
+        } else {
+          console.log(`No data found on page ${page + 1}/${pages}`);
+        }
       }
       
       const mtdData = allRecords;
       console.log('Fetched April MTD records total count:', mtdData.length);
+      
+      // Defensive coding: make sure we have data before proceeding
+      if (!mtdData || mtdData.length === 0) {
+        throw new Error('No valid data found for April in the MTD Daily table.');
+      }
       
       const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
       const revaData = mtdData.filter(item => item.Department === 'REVA');
@@ -225,6 +244,7 @@ export const useRepPerformanceData = () => {
       
       console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
       
+      // Safe handling of marchRollingData
       const marchRetailData = marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
       const marchRevaData = marchRollingData?.filter(item => item.Department === 'REVA') || [];
       const marchWholesaleData = marchRollingData?.filter(item => 
