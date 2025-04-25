@@ -23,6 +23,11 @@ const Auth = () => {
     setLoading(true);
     
     try {
+      // Add email domain validation before attempting signup or login
+      if (!email.toLowerCase().endsWith('@avergenerics.co.uk')) {
+        throw new Error('Only avergenerics.co.uk email addresses are allowed.');
+      }
+
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -84,9 +89,7 @@ const Auth = () => {
           <CardHeader>
             <CardTitle>{isLogin ? 'Sign In' : 'Create Account'}</CardTitle>
             <CardDescription className="text-finance-gray">
-              {isLogin 
-                ? 'Enter your credentials to access the dashboard' 
-                : 'Register for a new account to access the dashboard'}
+              Only avergenerics.co.uk email addresses are allowed
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleAuth}>
