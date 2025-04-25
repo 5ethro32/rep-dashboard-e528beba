@@ -163,9 +163,10 @@ export const useRepPerformanceData = () => {
       console.log('Getting all MTD Daily data without pagination...');
       
       // Direct query for all mtd_daily records without any pagination, range, or count limitations
-      const { data: mtdData, error: mtdError } = await supabase
+      // Set count to exact to ensure we get accurate record counts
+      const { data: mtdData, error: mtdError, count: mtdCount } = await supabase
         .from('mtd_daily')
-        .select('*');
+        .select('*', { count: 'exact' });
       
       if (mtdError) {
         console.error('Error fetching MTD Daily data:', mtdError);
@@ -173,12 +174,12 @@ export const useRepPerformanceData = () => {
       }
       
       const mtdRecordCount = mtdData?.length || 0;
-      console.log(`MTD Daily full data fetch - Records found: ${mtdRecordCount}`);
+      console.log(`MTD Daily full data fetch - Records found: ${mtdRecordCount}, Count from API: ${mtdCount || 'unknown'}`);
       
       // Direct query for all march_rolling records without pagination
-      const { data: marchRollingData, error: marchRollingError } = await supabase
+      const { data: marchRollingData, error: marchRollingError, count: marchCount } = await supabase
         .from('march_rolling')
-        .select('*');
+        .select('*', { count: 'exact' });
       
       if (marchRollingError) {
         console.error('Error fetching March Rolling data:', marchRollingError);
@@ -186,7 +187,7 @@ export const useRepPerformanceData = () => {
       }
       
       const marchRollingCount = marchRollingData?.length || 0;
-      console.log(`March Rolling records: ${marchRollingCount}`);
+      console.log(`March Rolling records: ${marchRollingCount}, Count from API: ${marchCount || 'unknown'}`);
       
       // If no mtd data is found, show error
       if (!mtdData || mtdData.length === 0) {
@@ -204,6 +205,7 @@ export const useRepPerformanceData = () => {
       console.log('Fetched all April MTD records total count:', mtdData.length);
       console.log('Sample MTD data:', mtdData.slice(0, 3));
       
+      // Process the April data
       const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
       const revaData = mtdData.filter(item => item.Department === 'REVA');
       const wholesaleData = mtdData.filter(item => 

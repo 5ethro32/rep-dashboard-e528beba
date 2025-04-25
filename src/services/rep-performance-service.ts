@@ -335,20 +335,22 @@ const loadAprilData = async () => {
     console.group('Loading April Data');
     console.log('Fetching all MTD Daily data without pagination...');
     
-    // Get all MTD data without pagination or any limits
+    // Get all MTD data without pagination or any limits - EXPLICITLY set no-count to true
     const { data: mtdData, error: mtdError } = await supabase
       .from('mtd_daily')
-      .select('*');
+      .select('*', { count: 'exact' });
     
     if (mtdError) {
       console.error('Error fetching MTD Daily data:', mtdError);
       throw new Error(`Error fetching MTD Daily data: ${mtdError.message}`);
     }
     
-    // Get all March Rolling data without pagination or limits
+    console.log(`Retrieved ${mtdData?.length || 0} MTD daily records`);
+    
+    // Get all March Rolling data without pagination or limits - EXPLICITLY set count to exact
     const { data: marchRollingData, error: marchRollingError } = await supabase
       .from('march_rolling')
-      .select('*');
+      .select('*', { count: 'exact' });
     
     if (marchRollingError) {
       console.error('Error fetching March Rolling data:', marchRollingError);
@@ -358,7 +360,7 @@ const loadAprilData = async () => {
     const mtdRecordCount = mtdData?.length || 0;
     const marchRollingCount = marchRollingData?.length || 0;
     
-    console.log(`Fetched ${mtdRecordCount} April MTD records and ${marchRollingCount} March rolling records without pagination`);
+    console.log(`Fetched ${mtdRecordCount} April MTD records and ${marchRollingCount} March rolling records with exact count`);
     
     // Check if we actually have data
     if (!mtdData || mtdData.length === 0) {
