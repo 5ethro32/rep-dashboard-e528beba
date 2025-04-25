@@ -48,7 +48,8 @@ const Auth = () => {
         navigate('/rep-performance');
         
       } else {
-        const { error } = await supabase.auth.signUp({
+        console.log('Attempting signup with:', email);
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -58,13 +59,20 @@ const Auth = () => {
         
         if (error) throw error;
         
+        console.log('Signup successful, data:', data);
         toast({
           title: "Success!",
           description: "Registration successful. Please check your email for verification.",
         });
+        
+        // Auto-login if email verification is disabled
+        if (data?.session) {
+          navigate('/rep-performance');
+        }
       }
     } catch (error: any) {
       // Improved error handling with more specific messages
+      console.error('Auth error:', error);
       let errorMessage = error.message || "Authentication failed";
       
       // Handle specific errors
