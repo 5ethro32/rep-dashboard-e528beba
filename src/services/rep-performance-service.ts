@@ -150,7 +150,9 @@ function processRawData(rawData: any[]): RepData[] {
   rawData.forEach(item => {
     let repName;
     
-    if (item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+    if (item['Sub-Rep'] && 
+        item['Sub-Rep'].trim() !== '' && 
+        item['Sub-Rep'].trim().toUpperCase() !== 'NONE') {
       repName = item['Sub-Rep'];
     } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
       return;
@@ -192,7 +194,7 @@ function processRawData(rawData: any[]): RepData[] {
     }
   });
   
-  return Array.from(repMap.values()).map(rep => {
+  const repDataArray = Array.from(repMap.values()).map(rep => {
     const activeAccounts = rep.activeAccounts.size;
     const totalAccounts = rep.totalAccounts.size;
     
@@ -209,6 +211,13 @@ function processRawData(rawData: any[]): RepData[] {
       activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
     };
   });
+  
+  // Filter out reps where all metrics are zero
+  const filteredRepData = repDataArray.filter(rep => {
+    return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
+  });
+  
+  return filteredRepData;
 }
 
 // Helper function to calculate changes between two sets of rep data
