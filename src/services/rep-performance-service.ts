@@ -470,7 +470,6 @@ const fetchDepartmentData = async (department: string, isMarch: boolean) => {
   let hasMoreData = true;
   
   // Use explicit table name strings rather than dynamic ones
-  // This avoids TypeScript's deep type instantiation error
   const tableName = isMarch ? 'sales_data' : 'sales_data_februrary';
   
   while (hasMoreData) {
@@ -478,6 +477,7 @@ const fetchDepartmentData = async (department: string, isMarch: boolean) => {
     
     if (isMarch) {
       // For March data from sales_data table
+      // Removed authentication-specific filtering
       query = supabase
         .from(tableName as 'sales_data')
         .select('*')
