@@ -185,11 +185,18 @@ export const useRepPerformanceData = () => {
       
       if (!mtdCheckData || mtdCheckData.length === 0) {
         console.warn('No records found in MTD Daily table');
-        toast({
-          title: "No April data found",
-          description: "The MTD Daily table appears to be empty.",
-          variant: "destructive",
-        });
+        // Don't show error toast - we'll just use the March data
+        // toast({
+        //  title: "No April data found",
+        //  description: "The MTD Daily table appears to be empty.",
+        //  variant: "destructive",
+        // });
+        
+        // Process March rolling data for display
+        if (marchRollingData && marchRollingData.length > 0) {
+          processAndSetMarchData(marchRollingData);
+          return true; // Return true to indicate successful data load (just March data)
+        }
         return false;
       }
       
@@ -214,7 +221,7 @@ export const useRepPerformanceData = () => {
         console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records`);
       }
       
-      const mtdData = allRecords;
+      const mtdData = allRecords || [];
       console.log('Fetched April MTD records total count:', mtdData.length);
       
       const retailData = mtdData.filter(item => item && (!item.Department || item.Department === 'RETAIL'));
@@ -225,23 +232,10 @@ export const useRepPerformanceData = () => {
       
       console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
       
-      if (!marchRollingData) {
-        console.warn('March Rolling data is null or undefined');
-        const marchRetailData = [];
-        const marchRevaData = [];
-        const marchWholesaleData = [];
-      } else {
-        const marchRetailData = marchRollingData.filter(item => item && (!item.Department || item.Department === 'RETAIL'));
-        const marchRevaData = marchRollingData.filter(item => item && item.Department === 'REVA');
-        const marchWholesaleData = marchRollingData.filter(item => 
-          item && (item.Department === 'Wholesale' || item.Department === 'WHOLESALE')
-        );
-      }
-
-      const marchRetailData = marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
-      const marchRevaData = marchRollingData?.filter(item => item.Department === 'REVA') || [];
+      const marchRetailData = marchRollingData?.filter(item => item && (!item.Department || item.Department === 'RETAIL')) || [];
+      const marchRevaData = marchRollingData?.filter(item => item && item.Department === 'REVA') || [];
       const marchWholesaleData = marchRollingData?.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+        item && (item.Department === 'Wholesale' || item.Department === 'WHOLESALE')
       ) || [];
 
       const transformData = (data: any[], isDepartmentData = false): RepData[] => {
@@ -503,6 +497,156 @@ export const useRepPerformanceData = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const processAndSetMarchData = (marchRollingData: any[]) => {
+    if (!marchRollingData || marchRollingData.length === 0) return;
+    
+    const marchRetailData = marchRollingData.filter(item => item && (!item.Department || item.Department === 'RETAIL')) || [];
+    const marchRevaData = marchRollingData.filter(item => item && item.Department === 'REVA') || [];
+    const marchWholesaleData = marchRollingData.filter(item => 
+      item && (item.Department === 'Wholesale' || item.Department === 'WHOLESALE')
+    ) || [];
+
+    const transformData = (data: any[], isDepartmentData = false): RepData[] => {
+      if (!data || data.length === 0) return [];
+      
+      const repMap = new Map<string, {
+        rep: string;
+        spend: number;
+        profit: number;
+        packs: number;
+        activeAccounts: Set<string>;
+        totalAccounts: Set<string>;
+        profitPerActiveShop: number;
+        profitPerPack: number;
+        activeRatio: number;
+      }>();
+      
+      data.forEach(item => {
+        if (!item) return;
+        
+        let repName;
+        
+        if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+          repName = item['Sub-Rep'];
+        } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
+          return;
+        } else {
+          repName = item.Rep;
+        }
+        
+        if (!repName) return;
+        
+        if (!repMap.has(repName)) {
+          repMap.set(repName, {
+            rep: repName,
+            spend: 0,
+            profit: 0,
+            packs: 0,
+            activeAccounts: new Set(),
+            totalAccounts: new Set(),
+            profitPerActiveShop: 0,
+            profitPerPack: 0,
+            activeRatio: 0
+          });
+        }
+        
+        const currentRep = repMap.get(repName)!;
+        
+        const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+        const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+        const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+        
+        currentRep.spend += spend;
+        currentRep.profit += profit;
+        currentRep.packs += packs;
+        
+        if (item["Account Ref"]) {
+          currentRep.totalAccounts.add(item["Account Ref"]);
+          if (spend > 0) {
+            currentRep.activeAccounts.add(item["Account Ref"]);
+          }
+        }
+        
+        repMap.set(repName, currentRep);
+      });
+      
+      return Array.from(repMap.values()).map(rep => {
+        const margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
+        
+        return {
+          rep: rep.rep,
+          spend: rep.spend,
+          profit: rep.profit,
+          margin: margin,
+          packs: rep.packs,
+          activeAccounts: rep.activeAccounts.size,
+          totalAccounts: rep.totalAccounts.size,
+          profitPerActiveShop: rep.profitPerActiveShop || 0,
+          profitPerPack: rep.profitPerPack || 0,
+          activeRatio: rep.activeRatio || 0
+        };
+      }).filter(rep => {
+        return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
+      });
+    };
+    
+    const marchRetailRepData = transformData(marchRetailData);
+    const marchRevaRepData = transformData(marchRevaData, true);
+    const marchWholesaleRepData = transformData(marchWholesaleData, true);
+    
+    setAprRepData(marchRetailRepData);
+    setAprRevaData(marchRevaRepData);
+    setAprWholesaleData(marchWholesaleRepData);
+    
+    const marchRetailSummary = calculateDeptSummary(marchRetailData);
+    const marchRevaSummary = calculateDeptSummary(marchRevaData);
+    const marchWholesaleSummary = calculateDeptSummary(marchWholesaleData);
+    
+    setAprBaseSummary(marchRetailSummary);
+    setAprRevaValues(marchRevaSummary);
+    setAprWholesaleValues(marchWholesaleSummary);
+    
+    const combinedMarchData = getCombinedRepData(
+      marchRetailRepData,
+      marchRevaRepData,
+      marchWholesaleRepData,
+      includeRetail,
+      includeReva,
+      includeWholesale
+    );
+    
+    if (selectedMonth === 'April') {
+      setOverallData(combinedMarchData);
+    }
+    
+    const noChanges = {
+      totalSpend: 0,
+      totalProfit: 0,
+      averageMargin: 0,
+      totalPacks: 0,
+      totalAccounts: 0,
+      activeAccounts: 0
+    };
+    
+    setSummaryChanges(noChanges);
+    
+    const currentData = loadStoredRepPerformanceData() || {};
+    saveRepPerformanceData({
+      ...currentData,
+      aprRepData: marchRetailRepData,
+      aprRevaData: marchRevaRepData,
+      aprWholesaleData: marchWholesaleRepData,
+      aprBaseSummary: marchRetailSummary,
+      aprRevaValues: marchRevaSummary,
+      aprWholesaleValues: marchWholesaleSummary
+    });
+    
+    toast({
+      title: "March data loaded for April view",
+      description: `No April data available. Showing ${marchRollingData.length} March records instead.`,
+    });
   };
 
   const loadDataFromSupabase = async () => {
