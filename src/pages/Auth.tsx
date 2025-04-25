@@ -18,13 +18,18 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Function to validate if email has the correct domain
+  const isValidDomain = (email: string) => {
+    return email.toLowerCase().endsWith('@avergenerics.co.uk');
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      // Add email domain validation before attempting signup or login
-      if (!email.toLowerCase().endsWith('@avergenerics.co.uk')) {
+      // Check domain before attempting signup or login
+      if (!isValidDomain(email)) {
         throw new Error('Only avergenerics.co.uk email addresses are allowed.');
       }
 
@@ -59,9 +64,21 @@ const Auth = () => {
         });
       }
     } catch (error: any) {
+      // Improved error handling with more specific messages
+      let errorMessage = error.message || "Authentication failed";
+      
+      // Handle specific errors
+      if (errorMessage.includes('avergenerics.co.uk')) {
+        errorMessage = "Only avergenerics.co.uk email addresses are allowed.";
+      } else if (errorMessage.includes('User already registered')) {
+        errorMessage = "This email is already registered. Please sign in instead.";
+      } else if (errorMessage.includes('Invalid login credentials')) {
+        errorMessage = "Invalid email or password. Please try again.";
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Authentication failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -99,7 +116,7 @@ const Auth = () => {
                 <Input 
                   id="email"
                   type="email" 
-                  placeholder="name@company.com" 
+                  placeholder="name@avergenerics.co.uk" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
