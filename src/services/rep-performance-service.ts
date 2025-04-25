@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -221,6 +220,28 @@ export const fetchRepPerformanceData = async () => {
       processedFebRevaData,
       processedFebWholesaleData
     );
+
+    // Try to load April data, but handle potential errors more gracefully
+    let aprBaseSummary, aprRevaValues, aprWholesaleValues;
+    try {
+      const aprilData = await loadAprilData();
+      if (aprilData && aprilData.apr) {
+        aprBaseSummary = aprilData.apr.baseSummary || calculatedSummary;
+        aprRevaValues = aprilData.apr.revaValues || revaSummary;
+        aprWholesaleValues = aprilData.apr.wholesaleValues || wholesaleSummary;
+      } else {
+        // If aprilData is missing or incomplete, use March data as fallback
+        aprBaseSummary = calculatedSummary;
+        aprRevaValues = revaSummary;
+        aprWholesaleValues = wholesaleSummary;
+      }
+    } catch (error) {
+      console.error('Comprehensive error in loadAprilData:', error);
+      // Use March data as fallback if April data fails
+      aprBaseSummary = calculatedSummary;
+      aprRevaValues = revaSummary;
+      aprWholesaleValues = wholesaleSummary;
+    }
     
     return {
       // Current month data
@@ -239,6 +260,11 @@ export const fetchRepPerformanceData = async () => {
       febRevaValues: revaFebSummary,
       febWholesaleValues: wholesaleFebSummary,
       
+      // April data (with fallbacks)
+      aprBaseSummary: aprBaseSummary,
+      aprRevaValues: aprRevaValues,
+      aprWholesaleValues: aprWholesaleValues,
+      
       // Changes between months
       summaryChanges,
       repChanges
@@ -251,6 +277,101 @@ export const fetchRepPerformanceData = async () => {
       variant: "destructive",
     });
     throw error;
+  }
+};
+
+// Helper function for loading April data with better error handling
+const loadAprilData = async () => {
+  try {
+    // Check for April data in mtd_daily table
+    const { data: aprilMtdData, error: aprilMtdError } = await supabase
+      .from('mtd_daily')
+      .select('*');
+    
+    if (aprilMtdError) {
+      console.error('Error loading April MTD data:', aprilMtdError);
+      throw aprilMtdError;
+    }
+    
+    // Check if we actually have data
+    if (!aprilMtdData || aprilMtdData.length === 0) {
+      console.log('No April data found in mtd_daily, using March data fallback');
+      return null;
+    }
+    
+    // Safe mapping of April data
+    const mappedAprilData = aprilMtdData.map((item: any) => {
+      try {
+        // Parse numerical values properly, ensuring they're numbers and not strings
+        const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+        const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+        const cost = typeof item.Cost === 'string' ? parseFloat(item.Cost) : Number(item.Cost || 0);
+        const credit = typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0);
+        const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
+        const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+        
+        // Handle rep name and department safely
+        let repName = item.Rep || '';
+        const subRep = item['Sub-Rep'] || '';
+        const department = item.Department || 'RETAIL';
+        
+        if ((department === 'REVA' || department === 'Wholesale' || department === 'WHOLESALE') && subRep) {
+          repName = subRep;
+        }
+        
+        return {
+          id: item.id || 0,
+          reporting_period: 'April 2025',
+          rep_name: repName,
+          sub_rep: subRep,
+          account_ref: item['Account Ref'] || '',
+          account_name: item['Account Name'] || '',
+          spend: spend,
+          cost: cost,
+          credit: credit,
+          profit: profit,
+          margin: margin,
+          packs: packs,
+          rep_type: department,
+          original_dept: department,
+          import_date: new Date().toISOString()
+        };
+      } catch (itemError) {
+        console.error('Error processing April data item:', itemError, item);
+        return null;
+      }
+    }).filter(Boolean); // Remove any null items from mapping errors
+    
+    // Filter data by department
+    const aprilRetailData = mappedAprilData.filter(item => item.rep_type === 'RETAIL');
+    const aprilRevaData = mappedAprilData.filter(item => item.rep_type === 'REVA');
+    const aprilWholesaleData = mappedAprilData.filter(
+      item => item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE'
+    );
+    
+    // Process the data to RepData format
+    const processedAprilRetailData = processRepData(aprilRetailData as SalesDataItem[] || []);
+    const processedAprilRevaData = processRepData(aprilRevaData as SalesDataItem[] || []);
+    const processedAprilWholesaleData = processRepData(aprilWholesaleData as SalesDataItem[] || []);
+    
+    // Calculate summary data - April
+    const aprilRetailSummary = calculateSummaryFromData(processedAprilRetailData);
+    const aprilRevaSummary = calculateSummaryFromData(processedAprilRevaData);
+    const aprilWholesaleSummary = calculateSummaryFromData(processedAprilWholesaleData);
+    
+    return {
+      apr: {
+        repData: processedAprilRetailData,
+        revaData: processedAprilRevaData,
+        wholesaleData: processedAprilWholesaleData,
+        baseSummary: aprilRetailSummary,
+        revaValues: aprilRevaSummary,
+        wholesaleValues: aprilWholesaleSummary
+      }
+    };
+  } catch (error) {
+    console.error('Error loading April data:', error);
+    return null; // Return null to trigger fallback to March data
   }
 };
 
@@ -596,4 +717,3 @@ export const loadStoredRepPerformanceData = () => {
     return null;
   }
 };
-
