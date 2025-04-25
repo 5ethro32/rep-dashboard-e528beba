@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,8 +20,7 @@ const Auth = () => {
 
   // Improved domain validation
   const isValidDomain = (email: string) => {
-    const domain = email.toLowerCase();
-    return domain.endsWith('@avergenerics.co.uk');
+    return email.toLowerCase().endsWith('@avergenerics.co.uk');
   };
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -28,6 +28,11 @@ const Auth = () => {
     setLoading(true);
     
     try {
+      // Client-side domain validation to provide immediate feedback
+      if (!isValidDomain(email)) {
+        throw new Error('Only avergenerics.co.uk email addresses are allowed.');
+      }
+      
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -48,10 +53,7 @@ const Auth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
-            data: {
-              email_domain: 'avergenerics.co.uk' // Add domain info to metadata
-            }
+            emailRedirectTo: window.location.origin
           }
         });
         
@@ -69,7 +71,6 @@ const Auth = () => {
         }
       }
     } catch (error: any) {
-      // Improved error handling with more specific messages
       console.error('Auth error:', error);
       let errorMessage = error.message || "Authentication failed";
       
@@ -80,6 +81,8 @@ const Auth = () => {
         errorMessage = "This email is already registered. Please sign in instead.";
       } else if (errorMessage.includes('Invalid login credentials')) {
         errorMessage = "Invalid email or password. Please try again.";
+      } else if (errorMessage.includes('saving new user')) {
+        errorMessage = "Registration failed. Please ensure you're using a valid avergenerics.co.uk email address.";
       }
       
       toast({
