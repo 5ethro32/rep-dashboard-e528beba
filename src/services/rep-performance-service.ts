@@ -291,13 +291,15 @@ const fetchDepartmentData = async (department: string, isMarch: boolean) => {
     query = supabase
       .from(tableName as 'sales_data')
       .select('*')
-      .eq('rep_type', department);
+      .eq('rep_type', department)
+      .limit(100000); // Explicitly set a very high limit to override default 1000
   } else {
     // For February data from sales_data_februrary table
     query = supabase
       .from(tableName as 'sales_data_februrary')
       .select('*')
-      .eq('Department', department);
+      .eq('Department', department)
+      .limit(100000); // Explicitly set a very high limit to override default 1000
   }
   
   const { data, error } = await query;
@@ -338,7 +340,8 @@ const loadAprilData = async () => {
     // Get all MTD data without pagination or any limits - EXPLICITLY set no-count to true
     const { data: mtdData, error: mtdError } = await supabase
       .from('mtd_daily')
-      .select('*', { count: 'exact' });
+      .select('*', { count: 'exact' })
+      .limit(100000); // Explicitly set a very high limit to override default 1000
     
     if (mtdError) {
       console.error('Error fetching MTD Daily data:', mtdError);
@@ -350,7 +353,8 @@ const loadAprilData = async () => {
     // Get all March Rolling data without pagination or limits - EXPLICITLY set count to exact
     const { data: marchRollingData, error: marchRollingError } = await supabase
       .from('march_rolling')
-      .select('*', { count: 'exact' });
+      .select('*', { count: 'exact' })
+      .limit(100000); // Explicitly set a very high limit to override default 1000
     
     if (marchRollingError) {
       console.error('Error fetching March Rolling data:', marchRollingError);
@@ -360,7 +364,7 @@ const loadAprilData = async () => {
     const mtdRecordCount = mtdData?.length || 0;
     const marchRollingCount = marchRollingData?.length || 0;
     
-    console.log(`Fetched ${mtdRecordCount} April MTD records and ${marchRollingCount} March rolling records with exact count`);
+    console.log(`Fetched ${mtdRecordCount} April MTD records and ${marchRollingCount} March rolling records with exact count and high limit`);
     
     // Check if we actually have data
     if (!mtdData || mtdData.length === 0) {

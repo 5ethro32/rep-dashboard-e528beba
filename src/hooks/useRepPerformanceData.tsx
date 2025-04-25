@@ -166,7 +166,8 @@ export const useRepPerformanceData = () => {
       // Set count to exact to ensure we get accurate record counts
       const { data: mtdData, error: mtdError, count: mtdCount } = await supabase
         .from('mtd_daily')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact' })
+        .limit(100000); // Explicitly set a very high limit to override default 1000
       
       if (mtdError) {
         console.error('Error fetching MTD Daily data:', mtdError);
@@ -179,7 +180,8 @@ export const useRepPerformanceData = () => {
       // Direct query for all march_rolling records without pagination
       const { data: marchRollingData, error: marchRollingError, count: marchCount } = await supabase
         .from('march_rolling')
-        .select('*', { count: 'exact' });
+        .select('*', { count: 'exact' })
+        .limit(100000); // Explicitly set a very high limit to override default 1000
       
       if (marchRollingError) {
         console.error('Error fetching March Rolling data:', marchRollingError);
@@ -454,7 +456,7 @@ export const useRepPerformanceData = () => {
       
       toast({
         title: "April data loaded successfully",
-        description: `Loaded ${mtdData.length} April MTD records and ${marchRollingData?.length || 0} March Rolling records.`,
+        description: `Loaded ${mtdData.length} April MTD records and ${marchRollingData?.length || 0} March Rolling records (no limit).`,
       });
       
       console.groupEnd();
