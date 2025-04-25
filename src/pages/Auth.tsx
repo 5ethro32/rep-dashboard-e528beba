@@ -18,20 +18,12 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Improved domain validation
-  const isValidDomain = (email: string) => {
-    return email.toLowerCase().endsWith('@avergenerics.co.uk');
-  };
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      // Client-side domain validation to provide immediate feedback
-      if (!isValidDomain(email)) {
-        throw new Error('Only avergenerics.co.uk email addresses are allowed.');
-      }
+      // We've removed client-side validation to test if the server-side validation works
       
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
@@ -49,17 +41,17 @@ const Auth = () => {
         
       } else {
         console.log('Attempting signup with:', email);
+        
+        // Let's try without additional metadata or any client-side validation
         const { data, error } = await supabase.auth.signUp({
           email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin
-          }
+          password
         });
+        
+        console.log('Signup response:', data, error);
         
         if (error) throw error;
         
-        console.log('Signup successful, data:', data);
         toast({
           title: "Success!",
           description: "Registration successful. Please check your email for verification.",
@@ -71,20 +63,17 @@ const Auth = () => {
         }
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
+      console.error('Auth error details:', error);
       let errorMessage = error.message || "Authentication failed";
       
-      // Handle specific errors
-      if (errorMessage.includes('avergenerics.co.uk')) {
-        errorMessage = "Only avergenerics.co.uk email addresses are allowed.";
-      } else if (errorMessage.includes('User already registered')) {
-        errorMessage = "This email is already registered. Please sign in instead.";
-      } else if (errorMessage.includes('Invalid login credentials')) {
-        errorMessage = "Invalid email or password. Please try again.";
-      } else if (errorMessage.includes('saving new user')) {
-        errorMessage = "Registration failed. Please ensure you're using a valid avergenerics.co.uk email address.";
-      }
+      // Display the complete error message for debugging
+      toast({
+        title: "Debug Error",
+        description: `Raw error: ${JSON.stringify(error)}`,
+        variant: "destructive",
+      });
       
+      // Also display a user-friendly message
       toast({
         title: "Error",
         description: errorMessage,
