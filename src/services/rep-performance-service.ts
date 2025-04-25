@@ -1,8 +1,44 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData } from '@/utils/rep-data-processing';
+
+// Define table names type to avoid TypeScript errors
+type TableName = 'mtd_daily' | 'march_rolling' | 'sales_data' | 'sales_data_februrary' | 'customer_visits' | 'profiles' | 'week_plans';
+
+// Fetch all data with pagination
+async function fetchAllRecords(tableName: TableName) {
+  let allData: any[] = [];
+  const PAGE_SIZE = 1000;
+  let page = 0;
+  let hasMoreData = true;
+  
+  while (hasMoreData) {
+    const { data, error, count } = await supabase
+      .from(tableName)
+      .select('*', { count: 'exact' })
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      
+    if (error) {
+      console.error(`Error fetching page ${page} from ${tableName}:`, error);
+      throw error;
+    }
+    
+    if (data && data.length > 0) {
+      console.log(`Fetched ${data.length} records from ${tableName}, page ${page}`);
+      allData = [...allData, ...data];
+      page++;
+      
+      // Check if we've fetched all available data
+      hasMoreData = data.length === PAGE_SIZE;
+    } else {
+      hasMoreData = false;
+    }
+  }
+  
+  console.log(`Total ${allData.length} records fetched from ${tableName}`);
+  return allData;
+}
 
 export const fetchRepPerformanceData = async () => {
   try {
@@ -10,24 +46,23 @@ export const fetchRepPerformanceData = async () => {
       throw new Error('Supabase client is not initialized.');
     }
     
-    console.log('Fetching rep performance data using direct SQL functions...');
+    console.log('Fetching rep performance data using pagination...');
     
-    // Use our SQL functions to get MTD data (April)
-    const { data: mtdData, error: mtdError } = await supabase.rpc('fetch_all_mtd_data');
-    if (mtdError) {
-      console.error('Error fetching MTD data:', mtdError);
-      throw new Error(`Error fetching MTD data: ${mtdError.message}`);
-    }
+    // Use pagination to get all MTD data (April)
+    const mtdData = await fetchAllRecords('mtd_daily');
     
-    // Use our SQL functions to get March rolling data
-    const { data: marchRollingData, error: marchRollingError } = await supabase.rpc('fetch_all_march_rolling_data');
-    if (marchRollingError) {
-      console.error('Error fetching March Rolling data:', marchRollingError);
-      throw new Error(`Error fetching March Rolling data: ${marchRollingError.message}`);
-    }
+    // Use pagination to get all March rolling data
+    const marchRollingData = await fetchAllRecords('march_rolling');
     
     console.log('Total MTD records fetched:', mtdData?.length || 0);
     console.log('Total March Rolling records fetched:', marchRollingData?.length || 0);
+    
+    // Show toast with number of records fetched
+    toast({
+      title: "Data Load Information",
+      description: `April MTD: ${mtdData?.length || 0} records\nMarch: ${marchRollingData?.length || 0} records`,
+      duration: 10000, // Show for 10 seconds
+    });
     
     // Transform data into the format we need
     // For April (MTD) data

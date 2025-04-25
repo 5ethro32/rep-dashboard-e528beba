@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -146,16 +145,11 @@ const RepPerformance = () => {
           formatPercent={formatPercent}
           formatNumber={formatNumber}
           renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
-            // Convert to number before passing since getFebValue now returns string
-            const previousValue = repName && metricType && metricValue !== undefined && changeValue !== undefined 
-              ? parseFloat(getFebValue(repName, metricType, metricValue, changeValue))
-              : 0;
-              
+            // Don't pass previousValue to avoid showing the "0" values
             return (
               <RenderChangeIndicator 
                 changeValue={changeValue} 
                 size={size === "small" ? "small" : "large"}
-                previousValue={previousValue}
               />
             );
           }}
