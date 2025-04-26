@@ -343,35 +343,35 @@ export type Database = {
       fetch_all_march_rolling_data: {
         Args: Record<PropertyKey, never>
         Returns: {
-          Spend: number
-          "Account Name": string
-          "Account Ref": string
-          Cost: number
+          "Account Name": string | null
+          "Account Ref": string | null
+          Cost: number | null
+          Credit: number | null
+          Department: string | null
           id: string
-          Department: string
-          "Sub-Rep": string
+          Margin: number | null
+          Packs: number | null
+          Profit: number | null
           Rep: string
-          Credit: number
-          Profit: number
-          Margin: number
-          Packs: number
+          Spend: number | null
+          "Sub-Rep": string | null
         }[]
       }
       fetch_all_mtd_data: {
         Args: Record<PropertyKey, never>
         Returns: {
-          Cost: number
+          "Account Name": string | null
+          "Account Ref": string | null
+          Cost: number | null
+          Credit: number | null
+          Department: string | null
           id: string
-          Spend: number
-          Credit: number
-          Profit: number
-          Margin: number
-          Packs: number
+          Margin: number | null
+          Packs: number | null
+          Profit: number | null
           Rep: string
-          "Sub-Rep": string
-          Department: string
-          "Account Ref": string
-          "Account Name": string
+          Spend: number | null
+          "Sub-Rep": string | null
         }[]
       }
       get_april_mtd_data_by_department: {

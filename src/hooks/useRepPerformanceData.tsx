@@ -23,33 +23,27 @@ const calculateDirectSummary = (
   baseSummary: SummaryData, 
   revaValues: SummaryData, 
   wholesaleValues: SummaryData,
-  includeRetail: boolean,
-  includeReva: boolean,
-  includeWholesale: boolean,
   isRawData: boolean
 ) => {
   // For raw data months (April, March), when we're using raw all-inclusive data, 
-  // we should return just the baseSummary if it's included, not combine it with other departments
-  if (isRawData && includeRetail) {
+  // we should return just the baseSummary
+  if (isRawData) {
     console.log("Using raw summary data directly:", baseSummary);
     return baseSummary;
   }
   
-  // For other months or if retail is not included, use the normal calculation
+  // For other months use the normal calculation but include all departments
   return calculateSummary(
     baseSummary,
     revaValues,
     wholesaleValues,
-    includeRetail,
-    includeReva,
-    includeWholesale
+    true, // Always include retail
+    true, // Always include REVA
+    true  // Always include wholesale
   );
 };
 
 export const useRepPerformanceData = () => {
-  const [includeRetail, setIncludeRetail] = useState(true);
-  const [includeReva, setIncludeReva] = useState(true);
-  const [includeWholesale, setIncludeWholesale] = useState(true);
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
@@ -59,26 +53,26 @@ export const useRepPerformanceData = () => {
   const [repData, setRepData] = useState(defaultRepData);
   const [revaData, setRevaData] = useState(defaultRevaData);
   const [wholesaleData, setWholesaleData] = useState(defaultWholesaleData);
-  const [baseSummary, setBaseSummary] = useState<SummaryData>(defaultBaseSummary);
-  const [revaValues, setRevaValues] = useState<SummaryData>(defaultRevaValues);
-  const [wholesaleValues, setWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
-  const [febRepData, setFebRepData] = useState(defaultRepData);
-  const [febRevaData, setFebRevaData] = useState(defaultRevaData);
-  const [febWholesaleData, setFebWholesaleData] = useState(defaultWholesaleData);
-  const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>(defaultBaseSummary);
-  const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
-  const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
-  
-  const [aprRepData, setAprRepData] = useState(defaultRepData);
-  const [aprRevaData, setAprRevaData] = useState(defaultRevaData);
-  const [aprWholesaleData, setAprWholesaleData] = useState(defaultWholesaleData);
+  // April data states
   const [aprBaseSummary, setAprBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [aprRevaValues, setAprRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [aprWholesaleValues, setAprWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
+  // March data states
+  const [marchBaseSummary, setMarchBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [marchRevaValues, setMarchRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [marchWholesaleValues, setMarchWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  
+  // February data states
+  const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
+  const [marchSummaryChanges, setMarchSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
+  const [marchRepChanges, setMarchRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
 
   useEffect(() => {
     loadData();
@@ -89,39 +83,38 @@ export const useRepPerformanceData = () => {
     try {
       const data = await fetchRepPerformanceData();
       
+      // Set April data
       setRepData(data.repData);
       setRevaData(data.revaData);
       setWholesaleData(data.wholesaleData);
-      setBaseSummary(data.baseSummary);
-      setRevaValues(data.revaValues);
-      setWholesaleValues(data.wholesaleValues);
+      setAprBaseSummary(data.baseSummary);
+      setAprRevaValues(data.revaValues);
+      setAprWholesaleValues(data.wholesaleValues);
       
-      setFebRepData(data.febRepData);
-      setFebRevaData(data.febRevaData);
-      setFebWholesaleData(data.febWholesaleData);
+      // Set March data
+      setMarchBaseSummary(data.marchBaseSummary);
+      setMarchRevaValues(data.marchRevaValues);
+      setMarchWholesaleValues(data.marchWholesaleValues);
+      
+      // Set February data
       setFebBaseSummary(data.febBaseSummary);
       setFebRevaValues(data.febRevaValues);
       setFebWholesaleValues(data.febWholesaleValues);
       
+      // Set changes data
       setSummaryChanges(data.summaryChanges);
+      setMarchSummaryChanges(data.marchSummaryChanges);
       setRepChanges(data.repChanges);
+      setMarchRepChanges(data.marchRepChanges);
       
-      if (selectedMonth === 'April') {
-        setAprRepData(data.repData);
-        setAprRevaData(data.revaData);
-        setAprWholesaleData(data.wholesaleData);
-        setAprBaseSummary(data.baseSummary);
-        setAprRevaValues(data.revaValues);
-        setAprWholesaleValues(data.wholesaleValues);
-      }
-      
+      // Update overall data based on selected month
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
         data.wholesaleData,
-        includeRetail,
-        includeReva,
-        includeWholesale
+        true, // Always include retail
+        true, // Always include REVA
+        true  // Always include wholesale
       );
       
       setOverallData(combinedData);
@@ -181,28 +174,23 @@ export const useRepPerformanceData = () => {
   const isRawDataMonth = selectedMonth === 'April' || selectedMonth === 'March';
   
   return {
-    includeRetail,
-    setIncludeRetail,
-    includeReva,
-    setIncludeReva,
-    includeWholesale,
-    setIncludeWholesale,
     sortBy,
     sortOrder,
     summary: calculateDirectSummary(
       selectedMonth === 'April' ? aprBaseSummary : 
-        selectedMonth === 'March' ? febBaseSummary : baseSummary,
+        selectedMonth === 'March' ? marchBaseSummary : febBaseSummary,
       selectedMonth === 'April' ? aprRevaValues : 
-        selectedMonth === 'March' ? febRevaValues : revaValues,
+        selectedMonth === 'March' ? marchRevaValues : febRevaValues,
       selectedMonth === 'April' ? aprWholesaleValues : 
-        selectedMonth === 'March' ? febWholesaleValues : wholesaleValues,
-      includeRetail,
-      includeReva,
-      includeWholesale,
+        selectedMonth === 'March' ? marchWholesaleValues : febWholesaleValues,
       isRawDataMonth
     ),
-    summaryChanges,
-    repChanges,
+    summaryChanges: selectedMonth === 'April' ? summaryChanges : 
+                   selectedMonth === 'March' ? marchSummaryChanges : 
+                   defaultSummaryChanges,
+    repChanges: selectedMonth === 'April' ? repChanges : 
+                selectedMonth === 'March' ? marchRepChanges : 
+                defaultRepChanges,
     getActiveData,
     sortData,
     handleSort,
@@ -211,11 +199,11 @@ export const useRepPerformanceData = () => {
     getFebValue,
     selectedMonth,
     setSelectedMonth,
-    baseSummary,
-    revaValues,
-    wholesaleValues,
-    aprBaseSummary,
-    aprRevaValues,
-    aprWholesaleValues,
+    baseSummary: selectedMonth === 'April' ? aprBaseSummary : 
+                selectedMonth === 'March' ? marchBaseSummary : febBaseSummary,
+    revaValues: selectedMonth === 'April' ? aprRevaValues : 
+               selectedMonth === 'March' ? marchRevaValues : febRevaValues,
+    wholesaleValues: selectedMonth === 'April' ? aprWholesaleValues : 
+                    selectedMonth === 'March' ? marchWholesaleValues : febWholesaleValues,
   };
 };
