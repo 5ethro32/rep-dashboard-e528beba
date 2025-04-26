@@ -24,10 +24,6 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
   includeWholesale 
 }) => {
   const [stats, setStats] = useState<DepartmentStats[]>([]);
-  const [rawRetailSum, setRawRetailSum] = useState<number | null>(null);
-  const [rawWholesaleSum, setRawWholesaleSum] = useState<number | null>(null);
-  const [rawRevaSum, setRawRevaSum] = useState<number | null>(null);
-  const [rawTotalSum, setRawTotalSum] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,22 +51,17 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
           console.log('No data found in March Data');
           return;
         }
+
+        console.log('Raw March Data:', data);
         
         // Group and calculate stats by department
         const deptMap = new Map<string, DepartmentStats>();
         
         data.forEach(item => {
-          // Normalize department names
-          let dept = item.rep_type || 'Unknown';
-          
-          // Map both "Wholesale" and "WHOLESALE" to a single department name for consistency
-          if (dept.toUpperCase() === 'WHOLESALE') {
-            dept = 'Wholesale';
-          }
-          
-          const spend = typeof item.spend === 'string' ? parseFloat(item.spend) : Number(item.spend || 0);
-          const profit = typeof item.profit === 'string' ? parseFloat(item.profit) : Number(item.profit || 0);
-          const packs = typeof item.packs === 'string' ? parseInt(item.packs as string) : Number(item.packs || 0);
+          const dept = item.rep_type || 'Unknown';
+          const spend = Number(item.spend) || 0;
+          const profit = Number(item.profit) || 0;
+          const packs = Number(item.packs) || 0;
           
           if (!deptMap.has(dept)) {
             deptMap.set(dept, {
@@ -93,10 +84,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         
         const deptStats = Array.from(deptMap.values());
         setStats(deptStats);
-        console.log('Fetched department stats:', deptStats);
-        
-        // Use RPC calls for accurate department totals
-        await fetchDepartmentTotals();
+        console.log('Processed department stats:', deptStats);
         
       } catch (err) {
         console.error('Error fetching direct stats:', err);
@@ -105,65 +93,12 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         setIsLoading(false);
       }
     };
-    
-    const fetchDepartmentTotals = async () => {
-      try {
-        // Total profit across all departments
-        const { data: totalData, error: totalError } = await supabase
-          .rpc('get_total_profit');
-          
-        if (totalError) throw new Error(`Total query error: ${totalError.message}`);
-        setRawTotalSum(totalData);
-        
-        // RETAIL department profit
-        const { data: retailData, error: retailError } = await supabase
-          .rpc('get_retail_profit');
-          
-        if (retailError) throw new Error(`RETAIL query error: ${retailError.message}`);
-        setRawRetailSum(retailData);
-        
-        // Wholesale department profit
-        const { data: wholesaleData, error: wholesaleError } = await supabase
-          .rpc('get_wholesale_profit');
-          
-        if (wholesaleError) throw new Error(`Wholesale query error: ${wholesaleError.message}`);
-        setRawWholesaleSum(wholesaleData);
-        
-        // REVA department profit
-        const { data: revaData, error: revaError } = await supabase
-          .rpc('get_reva_profit');
-          
-        if (revaError) throw new Error(`REVA query error: ${revaError.message}`);
-        setRawRevaSum(revaData);
-        
-        console.log('Fetched department totals:', {
-          total: totalData,
-          retail: retailData,
-          wholesale: wholesaleData,
-          reva: revaData
-        });
-        
-      } catch (err) {
-        console.error('Error fetching raw department sums:', err);
-      }
-    };
 
     fetchDirectStats();
-  }, []); // Only fetch once on mount
+  }, [includeRetail, includeReva, includeWholesale]);
 
-  // Calculate totals based on department filters and using SQL results for profit
+  // Calculate totals based on department filters
   const calculateFilteredTotals = () => {
-    // Use SQL values (more accurate) for profit when available
-    const retailProfit = rawRetailSum !== null ? rawRetailSum : 
-      stats.find(s => s.department === 'RETAIL')?.total_profit || 0;
-      
-    const revaProfit = rawRevaSum !== null ? rawRevaSum : 
-      stats.find(s => s.department === 'REVA')?.total_profit || 0;
-      
-    const wholesaleProfit = rawWholesaleSum !== null ? rawWholesaleSum : 
-      stats.find(s => s.department === 'Wholesale')?.total_profit || 0;
-    
-    // Calculate totals based on filters
     let totalSpend = 0;
     let totalProfit = 0;
     let totalPacks = 0;
@@ -175,16 +110,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         (stat.department === 'Wholesale' && includeWholesale)
       ) {
         totalSpend += stat.total_spend;
-        // Use SQL values for profit
-        if (stat.department === 'RETAIL') {
-          totalProfit += includeRetail ? retailProfit : 0;
-        } else if (stat.department === 'REVA') {
-          totalProfit += includeReva ? revaProfit : 0;
-        } else if (stat.department === 'Wholesale') {
-          totalProfit += includeWholesale ? wholesaleProfit : 0;
-        } else {
-          totalProfit += stat.total_profit;
-        }
+        totalProfit += stat.total_profit;
         totalPacks += stat.total_packs;
       }
     });
@@ -219,7 +145,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         <MetricCard
           title="Direct Profit"
           value={formatCurrency(filteredTotals.totalProfit || 0, 0)}
-          subtitle="From Supabase query"
+          subtitle="From March Data"
           valueClassName="text-finance-red"
           isLoading={isLoading}
         />
@@ -227,14 +153,14 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         <MetricCard
           title="Direct Margin"
           value={formatPercent(filteredTotals.averageMargin || 0)}
-          subtitle="From Supabase query"
+          subtitle="From March Data"
           isLoading={isLoading}
         />
         
         <MetricCard
           title="Direct Packs"
           value={formatNumber(filteredTotals.totalPacks || 0)}
-          subtitle="From Supabase query"
+          subtitle="From March Data"
           isLoading={isLoading}
         />
       </div>
