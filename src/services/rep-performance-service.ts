@@ -4,11 +4,14 @@ import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData, calculateRawMtdSummary } from '@/utils/rep-data-processing';
 
-// Define valid table names for type safety
-type TableName = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_rolling' | 'customer_visits' | 'profiles' | 'week_plans' | 'combined_rep_performance';
+// Define valid table and view names for type safety
+// Tables
+type DbTableName = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_rolling' | 'customer_visits' | 'profiles' | 'week_plans';
+// Views
+type DbViewName = 'combined_rep_performance';
 
 // Helper function to fetch all records from a table using pagination
-async function fetchAllRecords(tableName: TableName) {
+async function fetchAllRecords(tableName: DbTableName) {
   let allRecords: any[] = [];
   let page = 0;
   const pageSize = 1000;
@@ -34,6 +37,36 @@ async function fetchAllRecords(tableName: TableName) {
   }
   
   console.log(`Fetched ${allRecords.length} total records from ${tableName}`);
+  return allRecords;
+}
+
+// Helper function for views if needed in the future
+async function fetchAllViewRecords(viewName: DbViewName) {
+  let allRecords: any[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from(viewName)
+      .select('*')
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+      
+    if (error) {
+      console.error(`Error fetching ${viewName} view data:`, error);
+      throw error;
+    }
+    
+    if (data && data.length > 0) {
+      allRecords = [...allRecords, ...data];
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
+  
+  console.log(`Fetched ${allRecords.length} total records from ${viewName} view`);
   return allRecords;
 }
 
