@@ -18,24 +18,16 @@ import {
 } from '@/data/rep-performance-default-data';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
-// Create a custom summary calculation function that uses the raw summary directly
+// Always use calculateSummary to combine department data based on toggle states
 const calculateDirectSummary = (
   baseSummary: SummaryData, 
   revaValues: SummaryData, 
   wholesaleValues: SummaryData,
   includeRetail: boolean,
   includeReva: boolean,
-  includeWholesale: boolean,
-  isRawData: boolean
+  includeWholesale: boolean
 ) => {
-  // For raw data months (April, March), when we're using raw all-inclusive data, 
-  // we should return just the baseSummary if it's included, not combine it with other departments
-  if (isRawData && includeRetail) {
-    console.log("Using raw summary data directly:", baseSummary);
-    return baseSummary;
-  }
-  
-  // For other months or if retail is not included, use the normal calculation
+  // Always use calculateSummary to properly combine department data
   return calculateSummary(
     baseSummary,
     revaValues,
@@ -198,8 +190,7 @@ export const useRepPerformanceData = () => {
         selectedMonth === 'March' ? febWholesaleValues : wholesaleValues,
       includeRetail,
       includeReva,
-      includeWholesale,
-      isRawDataMonth
+      includeWholesale
     ),
     summaryChanges,
     repChanges,
