@@ -3,6 +3,36 @@ import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData, calculateRawMtdSummary } from '@/utils/rep-data-processing';
 
+// Helper function to fetch all records from a table using pagination
+async function fetchAllRecords(tableName: string) {
+  let allRecords: any[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+      
+    if (error) {
+      console.error(`Error fetching ${tableName} data:`, error);
+      throw error;
+    }
+    
+    if (data && data.length > 0) {
+      allRecords = [...allRecords, ...data];
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
+  
+  console.log(`Fetched ${allRecords.length} total records from ${tableName}`);
+  return allRecords;
+}
+
 export const fetchRepPerformanceData = async () => {
   try {
     if (!supabase) {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -69,6 +70,9 @@ export const useRepPerformanceData = () => {
   const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
+  // February data states
+  const [febRepData, setFebRepData] = useState<RepData[]>(defaultRepData);
+  
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [marchSummaryChanges, setMarchSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
@@ -100,6 +104,9 @@ export const useRepPerformanceData = () => {
       setFebBaseSummary(data.febBaseSummary);
       setFebRevaValues(data.febRevaValues);
       setFebWholesaleValues(data.febWholesaleValues);
+      
+      // Set February rep data
+      setFebRepData(data.febRepData || defaultRepData);
       
       // Set changes data
       setSummaryChanges(data.summaryChanges);

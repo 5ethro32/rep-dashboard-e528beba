@@ -42,6 +42,25 @@ const RepPerformance = () => {
     loadDataFromSupabase();
   }, []);
   
+  // Since we've removed the toggle functionality, we always include all departments
+  const includeRetail = true;
+  const includeReva = true;
+  const includeWholesale = true;
+  
+  // Create a wrapper function to make RenderChangeIndicator compatible with the expected type
+  const renderChangeIndicator = (
+    changeValue: number, 
+    size?: string, 
+    metricType?: string, 
+    repName?: string, 
+    metricValue?: number
+  ) => {
+    return RenderChangeIndicator({ 
+      changeValue, 
+      size: size as "small" | "large" | undefined 
+    });
+  };
+  
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
@@ -90,6 +109,9 @@ const RepPerformance = () => {
           summaryChanges={summaryChanges}
           isLoading={isLoading}
           selectedMonth={selectedMonth}
+          includeRetail={includeRetail}
+          includeReva={includeReva}
+          includeWholesale={includeWholesale}
         />
         
         <PerformanceContent
@@ -103,13 +125,16 @@ const RepPerformance = () => {
           formatCurrency={formatCurrency}
           formatPercent={formatPercent}
           formatNumber={formatNumber}
-          renderChangeIndicator={RenderChangeIndicator}
+          renderChangeIndicator={renderChangeIndicator}
           isLoading={isLoading}
           selectedMonth={selectedMonth}
           summary={summary}
           baseSummary={baseSummary}
           revaValues={revaValues}
           wholesaleValues={wholesaleValues}
+          includeRetail={includeRetail}
+          includeReva={includeReva}
+          includeWholesale={includeWholesale}
         />
       </div>
       <ChatInterface selectedMonth={selectedMonth} />
