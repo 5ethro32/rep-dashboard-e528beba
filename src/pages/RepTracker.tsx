@@ -42,8 +42,9 @@ const RepTracker: React.FC = () => {
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      const { data: salesData, error } = await supabase
-        .from('sales_data')
+      // Using "March Data" table instead of "sales_data" since it has account_name and account_ref fields
+      const { data: marchData, error } = await supabase
+        .from('March Data')
         .select('account_name, account_ref')
         .order('account_name')
         .limit(1000);
@@ -52,7 +53,7 @@ const RepTracker: React.FC = () => {
         throw error;
       }
       
-      const uniqueCustomers = salesData.reduce((acc: any[], current) => {
+      const uniqueCustomers = marchData.reduce((acc: any[], current) => {
         const x = acc.find(item => item.account_ref === current.account_ref);
         if (!x) {
           return acc.concat([current]);
