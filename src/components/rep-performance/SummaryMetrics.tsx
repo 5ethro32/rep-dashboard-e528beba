@@ -17,19 +17,21 @@ interface SummaryMetricsProps {
     totalPacks: number;
   };
   isLoading?: boolean;
-  includeRetail: boolean;
-  includeReva: boolean;
-  includeWholesale: boolean;
   selectedMonth?: string;
+  // Make these optional since we're removing toggles
+  includeRetail?: boolean;
+  includeReva?: boolean;
+  includeWholesale?: boolean;
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ 
   summary, 
   summaryChanges, 
   isLoading,
-  includeRetail,
-  includeReva,
-  includeWholesale,
+  // Set default values for the toggles since they're now optional
+  includeRetail = true,
+  includeReva = true,
+  includeWholesale = true,
   selectedMonth = 'March'
 }) => {
   // Calculate filtered change indicators based on current toggle state
