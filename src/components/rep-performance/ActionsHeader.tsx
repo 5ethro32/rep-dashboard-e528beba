@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Database } from "lucide-react";
@@ -17,11 +18,11 @@ const ActionsHeader: React.FC<ActionsHeaderProps> = ({
     try {
       // Fetch counts directly from the tables
       const { count: mtdCount, error: mtdError } = await supabase
-        .from('mtd_daily')
+        .from('April Data')
         .select('*', { count: 'exact', head: true });
         
       const { count: marchCount, error: marchError } = await supabase
-        .from('march_rolling')
+        .from('March Data MTD')
         .select('*', { count: 'exact', head: true });
         
       if (mtdError || marchError) {

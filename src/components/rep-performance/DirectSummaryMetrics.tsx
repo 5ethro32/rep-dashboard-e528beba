@@ -39,7 +39,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
       try {
         // Query to get aggregated stats by department - use sales_data table
         const { data, error } = await supabase
-          .from('sales_data')
+          .from('March Data')
           .select(`
             rep_type,
             profit,

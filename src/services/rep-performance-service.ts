@@ -6,7 +6,7 @@ import { processRepData, calculateSummaryFromData, calculateRawMtdSummary } from
 
 // Define valid table and view names for type safety
 // Tables
-type DbTableName = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_rolling' | 'customer_visits' | 'profiles' | 'week_plans';
+type DbTableName = 'April Data' | 'March Data' | 'February Data' | 'March Data MTD' | 'customer_visits' | 'profiles' | 'week_plans';
 // Views
 type DbViewName = 'combined_rep_performance';
 
@@ -78,17 +78,17 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data using pagination...');
     
-    // April Data: MTD Daily
-    const mtdData = await fetchAllRecords('mtd_daily');
+    // April Data: mtd_daily
+    const mtdData = await fetchAllRecords('April Data');
     
     // March Data: sales_data
-    const marchData = await fetchAllRecords('sales_data');
+    const marchData = await fetchAllRecords('March Data');
     
     // February Data: sales_data_februrary
-    const februaryData = await fetchAllRecords('sales_data_februrary');
+    const februaryData = await fetchAllRecords('February Data');
     
     // March Rolling Data (for April comparisons)
-    const marchRollingData = await fetchAllRecords('march_rolling');
+    const marchRollingData = await fetchAllRecords('March Data MTD');
     
     console.log('Total records fetched:', {
       mtd: mtdData?.length || 0,
