@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -17,6 +16,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const RepPerformance = () => {
   const {
+    includeRetail,
+    setIncludeRetail,
+    includeReva,
+    setIncludeReva,
+    includeWholesale, 
+    setIncludeWholesale,
     sortBy,
     sortOrder,
     summary,
@@ -45,12 +50,14 @@ const RepPerformance = () => {
   const currentRevaValues = selectedMonth === 'April' ? (aprRevaValues || revaValues) : revaValues;
   const currentWholesaleValues = selectedMonth === 'April' ? (aprWholesaleValues || wholesaleValues) : wholesaleValues;
   
+  // Initial data loading - ensure all data is loaded without pagination
   useEffect(() => {
     console.log('RepPerformance: Initial data load starting');
     loadDataFromSupabase();
   }, []);
   
   useEffect(() => {
+    // Debug data availability for April
     if (selectedMonth === 'April') {
       console.log('RepPerformance: April data check', { 
         aprBaseSummary: !!aprBaseSummary, 
@@ -106,6 +113,12 @@ const RepPerformance = () => {
         </div>
 
         <PerformanceFilters
+          includeRetail={includeRetail}
+          setIncludeRetail={setIncludeRetail}
+          includeReva={includeReva}
+          setIncludeReva={setIncludeReva}
+          includeWholesale={includeWholesale}
+          setIncludeWholesale={setIncludeWholesale}
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
         />
@@ -114,6 +127,9 @@ const RepPerformance = () => {
           summary={summary}
           summaryChanges={summaryChanges}
           isLoading={isLoading}
+          includeRetail={includeRetail}
+          includeReva={includeReva}
+          includeWholesale={includeWholesale}
           selectedMonth={selectedMonth}
         />
         
@@ -129,6 +145,7 @@ const RepPerformance = () => {
           formatPercent={formatPercent}
           formatNumber={formatNumber}
           renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
+            // Don't pass previousValue to avoid showing the "0" values
             return (
               <RenderChangeIndicator 
                 changeValue={changeValue} 
@@ -140,6 +157,9 @@ const RepPerformance = () => {
           getFebValue={getFebValue}
           selectedMonth={selectedMonth}
           summary={summary}
+          includeRetail={includeRetail}
+          includeReva={includeReva}
+          includeWholesale={includeWholesale}
           baseSummary={currentBaseSummary}
           revaValues={currentRevaValues}
           wholesaleValues={currentWholesaleValues}

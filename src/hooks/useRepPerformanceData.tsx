@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { calculateSummary } from '@/utils/rep-performance-utils';
+import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
 import { fetchRepPerformanceData } from '@/services/rep-performance-service';
@@ -19,7 +18,30 @@ import {
 } from '@/data/rep-performance-default-data';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
+// Always use calculateSummary to combine department data based on toggle states
+const calculateDirectSummary = (
+  baseSummary: SummaryData, 
+  revaValues: SummaryData, 
+  wholesaleValues: SummaryData,
+  includeRetail: boolean,
+  includeReva: boolean,
+  includeWholesale: boolean
+) => {
+  // Always use calculateSummary to properly combine department data
+  return calculateSummary(
+    baseSummary,
+    revaValues,
+    wholesaleValues,
+    includeRetail,
+    includeReva,
+    includeWholesale
+  );
+};
+
 export const useRepPerformanceData = () => {
+  const [includeRetail, setIncludeRetail] = useState(true);
+  const [includeReva, setIncludeReva] = useState(true);
+  const [includeWholesale, setIncludeWholesale] = useState(true);
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +110,10 @@ export const useRepPerformanceData = () => {
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
-        data.wholesaleData
+        data.wholesaleData,
+        includeRetail,
+        includeReva,
+        includeWholesale
       );
       
       setOverallData(combinedData);
@@ -100,7 +125,6 @@ export const useRepPerformanceData = () => {
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
-      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -145,16 +169,28 @@ export const useRepPerformanceData = () => {
     return (metricValue - changeValue).toString();
   };
   
+  // Determine if we should use raw direct calculation for the selected month
+  const isRawDataMonth = selectedMonth === 'April' || selectedMonth === 'March';
+  
   return {
+    includeRetail,
+    setIncludeRetail,
+    includeReva,
+    setIncludeReva,
+    includeWholesale,
+    setIncludeWholesale,
     sortBy,
     sortOrder,
-    summary: calculateSummary(
+    summary: calculateDirectSummary(
       selectedMonth === 'April' ? aprBaseSummary : 
         selectedMonth === 'March' ? febBaseSummary : baseSummary,
       selectedMonth === 'April' ? aprRevaValues : 
         selectedMonth === 'March' ? febRevaValues : revaValues,
       selectedMonth === 'April' ? aprWholesaleValues : 
-        selectedMonth === 'March' ? febWholesaleValues : wholesaleValues
+        selectedMonth === 'March' ? febWholesaleValues : wholesaleValues,
+      includeRetail,
+      includeReva,
+      includeWholesale
     ),
     summaryChanges,
     repChanges,
