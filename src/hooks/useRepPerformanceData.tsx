@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
+import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
 import { fetchRepPerformanceData } from '@/services/rep-performance-service';
@@ -18,38 +19,7 @@ import {
 } from '@/data/rep-performance-default-data';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
-// Create a custom summary calculation function that uses the raw summary directly
-const calculateDirectSummary = (
-  baseSummary: SummaryData, 
-  revaValues: SummaryData, 
-  wholesaleValues: SummaryData,
-  includeRetail: boolean,
-  includeReva: boolean,
-  includeWholesale: boolean,
-  isRawData: boolean
-) => {
-  // For raw data months (April, March), when we're using raw all-inclusive data, 
-  // we should return just the baseSummary if it's included, not combine it with other departments
-  if (isRawData && includeRetail) {
-    console.log("Using raw summary data directly:", baseSummary);
-    return baseSummary;
-  }
-  
-  // For other months or if retail is not included, use the normal calculation
-  return calculateSummary(
-    baseSummary,
-    revaValues,
-    wholesaleValues,
-    includeRetail,
-    includeReva,
-    includeWholesale
-  );
-};
-
 export const useRepPerformanceData = () => {
-  const [includeRetail, setIncludeRetail] = useState(true);
-  const [includeReva, setIncludeReva] = useState(true);
-  const [includeWholesale, setIncludeWholesale] = useState(true);
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
@@ -118,10 +88,7 @@ export const useRepPerformanceData = () => {
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
-        data.wholesaleData,
-        includeRetail,
-        includeReva,
-        includeWholesale
+        data.wholesaleData
       );
       
       setOverallData(combinedData);
@@ -133,6 +100,7 @@ export const useRepPerformanceData = () => {
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -177,29 +145,16 @@ export const useRepPerformanceData = () => {
     return (metricValue - changeValue).toString();
   };
   
-  // Determine if we should use raw direct calculation for the selected month
-  const isRawDataMonth = selectedMonth === 'April' || selectedMonth === 'March';
-  
   return {
-    includeRetail,
-    setIncludeRetail,
-    includeReva,
-    setIncludeReva,
-    includeWholesale,
-    setIncludeWholesale,
     sortBy,
     sortOrder,
-    summary: calculateDirectSummary(
+    summary: calculateSummary(
       selectedMonth === 'April' ? aprBaseSummary : 
         selectedMonth === 'March' ? febBaseSummary : baseSummary,
       selectedMonth === 'April' ? aprRevaValues : 
         selectedMonth === 'March' ? febRevaValues : revaValues,
       selectedMonth === 'April' ? aprWholesaleValues : 
-        selectedMonth === 'March' ? febWholesaleValues : wholesaleValues,
-      includeRetail,
-      includeReva,
-      includeWholesale,
-      isRawDataMonth
+        selectedMonth === 'March' ? febWholesaleValues : wholesaleValues
     ),
     summaryChanges,
     repChanges,
