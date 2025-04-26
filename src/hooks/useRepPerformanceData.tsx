@@ -88,10 +88,7 @@ export const useRepPerformanceData = () => {
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
-        data.wholesaleData,
-        true, // Always include retail data
-        true, // Always include REVA data
-        true  // Always include wholesale data
+        data.wholesaleData
       );
       
       setOverallData(combinedData);

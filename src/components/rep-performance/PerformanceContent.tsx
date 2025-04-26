@@ -31,6 +31,9 @@ interface PerformanceContentProps {
     totalAccounts?: number;
     activeAccounts?: number;
   };
+  includeRetail: boolean;
+  includeReva: boolean;
+  includeWholesale: boolean;
   baseSummary?: {
     totalProfit: number;
   };
@@ -40,10 +43,6 @@ interface PerformanceContentProps {
   wholesaleValues?: {
     totalProfit: number;
   };
-  // Make these optional since we're removing toggles
-  includeRetail?: boolean;
-  includeReva?: boolean;
-  includeWholesale?: boolean;
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -62,13 +61,12 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   getFebValue,
   selectedMonth,
   summary,
+  includeRetail,
+  includeReva,
+  includeWholesale,
   baseSummary,
   revaValues,
-  wholesaleValues,
-  // Set default values for the toggles since they're now optional
-  includeRetail = true,
-  includeReva = true,
-  includeWholesale = true
+  wholesaleValues
 }) => {
   const isMobile = useIsMobile();
 

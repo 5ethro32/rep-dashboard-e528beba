@@ -107,9 +107,9 @@ export const getCombinedRepData = (
   retailData: RepData[],
   revaData: RepData[],
   wholesaleData: RepData[],
-  includeRetailData: boolean = true,
-  includeRevaData: boolean = true,
-  includeWholesaleData: boolean = true
+  includeRetailData: boolean,
+  includeRevaData: boolean,
+  includeWholesaleData: boolean
 ): RepData[] => {
   const repMap = new Map<string, {
     rep: string;

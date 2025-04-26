@@ -24,9 +24,9 @@ export const calculateSummary = (
     activeAccounts: number;
     averageMargin: number;
   },
-  includeRetail: boolean = true,
-  includeReva: boolean = true,
-  includeWholesale: boolean = true
+  includeRetail: boolean,
+  includeReva: boolean,
+  includeWholesale: boolean
 ) => {
   let totalSpend = 0;
   let totalProfit = 0;
