@@ -61,38 +61,29 @@ export const fetchRepPerformanceData = async () => {
     toast({
       title: "Data Load Information",
       description: `April MTD: ${mtdData?.length || 0} records\nMarch: ${marchRollingData?.length || 0} records`,
-      duration: 10000, // Show for 10 seconds
+      duration: 10000,
     });
     
-    // Calculate raw summary directly from all mtd_daily records without filtering
-    const rawAprSummary = calculateRawMtdSummary(mtdData || []);
-    console.log('Raw April summary (all records):', rawAprSummary);
-    
-    // Calculate raw summary directly from all march_rolling records without filtering
-    const rawMarchSummary = calculateRawMtdSummary(marchRollingData || []);
-    console.log('Raw March summary (all records):', rawMarchSummary);
-    
-    // Transform data into the format we need
-    // For April (MTD) data - still needed for rep-level data
-    const aprRetailData = processRawData(mtdData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
+    // For April (MTD) data - use strict department filtering
+    const aprRetailData = processRawData(mtdData?.filter(item => item.Department === 'RETAIL') || []);
     const aprRevaData = processRawData(mtdData?.filter(item => item.Department === 'REVA') || []);
     const aprWholesaleData = processRawData(mtdData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
     
-    // For March (Rolling) data
-    const marchRetailData = processRawData(marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
+    // For March (Rolling) data - use strict department filtering
+    const marchRetailData = processRawData(marchRollingData?.filter(item => item.Department === 'RETAIL') || []);
     const marchRevaData = processRawData(marchRollingData?.filter(item => item.Department === 'REVA') || []);
     const marchWholesaleData = processRawData(marchRollingData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
     
-    // Calculate filtered summaries - only used for department-specific data
+    // Calculate filtered summaries - use strict department filtering
     const aprRetailSummary = calculateSummaryFromData(aprRetailData);
     const aprRevaSummary = calculateSummaryFromData(aprRevaData);
     const aprWholesaleSummary = calculateSummaryFromData(aprWholesaleData);
     
-    // Calculate summaries - March
+    // Calculate summaries - March with strict filtering
     const marchRetailSummary = calculateSummaryFromData(marchRetailData);
     const marchRevaSummary = calculateSummaryFromData(marchRevaData);
     const marchWholesaleSummary = calculateSummaryFromData(marchWholesaleData);
@@ -133,14 +124,14 @@ export const fetchRepPerformanceData = async () => {
       repData: aprRetailData,
       revaData: aprRevaData,
       wholesaleData: aprWholesaleData,
-      baseSummary: rawAprSummary, // Use raw April summary here
+      baseSummary: aprRetailSummary, // Use retail-only summary instead of raw summary
       revaValues: aprRevaSummary,
       wholesaleValues: aprWholesaleSummary,
       
       febRepData: marchRetailData,
       febRevaData: marchRevaData,
       febWholesaleData: marchWholesaleData,
-      febBaseSummary: rawMarchSummary, // Use raw March summary here
+      febBaseSummary: marchRetailSummary, // Use retail-only summary for March
       febRevaValues: marchRevaSummary,
       febWholesaleValues: marchWholesaleSummary,
       
