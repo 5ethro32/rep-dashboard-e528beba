@@ -13,6 +13,7 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
   console.log(`Processing ${salesData.length} raw sales data items`);
   
   salesData.forEach(item => {
+    // Use rep_name for consistency
     const repName = item.rep_name;
     
     if (!repGrouped[repName]) {
@@ -62,6 +63,7 @@ export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
   });
   
   const filteredResult = result.filter(rep => {
+    // Filter out reps with zero metrics (all values are zero)
     return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
   });
   
@@ -218,9 +220,10 @@ export const getCombinedRepData = (
     };
   });
   
+  // Filter out reps with zero metrics
   const filteredCombinedData = combinedData.filter(rep => {
     return (rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0) 
-      && rep.rep !== 'ALL_RECORDS';
+      && rep.rep !== 'ALL_RECORDS'; // Also exclude the ALL_RECORDS entry
   });
   
   console.log("Final combined data length:", combinedData.length, "filtered length:", filteredCombinedData.length);
@@ -247,15 +250,19 @@ export const calculateRawMtdSummary = (rawData: any[]): SummaryData => {
   const accountRefs = new Set<string>();
   const activeAccountRefs = new Set<string>();
   
+  // Process each record directly without filtering
   rawData.forEach(item => {
+    // Parse numeric values
     const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
     const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
     const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
     
+    // Add to totals
     totalSpend += spend;
     totalProfit += profit;
     totalPacks += packs;
     
+    // Track accounts
     if (item["Account Ref"]) {
       accountRefs.add(item["Account Ref"]);
       if (spend > 0) {
