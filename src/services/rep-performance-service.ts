@@ -1,10 +1,14 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummaryFromData, calculateRawMtdSummary } from '@/utils/rep-data-processing';
 
+// Define valid table names for type safety
+type TableName = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_rolling' | 'customer_visits' | 'profiles' | 'week_plans' | 'combined_rep_performance';
+
 // Helper function to fetch all records from a table using pagination
-async function fetchAllRecords(tableName: string) {
+async function fetchAllRecords(tableName: TableName) {
   let allRecords: any[] = [];
   let page = 0;
   const pageSize = 1000;

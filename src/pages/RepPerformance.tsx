@@ -31,6 +31,7 @@ const RepPerformance = () => {
     baseSummary,
     revaValues,
     wholesaleValues,
+    getFebValue,
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
@@ -135,6 +136,7 @@ const RepPerformance = () => {
           includeRetail={includeRetail}
           includeReva={includeReva}
           includeWholesale={includeWholesale}
+          getFebValue={getFebValue}
         />
       </div>
       <ChatInterface selectedMonth={selectedMonth} />
