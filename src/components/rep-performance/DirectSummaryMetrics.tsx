@@ -37,7 +37,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
       setError(null);
       
       try {
-        // Query to get aggregated stats by department - use sales_data table
+        // Query to get aggregated stats by department from March Data
         const { data, error } = await supabase
           .from('March Data')
           .select(`
@@ -52,6 +52,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         if (!data || data.length === 0) {
           setStats([]);
           setIsLoading(false);
+          console.log('No data found in March Data');
           return;
         }
         
@@ -63,7 +64,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
           let dept = item.rep_type || 'Unknown';
           
           // Map both "Wholesale" and "WHOLESALE" to a single department name for consistency
-          if (dept === 'WHOLESALE') {
+          if (dept.toUpperCase() === 'WHOLESALE') {
             dept = 'Wholesale';
           }
           
@@ -94,8 +95,8 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         setStats(deptStats);
         console.log('Fetched department stats:', deptStats);
         
-        // Use direct SQL RPC calls for accurate department totals
-        await fetchRawDepartmentSums();
+        // Use RPC calls for accurate department totals
+        await fetchDepartmentTotals();
         
       } catch (err) {
         console.error('Error fetching direct stats:', err);
@@ -105,35 +106,42 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
       }
     };
     
-    const fetchRawDepartmentSums = async () => {
+    const fetchDepartmentTotals = async () => {
       try {
-        // Total sum across all departments
+        // Total profit across all departments
         const { data: totalData, error: totalError } = await supabase
           .rpc('get_total_profit');
           
         if (totalError) throw new Error(`Total query error: ${totalError.message}`);
         setRawTotalSum(totalData);
         
-        // RETAIL department sum
+        // RETAIL department profit
         const { data: retailData, error: retailError } = await supabase
           .rpc('get_retail_profit');
           
         if (retailError) throw new Error(`RETAIL query error: ${retailError.message}`);
         setRawRetailSum(retailData);
         
-        // Wholesale department sum
+        // Wholesale department profit
         const { data: wholesaleData, error: wholesaleError } = await supabase
           .rpc('get_wholesale_profit');
           
         if (wholesaleError) throw new Error(`Wholesale query error: ${wholesaleError.message}`);
         setRawWholesaleSum(wholesaleData);
         
-        // REVA department sum
+        // REVA department profit
         const { data: revaData, error: revaError } = await supabase
           .rpc('get_reva_profit');
           
         if (revaError) throw new Error(`REVA query error: ${revaError.message}`);
         setRawRevaSum(revaData);
+        
+        console.log('Fetched department totals:', {
+          total: totalData,
+          retail: retailData,
+          wholesale: wholesaleData,
+          reva: revaData
+        });
         
       } catch (err) {
         console.error('Error fetching raw department sums:', err);

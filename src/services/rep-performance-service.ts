@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -78,13 +77,13 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data using pagination...');
     
-    // April Data: mtd_daily
+    // April Data
     const mtdData = await fetchAllRecords('April Data');
     
-    // March Data: sales_data
+    // March Data
     const marchData = await fetchAllRecords('March Data');
     
-    // February Data: sales_data_februrary
+    // February Data
     const februaryData = await fetchAllRecords('February Data');
     
     // March Rolling Data (for April comparisons)
@@ -100,33 +99,33 @@ export const fetchRepPerformanceData = async () => {
     // Show toast with number of records fetched
     toast({
       title: "Data Load Information",
-      description: `April MTD: ${mtdData?.length || 0} records\nMarch: ${marchData?.length || 0} records`,
+      description: `April: ${mtdData?.length || 0} records\nMarch: ${marchData?.length || 0} records\nFebruary: ${februaryData?.length || 0} records`,
       duration: 10000,
     });
     
     // April data processing
-    const rawAprSummary = calculateRawMtdSummary(mtdData || []);
     const aprRetailData = processRawData(mtdData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const aprRevaData = processRawData(mtdData?.filter(item => item.Department === 'REVA') || []);
     const aprWholesaleData = processRawData(mtdData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
+    const rawAprSummary = calculateRawMtdSummary(mtdData || []);
     
-    // March data processing (from sales_data)
-    const rawMarchSummary = calculateRawMtdSummary(marchData || []);
+    // March data processing
     const marchRetailData = processRawData(marchData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || []);
     const marchRevaData = processRawData(marchData?.filter(item => item.rep_type === 'REVA') || []);
     const marchWholesaleData = processRawData(marchData?.filter(item => 
       item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE'
     ) || []);
+    const rawMarchSummary = calculateRawMtdSummary(marchData || []);
     
     // February data processing
-    const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     const febRetailData = processRawData(februaryData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const febRevaData = processRawData(februaryData?.filter(item => item.Department === 'REVA') || []);
     const febWholesaleData = processRawData(februaryData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
+    const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
     // March Rolling data processing (for April comparison)
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
@@ -237,34 +236,41 @@ function processRawData(rawData: any[]): RepData[] {
   });
   
   rawData.forEach(item => {
-    let repName;
-    
     // First, add this record's values to the ALL_RECORDS aggregate
     const allRecordsEntry = repMap.get('ALL_RECORDS')!;
-    const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-    const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-    const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+    
+    // Extract data using field mapping to handle different data structures
+    const spend = extractNumericValue(item, ['Spend', 'spend']);
+    const profit = extractNumericValue(item, ['Profit', 'profit']);
+    const packs = extractNumericValue(item, ['Packs', 'packs']);
+    const accountRef = item["Account Ref"] || item.account_ref;
     
     allRecordsEntry.spend += spend;
     allRecordsEntry.profit += profit;
     allRecordsEntry.packs += packs;
     
-    if (item["Account Ref"]) {
-      allRecordsEntry.totalAccounts.add(item["Account Ref"]);
+    if (accountRef) {
+      allRecordsEntry.totalAccounts.add(accountRef);
       if (spend > 0) {
-        allRecordsEntry.activeAccounts.add(item["Account Ref"]);
+        allRecordsEntry.activeAccounts.add(accountRef);
       }
     }
     
-    // Then, process the record for individual rep aggregation as before
-    if (item['Sub-Rep'] && 
-        item['Sub-Rep'].trim() !== '' && 
-        item['Sub-Rep'].trim().toUpperCase() !== 'NONE') {
-      repName = item['Sub-Rep'];
-    } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
+    // Then, process the record for individual rep aggregation
+    // Extract rep name with fallbacks for different column naming
+    let repName;
+    
+    // Handle Sub-Rep logic
+    const subRep = item['Sub-Rep'] || item.sub_rep;
+    const mainRep = item.Rep || item.rep_name;
+    
+    if (subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
+      repName = subRep;
+    } else if (mainRep === 'REVA' || mainRep === 'Wholesale' || mainRep === 'WHOLESALE') {
+      // Skip departmental entries without subreps
       return;
     } else {
-      repName = item.Rep;
+      repName = mainRep;
     }
     
     if (!repName) {
@@ -289,10 +295,10 @@ function processRawData(rawData: any[]): RepData[] {
     currentRep.profit += profit;
     currentRep.packs += packs;
     
-    if (item["Account Ref"]) {
-      currentRep.totalAccounts.add(item["Account Ref"]);
+    if (accountRef) {
+      currentRep.totalAccounts.add(accountRef);
       if (spend > 0) {
-        currentRep.activeAccounts.add(item["Account Ref"]);
+        currentRep.activeAccounts.add(accountRef);
       }
     }
   });
@@ -338,11 +344,27 @@ function processRawData(rawData: any[]): RepData[] {
   return filteredRepData.filter(rep => rep.rep !== 'ALL_RECORDS');
 }
 
+// Helper to extract numeric values from records with different field naming
+function extractNumericValue(item: any, fieldNames: string[]): number {
+  for (const fieldName of fieldNames) {
+    const value = item[fieldName];
+    if (value !== undefined) {
+      return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+    }
+  }
+  return 0;
+}
+
 function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
   const changes: Record<string, any> = {};
   
   currentData.forEach(current => {
-    const previous = previousData.find(prev => prev.rep === current.rep);
+    const previous = previousData.find(prev => {
+      // Try to match reps by name, accounting for potential differences in casing
+      const currentRepName = current.rep.toLowerCase();
+      const prevRepName = typeof prev.rep === 'string' ? prev.rep.toLowerCase() : '';
+      return currentRepName === prevRepName;
+    });
     
     if (previous) {
       const calculateChange = (currentValue: number, previousValue: number) => {

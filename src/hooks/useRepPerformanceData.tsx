@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
+import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
 import { fetchRepPerformanceData } from '@/services/rep-performance-service';
@@ -17,7 +17,6 @@ import {
   defaultSummaryChanges,
   defaultRepChanges
 } from '@/data/rep-performance-default-data';
-import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 // Create a custom summary calculation function that uses the raw summary directly
 const calculateDirectSummary = (
@@ -70,7 +69,7 @@ export const useRepPerformanceData = () => {
   const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
-  // February data states
+  // February rep data states
   const [febRepData, setFebRepData] = useState<RepData[]>(defaultRepData);
   
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
@@ -86,6 +85,8 @@ export const useRepPerformanceData = () => {
     setIsLoading(true);
     try {
       const data = await fetchRepPerformanceData();
+      
+      console.log("Loaded performance data:", data);
       
       // Set April data
       setRepData(data.repData);
@@ -180,24 +181,33 @@ export const useRepPerformanceData = () => {
   // Determine if we should use raw direct calculation for the selected month
   const isRawDataMonth = selectedMonth === 'April' || selectedMonth === 'March';
   
+  // Calculate current summary based on selected month
+  const currentSummary = calculateDirectSummary(
+    selectedMonth === 'April' ? aprBaseSummary : 
+      selectedMonth === 'March' ? marchBaseSummary : febBaseSummary,
+    selectedMonth === 'April' ? aprRevaValues : 
+      selectedMonth === 'March' ? marchRevaValues : febRevaValues,
+    selectedMonth === 'April' ? aprWholesaleValues : 
+      selectedMonth === 'March' ? marchWholesaleValues : febWholesaleValues,
+    isRawDataMonth
+  );
+  
+  // Get the appropriate changes object based on selected month
+  const currentChanges = selectedMonth === 'April' ? summaryChanges : 
+                      selectedMonth === 'March' ? marchSummaryChanges : 
+                      defaultSummaryChanges;
+  
+  // Current month's rep changes
+  const currentRepChanges = selectedMonth === 'April' ? repChanges : 
+                         selectedMonth === 'March' ? marchRepChanges : 
+                         defaultRepChanges;
+  
   return {
     sortBy,
     sortOrder,
-    summary: calculateDirectSummary(
-      selectedMonth === 'April' ? aprBaseSummary : 
-        selectedMonth === 'March' ? marchBaseSummary : febBaseSummary,
-      selectedMonth === 'April' ? aprRevaValues : 
-        selectedMonth === 'March' ? marchRevaValues : febRevaValues,
-      selectedMonth === 'April' ? aprWholesaleValues : 
-        selectedMonth === 'March' ? marchWholesaleValues : febWholesaleValues,
-      isRawDataMonth
-    ),
-    summaryChanges: selectedMonth === 'April' ? summaryChanges : 
-                   selectedMonth === 'March' ? marchSummaryChanges : 
-                   defaultSummaryChanges,
-    repChanges: selectedMonth === 'April' ? repChanges : 
-                selectedMonth === 'March' ? marchRepChanges : 
-                defaultRepChanges,
+    summary: currentSummary,
+    summaryChanges: currentChanges,
+    repChanges: currentRepChanges,
     getActiveData,
     sortData,
     handleSort,
