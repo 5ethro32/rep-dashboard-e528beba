@@ -100,33 +100,38 @@ export const useComparisonData = (
       return filterDataByTab(combinedData, tab);
     };
 
-    // Get combined and filtered data for previous month
+    // Get combined and filtered data for previous month based on selected month
     const getPreviousData = () => {
       let combinedData: RepData[] = [];
       
-      switch (selectedMonth) {
-        case 'April':
-          combinedData = getCombinedRepData(
-            safeMarchRepData,
-            safeMarchRevaRepData,
-            safeMarchWholesaleRepData,
-            tab === 'overall' || tab === 'rep',
-            tab === 'overall' || tab === 'reva',
-            tab === 'overall' || tab === 'wholesale'
-          );
-          break;
-        case 'March':
-          combinedData = getCombinedRepData(
-            safeFebRepData,
-            safeFebRevaRepData,
-            safeFebWholesaleRepData,
-            tab === 'overall' || tab === 'rep',
-            tab === 'overall' || tab === 'reva',
-            tab === 'overall' || tab === 'wholesale'
-          );
-          break;
-        default:
-          return [];
+      // For April, use march_rolling data instead of regular March data
+      if (selectedMonth === 'April') {
+        console.log('Using march_rolling data for April comparison');
+        combinedData = getCombinedRepData(
+          safeMarchRepData, // This should be march_rolling data
+          safeMarchRevaRepData,
+          safeMarchWholesaleRepData,
+          tab === 'overall' || tab === 'rep',
+          tab === 'overall' || tab === 'reva',
+          tab === 'overall' || tab === 'wholesale'
+        );
+        
+        // Log march_rolling data for validation
+        console.log('March Rolling data validation:', {
+          total: combinedData.length,
+          retail: combinedData.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
+          reva: combinedData.filter(d => d.rep === 'REVA').length,
+          wholesale: combinedData.filter(d => d.rep === 'Wholesale').length
+        });
+      } else if (selectedMonth === 'March') {
+        combinedData = getCombinedRepData(
+          safeFebRepData,
+          safeFebRevaRepData,
+          safeFebWholesaleRepData,
+          tab === 'overall' || tab === 'rep',
+          tab === 'overall' || tab === 'reva',
+          tab === 'overall' || tab === 'wholesale'
+        );
       }
       
       return filterDataByTab(combinedData, tab);
@@ -145,7 +150,7 @@ export const useComparisonData = (
       const previousRep = previousData.find(d => d.rep === repName);
       
       if (currentRep || previousRep) {
-        console.log(`[${tab}] Data for ${repName}:`, {
+        console.log(`[${selectedMonth}-${tab}] Data for ${repName}:`, {
           current: currentRep ? {
             profit: currentRep.profit,
             spend: currentRep.spend,
