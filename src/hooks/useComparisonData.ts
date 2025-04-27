@@ -47,45 +47,28 @@ export const useComparisonData = (
       }
     };
 
-    const getFilteredPreviousData = (rawData: RepData[]) => {
-      // For previous month data, we apply the same department filtering
-      switch (tab) {
-        case 'rep':
-          return filterByDepartment(rawData, 'retail');
-        case 'reva':
-          return filterByDepartment(rawData, 'reva');
-        case 'wholesale':
-          return filterByDepartment(rawData, 'wholesale');
-        default:
-          return rawData;
-      }
-    };
-
-    // Debug function to track Craig's data across different stages
+    // Debug function to track data across different stages
     const debugRepData = (stage: string, current: RepData[], previous: RepData[]) => {
-      const craigCurrent = current.find(rep => rep.rep === 'Craig McDowall');
-      const craigPrevious = previous.find(rep => rep.rep === 'Craig McDowall');
-      
-      console.log(`[${stage}] Comparison data for ${selectedMonth}, tab: ${tab}:`, {
-        craigCurrentData: craigCurrent ? {
-          rep: craigCurrent.rep,
-          profit: craigCurrent.profit,
-          spend: craigCurrent.spend,
-          packs: craigCurrent.packs,
-        } : 'Not found in current data',
-        craigPreviousData: craigPrevious ? {
-          rep: craigPrevious.rep,
-          profit: craigPrevious.profit,
-          spend: craigPrevious.spend,
-          packs: craigPrevious.packs,
-        } : 'Not found in previous data'
+      console.log(`[${stage}] Data validation for ${selectedMonth}, tab: ${tab}:`, {
+        currentData: {
+          total: current.length,
+          retail: current.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
+          reva: current.filter(d => d.rep === 'REVA').length,
+          wholesale: current.filter(d => d.rep === 'Wholesale').length
+        },
+        previousData: {
+          total: previous.length,
+          retail: previous.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
+          reva: previous.filter(d => d.rep === 'REVA').length,
+          wholesale: previous.filter(d => d.rep === 'Wholesale').length
+        }
       });
     };
 
     switch (selectedMonth) {
       case 'April': {
         const currentData = getFilteredCurrentData(safeAprRepData);
-        const previousData = getFilteredPreviousData(safeMarchRepData);
+        const previousData = safeMarchRepData; // No filtering for previous data
         
         logDataValidation(currentData, previousData);
         debugRepData('April vs March', currentData, previousData);
@@ -94,7 +77,7 @@ export const useComparisonData = (
       }
       case 'March': {
         const currentData = getFilteredCurrentData(safeMarchRepData);
-        const previousData = getFilteredPreviousData(safeFebRepData);
+        const previousData = safeFebRepData; // No filtering for previous data
         
         logDataValidation(currentData, previousData);
         debugRepData('March vs February', currentData, previousData);
