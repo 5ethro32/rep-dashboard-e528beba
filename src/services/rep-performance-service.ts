@@ -69,7 +69,7 @@ async function fetchAllViewRecords(viewName: DbViewName) {
   return allRecords;
 }
 
-export const fetchRepPerformanceData = async () => {
+export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'April') => {
   try {
     if (!supabase) {
       throw new Error('Supabase client is not initialized.');
@@ -199,10 +199,10 @@ export const fetchRepPerformanceData = async () => {
       wholesaleValues: aprWholesaleSummary,
       
       // March data (using March Rolling for April comparisons)
-      marchRepData: selectedMonth === 'April' ? marchRollingRetailData : marchRetailData,
-      marchRevaData: selectedMonth === 'April' ? marchRollingRevaData : marchRevaData,
-      marchWholesaleData: selectedMonth === 'April' ? marchRollingWholesaleData : marchWholesaleData,
-      marchBaseSummary: selectedMonth === 'April' ? rawMarchRollingSummary : rawMarchSummary,
+      marchRepData: currentSelectedMonth === 'April' ? marchRollingRetailData : marchRetailData,
+      marchRevaData: currentSelectedMonth === 'April' ? marchRollingRevaData : marchRevaData,
+      marchWholesaleData: currentSelectedMonth === 'April' ? marchRollingWholesaleData : marchWholesaleData,
+      marchBaseSummary: currentSelectedMonth === 'April' ? rawMarchRollingSummary : rawMarchSummary,
       marchRevaValues: marchRevaSummary,
       marchWholesaleValues: marchWholesaleSummary,
       
