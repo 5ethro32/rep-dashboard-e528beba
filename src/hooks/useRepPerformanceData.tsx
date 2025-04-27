@@ -86,7 +86,7 @@ export const useRepPerformanceData = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchRepPerformanceData(selectedMonth);
+      const data = await fetchRepPerformanceData();
       
       console.log("Loaded performance data:", data);
       
