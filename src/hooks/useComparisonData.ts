@@ -15,16 +15,22 @@ export const useComparisonData = (
 
     // Debug Craig's data
     const craigCurrentData = safeAprRepData.find(rep => rep.rep === 'Craig McDowall');
-    const craigPreviousData = safeMarchRepData.find(rep => rep.rep === 'Craig McDowall');
+    const craigPreviousData = tab === 'overall' && selectedMonth === 'April' ? 
+      safeMarchRepData.find(rep => rep.rep === 'Craig McDowall') :
+      safeMarchRepData.find(rep => rep.rep === 'Craig McDowall');
     
-    console.log(`Tab: ${tab}, Craig's current data:`, craigCurrentData);
-    console.log(`Tab: ${tab}, Craig's previous data:`, craigPreviousData);
+    console.log(`Tab: ${tab}, Month: ${selectedMonth}, Craig's current data:`, craigCurrentData);
+    console.log(`Tab: ${tab}, Month: ${selectedMonth}, Craig's previous data:`, craigPreviousData);
     
     switch (selectedMonth) {
       case 'April':
+        // Now using sales_data (marchRepData) instead of march_rolling for April comparison
         return {
           currentData: safeAprRepData,
-          previousData: safeMarchRepData
+          previousData: tab === 'overall' ? safeMarchRepData : 
+                       tab === 'rep' ? safeMarchRepData.filter(d => !['REVA', 'Wholesale'].includes(d.rep)) :
+                       tab === 'reva' ? safeMarchRepData.filter(d => d.rep === 'REVA') :
+                       safeMarchRepData.filter(d => d.rep === 'Wholesale')
         };
       case 'March':
         return {
@@ -48,3 +54,4 @@ export const useComparisonData = (
     getCurrentAndPreviousData
   };
 };
+
