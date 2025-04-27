@@ -1,4 +1,6 @@
 
+import { RepData, SummaryData } from './rep-performance.types';
+
 export interface DepartmentProcessedData {
   retail: RepData[];
   reva: RepData[];

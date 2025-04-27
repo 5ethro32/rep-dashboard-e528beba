@@ -1,7 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData, MarchRollingData, SalesData } from '@/types/rep-performance.types';
-import { processRepData, calculateSummary, calculateRawMtdSummary, calculateSummaryFromData, processRawData } from '@/utils/rep-data-processing';
+import { DepartmentProcessedData } from '@/types/rep-comparison.types';
+import { processRepData, calculateSummary, calculateRawMtdSummary, calculateSummaryFromData } from '@/utils/rep-data-processing';
 
 // Define valid table and view names for type safety
 // Tables
@@ -88,6 +89,108 @@ const processDataByDepartment = (data: any[], department?: string) => {
   }) || [];
 };
 
+// Function to process raw data into structured RepData objects
+function processRawData(data: (MarchRollingData | SalesData)[]): RepData[] {
+  const repMap = new Map<string, {
+    rep: string;
+    spend: number;
+    profit: number;
+    packs: number;
+    activeAccounts: Set<string>;
+    totalAccounts: Set<string>;
+  }>();
+
+  data.forEach(item => {
+    // Handle both data structures
+    const repName = 
+      'rep_name' in item ? item.rep_name :
+      'Rep' in item ? item.Rep :
+      'Unknown';
+    
+    const subRep = 
+      'sub_rep' in item ? item.sub_rep :
+      'Sub-Rep' in item ? item['Sub-Rep'] :
+      undefined;
+    
+    const spend = 
+      'spend' in item ? Number(item.spend) :
+      'Spend' in item ? Number(item.Spend) :
+      0;
+    
+    const profit = 
+      'profit' in item ? Number(item.profit) :
+      'Profit' in item ? Number(item.Profit) :
+      0;
+    
+    const packs = 
+      'packs' in item ? Number(item.packs) :
+      'Packs' in item ? Number(item.Packs) :
+      0;
+    
+    const accountRef = 
+      'account_ref' in item ? item.account_ref :
+      'Account Ref' in item ? item['Account Ref'] :
+      'Unknown';
+
+    // Process the rep data
+    if (!repMap.has(repName)) {
+      repMap.set(repName, {
+        rep: repName,
+        spend: 0,
+        profit: 0,
+        packs: 0,
+        activeAccounts: new Set(),
+        totalAccounts: new Set()
+      });
+    }
+
+    const currentRep = repMap.get(repName)!;
+    currentRep.spend += spend;
+    currentRep.profit += profit;
+    currentRep.packs += packs;
+    currentRep.totalAccounts.add(accountRef);
+    if (spend > 0) {
+      currentRep.activeAccounts.add(accountRef);
+    }
+
+    // If there's a sub-rep, process their data too
+    if (subRep) {
+      if (!repMap.has(subRep)) {
+        repMap.set(subRep, {
+          rep: subRep,
+          spend: 0,
+          profit: 0,
+          packs: 0,
+          activeAccounts: new Set(),
+          totalAccounts: new Set()
+        });
+      }
+
+      const currentSubRep = repMap.get(subRep)!;
+      currentSubRep.spend += spend;
+      currentSubRep.profit += profit;
+      currentSubRep.packs += packs;
+      currentSubRep.totalAccounts.add(accountRef);
+      if (spend > 0) {
+        currentSubRep.activeAccounts.add(accountRef);
+      }
+    }
+  });
+
+  return Array.from(repMap.values()).map(rep => ({
+    rep: rep.rep,
+    spend: rep.spend,
+    profit: rep.profit,
+    margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
+    packs: rep.packs,
+    activeAccounts: rep.activeAccounts.size,
+    totalAccounts: rep.totalAccounts.size,
+    profitPerActiveShop: rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0,
+    profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
+    activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
+  }));
+}
+
 export const fetchRepPerformanceData = async () => {
   try {
     if (!supabase) {
@@ -98,19 +201,19 @@ export const fetchRepPerformanceData = async () => {
     
     // Fetch data from all tables
     const mtdData = await fetchAllRecords('mtd_daily');
-    const marchData = await fetchAllRecords('sales_data');
+    const marchRawData = await fetchAllRecords('sales_data'); // Renamed to avoid conflict
     const februaryData = await fetchAllRecords('sales_data_februrary');
     const marchRollingData = await fetchAllRecords('march_rolling');
     
     console.log('Data samples:', {
       mtd: mtdData?.[0],
       marchRolling: marchRollingData?.[0],
-      march: marchData?.[0],
+      march: marchRawData?.[0], // Updated variable name
       february: februaryData?.[0]
     });
 
-    // Process department data
-    const processDepartmentData = (data: any[]) => ({
+    // Process department data - returns correctly typed DepartmentProcessedData
+    const processDepartmentData = (data: any[]): DepartmentProcessedData => ({
       retail: processRepData(processDataByDepartment(data)),
       reva: processRepData(processDataByDepartment(data, 'REVA')),
       wholesale: processRepData(processDataByDepartment(data, 'WHOLESALE'))
@@ -119,7 +222,7 @@ export const fetchRepPerformanceData = async () => {
     // Process all datasets
     const aprData = processDepartmentData(mtdData);
     const marchRollingProcessed = processDepartmentData(marchRollingData);
-    const marchData = processDepartmentData(marchData);
+    const marchProcessedData = processDepartmentData(marchRawData); // Renamed to avoid conflict
     const febData = processDepartmentData(februaryData);
 
     console.log('Processed data counts:', {
@@ -138,11 +241,11 @@ export const fetchRepPerformanceData = async () => {
     // Calculate summaries
     const rawAprSummary = calculateRawMtdSummary(mtdData || []);
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
-    const rawMarchSummary = calculateRawMtdSummary(marchData || []);
+    const rawMarchSummary = calculateRawMtdSummary(marchRawData || []); // Updated variable name
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
 
     // Calculate filtered summaries
-    const calculateFilteredSummaries = (data: { retail: RepData[], reva: RepData[], wholesale: RepData[] }) => ({
+    const calculateFilteredSummaries = (data: DepartmentProcessedData) => ({
       retail: calculateSummaryFromData(data.retail),
       reva: calculateSummaryFromData(data.reva),
       wholesale: calculateSummaryFromData(data.wholesale)
@@ -150,7 +253,7 @@ export const fetchRepPerformanceData = async () => {
 
     const aprSummaries = calculateFilteredSummaries(aprData);
     const marchRollingSummaries = calculateFilteredSummaries(marchRollingProcessed);
-    const marchSummaries = calculateFilteredSummaries(marchData);
+    const marchSummaries = calculateFilteredSummaries(marchProcessedData); // Updated variable name
     const febSummaries = calculateFilteredSummaries(febData);
 
     // Calculate changes
@@ -215,7 +318,7 @@ export const fetchRepPerformanceData = async () => {
 
     // Calculate changes
     const aprRepChanges = calculateRepChanges(aprData.retail, marchRollingProcessed.retail);
-    const marchRepChanges = calculateRepChanges(marchData.retail, febData.retail);
+    const marchRepChanges = calculateRepChanges(marchProcessedData.retail, febData.retail); // Updated variable name
 
     // Debug logging for changes
     console.log('Change calculations:', {
@@ -245,9 +348,9 @@ export const fetchRepPerformanceData = async () => {
       wholesaleValues: aprSummaries.wholesale,
       
       // March data
-      marchRepData: marchData.retail,
-      marchRevaData: marchData.reva,
-      marchWholesaleData: marchData.wholesale,
+      marchRepData: marchProcessedData.retail,
+      marchRevaData: marchProcessedData.reva,
+      marchWholesaleData: marchProcessedData.wholesale,
       marchBaseSummary: rawMarchSummary,
       marchRevaValues: marchSummaries.reva,
       marchWholesaleValues: marchSummaries.wholesale,
