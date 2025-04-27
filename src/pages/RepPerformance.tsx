@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
@@ -34,6 +35,12 @@ const RepPerformance = () => {
     aprRepData,
     marchRepData,
     febRepData,
+    aprRevaRepData,
+    marchRevaRepData,
+    febRevaRepData,
+    aprWholesaleRepData,
+    marchWholesaleRepData,
+    febWholesaleRepData
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
@@ -139,6 +146,12 @@ const RepPerformance = () => {
           aprRepData={aprRepData}
           marchRepData={marchRepData}
           febRepData={febRepData}
+          aprRevaRepData={aprRevaRepData}
+          marchRevaRepData={marchRevaRepData}
+          febRevaRepData={febRevaRepData}
+          aprWholesaleRepData={aprWholesaleRepData}
+          marchWholesaleRepData={marchWholesaleRepData}
+          febWholesaleRepData={febWholesaleRepData}
         />
       </div>
       <ChatInterface selectedMonth={selectedMonth} />
