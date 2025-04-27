@@ -12,6 +12,13 @@ export const useComparisonData = (
     const safeAprRepData = aprRepData || [];
     const safeMarchRepData = marchRepData || [];
     const safeFebRepData = febRepData || [];
+
+    // Debug Craig's data
+    const craigCurrentData = safeAprRepData.find(rep => rep.rep === 'Craig McDowall');
+    const craigPreviousData = safeMarchRepData.find(rep => rep.rep === 'Craig McDowall');
+    
+    console.log(`Tab: ${tab}, Craig's current data:`, craigCurrentData);
+    console.log(`Tab: ${tab}, Craig's previous data:`, craigPreviousData);
     
     switch (selectedMonth) {
       case 'April':

@@ -279,11 +279,32 @@ export function processRawData(rawData: any[]): RepData[] {
         subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
       repName = subRep.trim();
       
+      // Debug Craig's data
+      if (subRep.trim() === 'Craig McDowall') {
+        console.log('Found Craig as Sub-Rep in:', mainRep, 'department. Data:', {
+          spend,
+          profit,
+          packs,
+          accountRef
+        });
+      }
+      
       processedEntries.add(entryId);
     } 
     else if (!processedEntries.has(entryId) && 
              mainRep && !['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep)) {
       repName = mainRep.trim();
+      
+      // Debug Craig's data
+      if (mainRep.trim() === 'Craig McDowall') {
+        console.log('Found Craig as Main Rep. Data:', {
+          spend,
+          profit,
+          packs,
+          accountRef
+        });
+      }
+      
       processedEntries.add(entryId);
     }
 
@@ -319,6 +340,7 @@ export function processRawData(rawData: any[]): RepData[] {
     }
   });
 
+  // Special debug for Craig's data
   if (repMap.has('Craig McDowall')) {
     const craigData = repMap.get('Craig McDowall')!;
     console.log('Craig McDowall processed data:', {
