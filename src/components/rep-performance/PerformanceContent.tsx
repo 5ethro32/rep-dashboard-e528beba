@@ -75,12 +75,23 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   febRepData
 }) => {
   const isMobile = useIsMobile();
+  
   const { getCurrentAndPreviousData } = useComparisonData(
     selectedMonth,
     aprRepData || [],
     marchRepData || [],
     febRepData || []
   );
+
+  React.useEffect(() => {
+    if (selectedMonth && (aprRepData || marchRepData || febRepData)) {
+      console.log(`PerformanceContent: Debugging comparison data for ${selectedMonth}`);
+      tabValues.forEach(tab => {
+        const { currentData, previousData } = getCurrentAndPreviousData(tab);
+        console.log(`Tab: ${tab}, Current data: ${currentData.length}, Previous data: ${previousData.length}`);
+      });
+    }
+  }, [selectedMonth, aprRepData, marchRepData, febRepData, tabValues]);
 
   const getTabLabel = (tabValue: string) => {
     switch (tabValue) {

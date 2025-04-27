@@ -23,6 +23,7 @@ export const useComparisonData = (
       });
     };
 
+    // Filter by department function - only applied to current month data
     const filterByDepartment = (data: RepData[], department: 'retail' | 'reva' | 'wholesale') => {
       switch (department) {
         case 'retail':
@@ -47,24 +48,66 @@ export const useComparisonData = (
       }
     };
 
-    // Debug function to track data across different stages
+    // Debug function for comprehensive data validation
     const debugRepData = (stage: string, current: RepData[], previous: RepData[]) => {
+      // Count reps by department in each dataset
+      const currentRetail = current.filter(d => !['REVA', 'Wholesale'].includes(d.rep));
+      const currentReva = current.filter(d => d.rep === 'REVA');
+      const currentWholesale = current.filter(d => d.rep === 'Wholesale');
+      
+      const previousRetail = previous.filter(d => !['REVA', 'Wholesale'].includes(d.rep));
+      const previousReva = previous.filter(d => d.rep === 'REVA');
+      const previousWholesale = previous.filter(d => d.rep === 'Wholesale');
+
       console.log(`[${stage}] Data validation for ${selectedMonth}, tab: ${tab}:`, {
         currentData: {
           total: current.length,
-          retail: current.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
-          reva: current.filter(d => d.rep === 'REVA').length,
-          wholesale: current.filter(d => d.rep === 'Wholesale').length
+          retail: currentRetail.length,
+          retailProfit: currentRetail.reduce((sum, rep) => sum + rep.profit, 0),
+          reva: currentReva.length,
+          revaProfit: currentReva.reduce((sum, rep) => sum + rep.profit, 0),
+          wholesale: currentWholesale.length,
+          wholesaleProfit: currentWholesale.reduce((sum, rep) => sum + rep.profit, 0)
         },
         previousData: {
           total: previous.length,
-          retail: previous.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
-          reva: previous.filter(d => d.rep === 'REVA').length,
-          wholesale: previous.filter(d => d.rep === 'Wholesale').length
+          retail: previousRetail.length,
+          retailProfit: previousRetail.reduce((sum, rep) => sum + rep.profit, 0),
+          reva: previousReva.length,
+          revaProfit: previousReva.reduce((sum, rep) => sum + rep.profit, 0),
+          wholesale: previousWholesale.length,
+          wholesaleProfit: previousWholesale.reduce((sum, rep) => sum + rep.profit, 0)
         }
       });
+
+      // Sample individual reps for verification
+      if (previous.length > 0) {
+        const samplePreviousReps = previous.slice(0, Math.min(3, previous.length))
+          .map(r => ({ rep: r.rep, profit: r.profit, spend: r.spend }));
+        console.log(`Sample previous month reps for ${tab}:`, samplePreviousReps);
+      }
+
+      // Check if any specific rep appears in both datasets for comparison
+      if (current.length > 0 && previous.length > 0) {
+        const commonReps = current.filter(c => 
+          previous.some(p => p.rep === c.rep && !['REVA', 'Wholesale'].includes(c.rep))
+        ).slice(0, 3);
+        
+        if (commonReps.length > 0) {
+          console.log(`Common reps between ${selectedMonth} and previous month:`, 
+            commonReps.map(r => ({
+              rep: r.rep,
+              currentProfit: r.profit,
+              previousProfit: previous.find(p => p.rep === r.rep)?.profit || 0
+            }))
+          );
+        } else {
+          console.log(`No common reps found between ${selectedMonth} and previous month for ${tab}`);
+        }
+      }
     };
 
+    // We must properly handle each month comparison scenario differently
     switch (selectedMonth) {
       case 'April': {
         const currentData = getFilteredCurrentData(safeAprRepData);
