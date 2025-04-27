@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -181,7 +180,7 @@ export const useRepPerformanceData = () => {
       return value.toString();
     }
     
-    // Fix: Calculate previous value more accurately based on current value and change percentage
+    // Calculate previous value more accurately based on current value and change percentage
     if (changeValue !== 0) {
       // If we have a change value, calculate the previous value
       const previousValue = metricValue / (1 + (changeValue / 100));

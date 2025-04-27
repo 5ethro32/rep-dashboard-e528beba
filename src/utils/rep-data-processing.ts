@@ -263,6 +263,27 @@ export function processRawData(rawData: any[]): RepData[] {
   if (rawData.length > 0) {
     // Log field names from first item to help debug
     console.log("Sample raw data fields:", Object.keys(rawData[0]));
+    
+    // Log first item entirely to see its structure
+    console.log("First item in raw data:", rawData[0]);
+    
+    // For March Rolling data, check specifically for Craig McDowall
+    const craigRecords = rawData.filter(item => {
+      const allFields = JSON.stringify(item).toLowerCase();
+      return allFields.includes('craig') && allFields.includes('mcdowall');
+    });
+    
+    if (craigRecords.length > 0) {
+      console.log(`Found ${craigRecords.length} raw records for Craig McDowall`);
+      console.log("First Craig McDowall record:", craigRecords[0]);
+      
+      // Check profit fields specifically
+      console.log("Craig's profit field values:", craigRecords.map(r => ({
+        Profit: r.Profit,
+        profit: r.profit,
+        repName: r.Rep || r.rep || r['Rep'] || r['rep']
+      })));
+    }
   }
 
   rawData.forEach(item => {
@@ -296,6 +317,11 @@ export function processRawData(rawData: any[]): RepData[] {
 
     // Normalize rep name to handle case differences
     repName = repName.trim();
+    
+    // Special debug for Craig McDowall
+    if (repName.toLowerCase().includes('craig') && repName.toLowerCase().includes('mcdowall')) {
+      console.log(`Processing raw item for Craig McDowall with profit: ${profit}, spend: ${spend}`);
+    }
 
     if (!repMap.has(repName)) {
       repMap.set(repName, {
@@ -322,10 +348,10 @@ export function processRawData(rawData: any[]): RepData[] {
     }
   });
 
-  // Special debugging for Craig McDowall
+  // Special debugging for Craig McDowall after processing all data
   if (repMap.has('Craig McDowall')) {
     const craigData = repMap.get('Craig McDowall')!;
-    console.log('Craig McDowall processed data:', {
+    console.log('Craig McDowall processed data after aggregation:', {
       profit: craigData.profit,
       spend: craigData.spend,
       packs: craigData.packs,
@@ -359,7 +385,14 @@ function extractNumericValue(item: any, fieldNames: string[]): number {
   for (const fieldName of fieldNames) {
     const value = item[fieldName];
     if (value !== undefined) {
-      return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+      // Improve parsing of string values by handling commas
+      if (typeof value === 'string') {
+        const cleanValue = value.replace(/,/g, '');
+        const parsed = parseFloat(cleanValue);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      // Handle numeric values directly
+      return Number(value || 0);
     }
   }
   return 0;
