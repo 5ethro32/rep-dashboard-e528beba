@@ -1,3 +1,4 @@
+
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 
 export function processRepData(data: SalesDataItem[]): RepData[] {
@@ -215,6 +216,7 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   const activeAccountSet = new Set<string>();
   
   data.forEach(item => {
+    // Handle both March MTD and April Data formats
     const spend = Number(item.Spend || item.spend) || 0;
     const profit = Number(item.Profit || item.profit) || 0;
     const packs = Number(item.Packs || item.packs) || 0;
@@ -262,6 +264,7 @@ export function processRawData(rawData: any[]): RepData[] {
     const packs = extractNumericValue(item, ['Packs', 'packs']);
     const accountRef = item["Account Ref"] || item.account_ref;
     
+    // Fix: Handle rep name extraction more consistently across different data formats
     let repName;
     const subRep = item['Sub-Rep'] || item.sub_rep;
     const mainRep = item.Rep || item.rep_name;

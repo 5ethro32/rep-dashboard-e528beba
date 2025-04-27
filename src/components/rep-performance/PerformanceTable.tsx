@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
@@ -56,14 +55,25 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
     const prevData = clonedData.map((item: any) => {
       const change = repChanges[item.rep] || {};
       
-      // Calculate previous values based on % changes
+      // Fix: Calculate previous values with better handling for edge cases
+      const getAdjustedPrevValue = (currentVal: number, changePercent: number) => {
+        if (changePercent === 0) return currentVal;
+        if (changePercent === 100) return 0; // If current is 100% more than previous, previous was 0
+        
+        // Cap extreme percentage values for calculation
+        const cappedChange = Math.max(Math.min(changePercent, 1000), -1000);
+        
+        // Calculate previous value from current value and change percentage
+        return currentVal / (1 + (cappedChange / 100));
+      };
+      
       return {
         rep: item.rep,
-        profit: item.profit / (1 + (change.profit || 0) / 100),
-        spend: item.spend / (1 + (change.spend || 0) / 100),
+        profit: getAdjustedPrevValue(item.profit, change.profit || 0),
+        spend: getAdjustedPrevValue(item.spend, change.spend || 0),
         margin: item.margin - (change.margin || 0),
-        activeAccounts: Math.round(item.activeAccounts / (1 + (change.activeAccounts || 0) / 100)),
-        packs: Math.round(item.packs / (1 + (change.packs || 0) / 100))
+        activeAccounts: Math.round(getAdjustedPrevValue(item.activeAccounts, change.activeAccounts || 0)),
+        packs: Math.round(getAdjustedPrevValue(item.packs, change.packs || 0))
       };
     });
     
@@ -79,6 +89,16 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
       return acc;
     }, {});
   }, [displayData, repChanges, sortBy, sortOrder, showChangeIndicators]);
+  
+  // Format the difference value for tooltip display
+  const formatDiffValue = (value: number, changePercent: number): number => {
+    // If change percentage is very large, use a reasonable calculation
+    if (Math.abs(changePercent) > 500) {
+      return value - (value / (1 + (Math.sign(changePercent) * 5)));
+    }
+    
+    return value - (value / (1 + (changePercent / 100)));
+  };
   
   return (
     <div className="overflow-x-auto -mx-3 md:mx-0 scrollbar-hide relative">
@@ -143,6 +163,14 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
               // Check if active accounts match total accounts for displaying dash instead of down arrow
               const accountsMatch = item.activeAccounts === item.totalAccounts;
               
+              // Helper function to safely calculate previous values
+              const getPreviousValue = (current: number, changePercent: number): number => {
+                if (Math.abs(changePercent) > 500) {
+                  return current * 0.5; // For extreme changes, use a modest estimate
+                }
+                return current / (1 + (changePercent / 100));
+              };
+              
               return (
                 <TableRow key={item.rep} className="hover:bg-white/5 transition-colors">
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium sticky left-0 z-10 bg-gray-900/90 backdrop-blur-sm border-r border-white/5">
@@ -176,6 +204,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                       ) : null}
                     </div>
                   </TableCell>
+                  
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                     <TooltipProvider>
                       <Tooltip>
@@ -186,7 +215,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                               <div className="flex items-center ml-1">
                                 {renderChangeIndicator(repChanges[item.rep].spend, 'small')}
                                 <span className="text-2xs ml-1 text-finance-gray">
-                                  {formatCurrency(item.spend / (1 + (repChanges[item.rep]?.spend || 0) / 100), 0)}
+                                  {formatCurrency(getPreviousValue(item.spend, repChanges[item.rep]?.spend || 0), 0)}
                                 </span>
                               </div>
                             ) : showChangeIndicators ? (
@@ -200,7 +229,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           <p>
                             {showChangeIndicators ? (
                               <>
-                                Previous: {formatCurrency(item.spend / (1 + (repChanges[item.rep]?.spend || 0) / 100))}
+                                Previous: {formatCurrency(getPreviousValue(item.spend, repChanges[item.rep]?.spend || 0))}
                                 {repChanges[item.rep]?.spend ? ` (${repChanges[item.rep].spend > 0 ? '+' : ''}${repChanges[item.rep].spend.toFixed(1)}%)` : ''}
                               </>
                             ) : `${item.rep}'s spend`}
@@ -209,6 +238,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                       </Tooltip>
                     </TooltipProvider>
                   </TableCell>
+                  
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-finance-red">
                     <TooltipProvider>
                       <Tooltip>
@@ -219,7 +249,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                               <div className="flex items-center ml-1">
                                 {renderChangeIndicator(repChanges[item.rep].profit, 'small')}
                                 <span className="text-2xs ml-1 text-finance-gray">
-                                  {formatCurrency(item.profit / (1 + (repChanges[item.rep]?.profit || 0) / 100), 0)}
+                                  {formatCurrency(getPreviousValue(item.profit, repChanges[item.rep]?.profit || 0), 0)}
                                 </span>
                               </div>
                             ) : showChangeIndicators ? (
@@ -233,7 +263,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           <p>
                             {showChangeIndicators ? (
                               <>
-                                Previous: {formatCurrency(item.profit / (1 + (repChanges[item.rep]?.profit || 0) / 100))}
+                                Previous: {formatCurrency(getPreviousValue(item.profit, repChanges[item.rep]?.profit || 0))}
                                 {repChanges[item.rep]?.profit ? ` (${repChanges[item.rep].profit > 0 ? '+' : ''}${repChanges[item.rep].profit.toFixed(1)}%)` : ''}
                               </>
                             ) : `${item.rep}'s profit`}
@@ -242,6 +272,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                       </Tooltip>
                     </TooltipProvider>
                   </TableCell>
+                  
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                     <TooltipProvider>
                       <Tooltip>
@@ -275,6 +306,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                       </Tooltip>
                     </TooltipProvider>
                   </TableCell>
+                  
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                     <TooltipProvider>
                       <Tooltip>
@@ -318,6 +350,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                       </Tooltip>
                     </TooltipProvider>
                   </TableCell>
+                  
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm">
                     <TooltipProvider>
                       <Tooltip>

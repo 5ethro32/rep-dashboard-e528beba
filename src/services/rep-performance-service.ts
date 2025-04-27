@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -128,6 +129,8 @@ export const fetchRepPerformanceData = async () => {
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
     // March Rolling data processing (for April comparison)
+    // Process March Rolling data for comparison with April
+    const marchRollingRetailData = processRawData(marchRollingData || []);
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
     
     // Calculate filtered summaries
@@ -169,8 +172,8 @@ export const fetchRepPerformanceData = async () => {
       activeAccounts: calculateChanges(rawMarchSummary.activeAccounts, rawFebSummary.activeAccounts)
     };
     
-    // Calculate rep-level changes
-    const aprRepChanges = calculateRepChanges(aprRetailData, processRawData(marchRollingData));
+    // Fix: Calculate rep-level changes with improved handling for extreme values
+    const aprRepChanges = calculateRepChanges(aprRetailData, marchRollingRetailData);
     const marchRepChanges = calculateRepChanges(marchRetailData, febRetailData);
     
     return {
@@ -227,9 +230,15 @@ function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
     });
     
     if (previous) {
+      // Fix: Add capping to prevent extreme percentage values
       const calculateChange = (currentValue: number, previousValue: number) => {
-        if (previousValue === 0) return 0;
-        return ((currentValue - previousValue) / previousValue) * 100;
+        if (previousValue === 0) return currentValue > 0 ? 100 : 0;
+        
+        const percentChange = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+        
+        // Cap extreme percentage values to prevent UI issues
+        const MAX_PERCENTAGE = 1000; // Cap at 1000% change
+        return Math.max(Math.min(percentChange, MAX_PERCENTAGE), -MAX_PERCENTAGE);
       };
       
       changes[current.rep] = {
@@ -243,6 +252,15 @@ function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
         profitPerPack: calculateChange(current.profitPerPack, previous.profitPerPack),
         activeRatio: calculateChange(current.activeRatio, previous.activeRatio)
       };
+      
+      // Log extreme changes for debugging
+      if (Math.abs(changes[current.rep].profit) > 500) {
+        console.log(`Large profit change detected for ${current.rep}:`, {
+          current: current.profit,
+          previous: previous.profit,
+          change: changes[current.rep].profit
+        });
+      }
     }
   });
   
