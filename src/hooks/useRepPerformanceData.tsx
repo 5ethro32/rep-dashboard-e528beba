@@ -58,19 +58,25 @@ export const useRepPerformanceData = () => {
   const [aprBaseSummary, setAprBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [aprRevaValues, setAprRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [aprWholesaleValues, setAprWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  const [aprRepData, setAprRepData] = useState<RepData[]>(defaultRepData);
+  const [aprRevaRepData, setAprRevaRepData] = useState<RepData[]>(defaultRevaData);
+  const [aprWholesaleRepData, setAprWholesaleRepData] = useState<RepData[]>(defaultWholesaleData);
   
   // March data states
   const [marchBaseSummary, setMarchBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [marchRevaValues, setMarchRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [marchWholesaleValues, setMarchWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  const [marchRepData, setMarchRepData] = useState<RepData[]>(defaultRepData);
+  const [marchRevaRepData, setMarchRevaRepData] = useState<RepData[]>(defaultRevaData);
+  const [marchWholesaleRepData, setMarchWholesaleRepData] = useState<RepData[]>(defaultWholesaleData);
   
   // February data states
   const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
-  
-  // February rep data states
   const [febRepData, setFebRepData] = useState<RepData[]>(defaultRepData);
+  const [febRevaRepData, setFebRevaRepData] = useState<RepData[]>(defaultRevaData);
+  const [febWholesaleRepData, setFebWholesaleRepData] = useState<RepData[]>(defaultWholesaleData);
   
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [marchSummaryChanges, setMarchSummaryChanges] = useState(defaultSummaryChanges);
@@ -81,6 +87,11 @@ export const useRepPerformanceData = () => {
     loadData();
   }, []);
   
+  // This effect updates the displayed data when the month changes
+  useEffect(() => {
+    updateDisplayedDataForMonth();
+  }, [selectedMonth]);
+  
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -89,25 +100,28 @@ export const useRepPerformanceData = () => {
       console.log("Loaded performance data:", data);
       
       // Set April data
-      setRepData(data.repData);
-      setRevaData(data.revaData);
-      setWholesaleData(data.wholesaleData);
+      setAprRepData(data.repData);
+      setAprRevaRepData(data.revaData);
+      setAprWholesaleRepData(data.wholesaleData);
       setAprBaseSummary(data.baseSummary);
       setAprRevaValues(data.revaValues);
       setAprWholesaleValues(data.wholesaleValues);
       
       // Set March data
+      setMarchRepData(data.marchRepData);
+      setMarchRevaRepData(data.marchRevaData);
+      setMarchWholesaleRepData(data.marchWholesaleData);
       setMarchBaseSummary(data.marchBaseSummary);
       setMarchRevaValues(data.marchRevaValues);
       setMarchWholesaleValues(data.marchWholesaleValues);
       
       // Set February data
+      setFebRepData(data.febRepData || defaultRepData);
+      setFebRevaRepData(data.febRevaData || defaultRevaData);
+      setFebWholesaleRepData(data.febWholesaleData || defaultWholesaleData);
       setFebBaseSummary(data.febBaseSummary);
       setFebRevaValues(data.febRevaValues);
       setFebWholesaleValues(data.febWholesaleValues);
-      
-      // Set February rep data
-      setFebRepData(data.febRepData || defaultRepData);
       
       // Set changes data
       setSummaryChanges(data.summaryChanges);
@@ -115,7 +129,12 @@ export const useRepPerformanceData = () => {
       setRepChanges(data.repChanges);
       setMarchRepChanges(data.marchRepChanges);
       
-      // Update overall data based on selected month
+      // Initial data based on April (default)
+      setRepData(data.repData);
+      setRevaData(data.revaData);
+      setWholesaleData(data.wholesaleData);
+      
+      // Update overall data
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
@@ -127,11 +146,6 @@ export const useRepPerformanceData = () => {
       
       setOverallData(combinedData);
       
-      // Debug check for specific rep
-      if (data.repChanges && data.repChanges['Craig McDowall']) {
-        console.log('Craig McDowall change data:', data.repChanges['Craig McDowall']);
-      }
-      
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -141,6 +155,63 @@ export const useRepPerformanceData = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Function to update displayed data based on selected month
+  const updateDisplayedDataForMonth = () => {
+    console.log(`Updating displayed data for month: ${selectedMonth}`);
+    
+    if (selectedMonth === 'April') {
+      setRepData(aprRepData);
+      setRevaData(aprRevaRepData);
+      setWholesaleData(aprWholesaleRepData);
+      
+      // Update overall data for April
+      const combinedData = getCombinedRepData(
+        aprRepData,
+        aprRevaRepData,
+        aprWholesaleRepData,
+        true, // Always include retail
+        true, // Always include REVA
+        true  // Always include wholesale
+      );
+      
+      setOverallData(combinedData);
+      
+    } else if (selectedMonth === 'March') {
+      setRepData(marchRepData);
+      setRevaData(marchRevaRepData);
+      setWholesaleData(marchWholesaleRepData);
+      
+      // Update overall data for March
+      const combinedData = getCombinedRepData(
+        marchRepData,
+        marchRevaRepData,
+        marchWholesaleRepData,
+        true, // Always include retail
+        true, // Always include REVA
+        true  // Always include wholesale
+      );
+      
+      setOverallData(combinedData);
+      
+    } else if (selectedMonth === 'February') {
+      setRepData(febRepData);
+      setRevaData(febRevaRepData);
+      setWholesaleData(febWholesaleRepData);
+      
+      // Update overall data for February
+      const combinedData = getCombinedRepData(
+        febRepData,
+        febRevaRepData,
+        febWholesaleRepData,
+        true, // Always include retail
+        true, // Always include REVA
+        true  // Always include wholesale
+      );
+      
+      setOverallData(combinedData);
     }
   };
   
