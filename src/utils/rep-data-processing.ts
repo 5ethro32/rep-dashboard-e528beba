@@ -1,3 +1,4 @@
+
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 
 export function processRepData(data: SalesDataItem[]): RepData[] {
@@ -11,7 +12,7 @@ export function processRepData(data: SalesDataItem[]): RepData[] {
   }>();
 
   data.forEach(item => {
-    const repName = item.rep || 'Unknown';
+    const repName = item.rep_name || 'Unknown';
     const spend = Number(item.spend) || 0;
     const profit = Number(item.profit) || 0;
     const packs = Number(item.packs) || 0;
