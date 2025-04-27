@@ -1,4 +1,3 @@
-
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 
 export function processRepData(data: SalesDataItem[]): RepData[] {
@@ -13,16 +12,16 @@ export function processRepData(data: SalesDataItem[]): RepData[] {
 
   data.forEach(item => {
     // Prioritize different possible rep name fields
+    // Access only properties that exist in the SalesDataItem type
     const repName = 
       item.rep_name || 
-      item.rep || 
-      item.Sub_Rep || 
+      item.sub_rep || 
       'Unknown';
     
     const spend = Number(item.spend) || 0;
     const profit = Number(item.profit) || 0;
     const packs = Number(item.packs) || 0;
-    const accountRef = item.account_ref || item['Account Ref'] || 'Unknown';
+    const accountRef = item.account_ref || 'Unknown';
 
     if (!repMap.has(repName)) {
       repMap.set(repName, {
