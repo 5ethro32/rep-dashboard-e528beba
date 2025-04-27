@@ -1,4 +1,5 @@
-import React, { useMemo, useEffect } from 'react';
+
+import React, { useMemo } from 'react';
 import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
   Table,
@@ -49,37 +50,9 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
     if (!previousMonthData || !Array.isArray(previousMonthData)) {
       return 0;
     }
-    
-    // Find the matching rep in the previous data
     const previousRecord = previousMonthData.find(record => record.rep === repName);
     return previousRecord ? previousRecord[metric] : 0;
   };
-  
-  // Debug the previous month data
-  useEffect(() => {
-    if (previousMonthData && previousMonthData.length > 0) {
-      console.log('PerformanceTable: Previous month data sample:', 
-        previousMonthData.slice(0, 3).map(d => ({ 
-          rep: d.rep, 
-          profit: d.profit, 
-          spend: d.spend,
-          packs: d.packs 
-        }))
-      );
-      
-      // Count by department
-      const retailCount = previousMonthData.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length;
-      const revaCount = previousMonthData.filter(d => d.rep === 'REVA').length;
-      const wholesaleCount = previousMonthData.filter(d => d.rep === 'Wholesale').length;
-      
-      console.log('Previous month data department counts:', {
-        total: previousMonthData.length,
-        retail: retailCount,
-        reva: revaCount,
-        wholesale: wholesaleCount
-      });
-    }
-  }, [previousMonthData]);
 
   return (
     <div className="overflow-x-auto -mx-3 md:mx-0 scrollbar-hide relative">
