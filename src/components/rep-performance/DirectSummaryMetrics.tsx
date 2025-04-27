@@ -33,9 +33,9 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
       setError(null);
       
       try {
-        // Query to get aggregated stats by department from March Data
+        // Query to get aggregated stats by department from sales_data
         const { data, error } = await supabase
-          .from('March Data')
+          .from('sales_data')
           .select(`
             rep_type,
             profit,
@@ -48,11 +48,11 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         if (!data || data.length === 0) {
           setStats([]);
           setIsLoading(false);
-          console.log('No data found in March Data');
+          console.log('No data found in sales_data');
           return;
         }
 
-        console.log('Raw March Data:', data);
+        console.log('Raw sales data:', data);
         
         // Group and calculate stats by department
         const deptMap = new Map<string, DepartmentStats>();
@@ -145,7 +145,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         <MetricCard
           title="Direct Profit"
           value={formatCurrency(filteredTotals.totalProfit || 0, 0)}
-          subtitle="From March Data"
+          subtitle="From sales_data"
           valueClassName="text-finance-red"
           isLoading={isLoading}
         />
@@ -153,14 +153,14 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
         <MetricCard
           title="Direct Margin"
           value={formatPercent(filteredTotals.averageMargin || 0)}
-          subtitle="From March Data"
+          subtitle="From sales_data"
           isLoading={isLoading}
         />
         
         <MetricCard
           title="Direct Packs"
           value={formatNumber(filteredTotals.totalPacks || 0)}
-          subtitle="From March Data"
+          subtitle="From sales_data"
           isLoading={isLoading}
         />
       </div>

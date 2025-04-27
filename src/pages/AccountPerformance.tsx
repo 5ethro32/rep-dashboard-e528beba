@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -12,7 +13,8 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-type AllowedTable = 'April Data' | 'March Data' | 'February Data' | 'March Data MTD';
+// Updated table type to match actual database tables
+type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_rolling';
 
 type DataItem = {
   [key: string]: any;
@@ -81,20 +83,20 @@ const AccountPerformance = () => {
       
       switch (selectedMonth) {
         case 'April':
-          currentTable = "April Data";
-          previousTable = "March Data MTD";
+          currentTable = "mtd_daily";
+          previousTable = "march_rolling";
           break;
         case 'March':
-          currentTable = "March Data";
-          previousTable = "February Data";
+          currentTable = "sales_data";
+          previousTable = "sales_data_februrary";
           break;
         case 'February':
-          currentTable = "February Data";
+          currentTable = "sales_data_februrary";
           previousTable = null;
           break;
         default:
-          currentTable = "March Data";
-          previousTable = "February Data";
+          currentTable = "sales_data";
+          previousTable = "sales_data_februrary";
       }
       
       console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);

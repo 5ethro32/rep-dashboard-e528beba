@@ -16,13 +16,13 @@ const ActionsHeader: React.FC<ActionsHeaderProps> = ({
 }) => {
   const showDataCounts = async () => {
     try {
-      // Fetch counts directly from the tables
+      // Fetch counts directly from the correct tables
       const { count: mtdCount, error: mtdError } = await supabase
-        .from('April Data')
+        .from('mtd_daily')
         .select('*', { count: 'exact', head: true });
         
       const { count: marchCount, error: marchError } = await supabase
-        .from('March Data MTD')
+        .from('march_rolling')
         .select('*', { count: 'exact', head: true });
         
       if (mtdError || marchError) {
