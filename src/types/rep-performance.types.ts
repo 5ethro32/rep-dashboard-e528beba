@@ -1,4 +1,3 @@
-
 export interface RepData {
   rep: string;
   spend: number;
@@ -52,3 +51,27 @@ export interface RepChanges {
 }
 
 export type RepChangesRecord = Record<string, RepChanges>;
+
+export interface MarchRollingData {
+  Department?: string;
+  Rep: string;
+  "Sub-Rep"?: string;
+  "Account Name"?: string;
+  "Account Ref"?: string;
+  Spend?: number;
+  Profit?: number;
+  Margin?: number;
+  Packs?: number;
+}
+
+export interface SalesData {
+  rep_type?: string;
+  rep_name: string;
+  sub_rep?: string;
+  account_name: string;
+  account_ref: string;
+  spend: number;
+  profit: number;
+  margin: number;
+  packs: number;
+}
