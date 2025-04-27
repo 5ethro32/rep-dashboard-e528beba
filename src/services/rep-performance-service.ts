@@ -90,49 +90,22 @@ export const fetchRepPerformanceData = async () => {
     const marchRollingData = await fetchAllRecords('March Data MTD');
     
     console.log('Total records fetched:', {
-      mtd: mtdData?.length || 0,
+      april: mtdData?.length || 0,
       march: marchData?.length || 0,
       february: februaryData?.length || 0,
       marchRolling: marchRollingData?.length || 0
     });
     
-    // Fix: Let's debug the actual raw data for Craig McDowall
-    if (marchRollingData && marchRollingData.length > 0) {
-      const craigRecords = marchRollingData.filter(item => {
-        const repName = (item.Rep || '').toLowerCase();
-        const subRep = (item['Sub-Rep'] || '').toLowerCase();
-        return repName.includes('craig') || repName.includes('mcdowall') || 
-               subRep.includes('craig') || subRep.includes('mcdowall');
-      });
-      
-      console.log(`Found ${craigRecords.length} raw records for Craig McDowall in March MTD`);
-      console.log('Craig McDowall March MTD raw records:', craigRecords);
-      
-      // Calculate Craig's total profit directly from raw data
-      if (craigRecords.length > 0) {
-        const totalProfit = craigRecords.reduce((sum, item) => {
-          // Be very explicit about how we extract profit
-          let profit = 0;
-          if (typeof item.Profit === 'number') {
-            profit = item.Profit;
-          } else if (typeof item.profit === 'number') {
-            profit = item.profit;
-          } else if (item.Profit) {
-            profit = parseFloat(item.Profit);
-          } else if (item.profit) {
-            profit = parseFloat(item.profit);
-          }
-          return sum + profit;
-        }, 0);
-        
-        console.log(`Craig McDowall's raw profit from March MTD: ${totalProfit}`);
-      }
-    }
+    console.log('Data sources clarification:');
+    console.log('- April Data: This is the main data for April');
+    console.log('- March Data: This is the main data for March');
+    console.log('- February Data: This is the main data for February');
+    console.log('- March Data MTD: This is the March rolling data used for comparison with April');
     
     // Toast with number of records fetched
     toast({
-      title: "Data Load Information",
-      description: `April: ${mtdData?.length || 0} records\nMarch: ${marchData?.length || 0} records\nFebruary: ${februaryData?.length || 0} records`,
+      title: "Data Sources Information",
+      description: `April: ${mtdData?.length || 0} records (compared with March MTD)\nMarch: ${marchData?.length || 0} records (compared with Feb)\nFebruary: ${februaryData?.length || 0} records (no comparison)`,
       duration: 10000,
     });
     
@@ -160,20 +133,34 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
-    // FIX: Improve March Rolling data processing with more explicit filtering and debugging
-    console.log('Processing March Rolling data for better comparison with April data...');
+    console.log('Processing March Rolling data for comparison with April data...');
     
-    // New approach: Process March Rolling data completely separately
-    // This ensures we don't have any cross-contamination with other datasets
+    // Process March Rolling data using fixed function that properly prevents double-counting
     const processedMarchRollingData = processMarchRollingDataFixed(marchRollingData || []);
     
     // Calculate raw summary directly from the March Rolling data
-    // This ensures our summary numbers match exactly with the processed rep data
     const rawMarchRollingSummary = calculateSummaryFromData(processedMarchRollingData);
     
-    console.log('Processed March Rolling Summary:', {
+    console.log('Data summaries for comparison:');
+    console.log('April Summary:', {
+      totalProfit: rawAprSummary.totalProfit,
+      totalSpend: rawAprSummary.totalSpend,
+      source: 'April Data table'
+    });
+    console.log('March Rolling Summary (for April comparison):', {
       totalProfit: rawMarchRollingSummary.totalProfit,
-      totalSpend: rawMarchRollingSummary.totalSpend
+      totalSpend: rawMarchRollingSummary.totalSpend,
+      source: 'March Data MTD table'
+    });
+    console.log('March Summary:', {
+      totalProfit: rawMarchSummary.totalProfit,
+      totalSpend: rawMarchSummary.totalSpend,
+      source: 'March Data table'
+    });
+    console.log('February Summary (for March comparison):', {
+      totalProfit: rawFebSummary.totalProfit,
+      totalSpend: rawFebSummary.totalSpend,
+      source: 'February Data table'
     });
     
     // Calculate filtered summaries
@@ -205,6 +192,16 @@ export const fetchRepPerformanceData = async () => {
       activeAccounts: calculateChanges(rawAprSummary.activeAccounts, rawMarchRollingSummary.activeAccounts)
     };
     
+    // Log the change calculations for clarity
+    console.log('April vs March Rolling Changes:', {
+      aprSpend: rawAprSummary.totalSpend,
+      marchRollingSpend: rawMarchRollingSummary.totalSpend,
+      spendChange: aprVsMarchChanges.totalSpend,
+      aprProfit: rawAprSummary.totalProfit,
+      marchRollingProfit: rawMarchRollingSummary.totalProfit,
+      profitChange: aprVsMarchChanges.totalProfit
+    });
+    
     // March vs February changes
     const marchVsFebChanges = {
       totalSpend: calculateChanges(rawMarchSummary.totalSpend, rawFebSummary.totalSpend),
@@ -215,7 +212,7 @@ export const fetchRepPerformanceData = async () => {
       activeAccounts: calculateChanges(rawMarchSummary.activeAccounts, rawFebSummary.activeAccounts)
     };
     
-    // FIX: Use the new processed March Rolling data for calculating rep changes
+    // FIX: Use the processed March Rolling data for calculating rep changes
     const aprRepChanges = calculateRepChanges(aprRetailData, processedMarchRollingData);
     const marchRepChanges = calculateRepChanges(marchRetailData, febRetailData);
     
@@ -243,6 +240,9 @@ export const fetchRepPerformanceData = async () => {
       febBaseSummary: rawFebSummary,
       febRevaValues: febRevaSummary,
       febWholesaleValues: febWholesaleSummary,
+      
+      // Add March rolling summary for debugging
+      marchRollingSummary: rawMarchRollingSummary,
       
       // Changes
       summaryChanges: aprVsMarchChanges,

@@ -45,6 +45,13 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     console.log("SummaryMetrics useEffect: Selected Month:", selectedMonth);
     console.log("SummaryMetrics useEffect: Summary Data:", summary);
     console.log("SummaryMetrics useEffect: Summary Changes:", summaryChanges);
+    
+    // Add clarity about which data sources are being used
+    if (selectedMonth === 'April') {
+      console.log("Using April Data table with March Data MTD for comparison");
+    } else if (selectedMonth === 'March') {
+      console.log("Using March Data table with February Data for comparison");
+    }
   }, [summaryChanges, includeRetail, includeReva, includeWholesale, selectedMonth, summary]);
 
   // Create a change indicator for the KPI cards
@@ -67,7 +74,21 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // Calculate comparison month for subtitle
   const getComparisonMonthText = () => {
     if (selectedMonth === 'March') return 'February';
-    if (selectedMonth === 'April') return 'March';
+    if (selectedMonth === 'April') return 'March (MTD)';
+    return '';
+  };
+  
+  // Get data source text for clarity
+  const getDataSourceText = () => {
+    if (selectedMonth === 'April') return 'From April Data table';
+    if (selectedMonth === 'March') return 'From March Data table';
+    return 'From February Data table';
+  };
+  
+  // Get comparison text for clarity
+  const getComparisonSourceText = () => {
+    if (selectedMonth === 'April') return 'Compared to March Data MTD';
+    if (selectedMonth === 'March') return 'Compared to February Data';
     return '';
   };
 
@@ -144,6 +165,14 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         }
         isLoading={isLoading}
       />
+      
+      {/* Data Source Information Card */}
+      <div className="col-span-1 sm:col-span-2 lg:col-span-4">
+        <div className="text-xs text-finance-gray/80 mt-1 text-center">
+          <span className="mr-2">{getDataSourceText()}</span>
+          {showChangeIndicators && <span>{getComparisonSourceText()}</span>}
+        </div>
+      </div>
     </div>
   );
 };

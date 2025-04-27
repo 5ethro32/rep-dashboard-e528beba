@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -125,6 +126,15 @@ export const useRepPerformanceData = () => {
       );
       
       setOverallData(combinedData);
+      
+      // Add debugging for summary data and changes for better diagnosis
+      console.log("April Summary Data:", data.baseSummary);
+      console.log("March Rolling Summary Data:", data.marchRollingSummary);
+      console.log("April vs March Changes:", data.summaryChanges);
+      console.log("Data sources for comparisons:", {
+        april: "April Data table",
+        marchComparison: "March Data MTD table (for March Rolling)"
+      });
       
       // Add debugging for specific rep changes
       if (data.repChanges) {

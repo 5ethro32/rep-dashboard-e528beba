@@ -9,7 +9,7 @@ import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import ChatInterface from '@/components/chat/ChatInterface';
 import { Button } from '@/components/ui/button';
-import { BarChart3, ClipboardList } from 'lucide-react';
+import { BarChart3, ClipboardList, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -62,6 +62,38 @@ const RepPerformance = () => {
     });
   };
   
+  // Get data source information based on selected month
+  const getDataSourceInfo = () => {
+    switch (selectedMonth) {
+      case 'April':
+        return {
+          current: 'April Data table',
+          comparison: 'March Data MTD table',
+          comparisonMonth: 'March (MTD)'
+        };
+      case 'March':
+        return {
+          current: 'March Data table',
+          comparison: 'February Data table',
+          comparisonMonth: 'February'
+        };
+      case 'February':
+        return {
+          current: 'February Data table',
+          comparison: 'None - no comparison data available',
+          comparisonMonth: 'None'
+        };
+      default:
+        return {
+          current: 'Unknown',
+          comparison: 'Unknown',
+          comparisonMonth: 'Unknown'
+        };
+    }
+  };
+  
+  const dataSourceInfo = getDataSourceInfo();
+  
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
@@ -102,6 +134,25 @@ const RepPerformance = () => {
                 Rep Tracker
               </Button>
             </Link>
+          </div>
+        </div>
+        
+        {/* Data Source Information Banner */}
+        <div className="mb-4 p-3 bg-gray-800/40 border border-gray-700/40 rounded-lg text-xs">
+          <div className="flex items-start gap-2">
+            <Database className="h-4 w-4 text-gray-400 mt-0.5" />
+            <div>
+              <p className="font-medium text-white/90">Data Sources:</p>
+              <p className="text-white/70">
+                Current month ({selectedMonth} 2025): <span className="text-white/90">{dataSourceInfo.current}</span>
+              </p>
+              <p className="text-white/70">
+                Comparison data: <span className="text-white/90">{dataSourceInfo.comparison}</span>
+              </p>
+              <p className="text-gray-400 italic mt-1">
+                Note: April metrics are compared to March MTD data; March is compared to February.
+              </p>
+            </div>
           </div>
         </div>
 
