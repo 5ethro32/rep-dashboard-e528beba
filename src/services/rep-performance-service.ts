@@ -6,7 +6,7 @@ import { processRepData, calculateSummary, calculateRawMtdSummary, calculateSumm
 
 // Define valid table and view names for type safety
 // Tables
-type DbTableName = 'April Data' | 'March Data' | 'February Data' | 'March Data MTD' | 'customer_visits' | 'profiles' | 'week_plans';
+type DbTableName = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_rolling' | 'customer_visits' | 'profiles' | 'week_plans';
 // Views
 type DbViewName = 'combined_rep_performance';
 
@@ -78,17 +78,17 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data using pagination...');
     
-    // April Data
-    const mtdData = await fetchAllRecords('April Data');
+    // April Data from mtd_daily
+    const mtdData = await fetchAllRecords('mtd_daily');
     
-    // March Data
-    const marchData = await fetchAllRecords('March Data');
+    // March Data from sales_data
+    const marchData = await fetchAllRecords('sales_data');
     
-    // February Data
-    const februaryData = await fetchAllRecords('February Data');
+    // February Data from sales_data_februrary
+    const februaryData = await fetchAllRecords('sales_data_februrary');
     
-    // March Rolling Data (for April comparisons)
-    const marchRollingData = await fetchAllRecords('March Data MTD');
+    // March Rolling Data (for April comparisons) from march_rolling
+    const marchRollingData = await fetchAllRecords('march_rolling');
     
     console.log('Total records fetched:', {
       mtd: mtdData?.length || 0,
@@ -112,7 +112,7 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawAprSummary = calculateRawMtdSummary(mtdData || []);
     
-    // March data processing
+    // March data processing - using sales_data table which has different field names
     const marchRetailData = processRawData(marchData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || []);
     const marchRevaData = processRawData(marchData?.filter(item => item.rep_type === 'REVA') || []);
     const marchWholesaleData = processRawData(marchData?.filter(item => 
@@ -120,7 +120,7 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawMarchSummary = calculateRawMtdSummary(marchData || []);
     
-    // February data processing
+    // February data processing from sales_data_februrary
     const febRetailData = processRawData(februaryData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const febRevaData = processRawData(februaryData?.filter(item => item.Department === 'REVA') || []);
     const febWholesaleData = processRawData(februaryData?.filter(item => 
@@ -128,8 +128,7 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
-    // March Rolling data processing (for April comparison)
-    // Fix: Ensure March Rolling data is correctly processed with proper field handling
+    // March Rolling data processing (for April comparison) from march_rolling
     console.log('Processing March MTD data for comparison with April data...');
     
     // Log some sample data for March Rolling to check field structure
@@ -150,7 +149,7 @@ export const fetchRepPerformanceData = async () => {
       }
     }
     
-    // Fix: Ensure we're using the correct field names for March MTD data which might be different
+    // Process march_rolling data
     const marchRollingRetailData = processRawData(marchRollingData || []);
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
     

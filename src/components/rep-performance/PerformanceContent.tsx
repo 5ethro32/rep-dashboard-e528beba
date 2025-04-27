@@ -2,6 +2,7 @@
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
+import RawMonthlyTable from './RawMonthlyTable';
 import RepProfitChart from '@/components/RepProfitChart';
 import RepProfitShare from '@/components/RepProfitShare';
 import RepMarginComparison from '@/components/RepMarginComparison';
@@ -76,6 +77,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
       case 'rep': return 'Retail';
       case 'reva': return 'REVA';
       case 'wholesale': return 'Wholesale';
+      case 'raw': return 'Raw Data';
       default: return tabValue;
     }
   };
@@ -86,6 +88,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
       case 'rep': return `Retail Performance (${selectedMonth} 2025)`;
       case 'reva': return `REVA Performance (${selectedMonth} 2025)`;
       case 'wholesale': return `Wholesale Performance (${selectedMonth} 2025)`;
+      case 'raw': return `Raw ${selectedMonth} 2025 Data`;
       default: return '';
     }
   };
@@ -100,6 +103,10 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
         return 'Showing REVA data by rep.';
       case 'wholesale': 
         return 'Showing wholesale data by rep.';
+      case 'raw':
+        return selectedMonth === 'April' 
+          ? 'Raw April data with comparisons to March MTD.' 
+          : `Raw ${selectedMonth} data.`;
       default: 
         return '';
     }
@@ -107,11 +114,14 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
 
   const showChangeIndicators = selectedMonth !== 'February';
 
+  // Extended tab values to include the raw data tab
+  const extendedTabValues = [...tabValues, 'raw'];
+
   return (
     <div className="mb-8 animate-slide-in-up">
       <Tabs defaultValue="overall" className="w-full">
-        <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
-          {tabValues.map((tabValue) => (
+        <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-5'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
+          {extendedTabValues.map((tabValue) => (
             <TabsTrigger 
               key={tabValue}
               value={tabValue} 
@@ -122,7 +132,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
           ))}
         </TabsList>
         
-        {tabValues.map((tabValue) => (
+        {extendedTabValues.map((tabValue) => (
           <TabsContent key={tabValue} value={tabValue} className="mt-0">
             <div className="bg-gray-900/40 rounded-lg border border-white/10 mb-6 md:mb-8 backdrop-blur-sm shadow-lg">
               <div className="p-3 md:p-6">
@@ -131,75 +141,98 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                 </h2>
                 <p className="text-xs md:text-sm mb-3 md:mb-4 text-white/60">
                   {getTabDescription(tabValue)}
-                  {selectedMonth === 'February' && (
+                  {selectedMonth === 'February' && tabValue !== 'raw' && (
                     <span className="ml-1 text-finance-gray italic">No comparison data available for January.</span>
                   )}
                 </p>
-                <PerformanceTable 
-                  displayData={sortData(getActiveData(tabValue))}
-                  repChanges={repChanges}
-                  sortBy={sortBy}
-                  sortOrder={sortOrder}
-                  onSort={handleSort}
-                  formatCurrency={formatCurrency}
-                  formatPercent={formatPercent}
-                  formatNumber={formatNumber}
-                  renderChangeIndicator={showChangeIndicators ? renderChangeIndicator : () => null}
-                  isLoading={isLoading}
-                  getFebValue={getFebValue}
-                  showChangeIndicators={showChangeIndicators}
-                />
+                
+                {tabValue === 'raw' ? (
+                  <RawMonthlyTable
+                    displayData={sortData(getActiveData('rep'))} // Using retail data for raw display
+                    repChanges={repChanges}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSort={handleSort}
+                    formatCurrency={formatCurrency}
+                    formatPercent={formatPercent}
+                    formatNumber={formatNumber}
+                    renderChangeIndicator={showChangeIndicators ? renderChangeIndicator : () => null}
+                    isLoading={isLoading}
+                    showChangeIndicators={showChangeIndicators && selectedMonth === 'April'}
+                    selectedMonth={selectedMonth}
+                  />
+                ) : (
+                  <PerformanceTable 
+                    displayData={sortData(getActiveData(tabValue))}
+                    repChanges={repChanges}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSort={handleSort}
+                    formatCurrency={formatCurrency}
+                    formatPercent={formatPercent}
+                    formatNumber={formatNumber}
+                    renderChangeIndicator={showChangeIndicators ? renderChangeIndicator : () => null}
+                    isLoading={isLoading}
+                    getFebValue={getFebValue}
+                    showChangeIndicators={showChangeIndicators}
+                  />
+                )}
               </div>
             </div>
             
-            {/* Profit Distribution and Margin Comparison side by side */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
-              <div className="h-64 md:h-80">
-                <RepProfitChart 
-                  displayData={sortData(getActiveData(tabValue))}
-                  repChanges={repChanges}
-                  formatCurrency={formatCurrency}
-                  isLoading={isLoading}
-                  showChangeIndicators={showChangeIndicators}
-                />
-              </div>
-              
-              <div className="h-64 md:h-80">
-                <RepMarginComparison
-                  displayData={sortData(getActiveData(tabValue))}
-                  repChanges={repChanges}
-                  formatPercent={formatPercent}
-                  isLoading={isLoading}
-                  showChangeIndicators={showChangeIndicators}
-                />
-              </div>
-            </div>
-            
-            {/* Profit Share charts side by side */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
-              <div className="h-80 md:h-96">
-                <RepProfitShare 
-                  displayData={sortData(getActiveData(tabValue))}
-                  repChanges={repChanges}
-                  isLoading={isLoading}
-                  showChangeIndicators={showChangeIndicators}
-                  totalProfit={tabValue === 'overall' && selectedMonth === 'April' ? summary?.totalProfit : undefined}
-                />
-              </div>
-              
-              <div className="h-80 md:h-96">
-                <DepartmentProfitShare 
-                  retailProfit={(includeRetail && baseSummary?.totalProfit) || 0}
-                  revaProfit={(includeReva && revaValues?.totalProfit) || 0}
-                  wholesaleProfit={(includeWholesale && wholesaleValues?.totalProfit) || 0}
-                  totalProfit={summary?.totalProfit || 0}
-                  includeRetail={includeRetail}
-                  includeReva={includeReva}
-                  includeWholesale={includeWholesale}
-                  isLoading={isLoading}
-                />
-              </div>
-            </div>
+            {/* Only show charts for regular tabs, not for raw data */}
+            {tabValue !== 'raw' && (
+              <>
+                {/* Profit Distribution and Margin Comparison side by side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+                  <div className="h-64 md:h-80">
+                    <RepProfitChart 
+                      displayData={sortData(getActiveData(tabValue))}
+                      repChanges={repChanges}
+                      formatCurrency={formatCurrency}
+                      isLoading={isLoading}
+                      showChangeIndicators={showChangeIndicators}
+                    />
+                  </div>
+                  
+                  <div className="h-64 md:h-80">
+                    <RepMarginComparison
+                      displayData={sortData(getActiveData(tabValue))}
+                      repChanges={repChanges}
+                      formatPercent={formatPercent}
+                      isLoading={isLoading}
+                      showChangeIndicators={showChangeIndicators}
+                    />
+                  </div>
+                </div>
+                
+                {/* Profit Share charts side by side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
+                  <div className="h-80 md:h-96">
+                    <RepProfitShare 
+                      displayData={sortData(getActiveData(tabValue))}
+                      repChanges={repChanges}
+                      isLoading={isLoading}
+                      showChangeIndicators={showChangeIndicators}
+                      totalProfit={tabValue === 'overall' && selectedMonth === 'April' ? summary?.totalProfit : undefined}
+                    />
+                  </div>
+                  
+                  <div className="h-80 md:h-96">
+                    <DepartmentProfitShare 
+                      retailProfit={(includeRetail && baseSummary?.totalProfit) || 0}
+                      revaProfit={(includeReva && revaValues?.totalProfit) || 0}
+                      wholesaleProfit={(includeWholesale && wholesaleValues?.totalProfit) || 0}
+                      totalProfit={summary?.totalProfit || 0}
+                      includeRetail={includeRetail}
+                      includeReva={includeReva}
+                      includeWholesale={includeWholesale}
+                      isLoading={isLoading}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </TabsContent>
         ))}
       </Tabs>
