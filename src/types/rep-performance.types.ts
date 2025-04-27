@@ -1,3 +1,4 @@
+
 export interface RepData {
   rep: string;
   spend: number;
@@ -62,6 +63,9 @@ export interface MarchRollingData {
   Profit?: number;
   Margin?: number;
   Packs?: number;
+  Cost?: number;
+  Credit?: number;
+  id?: string;
 }
 
 export interface SalesData {
@@ -74,4 +78,9 @@ export interface SalesData {
   profit: number;
   margin: number;
   packs: number;
+  cost?: number;
+  credit?: number;
+  id?: number;
+  reporting_period?: string;
+  import_date?: string;
 }
