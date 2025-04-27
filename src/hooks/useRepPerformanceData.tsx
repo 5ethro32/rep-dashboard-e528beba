@@ -115,7 +115,7 @@ export const useRepPerformanceData = () => {
       setRepChanges(data.repChanges);
       setMarchRepChanges(data.marchRepChanges);
       
-      // Update overall data based on selected month - we'll update this based on selectedMonth in another effect
+      // Update overall data based on selected month
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
@@ -127,23 +127,9 @@ export const useRepPerformanceData = () => {
       
       setOverallData(combinedData);
       
-      // Add debugging for summary data and changes for better diagnosis
-      console.log("April Summary Data:", data.baseSummary);
-      console.log("March Rolling Summary Data:", data.marchRollingSummary);
-      console.log("April vs March Changes:", data.summaryChanges);
-      console.log("Data sources for comparisons:", {
-        april: "April Data table",
-        marchComparison: "March Data MTD table (for March Rolling)"
-      });
-      
-      // Add debugging for specific rep changes
-      if (data.repChanges) {
-        const repsToCheck = ['Craig McDowall', 'Thomas Lowrey', 'John Smith'];
-        repsToCheck.forEach(repName => {
-          if (data.repChanges[repName]) {
-            console.log(`${repName} change data:`, data.repChanges[repName]);
-          }
-        });
+      // Debug check for specific rep
+      if (data.repChanges && data.repChanges['Craig McDowall']) {
+        console.log('Craig McDowall change data:', data.repChanges['Craig McDowall']);
       }
       
     } catch (error) {
@@ -157,33 +143,6 @@ export const useRepPerformanceData = () => {
       setIsLoading(false);
     }
   };
-  
-  // Update overall data when selectedMonth changes
-  useEffect(() => {
-    // Get the appropriate rep data based on selected month
-    let monthRepData = repData;
-    let monthRevaData = revaData;
-    let monthWholesaleData = wholesaleData;
-    
-    if (selectedMonth === 'March') {
-      // If we add March rep data in the future, we'd use it here
-    } else if (selectedMonth === 'February') {
-      monthRepData = febRepData;
-      // If we add February reva/wholesale data in the future, we'd use it here
-    }
-    
-    // Update overall data based on selected month
-    const combinedData = getCombinedRepData(
-      monthRepData,
-      monthRevaData,
-      monthWholesaleData,
-      true, // Always include retail
-      true, // Always include REVA
-      true  // Always include wholesale
-    );
-    
-    setOverallData(combinedData);
-  }, [selectedMonth, repData, revaData, wholesaleData, febRepData]);
   
   const getActiveData = (tab: string) => {
     if (tab === 'overall') {
@@ -222,7 +181,7 @@ export const useRepPerformanceData = () => {
       return value.toString();
     }
     
-    // Calculate previous value more accurately based on current value and change percentage
+    // Fix: Calculate previous value more accurately based on current value and change percentage
     if (changeValue !== 0) {
       // If we have a change value, calculate the previous value
       const previousValue = metricValue / (1 + (changeValue / 100));

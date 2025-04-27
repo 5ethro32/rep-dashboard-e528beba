@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -51,12 +52,12 @@ async function fetchAllViewRecords(viewName: DbViewName) {
       .from(viewName)
       .select('*')
       .range(page * pageSize, (page + 1) * pageSize - 1);
-
+      
     if (error) {
-      console.error(`Error fetching ${viewName} data:`, error);
+      console.error(`Error fetching ${viewName} view data:`, error);
       throw error;
     }
-
+    
     if (data && data.length > 0) {
       allRecords = [...allRecords, ...data];
       page++;
@@ -64,8 +65,8 @@ async function fetchAllViewRecords(viewName: DbViewName) {
       hasMore = false;
     }
   }
-
-  console.log(`Fetched ${allRecords.length} total records from ${viewName}`);
+  
+  console.log(`Fetched ${allRecords.length} total records from ${viewName} view`);
   return allRecords;
 }
 
@@ -90,26 +91,20 @@ export const fetchRepPerformanceData = async () => {
     const marchRollingData = await fetchAllRecords('March Data MTD');
     
     console.log('Total records fetched:', {
-      april: mtdData?.length || 0,
+      mtd: mtdData?.length || 0,
       march: marchData?.length || 0,
       february: februaryData?.length || 0,
       marchRolling: marchRollingData?.length || 0
     });
     
-    console.log('Data sources clarification:');
-    console.log('- April Data: This is the main data for April');
-    console.log('- March Data: This is the main data for March');
-    console.log('- February Data: This is the main data for February');
-    console.log('- March Data MTD: This is the March rolling data used for comparison with April');
-    
-    // Toast with number of records fetched
+    // Show toast with number of records fetched
     toast({
-      title: "Data Sources Information",
-      description: `April: ${mtdData?.length || 0} records (compared with March MTD)\nMarch: ${marchData?.length || 0} records (compared with Feb)\nFebruary: ${februaryData?.length || 0} records (no comparison)`,
+      title: "Data Load Information",
+      description: `April: ${mtdData?.length || 0} records\nMarch: ${marchData?.length || 0} records\nFebruary: ${februaryData?.length || 0} records`,
       duration: 10000,
     });
     
-    // Process April data with careful attention to field names
+    // April data processing
     const aprRetailData = processRawData(mtdData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const aprRevaData = processRawData(mtdData?.filter(item => item.Department === 'REVA') || []);
     const aprWholesaleData = processRawData(mtdData?.filter(item => 
@@ -117,7 +112,7 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawAprSummary = calculateRawMtdSummary(mtdData || []);
     
-    // Process March data
+    // March data processing
     const marchRetailData = processRawData(marchData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || []);
     const marchRevaData = processRawData(marchData?.filter(item => item.rep_type === 'REVA') || []);
     const marchWholesaleData = processRawData(marchData?.filter(item => 
@@ -125,7 +120,7 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawMarchSummary = calculateRawMtdSummary(marchData || []);
     
-    // Process February data
+    // February data processing
     const febRetailData = processRawData(februaryData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const febRevaData = processRawData(februaryData?.filter(item => item.Department === 'REVA') || []);
     const febWholesaleData = processRawData(februaryData?.filter(item => 
@@ -133,35 +128,31 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
-    console.log('Processing March Rolling data for comparison with April data...');
+    // March Rolling data processing (for April comparison)
+    // Fix: Ensure March Rolling data is correctly processed with proper field handling
+    console.log('Processing March MTD data for comparison with April data...');
     
-    // Process March Rolling data using fixed function that properly prevents double-counting
-    const processedMarchRollingData = processMarchRollingDataFixed(marchRollingData || []);
+    // Log some sample data for March Rolling to check field structure
+    if (marchRollingData && marchRollingData.length > 0) {
+      console.log('Sample March Rolling Data item:', marchRollingData[0]);
+      
+      // Check if Craig McDowall exists in the data
+      const craigData = marchRollingData.filter(item => 
+        (item.Rep === 'Craig McDowall' || item['Sub-Rep'] === 'Craig McDowall')
+      );
+      
+      if (craigData.length > 0) {
+        console.log(`Found ${craigData.length} records for Craig McDowall in March MTD`);
+        const totalProfit = craigData.reduce((sum, item) => sum + parseFloat(item.Profit || "0"), 0);
+        console.log(`Craig McDowall March MTD total profit: ${totalProfit}`);
+      } else {
+        console.log('Craig McDowall not found in March MTD data');
+      }
+    }
     
-    // Calculate raw summary directly from the March Rolling data
-    const rawMarchRollingSummary = calculateSummaryFromData(processedMarchRollingData);
-    
-    console.log('Data summaries for comparison:');
-    console.log('April Summary:', {
-      totalProfit: rawAprSummary.totalProfit,
-      totalSpend: rawAprSummary.totalSpend,
-      source: 'April Data table'
-    });
-    console.log('March Rolling Summary (for April comparison):', {
-      totalProfit: rawMarchRollingSummary.totalProfit,
-      totalSpend: rawMarchRollingSummary.totalSpend,
-      source: 'March Data MTD table'
-    });
-    console.log('March Summary:', {
-      totalProfit: rawMarchSummary.totalProfit,
-      totalSpend: rawMarchSummary.totalSpend,
-      source: 'March Data table'
-    });
-    console.log('February Summary (for March comparison):', {
-      totalProfit: rawFebSummary.totalProfit,
-      totalSpend: rawFebSummary.totalSpend,
-      source: 'February Data table'
-    });
+    // Fix: Ensure we're using the correct field names for March MTD data which might be different
+    const marchRollingRetailData = processRawData(marchRollingData || []);
+    const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
     
     // Calculate filtered summaries
     const aprRetailSummary = calculateSummaryFromData(aprRetailData);
@@ -176,9 +167,9 @@ export const fetchRepPerformanceData = async () => {
     const febRevaSummary = calculateSummaryFromData(febRevaData);
     const febWholesaleSummary = calculateSummaryFromData(febWholesaleData);
     
-    // Calculate changes for different periods with better precision
+    // Calculate changes for different periods
     const calculateChanges = (current: number, previous: number): number => {
-      if (!previous) return 0;
+      if (previous === 0) return 0;
       return ((current - previous) / previous) * 100;
     };
     
@@ -192,16 +183,6 @@ export const fetchRepPerformanceData = async () => {
       activeAccounts: calculateChanges(rawAprSummary.activeAccounts, rawMarchRollingSummary.activeAccounts)
     };
     
-    // Log the change calculations for clarity
-    console.log('April vs March Rolling Changes:', {
-      aprSpend: rawAprSummary.totalSpend,
-      marchRollingSpend: rawMarchRollingSummary.totalSpend,
-      spendChange: aprVsMarchChanges.totalSpend,
-      aprProfit: rawAprSummary.totalProfit,
-      marchRollingProfit: rawMarchRollingSummary.totalProfit,
-      profitChange: aprVsMarchChanges.totalProfit
-    });
-    
     // March vs February changes
     const marchVsFebChanges = {
       totalSpend: calculateChanges(rawMarchSummary.totalSpend, rawFebSummary.totalSpend),
@@ -212,8 +193,8 @@ export const fetchRepPerformanceData = async () => {
       activeAccounts: calculateChanges(rawMarchSummary.activeAccounts, rawFebSummary.activeAccounts)
     };
     
-    // FIX: Use the processed March Rolling data for calculating rep changes
-    const aprRepChanges = calculateRepChanges(aprRetailData, processedMarchRollingData);
+    // Fix: Calculate rep-level changes with improved handling for extreme values
+    const aprRepChanges = calculateRepChanges(aprRetailData, marchRollingRetailData);
     const marchRepChanges = calculateRepChanges(marchRetailData, febRetailData);
     
     return {
@@ -241,9 +222,6 @@ export const fetchRepPerformanceData = async () => {
       febRevaValues: febRevaSummary,
       febWholesaleValues: febWholesaleSummary,
       
-      // Add March rolling summary for debugging
-      marchRollingSummary: rawMarchRollingSummary,
-      
       // Changes
       summaryChanges: aprVsMarchChanges,
       marchSummaryChanges: marchVsFebChanges,
@@ -261,286 +239,6 @@ export const fetchRepPerformanceData = async () => {
   }
 };
 
-// FIX: Completely rewritten function to process March Rolling data
-// with extremely strict filtering and deduplication
-function processMarchRollingDataFixed(rawData: any[]): RepData[] {
-  console.log('Processing March Rolling data with fixed approach');
-  
-  // Track seen account refs to prevent double-counting
-  const seenAccountRefs = new Map<string, { rep: string, spent: number, profit: number, packs: number }>();
-  
-  // First pass: Process each record and build a lookup of unique accounts
-  rawData.forEach((item, index) => {
-    // Extract all possible field names to ensure we don't miss data
-    const spend = extractNumericValue(item, ['Spend', 'spend']);
-    const profit = extractNumericValue(item, ['Profit', 'profit']);
-    const packs = extractNumericValue(item, ['Packs', 'packs']);
-    const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
-    
-    // Skip items without account ref
-    if (!accountRef) return;
-    
-    // Get the rep name consistently
-    const subRep = item['Sub-Rep'] || item.sub_rep || '';
-    const mainRep = item.Rep || item.rep || '';
-    const repName = subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE' ? 
-      subRep.trim() : mainRep.trim();
-    
-    // Skip non-retail entries
-    const department = item.Department || '';
-    if (department === 'REVA' || department === 'Wholesale' || department === 'WHOLESALE') {
-      return;
-    }
-    
-    // Skip entries without rep name
-    if (!repName || repName.trim() === '') {
-      return;
-    }
-    
-    // Handle Craig McDowall specially for debugging
-    if (repName.toLowerCase().includes('craig') && repName.toLowerCase().includes('mcdowall')) {
-      console.log(`Processing March Rolling record ${index} for Craig:`, {
-        accountRef,
-        profit,
-        spend
-      });
-    }
-    
-    // Create a unique key for this account under this rep
-    const key = `${repName.toLowerCase()}-${accountRef}`;
-    
-    // If we've seen this account for this rep before, update the values
-    if (seenAccountRefs.has(key)) {
-      const existing = seenAccountRefs.get(key)!;
-      seenAccountRefs.set(key, {
-        rep: repName,
-        spent: existing.spent + spend,
-        profit: existing.profit + profit,
-        packs: existing.packs + packs
-      });
-      
-      if (repName.toLowerCase().includes('craig') && repName.toLowerCase().includes('mcdowall')) {
-        console.log(`Updated existing account ${accountRef} for Craig:`, {
-          newProfit: existing.profit + profit,
-          newSpend: existing.spent + spend
-        });
-      }
-    } else {
-      // Otherwise add it as a new entry
-      seenAccountRefs.set(key, {
-        rep: repName,
-        spent: spend,
-        profit: profit,
-        packs: packs
-      });
-      
-      if (repName.toLowerCase().includes('craig') && repName.toLowerCase().includes('mcdowall')) {
-        console.log(`Added new account ${accountRef} for Craig:`, {
-          profit, spend
-        });
-      }
-    }
-  });
-  
-  // Now aggregate by rep
-  const repMap = new Map<string, {
-    rep: string;
-    spend: number;
-    profit: number;
-    packs: number;
-    activeAccounts: Set<string>;
-    totalAccounts: Set<string>;
-  }>();
-  
-  // Process our deduplicated accounts
-  seenAccountRefs.forEach((value, key) => {
-    const [repName, accountRef] = key.split('-', 2);
-    
-    if (!repMap.has(repName)) {
-      repMap.set(repName, {
-        rep: value.rep, // Use the actual case from the value
-        spend: 0,
-        profit: 0,
-        packs: 0,
-        activeAccounts: new Set(),
-        totalAccounts: new Set()
-      });
-    }
-    
-    const currentRep = repMap.get(repName)!;
-    currentRep.spend += value.spent;
-    currentRep.profit += value.profit;
-    currentRep.packs += value.packs;
-    currentRep.totalAccounts.add(accountRef);
-    
-    if (value.spent > 0) {
-      currentRep.activeAccounts.add(accountRef);
-    }
-    
-    // Special debug for Craig
-    if (repName.includes('craig') && repName.includes('mcdowall')) {
-      console.log(`Aggregating ${accountRef} to Craig's total:`, {
-        currentTotal: currentRep.profit,
-        addedProfit: value.profit
-      });
-    }
-  });
-  
-  // Generate the final RepData array
-  const repDataArray = Array.from(repMap.values()).map(rep => {
-    const activeAccounts = rep.activeAccounts.size;
-    const totalAccounts = rep.totalAccounts.size;
-    
-    const repData = {
-      rep: rep.rep,
-      spend: rep.spend,
-      profit: rep.profit,
-      margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
-      packs: rep.packs,
-      activeAccounts: activeAccounts,
-      totalAccounts: totalAccounts,
-      profitPerActiveShop: activeAccounts > 0 ? rep.profit / activeAccounts : 0,
-      profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
-      activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
-    };
-    
-    // Final debug for Craig
-    if (rep.rep.toLowerCase().includes('craig') && rep.rep.toLowerCase().includes('mcdowall')) {
-      console.log('FINAL PROCESSED DATA FOR CRAIG MCDOWALL:', repData);
-    }
-    
-    return repData;
-  });
-  
-  console.log(`Processed ${repDataArray.length} reps from March Rolling data with fixed approach`);
-  
-  return repDataArray;
-}
-
-// Special function to handle March Rolling data specifically for better comparisons
-function processMarchRollingData(rawData: any[]): RepData[] {
-  console.log('Processing March Rolling data with special handling');
-  
-  const repMap = new Map<string, {
-    rep: string;
-    spend: number;
-    profit: number;
-    packs: number;
-    activeAccounts: Set<string>;
-    totalAccounts: Set<string>;
-  }>();
-
-  if (rawData.length > 0) {
-    console.log("First item in March Rolling data:", rawData[0]);
-    console.log("Sample fields available:", Object.keys(rawData[0]));
-  }
-
-  rawData.forEach(item => {
-    // Extract values with consistent approach for March Rolling data
-    const spend = extractNumericValue(item, ['Spend', 'spend']);
-    const profit = extractNumericValue(item, ['Profit', 'profit']);
-    const packs = extractNumericValue(item, ['Packs', 'packs']);
-    const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
-    
-    // Specially handle rep name extraction for March Rolling data
-    let repName;
-    
-    // First check for primary rep in both Rep and rep fields
-    const mainRep = item.Rep || item.rep || '';
-    // Then check for sub-rep in both Sub-Rep and sub_rep fields
-    const subRep = item['Sub-Rep'] || item.sub_rep || '';
-    
-    // Determine the actual rep based on data structure
-    if (subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
-      // If we have a valid sub-rep, use that as the rep name
-      repName = subRep;
-    } else if (mainRep === 'REVA' || mainRep === 'Wholesale' || mainRep === 'WHOLESALE') {
-      // Skip department entries
-      return;
-    } else {
-      // Otherwise use the main rep
-      repName = mainRep;
-    }
-
-    // Skip entries without a rep name
-    if (!repName || repName.trim() === '') {
-      return;
-    }
-
-    // Normalize rep name to handle case differences
-    repName = repName.trim();
-    
-    // Special debug for Craig McDowall
-    if (repName.toLowerCase().includes('craig') || repName.toLowerCase().includes('mcdowall')) {
-      console.log(`Found Craig McDowall record in March Rolling:`, {
-        repName,
-        profit,
-        spend,
-        packs
-      });
-    }
-
-    if (!repMap.has(repName)) {
-      repMap.set(repName, {
-        rep: repName,
-        spend: 0,
-        profit: 0,
-        packs: 0,
-        activeAccounts: new Set(),
-        totalAccounts: new Set()
-      });
-    }
-
-    const currentRep = repMap.get(repName)!;
-
-    currentRep.spend += spend;
-    currentRep.profit += profit;
-    currentRep.packs += packs;
-
-    if (accountRef) {
-      currentRep.totalAccounts.add(accountRef);
-      if (spend > 0) {
-        currentRep.activeAccounts.add(accountRef);
-      }
-    }
-  });
-
-  // After processing, log the aggregated data for Craig McDowall
-  if (repMap.has('Craig McDowall')) {
-    const craigData = repMap.get('Craig McDowall')!;
-    console.log('Craig McDowall processed data from March Rolling:', {
-      profit: craigData.profit,
-      spend: craigData.spend,
-      packs: craigData.packs,
-      totalAccounts: craigData.totalAccounts.size,
-      activeAccounts: craigData.activeAccounts.size
-    });
-  }
-
-  const repDataArray = Array.from(repMap.values()).map(rep => {
-    const activeAccounts = rep.activeAccounts.size;
-    const totalAccounts = rep.totalAccounts.size;
-
-    return {
-      rep: rep.rep,
-      spend: rep.spend,
-      profit: rep.profit,
-      margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
-      packs: rep.packs,
-      activeAccounts: activeAccounts,
-      totalAccounts: totalAccounts,
-      profitPerActiveShop: activeAccounts > 0 ? rep.profit / activeAccounts : 0,
-      profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
-      activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
-    };
-  });
-
-  // Final debug log of all processed rep data
-  console.log(`Processed ${repDataArray.length} reps from March Rolling data`);
-  
-  return repDataArray;
-}
-
 function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
   const changes: Record<string, any> = {};
   
@@ -551,56 +249,37 @@ function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
   console.log('Current rep names:', currentData.map(r => r.rep));
   console.log('Previous rep names:', previousData.map(r => r.rep));
   
-  // Create a normalized map of previous data for easier lookup
-  const previousDataMap = new Map<string, RepData>();
-  previousData.forEach(prev => {
-    const normalizedName = prev.rep.toLowerCase().trim();
-    previousDataMap.set(normalizedName, prev);
-    
-    // Special debug for Craig McDowall in previous data
-    if (normalizedName.includes('craig') && normalizedName.includes('mcdowall')) {
-      console.log('Found Craig McDowall in previous data:', prev);
-    }
-  });
-  
   currentData.forEach(current => {
-    // Find the matching rep in previous data using normalized names
-    const normalizedCurrentName = current.rep.toLowerCase().trim();
-    const previous = previousDataMap.get(normalizedCurrentName);
+    // Find the matching rep in previous data
+    // Fix: Improve matching by normalizing rep names (trim, lowercase)
+    const currentRepName = current.rep.toLowerCase().trim();
+    
+    const previous = previousData.find(prev => {
+      const prevRepName = prev.rep.toLowerCase().trim();
+      return currentRepName === prevRepName;
+    });
     
     // Debug log for specific rep (Craig McDowall)
-    if (current.rep.toLowerCase().includes('craig') && current.rep.toLowerCase().includes('mcdowall')) {
-      console.log('Processing Craig McDowall comparison data:');
+    if (current.rep.includes('Craig McDowall')) {
+      console.log('Processing Craig McDowall:');
       console.log('  Current profit:', current.profit);
+      console.log('  Previous profit:', previous?.profit || 'Not found in previous data');
       
       if (previous) {
-        console.log('  Previous profit from map:', previous.profit);
-        const percentChange = previous.profit !== 0 ? 
-          ((current.profit - previous.profit) / Math.abs(previous.profit)) * 100 : 0;
-        console.log('  Raw percent change calculation:', percentChange);
-      } else {
-        console.log('  ERROR: No previous data found for Craig McDowall!');
-        
-        // Search manually through previous data for any similar names
-        const possibleMatches = previousData.filter(p => 
-          p.rep.toLowerCase().includes('craig') || 
-          p.rep.toLowerCase().includes('mcdowall'));
-        
-        if (possibleMatches.length > 0) {
-          console.log('  Possible matches found:', possibleMatches.map(p => `${p.rep} (profit: ${p.profit})`));
-        }
+        const percentChange = ((current.profit - previous.profit) / Math.abs(previous.profit)) * 100;
+        console.log('  Raw percent change:', percentChange);
       }
     }
     
     if (previous) {
-      // Calculate change with capping to prevent extreme percentage values
+      // Fix: Add capping to prevent extreme percentage values
       const calculateChange = (currentValue: number, previousValue: number) => {
         if (previousValue === 0) return currentValue > 0 ? 100 : 0;
         
         const percentChange = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
         
         // Cap extreme percentage values to prevent UI issues
-        const MAX_PERCENTAGE = 500; // Cap to 500% change
+        const MAX_PERCENTAGE = 500; // Lower the cap to 500% change
         return Math.max(Math.min(percentChange, MAX_PERCENTAGE), -MAX_PERCENTAGE);
       };
       
@@ -615,26 +294,17 @@ function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
         profitPerPack: calculateChange(current.profitPerPack, previous.profitPerPack),
         activeRatio: calculateChange(current.activeRatio, previous.activeRatio)
       };
-    } else {
-      console.log(`No previous data match found for: ${current.rep}`);
+      
+      // Log extreme changes for debugging
+      if (Math.abs(changes[current.rep].profit) > 100) {
+        console.log(`Large profit change detected for ${current.rep}:`, {
+          current: current.profit,
+          previous: previous.profit,
+          change: changes[current.rep].profit
+        });
+      }
     }
   });
   
   return changes;
-}
-
-function extractNumericValue(item: any, fieldNames: string[]): number {
-  for (const fieldName of fieldNames) {
-    const value = item[fieldName];
-    if (value !== undefined) {
-      // Handle string values that need to be parsed
-      if (typeof value === 'string') {
-        const parsed = parseFloat(value.replace(/,/g, ''));
-        return isNaN(parsed) ? 0 : parsed;
-      }
-      // Handle numeric values directly
-      return Number(value || 0);
-    }
-  }
-  return 0;
 }
