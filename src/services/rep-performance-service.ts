@@ -1,20 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { 
-  SalesDataItem, 
-  RepData, 
-  SummaryData, 
-  MarchRollingData, 
-  SalesData 
-} from '@/types/rep-performance.types';
-import { 
-  processRepData, 
-  calculateSummary, 
-  calculateRawMtdSummary, 
-  calculateSummaryFromData, 
-  processRawData 
-} from '@/utils/rep-data-processing';
+import { SalesDataItem, RepData, SummaryData, MarchRollingData, SalesData } from '@/types/rep-performance.types';
+import { processRepData, calculateSummary, calculateRawMtdSummary, calculateSummaryFromData, processRawData } from '@/utils/rep-data-processing';
 
 // Define valid table and view names for type safety
 // Tables
@@ -82,6 +69,25 @@ async function fetchAllViewRecords(viewName: DbViewName) {
   return allRecords;
 }
 
+// Helper function to normalize department names for comparison
+const normalizeDepartment = (dept?: string): string => {
+  if (!dept) return '';
+  return dept.trim().toUpperCase();
+};
+
+// Helper function to process data by department
+const processDataByDepartment = (data: any[], department?: string) => {
+  return data?.filter(item => {
+    const itemDept = normalizeDepartment(item.Department || item.rep_type);
+    const targetDept = normalizeDepartment(department);
+    
+    if (!department) {
+      return !itemDept || itemDept === 'RETAIL';
+    }
+    return itemDept === targetDept;
+  }) || [];
+};
+
 export const fetchRepPerformanceData = async () => {
   try {
     if (!supabase) {
@@ -96,128 +102,63 @@ export const fetchRepPerformanceData = async () => {
     const februaryData = await fetchAllRecords('sales_data_februrary');
     const marchRollingData = await fetchAllRecords('march_rolling');
     
-    console.log('March Rolling Data sample:', marchRollingData?.[0]);
-    console.log('Total March Rolling records:', marchRollingData?.length || 0);
-    
-    // Process March Rolling data with case-insensitive department matching
-    // Process all data in a single pass to avoid duplicate variables
-    const marchRollingProcessed = {
-      retail: processRawData(
-        marchRollingData?.filter(item => {
-          const dept = item.Department?.toUpperCase();
-          return !dept || dept === 'RETAIL';
-        }) || []
-      ),
-      reva: processRawData(
-        marchRollingData?.filter(item => {
-          const dept = item.Department?.toUpperCase();
-          return dept === 'REVA';
-        }) || []
-      ),
-      wholesale: processRawData(
-        marchRollingData?.filter(item => {
-          const dept = item.Department?.toUpperCase();
-          return dept === 'WHOLESALE';
-        }) || []
-      )
-    };
-    
-    // Add debug logging
-    console.log('March Rolling data processed:', {
-      retail: marchRollingProcessed.retail.length,
-      reva: marchRollingProcessed.reva.length,
-      wholesale: marchRollingProcessed.wholesale.length
+    console.log('Data samples:', {
+      mtd: mtdData?.[0],
+      marchRolling: marchRollingData?.[0],
+      march: marchData?.[0],
+      february: februaryData?.[0]
     });
-    
-    // Process April/MTD data
-    const aprProcessed = {
-      retail: processRawData(
-        mtdData?.filter(item => {
-          const dept = item.Department?.toUpperCase();
-          return !dept || dept === 'RETAIL';
-        }) || []
-      ),
-      reva: processRawData(
-        mtdData?.filter(item => {
-          const dept = item.Department?.toUpperCase();
-          return dept === 'REVA';
-        }) || []
-      ),
-      wholesale: processRawData(
-        mtdData?.filter(item => {
-          const dept = item.Department?.toUpperCase();
-          return dept === 'WHOLESALE';
-        }) || []
-      )
-    };
 
-    console.log('Total records fetched:', {
-      mtd: mtdData?.length || 0,
-      march: marchData?.length || 0,
-      february: februaryData?.length || 0,
-      marchRolling: marchRollingData?.length || 0
+    // Process department data
+    const processDepartmentData = (data: any[]) => ({
+      retail: processRepData(processDataByDepartment(data)),
+      reva: processRepData(processDataByDepartment(data, 'REVA')),
+      wholesale: processRepData(processDataByDepartment(data, 'WHOLESALE'))
     });
-    
-    // Show toast with number of records fetched
-    toast({
-      title: "Data Load Information",
-      description: `April: ${mtdData?.length || 0} records\nMarch: ${marchData?.length || 0} records\nFebruary: ${februaryData?.length || 0} records`,
-      duration: 10000,
+
+    // Process all datasets
+    const aprData = processDepartmentData(mtdData);
+    const marchRollingProcessed = processDepartmentData(marchRollingData);
+    const marchData = processDepartmentData(marchData);
+    const febData = processDepartmentData(februaryData);
+
+    console.log('Processed data counts:', {
+      april: {
+        retail: aprData.retail.length,
+        reva: aprData.reva.length,
+        wholesale: aprData.wholesale.length
+      },
+      marchRolling: {
+        retail: marchRollingProcessed.retail.length,
+        reva: marchRollingProcessed.reva.length,
+        wholesale: marchRollingProcessed.wholesale.length
+      }
     });
-    
-    // Raw summary data calculations
+
+    // Calculate summaries
     const rawAprSummary = calculateRawMtdSummary(mtdData || []);
-    
-    // March data processing
-    const marchProcessed = {
-      retail: processRawData(marchData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || []),
-      reva: processRawData(marchData?.filter(item => item.rep_type === 'REVA') || []),
-      wholesale: processRawData(marchData?.filter(item => 
-        item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE'
-      ) || [])
-    };
-    
-    const rawMarchSummary = calculateRawMtdSummary(marchData || []);
-    
-    // February data processing
-    const febProcessed = {
-      retail: processRawData(februaryData?.filter(item => !item.Department || item.Department === 'RETAIL') || []),
-      reva: processRawData(februaryData?.filter(item => item.Department === 'REVA') || []),
-      wholesale: processRawData(februaryData?.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-      ) || [])
-    };
-    
-    const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
-    
-    // Debug log for March Rolling data
-    console.log('March Rolling data processed:', {
-      retail: marchRollingProcessed.retail.length,
-      reva: marchRollingProcessed.reva.length,
-      wholesale: marchRollingProcessed.wholesale.length,
-      total: marchRollingData?.length || 0
-    });
-    
+    const rawMarchSummary = calculateRawMtdSummary(marchData || []);
+    const rawFebSummary = calculateRawMtdSummary(februaryData || []);
+
     // Calculate filtered summaries
-    const aprRetailSummary = calculateSummaryFromData(aprProcessed.retail);
-    const aprRevaSummary = calculateSummaryFromData(aprProcessed.reva);
-    const aprWholesaleSummary = calculateSummaryFromData(aprProcessed.wholesale);
-    
-    const marchRetailSummary = calculateSummaryFromData(marchProcessed.retail);
-    const marchRevaSummary = calculateSummaryFromData(marchProcessed.reva);
-    const marchWholesaleSummary = calculateSummaryFromData(marchProcessed.wholesale);
-    
-    const febRetailSummary = calculateSummaryFromData(febProcessed.retail);
-    const febRevaSummary = calculateSummaryFromData(febProcessed.reva);
-    const febWholesaleSummary = calculateSummaryFromData(febProcessed.wholesale);
-    
+    const calculateFilteredSummaries = (data: { retail: RepData[], reva: RepData[], wholesale: RepData[] }) => ({
+      retail: calculateSummaryFromData(data.retail),
+      reva: calculateSummaryFromData(data.reva),
+      wholesale: calculateSummaryFromData(data.wholesale)
+    });
+
+    const aprSummaries = calculateFilteredSummaries(aprData);
+    const marchRollingSummaries = calculateFilteredSummaries(marchRollingProcessed);
+    const marchSummaries = calculateFilteredSummaries(marchData);
+    const febSummaries = calculateFilteredSummaries(febData);
+
     // Calculate changes
     const calculateChanges = (current: number, previous: number): number => {
       if (previous === 0) return 0;
       return ((current - previous) / previous) * 100;
     };
-    
+
     // April vs March Rolling changes
     const aprVsMarchChanges = {
       totalSpend: calculateChanges(rawAprSummary.totalSpend, rawMarchRollingSummary.totalSpend),
@@ -227,7 +168,7 @@ export const fetchRepPerformanceData = async () => {
       totalAccounts: calculateChanges(rawAprSummary.totalAccounts, rawMarchRollingSummary.totalAccounts),
       activeAccounts: calculateChanges(rawAprSummary.activeAccounts, rawMarchRollingSummary.activeAccounts)
     };
-    
+
     // March vs February changes
     const marchVsFebChanges = {
       totalSpend: calculateChanges(rawMarchSummary.totalSpend, rawFebSummary.totalSpend),
@@ -237,35 +178,87 @@ export const fetchRepPerformanceData = async () => {
       totalAccounts: calculateChanges(rawMarchSummary.totalAccounts, rawFebSummary.totalAccounts),
       activeAccounts: calculateChanges(rawMarchSummary.activeAccounts, rawFebSummary.activeAccounts)
     };
-    
+
     // Calculate rep-level changes
-    const aprRepChanges = calculateRepChanges(aprProcessed.retail, marchRollingProcessed.retail);
-    const marchRepChanges = calculateRepChanges(marchProcessed.retail, febProcessed.retail);
-    
+    const calculateRepChanges = (currentData: RepData[], previousData: RepData[]) => {
+      console.log(`Calculating changes between datasets: current=${currentData.length} reps, previous=${previousData.length} reps`);
+      
+      const changes: Record<string, any> = {};
+      
+      currentData.forEach(current => {
+        const currentRepName = current.rep.toLowerCase().trim();
+        const previous = previousData.find(prev => prev.rep.toLowerCase().trim() === currentRepName);
+        
+        if (previous) {
+          const calculateChange = (currentValue: number, previousValue: number) => {
+            if (previousValue === 0) return currentValue > 0 ? 100 : 0;
+            const change = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+            return Math.max(Math.min(change, 500), -500);
+          };
+          
+          changes[current.rep] = {
+            spend: calculateChange(current.spend, previous.spend),
+            profit: calculateChange(current.profit, previous.profit),
+            margin: calculateChange(current.margin, previous.margin),
+            packs: calculateChange(current.packs, previous.packs),
+            activeAccounts: calculateChange(current.activeAccounts, previous.activeAccounts),
+            totalAccounts: calculateChange(current.totalAccounts, previous.totalAccounts),
+            profitPerActiveShop: calculateChange(current.profitPerActiveShop, previous.profitPerActiveShop),
+            profitPerPack: calculateChange(current.profitPerPack, previous.profitPerPack),
+            activeRatio: calculateChange(current.activeRatio, previous.activeRatio)
+          };
+        }
+      });
+      
+      return changes;
+    };
+
+    // Calculate changes
+    const aprRepChanges = calculateRepChanges(aprData.retail, marchRollingProcessed.retail);
+    const marchRepChanges = calculateRepChanges(marchData.retail, febData.retail);
+
+    // Debug logging for changes
+    console.log('Change calculations:', {
+      aprVsMarch: {
+        totalProfit: {
+          current: rawAprSummary.totalProfit,
+          previous: rawMarchRollingSummary.totalProfit,
+          change: aprVsMarchChanges.totalProfit
+        }
+      },
+      marchVsFeb: {
+        totalProfit: {
+          current: rawMarchSummary.totalProfit,
+          previous: rawFebSummary.totalProfit,
+          change: marchVsFebChanges.totalProfit
+        }
+      }
+    });
+
     return {
       // April data
-      repData: aprProcessed.retail,
-      revaData: aprProcessed.reva,
-      wholesaleData: aprProcessed.wholesale,
+      repData: aprData.retail,
+      revaData: aprData.reva,
+      wholesaleData: aprData.wholesale,
       baseSummary: rawAprSummary,
-      revaValues: aprRevaSummary,
-      wholesaleValues: aprWholesaleSummary,
+      revaValues: aprSummaries.reva,
+      wholesaleValues: aprSummaries.wholesale,
       
       // March data
-      marchRepData: marchProcessed.retail,
-      marchRevaData: marchProcessed.reva,
-      marchWholesaleData: marchProcessed.wholesale,
+      marchRepData: marchData.retail,
+      marchRevaData: marchData.reva,
+      marchWholesaleData: marchData.wholesale,
       marchBaseSummary: rawMarchSummary,
-      marchRevaValues: marchRevaSummary,
-      marchWholesaleValues: marchWholesaleSummary,
+      marchRevaValues: marchSummaries.reva,
+      marchWholesaleValues: marchSummaries.wholesale,
       
       // February data
-      febRepData: febProcessed.retail,
-      febRevaData: febProcessed.reva,
-      febWholesaleData: febProcessed.wholesale,
+      febRepData: febData.retail,
+      febRevaData: febData.reva,
+      febWholesaleData: febData.wholesale,
       febBaseSummary: rawFebSummary,
-      febRevaValues: febRevaSummary,
-      febWholesaleValues: febWholesaleSummary,
+      febRevaValues: febSummaries.reva,
+      febWholesaleValues: febSummaries.wholesale,
       
       // March Rolling data for April comparisons
       marchRollingRetailData: marchRollingProcessed.retail,
@@ -288,73 +281,3 @@ export const fetchRepPerformanceData = async () => {
     throw error;
   }
 };
-
-function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
-  const changes: Record<string, any> = {};
-  
-  // Debug log for troubleshooting
-  console.log(`Calculating changes between datasets: current=${currentData.length} reps, previous=${previousData.length} reps`);
-  
-  // Log rep names from both datasets to help debug matching issues
-  console.log('Current rep names:', currentData.map(r => r.rep));
-  console.log('Previous rep names:', previousData.map(r => r.rep));
-  
-  currentData.forEach(current => {
-    // Find the matching rep in previous data
-    // Fix: Improve matching by normalizing rep names (trim, lowercase)
-    const currentRepName = current.rep.toLowerCase().trim();
-    
-    const previous = previousData.find(prev => {
-      const prevRepName = prev.rep.toLowerCase().trim();
-      return currentRepName === prevRepName;
-    });
-    
-    // Debug log for specific rep (Craig McDowall)
-    if (current.rep.includes('Craig McDowall')) {
-      console.log('Processing Craig McDowall:');
-      console.log('  Current profit:', current.profit);
-      console.log('  Previous profit:', previous?.profit || 'Not found in previous data');
-      
-      if (previous) {
-        const percentChange = ((current.profit - previous.profit) / Math.abs(previous.profit)) * 100;
-        console.log('  Raw percent change:', percentChange);
-      }
-    }
-    
-    if (previous) {
-      // Fix: Add capping to prevent extreme percentage values
-      const calculateChange = (currentValue: number, previousValue: number) => {
-        if (previousValue === 0) return currentValue > 0 ? 100 : 0;
-        
-        const percentChange = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
-        
-        // Cap extreme percentage values to prevent UI issues
-        const MAX_PERCENTAGE = 500; // Lower the cap to 500% change
-        return Math.max(Math.min(percentChange, MAX_PERCENTAGE), -MAX_PERCENTAGE);
-      };
-      
-      changes[current.rep] = {
-        spend: calculateChange(current.spend, previous.spend),
-        profit: calculateChange(current.profit, previous.profit),
-        margin: calculateChange(current.margin, previous.margin),
-        packs: calculateChange(current.packs, previous.packs),
-        activeAccounts: calculateChange(current.activeAccounts, previous.activeAccounts),
-        totalAccounts: calculateChange(current.totalAccounts, previous.totalAccounts),
-        profitPerActiveShop: calculateChange(current.profitPerActiveShop, previous.profitPerActiveShop),
-        profitPerPack: calculateChange(current.profitPerPack, previous.profitPerPack),
-        activeRatio: calculateChange(current.activeRatio, previous.activeRatio)
-      };
-      
-      // Log extreme changes for debugging
-      if (Math.abs(changes[current.rep].profit) > 100) {
-        console.log(`Large profit change detected for ${current.rep}:`, {
-          current: current.profit,
-          previous: previous.profit,
-          change: changes[current.rep].profit
-        });
-      }
-    }
-  });
-  
-  return changes;
-}
