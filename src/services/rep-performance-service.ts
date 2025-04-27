@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -103,7 +102,7 @@ export const fetchRepPerformanceData = async () => {
       description: `April: ${mtdData?.length || 0} records\nMarch: ${marchData?.length || 0} records\nFebruary: ${februaryData?.length || 0} records`,
       duration: 10000,
     });
-    
+
     // April data processing
     const aprRetailData = processRawData(mtdData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const aprRevaData = processRawData(mtdData?.filter(item => item.Department === 'REVA') || []);
@@ -129,30 +128,24 @@ export const fetchRepPerformanceData = async () => {
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
     // March Rolling data processing (for April comparison) from march_rolling
-    console.log('Processing March MTD data for comparison with April data...');
+    console.log('Processing March Rolling data by department...');
     
-    // Log some sample data for March Rolling to check field structure
-    if (marchRollingData && marchRollingData.length > 0) {
-      console.log('Sample March Rolling Data item:', marchRollingData[0]);
-      
-      // Check if Craig McDowall exists in the data
-      const craigData = marchRollingData.filter(item => 
-        (item.Rep === 'Craig McDowall' || item['Sub-Rep'] === 'Craig McDowall')
-      );
-      
-      if (craigData.length > 0) {
-        console.log(`Found ${craigData.length} records for Craig McDowall in March MTD`);
-        const totalProfit = craigData.reduce((sum, item) => sum + parseFloat(item.Profit || "0"), 0);
-        console.log(`Craig McDowall March MTD total profit: ${totalProfit}`);
-      } else {
-        console.log('Craig McDowall not found in March MTD data');
-      }
-    }
-    
-    // Process march_rolling data
-    const marchRollingRetailData = processRawData(marchRollingData || []);
+    // Process march_rolling data by department
+    const marchRollingRetailData = processRawData(marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
+    const marchRollingRevaData = processRawData(marchRollingData?.filter(item => item.Department === 'REVA') || []);
+    const marchRollingWholesaleData = processRawData(marchRollingData?.filter(item => 
+      item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+    ) || []);
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
     
+    // Debug log for March Rolling data by department
+    console.log('March Rolling data by department:', {
+      retail: marchRollingRetailData.length,
+      reva: marchRollingRevaData.length,
+      wholesale: marchRollingWholesaleData.length,
+      total: marchRollingData?.length || 0
+    });
+
     // Calculate filtered summaries
     const aprRetailSummary = calculateSummaryFromData(aprRetailData);
     const aprRevaSummary = calculateSummaryFromData(aprRevaData);
@@ -205,11 +198,11 @@ export const fetchRepPerformanceData = async () => {
       revaValues: aprRevaSummary,
       wholesaleValues: aprWholesaleSummary,
       
-      // March data
-      marchRepData: marchRetailData,
-      marchRevaData: marchRevaData,
-      marchWholesaleData: marchWholesaleData,
-      marchBaseSummary: rawMarchSummary,
+      // March data (using March Rolling for April comparisons)
+      marchRepData: selectedMonth === 'April' ? marchRollingRetailData : marchRetailData,
+      marchRevaData: selectedMonth === 'April' ? marchRollingRevaData : marchRevaData,
+      marchWholesaleData: selectedMonth === 'April' ? marchRollingWholesaleData : marchWholesaleData,
+      marchBaseSummary: selectedMonth === 'April' ? rawMarchRollingSummary : rawMarchSummary,
       marchRevaValues: marchRevaSummary,
       marchWholesaleValues: marchWholesaleSummary,
       
