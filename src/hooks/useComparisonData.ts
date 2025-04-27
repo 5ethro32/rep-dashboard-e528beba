@@ -13,35 +13,70 @@ export const useComparisonData = (
     const safeMarchRepData = marchRepData || [];
     const safeFebRepData = febRepData || [];
 
-    // Debug Craig's data
-    const craigCurrentData = safeAprRepData.find(rep => rep.rep === 'Craig McDowall');
-    const craigPreviousData = tab === 'overall' && selectedMonth === 'April' ? 
-      safeMarchRepData.find(rep => rep.rep === 'Craig McDowall') :
-      safeMarchRepData.find(rep => rep.rep === 'Craig McDowall');
-    
-    console.log(`Tab: ${tab}, Month: ${selectedMonth}, Craig's current data:`, craigCurrentData);
-    console.log(`Tab: ${tab}, Month: ${selectedMonth}, Craig's previous data:`, craigPreviousData);
-    
+    const logDataValidation = (current: RepData[], previous: RepData[]) => {
+      console.log(`Data validation for ${selectedMonth} comparison:`, {
+        currentMonth: selectedMonth,
+        currentDataCount: current.length,
+        previousDataCount: previous.length,
+      });
+    };
+
+    const filterForTab = (data: RepData[]) => {
+      switch (tab) {
+        case 'rep':
+          return data.filter(d => !['REVA', 'Wholesale'].includes(d.rep));
+        case 'reva':
+          return data.filter(d => d.rep === 'REVA');
+        case 'wholesale':
+          return data.filter(d => d.rep === 'Wholesale');
+        default:
+          return data;
+      }
+    };
+
+    // Debug Craig's data consistently across all comparisons
+    const debugRepData = (current: RepData[], previous: RepData[]) => {
+      const craigCurrent = current.find(rep => rep.rep === 'Craig McDowall');
+      const craigPrevious = previous.find(rep => rep.rep === 'Craig McDowall');
+      console.log(`Comparison data for ${selectedMonth}:`, {
+        tab,
+        craigCurrentData: craigCurrent ? {
+          rep: craigCurrent.rep,
+          profit: craigCurrent.profit,
+          spend: craigCurrent.spend
+        } : 'Not found in current data',
+        craigPreviousData: craigPrevious ? {
+          rep: craigPrevious.rep,
+          profit: craigPrevious.profit,
+          spend: craigPrevious.spend
+        } : 'Not found in previous data'
+      });
+    };
+
     switch (selectedMonth) {
-      case 'April':
-        // Now using sales_data (marchRepData) instead of march_rolling for April comparison
+      case 'April': {
+        // Use the same logic as March comparison - filter current data only
+        const currentData = filterForTab(safeAprRepData);
+        const previousData = safeMarchRepData; // No filtering on comparison data
+        logDataValidation(currentData, previousData);
+        debugRepData(currentData, previousData);
+        return { currentData, previousData };
+      }
+      case 'March': {
+        const currentData = filterForTab(safeMarchRepData);
+        const previousData = safeFebRepData; // Already using this pattern here
+        logDataValidation(currentData, previousData);
+        debugRepData(currentData, previousData);
+        return { currentData, previousData };
+      }
+      case 'February': {
+        const currentData = filterForTab(safeFebRepData);
+        logDataValidation(currentData, []);
         return {
-          currentData: safeAprRepData,
-          previousData: tab === 'overall' ? safeMarchRepData : 
-                       tab === 'rep' ? safeMarchRepData.filter(d => !['REVA', 'Wholesale'].includes(d.rep)) :
-                       tab === 'reva' ? safeMarchRepData.filter(d => d.rep === 'REVA') :
-                       safeMarchRepData.filter(d => d.rep === 'Wholesale')
-        };
-      case 'March':
-        return {
-          currentData: safeMarchRepData,
-          previousData: safeFebRepData
-        };
-      case 'February':
-        return {
-          currentData: safeFebRepData,
+          currentData,
           previousData: []
         };
+      }
       default:
         return {
           currentData: [],
@@ -54,4 +89,3 @@ export const useComparisonData = (
     getCurrentAndPreviousData
   };
 };
-
