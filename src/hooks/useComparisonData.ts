@@ -28,17 +28,39 @@ export const useComparisonData = (
     const safeFebRevaRepData = febRevaRepData || [];
     const safeFebWholesaleRepData = febWholesaleRepData || [];
 
-    const logDataValidation = (stage: string, data: RepData[]) => {
+    const logDataValidation = (stage: string, data: RepData[], filteredData: RepData[]) => {
       console.log(`[${stage}] Data validation:`, {
         monthAndTab: `${selectedMonth}-${tab}`,
-        dataCount: data.length,
-        retailCount: data.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
-        revaCount: data.filter(d => d.rep === 'REVA').length,
-        wholesaleCount: data.filter(d => d.rep === 'Wholesale').length
+        beforeFilter: {
+          dataCount: data.length,
+          retailCount: data.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
+          revaCount: data.filter(d => d.rep === 'REVA').length,
+          wholesaleCount: data.filter(d => d.rep === 'Wholesale').length
+        },
+        afterFilter: {
+          dataCount: filteredData.length,
+          retailCount: filteredData.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
+          revaCount: filteredData.filter(d => d.rep === 'REVA').length,
+          wholesaleCount: filteredData.filter(d => d.rep === 'Wholesale').length
+        }
       });
     };
 
-    // Get combined data for current month
+    // Helper function to filter data based on tab
+    const filterDataByTab = (data: RepData[], tab: string): RepData[] => {
+      switch (tab) {
+        case 'rep':
+          return data.filter(d => !['REVA', 'Wholesale'].includes(d.rep));
+        case 'reva':
+          return data.filter(d => d.rep === 'REVA');
+        case 'wholesale':
+          return data.filter(d => d.rep === 'Wholesale');
+        default:
+          return data;
+      }
+    };
+
+    // Get combined and filtered data for current month
     const getCurrentData = () => {
       let combinedData: RepData[] = [];
       
@@ -48,7 +70,9 @@ export const useComparisonData = (
             safeAprRepData,
             safeAprRevaRepData,
             safeAprWholesaleRepData,
-            true, true, true
+            tab === 'overall' || tab === 'rep',
+            tab === 'overall' || tab === 'reva',
+            tab === 'overall' || tab === 'wholesale'
           );
           break;
         case 'March':
@@ -56,7 +80,9 @@ export const useComparisonData = (
             safeMarchRepData,
             safeMarchRevaRepData,
             safeMarchWholesaleRepData,
-            true, true, true
+            tab === 'overall' || tab === 'rep',
+            tab === 'overall' || tab === 'reva',
+            tab === 'overall' || tab === 'wholesale'
           );
           break;
         case 'February':
@@ -64,52 +90,54 @@ export const useComparisonData = (
             safeFebRepData,
             safeFebRevaRepData,
             safeFebWholesaleRepData,
-            true, true, true
+            tab === 'overall' || tab === 'rep',
+            tab === 'overall' || tab === 'reva',
+            tab === 'overall' || tab === 'wholesale'
           );
           break;
       }
       
-      // Filter by department after combining
-      switch (tab) {
-        case 'rep':
-          return combinedData.filter(d => !['REVA', 'Wholesale'].includes(d.rep));
-        case 'reva':
-          return combinedData.filter(d => d.rep === 'REVA');
-        case 'wholesale':
-          return combinedData.filter(d => d.rep === 'Wholesale');
-        default:
-          return combinedData;
-      }
+      return filterDataByTab(combinedData, tab);
     };
 
-    // Get combined data for previous month
+    // Get combined and filtered data for previous month
     const getPreviousData = () => {
+      let combinedData: RepData[] = [];
+      
       switch (selectedMonth) {
         case 'April':
-          return getCombinedRepData(
+          combinedData = getCombinedRepData(
             safeMarchRepData,
             safeMarchRevaRepData,
             safeMarchWholesaleRepData,
-            true, true, true
+            tab === 'overall' || tab === 'rep',
+            tab === 'overall' || tab === 'reva',
+            tab === 'overall' || tab === 'wholesale'
           );
+          break;
         case 'March':
-          return getCombinedRepData(
+          combinedData = getCombinedRepData(
             safeFebRepData,
             safeFebRevaRepData,
             safeFebWholesaleRepData,
-            true, true, true
+            tab === 'overall' || tab === 'rep',
+            tab === 'overall' || tab === 'reva',
+            tab === 'overall' || tab === 'wholesale'
           );
+          break;
         default:
           return [];
       }
+      
+      return filterDataByTab(combinedData, tab);
     };
 
     const currentData = getCurrentData();
     const previousData = getPreviousData();
 
     // Log data for validation
-    logDataValidation('Current Month', currentData);
-    logDataValidation('Previous Month', previousData);
+    logDataValidation('Current Month', currentData, filterDataByTab(currentData, tab));
+    logDataValidation('Previous Month', previousData, filterDataByTab(previousData, tab));
 
     // Debug specific rep data
     const debugRepData = (repName: string) => {
@@ -117,7 +145,7 @@ export const useComparisonData = (
       const previousRep = previousData.find(d => d.rep === repName);
       
       if (currentRep || previousRep) {
-        console.log(`Data for ${repName}:`, {
+        console.log(`[${tab}] Data for ${repName}:`, {
           current: currentRep ? {
             profit: currentRep.profit,
             spend: currentRep.spend,
