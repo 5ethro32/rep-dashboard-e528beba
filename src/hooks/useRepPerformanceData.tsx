@@ -127,6 +127,11 @@ export const useRepPerformanceData = () => {
       
       setOverallData(combinedData);
       
+      // Debug check for specific rep
+      if (data.repChanges && data.repChanges['Craig McDowall']) {
+        console.log('Craig McDowall change data:', data.repChanges['Craig McDowall']);
+      }
+      
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
@@ -175,6 +180,14 @@ export const useRepPerformanceData = () => {
       const value = rep[metricType as keyof RepData] as number;
       return value.toString();
     }
+    
+    // Fix: Calculate previous value more accurately based on current value and change percentage
+    if (changeValue !== 0) {
+      // If we have a change value, calculate the previous value
+      const previousValue = metricValue / (1 + (changeValue / 100));
+      return previousValue.toFixed(2);
+    }
+    
     return (metricValue - changeValue).toString();
   };
   

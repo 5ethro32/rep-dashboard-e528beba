@@ -1,5 +1,5 @@
 
-import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
+import { SalesDataItem, RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 
 export function processRepData(data: SalesDataItem[]): RepData[] {
   const repMap = new Map<string, {
@@ -216,11 +216,13 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   const activeAccountSet = new Set<string>();
   
   data.forEach(item => {
-    // Handle both March MTD and April Data formats
-    const spend = Number(item.Spend || item.spend) || 0;
-    const profit = Number(item.Profit || item.profit) || 0;
-    const packs = Number(item.Packs || item.packs) || 0;
-    const accountRef = item["Account Ref"] || item.account_ref;
+    // Handle different possible field name formats across datasets
+    const spend = extractNumericValue(item, ['Spend', 'spend']);
+    const profit = extractNumericValue(item, ['Profit', 'profit']);
+    const packs = extractNumericValue(item, ['Packs', 'packs']);
+    
+    // Unified approach to handle account ref with different case formats
+    const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
     
     totalSpend += spend;
     totalProfit += profit;
@@ -258,20 +260,30 @@ export function processRawData(rawData: any[]): RepData[] {
     totalAccounts: Set<string>;
   }>();
 
+  if (rawData.length > 0) {
+    // Log field names from first item to help debug
+    console.log("Sample raw data fields:", Object.keys(rawData[0]));
+  }
+
   rawData.forEach(item => {
     const spend = extractNumericValue(item, ['Spend', 'spend']);
     const profit = extractNumericValue(item, ['Profit', 'profit']);
     const packs = extractNumericValue(item, ['Packs', 'packs']);
-    const accountRef = item["Account Ref"] || item.account_ref;
+    const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
     
     // Fix: Handle rep name extraction more consistently across different data formats
     let repName;
-    const subRep = item['Sub-Rep'] || item.sub_rep;
-    const mainRep = item.Rep || item.rep_name;
+    
+    // Check for Sub-Rep fields with different case formats
+    const subRep = item['Sub-Rep'] || item.sub_rep || item["SUB-REP"];
+    
+    // Check for Rep fields with different case formats
+    const mainRep = item.Rep || item.rep || item.rep_name || item.REP;
     
     if (subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
       repName = subRep;
     } else if (mainRep === 'REVA' || mainRep === 'Wholesale' || mainRep === 'WHOLESALE') {
+      // Skip REVA/Wholesale rep names as they'll be processed separately
       return;
     } else {
       repName = mainRep;
@@ -281,6 +293,9 @@ export function processRawData(rawData: any[]): RepData[] {
       console.log('Found item without Rep name:', item);
       return;
     }
+
+    // Normalize rep name to handle case differences
+    repName = repName.trim();
 
     if (!repMap.has(repName)) {
       repMap.set(repName, {
@@ -306,6 +321,18 @@ export function processRawData(rawData: any[]): RepData[] {
       }
     }
   });
+
+  // Special debugging for Craig McDowall
+  if (repMap.has('Craig McDowall')) {
+    const craigData = repMap.get('Craig McDowall')!;
+    console.log('Craig McDowall processed data:', {
+      profit: craigData.profit,
+      spend: craigData.spend,
+      packs: craigData.packs,
+      totalAccounts: craigData.totalAccounts.size,
+      activeAccounts: craigData.activeAccounts.size
+    });
+  }
 
   const repDataArray = Array.from(repMap.values()).map(rep => {
     const activeAccounts = rep.activeAccounts.size;

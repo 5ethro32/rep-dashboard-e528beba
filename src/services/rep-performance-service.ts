@@ -129,7 +129,28 @@ export const fetchRepPerformanceData = async () => {
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
     // March Rolling data processing (for April comparison)
-    // Process March Rolling data for comparison with April
+    // Fix: Ensure March Rolling data is correctly processed with proper field handling
+    console.log('Processing March MTD data for comparison with April data...');
+    
+    // Log some sample data for March Rolling to check field structure
+    if (marchRollingData && marchRollingData.length > 0) {
+      console.log('Sample March Rolling Data item:', marchRollingData[0]);
+      
+      // Check if Craig McDowall exists in the data
+      const craigData = marchRollingData.filter(item => 
+        (item.Rep === 'Craig McDowall' || item['Sub-Rep'] === 'Craig McDowall')
+      );
+      
+      if (craigData.length > 0) {
+        console.log(`Found ${craigData.length} records for Craig McDowall in March MTD`);
+        const totalProfit = craigData.reduce((sum, item) => sum + parseFloat(item.Profit || "0"), 0);
+        console.log(`Craig McDowall March MTD total profit: ${totalProfit}`);
+      } else {
+        console.log('Craig McDowall not found in March MTD data');
+      }
+    }
+    
+    // Fix: Ensure we're using the correct field names for March MTD data which might be different
     const marchRollingRetailData = processRawData(marchRollingData || []);
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
     
@@ -221,13 +242,34 @@ export const fetchRepPerformanceData = async () => {
 function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
   const changes: Record<string, any> = {};
   
+  // Debug log for troubleshooting
+  console.log(`Calculating changes between datasets: current=${currentData.length} reps, previous=${previousData.length} reps`);
+  
+  // Log rep names from both datasets to help debug matching issues
+  console.log('Current rep names:', currentData.map(r => r.rep));
+  console.log('Previous rep names:', previousData.map(r => r.rep));
+  
   currentData.forEach(current => {
+    // Find the matching rep in previous data
+    // Fix: Improve matching by normalizing rep names (trim, lowercase)
+    const currentRepName = current.rep.toLowerCase().trim();
+    
     const previous = previousData.find(prev => {
-      // Try to match reps by name, accounting for potential differences in casing
-      const currentRepName = current.rep.toLowerCase();
-      const prevRepName = typeof prev.rep === 'string' ? prev.rep.toLowerCase() : '';
+      const prevRepName = prev.rep.toLowerCase().trim();
       return currentRepName === prevRepName;
     });
+    
+    // Debug log for specific rep (Craig McDowall)
+    if (current.rep.includes('Craig McDowall')) {
+      console.log('Processing Craig McDowall:');
+      console.log('  Current profit:', current.profit);
+      console.log('  Previous profit:', previous?.profit || 'Not found in previous data');
+      
+      if (previous) {
+        const percentChange = ((current.profit - previous.profit) / Math.abs(previous.profit)) * 100;
+        console.log('  Raw percent change:', percentChange);
+      }
+    }
     
     if (previous) {
       // Fix: Add capping to prevent extreme percentage values
@@ -237,7 +279,7 @@ function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
         const percentChange = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
         
         // Cap extreme percentage values to prevent UI issues
-        const MAX_PERCENTAGE = 1000; // Cap at 1000% change
+        const MAX_PERCENTAGE = 500; // Lower the cap to 500% change
         return Math.max(Math.min(percentChange, MAX_PERCENTAGE), -MAX_PERCENTAGE);
       };
       
@@ -254,7 +296,7 @@ function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
       };
       
       // Log extreme changes for debugging
-      if (Math.abs(changes[current.rep].profit) > 500) {
+      if (Math.abs(changes[current.rep].profit) > 100) {
         console.log(`Large profit change detected for ${current.rep}:`, {
           current: current.profit,
           previous: previous.profit,
