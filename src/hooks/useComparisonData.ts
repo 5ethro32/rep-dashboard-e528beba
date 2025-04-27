@@ -3,25 +3,30 @@ import { RepData } from '@/types/rep-performance.types';
 
 export const useComparisonData = (
   selectedMonth: string,
-  aprRepData: RepData[],
-  marchRepData: RepData[],
-  febRepData: RepData[]
+  aprRepData: RepData[] | undefined,
+  marchRepData: RepData[] | undefined,
+  febRepData: RepData[] | undefined
 ) => {
   const getCurrentAndPreviousData = (tab: string) => {
+    // Ensure we have defined arrays to work with
+    const safeAprRepData = aprRepData || [];
+    const safeMarchRepData = marchRepData || [];
+    const safeFebRepData = febRepData || [];
+    
     switch (selectedMonth) {
       case 'April':
         return {
-          currentData: aprRepData,
-          previousData: marchRepData
+          currentData: safeAprRepData,
+          previousData: safeMarchRepData
         };
       case 'March':
         return {
-          currentData: marchRepData,
-          previousData: febRepData
+          currentData: safeMarchRepData,
+          previousData: safeFebRepData
         };
       case 'February':
         return {
-          currentData: febRepData,
+          currentData: safeFebRepData,
           previousData: []
         };
       default:

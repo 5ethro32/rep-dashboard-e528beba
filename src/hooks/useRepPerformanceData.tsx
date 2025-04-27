@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -18,28 +17,24 @@ import {
   defaultRepChanges
 } from '@/data/rep-performance-default-data';
 
-// Create a custom summary calculation function that uses the raw summary directly
 const calculateDirectSummary = (
   baseSummary: SummaryData, 
   revaValues: SummaryData, 
   wholesaleValues: SummaryData,
   isRawData: boolean
 ) => {
-  // For raw data months (April, March), when we're using raw all-inclusive data, 
-  // we should return just the baseSummary
   if (isRawData) {
     console.log("Using raw summary data directly:", baseSummary);
     return baseSummary;
   }
   
-  // For other months use the normal calculation but include all departments
   return calculateSummary(
     baseSummary,
     revaValues,
     wholesaleValues,
-    true, // Always include retail
-    true, // Always include REVA
-    true  // Always include wholesale
+    true,
+    true,
+    true
   );
 };
 
@@ -54,7 +49,6 @@ export const useRepPerformanceData = () => {
   const [revaData, setRevaData] = useState(defaultRevaData);
   const [wholesaleData, setWholesaleData] = useState(defaultWholesaleData);
   
-  // April data states
   const [aprBaseSummary, setAprBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [aprRevaValues, setAprRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [aprWholesaleValues, setAprWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
@@ -62,7 +56,6 @@ export const useRepPerformanceData = () => {
   const [aprRevaRepData, setAprRevaRepData] = useState<RepData[]>(defaultRevaData);
   const [aprWholesaleRepData, setAprWholesaleRepData] = useState<RepData[]>(defaultWholesaleData);
   
-  // March data states
   const [marchBaseSummary, setMarchBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [marchRevaValues, setMarchRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [marchWholesaleValues, setMarchWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
@@ -70,7 +63,6 @@ export const useRepPerformanceData = () => {
   const [marchRevaRepData, setMarchRevaRepData] = useState<RepData[]>(defaultRevaData);
   const [marchWholesaleRepData, setMarchWholesaleRepData] = useState<RepData[]>(defaultWholesaleData);
   
-  // February data states
   const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
@@ -87,7 +79,6 @@ export const useRepPerformanceData = () => {
     loadData();
   }, []);
   
-  // This effect updates the displayed data when the month changes
   useEffect(() => {
     updateDisplayedDataForMonth();
   }, [selectedMonth]);
@@ -99,7 +90,6 @@ export const useRepPerformanceData = () => {
       
       console.log("Loaded performance data:", data);
       
-      // Set April data
       setAprRepData(data.repData);
       setAprRevaRepData(data.revaData);
       setAprWholesaleRepData(data.wholesaleData);
@@ -107,7 +97,6 @@ export const useRepPerformanceData = () => {
       setAprRevaValues(data.revaValues);
       setAprWholesaleValues(data.wholesaleValues);
       
-      // Set March data
       setMarchRepData(data.marchRepData);
       setMarchRevaRepData(data.marchRevaData);
       setMarchWholesaleRepData(data.marchWholesaleData);
@@ -115,7 +104,6 @@ export const useRepPerformanceData = () => {
       setMarchRevaValues(data.marchRevaValues);
       setMarchWholesaleValues(data.marchWholesaleValues);
       
-      // Set February data
       setFebRepData(data.febRepData || defaultRepData);
       setFebRevaRepData(data.febRevaData || defaultRevaData);
       setFebWholesaleRepData(data.febWholesaleData || defaultWholesaleData);
@@ -123,25 +111,18 @@ export const useRepPerformanceData = () => {
       setFebRevaValues(data.febRevaValues);
       setFebWholesaleValues(data.febWholesaleValues);
       
-      // Set changes data
       setSummaryChanges(data.summaryChanges);
       setMarchSummaryChanges(data.marchSummaryChanges);
       setRepChanges(data.repChanges);
       setMarchRepChanges(data.marchRepChanges);
       
-      // Initial data based on April (default)
-      setRepData(data.repData);
-      setRevaData(data.revaData);
-      setWholesaleData(data.wholesaleData);
-      
-      // Update overall data
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
         data.wholesaleData,
-        true, // Always include retail
-        true, // Always include REVA
-        true  // Always include wholesale
+        true,
+        true,
+        true
       );
       
       setOverallData(combinedData);
@@ -158,7 +139,6 @@ export const useRepPerformanceData = () => {
     }
   };
   
-  // Function to update displayed data based on selected month
   const updateDisplayedDataForMonth = () => {
     console.log(`Updating displayed data for month: ${selectedMonth}`);
     
@@ -167,14 +147,13 @@ export const useRepPerformanceData = () => {
       setRevaData(aprRevaRepData);
       setWholesaleData(aprWholesaleRepData);
       
-      // Update overall data for April
       const combinedData = getCombinedRepData(
         aprRepData,
         aprRevaRepData,
         aprWholesaleRepData,
-        true, // Always include retail
-        true, // Always include REVA
-        true  // Always include wholesale
+        true,
+        true,
+        true
       );
       
       setOverallData(combinedData);
@@ -184,14 +163,13 @@ export const useRepPerformanceData = () => {
       setRevaData(marchRevaRepData);
       setWholesaleData(marchWholesaleRepData);
       
-      // Update overall data for March
       const combinedData = getCombinedRepData(
         marchRepData,
         marchRevaRepData,
         marchWholesaleRepData,
-        true, // Always include retail
-        true, // Always include REVA
-        true  // Always include wholesale
+        true,
+        true,
+        true
       );
       
       setOverallData(combinedData);
@@ -201,14 +179,13 @@ export const useRepPerformanceData = () => {
       setRevaData(febRevaRepData);
       setWholesaleData(febWholesaleRepData);
       
-      // Update overall data for February
       const combinedData = getCombinedRepData(
         febRepData,
         febRevaRepData,
         febWholesaleRepData,
-        true, // Always include retail
-        true, // Always include REVA
-        true  // Always include wholesale
+        true,
+        true,
+        true
       );
       
       setOverallData(combinedData);
@@ -252,9 +229,7 @@ export const useRepPerformanceData = () => {
       return value.toString();
     }
     
-    // Fix: Calculate previous value more accurately based on current value and change percentage
     if (changeValue !== 0) {
-      // If we have a change value, calculate the previous value
       const previousValue = metricValue / (1 + (changeValue / 100));
       return previousValue.toFixed(2);
     }
@@ -262,10 +237,8 @@ export const useRepPerformanceData = () => {
     return (metricValue - changeValue).toString();
   };
   
-  // Determine if we should use raw direct calculation for the selected month
   const isRawDataMonth = selectedMonth === 'April' || selectedMonth === 'March';
   
-  // Calculate current summary based on selected month
   const currentSummary = calculateDirectSummary(
     selectedMonth === 'April' ? aprBaseSummary : 
       selectedMonth === 'March' ? marchBaseSummary : febBaseSummary,
@@ -276,12 +249,10 @@ export const useRepPerformanceData = () => {
     isRawDataMonth
   );
   
-  // Get the appropriate changes object based on selected month
   const currentChanges = selectedMonth === 'April' ? summaryChanges : 
                       selectedMonth === 'March' ? marchSummaryChanges : 
                       defaultSummaryChanges;
   
-  // Current month's rep changes
   const currentRepChanges = selectedMonth === 'April' ? repChanges : 
                          selectedMonth === 'March' ? marchRepChanges : 
                          defaultRepChanges;
@@ -306,5 +277,14 @@ export const useRepPerformanceData = () => {
                selectedMonth === 'March' ? marchRevaValues : febRevaValues,
     wholesaleValues: selectedMonth === 'April' ? aprWholesaleValues : 
                     selectedMonth === 'March' ? marchWholesaleValues : febWholesaleValues,
+    aprRepData,
+    marchRepData,
+    febRepData,
+    aprRevaRepData,
+    marchRevaRepData,
+    febRevaRepData,
+    aprWholesaleRepData,
+    marchWholesaleRepData,
+    febWholesaleRepData
   };
 };

@@ -75,7 +75,12 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   febRepData
 }) => {
   const isMobile = useIsMobile();
-  const { getCurrentAndPreviousData } = useComparisonData(selectedMonth, aprRepData, marchRepData, febRepData);
+  const { getCurrentAndPreviousData } = useComparisonData(
+    selectedMonth,
+    aprRepData || [],
+    marchRepData || [],
+    febRepData || []
+  );
 
   const getTabLabel = (tabValue: string) => {
     switch (tabValue) {

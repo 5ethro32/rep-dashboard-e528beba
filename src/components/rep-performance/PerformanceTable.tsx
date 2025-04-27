@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
@@ -27,12 +28,12 @@ interface PerformanceTableProps {
   renderChangeIndicator: (changeValue: number, size?: string) => React.ReactNode;
   isLoading?: boolean;
   showChangeIndicators?: boolean;
-  previousMonthData: any[];
+  previousMonthData: any[] | undefined;
 }
 
 const PerformanceTable: React.FC<PerformanceTableProps> = ({
   displayData,
-  previousMonthData,
+  previousMonthData = [], // Provide default empty array
   repChanges,
   sortBy,
   sortOrder,
@@ -44,8 +45,11 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
   isLoading,
   showChangeIndicators = true
 }) => {
-  // Calculate previous values directly from previousMonthData
+  // Calculate previous values directly from previousMonthData with safety checks
   const getPreviousValue = (repName: string, metric: string) => {
+    if (!previousMonthData || !Array.isArray(previousMonthData)) {
+      return 0;
+    }
     const previousRecord = previousMonthData.find(record => record.rep === repName);
     return previousRecord ? previousRecord[metric] : 0;
   };
