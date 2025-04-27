@@ -11,11 +11,11 @@ export function processRepData(data: SalesDataItem[]): RepData[] {
   }>();
 
   data.forEach(item => {
-    const repName = item.Rep || 'Unknown';
-    const spend = Number(item.Spend) || 0;
-    const profit = Number(item.Profit) || 0;
-    const packs = Number(item.Packs) || 0;
-    const accountRef = item["Account Ref"] || 'Unknown';
+    const repName = item.rep || 'Unknown';
+    const spend = Number(item.spend) || 0;
+    const profit = Number(item.profit) || 0;
+    const packs = Number(item.packs) || 0;
+    const accountRef = item.account_ref || 'Unknown';
 
     if (!repMap.has(repName)) {
       repMap.set(repName, {
@@ -102,8 +102,8 @@ export const sortRepData = (data: RepData[], sortBy: string, sortOrder: string):
   const sortedData = [...data];
 
   sortedData.sort((a, b) => {
-    let valueA = a[sortBy as keyof RepData] as number;
-    let valueB = b[sortBy as keyof RepData] as number;
+    let valueA = a[sortBy as keyof RepData] as number | string;
+    let valueB = b[sortBy as keyof RepData] as number | string;
 
     if (typeof valueA === 'string' && typeof valueB === 'string') {
       valueA = valueA.toLowerCase();
@@ -120,6 +120,33 @@ export const sortRepData = (data: RepData[], sortBy: string, sortOrder: string):
   });
 
   return sortedData;
+};
+
+export const calculateSummaryFromData = (data: RepData[]): SummaryData => {
+  let totalSpend = 0;
+  let totalProfit = 0;
+  let totalPacks = 0;
+  let totalAccounts = 0;
+  let activeAccounts = 0;
+  
+  data.forEach(item => {
+    totalSpend += item.spend;
+    totalProfit += item.profit;
+    totalPacks += item.packs;
+    totalAccounts += item.totalAccounts;
+    activeAccounts += item.activeAccounts;
+  });
+  
+  const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+  
+  return {
+    totalSpend,
+    totalProfit,
+    totalPacks,
+    averageMargin,
+    totalAccounts,
+    activeAccounts
+  };
 };
 
 export const calculateSummary = (
@@ -224,13 +251,11 @@ export function processRawData(rawData: any[]): RepData[] {
   }>();
 
   rawData.forEach(item => {
-    // Extract data using field mapping to handle different data structures
     const spend = extractNumericValue(item, ['Spend', 'spend']);
     const profit = extractNumericValue(item, ['Profit', 'profit']);
     const packs = extractNumericValue(item, ['Packs', 'packs']);
     const accountRef = item["Account Ref"] || item.account_ref;
     
-    // Handle different rep name fields
     let repName;
     const subRep = item['Sub-Rep'] || item.sub_rep;
     const mainRep = item.Rep || item.rep_name;
