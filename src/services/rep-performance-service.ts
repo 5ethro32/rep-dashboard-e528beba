@@ -69,7 +69,7 @@ async function fetchAllViewRecords(viewName: DbViewName) {
   return allRecords;
 }
 
-export const fetchRepPerformanceData = async () => {
+export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'April') => {
   try {
     if (!supabase) {
       throw new Error('Supabase client is not initialized.');
@@ -102,7 +102,7 @@ export const fetchRepPerformanceData = async () => {
       description: `April: ${mtdData?.length || 0} records\nMarch: ${marchData?.length || 0} records\nFebruary: ${februaryData?.length || 0} records`,
       duration: 10000,
     });
-    
+
     // April data processing
     const aprRetailData = processRawData(mtdData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const aprRevaData = processRawData(mtdData?.filter(item => item.Department === 'REVA') || []);
@@ -111,7 +111,7 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawAprSummary = calculateRawMtdSummary(mtdData || []);
     
-    // March data processing
+    // March data processing - using sales_data table which has different field names
     const marchRetailData = processRawData(marchData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || []);
     const marchRevaData = processRawData(marchData?.filter(item => item.rep_type === 'REVA') || []);
     const marchWholesaleData = processRawData(marchData?.filter(item => 
@@ -119,7 +119,7 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawMarchSummary = calculateRawMtdSummary(marchData || []);
     
-    // February data processing
+    // February data processing from sales_data_februrary
     const febRetailData = processRawData(februaryData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const febRevaData = processRawData(februaryData?.filter(item => item.Department === 'REVA') || []);
     const febWholesaleData = processRawData(februaryData?.filter(item => 
@@ -127,9 +127,10 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
-    // Process March Rolling data for April comparison
-    console.log('Processing March Rolling data for April comparison...');
+    // March Rolling data processing (for April comparison) from march_rolling
+    console.log('Processing March Rolling data by department...');
     
+    // Process march_rolling data by department
     const marchRollingRetailData = processRawData(marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const marchRollingRevaData = processRawData(marchRollingData?.filter(item => item.Department === 'REVA') || []);
     const marchRollingWholesaleData = processRawData(marchRollingData?.filter(item => 
@@ -137,14 +138,14 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
     
-    // Debug log for March Rolling data
-    console.log('March Rolling data processed:', {
+    // Debug log for March Rolling data by department
+    console.log('March Rolling data by department:', {
       retail: marchRollingRetailData.length,
       reva: marchRollingRevaData.length,
       wholesale: marchRollingWholesaleData.length,
       total: marchRollingData?.length || 0
     });
-    
+
     // Calculate filtered summaries
     const aprRetailSummary = calculateSummaryFromData(aprRetailData);
     const aprRevaSummary = calculateSummaryFromData(aprRevaData);
@@ -158,7 +159,7 @@ export const fetchRepPerformanceData = async () => {
     const febRevaSummary = calculateSummaryFromData(febRevaData);
     const febWholesaleSummary = calculateSummaryFromData(febWholesaleData);
     
-    // Calculate changes
+    // Calculate changes for different periods
     const calculateChanges = (current: number, previous: number): number => {
       if (previous === 0) return 0;
       return ((current - previous) / previous) * 100;
@@ -184,7 +185,7 @@ export const fetchRepPerformanceData = async () => {
       activeAccounts: calculateChanges(rawMarchSummary.activeAccounts, rawFebSummary.activeAccounts)
     };
     
-    // Calculate rep-level changes
+    // Fix: Calculate rep-level changes with improved handling for extreme values
     const aprRepChanges = calculateRepChanges(aprRetailData, marchRollingRetailData);
     const marchRepChanges = calculateRepChanges(marchRetailData, febRetailData);
     
@@ -197,11 +198,11 @@ export const fetchRepPerformanceData = async () => {
       revaValues: aprRevaSummary,
       wholesaleValues: aprWholesaleSummary,
       
-      // March data
-      marchRepData: marchRetailData,
-      marchRevaData: marchRevaData,
-      marchWholesaleData: marchWholesaleData,
-      marchBaseSummary: rawMarchSummary,
+      // March data (using March Rolling for April comparisons)
+      marchRepData: currentSelectedMonth === 'April' ? marchRollingRetailData : marchRetailData,
+      marchRevaData: currentSelectedMonth === 'April' ? marchRollingRevaData : marchRevaData,
+      marchWholesaleData: currentSelectedMonth === 'April' ? marchRollingWholesaleData : marchWholesaleData,
+      marchBaseSummary: currentSelectedMonth === 'April' ? rawMarchRollingSummary : rawMarchSummary,
       marchRevaValues: marchRevaSummary,
       marchWholesaleValues: marchWholesaleSummary,
       
@@ -212,11 +213,6 @@ export const fetchRepPerformanceData = async () => {
       febBaseSummary: rawFebSummary,
       febRevaValues: febRevaSummary,
       febWholesaleValues: febWholesaleSummary,
-      
-      // March Rolling data for April comparisons
-      marchRollingRetailData,
-      marchRollingRevaData,
-      marchRollingWholesaleData,
       
       // Changes
       summaryChanges: aprVsMarchChanges,

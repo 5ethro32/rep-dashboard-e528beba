@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
@@ -8,7 +7,6 @@ import RepMarginComparison from '@/components/RepMarginComparison';
 import DepartmentProfitShare from '@/components/DepartmentProfitShare';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useComparisonData } from '@/hooks/useComparisonData';
-import { RepData } from '@/types/rep-performance.types';
 
 interface PerformanceContentProps {
   tabValues: string[];
@@ -54,9 +52,6 @@ interface PerformanceContentProps {
   aprWholesaleRepData: any[];
   marchWholesaleRepData: any[];
   febWholesaleRepData: any[];
-  marchRollingRetailData?: RepData[];
-  marchRollingRevaData?: RepData[];
-  marchRollingWholesaleData?: RepData[];
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -89,10 +84,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   febRevaRepData,
   aprWholesaleRepData,
   marchWholesaleRepData,
-  febWholesaleRepData,
-  marchRollingRetailData,
-  marchRollingRevaData,
-  marchRollingWholesaleData
+  febWholesaleRepData
 }) => {
   const isMobile = useIsMobile();
   
@@ -106,10 +98,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     febRevaRepData,
     aprWholesaleRepData,
     marchWholesaleRepData,
-    febWholesaleRepData,
-    marchRollingRetailData,
-    marchRollingRevaData,
-    marchRollingWholesaleData
+    febWholesaleRepData
   );
 
   React.useEffect(() => {
