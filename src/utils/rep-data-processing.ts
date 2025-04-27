@@ -12,11 +12,17 @@ export function processRepData(data: SalesDataItem[]): RepData[] {
   }>();
 
   data.forEach(item => {
-    const repName = item.rep_name || 'Unknown';
+    // Prioritize different possible rep name fields
+    const repName = 
+      item.rep_name || 
+      item.rep || 
+      item.Sub_Rep || 
+      'Unknown';
+    
     const spend = Number(item.spend) || 0;
     const profit = Number(item.profit) || 0;
     const packs = Number(item.packs) || 0;
-    const accountRef = item.account_ref || 'Unknown';
+    const accountRef = item.account_ref || item['Account Ref'] || 'Unknown';
 
     if (!repMap.has(repName)) {
       repMap.set(repName, {
