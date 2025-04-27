@@ -46,6 +46,12 @@ interface PerformanceContentProps {
   aprRepData: any[];
   marchRepData: any[];
   febRepData: any[];
+  aprRevaRepData: any[];
+  marchRevaRepData: any[];
+  febRevaRepData: any[];
+  aprWholesaleRepData: any[];
+  marchWholesaleRepData: any[];
+  febWholesaleRepData: any[];
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -72,15 +78,27 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   wholesaleValues,
   aprRepData,
   marchRepData,
-  febRepData
+  febRepData,
+  aprRevaRepData,
+  marchRevaRepData,
+  febRevaRepData,
+  aprWholesaleRepData,
+  marchWholesaleRepData,
+  febWholesaleRepData
 }) => {
   const isMobile = useIsMobile();
   
   const { getCurrentAndPreviousData } = useComparisonData(
     selectedMonth,
-    aprRepData || [],
-    marchRepData || [],
-    febRepData || []
+    aprRepData,
+    marchRepData,
+    febRepData,
+    aprRevaRepData,
+    marchRevaRepData,
+    febRevaRepData,
+    aprWholesaleRepData,
+    marchWholesaleRepData,
+    febWholesaleRepData
   );
 
   React.useEffect(() => {
