@@ -114,7 +114,7 @@ export const useRepPerformanceData = () => {
       setRepChanges(data.repChanges);
       setMarchRepChanges(data.marchRepChanges);
       
-      // Update overall data based on selected month
+      // Update overall data based on selected month - we'll update this based on selectedMonth in another effect
       const combinedData = getCombinedRepData(
         data.repData,
         data.revaData,
@@ -126,9 +126,14 @@ export const useRepPerformanceData = () => {
       
       setOverallData(combinedData);
       
-      // Debug check for specific rep
-      if (data.repChanges && data.repChanges['Craig McDowall']) {
-        console.log('Craig McDowall change data:', data.repChanges['Craig McDowall']);
+      // Add debugging for specific rep changes
+      if (data.repChanges) {
+        const repsToCheck = ['Craig McDowall', 'Thomas Lowrey', 'John Smith'];
+        repsToCheck.forEach(repName => {
+          if (data.repChanges[repName]) {
+            console.log(`${repName} change data:`, data.repChanges[repName]);
+          }
+        });
       }
       
     } catch (error) {
@@ -142,6 +147,33 @@ export const useRepPerformanceData = () => {
       setIsLoading(false);
     }
   };
+  
+  // Update overall data when selectedMonth changes
+  useEffect(() => {
+    // Get the appropriate rep data based on selected month
+    let monthRepData = repData;
+    let monthRevaData = revaData;
+    let monthWholesaleData = wholesaleData;
+    
+    if (selectedMonth === 'March') {
+      // If we add March rep data in the future, we'd use it here
+    } else if (selectedMonth === 'February') {
+      monthRepData = febRepData;
+      // If we add February reva/wholesale data in the future, we'd use it here
+    }
+    
+    // Update overall data based on selected month
+    const combinedData = getCombinedRepData(
+      monthRepData,
+      monthRevaData,
+      monthWholesaleData,
+      true, // Always include retail
+      true, // Always include REVA
+      true  // Always include wholesale
+    );
+    
+    setOverallData(combinedData);
+  }, [selectedMonth, repData, revaData, wholesaleData, febRepData]);
   
   const getActiveData = (tab: string) => {
     if (tab === 'overall') {
