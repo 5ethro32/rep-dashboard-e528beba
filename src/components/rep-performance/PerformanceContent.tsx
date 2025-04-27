@@ -52,6 +52,9 @@ interface PerformanceContentProps {
   aprWholesaleRepData: any[];
   marchWholesaleRepData: any[];
   febWholesaleRepData: any[];
+  marchRollingRetailData?: RepData[];
+  marchRollingRevaData?: RepData[];
+  marchRollingWholesaleData?: RepData[];
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -84,7 +87,10 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   febRevaRepData,
   aprWholesaleRepData,
   marchWholesaleRepData,
-  febWholesaleRepData
+  febWholesaleRepData,
+  marchRollingRetailData,
+  marchRollingRevaData,
+  marchRollingWholesaleData
 }) => {
   const isMobile = useIsMobile();
   
@@ -98,7 +104,10 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     febRevaRepData,
     aprWholesaleRepData,
     marchWholesaleRepData,
-    febWholesaleRepData
+    febWholesaleRepData,
+    marchRollingRetailData,
+    marchRollingRevaData,
+    marchRollingWholesaleData
   );
 
   React.useEffect(() => {

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -112,7 +111,7 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawAprSummary = calculateRawMtdSummary(mtdData || []);
     
-    // March data processing - using sales_data table which has different field names
+    // March data processing
     const marchRetailData = processRawData(marchData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || []);
     const marchRevaData = processRawData(marchData?.filter(item => item.rep_type === 'REVA') || []);
     const marchWholesaleData = processRawData(marchData?.filter(item => 
@@ -120,7 +119,7 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawMarchSummary = calculateRawMtdSummary(marchData || []);
     
-    // February data processing from sales_data_februrary
+    // February data processing
     const febRetailData = processRawData(februaryData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const febRevaData = processRawData(februaryData?.filter(item => item.Department === 'REVA') || []);
     const febWholesaleData = processRawData(februaryData?.filter(item => 
@@ -128,30 +127,23 @@ export const fetchRepPerformanceData = async () => {
     ) || []);
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
-    // March Rolling data processing (for April comparison) from march_rolling
-    console.log('Processing March MTD data for comparison with April data...');
+    // Process March Rolling data for April comparison
+    console.log('Processing March Rolling data for April comparison...');
     
-    // Log some sample data for March Rolling to check field structure
-    if (marchRollingData && marchRollingData.length > 0) {
-      console.log('Sample March Rolling Data item:', marchRollingData[0]);
-      
-      // Check if Craig McDowall exists in the data
-      const craigData = marchRollingData.filter(item => 
-        (item.Rep === 'Craig McDowall' || item['Sub-Rep'] === 'Craig McDowall')
-      );
-      
-      if (craigData.length > 0) {
-        console.log(`Found ${craigData.length} records for Craig McDowall in March MTD`);
-        const totalProfit = craigData.reduce((sum, item) => sum + parseFloat(item.Profit || "0"), 0);
-        console.log(`Craig McDowall March MTD total profit: ${totalProfit}`);
-      } else {
-        console.log('Craig McDowall not found in March MTD data');
-      }
-    }
-    
-    // Process march_rolling data
-    const marchRollingRetailData = processRawData(marchRollingData || []);
+    const marchRollingRetailData = processRawData(marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
+    const marchRollingRevaData = processRawData(marchRollingData?.filter(item => item.Department === 'REVA') || []);
+    const marchRollingWholesaleData = processRawData(marchRollingData?.filter(item => 
+      item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+    ) || []);
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
+    
+    // Debug log for March Rolling data
+    console.log('March Rolling data processed:', {
+      retail: marchRollingRetailData.length,
+      reva: marchRollingRevaData.length,
+      wholesale: marchRollingWholesaleData.length,
+      total: marchRollingData?.length || 0
+    });
     
     // Calculate filtered summaries
     const aprRetailSummary = calculateSummaryFromData(aprRetailData);
@@ -166,7 +158,7 @@ export const fetchRepPerformanceData = async () => {
     const febRevaSummary = calculateSummaryFromData(febRevaData);
     const febWholesaleSummary = calculateSummaryFromData(febWholesaleData);
     
-    // Calculate changes for different periods
+    // Calculate changes
     const calculateChanges = (current: number, previous: number): number => {
       if (previous === 0) return 0;
       return ((current - previous) / previous) * 100;
@@ -192,7 +184,7 @@ export const fetchRepPerformanceData = async () => {
       activeAccounts: calculateChanges(rawMarchSummary.activeAccounts, rawFebSummary.activeAccounts)
     };
     
-    // Fix: Calculate rep-level changes with improved handling for extreme values
+    // Calculate rep-level changes
     const aprRepChanges = calculateRepChanges(aprRetailData, marchRollingRetailData);
     const marchRepChanges = calculateRepChanges(marchRetailData, febRetailData);
     
@@ -220,6 +212,11 @@ export const fetchRepPerformanceData = async () => {
       febBaseSummary: rawFebSummary,
       febRevaValues: febRevaSummary,
       febWholesaleValues: febWholesaleSummary,
+      
+      // March Rolling data for April comparisons
+      marchRollingRetailData,
+      marchRollingRevaData,
+      marchRollingWholesaleData,
       
       // Changes
       summaryChanges: aprVsMarchChanges,
