@@ -1,116 +1,6 @@
-import { RepData, SalesDataItem, SummaryData } from "@/types/rep-performance.types";
+import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 
-export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
-  const repGrouped: Record<string, {
-    rep: string;
-    spend: number;
-    profit: number;
-    packs: number;
-    activeAccounts: Set<string>;
-    totalAccounts: Set<string>;
-  }> = {};
-  
-  console.log(`Processing ${salesData.length} raw sales data items`);
-  
-  salesData.forEach(item => {
-    // Use rep_name for consistency
-    const repName = item.rep_name;
-    
-    if (!repGrouped[repName]) {
-      repGrouped[repName] = {
-        rep: repName,
-        spend: 0,
-        profit: 0,
-        packs: 0,
-        activeAccounts: new Set(),
-        totalAccounts: new Set(),
-      };
-    }
-    
-    const spend = Number(item.spend) || 0;
-    const profit = Number(item.profit) || 0;
-    const packs = Number(item.packs) || 0;
-    
-    repGrouped[repName].spend += spend;
-    repGrouped[repName].profit += profit;
-    repGrouped[repName].packs += packs;
-    
-    if (spend > 0) {
-      repGrouped[repName].activeAccounts.add(item.account_ref);
-    }
-    repGrouped[repName].totalAccounts.add(item.account_ref);
-  });
-  
-  const result = Object.values(repGrouped).map(rep => {
-    const spend = rep.spend;
-    const profit = rep.profit;
-    const packs = rep.packs;
-    const activeAccounts = rep.activeAccounts.size;
-    const totalAccounts = rep.totalAccounts.size;
-    
-    return {
-      rep: rep.rep,
-      spend: spend,
-      profit: profit,
-      margin: spend > 0 ? (profit / spend) * 100 : 0,
-      packs: packs,
-      activeAccounts: activeAccounts,
-      totalAccounts: totalAccounts,
-      profitPerActiveShop: activeAccounts > 0 ? profit / activeAccounts : 0,
-      profitPerPack: packs > 0 ? profit / packs : 0,
-      activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
-    };
-  });
-  
-  const filteredResult = result.filter(rep => {
-    // Filter out reps with zero metrics (all values are zero)
-    return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
-  });
-  
-  console.log(`Processed data into ${result.length} rep records, ${filteredResult.length} after filtering zero records`);
-  if (filteredResult.length > 0) {
-    console.log('Sample processed rep data:', filteredResult[0]);
-  }
-  
-  return filteredResult;
-};
-
-export const calculateSummaryFromData = (repData: RepData[]): SummaryData => {
-  let totalSpend = 0;
-  let totalProfit = 0;
-  let totalPacks = 0;
-  let totalActiveAccounts = 0;
-  let totalAccounts = 0;
-  
-  repData.forEach(rep => {
-    totalSpend += rep.spend;
-    totalProfit += rep.profit;
-    totalPacks += rep.packs;
-    totalActiveAccounts += rep.activeAccounts;
-    totalAccounts += rep.totalAccounts;
-  });
-  
-  const summary = {
-    totalSpend,
-    totalProfit,
-    totalPacks,
-    totalAccounts,
-    activeAccounts: totalActiveAccounts,
-    averageMargin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0
-  };
-  
-  console.log('Calculated summary:', summary);
-  return summary;
-};
-
-export const getCombinedRepData = (
-  retailData: RepData[],
-  revaData: RepData[],
-  wholesaleData: RepData[],
-  includeRetailData: boolean,
-  includeRevaData: boolean,
-  includeWholesaleData: boolean
-): RepData[] => {
+export function processRepData(data: SalesDataItem[]): RepData[] {
   const repMap = new Map<string, {
     rep: string;
     spend: number;
@@ -119,172 +9,297 @@ export const getCombinedRepData = (
     activeAccounts: Set<string>;
     totalAccounts: Set<string>;
   }>();
-  
-  if (includeRetailData) {
-    console.log("Including Retail data in combined data");
-    
-    retailData.forEach(rep => {
-      repMap.set(rep.rep, {
-        rep: rep.rep,
-        spend: rep.spend,
-        profit: rep.profit,
-        packs: rep.packs,
-        activeAccounts: new Set(Array(rep.activeAccounts).fill(null).map((_, i) => `retail_${rep.rep}_${i}`)),
-        totalAccounts: new Set(Array(rep.totalAccounts).fill(null).map((_, i) => `retail_${rep.rep}_${i}`))
+
+  data.forEach(item => {
+    const repName = item.Rep || 'Unknown';
+    const spend = Number(item.Spend) || 0;
+    const profit = Number(item.Profit) || 0;
+    const packs = Number(item.Packs) || 0;
+    const accountRef = item["Account Ref"] || 'Unknown';
+
+    if (!repMap.has(repName)) {
+      repMap.set(repName, {
+        rep: repName,
+        spend: 0,
+        profit: 0,
+        packs: 0,
+        activeAccounts: new Set(),
+        totalAccounts: new Set()
       });
-    });
-  }
-  
-  console.log("Starting combined data processing. Rep count:", repMap.size);
-  
-  if (includeRevaData) {
-    console.log("Including REVA data in combined data");
-    
-    revaData.forEach(rep => {
-      if (rep.rep === 'REVA') {
-        return;
-      }
-      
-      if (!repMap.has(rep.rep)) {
-        repMap.set(rep.rep, {
-          rep: rep.rep,
-          spend: 0,
-          profit: 0,
-          packs: 0,
-          activeAccounts: new Set(),
-          totalAccounts: new Set()
-        });
-      }
-      
-      const repData = repMap.get(rep.rep)!;
-      repData.spend += rep.spend;
-      repData.profit += rep.profit;
-      repData.packs += rep.packs;
-      
-      const revaActiveAccounts = Array(rep.activeAccounts).fill(null)
-        .map((_, i) => `reva_${rep.rep}_${i}`);
-      const revaTotalAccounts = Array(rep.totalAccounts).fill(null)
-        .map((_, i) => `reva_${rep.rep}_${i}`);
-        
-      revaActiveAccounts.forEach(account => repData.activeAccounts.add(account));
-      revaTotalAccounts.forEach(account => repData.totalAccounts.add(account));
-    });
-  }
-  
-  if (includeWholesaleData) {
-    console.log("Including Wholesale data in combined data");
-    
-    wholesaleData.forEach(rep => {
-      if (rep.rep === 'Wholesale') {
-        return;
-      }
-      
-      if (!repMap.has(rep.rep)) {
-        repMap.set(rep.rep, {
-          rep: rep.rep,
-          spend: 0,
-          profit: 0,
-          packs: 0,
-          activeAccounts: new Set(),
-          totalAccounts: new Set()
-        });
-      }
-      
-      const repData = repMap.get(rep.rep)!;
-      repData.spend += rep.spend;
-      repData.profit += rep.profit;
-      repData.packs += rep.packs;
-      
-      const wholesaleActiveAccounts = Array(rep.activeAccounts).fill(null)
-        .map((_, i) => `wholesale_${rep.rep}_${i}`);
-      const wholesaleTotalAccounts = Array(rep.totalAccounts).fill(null)
-        .map((_, i) => `wholesale_${rep.rep}_${i}`);
-        
-      wholesaleActiveAccounts.forEach(account => repData.activeAccounts.add(account));
-      wholesaleTotalAccounts.forEach(account => repData.totalAccounts.add(account));
-    });
-  }
-  
-  const combinedData: RepData[] = Array.from(repMap.values()).map(rep => {
+    }
+
+    const currentRep = repMap.get(repName)!;
+    currentRep.spend += spend;
+    currentRep.profit += profit;
+    currentRep.packs += packs;
+    currentRep.totalAccounts.add(accountRef);
+    if (spend > 0) {
+      currentRep.activeAccounts.add(accountRef);
+    }
+  });
+
+  return Array.from(repMap.values()).map(rep => {
+    const activeAccounts = rep.activeAccounts.size;
+    const totalAccounts = rep.totalAccounts.size;
+
     return {
       rep: rep.rep,
       spend: rep.spend,
       profit: rep.profit,
       margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
       packs: rep.packs,
-      activeAccounts: rep.activeAccounts.size,
-      totalAccounts: rep.totalAccounts.size,
-      profitPerActiveShop: rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0,
+      activeAccounts: activeAccounts,
+      totalAccounts: totalAccounts,
+      profitPerActiveShop: activeAccounts > 0 ? rep.profit / activeAccounts : 0,
       profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
-      activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
+      activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
     };
   });
-  
-  // Filter out reps with zero metrics
-  const filteredCombinedData = combinedData.filter(rep => {
-    return (rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0) 
-      && rep.rep !== 'ALL_RECORDS'; // Also exclude the ALL_RECORDS entry
-  });
-  
-  console.log("Final combined data length:", combinedData.length, "filtered length:", filteredCombinedData.length);
-  return filteredCombinedData;
+}
+
+export const getCombinedRepData = (
+  repData: RepData[],
+  revaData: RepData[],
+  wholesaleData: RepData[],
+  includeRetail: boolean,
+  includeReva: boolean,
+  includeWholesale: boolean
+): RepData[] => {
+  const combinedDataMap = new Map<string, RepData>();
+
+  const addDataToMap = (data: RepData[], include: boolean) => {
+    if (!include) return;
+
+    data.forEach(item => {
+      if (combinedDataMap.has(item.rep)) {
+        const existingItem = combinedDataMap.get(item.rep)!;
+        combinedDataMap.set(item.rep, {
+          ...existingItem,
+          spend: existingItem.spend + item.spend,
+          profit: existingItem.profit + item.profit,
+          packs: existingItem.packs + item.packs,
+          activeAccounts: existingItem.activeAccounts + item.activeAccounts,
+          totalAccounts: existingItem.totalAccounts + item.totalAccounts,
+          margin: (existingItem.spend + item.spend) > 0 ? ((existingItem.profit + item.profit) / (existingItem.spend + item.spend)) * 100 : 0,
+          profitPerActiveShop: (existingItem.activeAccounts + item.activeAccounts) > 0 ? (existingItem.profit + item.profit) / (existingItem.activeAccounts + item.activeAccounts) : 0,
+          profitPerPack: (existingItem.packs + item.packs) > 0 ? (existingItem.profit + item.profit) / (existingItem.packs + item.packs) : 0,
+          activeRatio: (existingItem.totalAccounts + item.totalAccounts) > 0 ? ((existingItem.activeAccounts + item.activeAccounts) / (existingItem.totalAccounts + item.totalAccounts)) * 100 : 0
+        });
+      } else {
+        combinedDataMap.set(item.rep, { ...item });
+      }
+    });
+  };
+
+  addDataToMap(repData, includeRetail);
+  addDataToMap(revaData, includeReva);
+  addDataToMap(wholesaleData, includeWholesale);
+
+  return Array.from(combinedDataMap.values());
 };
 
 export const sortRepData = (data: RepData[], sortBy: string, sortOrder: string): RepData[] => {
-  return [...data].sort((a, b) => {
-    const aValue = a[sortBy as keyof RepData] as number;
-    const bValue = b[sortBy as keyof RepData] as number;
-    
-    if (sortOrder === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
+  const sortedData = [...data];
+
+  sortedData.sort((a, b) => {
+    let valueA = a[sortBy as keyof RepData] as number;
+    let valueB = b[sortBy as keyof RepData] as number;
+
+    if (typeof valueA === 'string' && typeof valueB === 'string') {
+      valueA = valueA.toLowerCase();
+      valueB = valueB.toLowerCase();
     }
+
+    if (valueA < valueB) {
+      return sortOrder === 'asc' ? -1 : 1;
+    }
+    if (valueA > valueB) {
+      return sortOrder === 'asc' ? 1 : -1;
+    }
+    return 0;
   });
+
+  return sortedData;
 };
 
-export const calculateRawMtdSummary = (rawData: any[]): SummaryData => {
+export const calculateSummary = (
+  retailValues: SummaryData,
+  revaValues: SummaryData,
+  wholesaleValues: SummaryData,
+  includeRetail: boolean,
+  includeReva: boolean,
+  includeWholesale: boolean
+): SummaryData => {
   let totalSpend = 0;
   let totalProfit = 0;
   let totalPacks = 0;
-  const accountRefs = new Set<string>();
-  const activeAccountRefs = new Set<string>();
+  let totalAccounts = 0;
+  let activeAccounts = 0;
+
+  if (includeRetail) {
+    totalSpend += retailValues.totalSpend;
+    totalProfit += retailValues.totalProfit;
+    totalPacks += retailValues.totalPacks;
+    totalAccounts += retailValues.totalAccounts;
+    activeAccounts += retailValues.activeAccounts;
+  }
+
+  if (includeReva) {
+    totalSpend += revaValues.totalSpend;
+    totalProfit += revaValues.totalProfit;
+    totalPacks += revaValues.totalPacks;
+    totalAccounts += revaValues.totalAccounts;
+    activeAccounts += revaValues.activeAccounts;
+  }
+
+  if (includeWholesale) {
+    totalSpend += wholesaleValues.totalSpend;
+    totalProfit += wholesaleValues.totalProfit;
+    totalPacks += wholesaleValues.totalPacks;
+    totalAccounts += wholesaleValues.totalAccounts;
+    activeAccounts += wholesaleValues.activeAccounts;
+  }
+
+  const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+
+  return {
+    totalSpend,
+    totalProfit,
+    totalPacks,
+    averageMargin,
+    totalAccounts,
+    activeAccounts
+  };
+};
+
+export const calculateRawMtdSummary = (data: any[]): SummaryData => {
+  let totalSpend = 0;
+  let totalProfit = 0;
+  let totalPacks = 0;
+  let totalAccounts = 0;
+  let activeAccounts = 0;
+  const accountSet = new Set<string>();
+  const activeAccountSet = new Set<string>();
   
-  // Process each record directly without filtering
-  rawData.forEach(item => {
-    // Parse numeric values
-    const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-    const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-    const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+  data.forEach(item => {
+    const spend = Number(item.Spend || item.spend) || 0;
+    const profit = Number(item.Profit || item.profit) || 0;
+    const packs = Number(item.Packs || item.packs) || 0;
+    const accountRef = item["Account Ref"] || item.account_ref;
     
-    // Add to totals
     totalSpend += spend;
     totalProfit += profit;
     totalPacks += packs;
     
-    // Track accounts
-    if (item["Account Ref"]) {
-      accountRefs.add(item["Account Ref"]);
+    if (accountRef) {
+      accountSet.add(accountRef);
+      totalAccounts = accountSet.size;
       if (spend > 0) {
-        activeAccountRefs.add(item["Account Ref"]);
+        activeAccountSet.add(accountRef);
+        activeAccounts = activeAccountSet.size;
       }
     }
   });
   
-  console.log('Raw MTD Summary Calculation:', {
-    totalSpend,
-    totalProfit,
-    totalPacks,
-    accountsCount: accountRefs.size,
-    activeAccountsCount: activeAccountRefs.size
-  });
+  const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
   
   return {
     totalSpend,
     totalProfit,
     totalPacks,
-    totalAccounts: accountRefs.size,
-    activeAccounts: activeAccountRefs.size,
-    averageMargin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0
+    averageMargin,
+    totalAccounts,
+    activeAccounts
   };
 };
+
+export function processRawData(rawData: any[]): RepData[] {
+  const repMap = new Map<string, {
+    rep: string;
+    spend: number;
+    profit: number;
+    packs: number;
+    activeAccounts: Set<string>;
+    totalAccounts: Set<string>;
+  }>();
+
+  rawData.forEach(item => {
+    // Extract data using field mapping to handle different data structures
+    const spend = extractNumericValue(item, ['Spend', 'spend']);
+    const profit = extractNumericValue(item, ['Profit', 'profit']);
+    const packs = extractNumericValue(item, ['Packs', 'packs']);
+    const accountRef = item["Account Ref"] || item.account_ref;
+    
+    // Handle different rep name fields
+    let repName;
+    const subRep = item['Sub-Rep'] || item.sub_rep;
+    const mainRep = item.Rep || item.rep_name;
+    
+    if (subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
+      repName = subRep;
+    } else if (mainRep === 'REVA' || mainRep === 'Wholesale' || mainRep === 'WHOLESALE') {
+      return;
+    } else {
+      repName = mainRep;
+    }
+
+    if (!repName) {
+      console.log('Found item without Rep name:', item);
+      return;
+    }
+
+    if (!repMap.has(repName)) {
+      repMap.set(repName, {
+        rep: repName,
+        spend: 0,
+        profit: 0,
+        packs: 0,
+        activeAccounts: new Set(),
+        totalAccounts: new Set()
+      });
+    }
+
+    const currentRep = repMap.get(repName)!;
+
+    currentRep.spend += spend;
+    currentRep.profit += profit;
+    currentRep.packs += packs;
+
+    if (accountRef) {
+      currentRep.totalAccounts.add(accountRef);
+      if (spend > 0) {
+        currentRep.activeAccounts.add(accountRef);
+      }
+    }
+  });
+
+  const repDataArray = Array.from(repMap.values()).map(rep => {
+    const activeAccounts = rep.activeAccounts.size;
+    const totalAccounts = rep.totalAccounts.size;
+
+    return {
+      rep: rep.rep,
+      spend: rep.spend,
+      profit: rep.profit,
+      margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
+      packs: rep.packs,
+      activeAccounts: activeAccounts,
+      totalAccounts: totalAccounts,
+      profitPerActiveShop: activeAccounts > 0 ? rep.profit / activeAccounts : 0,
+      profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
+      activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
+    };
+  });
+
+  return repDataArray;
+}
+
+function extractNumericValue(item: any, fieldNames: string[]): number {
+  for (const fieldName of fieldNames) {
+    const value = item[fieldName];
+    if (value !== undefined) {
+      return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+    }
+  }
+  return 0;
+}

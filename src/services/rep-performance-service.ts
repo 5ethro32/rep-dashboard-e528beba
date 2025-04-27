@@ -170,7 +170,7 @@ export const fetchRepPerformanceData = async () => {
     };
     
     // Calculate rep-level changes
-    const aprRepChanges = calculateRepChanges(aprRetailData, marchRollingData);
+    const aprRepChanges = calculateRepChanges(aprRetailData, processRawData(marchRollingData));
     const marchRepChanges = calculateRepChanges(marchRetailData, febRetailData);
     
     return {
