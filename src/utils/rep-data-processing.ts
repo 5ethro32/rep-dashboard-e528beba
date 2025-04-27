@@ -11,8 +11,6 @@ export function processRepData(data: SalesDataItem[]): RepData[] {
   }>();
 
   data.forEach(item => {
-    // Prioritize different possible rep name fields
-    // Access only properties that exist in the SalesDataItem type
     const repName = 
       item.rep_name || 
       item.sub_rep || 
@@ -215,12 +213,10 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   const activeAccountSet = new Set<string>();
   
   data.forEach(item => {
-    // Handle different possible field name formats across datasets
     const spend = extractNumericValue(item, ['Spend', 'spend']);
     const profit = extractNumericValue(item, ['Profit', 'profit']);
     const packs = extractNumericValue(item, ['Packs', 'packs']);
     
-    // Unified approach to handle account ref with different case formats
     const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
     
     totalSpend += spend;
@@ -260,32 +256,35 @@ export function processRawData(rawData: any[]): RepData[] {
   }>();
 
   if (rawData.length > 0) {
-    // Log field names from first item to help debug
     console.log("Sample raw data fields:", Object.keys(rawData[0]));
   }
 
-  rawData.forEach(item => {
+  const processedEntries = new Set<string>();
+
+  rawData.forEach((item, index) => {
     const spend = extractNumericValue(item, ['Spend', 'spend']);
     const profit = extractNumericValue(item, ['Profit', 'profit']);
     const packs = extractNumericValue(item, ['Packs', 'packs']);
     const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
     
-    // Use consistent logic for both mtd_daily and march_rolling
-    let repName;
+    const entryId = `${accountRef}-${index}`;
+
+    let repName = null;
     
-    // Check for Sub-Rep fields with consistent casing
     const subRep = item['Sub-Rep'] || item.sub_rep || item["SUB-REP"];
     
-    // Check for Rep fields with consistent casing
     const mainRep = item.Rep || item.rep || item.rep_name || item.REP;
     
-    // First, check if this is a department entry with a sub-rep
-    if (mainRep && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep) && subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
-      // If it's a department entry with a valid sub-rep, use the sub-rep name
-      repName = subRep;
-    } else if (mainRep && !['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep)) {
-      // If main rep is not a department name, use it
-      repName = mainRep;
+    if (mainRep && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep) && 
+        subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
+      repName = subRep.trim();
+      
+      processedEntries.add(entryId);
+    } 
+    else if (!processedEntries.has(entryId) && 
+             mainRep && !['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep)) {
+      repName = mainRep.trim();
+      processedEntries.add(entryId);
     }
 
     if (!repName) {
@@ -293,7 +292,6 @@ export function processRawData(rawData: any[]): RepData[] {
       return;
     }
 
-    // Normalize rep name to handle case differences
     repName = repName.trim();
 
     if (!repMap.has(repName)) {
@@ -321,7 +319,6 @@ export function processRawData(rawData: any[]): RepData[] {
     }
   });
 
-  // Special debugging for Craig McDowall
   if (repMap.has('Craig McDowall')) {
     const craigData = repMap.get('Craig McDowall')!;
     console.log('Craig McDowall processed data:', {
