@@ -2,6 +2,7 @@
 import React from 'react';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface RawMonthlyTableProps {
   displayData: any[];
@@ -13,6 +14,7 @@ interface RawMonthlyTableProps {
   onSort: (column: string) => void;
   isLoading?: boolean;
   selectedMonth: string;
+  repChanges?: Record<string, any>;
 }
 
 const RawMonthlyTable: React.FC<RawMonthlyTableProps> = ({
@@ -25,6 +27,7 @@ const RawMonthlyTable: React.FC<RawMonthlyTableProps> = ({
   onSort,
   isLoading,
   selectedMonth,
+  repChanges = {}
 }) => {
   const getSortIcon = (columnName: string) => {
     if (sortBy !== columnName) return '↕️';
@@ -35,6 +38,30 @@ const RawMonthlyTable: React.FC<RawMonthlyTableProps> = ({
     return cn(
       'cursor-pointer hover:bg-white/5',
       sortBy === columnName && 'bg-white/5'
+    );
+  };
+
+  const renderChangeIndicator = (repName: string, metric: string, currentValue: number) => {
+    if (selectedMonth !== 'April' || !repChanges[repName]) return null;
+
+    const change = repChanges[repName][metric];
+    if (!change && change !== 0) return null;
+
+    return (
+      <span className={cn(
+        "inline-flex items-center ml-1 text-xs",
+        change > 0 ? 'text-emerald-500' : 
+        change < 0 ? 'text-finance-red' : 'text-finance-gray'
+      )}>
+        {change > 0 ? (
+          <TrendingUp className="h-3 w-3 mr-1" />
+        ) : (
+          <TrendingDown className="h-3 w-3 mr-1" />
+        )}
+        <span className="text-2xs">
+          ({formatNumber(Math.abs(change))})
+        </span>
+      </span>
     );
   };
 
@@ -99,16 +126,37 @@ const RawMonthlyTable: React.FC<RawMonthlyTableProps> = ({
               key={row.rep + index} 
               className="border-white/10 hover:bg-white/5"
             >
-              <TableCell className="font-medium">{row.rep}</TableCell>
-              <TableCell>{formatCurrency(row.spend)}</TableCell>
+              <TableCell className="font-medium">
+                {row.rep}
+              </TableCell>
+              <TableCell>
+                {formatCurrency(row.spend)}
+                {renderChangeIndicator(row.rep, 'spend', row.spend)}
+              </TableCell>
               <TableCell className="text-finance-red">
                 {formatCurrency(row.profit)}
+                {renderChangeIndicator(row.rep, 'profit', row.profit)}
               </TableCell>
-              <TableCell>{formatPercent(row.margin)}</TableCell>
-              <TableCell>{formatNumber(row.packs)}</TableCell>
-              <TableCell>{formatNumber(row.activeAccounts)}</TableCell>
-              <TableCell>{formatCurrency(row.profitPerActiveShop)}</TableCell>
-              <TableCell>{formatCurrency(row.profitPerPack)}</TableCell>
+              <TableCell>
+                {formatPercent(row.margin)}
+                {renderChangeIndicator(row.rep, 'margin', row.margin)}
+              </TableCell>
+              <TableCell>
+                {formatNumber(row.packs)}
+                {renderChangeIndicator(row.rep, 'packs', row.packs)}
+              </TableCell>
+              <TableCell>
+                {formatNumber(row.activeAccounts)}
+                {renderChangeIndicator(row.rep, 'activeAccounts', row.activeAccounts)}
+              </TableCell>
+              <TableCell>
+                {formatCurrency(row.profitPerActiveShop)}
+                {renderChangeIndicator(row.rep, 'profitPerActiveShop', row.profitPerActiveShop)}
+              </TableCell>
+              <TableCell>
+                {formatCurrency(row.profitPerPack)}
+                {renderChangeIndicator(row.rep, 'profitPerPack', row.profitPerPack)}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -118,4 +166,3 @@ const RawMonthlyTable: React.FC<RawMonthlyTableProps> = ({
 };
 
 export default RawMonthlyTable;
-

@@ -159,7 +159,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                     Raw {selectedMonth} 2025 Data
                   </h2>
                   <p className="text-xs md:text-sm mb-3 md:mb-4 text-white/60">
-                    Showing raw data without comparisons for {selectedMonth}.
+                    Showing raw data for {selectedMonth} with movement indicators compared to previous month.
                   </p>
                   <RawMonthlyTable 
                     displayData={sortData(getActiveData(tabValue))}
@@ -171,6 +171,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                     formatNumber={formatNumber}
                     isLoading={isLoading}
                     selectedMonth={selectedMonth}
+                    repChanges={repChanges}
                   />
                 </div>
               </div>
