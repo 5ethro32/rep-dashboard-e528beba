@@ -1,4 +1,3 @@
-
 import { SalesDataItem, RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 
 export function processRepData(data: SalesDataItem[]): RepData[] {
@@ -271,26 +270,26 @@ export function processRawData(rawData: any[]): RepData[] {
     const packs = extractNumericValue(item, ['Packs', 'packs']);
     const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
     
-    // Fix: Handle rep name extraction more consistently across different data formats
+    // Use consistent logic for both mtd_daily and march_rolling
     let repName;
     
-    // Check for Sub-Rep fields with different case formats
+    // Check for Sub-Rep fields with consistent casing
     const subRep = item['Sub-Rep'] || item.sub_rep || item["SUB-REP"];
     
-    // Check for Rep fields with different case formats
+    // Check for Rep fields with consistent casing
     const mainRep = item.Rep || item.rep || item.rep_name || item.REP;
     
-    if (subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
+    // First, check if this is a department entry with a sub-rep
+    if (mainRep && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep) && subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
+      // If it's a department entry with a valid sub-rep, use the sub-rep name
       repName = subRep;
-    } else if (mainRep === 'REVA' || mainRep === 'Wholesale' || mainRep === 'WHOLESALE') {
-      // Skip REVA/Wholesale rep names as they'll be processed separately
-      return;
-    } else {
+    } else if (mainRep && !['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep)) {
+      // If main rep is not a department name, use it
       repName = mainRep;
     }
 
     if (!repName) {
-      console.log('Found item without Rep name:', item);
+      console.log('Skipping item without valid Rep name:', item);
       return;
     }
 
@@ -334,25 +333,18 @@ export function processRawData(rawData: any[]): RepData[] {
     });
   }
 
-  const repDataArray = Array.from(repMap.values()).map(rep => {
-    const activeAccounts = rep.activeAccounts.size;
-    const totalAccounts = rep.totalAccounts.size;
-
-    return {
-      rep: rep.rep,
-      spend: rep.spend,
-      profit: rep.profit,
-      margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
-      packs: rep.packs,
-      activeAccounts: activeAccounts,
-      totalAccounts: totalAccounts,
-      profitPerActiveShop: activeAccounts > 0 ? rep.profit / activeAccounts : 0,
-      profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
-      activeRatio: totalAccounts > 0 ? (activeAccounts / totalAccounts) * 100 : 0
-    };
-  });
-
-  return repDataArray;
+  return Array.from(repMap.values()).map(rep => ({
+    rep: rep.rep,
+    spend: rep.spend,
+    profit: rep.profit,
+    margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
+    packs: rep.packs,
+    activeAccounts: rep.activeAccounts.size,
+    totalAccounts: rep.totalAccounts.size,
+    profitPerActiveShop: rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0,
+    profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
+    activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
+  }));
 }
 
 function extractNumericValue(item: any, fieldNames: string[]): number {
