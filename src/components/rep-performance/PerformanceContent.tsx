@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
@@ -7,6 +8,7 @@ import RepMarginComparison from '@/components/RepMarginComparison';
 import DepartmentProfitShare from '@/components/DepartmentProfitShare';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useComparisonData } from '@/hooks/useComparisonData';
+import { RepData } from '@/types/rep-performance.types';
 
 interface PerformanceContentProps {
   tabValues: string[];
