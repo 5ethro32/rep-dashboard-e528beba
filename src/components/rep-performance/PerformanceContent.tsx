@@ -6,6 +6,7 @@ import RepProfitShare from '@/components/RepProfitShare';
 import RepMarginComparison from '@/components/RepMarginComparison';
 import DepartmentProfitShare from '@/components/DepartmentProfitShare';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useComparisonData } from '@/hooks/useComparisonData';
 
 interface PerformanceContentProps {
   tabValues: string[];
@@ -42,6 +43,9 @@ interface PerformanceContentProps {
   wholesaleValues?: {
     totalProfit: number;
   };
+  aprRepData: any[];
+  marchRepData: any[];
+  febRepData: any[];
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -65,9 +69,13 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   includeWholesale,
   baseSummary,
   revaValues,
-  wholesaleValues
+  wholesaleValues,
+  aprRepData,
+  marchRepData,
+  febRepData
 }) => {
   const isMobile = useIsMobile();
+  const { getCurrentAndPreviousData } = useComparisonData(selectedMonth, aprRepData, marchRepData, febRepData);
 
   const getTabLabel = (tabValue: string) => {
     switch (tabValue) {
@@ -146,8 +154,8 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   formatNumber={formatNumber}
                   renderChangeIndicator={showChangeIndicators ? renderChangeIndicator : () => null}
                   isLoading={isLoading}
-                  getFebValue={getFebValue}
                   showChangeIndicators={showChangeIndicators}
+                  previousMonthData={getCurrentAndPreviousData(tabValue).previousData}
                 />
               </div>
             </div>

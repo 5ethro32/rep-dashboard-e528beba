@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
@@ -32,23 +31,23 @@ const RepPerformance = () => {
     revaValues,
     wholesaleValues,
     getFebValue,
+    aprRepData,
+    marchRepData,
+    febRepData,
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
   const isMobile = useIsMobile();
   
-  // Initial data loading - ensure all data is loaded without pagination
   useEffect(() => {
     console.log('RepPerformance: Initial data load starting');
     loadDataFromSupabase();
   }, []);
   
-  // Since we've removed the toggle functionality, we always include all departments
   const includeRetail = true;
   const includeReva = true;
   const includeWholesale = true;
   
-  // Create a wrapper function to make RenderChangeIndicator compatible with the expected type
   const renderChangeIndicator = (
     changeValue: number, 
     size?: string, 
@@ -137,6 +136,9 @@ const RepPerformance = () => {
           includeReva={includeReva}
           includeWholesale={includeWholesale}
           getFebValue={getFebValue}
+          aprRepData={aprRepData}
+          marchRepData={marchRepData}
+          febRepData={febRepData}
         />
       </div>
       <ChatInterface selectedMonth={selectedMonth} />

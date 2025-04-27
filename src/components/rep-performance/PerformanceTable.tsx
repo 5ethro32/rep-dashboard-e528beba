@@ -26,12 +26,13 @@ interface PerformanceTableProps {
   formatNumber: (value: number) => string;
   renderChangeIndicator: (changeValue: number, size?: string) => React.ReactNode;
   isLoading?: boolean;
-  getFebValue: (repName: string, metricType: string, currentValue: number, changePercent: number) => string;
   showChangeIndicators?: boolean;
+  previousMonthData: any[];
 }
 
 const PerformanceTable: React.FC<PerformanceTableProps> = ({
   displayData,
+  previousMonthData,
   repChanges,
   sortBy,
   sortOrder,
@@ -41,65 +42,14 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
   formatNumber,
   renderChangeIndicator,
   isLoading,
-  getFebValue,
   showChangeIndicators = true
 }) => {
-  // Calculate the previous month's ranking based on the same sort criteria
-  const prevRankings = useMemo(() => {
-    if (!displayData.length || !showChangeIndicators) return {};
-    
-    // Deep clone the data to avoid mutation
-    const clonedData = JSON.parse(JSON.stringify(displayData));
-    
-    // Calculate previous values for each rep
-    const prevData = clonedData.map((item: any) => {
-      const change = repChanges[item.rep] || {};
-      
-      // Fix: Calculate previous values with better handling for edge cases
-      const getAdjustedPrevValue = (currentVal: number, changePercent: number) => {
-        if (changePercent === 0) return currentVal;
-        if (changePercent === 100) return 0; // If current is 100% more than previous, previous was 0
-        
-        // Cap extreme percentage values for calculation
-        const cappedChange = Math.max(Math.min(changePercent, 1000), -1000);
-        
-        // Calculate previous value from current value and change percentage
-        return currentVal / (1 + (cappedChange / 100));
-      };
-      
-      return {
-        rep: item.rep,
-        profit: getAdjustedPrevValue(item.profit, change.profit || 0),
-        spend: getAdjustedPrevValue(item.spend, change.spend || 0),
-        margin: item.margin - (change.margin || 0),
-        activeAccounts: Math.round(getAdjustedPrevValue(item.activeAccounts, change.activeAccounts || 0)),
-        packs: Math.round(getAdjustedPrevValue(item.packs, change.packs || 0))
-      };
-    });
-    
-    // Sort previous data using the same criteria
-    const sortField = sortBy;
-    const sortMultiplier = sortOrder === 'desc' ? -1 : 1;
-    
-    prevData.sort((a: any, b: any) => (a[sortField] - b[sortField]) * sortMultiplier);
-    
-    // Create a map of rep name to previous rank
-    return prevData.reduce((acc: any, item: any, index: number) => {
-      acc[item.rep] = index + 1;
-      return acc;
-    }, {});
-  }, [displayData, repChanges, sortBy, sortOrder, showChangeIndicators]);
-  
-  // Format the difference value for tooltip display
-  const formatDiffValue = (value: number, changePercent: number): number => {
-    // If change percentage is very large, use a reasonable calculation
-    if (Math.abs(changePercent) > 500) {
-      return value - (value / (1 + (Math.sign(changePercent) * 5)));
-    }
-    
-    return value - (value / (1 + (changePercent / 100)));
+  // Calculate previous values directly from previousMonthData
+  const getPreviousValue = (repName: string, metric: string) => {
+    const previousRecord = previousMonthData.find(record => record.rep === repName);
+    return previousRecord ? previousRecord[metric] : 0;
   };
-  
+
   return (
     <div className="overflow-x-auto -mx-3 md:mx-0 scrollbar-hide relative">
       <Table>
@@ -143,6 +93,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
             </TableHead>
           </TableRow>
         </TableHeader>
+        
         <TableBody>
           {isLoading ? (
             <TableRow>
@@ -155,53 +106,17 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
             </TableRow>
           ) : displayData.length > 0 ? (
             displayData.map((item, index) => {
-              // Calculate rank change
-              const currentRank = index + 1;
-              const previousRank = prevRankings[item.rep] || currentRank;
-              const rankChange = previousRank - currentRank;
-              
-              // Check if active accounts match total accounts for displaying dash instead of down arrow
-              const accountsMatch = item.activeAccounts === item.totalAccounts;
-              
-              // Helper function to safely calculate previous values
-              const getPreviousValue = (current: number, changePercent: number): number => {
-                if (Math.abs(changePercent) > 500) {
-                  return current * 0.5; // For extreme changes, use a modest estimate
-                }
-                return current / (1 + (changePercent / 100));
-              };
+              const previousSpend = getPreviousValue(item.rep, 'spend');
+              const previousProfit = getPreviousValue(item.rep, 'profit');
+              const previousMargin = getPreviousValue(item.rep, 'margin');
+              const previousPacks = getPreviousValue(item.rep, 'packs');
+              const previousActiveAccounts = getPreviousValue(item.rep, 'activeAccounts');
               
               return (
                 <TableRow key={item.rep} className="hover:bg-white/5 transition-colors">
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium sticky left-0 z-10 bg-gray-900/90 backdrop-blur-sm border-r border-white/5">
                     <div className="flex items-center">
                       <span>{item.rep}</span>
-                      {showChangeIndicators && rankChange !== 0 ? (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="ml-1.5">
-                                {rankChange > 0 ? (
-                                  <ArrowUpRight className="h-4 w-4 text-emerald-500" />
-                                ) : rankChange < 0 ? (
-                                  <ArrowDownRight className="h-4 w-4 text-finance-red" />
-                                ) : null}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-800 border-white/10 text-white">
-                              <p>
-                                {rankChange > 0
-                                  ? `Up ${rankChange} ${rankChange === 1 ? 'position' : 'positions'} (was ${previousRank})`
-                                  : `Down ${Math.abs(rankChange)} ${Math.abs(rankChange) === 1 ? 'position' : 'positions'} (was ${previousRank})`}
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : showChangeIndicators ? (
-                        <span className="ml-1.5 font-bold text-finance-gray">
-                          <Minus className="h-4 w-4" />
-                        </span>
-                      ) : null}
                     </div>
                   </TableCell>
                   
@@ -211,29 +126,18 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                         <TooltipTrigger asChild>
                           <div className="flex items-center">
                             {formatCurrency(item.spend)}
-                            {showChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].spend) >= 0.1 ? (
+                            {showChangeIndicators && (
                               <div className="flex items-center ml-1">
-                                {renderChangeIndicator(repChanges[item.rep].spend, 'small')}
+                                {renderChangeIndicator(((item.spend - previousSpend) / previousSpend) * 100, 'small')}
                                 <span className="text-2xs ml-1 text-finance-gray">
-                                  {formatCurrency(getPreviousValue(item.spend, repChanges[item.rep]?.spend || 0), 0)}
+                                  {formatCurrency(previousSpend, 0)}
                                 </span>
                               </div>
-                            ) : showChangeIndicators ? (
-                              <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
-                                <Minus className="h-4 w-4" />
-                              </span>
-                            ) : null}
+                            )}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent className="bg-gray-800 border-white/10 text-white">
-                          <p>
-                            {showChangeIndicators ? (
-                              <>
-                                Previous: {formatCurrency(getPreviousValue(item.spend, repChanges[item.rep]?.spend || 0))}
-                                {repChanges[item.rep]?.spend ? ` (${repChanges[item.rep].spend > 0 ? '+' : ''}${repChanges[item.rep].spend.toFixed(1)}%)` : ''}
-                              </>
-                            ) : `${item.rep}'s spend`}
-                          </p>
+                        <TooltipContent>
+                          Previous Spend
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -245,29 +149,18 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                         <TooltipTrigger asChild>
                           <div className="flex items-center">
                             {formatCurrency(item.profit)}
-                            {showChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].profit) >= 0.1 ? (
+                            {showChangeIndicators && (
                               <div className="flex items-center ml-1">
-                                {renderChangeIndicator(repChanges[item.rep].profit, 'small')}
+                                {renderChangeIndicator(((item.profit - previousProfit) / previousProfit) * 100, 'small')}
                                 <span className="text-2xs ml-1 text-finance-gray">
-                                  {formatCurrency(getPreviousValue(item.profit, repChanges[item.rep]?.profit || 0), 0)}
+                                  {formatCurrency(previousProfit, 0)}
                                 </span>
                               </div>
-                            ) : showChangeIndicators ? (
-                              <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
-                                <Minus className="h-4 w-4" />
-                              </span>
-                            ) : null}
+                            )}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent className="bg-gray-800 border-white/10 text-white">
-                          <p>
-                            {showChangeIndicators ? (
-                              <>
-                                Previous: {formatCurrency(getPreviousValue(item.profit, repChanges[item.rep]?.profit || 0))}
-                                {repChanges[item.rep]?.profit ? ` (${repChanges[item.rep].profit > 0 ? '+' : ''}${repChanges[item.rep].profit.toFixed(1)}%)` : ''}
-                              </>
-                            ) : `${item.rep}'s profit`}
-                          </p>
+                        <TooltipContent>
+                          Previous Profit
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -279,29 +172,18 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                         <TooltipTrigger asChild>
                           <div className="flex items-center">
                             {formatPercent(item.margin)}
-                            {showChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].margin) >= 0.1 ? (
+                            {showChangeIndicators && (
                               <div className="flex items-center ml-1">
-                                {renderChangeIndicator(repChanges[item.rep].margin, 'small')}
+                                {renderChangeIndicator(((item.margin - previousMargin) / previousMargin) * 100, 'small')}
                                 <span className="text-2xs ml-1 text-finance-gray">
-                                  {formatPercent(item.margin - (repChanges[item.rep]?.margin || 0))}
+                                  {formatPercent(previousMargin)}
                                 </span>
                               </div>
-                            ) : showChangeIndicators ? (
-                              <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
-                                <Minus className="h-4 w-4" />
-                              </span>
-                            ) : null}
+                            )}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent className="bg-gray-800 border-white/10 text-white">
-                          <p>
-                            {showChangeIndicators ? (
-                              <>
-                                Previous: {formatPercent(item.margin - (repChanges[item.rep]?.margin || 0))}
-                                {repChanges[item.rep]?.margin ? ` (${repChanges[item.rep].margin > 0 ? '+' : ''}${repChanges[item.rep].margin.toFixed(1)}%)` : ''}
-                              </>
-                            ) : `${item.rep}'s margin`}
-                          </p>
+                        <TooltipContent>
+                          Previous Margin
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -316,36 +198,17 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                             <span className="text-finance-gray mx-1"> / </span>
                             <span>{formatNumber(item.totalAccounts)}</span>
                             {showChangeIndicators && (
-                              accountsMatch ? (
-                                <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
-                                  <Minus className="h-4 w-4" />
+                              <div className="flex items-center ml-1">
+                                {renderChangeIndicator(((item.activeAccounts - previousActiveAccounts) / previousActiveAccounts) * 100, 'small')}
+                                <span className="text-2xs ml-1 text-finance-gray">
+                                  {formatNumber(previousActiveAccounts)}
                                 </span>
-                              ) : (
-                                repChanges[item.rep] && Math.abs(repChanges[item.rep].activeAccounts) >= 0.1 ? (
-                                  <div className="flex items-center ml-1">
-                                    {renderChangeIndicator(repChanges[item.rep].activeAccounts, 'small')}
-                                    <span className="text-2xs ml-1 text-finance-gray">
-                                      {formatNumber(Math.round(item.activeAccounts / (1 + (repChanges[item.rep]?.activeAccounts || 0) / 100)))}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
-                                    <Minus className="h-4 w-4" />
-                                  </span>
-                                )
-                              )
+                              </div>
                             )}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent className="bg-gray-800 border-white/10 text-white">
-                          <p>
-                            {showChangeIndicators ? (
-                              <>
-                                Previous: {formatNumber(Math.round(item.activeAccounts / (1 + (repChanges[item.rep]?.activeAccounts || 0) / 100)))}
-                                {repChanges[item.rep]?.activeAccounts ? ` (${repChanges[item.rep].activeAccounts > 0 ? '+' : ''}${repChanges[item.rep].activeAccounts.toFixed(1)}%)` : ''}
-                              </>
-                            ) : `${item.rep}'s active/total accounts`}
-                          </p>
+                        <TooltipContent>
+                          Previous Active Accounts
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -357,29 +220,18 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                         <TooltipTrigger asChild>
                           <div className="flex items-center">
                             {formatNumber(item.packs)}
-                            {showChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].packs) >= 0.1 ? (
+                            {showChangeIndicators && (
                               <div className="flex items-center ml-1">
-                                {renderChangeIndicator(repChanges[item.rep].packs, 'small')}
+                                {renderChangeIndicator(((item.packs - previousPacks) / previousPacks) * 100, 'small')}
                                 <span className="text-2xs ml-1 text-finance-gray">
-                                  {formatNumber(Math.round(item.packs / (1 + (repChanges[item.rep]?.packs || 0) / 100)))}
+                                  {formatNumber(previousPacks)}
                                 </span>
                               </div>
-                            ) : showChangeIndicators ? (
-                              <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
-                                <Minus className="h-4 w-4" />
-                              </span>
-                            ) : null}
+                            )}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent className="bg-gray-800 border-white/10 text-white">
-                          <p>
-                            {showChangeIndicators ? (
-                              <>
-                                Previous: {formatNumber(Math.round(item.packs / (1 + (repChanges[item.rep]?.packs || 0) / 100)))}
-                                {repChanges[item.rep]?.packs ? ` (${repChanges[item.rep].packs > 0 ? '+' : ''}${repChanges[item.rep].packs.toFixed(1)}%)` : ''}
-                              </>
-                            ) : `${item.rep}'s packs`}
-                          </p>
+                        <TooltipContent>
+                          Previous Packs
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
