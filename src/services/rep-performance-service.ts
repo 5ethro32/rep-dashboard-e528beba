@@ -9,17 +9,6 @@ type DbTableName = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_
 // Views
 type DbViewName = 'combined_rep_performance';
 
-// Helper function to extract numeric values from different field name variations
-function extractNumericValue(item: any, fieldNames: string[]): number {
-  for (const fieldName of fieldNames) {
-    const value = item[fieldName];
-    if (value !== undefined) {
-      return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
-    }
-  }
-  return 0;
-}
-
 // Helper function to fetch all records from a table using pagination
 async function fetchAllRecords(tableName: DbTableName) {
   let allRecords: any[] = [];
@@ -122,7 +111,7 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     ) || []);
     const rawAprSummary = calculateRawMtdSummary(mtdData || []);
     
-    // March data processing
+    // March data processing - using sales_data table which has different field names
     const marchRetailData = processRawData(marchData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || []);
     const marchRevaData = processRawData(marchData?.filter(item => item.rep_type === 'REVA') || []);
     const marchWholesaleData = processRawData(marchData?.filter(item => 
@@ -130,23 +119,32 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     ) || []);
     const rawMarchSummary = calculateRawMtdSummary(marchData || []);
     
-    // February data processing - now using the same direct calculation approach as April
+    // February data processing from sales_data_februrary
     const febRetailData = processRawData(februaryData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const febRevaData = processRawData(februaryData?.filter(item => item.Department === 'REVA') || []);
     const febWholesaleData = processRawData(februaryData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
-    const rawFebSummary = calculateRawMtdSummary(februaryData || []); // Using same direct calculation as April
+    const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
-    // March Rolling data processing
+    // March Rolling data processing (for April comparison) from march_rolling
     console.log('Processing March Rolling data by department...');
     
+    // Process march_rolling data by department
     const marchRollingRetailData = processRawData(marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
     const marchRollingRevaData = processRawData(marchRollingData?.filter(item => item.Department === 'REVA') || []);
     const marchRollingWholesaleData = processRawData(marchRollingData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
     const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
+    
+    // Debug log for March Rolling data by department
+    console.log('March Rolling data by department:', {
+      retail: marchRollingRetailData.length,
+      reva: marchRollingRevaData.length,
+      wholesale: marchRollingWholesaleData.length,
+      total: marchRollingData?.length || 0
+    });
 
     // Calculate filtered summaries
     const aprRetailSummary = calculateSummaryFromData(aprRetailData);
@@ -160,7 +158,7 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     const febRetailSummary = calculateSummaryFromData(febRetailData);
     const febRevaSummary = calculateSummaryFromData(febRevaData);
     const febWholesaleSummary = calculateSummaryFromData(febWholesaleData);
-
+    
     // Calculate changes for different periods
     const calculateChanges = (current: number, previous: number): number => {
       if (previous === 0) return 0;
@@ -208,7 +206,7 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
       marchRevaValues: marchRevaSummary,
       marchWholesaleValues: marchWholesaleSummary,
       
-      // February data - now using raw summary directly like April
+      // February data
       febRepData: febRetailData,
       febRevaData: febRevaData,
       febWholesaleData: febWholesaleData,

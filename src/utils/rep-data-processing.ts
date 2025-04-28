@@ -1,16 +1,5 @@
 import { SalesDataItem, RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 
-// Helper function to extract numeric values from different field name variations
-function extractNumericValue(item: any, fieldNames: string[]): number {
-  for (const fieldName of fieldNames) {
-    const value = item[fieldName];
-    if (value !== undefined) {
-      return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
-    }
-  }
-  return 0;
-}
-
 export function processRepData(data: SalesDataItem[]): RepData[] {
   const repMap = new Map<string, {
     rep: string;
@@ -222,19 +211,8 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   let activeAccounts = 0;
   const accountSet = new Set<string>();
   const activeAccountSet = new Set<string>();
-
-  // Debug: Log the total records before filtering
-  console.log('Total records before filtering:', data.length);
   
   data.forEach(item => {
-    // Check both Department and rep_type fields to handle different data sources
-    const department = item.Department || item.rep_type;
-    
-    // Skip if item represents a department summary
-    if (department && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(department)) {
-      return;
-    }
-
     const spend = extractNumericValue(item, ['Spend', 'spend']);
     const profit = extractNumericValue(item, ['Profit', 'profit']);
     const packs = extractNumericValue(item, ['Packs', 'packs']);
@@ -256,16 +234,6 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   });
   
   const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
-  
-  // Debug: Log the summary data
-  console.log('Raw Summary Data:', {
-    totalSpend,
-    totalProfit,
-    totalPacks,
-    averageMargin,
-    totalAccounts,
-    activeAccounts
-  });
   
   return {
     totalSpend,
@@ -396,4 +364,14 @@ export function processRawData(rawData: any[]): RepData[] {
     profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
     activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
   }));
+}
+
+function extractNumericValue(item: any, fieldNames: string[]): number {
+  for (const fieldName of fieldNames) {
+    const value = item[fieldName];
+    if (value !== undefined) {
+      return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+    }
+  }
+  return 0;
 }
