@@ -103,60 +103,28 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
       duration: 10000,
     });
 
-    // April data processing with case-insensitive department matching
-    const aprRetailData = processRawData(mtdData?.filter(item => {
-      const dept = (item.Department || '').toUpperCase();
-      return !dept || dept === 'RETAIL';
-    }) || []);
-
-    const aprRevaData = processRawData(mtdData?.filter(item => {
-      const dept = (item.Department || '').toUpperCase();
-      return dept === 'REVA';
-    }) || []);
-
-    const aprWholesaleData = processRawData(mtdData?.filter(item => {
-      const dept = (item.Department || '').toUpperCase();
-      return dept === 'WHOLESALE';
-    }) || []);
-
-    // March data processing with case-insensitive matching
-    const marchRetailData = processRawData(marchData?.filter(item => {
-      const repType = (item.rep_type || '').toUpperCase();
-      return !repType || repType === 'RETAIL';
-    }) || []);
-
-    const marchRevaData = processRawData(marchData?.filter(item => {
-      const repType = (item.rep_type || '').toUpperCase();
-      return repType === 'REVA';
-    }) || []);
-
-    const marchWholesaleData = processRawData(marchData?.filter(item => {
-      const repType = (item.rep_type || '').toUpperCase();
-      return repType === 'WHOLESALE';
-    }) || []);
-
-    // February data processing with case-insensitive matching
-    const febRetailData = processRawData(februaryData?.filter(item => {
-      const dept = (item.Department || '').toUpperCase();
-      return !dept || dept === 'RETAIL';
-    }) || []);
-
-    const febRevaData = processRawData(februaryData?.filter(item => {
-      const dept = (item.Department || '').toUpperCase();
-      return dept === 'REVA';
-    }) || []);
-
-    const febWholesaleData = processRawData(februaryData?.filter(item => {
-      const dept = (item.Department || '').toUpperCase();
-      return dept === 'WHOLESALE';
-    }) || []);
-    
+    // April data processing
+    const aprRetailData = processRawData(mtdData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
+    const aprRevaData = processRawData(mtdData?.filter(item => item.Department === 'REVA') || []);
+    const aprWholesaleData = processRawData(mtdData?.filter(item => 
+      item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+    ) || []);
     const rawAprSummary = calculateRawMtdSummary(mtdData || []);
     
     // March data processing - using sales_data table which has different field names
+    const marchRetailData = processRawData(marchData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || []);
+    const marchRevaData = processRawData(marchData?.filter(item => item.rep_type === 'REVA') || []);
+    const marchWholesaleData = processRawData(marchData?.filter(item => 
+      item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE'
+    ) || []);
     const rawMarchSummary = calculateRawMtdSummary(marchData || []);
     
     // February data processing from sales_data_februrary
+    const febRetailData = processRawData(februaryData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
+    const febRevaData = processRawData(februaryData?.filter(item => item.Department === 'REVA') || []);
+    const febWholesaleData = processRawData(februaryData?.filter(item => 
+      item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
+    ) || []);
     const rawFebSummary = calculateRawMtdSummary(februaryData || []);
     
     // March Rolling data processing (for April comparison) from march_rolling

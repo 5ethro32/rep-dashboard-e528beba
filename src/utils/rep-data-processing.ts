@@ -1,10 +1,5 @@
 import { SalesDataItem, RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 
-const normalizeDepartment = (department: string | undefined | null): string => {
-  if (!department) return '';
-  return department.toUpperCase().trim();
-};
-
 export function processRepData(data: SalesDataItem[]): RepData[] {
   const repMap = new Map<string, {
     rep: string;
@@ -277,24 +272,39 @@ export function processRawData(rawData: any[]): RepData[] {
     let repName = null;
     
     const subRep = item['Sub-Rep'] || item.sub_rep || item["SUB-REP"];
+    
     const mainRep = item.Rep || item.rep || item.rep_name || item.REP;
-    const department = normalizeDepartment(item.Department || item.rep_type);
     
-    console.log('Processing entry with department:', {
-      original: item.Department || item.rep_type,
-      normalized: department,
-      mainRep,
-      subRep
-    });
-    
-    if (mainRep && ['RETAIL', 'REVA', 'WHOLESALE'].includes(department) && 
+    if (mainRep && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep) && 
         subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
       repName = subRep.trim();
+      
+      // Debug Craig's data
+      if (subRep.trim() === 'Craig McDowall') {
+        console.log('Found Craig as Sub-Rep in:', mainRep, 'department. Data:', {
+          spend,
+          profit,
+          packs,
+          accountRef
+        });
+      }
+      
       processedEntries.add(entryId);
     } 
     else if (!processedEntries.has(entryId) && 
-             mainRep && !['RETAIL', 'REVA', 'WHOLESALE'].includes(department)) {
+             mainRep && !['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep)) {
       repName = mainRep.trim();
+      
+      // Debug Craig's data
+      if (mainRep.trim() === 'Craig McDowall') {
+        console.log('Found Craig as Main Rep. Data:', {
+          spend,
+          profit,
+          packs,
+          accountRef
+        });
+      }
+      
       processedEntries.add(entryId);
     }
 
