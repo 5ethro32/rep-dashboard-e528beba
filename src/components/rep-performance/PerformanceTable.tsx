@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Loader2, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -81,6 +81,25 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
     }
   }, [previousMonthData]);
 
+  // Calculate the previous month's ranking based on the same sort criteria
+  const prevRankings = useMemo(() => {
+    if (!previousMonthData || !showChangeIndicators) return {};
+    
+    // Sort previous month data using the same criteria
+    const sortField = sortBy;
+    const sortMultiplier = sortOrder === 'desc' ? -1 : 1;
+    
+    const sortedPrevData = [...previousMonthData].sort((a, b) => 
+      (a[sortField] - b[sortField]) * sortMultiplier
+    );
+    
+    // Create a map of rep name to previous rank
+    return sortedPrevData.reduce((acc, item, index) => {
+      acc[item.rep] = index + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [previousMonthData, sortBy, sortOrder, showChangeIndicators]);
+
   return (
     <div className="overflow-x-auto -mx-3 md:mx-0 scrollbar-hide relative">
       <Table>
@@ -137,6 +156,11 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
             </TableRow>
           ) : displayData.length > 0 ? (
             displayData.map((item, index) => {
+              // Calculate rank change
+              const currentRank = index + 1;
+              const previousRank = prevRankings[item.rep] || currentRank;
+              const rankChange = previousRank - currentRank;
+              
               const previousSpend = getPreviousValue(item.rep, 'spend');
               const previousProfit = getPreviousValue(item.rep, 'profit');
               const previousMargin = getPreviousValue(item.rep, 'margin');
@@ -148,6 +172,32 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                   <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium sticky left-0 z-10 bg-gray-900/90 backdrop-blur-sm border-r border-white/5">
                     <div className="flex items-center">
                       <span>{item.rep}</span>
+                      {showChangeIndicators && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="ml-1.5">
+                                {rankChange > 0 ? (
+                                  <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                                ) : rankChange < 0 ? (
+                                  <ArrowDownRight className="h-4 w-4 text-finance-red" />
+                                ) : (
+                                  <Minus className="h-4 w-4 text-finance-gray font-bold" />
+                                )}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-white/10 text-white">
+                              <p>
+                                {rankChange > 0
+                                  ? `Up ${rankChange} ${rankChange === 1 ? 'position' : 'positions'} (was ${previousRank})`
+                                  : rankChange < 0
+                                  ? `Down ${Math.abs(rankChange)} ${Math.abs(rankChange) === 1 ? 'position' : 'positions'} (was ${previousRank})`
+                                  : 'Position unchanged'}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
                   </TableCell>
                   
