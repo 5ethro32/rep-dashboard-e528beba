@@ -9,6 +9,17 @@ type DbTableName = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_
 // Views
 type DbViewName = 'combined_rep_performance';
 
+// Helper function to extract numeric values from different field name variations
+function extractNumericValue(item: any, fieldNames: string[]): number {
+  for (const fieldName of fieldNames) {
+    const value = item[fieldName];
+    if (value !== undefined) {
+      return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+    }
+  }
+  return 0;
+}
+
 // Helper function to fetch all records from a table using pagination
 async function fetchAllRecords(tableName: DbTableName) {
   let allRecords: any[] = [];
@@ -220,54 +231,6 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     });
     throw error;
   }
-};
-
-export const calculateRawMtdSummary = (data: any[]): SummaryData => {
-  let totalSpend = 0;
-  let totalProfit = 0;
-  let totalPacks = 0;
-  let totalAccounts = 0;
-  let activeAccounts = 0;
-  const accountSet = new Set<string>();
-  const activeAccountSet = new Set<string>();
-  
-  data.forEach(item => {
-    // Skip entries where Rep/rep_name is a department name to avoid double-counting
-    const repName = item.Rep || item.rep_name;
-    if (repName && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(repName)) {
-      return;
-    }
-
-    const spend = extractNumericValue(item, ['Spend', 'spend']);
-    const profit = extractNumericValue(item, ['Profit', 'profit']);
-    const packs = extractNumericValue(item, ['Packs', 'packs']);
-    
-    const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
-    
-    totalSpend += spend;
-    totalProfit += profit;
-    totalPacks += packs;
-    
-    if (accountRef) {
-      accountSet.add(accountRef);
-      totalAccounts = accountSet.size;
-      if (spend > 0) {
-        activeAccountSet.add(accountRef);
-        activeAccounts = activeAccountSet.size;
-      }
-    }
-  });
-  
-  const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
-  
-  return {
-    totalSpend,
-    totalProfit,
-    totalPacks,
-    averageMargin,
-    totalAccounts,
-    activeAccounts
-  };
 };
 
 function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {

@@ -1,5 +1,16 @@
 import { SalesDataItem, RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 
+// Helper function to extract numeric values from different field name variations
+function extractNumericValue(item: any, fieldNames: string[]): number {
+  for (const fieldName of fieldNames) {
+    const value = item[fieldName];
+    if (value !== undefined) {
+      return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
+    }
+  }
+  return 0;
+}
+
 export function processRepData(data: SalesDataItem[]): RepData[] {
   const repMap = new Map<string, {
     rep: string;
@@ -213,6 +224,11 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   const activeAccountSet = new Set<string>();
   
   data.forEach(item => {
+    const repName = item.Rep || item.rep_name;
+    if (repName && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(repName)) {
+      return;
+    }
+
     const spend = extractNumericValue(item, ['Spend', 'spend']);
     const profit = extractNumericValue(item, ['Profit', 'profit']);
     const packs = extractNumericValue(item, ['Packs', 'packs']);
@@ -364,14 +380,4 @@ export function processRawData(rawData: any[]): RepData[] {
     profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
     activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
   }));
-}
-
-function extractNumericValue(item: any, fieldNames: string[]): number {
-  for (const fieldName of fieldNames) {
-    const value = item[fieldName];
-    if (value !== undefined) {
-      return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
-    }
-  }
-  return 0;
 }
