@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
+import { CustomerCommand } from './CustomerCommand';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
 import DatePickerField from './DatePickerField';
 
@@ -89,10 +89,11 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <ImprovedCustomerSelector
+            <CustomerCommand
               customers={safeCustomers}
               selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}
+              className="border-input"
             />
           </div>
 
