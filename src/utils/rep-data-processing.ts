@@ -269,51 +269,57 @@ export function processRawData(rawData: any[]): RepData[] {
     
     const entryId = `${accountRef}-${index}`;
 
+    // Determine if this is February data by checking for the characteristic field names
+    const isFebruaryData = item.hasOwnProperty('Department') && !item.hasOwnProperty('rep_type');
+    
     let repName = null;
-    
-    const subRep = item['Sub-Rep'] || item.sub_rep || item["SUB-REP"];
-    
-    const mainRep = item.Rep || item.rep || item.rep_name || item.REP;
-    
-    if (mainRep && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep) && 
-        subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
-      repName = subRep.trim();
-      
-      // Debug Craig's data
-      if (subRep.trim() === 'Craig McDowall') {
-        console.log('Found Craig as Sub-Rep in:', mainRep, 'department. Data:', {
-          spend,
-          profit,
-          packs,
-          accountRef
-        });
+    const department = item.Department || item.rep_type;
+    const subRep = item['Sub-Rep'] || item.sub_rep;
+    const mainRep = item.Rep || item.rep || item.rep_name;
+
+    if (isFebruaryData) {
+      // Special handling for February data
+      if (department === 'REVA' || department === 'Wholesale' || department === 'WHOLESALE') {
+        // For REVA and Wholesale in February, only use Sub-Rep
+        if (subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
+          repName = subRep.trim();
+          console.log('Feb data: Using Sub-Rep for REVA/Wholesale:', {
+            department,
+            repName,
+            spend,
+            profit
+          });
+        }
+      } else {
+        // For Retail in February, use the main Rep field
+        if (mainRep && mainRep.trim() !== '') {
+          repName = mainRep.trim();
+          console.log('Feb data: Using Rep for Retail:', {
+            department,
+            repName,
+            spend,
+            profit
+          });
+        }
       }
-      
-      processedEntries.add(entryId);
-    } 
-    else if (!processedEntries.has(entryId) && 
-             mainRep && !['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep)) {
-      repName = mainRep.trim();
-      
-      // Debug Craig's data
-      if (mainRep.trim() === 'Craig McDowall') {
-        console.log('Found Craig as Main Rep. Data:', {
-          spend,
-          profit,
-          packs,
-          accountRef
-        });
+    } else {
+      // Keep existing logic for March and April
+      if (mainRep && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep) && 
+          subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE') {
+        repName = subRep.trim();
+        processedEntries.add(entryId);
+      } 
+      else if (!processedEntries.has(entryId) && 
+               mainRep && !['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep)) {
+        repName = mainRep.trim();
+        processedEntries.add(entryId);
       }
-      
-      processedEntries.add(entryId);
     }
 
     if (!repName) {
       console.log('Skipping item without valid Rep name:', item);
       return;
     }
-
-    repName = repName.trim();
 
     if (!repMap.has(repName)) {
       repMap.set(repName, {
