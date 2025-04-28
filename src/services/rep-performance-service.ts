@@ -222,6 +222,54 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
   }
 };
 
+export const calculateRawMtdSummary = (data: any[]): SummaryData => {
+  let totalSpend = 0;
+  let totalProfit = 0;
+  let totalPacks = 0;
+  let totalAccounts = 0;
+  let activeAccounts = 0;
+  const accountSet = new Set<string>();
+  const activeAccountSet = new Set<string>();
+  
+  data.forEach(item => {
+    // Skip entries where Rep/rep_name is a department name to avoid double-counting
+    const repName = item.Rep || item.rep_name;
+    if (repName && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(repName)) {
+      return;
+    }
+
+    const spend = extractNumericValue(item, ['Spend', 'spend']);
+    const profit = extractNumericValue(item, ['Profit', 'profit']);
+    const packs = extractNumericValue(item, ['Packs', 'packs']);
+    
+    const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
+    
+    totalSpend += spend;
+    totalProfit += profit;
+    totalPacks += packs;
+    
+    if (accountRef) {
+      accountSet.add(accountRef);
+      totalAccounts = accountSet.size;
+      if (spend > 0) {
+        activeAccountSet.add(accountRef);
+        activeAccounts = activeAccountSet.size;
+      }
+    }
+  });
+  
+  const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+  
+  return {
+    totalSpend,
+    totalProfit,
+    totalPacks,
+    averageMargin,
+    totalAccounts,
+    activeAccounts
+  };
+};
+
 function calculateRepChanges(currentData: RepData[], previousData: RepData[]) {
   const changes: Record<string, any> = {};
   
