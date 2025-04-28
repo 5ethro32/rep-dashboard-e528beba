@@ -222,10 +222,16 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   let activeAccounts = 0;
   const accountSet = new Set<string>();
   const activeAccountSet = new Set<string>();
+
+  // Debug: Log the total records before filtering
+  console.log('Total records before filtering:', data.length);
   
   data.forEach(item => {
-    const repName = item.Rep || item.rep_name;
-    if (repName && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(repName)) {
+    // Check both Department and rep_type fields to handle different data sources
+    const department = item.Department || item.rep_type;
+    
+    // Skip if item represents a department summary
+    if (department && ['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(department)) {
       return;
     }
 
@@ -250,6 +256,16 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   });
   
   const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+  
+  // Debug: Log the summary data
+  console.log('Raw Summary Data:', {
+    totalSpend,
+    totalProfit,
+    totalPacks,
+    averageMargin,
+    totalAccounts,
+    activeAccounts
+  });
   
   return {
     totalSpend,
