@@ -33,28 +33,28 @@ export const useComparisonData = (
         monthAndTab: `${selectedMonth}-${tab}`,
         beforeFilter: {
           dataCount: data.length,
-          retailCount: data.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
-          revaCount: data.filter(d => d.rep === 'REVA').length,
-          wholesaleCount: data.filter(d => d.rep === 'Wholesale').length
+          retailCount: data.filter(d => !['REVA', 'WHOLESALE'].includes(d.rep.toUpperCase())).length,
+          revaCount: data.filter(d => d.rep.toUpperCase() === 'REVA').length,
+          wholesaleCount: data.filter(d => d.rep.toUpperCase() === 'WHOLESALE').length
         },
         afterFilter: {
           dataCount: filteredData.length,
-          retailCount: filteredData.filter(d => !['REVA', 'Wholesale'].includes(d.rep)).length,
-          revaCount: filteredData.filter(d => d.rep === 'REVA').length,
-          wholesaleCount: filteredData.filter(d => d.rep === 'Wholesale').length
+          retailCount: filteredData.filter(d => !['REVA', 'WHOLESALE'].includes(d.rep.toUpperCase())).length,
+          revaCount: filteredData.filter(d => d.rep.toUpperCase() === 'REVA').length,
+          wholesaleCount: filteredData.filter(d => d.rep.toUpperCase() === 'WHOLESALE').length
         }
       });
     };
 
     // Helper function to filter data based on tab
     const filterDataByTab = (data: RepData[], tab: string): RepData[] => {
-      switch (tab) {
+      switch (tab.toLowerCase()) {
         case 'rep':
-          return data.filter(d => !['REVA', 'Wholesale'].includes(d.rep));
+          return data.filter(d => !['REVA', 'WHOLESALE'].includes(d.rep.toUpperCase()));
         case 'reva':
-          return data.filter(d => d.rep === 'REVA');
+          return data.filter(d => d.rep.toUpperCase() === 'REVA');
         case 'wholesale':
-          return data.filter(d => d.rep === 'Wholesale');
+          return data.filter(d => d.rep.toUpperCase() === 'WHOLESALE');
         default:
           return data;
       }
