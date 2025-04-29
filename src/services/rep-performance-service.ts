@@ -83,7 +83,7 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     // March Data from sales_data
     const marchData = await fetchAllRecords('sales_data');
     
-    // February Data from sales_data_februrary - always fetch this for both view and comparison
+    // February Data from sales_data_februrary
     const februaryData = await fetchAllRecords('sales_data_februrary');
     
     // March Rolling Data (for April comparisons) from march_rolling
@@ -126,10 +126,11 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
     
-    // CRITICAL FIX: Calculate February raw summary consistently for both view and comparison
-    console.log("Calculating RAW February summary from", februaryData?.length || 0, "records");
+    // CRITICAL FIX: Explicitly calculate February raw summary 
+    // This ensures we have the exact summary values as seen in the February view
+    console.log("Calculating raw February summary from", februaryData?.length || 0, "records");
     const rawFebSummary = calculateRawMtdSummary(februaryData || [], 'February');
-    console.log("Raw February summary calculated for March comparison:", rawFebSummary);
+    console.log("Raw February summary calculated:", rawFebSummary);
     
     // March Rolling data processing (for April comparison) from march_rolling
     console.log('Processing March Rolling data by department...');
@@ -184,14 +185,9 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     // Log calculated changes
     console.log("March vs February changes:", marchVsFebChanges);
     
-    // Fix: Calculate rep-level changes with improved handling
+    // Fix: Calculate rep-level changes with improved handling for extreme values
     const aprRepChanges = calculateRepChanges(aprRetailData, marchRollingRetailData);
     const marchRepChanges = calculateRepChanges(marchRetailData, febRetailData);
-    
-    // IMPORTANT: Log comparison between raw February and processed Feb summaries to verify consistency
-    console.log("Consistency check - February data:");
-    console.log("Raw Feb Summary:", rawFebSummary);
-    console.log("Processed Feb Retail Summary:", febRetailData);
     
     return {
       // April data
@@ -210,15 +206,16 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
       marchRevaValues: marchRevaSummary,
       marchWholesaleValues: marchWholesaleSummary,
       
-      // February data - always use the same raw data for both view and comparison
+      // February data
       febRepData: febRetailData,
       febRevaData: febRevaData,
       febWholesaleData: febWholesaleData,
-      febBaseSummary: rawFebSummary, // Use raw summary consistently 
+      febBaseSummary: rawFebSummary,
       febRevaValues: febRevaSummary,
       febWholesaleValues: febWholesaleSummary,
       
-      // CRITICAL FIX: Always provide the same raw February summary for direct comparison
+      // CRITICAL FIX: Add raw February summary directly 
+      // This ensures we're using the exact same data for February view and March comparison
       rawFebSummary,
       
       // Changes

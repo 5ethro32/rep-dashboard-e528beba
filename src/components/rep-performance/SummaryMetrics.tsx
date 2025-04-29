@@ -66,16 +66,25 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     };
   };
 
-  // SIMPLIFIED: Get previous value directly from previousMonthSummary without additional logic
+  // IMPROVED: Get previous value with better logging and validation for February data comparisons
   const getPreviousValue = (metric: keyof typeof summary) => {
     // Make sure we have valid previous month data
-    if (previousMonthSummary && previousMonthSummary[metric] !== undefined) {
-      const prevValue = previousMonthSummary[metric];
-      console.log(`Using direct previousMonthSummary for ${metric} (${selectedMonth}):`, prevValue);
-      return prevValue;
+    if (previousMonthSummary) {
+      // Check if the data exists for this metric
+      if (previousMonthSummary[metric] !== undefined) {
+        const prevValue = previousMonthSummary[metric];
+        console.log(`Using direct previousMonthSummary for ${metric} (${selectedMonth} comparing to previous month):`, prevValue);
+        return prevValue;
+      } else {
+        console.warn(`Missing ${metric} in previousMonthSummary data for ${selectedMonth} view`);
+      }
+    } else {
+      console.warn(`No previousMonthSummary data available for ${selectedMonth} view`);
     }
     
-    console.warn(`No previousMonthSummary data available for ${metric} in ${selectedMonth} view`);
+    // Always return the current metric value if no previous value is available
+    // This ensures we don't show NaN or incorrect percentage changes
+    console.log(`Falling back to current value for ${metric} (${selectedMonth}):`, summary[metric]);
     return summary[metric];
   };
 
