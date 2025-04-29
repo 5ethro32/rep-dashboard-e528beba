@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
@@ -210,7 +211,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <TrendingUp size={16} className="text-[#ea384c] mr-2" />
-            Most Improved Performance
+            Most Improved Rep (By Profit)
           </div>
           <div className="text-2xl md:text-3xl font-bold mb-1">{mostImprovedRep.name}</div>
           <div className="text-sm text-white/50">
