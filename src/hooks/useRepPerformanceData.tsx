@@ -763,5 +763,8 @@ export const useRepPerformanceData = () => {
     aprBaseSummary,
     aprRevaValues,
     aprWholesaleValues,
+    febBaseSummary,
+    febRevaValues,
+    febWholesaleValues,
   };
 };
