@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
-import { CustomerCommand } from './CustomerCommand';
+import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import DatePickerField from './DatePickerField';
 
 interface AddVisitDialogProps {
@@ -145,11 +146,10 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <CustomerCommand
+            <ImprovedCustomerSelector
               customers={safeCustomers}
               selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}
-              className="border-input"
             />
           </div>
 

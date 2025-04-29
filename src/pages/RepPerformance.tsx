@@ -1,6 +1,6 @@
-
-import React, { useEffect } from 'react';
+import React from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
+import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
 import PerformanceContent from '@/components/rep-performance/PerformanceContent';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
@@ -16,6 +16,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const RepPerformance = () => {
   const {
+    includeRetail,
+    setIncludeRetail,
+    includeReva,
+    setIncludeReva,
+    includeWholesale, 
+    setIncludeWholesale,
     sortBy,
     sortOrder,
     summary,
@@ -26,85 +32,23 @@ const RepPerformance = () => {
     handleSort,
     isLoading,
     loadDataFromSupabase,
+    getFebValue,
     selectedMonth,
     setSelectedMonth,
-    dataLoaded,
-    monthChangeInProgress,
     baseSummary,
     revaValues,
     wholesaleValues,
-    getFebValue,
-    aprRepData,
-    marchRepData,
-    febRepData,
-    aprRevaRepData,
-    marchRevaRepData,
-    febRevaRepData,
-    aprWholesaleRepData,
-    marchWholesaleRepData,
-    febWholesaleRepData,
-    marchBaseSummary,
-    febBaseSummary,
-    febDirectSummary,
-    rawFebSummary  
+    aprBaseSummary,
+    aprRevaValues,
+    aprWholesaleValues,
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
   const isMobile = useIsMobile();
   
-  useEffect(() => {
-    console.log('RepPerformance: Initial data load starting');
-  }, []);
-  
-  const includeRetail = true;
-  const includeReva = true;
-  const includeWholesale = true;
-  
-  // Improved getPreviousMonthSummary that's properly synchronized with month changes
-  const getPreviousMonthSummary = () => {
-    // If month change is in progress or data not loaded, return undefined
-    if (monthChangeInProgress || !dataLoaded) {
-      console.log("Month change in progress or data not fully loaded, showing loading state");
-      return undefined;
-    }
-    
-    // Different logic based on selected month
-    if (selectedMonth === 'April') {
-      console.log("Using March data as previous month for April view:", marchBaseSummary);
-      return marchBaseSummary;
-    } else if (selectedMonth === 'March') {
-      // Always use rawFebSummary for March comparisons
-      console.log("Using raw February summary for March comparison:", rawFebSummary);
-      
-      // Ensure we have valid data
-      if (!rawFebSummary || typeof rawFebSummary !== 'object') {
-        console.warn("Invalid rawFebSummary data for March comparison, falling back to febBaseSummary:", febBaseSummary);
-        return febBaseSummary;
-      }
-      
-      return rawFebSummary;
-    }
-    
-    console.log("No previous month data available for", selectedMonth);
-    return undefined;
-  };
-  
-  // Get previous month summary and log for debugging
-  const previousMonthSummary = getPreviousMonthSummary();
-  console.log("Previous month summary for", selectedMonth, ":", previousMonthSummary);
-  
-  const renderChangeIndicator = (
-    changeValue: number, 
-    size?: string, 
-    metricType?: string, 
-    repName?: string, 
-    metricValue?: number
-  ) => {
-    return RenderChangeIndicator({ 
-      changeValue, 
-      size: size as "small" | "large" | undefined 
-    });
-  };
+  const currentBaseSummary = selectedMonth === 'April' ? aprBaseSummary : baseSummary;
+  const currentRevaValues = selectedMonth === 'April' ? aprRevaValues : revaValues;
+  const currentWholesaleValues = selectedMonth === 'April' ? aprWholesaleValues : wholesaleValues;
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -116,7 +60,6 @@ const RepPerformance = () => {
         <PerformanceHeader 
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
-          isLoading={isLoading || monthChangeInProgress}
         />
         
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
@@ -150,15 +93,25 @@ const RepPerformance = () => {
           </div>
         </div>
 
+        <PerformanceFilters
+          includeRetail={includeRetail}
+          setIncludeRetail={setIncludeRetail}
+          includeReva={includeReva}
+          setIncludeReva={setIncludeReva}
+          includeWholesale={includeWholesale}
+          setIncludeWholesale={setIncludeWholesale}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+        />
+
         <SummaryMetrics 
           summary={summary}
           summaryChanges={summaryChanges}
-          previousMonthSummary={previousMonthSummary}
-          isLoading={isLoading || monthChangeInProgress || !dataLoaded}
-          selectedMonth={selectedMonth}
+          isLoading={isLoading}
           includeRetail={includeRetail}
           includeReva={includeReva}
           includeWholesale={includeWholesale}
+          selectedMonth={selectedMonth}
         />
         
         <PerformanceContent
@@ -172,26 +125,26 @@ const RepPerformance = () => {
           formatCurrency={formatCurrency}
           formatPercent={formatPercent}
           formatNumber={formatNumber}
-          renderChangeIndicator={renderChangeIndicator}
-          isLoading={isLoading || monthChangeInProgress || !dataLoaded}
+          renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
+            const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
+            return (
+              <RenderChangeIndicator 
+                changeValue={changeValue} 
+                size={size === "small" ? "small" : "large"}
+                previousValue={previousValue}
+              />
+            );
+          }}
+          isLoading={isLoading}
+          getFebValue={getFebValue}
           selectedMonth={selectedMonth}
           summary={summary}
-          baseSummary={baseSummary}
-          revaValues={revaValues}
-          wholesaleValues={wholesaleValues}
           includeRetail={includeRetail}
           includeReva={includeReva}
           includeWholesale={includeWholesale}
-          getFebValue={getFebValue}
-          aprRepData={aprRepData}
-          marchRepData={marchRepData}
-          febRepData={febRepData}
-          aprRevaRepData={aprRevaRepData}
-          marchRevaRepData={marchRevaRepData}
-          febRevaRepData={febRevaRepData}
-          aprWholesaleRepData={aprWholesaleRepData}
-          marchWholesaleRepData={marchWholesaleRepData}
-          febWholesaleRepData={febWholesaleRepData}
+          baseSummary={currentBaseSummary}
+          revaValues={currentRevaValues}
+          wholesaleValues={currentWholesaleValues}
         />
       </div>
       <ChatInterface selectedMonth={selectedMonth} />

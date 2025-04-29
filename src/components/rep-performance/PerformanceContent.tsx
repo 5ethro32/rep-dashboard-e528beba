@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
@@ -6,7 +7,6 @@ import RepProfitShare from '@/components/RepProfitShare';
 import RepMarginComparison from '@/components/RepMarginComparison';
 import DepartmentProfitShare from '@/components/DepartmentProfitShare';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useComparisonData } from '@/hooks/useComparisonData';
 
 interface PerformanceContentProps {
   tabValues: string[];
@@ -43,15 +43,6 @@ interface PerformanceContentProps {
   wholesaleValues?: {
     totalProfit: number;
   };
-  aprRepData: any[];
-  marchRepData: any[];
-  febRepData: any[];
-  aprRevaRepData: any[];
-  marchRevaRepData: any[];
-  febRevaRepData: any[];
-  aprWholesaleRepData: any[];
-  marchWholesaleRepData: any[];
-  febWholesaleRepData: any[];
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -75,41 +66,9 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   includeWholesale,
   baseSummary,
   revaValues,
-  wholesaleValues,
-  aprRepData,
-  marchRepData,
-  febRepData,
-  aprRevaRepData,
-  marchRevaRepData,
-  febRevaRepData,
-  aprWholesaleRepData,
-  marchWholesaleRepData,
-  febWholesaleRepData
+  wholesaleValues
 }) => {
   const isMobile = useIsMobile();
-  
-  const { getCurrentAndPreviousData } = useComparisonData(
-    selectedMonth,
-    aprRepData,
-    marchRepData,
-    febRepData,
-    aprRevaRepData,
-    marchRevaRepData,
-    febRevaRepData,
-    aprWholesaleRepData,
-    marchWholesaleRepData,
-    febWholesaleRepData
-  );
-
-  React.useEffect(() => {
-    if (selectedMonth && (aprRepData || marchRepData || febRepData)) {
-      console.log(`PerformanceContent: Debugging comparison data for ${selectedMonth}`);
-      tabValues.forEach(tab => {
-        const { currentData, previousData } = getCurrentAndPreviousData(tab);
-        console.log(`Tab: ${tab}, Current data: ${currentData.length}, Previous data: ${previousData.length}`);
-      });
-    }
-  }, [selectedMonth, aprRepData, marchRepData, febRepData, tabValues]);
 
   const getTabLabel = (tabValue: string) => {
     switch (tabValue) {
@@ -176,7 +135,6 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                     <span className="ml-1 text-finance-gray italic">No comparison data available for January.</span>
                   )}
                 </p>
-                
                 <PerformanceTable 
                   displayData={sortData(getActiveData(tabValue))}
                   repChanges={repChanges}
@@ -188,12 +146,13 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   formatNumber={formatNumber}
                   renderChangeIndicator={showChangeIndicators ? renderChangeIndicator : () => null}
                   isLoading={isLoading}
+                  getFebValue={getFebValue}
                   showChangeIndicators={showChangeIndicators}
-                  previousMonthData={getCurrentAndPreviousData(tabValue).previousData}
                 />
               </div>
             </div>
             
+            {/* Profit Distribution and Margin Comparison side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
               <div className="h-64 md:h-80">
                 <RepProfitChart 
@@ -216,6 +175,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
               </div>
             </div>
             
+            {/* Profit Share charts side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
               <div className="h-80 md:h-96">
                 <RepProfitShare 

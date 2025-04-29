@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronUp, ChevronDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
@@ -5,14 +6,12 @@ interface RenderChangeIndicatorProps {
   changeValue: number;
   size?: "small" | "large";
   previousValue?: number | string;
-  showPreviousValue?: boolean;
 }
 
 export const RenderChangeIndicator: React.FC<RenderChangeIndicatorProps> = ({ 
   changeValue,
   size = "small",
-  previousValue,
-  showPreviousValue = false
+  previousValue
 }) => {
   const isPositive = changeValue > 0;
   
@@ -21,6 +20,9 @@ export const RenderChangeIndicator: React.FC<RenderChangeIndicatorProps> = ({
     return (
       <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
         <Minus className={size === "small" ? "h-4 w-4" : "h-3.5 w-3.5 md:h-4 md:w-4"} />
+        {previousValue !== undefined && (
+          <span className="text-2xs ml-1 text-finance-gray">{previousValue}</span>
+        )}
       </span>
     );
   }
@@ -32,6 +34,9 @@ export const RenderChangeIndicator: React.FC<RenderChangeIndicatorProps> = ({
           <ChevronUp className="h-4 w-4" /> : 
           <ChevronDown className="h-4 w-4" />
         }
+        {previousValue !== undefined && (
+          <span className="text-2xs ml-1 text-finance-gray">{previousValue}</span>
+        )}
       </span>
     );
   } else {
@@ -42,7 +47,7 @@ export const RenderChangeIndicator: React.FC<RenderChangeIndicatorProps> = ({
           <ArrowDown className="h-3.5 w-3.5 md:h-4 md:w-4" />
         }
         <span className="text-xs font-medium ml-0.5">{Math.abs(changeValue).toFixed(1)}%</span>
-        {showPreviousValue && previousValue !== undefined && (
+        {previousValue !== undefined && (
           <span className="text-2xs ml-1.5 text-finance-gray">({previousValue})</span>
         )}
       </span>

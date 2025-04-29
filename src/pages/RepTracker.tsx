@@ -42,7 +42,6 @@ const RepTracker: React.FC = () => {
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      // Using "sales_data" table instead of "March Data" since it has account_name and account_ref fields
       const { data: salesData, error } = await supabase
         .from('sales_data')
         .select('account_name, account_ref')

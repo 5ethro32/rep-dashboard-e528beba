@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -13,7 +12,6 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// Updated table type to match actual database tables
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_rolling';
 
 type DataItem = {
@@ -84,7 +82,7 @@ const AccountPerformance = () => {
       switch (selectedMonth) {
         case 'April':
           currentTable = "mtd_daily";
-          previousTable = "march_rolling";
+          previousTable = "march_rolling";  // Changed from "sales_data" to "march_rolling"
           break;
         case 'March':
           currentTable = "sales_data";
@@ -102,11 +100,43 @@ const AccountPerformance = () => {
       console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
       
       let currentData: DataItem[] = [];
-      currentData = await fetchAllRecordsFromTable(currentTable);
+      if (currentTable === "sales_data") {
+        const rawData = await fetchAllRecordsFromTable(currentTable);
+        
+        currentData = rawData.map((item: any) => ({
+          "Account Name": item.account_name,
+          "Account Ref": item.account_ref,
+          "Rep": item.rep_name,
+          "Sub-Rep": item.sub_rep,
+          "Profit": item.profit,
+          "Spend": item.spend,
+          "Margin": item.margin,
+          "Packs": item.packs,
+          "Department": item.rep_type
+        }));
+      } else {
+        currentData = await fetchAllRecordsFromTable(currentTable);
+      }
       
       let previousData: DataItem[] = [];
       if (previousTable) {
-        previousData = await fetchAllRecordsFromTable(previousTable);
+        if (previousTable === "sales_data") {
+          const rawData = await fetchAllRecordsFromTable(previousTable);
+          
+          previousData = rawData.map((item: any) => ({
+            "Account Name": item.account_name,
+            "Account Ref": item.account_ref,
+            "Rep": item.rep_name,
+            "Sub-Rep": item.sub_rep,
+            "Profit": item.profit,
+            "Spend": item.spend,
+            "Margin": item.margin,
+            "Packs": item.packs,
+            "Department": item.rep_type
+          }));
+        } else {
+          previousData = await fetchAllRecordsFromTable(previousTable);
+        }
       }
       
       console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} and ${previousData?.length || 0} for previous month`);

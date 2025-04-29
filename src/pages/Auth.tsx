@@ -23,8 +23,11 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      console.log(`Attempting ${isLogin ? 'login' : 'signup'} with email: ${email}`);
-      
+      // Add email domain validation before attempting signup or login
+      if (!email.toLowerCase().endsWith('@avergenerics.co.uk')) {
+        throw new Error('Only avergenerics.co.uk email addresses are allowed.');
+      }
+
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -40,53 +43,25 @@ const Auth = () => {
         navigate('/rep-performance');
         
       } else {
-        console.log('Attempting signup with:', email);
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: {
-              email_domain: email.split('@')[1], // Add email domain as metadata
-            }
           }
         });
         
         if (error) throw error;
         
-        console.log('Signup successful, data:', data);
         toast({
           title: "Success!",
           description: "Registration successful. Please check your email for verification.",
         });
-        
-        // Auto-login if email verification is disabled
-        if (data?.session) {
-          navigate('/rep-performance');
-        }
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
-      
-      // Log the complete error for debugging
-      console.error('Full error object:', JSON.stringify(error, null, 2));
-      
-      let errorMessage = error.message || "Authentication failed";
-      
-      // Handle specific errors with more user-friendly messages
-      if (errorMessage.includes('avergenerics.co.uk')) {
-        errorMessage = "Only avergenerics.co.uk email addresses are allowed.";
-      } else if (errorMessage.includes('User already registered')) {
-        errorMessage = "This email is already registered. Please sign in instead.";
-      } else if (errorMessage.includes('Invalid login credentials')) {
-        errorMessage = "Invalid email or password. Please try again.";
-      } else if (errorMessage.includes('saving new user') || errorMessage.includes('failed')) {
-        errorMessage = "Registration failed. Please ensure your email address is spelled correctly and try again.";
-      }
-      
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error.message || "Authentication failed",
         variant: "destructive",
       });
     } finally {
@@ -124,7 +99,7 @@ const Auth = () => {
                 <Input 
                   id="email"
                   type="email" 
-                  placeholder="name@avergenerics.co.uk" 
+                  placeholder="name@company.com" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

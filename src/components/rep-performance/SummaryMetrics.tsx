@@ -16,12 +16,6 @@ interface SummaryMetricsProps {
     averageMargin: number;
     totalPacks: number;
   };
-  previousMonthSummary?: {
-    totalSpend: number;
-    totalProfit: number;
-    averageMargin: number;
-    totalPacks: number;
-  };
   isLoading?: boolean;
   includeRetail: boolean;
   includeReva: boolean;
@@ -32,7 +26,6 @@ interface SummaryMetricsProps {
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ 
   summary, 
   summaryChanges, 
-  previousMonthSummary,
   isLoading,
   includeRetail,
   includeReva,
@@ -41,45 +34,18 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
 }) => {
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
-  // Track if data is available for comparison
-  const [dataAvailable, setDataAvailable] = useState(false);
 
-  // Show change indicators for months with comparison data
+  // Only show change indicators if we're viewing March or April data (compared to previous month)
   const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April';
 
-  // Update changes and data availability status when props change
   useEffect(() => {
-    console.log("SummaryMetrics: Props changed, updating state", {
-      selectedMonth,
-      summaryChanges,
-      previousMonthSummary
-    });
-    
-    // Recalculate changes whenever parent props change
+    // Recalculate changes whenever toggle states change
     setFilteredChanges(summaryChanges);
-    
-    // Check if we have valid comparison data
-    const hasValidData = previousMonthSummary !== undefined && 
-                         previousMonthSummary !== null &&
-                         Object.keys(previousMonthSummary).length > 0;
-    setDataAvailable(hasValidData);
-    
-    console.log("SummaryMetrics useEffect: Summary Data:", summary);
-    console.log("SummaryMetrics useEffect: Summary Changes:", summaryChanges);
-    console.log("SummaryMetrics useEffect: Previous Month Summary:", previousMonthSummary);
-    console.log("SummaryMetrics useEffect: Data available for comparison:", hasValidData);
-  }, [summaryChanges, summary, previousMonthSummary, selectedMonth, includeRetail, includeReva, includeWholesale]);
+  }, [summaryChanges, includeRetail, includeReva, includeWholesale]);
 
   // Create a change indicator for the KPI cards
   const renderChangeIndicator = (changeValue: number) => {
-    // While loading, don't show indicators
-    if (isLoading) return undefined;
-    
-    // Check if we have valid data and should show indicators
-    if (!dataAvailable || !showChangeIndicators) return undefined;
-    
-    // Safety check to avoid NaN or null values
-    if (changeValue === undefined || changeValue === null || isNaN(changeValue) || Math.abs(changeValue) < 0.1) return undefined;
+    if (!showChangeIndicators || Math.abs(changeValue) < 0.1) return undefined; // No significant change or not showing changes
     
     return {
       value: `${Math.abs(changeValue).toFixed(1)}%`,
@@ -87,25 +53,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     };
   };
 
-  // Get previous value with better logging and validation
-  const getPreviousValue = (metric: keyof typeof summary) => {
-    // Make sure we have valid previous month data
-    if (previousMonthSummary && dataAvailable) {
-      // Check if the data exists for this metric
-      if (previousMonthSummary[metric] !== undefined) {
-        const prevValue = previousMonthSummary[metric];
-        console.log(`Using direct previousMonthSummary for ${metric} (${selectedMonth} comparing to previous month):`, prevValue);
-        return prevValue;
-      } else {
-        console.warn(`Missing ${metric} in previousMonthSummary data for ${selectedMonth} view`);
-      }
-    } else {
-      console.warn(`No previousMonthSummary data available for ${selectedMonth} view`);
-    }
-    
-    // Fall back to current metric value if no previous value is available
-    console.log(`Falling back to current value for ${metric} (${selectedMonth}):`, summary[metric]);
-    return summary[metric];
+  // Calculate previous value based on current value and percent change
+  const getPreviousValue = (current: number, changePercent: number) => {
+    if (!showChangeIndicators || !changePercent || Math.abs(changePercent) < 0.1) return current;
+    return current / (1 + changePercent / 100);
   };
 
   // Calculate comparison month for subtitle
@@ -115,67 +66,37 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     return '';
   };
 
-  // Enhanced logging for metrics data flow
-  console.log("Rendering SummaryMetrics with data:", { 
-    selectedMonth,
+  console.log("Rendering SummaryMetrics with data and filter state:", { 
     summary, 
     summaryChanges: filteredChanges,
-    previousMonthSummary,
-    showChangeIndicators,
-    dataAvailable,
-    filters: { includeRetail, includeReva, includeWholesale }
+    filters: { includeRetail, includeReva, includeWholesale },
+    selectedMonth,
+    showChangeIndicators 
   });
-
-  // Ensure we have valid data to prevent crashes
-  const safeTotal = {
-    spend: summary?.totalSpend || 0,
-    profit: summary?.totalProfit || 0,
-    margin: summary?.averageMargin || 0,
-    packs: summary?.totalPacks || 0
-  };
-
-  const safeChanges = {
-    spend: filteredChanges?.totalSpend || 0,
-    profit: filteredChanges?.totalProfit || 0, 
-    margin: filteredChanges?.averageMargin || 0,
-    packs: filteredChanges?.totalPacks || 0
-  };
-
-  // Determine what to display in the subtitle
-  const getSubtitleText = (metric: keyof typeof summary) => {
-    if (isLoading) return undefined;
-    
-    if (showChangeIndicators && dataAvailable) {
-      return `${getComparisonMonthText()}: ${
-        metric === 'totalSpend' ? formatCurrency(getPreviousValue(metric), 0) :
-        metric === 'totalProfit' ? formatCurrency(getPreviousValue(metric), 0) :
-        metric === 'averageMargin' ? formatPercent(getPreviousValue(metric)) :
-        formatNumber(getPreviousValue(metric))
-      }`;
-    } else if (selectedMonth === 'February') {
-      return 'No comparison data available';
-    } 
-    
-    return undefined;
-  };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
       {/* Revenue Card */}
       <MetricCard
         title="Revenue"
-        value={formatCurrency(safeTotal.spend, 0)}
-        change={renderChangeIndicator(safeChanges.spend)}
-        subtitle={getSubtitleText('totalSpend')}
+        value={formatCurrency(summary.totalSpend || 0, 0)}
+        change={renderChangeIndicator(filteredChanges.totalSpend)}
+        subtitle={showChangeIndicators ? 
+          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalSpend || 0, filteredChanges.totalSpend), 0)}` : 
+          selectedMonth === 'February' ? 'No comparison data available' : undefined
+        }
         isLoading={isLoading}
       />
       
       {/* Profit Card */}
       <MetricCard
         title="Profit"
-        value={formatCurrency(safeTotal.profit, 0)}
-        change={renderChangeIndicator(safeChanges.profit)}
-        subtitle={getSubtitleText('totalProfit')}
+        value={formatCurrency(summary.totalProfit || 0, 0)}
+        change={renderChangeIndicator(filteredChanges.totalProfit)}
+        subtitle={showChangeIndicators ? 
+          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalProfit || 0, filteredChanges.totalProfit), 0)}` :
+          selectedMonth === 'February' ? 'No comparison data available' : undefined
+        }
         valueClassName="text-finance-red"
         isLoading={isLoading}
       />
@@ -183,18 +104,24 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       {/* Margin Card */}
       <MetricCard
         title="Margin"
-        value={formatPercent(safeTotal.margin)}
-        change={renderChangeIndicator(safeChanges.margin)}
-        subtitle={getSubtitleText('averageMargin')}
+        value={formatPercent(summary.averageMargin || 0)}
+        change={renderChangeIndicator(filteredChanges.averageMargin)}
+        subtitle={showChangeIndicators ? 
+          `${getComparisonMonthText()}: ${formatPercent(getPreviousValue(summary.averageMargin || 0, filteredChanges.averageMargin))}` :
+          selectedMonth === 'February' ? 'No comparison data available' : undefined
+        }
         isLoading={isLoading}
       />
       
       {/* Packs Card */}
       <MetricCard
         title="Packs"
-        value={formatNumber(safeTotal.packs)}
-        change={renderChangeIndicator(safeChanges.packs)}
-        subtitle={getSubtitleText('totalPacks')}
+        value={formatNumber(summary.totalPacks || 0)}
+        change={renderChangeIndicator(filteredChanges.totalPacks)}
+        subtitle={showChangeIndicators ? 
+          `${getComparisonMonthText()}: ${formatNumber(getPreviousValue(summary.totalPacks || 0, filteredChanges.totalPacks))}` :
+          selectedMonth === 'February' ? 'No comparison data available' : undefined
+        }
         isLoading={isLoading}
       />
     </div>

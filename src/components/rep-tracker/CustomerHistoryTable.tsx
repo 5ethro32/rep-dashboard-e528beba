@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { CustomerCommand } from './CustomerCommand';
+import { Search } from 'lucide-react';
+import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import {
   Table,
   TableBody,
@@ -13,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from '@/utils/rep-performance-utils';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 
@@ -36,6 +39,7 @@ const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers }
   const [selectedCustomerRef, setSelectedCustomerRef] = useState<string>('');
   const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
 
+  // Query to fetch all visits for a specific customer
   const { data: customerVisits, isLoading } = useQuery({
     queryKey: ['customer-history', selectedCustomerRef],
     queryFn: async (): Promise<CustomerVisit[]> => {
@@ -61,6 +65,7 @@ const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers }
     setSelectedCustomerName(name);
   };
 
+  // Function to format the date for display
   const formatVisitDate = (dateString: string) => {
     try {
       return format(new Date(dateString), 'EEE, MMM d, yyyy');
@@ -78,11 +83,11 @@ const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers }
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="w-full sm:w-1/2">
-            <CustomerCommand
+            <ImprovedCustomerSelector
               customers={customers}
               selectedCustomer={selectedCustomerName}
               onSelect={handleCustomerSelect}
-              className="border-input bg-background"
+              placeholder="Select a customer to view their visit history..."
             />
           </div>
         </div>
