@@ -1,11 +1,11 @@
-
-import React, { useEffect } from 'react';
+import React from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
 import PerformanceContent from '@/components/rep-performance/PerformanceContent';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
+import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import ChatInterface from '@/components/chat/ChatInterface';
 import { Button } from '@/components/ui/button';
@@ -35,15 +35,12 @@ const RepPerformance = () => {
     getFebValue,
     selectedMonth,
     setSelectedMonth,
-    handleTabChange,
-    activeTab,
     baseSummary,
     revaValues,
     wholesaleValues,
     aprBaseSummary,
     aprRevaValues,
     aprWholesaleValues,
-    updateDisplayData,
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
@@ -52,11 +49,6 @@ const RepPerformance = () => {
   const currentBaseSummary = selectedMonth === 'April' ? aprBaseSummary : baseSummary;
   const currentRevaValues = selectedMonth === 'April' ? aprRevaValues : revaValues;
   const currentWholesaleValues = selectedMonth === 'April' ? aprWholesaleValues : wholesaleValues;
-  
-  // Force data refresh whenever visibility in the component changes
-  useEffect(() => {
-    updateDisplayData();
-  }, []);
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -68,19 +60,13 @@ const RepPerformance = () => {
         <PerformanceHeader 
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
-          isLoading={isLoading}
         />
         
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
-          <Button 
-            onClick={loadDataFromSupabase}
-            variant="outline"
-            size="sm"
-            className="text-white border-white/20 hover:bg-white/10 self-start"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : 'Manually Refresh Data'}
-          </Button>
+          <ActionsHeader 
+            onRefresh={loadDataFromSupabase}
+            isLoading={isLoading} 
+          />
           
           <div className="flex space-x-2">
             <Link to="/account-performance">
@@ -152,8 +138,6 @@ const RepPerformance = () => {
           isLoading={isLoading}
           getFebValue={getFebValue}
           selectedMonth={selectedMonth}
-          handleTabChange={handleTabChange}
-          activeTab={activeTab}
           summary={summary}
           includeRetail={includeRetail}
           includeReva={includeReva}

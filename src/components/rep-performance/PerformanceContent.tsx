@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
 import RepProfitChart from '@/components/RepProfitChart';
@@ -22,8 +23,6 @@ interface PerformanceContentProps {
   isLoading?: boolean;
   getFebValue: (repName: string, metricType: string, currentValue: number, changePercent: number) => string;
   selectedMonth: string;
-  handleTabChange?: (tab: string) => void; // New prop
-  activeTab?: string; // New prop
   summary?: {
     totalSpend?: number;
     totalProfit?: number;
@@ -61,8 +60,6 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   isLoading,
   getFebValue,
   selectedMonth,
-  handleTabChange,
-  activeTab = 'overall',
   summary,
   includeRetail,
   includeReva,
@@ -72,7 +69,6 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   wholesaleValues
 }) => {
   const isMobile = useIsMobile();
-  const [currentTabValue, setCurrentTabValue] = useState(activeTab);
 
   const getTabLabel = (tabValue: string) => {
     switch (tabValue) {
@@ -109,30 +105,17 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     }
   };
 
-  const handleTabValueChange = (value: string) => {
-    setCurrentTabValue(value);
-    if (handleTabChange) {
-      handleTabChange(value);
-    }
-  };
-
   const showChangeIndicators = selectedMonth !== 'February';
 
   return (
     <div className="mb-8 animate-slide-in-up">
-      <Tabs 
-        defaultValue={activeTab} 
-        value={currentTabValue}
-        onValueChange={handleTabValueChange}
-        className="w-full"
-      >
+      <Tabs defaultValue="overall" className="w-full">
         <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
           {tabValues.map((tabValue) => (
             <TabsTrigger 
               key={tabValue}
               value={tabValue} 
               className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2"
-              disabled={isLoading}
             >
               {getTabLabel(tabValue)}
             </TabsTrigger>
