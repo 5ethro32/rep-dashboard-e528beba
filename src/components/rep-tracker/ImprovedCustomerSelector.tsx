@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { CustomerCommand } from './CustomerCommand';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ImprovedCustomerSelectorProps {
   customers: Array<{ account_name: string; account_ref: string }>;
@@ -25,6 +26,7 @@ export function ImprovedCustomerSelector({
 }: ImprovedCustomerSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const isMobile = useIsMobile();
 
   // Safely handle customers array
   const safeCustomers = Array.isArray(customers) ? customers : [];
@@ -54,7 +56,13 @@ export function ImprovedCustomerSelector({
       </Button>
       
       {open && (
-        <div className="absolute w-full z-50 top-full mt-1 rounded-md border bg-popover shadow-md">
+        <div 
+          className={cn(
+            "absolute w-full z-50 top-full mt-1",
+            isMobile ? "left-0 right-0" : ""
+          )}
+          style={{ zIndex: 100 }}
+        >
           <CustomerCommand 
             customers={safeCustomers}
             selectedCustomer={selectedCustomer}

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SimpleCustomerSelectProps {
   customers: Array<{ account_name: string; account_ref: string }>;
@@ -25,6 +26,7 @@ export function SimpleCustomerSelect({
 }: SimpleCustomerSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const isMobile = useIsMobile();
   
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
@@ -64,14 +66,18 @@ export function SimpleCustomerSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="p-0 w-[var(--radix-popover-trigger-width)]" 
+        className="p-0 bg-popover" 
         align="start"
         sideOffset={4}
         onInteractOutside={(e) => {
           // Only close if clicking outside the popover
           e.preventDefault();
         }}
-        style={{ zIndex: 100 }}
+        style={{ 
+          zIndex: 100,
+          width: isMobile ? '85vw' : 'var(--radix-popover-trigger-width)',
+          maxWidth: isMobile ? '85vw' : 'none'
+        }}
       >
         <div className="border-b p-2">
           <Input
@@ -97,6 +103,7 @@ export function SimpleCustomerSelect({
                   className={cn(
                     "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer text-left",
                     "hover:bg-accent hover:text-accent-foreground",
+                    "break-words whitespace-normal",
                     selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                   )}
                   onClick={(e) => handleSelect(e, customer)}
@@ -104,11 +111,11 @@ export function SimpleCustomerSelect({
                 >
                   <Check
                     className={cn(
-                      "h-4 w-4",
+                      "h-4 w-4 flex-shrink-0",
                       selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <span>{customer.account_name}</span>
+                  <span className="text-wrap break-words line-clamp-2">{customer.account_name}</span>
                 </button>
               ) : null
             ))
