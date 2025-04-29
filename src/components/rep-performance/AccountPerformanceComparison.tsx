@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowDownIcon, ArrowUpIcon, SearchIcon, DollarSignIcon, PercentIcon, PackageIcon, ShoppingCartIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, SearchIcon, PoundSterlingIcon, PercentIcon, PackageIcon, ShoppingCartIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -559,7 +559,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
               <Tabs defaultValue="profit" value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid grid-cols-4 mb-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg">
                   <TabsTrigger value="profit" className="flex items-center gap-1">
-                    <DollarSignIcon className="h-4 w-4" />
+                    <PoundSterlingIcon className="h-4 w-4" />
                     <span className="hidden sm:inline">Profit</span>
                   </TabsTrigger>
                   <TabsTrigger value="margin" className="flex items-center gap-1">
