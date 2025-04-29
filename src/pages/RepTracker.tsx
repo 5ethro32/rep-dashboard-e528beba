@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -224,7 +223,7 @@ const RepTracker: React.FC = () => {
           
           <TabsContent value="visits" className="mt-6">
             {isMobile ? (
-              <ScrollArea className="h-[calc(100vh-380px)]">
+              <ScrollArea className="h-[calc(100vh-380px)]" orientation="both">
                 <CustomerVisitsList 
                   weekStartDate={weekStart} 
                   weekEndDate={weekEnd}
