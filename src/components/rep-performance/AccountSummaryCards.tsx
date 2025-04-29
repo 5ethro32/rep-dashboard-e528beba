@@ -3,7 +3,7 @@ import React from 'react';
 import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Award, Package, CreditCard } from 'lucide-react';
+import { Users, Award, Package, TrendingUp } from 'lucide-react';
 
 interface AccountSummaryCardsProps {
   currentMonthData: any[];
@@ -39,14 +39,15 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   // Find top rep by combined profit across all departments
   let topRep = { name: 'No data', profit: 0 };
   let topPacksRep = { name: 'No data', packs: 0 };
-  let topSpendRep = { name: 'No data', spend: 0 };
+  let mostImprovedRep = { name: 'No data', improvement: 0, percentImprovement: 0 };
   
   if (currentMonthData.length > 0) {
     // Group by rep and sum profits, packs, and spend across all departments
     const repProfits = new Map();
     const repPacks = new Map();
-    const repSpends = new Map();
+    const previousRepProfits = new Map();
     
+    // Process current month data
     currentMonthData.forEach(item => {
       // Extract the rep name with fallbacks for different column naming conventions
       const repName = item.Rep || item.rep_name || '';
@@ -59,8 +60,6 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
                       typeof item.profit === 'number' ? item.profit : 0;
         const packs = typeof item.Packs === 'number' ? item.Packs : 
                      typeof item.packs === 'number' ? item.packs : 0;
-        const spend = typeof item.Spend === 'number' ? item.Spend : 
-                     typeof item.spend === 'number' ? item.spend : 0;
         
         // Sum up profits
         const currentProfit = repProfits.get(repName) || 0;
@@ -69,10 +68,6 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         // Sum up packs
         const currentPacks = repPacks.get(repName) || 0;
         repPacks.set(repName, currentPacks + packs);
-        
-        // Sum up spend
-        const currentSpend = repSpends.get(repName) || 0;
-        repSpends.set(repName, currentSpend + spend);
       }
       
       // Also add metrics for the sub-rep if present
@@ -81,8 +76,6 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
                       typeof item.profit === 'number' ? item.profit : 0;
         const packs = typeof item.Packs === 'number' ? item.Packs : 
                      typeof item.packs === 'number' ? item.packs : 0;
-        const spend = typeof item.Spend === 'number' ? item.Spend : 
-                     typeof item.spend === 'number' ? item.spend : 0;
         
         // Sum up profits for sub-rep
         const currentProfit = repProfits.get(subRepName) || 0;
@@ -91,10 +84,34 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         // Sum up packs for sub-rep
         const currentPacks = repPacks.get(subRepName) || 0;
         repPacks.set(subRepName, currentPacks + packs);
+      }
+    });
+    
+    // Process previous month data
+    previousMonthData.forEach(item => {
+      // Extract the rep name with fallbacks for different column naming conventions
+      const repName = item.Rep || item.rep_name || '';
+      // Extract the sub-rep name with fallbacks for different column naming
+      const subRepName = item["Sub-Rep"] || item.sub_rep || '';
+      
+      // Skip RETAIL, REVA, and Wholesale as they are department names, not reps
+      if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale') {
+        const profit = typeof item.Profit === 'number' ? item.Profit : 
+                      typeof item.profit === 'number' ? item.profit : 0;
         
-        // Sum up spend for sub-rep
-        const currentSpend = repSpends.get(subRepName) || 0;
-        repSpends.set(subRepName, currentSpend + spend);
+        // Sum up profits
+        const prevProfit = previousRepProfits.get(repName) || 0;
+        previousRepProfits.set(repName, prevProfit + profit);
+      }
+      
+      // Also add metrics for the sub-rep if present
+      if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale') {
+        const profit = typeof item.Profit === 'number' ? item.Profit : 
+                      typeof item.profit === 'number' ? item.profit : 0;
+        
+        // Sum up profits for sub-rep
+        const prevProfit = previousRepProfits.get(subRepName) || 0;
+        previousRepProfits.set(subRepName, prevProfit + profit);
       }
     });
     
@@ -116,12 +133,39 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       }
     });
     
-    // Find rep with highest combined spend
-    let maxSpend = 0;
-    repSpends.forEach((spend, rep) => {
-      if (spend > maxSpend) {
-        maxSpend = spend;
-        topSpendRep = { name: rep, spend: maxSpend };
+    // Calculate most improved rep
+    let maxImprovement = 0;
+    let maxPercentImprovement = 0;
+    
+    repProfits.forEach((currentProfit, rep) => {
+      const previousProfit = previousRepProfits.get(rep) || 0;
+      
+      // Only consider reps who exist in both months and had some profit in previous month
+      if (previousProfit > 0) {
+        const improvement = currentProfit - previousProfit;
+        const percentImprovement = (improvement / previousProfit) * 100;
+        
+        // We'll prioritize percentage improvement as our metric
+        if (percentImprovement > maxPercentImprovement) {
+          maxPercentImprovement = percentImprovement;
+          maxImprovement = improvement;
+          mostImprovedRep = { 
+            name: rep, 
+            improvement: maxImprovement,
+            percentImprovement: maxPercentImprovement
+          };
+        }
+      } else if (previousProfit === 0 && currentProfit > 0 && !previousRepProfits.has(rep)) {
+        // This is a new rep who wasn't present before but is doing well
+        if (currentProfit > maxImprovement) {
+          maxImprovement = currentProfit;
+          maxPercentImprovement = 100; // 100% new improvement
+          mostImprovedRep = { 
+            name: rep, 
+            improvement: maxImprovement,
+            percentImprovement: maxPercentImprovement
+          };
+        }
       }
     });
   }
@@ -176,12 +220,14 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
-            <CreditCard size={16} className="text-[#ea384c] mr-2" />
-            Top Rep (by Spend)
+            <TrendingUp size={16} className="text-[#ea384c] mr-2" />
+            Most Improved Performance
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1">{topSpendRep.name}</div>
+          <div className="text-2xl md:text-3xl font-bold mb-1">{mostImprovedRep.name}</div>
           <div className="text-sm text-white/50">
-            Total spend: {formatCurrency(topSpendRep.spend)}
+            {mostImprovedRep.percentImprovement > 0 
+              ? `+${mostImprovedRep.percentImprovement.toFixed(1)}% improvement` 
+              : 'No improvement data'}
           </div>
         </CardContent>
       </Card>
