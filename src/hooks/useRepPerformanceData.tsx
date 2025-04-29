@@ -80,7 +80,8 @@ export const useRepPerformanceData = () => {
   }, []);
   
   useEffect(() => {
-    updateDisplayedDataForMonth();
+    console.log(`Month selection changed to: ${selectedMonth} - Loading fresh data`);
+    loadData();
   }, [selectedMonth]);
   
   const loadData = async () => {
@@ -88,7 +89,7 @@ export const useRepPerformanceData = () => {
     try {
       const data = await fetchRepPerformanceData(selectedMonth);
       
-      console.log("Loaded performance data:", data);
+      console.log(`Loaded fresh performance data for ${selectedMonth}:`, data);
       
       setAprRepData(data.repData);
       setAprRevaRepData(data.revaData);
@@ -116,23 +117,11 @@ export const useRepPerformanceData = () => {
       setRepChanges(data.repChanges);
       setMarchRepChanges(data.marchRepChanges);
       
-      const combinedData = getCombinedRepData(
-        data.repData,
-        data.revaData,
-        data.wholesaleData,
-        true,
-        true,
-        true
-      );
-      
-      setOverallData(combinedData);
-      
-      // Call updateDisplayedDataForMonth after loading all data
-      // This ensures metric cards reflect the currently selected month
+      // Update displayed data after loading fresh data
       updateDisplayedDataForMonth();
       
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error(`Error loading data for ${selectedMonth}:`, error);
       toast({
         title: "Error loading data",
         description: error instanceof Error ? error.message : "An unknown error occurred",
