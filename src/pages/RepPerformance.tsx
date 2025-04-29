@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
