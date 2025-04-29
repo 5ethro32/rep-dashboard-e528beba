@@ -19,8 +19,8 @@ const ActionsHeader = ({ onRefresh, isLoading, autoRefreshed }: ActionsHeaderPro
           className="text-white border-white/20 hover:bg-white/10"
           disabled={isLoading}
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          {isLoading ? 'Refreshing...' : 'Refresh Data'}
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading && <span className="ml-2">Refreshing...</span>}
         </Button>
         
         {autoRefreshed && !isLoading && (
