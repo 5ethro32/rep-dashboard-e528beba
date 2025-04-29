@@ -109,7 +109,7 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     const aprWholesaleData = processRawData(mtdData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
-    const rawAprSummary = calculateRawMtdSummary(mtdData || []);
+    const rawAprSummary = calculateRawMtdSummary(mtdData || [], 'April');
     
     // March data processing - using sales_data table which has different field names
     const marchRetailData = processRawData(marchData?.filter(item => !item.rep_type || item.rep_type === 'RETAIL') || []);
@@ -117,7 +117,7 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     const marchWholesaleData = processRawData(marchData?.filter(item => 
       item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE'
     ) || []);
-    const rawMarchSummary = calculateRawMtdSummary(marchData || []);
+    const rawMarchSummary = calculateRawMtdSummary(marchData || [], 'March');
     
     // February data processing from sales_data_februrary
     const febRetailData = processRawData(februaryData?.filter(item => !item.Department || item.Department === 'RETAIL') || []);
@@ -125,7 +125,7 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     const febWholesaleData = processRawData(februaryData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
-    const rawFebSummary = calculateRawMtdSummary(februaryData || []);
+    const rawFebSummary = calculateRawMtdSummary(februaryData || [], 'February');
     
     // March Rolling data processing (for April comparison) from march_rolling
     console.log('Processing March Rolling data by department...');
@@ -136,7 +136,7 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     const marchRollingWholesaleData = processRawData(marchRollingData?.filter(item => 
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
-    const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || []);
+    const rawMarchRollingSummary = calculateRawMtdSummary(marchRollingData || [], 'MarchRolling');
     
     // Debug log for March Rolling data by department
     console.log('March Rolling data by department:', {

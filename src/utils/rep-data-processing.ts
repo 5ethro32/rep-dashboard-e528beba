@@ -203,7 +203,7 @@ export const calculateSummary = (
   };
 };
 
-export const calculateRawMtdSummary = (data: any[]): SummaryData => {
+export const calculateRawMtdSummary = (data: any[], month?: string): SummaryData => {
   let totalSpend = 0;
   let totalProfit = 0;
   let totalPacks = 0;
@@ -212,17 +212,15 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   const accountSet = new Set<string>();
   const activeAccountSet = new Set<string>();
   
-  // Check if this is February data by examining fields present in the data
-  const isFebruaryData = data.length > 0 && data[0] && 
-                        (data[0].hasOwnProperty('Department') || 
-                         (data[0].hasOwnProperty('Rep') && data[0].hasOwnProperty('Sub-Rep')));
+  // Only apply special handling for February data
+  const isFebruaryData = month === 'February';
+  
+  if (isFebruaryData) {
+    console.log("February data handling enabled - implementing special processing for February raw summary data");
+  }
   
   // Track processed items to avoid double counting in February data
   const processedEntries = new Set<string>();
-  
-  if (isFebruaryData) {
-    console.log("February data detected - implementing special handling for February raw summary data");
-  }
   
   data.forEach((item, index) => {
     // For February data, avoid double-counting entries where Rep is a department and there's a Sub-Rep
@@ -266,7 +264,7 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
   
   // Log summary for verification
-  console.log(`Raw MTD Summary ${isFebruaryData ? "(February data)" : ""}:`, {
+  console.log(`Raw MTD Summary ${month || "unknown month"}:`, {
     totalSpend,
     totalProfit,
     totalPacks,
