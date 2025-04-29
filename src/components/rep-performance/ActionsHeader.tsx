@@ -18,7 +18,7 @@ const ActionsHeader = ({ onRefresh, isLoading }: ActionsHeaderProps) => {
         disabled={isLoading}
       >
         <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-        {isLoading ? 'Refreshing...' : 'Refresh Data'}
+        {isLoading ? 'Loading Data...' : 'Manual Refresh'}
       </Button>
     </div>
   );
