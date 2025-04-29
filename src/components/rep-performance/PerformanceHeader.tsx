@@ -1,13 +1,12 @@
 
 import React from 'react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2 } from 'lucide-react';
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, Loader2 } from 'lucide-react';
 
 interface PerformanceHeaderProps {
   selectedMonth: string;
@@ -30,33 +29,47 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">Dashboard</span>
       </h1>
       <div className="mt-4 md:mt-8 text-right">
-        <Select
-          value={selectedMonth}
-          onValueChange={setSelectedMonth}
-          disabled={isLoading}
-        >
-          <SelectTrigger className="w-[180px] bg-gray-800/50 border-gray-700 text-white focus:ring-finance-red focus:ring-opacity-50">
+        <DropdownMenu>
+          <DropdownMenuTrigger 
+            className="flex items-center text-lg md:text-xl lg:text-2xl text-white/80 hover:text-white transition-colors focus:outline-none"
+            disabled={isLoading}
+          >
             {isLoading ? (
               <div className="flex items-center space-x-2">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                <span>Loading...</span>
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                <span className="mr-2">Loading {selectedMonth} data...</span>
               </div>
             ) : (
-              <SelectValue placeholder={`${selectedMonth} 2025`} />
+              <div className="flex items-center">
+                {selectedMonth} 2025
+                <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+              </div>
             )}
-          </SelectTrigger>
-          <SelectContent className="bg-gray-800 border-gray-700 text-white z-50">
-            <SelectItem value="April" className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer">
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white z-50">
+            <DropdownMenuItem 
+              className={`text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer ${selectedMonth === 'April' ? 'bg-gray-700/50' : ''}`}
+              onClick={() => setSelectedMonth('April')}
+              disabled={isLoading}
+            >
               April 2025
-            </SelectItem>
-            <SelectItem value="March" className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer">
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className={`text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer ${selectedMonth === 'March' ? 'bg-gray-700/50' : ''}`}
+              onClick={() => setSelectedMonth('March')}
+              disabled={isLoading}
+            >
               March 2025
-            </SelectItem>
-            <SelectItem value="February" className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer">
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className={`text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer ${selectedMonth === 'February' ? 'bg-gray-700/50' : ''}`}
+              onClick={() => setSelectedMonth('February')}
+              disabled={isLoading}
+            >
               February 2025
-            </SelectItem>
-          </SelectContent>
-        </Select>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
