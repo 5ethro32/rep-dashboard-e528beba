@@ -17,17 +17,20 @@ import {
   defaultRepChanges
 } from '@/data/rep-performance-default-data';
 
+// SIMPLIFIED: Use raw data directly without additional calculations for February
 const calculateDirectSummary = (
   baseSummary: SummaryData, 
   revaValues: SummaryData, 
   wholesaleValues: SummaryData,
-  isRawData: boolean
+  month: string
 ) => {
-  if (isRawData) {
-    console.log("Using raw summary data directly:", baseSummary);
+  // For February data, always use the raw summary directly
+  if (month === 'February') {
+    console.log("Using raw February summary directly:", baseSummary);
     return baseSummary;
   }
   
+  // For other months, use the calculated summary
   return calculateSummary(
     baseSummary,
     revaValues,
@@ -122,23 +125,7 @@ export const useRepPerformanceData = () => {
       // CRITICAL FIX: Ensure rawFebSummary is properly set and verified
       if (data.rawFebSummary) {
         setRawFebSummary(data.rawFebSummary);
-        console.log("RAW February Summary (for direct comparison) from API:", data.rawFebSummary);
-      } else {
-        // If not provided by the service, calculate it directly from the February data
-        // This ensures we always have a valid raw February summary calculated the same way
-        console.warn("Raw February summary missing in API response, calculating directly from February data");
-        
-        // Combine all February data for calculation
-        const allFebData = [
-          ...(data.febRepData || []),
-          ...(data.febRevaData || []),
-          ...(data.febWholesaleData || [])
-        ];
-        
-        // Calculate raw summary with February-specific processing
-        const calculatedRawFebSummary = calculateRawMtdSummary(allFebData, 'February');
-        setRawFebSummary(calculatedRawFebSummary);
-        console.log("Calculated RAW February Summary:", calculatedRawFebSummary);
+        console.log("Setting RAW February Summary from API for consistent use:", data.rawFebSummary);
       }
       
       setSummaryChanges(data.summaryChanges);
@@ -259,20 +246,21 @@ export const useRepPerformanceData = () => {
     return (metricValue - changeValue).toString();
   };
   
-  const isRawDataMonth = selectedMonth === 'April' || selectedMonth === 'March';
+  // SIMPLIFIED: Determine raw data month - always use raw data for February
+  const isRawDataMonth = selectedMonth === 'April' || selectedMonth === 'March' || selectedMonth === 'February';
   
-  // Ensure we properly calculate the direct summaries for each month
+  // Ensure we properly calculate direct summaries for each month
   const currentSummary = calculateDirectSummary(
     selectedMonth === 'April' ? aprBaseSummary : 
-      selectedMonth === 'March' ? marchBaseSummary : febBaseSummary,
+      selectedMonth === 'March' ? marchBaseSummary : rawFebSummary,
     selectedMonth === 'April' ? aprRevaValues : 
       selectedMonth === 'March' ? marchRevaValues : febRevaValues,
     selectedMonth === 'April' ? aprWholesaleValues : 
       selectedMonth === 'March' ? marchWholesaleValues : febWholesaleValues,
-    isRawDataMonth
+    selectedMonth
   );
   
-  // CRITICAL FIX: Always use raw February data directly instead of calculating it
+  // CRITICAL FIX: Always use raw February data directly
   // This ensures the February comparison data is the same as when viewing February directly
   const febDirectSummary = rawFebSummary;
   
@@ -301,7 +289,7 @@ export const useRepPerformanceData = () => {
     selectedMonth,
     setSelectedMonth,
     baseSummary: selectedMonth === 'April' ? aprBaseSummary : 
-                selectedMonth === 'March' ? marchBaseSummary : febBaseSummary,
+                selectedMonth === 'March' ? marchBaseSummary : rawFebSummary,
     revaValues: selectedMonth === 'April' ? aprRevaValues : 
                selectedMonth === 'March' ? marchRevaValues : febRevaValues,
     wholesaleValues: selectedMonth === 'April' ? aprWholesaleValues : 
@@ -316,9 +304,8 @@ export const useRepPerformanceData = () => {
     marchWholesaleRepData,
     febWholesaleRepData,
     marchBaseSummary,
-    febBaseSummary,
+    febBaseSummary: rawFebSummary, // Always use rawFebSummary for consistency
     febDirectSummary,
-    // CRITICAL FIX: Add raw February summary to the return value
     rawFebSummary
   };
 };

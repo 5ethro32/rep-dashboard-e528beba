@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
@@ -59,37 +58,19 @@ const RepPerformance = () => {
   const includeReva = true;
   const includeWholesale = true;
   
-  // IMPROVED: More robust previous month summary selection with better logging
+  // SIMPLIFIED: Always use rawFebSummary for February data in March comparisons
   const getPreviousMonthSummary = () => {
     if (selectedMonth === 'April') {
-      console.log("Using March data as previous month for April view:", marchBaseSummary);
+      console.log("Using March rolling data as previous month for April view:", marchBaseSummary);
       return marchBaseSummary;
     } else if (selectedMonth === 'March') {
-      // CRITICAL FIX: Always use rawFebSummary for February data in March comparisons
-      // This ensures we use the exact same raw data regardless of column naming differences
-      console.log("Using raw February summary for March comparison:", rawFebSummary);
+      // CRITICAL FIX: Always use rawFebSummary directly without any additional logic
+      console.log("Using raw February summary directly for March comparison:", rawFebSummary);
       
-      // Additional validation to ensure we have valid data
       if (!rawFebSummary || typeof rawFebSummary !== 'object') {
-        console.warn("Invalid rawFebSummary data for March comparison, fallback to febBaseSummary:", febBaseSummary);
-        return febBaseSummary;
+        console.warn("Invalid rawFebSummary data - this should never happen!");
+        return undefined;
       }
-      
-      // Log all values to help with debugging
-      console.log("February comparison metrics:", {
-        rawFebSummary: {
-          totalSpend: rawFebSummary.totalSpend,
-          totalProfit: rawFebSummary.totalProfit,
-          averageMargin: rawFebSummary.averageMargin,
-          totalPacks: rawFebSummary.totalPacks
-        },
-        febBaseSummary: {
-          totalSpend: febBaseSummary.totalSpend,
-          totalProfit: febBaseSummary.totalProfit,
-          averageMargin: febBaseSummary.averageMargin,
-          totalPacks: febBaseSummary.totalPacks
-        }
-      });
       
       return rawFebSummary;
     }
