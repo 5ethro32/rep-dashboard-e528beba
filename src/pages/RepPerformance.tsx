@@ -44,7 +44,7 @@ const RepPerformance = () => {
     marchBaseSummary,
     febBaseSummary,
     febDirectSummary,
-    rawFebSummary  // Add this to destructuring to access the raw February data
+    rawFebSummary  
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
@@ -59,20 +59,48 @@ const RepPerformance = () => {
   const includeReva = true;
   const includeWholesale = true;
   
-  // Determine the previous month summary based on current selected month
+  // IMPROVED: More robust previous month summary selection with better logging
   const getPreviousMonthSummary = () => {
     if (selectedMonth === 'April') {
+      console.log("Using March data as previous month for April view:", marchBaseSummary);
       return marchBaseSummary;
     } else if (selectedMonth === 'March') {
-      // CRITICAL FIX: Use rawFebSummary - the exact same raw February data that's used in the February view
+      // CRITICAL FIX: Always use rawFebSummary for February data in March comparisons
+      // This ensures we use the exact same raw data regardless of column naming differences
       console.log("Using raw February summary for March comparison:", rawFebSummary);
+      
+      // Additional validation to ensure we have valid data
+      if (!rawFebSummary || typeof rawFebSummary !== 'object') {
+        console.warn("Invalid rawFebSummary data for March comparison, fallback to febBaseSummary:", febBaseSummary);
+        return febBaseSummary;
+      }
+      
+      // Log all values to help with debugging
+      console.log("February comparison metrics:", {
+        rawFebSummary: {
+          totalSpend: rawFebSummary.totalSpend,
+          totalProfit: rawFebSummary.totalProfit,
+          averageMargin: rawFebSummary.averageMargin,
+          totalPacks: rawFebSummary.totalPacks
+        },
+        febBaseSummary: {
+          totalSpend: febBaseSummary.totalSpend,
+          totalProfit: febBaseSummary.totalProfit,
+          averageMargin: febBaseSummary.averageMargin,
+          totalPacks: febBaseSummary.totalPacks
+        }
+      });
+      
       return rawFebSummary;
     }
+    
+    console.log("No previous month data available for", selectedMonth);
     return undefined;
   };
   
   // Log the previous month summary for debugging
-  console.log("Previous month summary for", selectedMonth, ":", getPreviousMonthSummary());
+  const previousMonthSummary = getPreviousMonthSummary();
+  console.log("Previous month summary for", selectedMonth, ":", previousMonthSummary);
   
   const renderChangeIndicator = (
     changeValue: number, 
@@ -133,7 +161,7 @@ const RepPerformance = () => {
         <SummaryMetrics 
           summary={summary}
           summaryChanges={summaryChanges}
-          previousMonthSummary={getPreviousMonthSummary()}
+          previousMonthSummary={previousMonthSummary}
           isLoading={isLoading}
           selectedMonth={selectedMonth}
           includeRetail={includeRetail}

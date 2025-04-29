@@ -204,6 +204,8 @@ export const calculateSummary = (
 };
 
 export const calculateRawMtdSummary = (data: any[], month?: string): SummaryData => {
+  console.log(`Starting calculateRawMtdSummary for ${month || 'unknown month'} with ${data.length} records`);
+  
   let totalSpend = 0;
   let totalProfit = 0;
   let totalPacks = 0;
@@ -221,6 +223,13 @@ export const calculateRawMtdSummary = (data: any[], month?: string): SummaryData
   
   // Track processed items to avoid double counting in February data
   const processedEntries = new Set<string>();
+  
+  // Sample logging to help diagnose data structure issues
+  if (data.length > 0) {
+    const sampleEntry = data[0];
+    console.log(`Sample ${month || 'unknown'} data entry fields:`, Object.keys(sampleEntry));
+    console.log(`Sample values: Spend=${getFieldValue(sampleEntry, 'Spend')}, Profit=${getFieldValue(sampleEntry, 'Profit')}`);
+  }
   
   data.forEach((item, index) => {
     // For February data, avoid double-counting entries where Rep is a department and there's a Sub-Rep
@@ -241,16 +250,22 @@ export const calculateRawMtdSummary = (data: any[], month?: string): SummaryData
       processedEntries.add(entryId);
     }
     
+    // Enhanced field extraction with better error handling and logging
     const spend = extractNumericValue(item, ['Spend', 'spend']);
     const profit = extractNumericValue(item, ['Profit', 'profit']);
     const packs = extractNumericValue(item, ['Packs', 'packs']);
     
-    const accountRef = item["Account Ref"] || item.account_ref || item["ACCOUNT REF"];
+    // Account reference can be in different formats based on the month's data
+    const accountRef = getFieldValue(item, 'account_ref') || 
+                      getFieldValue(item, 'Account Ref') || 
+                      getFieldValue(item, 'ACCOUNT REF');
     
+    // Add to overall totals
     totalSpend += spend;
     totalProfit += profit;
     totalPacks += packs;
     
+    // Track accounts
     if (accountRef) {
       accountSet.add(accountRef);
       totalAccounts = accountSet.size;
@@ -404,12 +419,47 @@ export function processRawData(rawData: any[]): RepData[] {
   }));
 }
 
+// Helper function to get field value with consistent casing handling
+function getFieldValue(record: any, fieldName: string): any {
+  if (!record) return null;
+  
+  // Try all possible case variations
+  const variants = [
+    fieldName,                                        // original
+    fieldName.toUpperCase(),                          // UPPERCASE
+    fieldName.toLowerCase(),                          // lowercase
+    fieldName.charAt(0).toUpperCase() + fieldName.slice(1), // Capitalized
+    // Handle special column naming for specific tables
+    fieldName === 'account_ref' ? 'Account Ref' : null,
+    fieldName === 'Account Ref' ? 'account_ref' : null,
+    fieldName === 'rep_name' ? 'Rep' : null,
+    fieldName === 'Rep' ? 'rep_name' : null,
+    fieldName === 'sub_rep' ? 'Sub-Rep' : null,
+    fieldName === 'Sub-Rep' ? 'sub_rep' : null
+  ].filter(Boolean); // Remove null values
+  
+  // Try each variant
+  for (const variant of variants) {
+    if (record[variant] !== undefined) {
+      return record[variant];
+    }
+  }
+  
+  return null;
+}
+
+// Improved function to extract numeric values with consistent handling across tables
 function extractNumericValue(item: any, fieldNames: string[]): number {
+  if (!item) return 0;
+  
+  // Try each field name (and its case variations)
   for (const fieldName of fieldNames) {
-    const value = item[fieldName];
-    if (value !== undefined) {
+    const value = getFieldValue(item, fieldName);
+    if (value !== undefined && value !== null) {
+      // Convert to number consistently
       return typeof value === 'string' ? parseFloat(value) : Number(value || 0);
     }
   }
+  
   return 0;
 }

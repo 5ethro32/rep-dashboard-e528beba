@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
-import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
+import { getCombinedRepData, sortRepData, calculateRawMtdSummary } from '@/utils/rep-data-processing';
 import { fetchRepPerformanceData } from '@/services/rep-performance-service';
 import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,7 +70,7 @@ export const useRepPerformanceData = () => {
   const [febRevaRepData, setFebRevaRepData] = useState<RepData[]>(defaultRevaData);
   const [febWholesaleRepData, setFebWholesaleRepData] = useState<RepData[]>(defaultWholesaleData);
   
-  // CRITICAL FIX: Add state for raw February summary
+  // CRITICAL FIX: Ensure we have a dedicated state for raw February summary that's always properly calculated
   const [rawFebSummary, setRawFebSummary] = useState<SummaryData>(defaultBaseSummary);
   
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
@@ -120,9 +119,27 @@ export const useRepPerformanceData = () => {
       setFebRevaValues(data.febRevaValues);
       setFebWholesaleValues(data.febWholesaleValues);
       
-      // CRITICAL FIX: Set the raw February summary
-      setRawFebSummary(data.rawFebSummary);
-      console.log("RAW February Summary (for direct comparison):", data.rawFebSummary);
+      // CRITICAL FIX: Ensure rawFebSummary is properly set and verified
+      if (data.rawFebSummary) {
+        setRawFebSummary(data.rawFebSummary);
+        console.log("RAW February Summary (for direct comparison) from API:", data.rawFebSummary);
+      } else {
+        // If not provided by the service, calculate it directly from the February data
+        // This ensures we always have a valid raw February summary calculated the same way
+        console.warn("Raw February summary missing in API response, calculating directly from February data");
+        
+        // Combine all February data for calculation
+        const allFebData = [
+          ...(data.febRepData || []),
+          ...(data.febRevaData || []),
+          ...(data.febWholesaleData || [])
+        ];
+        
+        // Calculate raw summary with February-specific processing
+        const calculatedRawFebSummary = calculateRawMtdSummary(allFebData, 'February');
+        setRawFebSummary(calculatedRawFebSummary);
+        console.log("Calculated RAW February Summary:", calculatedRawFebSummary);
+      }
       
       setSummaryChanges(data.summaryChanges);
       setMarchSummaryChanges(data.marchSummaryChanges);
@@ -257,7 +274,7 @@ export const useRepPerformanceData = () => {
   
   // CRITICAL FIX: Always use raw February data directly instead of calculating it
   // This ensures the February comparison data is the same as when viewing February directly
-  const febDirectSummary = febBaseSummary;
+  const febDirectSummary = rawFebSummary;
   
   console.log("February direct summary for March comparison (using raw data directly):", febDirectSummary);
   
