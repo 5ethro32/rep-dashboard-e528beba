@@ -47,8 +47,15 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // Show change indicators for months with comparison data
   const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April';
 
+  // Update changes and data availability status when props change
   useEffect(() => {
-    // Recalculate changes whenever toggle states change
+    console.log("SummaryMetrics: Props changed, updating state", {
+      selectedMonth,
+      summaryChanges,
+      previousMonthSummary
+    });
+    
+    // Recalculate changes whenever parent props change
     setFilteredChanges(summaryChanges);
     
     // Check if we have valid comparison data
@@ -57,17 +64,19 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
                          Object.keys(previousMonthSummary).length > 0;
     setDataAvailable(hasValidData);
     
-    console.log("SummaryMetrics useEffect: Selected Month:", selectedMonth);
     console.log("SummaryMetrics useEffect: Summary Data:", summary);
     console.log("SummaryMetrics useEffect: Summary Changes:", summaryChanges);
     console.log("SummaryMetrics useEffect: Previous Month Summary:", previousMonthSummary);
     console.log("SummaryMetrics useEffect: Data available for comparison:", hasValidData);
-  }, [summaryChanges, includeRetail, includeReva, includeWholesale, selectedMonth, summary, previousMonthSummary]);
+  }, [summaryChanges, summary, previousMonthSummary, selectedMonth, includeRetail, includeReva, includeWholesale]);
 
   // Create a change indicator for the KPI cards
   const renderChangeIndicator = (changeValue: number) => {
+    // While loading, don't show indicators
+    if (isLoading) return undefined;
+    
     // Check if we have valid data and should show indicators
-    if (!dataAvailable || !showChangeIndicators || isLoading) return undefined;
+    if (!dataAvailable || !showChangeIndicators) return undefined;
     
     // Safety check to avoid NaN or null values
     if (changeValue === undefined || changeValue === null || isNaN(changeValue) || Math.abs(changeValue) < 0.1) return undefined;
@@ -78,7 +87,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     };
   };
 
-  // IMPROVED: Get previous value with better logging and validation for February data comparisons
+  // Get previous value with better logging and validation
   const getPreviousValue = (metric: keyof typeof summary) => {
     // Make sure we have valid previous month data
     if (previousMonthSummary && dataAvailable) {
@@ -94,8 +103,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       console.warn(`No previousMonthSummary data available for ${selectedMonth} view`);
     }
     
-    // Always return the current metric value if no previous value is available
-    // This ensures we don't show NaN or incorrect percentage changes
+    // Fall back to current metric value if no previous value is available
     console.log(`Falling back to current value for ${metric} (${selectedMonth}):`, summary[metric]);
     return summary[metric];
   };

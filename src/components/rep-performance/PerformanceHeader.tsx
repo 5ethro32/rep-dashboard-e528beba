@@ -43,7 +43,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
               </>
             )}
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-gray-800 border-gray-700 z-50">
+          <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white z-50">
             <DropdownMenuItem 
               className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
               onClick={() => setSelectedMonth('April')}

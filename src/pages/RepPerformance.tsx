@@ -54,50 +54,33 @@ const RepPerformance = () => {
   
   useEffect(() => {
     console.log('RepPerformance: Initial data load starting');
-    // Initial load now handled directly in the hook
   }, []);
   
   const includeRetail = true;
   const includeReva = true;
   const includeWholesale = true;
   
-  // IMPROVED: More robust previous month summary selection with better logging
+  // Improved getPreviousMonthSummary that's properly synchronized with month changes
   const getPreviousMonthSummary = () => {
-    // If month change is in progress, return undefined to prevent incorrect data display
+    // If month change is in progress or data not loaded, return undefined
     if (monthChangeInProgress || !dataLoaded) {
       console.log("Month change in progress or data not fully loaded, showing loading state");
       return undefined;
     }
     
+    // Different logic based on selected month
     if (selectedMonth === 'April') {
       console.log("Using March data as previous month for April view:", marchBaseSummary);
       return marchBaseSummary;
     } else if (selectedMonth === 'March') {
-      // CRITICAL FIX: Always use rawFebSummary for February data in March comparisons
-      // This ensures we use the exact same raw data regardless of column naming differences
+      // Always use rawFebSummary for March comparisons
       console.log("Using raw February summary for March comparison:", rawFebSummary);
       
-      // Additional validation to ensure we have valid data
+      // Ensure we have valid data
       if (!rawFebSummary || typeof rawFebSummary !== 'object') {
-        console.warn("Invalid rawFebSummary data for March comparison, fallback to febBaseSummary:", febBaseSummary);
+        console.warn("Invalid rawFebSummary data for March comparison, falling back to febBaseSummary:", febBaseSummary);
         return febBaseSummary;
       }
-      
-      // Log all values to help with debugging
-      console.log("February comparison metrics:", {
-        rawFebSummary: {
-          totalSpend: rawFebSummary.totalSpend,
-          totalProfit: rawFebSummary.totalProfit,
-          averageMargin: rawFebSummary.averageMargin,
-          totalPacks: rawFebSummary.totalPacks
-        },
-        febBaseSummary: {
-          totalSpend: febBaseSummary.totalSpend,
-          totalProfit: febBaseSummary.totalProfit,
-          averageMargin: febBaseSummary.averageMargin,
-          totalPacks: febBaseSummary.totalPacks
-        }
-      });
       
       return rawFebSummary;
     }
@@ -106,7 +89,7 @@ const RepPerformance = () => {
     return undefined;
   };
   
-  // Log the previous month summary for debugging
+  // Get previous month summary and log for debugging
   const previousMonthSummary = getPreviousMonthSummary();
   console.log("Previous month summary for", selectedMonth, ":", previousMonthSummary);
   
