@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -98,6 +97,8 @@ export const useRepPerformanceData = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
+      // Pass the current selectedMonth to ensure we get the right data from the service
+      console.log(`Loading data for ${selectedMonth} from database...`);
       const data = await fetchRepPerformanceData(selectedMonth);
       
       console.log(`Loaded fresh performance data for ${selectedMonth}:`, data);
@@ -166,28 +167,35 @@ export const useRepPerformanceData = () => {
     }
   };
   
-  // Enhanced setSelectedMonth with better synchronization
+  // CRITICAL CHANGE: Completely revised setSelectedMonth to always fetch fresh data
   const setSelectedMonthAndLoad = useCallback(async (month: string) => {
     if (month === selectedMonth) return; // No change needed
     
     console.log(`Month selection changing from ${selectedMonth} to ${month}`);
     
-    // Set loading and month change flags
+    // Set loading flags
     setIsLoading(true);
     setMonthChangeInProgress(true);
     
-    // Update the month first
+    // Update the month first so UI can show the right month immediately
     setSelectedMonth(month);
     
-    // Immediately update displayed data based on cached values
-    // to avoid the need to wait for fresh API data
-    await updateCachedDataForMonth(month);
+    try {
+      // Instead of using cached data, always load fresh data from the database
+      // This ensures we always have the most up-to-date data for each month
+      await loadData();
+      console.log(`Successfully loaded fresh data for ${month}`);
+    } catch (error) {
+      console.error(`Error loading data for ${month}:`, error);
+      // If loading fails, at least update the displayed data from cache
+      updateDisplayedDataForMonth();
+    } finally {
+      // Always reset flags after operation completes
+      setMonthChangeInProgress(false);
+      setIsLoading(false);
+      console.log(`Month change to ${month} completed`);
+    }
     
-    // Reset flags after immediate update
-    setMonthChangeInProgress(false);
-    setIsLoading(false);
-    
-    console.log(`Initial month change to ${month} completed with cached data`);
   }, [selectedMonth]);
   
   // New function to update state based on cached data without API call

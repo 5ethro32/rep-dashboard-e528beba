@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -75,7 +76,7 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
       throw new Error('Supabase client is not initialized.');
     }
     
-    console.log('Fetching rep performance data using pagination...');
+    console.log(`Fetching rep performance data for ${currentSelectedMonth} using pagination...`);
     
     // April Data from mtd_daily
     const mtdData = await fetchAllRecords('mtd_daily');
@@ -127,7 +128,6 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     ) || []);
     
     // CRITICAL FIX: Explicitly calculate February raw summary 
-    // This ensures we have the exact summary values as seen in the February view
     console.log("Calculating raw February summary from", februaryData?.length || 0, "records");
     const rawFebSummary = calculateRawMtdSummary(februaryData || [], 'February');
     console.log("Raw February summary calculated:", rawFebSummary);
@@ -189,41 +189,112 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
     const aprRepChanges = calculateRepChanges(aprRetailData, marchRollingRetailData);
     const marchRepChanges = calculateRepChanges(marchRetailData, febRetailData);
     
-    return {
-      // April data
-      repData: aprRetailData,
-      revaData: aprRevaData,
-      wholesaleData: aprWholesaleData,
-      baseSummary: rawAprSummary,
-      revaValues: aprRevaSummary,
-      wholesaleValues: aprWholesaleSummary,
-      
-      // March data (using March Rolling for April comparisons)
-      marchRepData: currentSelectedMonth === 'April' ? marchRollingRetailData : marchRetailData,
-      marchRevaData: currentSelectedMonth === 'April' ? marchRollingRevaData : marchRevaData,
-      marchWholesaleData: currentSelectedMonth === 'April' ? marchRollingWholesaleData : marchWholesaleData,
-      marchBaseSummary: currentSelectedMonth === 'April' ? rawMarchRollingSummary : rawMarchSummary,
-      marchRevaValues: marchRevaSummary,
-      marchWholesaleValues: marchWholesaleSummary,
-      
-      // February data
-      febRepData: febRetailData,
-      febRevaData: febRevaData,
-      febWholesaleData: febWholesaleData,
-      febBaseSummary: rawFebSummary,
-      febRevaValues: febRevaSummary,
-      febWholesaleValues: febWholesaleSummary,
-      
-      // CRITICAL FIX: Add raw February summary directly 
-      // This ensures we're using the exact same data for February view and March comparison
-      rawFebSummary,
-      
-      // Changes
-      summaryChanges: aprVsMarchChanges,
-      marchSummaryChanges: marchVsFebChanges,
-      repChanges: aprRepChanges,
-      marchRepChanges: marchRepChanges
-    };
+    // CRITICAL FIX: Always use the correct data based on the selected month
+    // This fixes the double-issue where refreshing while viewing March could show
+    // wrong data at first
+    console.log(`Preparing response data for ${currentSelectedMonth}`);
+    
+    // Always return the right data for the selected month
+    if (currentSelectedMonth === 'April') {
+      return {
+        // April data
+        repData: aprRetailData,
+        revaData: aprRevaData,
+        wholesaleData: aprWholesaleData,
+        baseSummary: rawAprSummary,
+        revaValues: aprRevaSummary,
+        wholesaleValues: aprWholesaleSummary,
+        
+        // March Rolling data for April comparison
+        marchRepData: marchRollingRetailData,
+        marchRevaData: marchRollingRevaData,
+        marchWholesaleData: marchRollingWholesaleData,
+        marchBaseSummary: rawMarchRollingSummary,
+        marchRevaValues: marchRevaSummary,
+        marchWholesaleValues: marchWholesaleSummary,
+        
+        // February data
+        febRepData: febRetailData,
+        febRevaData: febRevaData,
+        febWholesaleData: febWholesaleData,
+        febBaseSummary: rawFebSummary,
+        febRevaValues: febRevaSummary,
+        febWholesaleValues: febWholesaleSummary,
+        rawFebSummary,
+        
+        // Changes
+        summaryChanges: aprVsMarchChanges,
+        marchSummaryChanges: marchVsFebChanges,
+        repChanges: aprRepChanges,
+        marchRepChanges: marchRepChanges
+      };
+    } else if (currentSelectedMonth === 'March') {
+      return {
+        // For March view, use regular March data as primary
+        repData: marchRetailData,
+        revaData: marchRevaData,
+        wholesaleData: marchWholesaleData,
+        baseSummary: rawMarchSummary,
+        revaValues: marchRevaSummary,
+        wholesaleValues: marchWholesaleSummary,
+        
+        // February data for comparison
+        marchRepData: febRetailData, // When viewing March, "march" comparison is February
+        marchRevaData: febRevaData,
+        marchWholesaleData: febWholesaleData,
+        marchBaseSummary: rawFebSummary, 
+        marchRevaValues: febRevaSummary,
+        marchWholesaleValues: febWholesaleSummary,
+        
+        // Add February data for consistency
+        febRepData: febRetailData,
+        febRevaData: febRevaData,
+        febWholesaleData: febWholesaleData,
+        febBaseSummary: rawFebSummary,
+        febRevaValues: febRevaSummary,
+        febWholesaleValues: febWholesaleSummary,
+        rawFebSummary,
+        
+        // Changes
+        summaryChanges: marchVsFebChanges, // Primary changes for March view
+        marchSummaryChanges: marchVsFebChanges, // Same as above for consistency
+        repChanges: marchRepChanges,
+        marchRepChanges: marchRepChanges
+      };
+    } else {
+      // February view (fallback for other months)
+      return {
+        repData: febRetailData,
+        revaData: febRevaData,
+        wholesaleData: febWholesaleData,
+        baseSummary: rawFebSummary,
+        revaValues: febRevaSummary,
+        wholesaleValues: febWholesaleSummary,
+        
+        // No comparison data for February (earliest month)
+        marchRepData: [],
+        marchRevaData: [],
+        marchWholesaleData: [],
+        marchBaseSummary: defaultBaseSummary,
+        marchRevaValues: defaultRevaValues,
+        marchWholesaleValues: defaultWholesaleValues,
+        
+        // Add February data for consistency
+        febRepData: febRetailData,
+        febRevaData: febRevaData,
+        febWholesaleData: febWholesaleData,
+        febBaseSummary: rawFebSummary,
+        febRevaValues: febRevaSummary,
+        febWholesaleValues: febWholesaleSummary,
+        rawFebSummary,
+        
+        // No changes for February
+        summaryChanges: defaultSummaryChanges,
+        marchSummaryChanges: defaultSummaryChanges,
+        repChanges: defaultRepChanges,
+        marchRepChanges: defaultRepChanges
+      };
+    }
   } catch (error) {
     console.error('Error loading data:', error);
     toast({

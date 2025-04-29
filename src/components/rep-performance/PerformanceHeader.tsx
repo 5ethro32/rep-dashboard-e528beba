@@ -30,10 +30,13 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
       </h1>
       <div className="mt-4 md:mt-8 text-right">
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center text-lg md:text-xl lg:text-2xl text-white/80 hover:text-white transition-colors focus:outline-none">
+          <DropdownMenuTrigger 
+            className="flex items-center text-lg md:text-xl lg:text-2xl text-white/80 hover:text-white transition-colors focus:outline-none"
+            disabled={isLoading}
+          >
             {isLoading ? (
               <div className="flex items-center">
-                <span className="mr-2">Loading</span>
+                <span className="mr-2">Loading {selectedMonth} data</span>
                 <Loader2 className="h-4 w-4 ml-1 animate-spin" />
               </div>
             ) : (
