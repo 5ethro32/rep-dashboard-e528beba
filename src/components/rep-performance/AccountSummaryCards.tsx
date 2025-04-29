@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,8 +53,8 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       // Extract the sub-rep name with fallbacks for different column naming
       const subRepName = item["Sub-Rep"] || item.sub_rep || '';
       
-      // Skip RETAIL, REVA, and Wholesale as they are department names, not reps
-      if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale') {
+      // Skip RETAIL, REVA, Wholesale, and None as they are department names or invalid reps, not actual reps
+      if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale' && repName !== 'None') {
         const profit = typeof item.Profit === 'number' ? item.Profit : 
                       typeof item.profit === 'number' ? item.profit : 0;
         const packs = typeof item.Packs === 'number' ? item.Packs : 
@@ -70,8 +69,8 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         repPacks.set(repName, currentPacks + packs);
       }
       
-      // Also add metrics for the sub-rep if present
-      if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale') {
+      // Also add metrics for the sub-rep if present and not "None"
+      if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale' && subRepName !== 'None') {
         const profit = typeof item.Profit === 'number' ? item.Profit : 
                       typeof item.profit === 'number' ? item.profit : 0;
         const packs = typeof item.Packs === 'number' ? item.Packs : 
@@ -94,8 +93,8 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       // Extract the sub-rep name with fallbacks for different column naming
       const subRepName = item["Sub-Rep"] || item.sub_rep || '';
       
-      // Skip RETAIL, REVA, and Wholesale as they are department names, not reps
-      if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale') {
+      // Skip RETAIL, REVA, Wholesale, and None as they are department names or invalid reps, not actual reps
+      if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale' && repName !== 'None') {
         const profit = typeof item.Profit === 'number' ? item.Profit : 
                       typeof item.profit === 'number' ? item.profit : 0;
         
@@ -104,8 +103,8 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         previousRepProfits.set(repName, prevProfit + profit);
       }
       
-      // Also add metrics for the sub-rep if present
-      if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale') {
+      // Also add metrics for the sub-rep if present and not "None"
+      if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale' && subRepName !== 'None') {
         const profit = typeof item.Profit === 'number' ? item.Profit : 
                       typeof item.profit === 'number' ? item.profit : 0;
         
@@ -133,7 +132,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       }
     });
     
-    // Calculate most improved rep
+    // Calculate most improved rep - ONLY considering reps who existed in the previous month data
     let maxImprovement = 0;
     let maxPercentImprovement = 0;
     
@@ -141,7 +140,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       const previousProfit = previousRepProfits.get(rep) || 0;
       
       // Only consider reps who exist in both months and had some profit in previous month
-      if (previousProfit > 0) {
+      if (previousRepProfits.has(rep) && previousProfit > 0) {
         const improvement = currentProfit - previousProfit;
         const percentImprovement = (improvement / previousProfit) * 100;
         
@@ -155,18 +154,8 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
             percentImprovement: maxPercentImprovement
           };
         }
-      } else if (previousProfit === 0 && currentProfit > 0 && !previousRepProfits.has(rep)) {
-        // This is a new rep who wasn't present before but is doing well
-        if (currentProfit > maxImprovement) {
-          maxImprovement = currentProfit;
-          maxPercentImprovement = 100; // 100% new improvement
-          mostImprovedRep = { 
-            name: rep, 
-            improvement: maxImprovement,
-            percentImprovement: maxPercentImprovement
-          };
-        }
       }
+      // Remove the edge case for new reps since we only want to include colleagues who had data in the previous month
     });
   }
 
