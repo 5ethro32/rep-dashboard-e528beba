@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -70,6 +71,9 @@ export const useRepPerformanceData = () => {
   const [febRevaRepData, setFebRevaRepData] = useState<RepData[]>(defaultRevaData);
   const [febWholesaleRepData, setFebWholesaleRepData] = useState<RepData[]>(defaultWholesaleData);
   
+  // CRITICAL FIX: Add state for raw February summary
+  const [rawFebSummary, setRawFebSummary] = useState<SummaryData>(defaultBaseSummary);
+  
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [marchSummaryChanges, setMarchSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
@@ -116,10 +120,9 @@ export const useRepPerformanceData = () => {
       setFebRevaValues(data.febRevaValues);
       setFebWholesaleValues(data.febWholesaleValues);
       
-      // Log February data for debugging
-      console.log("February Base Summary (should match February view):", data.febBaseSummary);
-      console.log("February REVA Values:", data.febRevaValues);
-      console.log("February Wholesale Values:", data.febWholesaleValues);
+      // CRITICAL FIX: Set the raw February summary
+      setRawFebSummary(data.rawFebSummary);
+      console.log("RAW February Summary (for direct comparison):", data.rawFebSummary);
       
       setSummaryChanges(data.summaryChanges);
       setMarchSummaryChanges(data.marchSummaryChanges);
@@ -252,7 +255,7 @@ export const useRepPerformanceData = () => {
     isRawDataMonth
   );
   
-  // FIX: Always use raw February data directly instead of calculating it
+  // CRITICAL FIX: Always use raw February data directly instead of calculating it
   // This ensures the February comparison data is the same as when viewing February directly
   const febDirectSummary = febBaseSummary;
   
@@ -297,7 +300,8 @@ export const useRepPerformanceData = () => {
     febWholesaleRepData,
     marchBaseSummary,
     febBaseSummary,
-    // Add the direct February summary for March comparison
-    febDirectSummary
+    febDirectSummary,
+    // CRITICAL FIX: Add raw February summary to the return value
+    rawFebSummary
   };
 };

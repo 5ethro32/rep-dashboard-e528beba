@@ -43,7 +43,8 @@ const RepPerformance = () => {
     febWholesaleRepData,
     marchBaseSummary,
     febBaseSummary,
-    febDirectSummary
+    febDirectSummary,
+    rawFebSummary  // Add this to destructuring to access the raw February data
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
@@ -59,14 +60,13 @@ const RepPerformance = () => {
   const includeWholesale = true;
   
   // Determine the previous month summary based on current selected month
-  // FIX: Use febDirectSummary (raw Feb data) when in March view
   const getPreviousMonthSummary = () => {
     if (selectedMonth === 'April') {
       return marchBaseSummary;
     } else if (selectedMonth === 'March') {
-      // Always use the raw February summary data directly
-      console.log("Using raw febDirectSummary for March comparison:", febDirectSummary);
-      return febDirectSummary;
+      // CRITICAL FIX: Use rawFebSummary - the exact same raw February data that's used in the February view
+      console.log("Using raw February summary for March comparison:", rawFebSummary);
+      return rawFebSummary;
     }
     return undefined;
   };

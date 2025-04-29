@@ -66,29 +66,15 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     };
   };
 
-  // FIX: Always use direct previous month summary when available
-  // This ensures consistent comparison data across all views
+  // CRITICAL FIX: Always use direct previous month summary value without any fallback calculation
   const getPreviousValue = (metric: keyof typeof summary) => {
     if (previousMonthSummary && previousMonthSummary[metric] !== undefined) {
       console.log(`Using direct previousMonthSummary for ${metric}:`, previousMonthSummary[metric]);
       return previousMonthSummary[metric];
     }
     
-    // Only fall back to calculating from percent change if no direct data
-    const current = summary[metric];
-    const changePercent = filteredChanges[metric];
-    
-    if (!showChangeIndicators || changePercent === undefined || changePercent === null || isNaN(changePercent) || Math.abs(changePercent) < 0.1) {
-      return current;
-    }
-    
-    const calculated = current / (1 + changePercent / 100);
-    console.log(`Calculating ${metric} from percent change:`, {
-      current,
-      changePercent,
-      calculated
-    });
-    return calculated;
+    // Always return the current metric value if no previous value is available
+    return summary[metric];
   };
 
   // Calculate comparison month for subtitle
@@ -98,7 +84,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     return '';
   };
 
-  console.log("Rendering SummaryMetrics with data and filter state:", { 
+  console.log("Rendering SummaryMetrics with data:", { 
     summary, 
     summaryChanges: filteredChanges,
     previousMonthSummary,

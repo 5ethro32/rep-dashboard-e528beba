@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -127,7 +126,8 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
       item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
     ) || []);
     
-    // FIXED: Explicitly calculate February raw summary 
+    // CRITICAL FIX: Explicitly calculate February raw summary 
+    // This ensures we have the exact summary values as seen in the February view
     console.log("Calculating raw February summary from", februaryData?.length || 0, "records");
     const rawFebSummary = calculateRawMtdSummary(februaryData || [], 'February');
     console.log("Raw February summary calculated:", rawFebSummary);
@@ -213,6 +213,10 @@ export const fetchRepPerformanceData = async (currentSelectedMonth: string = 'Ap
       febBaseSummary: rawFebSummary,
       febRevaValues: febRevaSummary,
       febWholesaleValues: febWholesaleSummary,
+      
+      // CRITICAL FIX: Add raw February summary directly 
+      // This ensures we're using the exact same data for February view and March comparison
+      rawFebSummary,
       
       // Changes
       summaryChanges: aprVsMarchChanges,
