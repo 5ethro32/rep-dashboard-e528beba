@@ -127,6 +127,10 @@ export const useRepPerformanceData = () => {
       
       setOverallData(combinedData);
       
+      // Call updateDisplayedDataForMonth after loading all data
+      // This ensures metric cards reflect the currently selected month
+      updateDisplayedDataForMonth();
+      
     } catch (error) {
       console.error('Error loading data:', error);
       toast({
