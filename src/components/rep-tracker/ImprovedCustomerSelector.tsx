@@ -37,6 +37,25 @@ export function ImprovedCustomerSelector({
       setSearchValue('');
     }
   }, [open]);
+
+  // Close dropdown when clicking outside (for mobile)
+  useEffect(() => {
+    if (!open) return;
+    
+    const handleOutsideClick = (e: MouseEvent) => {
+      setOpen(false);
+    };
+    
+    // Delay adding the event listener to prevent immediate closing
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleOutsideClick);
+    };
+  }, [open]);
   
   return (
     <div className={cn("relative w-full", className)}>
@@ -45,7 +64,10 @@ export function ImprovedCustomerSelector({
         role="combobox"
         aria-expanded={open}
         className={cn("w-full justify-between text-left font-normal", className)}
-        onClick={() => setOpen(!open)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
         disabled={disabled}
       >
         {selectedCustomer ? (
@@ -57,21 +79,45 @@ export function ImprovedCustomerSelector({
       
       {open && (
         <div 
-          className={cn(
-            "absolute w-full z-50 top-full mt-1",
-            isMobile ? "left-0 right-0" : ""
-          )}
-          style={{ zIndex: 100 }}
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center sm:relative sm:inset-auto sm:bg-transparent"
+          onClick={(e) => e.stopPropagation()}
+          style={{ zIndex: 990 }}
         >
-          <CustomerCommand 
-            customers={safeCustomers}
-            selectedCustomer={selectedCustomer}
-            onSelect={(ref, name) => {
-              onSelect(ref, name);
-              setOpen(false);
-            }}
-            className="rounded-t-none border-t-0"
-          />
+          {isMobile && (
+            <div className="fixed top-0 left-0 right-0 bg-black px-4 py-3 flex justify-between items-center z-[1000]">
+              <h3 className="font-semibold text-white">Select Customer</h3>
+              <button 
+                onClick={() => setOpen(false)}
+                className="text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+          
+          <div 
+            className={cn(
+              "z-[1000]",
+              isMobile 
+                ? "fixed inset-x-2 top-14 bottom-4" 
+                : "absolute w-full top-full mt-1"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CustomerCommand 
+              customers={safeCustomers}
+              selectedCustomer={selectedCustomer}
+              onSelect={(ref, name) => {
+                onSelect(ref, name);
+                setOpen(false);
+              }}
+              className={cn(
+                isMobile 
+                  ? "rounded-lg border shadow-lg" 
+                  : "rounded-t-none border-t-0"
+              )}
+            />
+          </div>
         </div>
       )}
     </div>

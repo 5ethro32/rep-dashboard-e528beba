@@ -78,11 +78,14 @@ export function CustomerCommand({
   return (
     <div 
       className={cn(
-        "rounded-lg border shadow-md bg-popover", 
-        isMobile ? "w-full max-w-[85vw]" : "",
+        "rounded-lg border shadow-md bg-popover fixed inset-x-2 sm:relative sm:inset-auto", 
         className
       )}
-      style={{ zIndex: 100 }}
+      style={{ 
+        zIndex: 999,
+        maxWidth: isMobile ? 'calc(100vw - 16px)' : 'none',
+        width: isMobile ? 'calc(100vw - 16px)' : 'auto'
+      }}
     >
       <div className="flex items-center border-b px-3">
         <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -101,8 +104,8 @@ export function CustomerCommand({
       </div>
       
       <ScrollArea 
-        className={cn("max-h-[200px] overflow-y-auto", isMobile ? "max-w-[85vw]" : "")} 
-        orientation="both"
+        className="max-h-[200px] overflow-y-auto"
+        orientation="vertical"
       >
         {filteredCustomers.length === 0 ? (
           <div className="py-6 text-center text-sm">No customer found.</div>
@@ -116,8 +119,9 @@ export function CustomerCommand({
                   onClick={(e) => handleSelect(e, customer)}
                   onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                   className={cn(
-                    "flex w-full items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm text-left break-words whitespace-normal",
+                    "flex w-full items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm text-left",
                     "hover:bg-accent hover:text-accent-foreground",
+                    "break-all whitespace-normal",
                     selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                   )}
                 >
@@ -127,7 +131,7 @@ export function CustomerCommand({
                       selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <span className="text-wrap break-words line-clamp-2">{customer.account_name}</span>
+                  <span className="text-wrap break-all line-clamp-2 overflow-hidden">{customer.account_name}</span>
                 </button>
               ) : null
             ))}

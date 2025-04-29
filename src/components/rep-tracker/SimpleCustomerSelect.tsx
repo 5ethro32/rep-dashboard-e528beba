@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SimpleCustomerSelectProps {
   customers: Array<{ account_name: string; account_ref: string }>;
@@ -51,6 +52,69 @@ export function SimpleCustomerSelect({
     }
   };
 
+  // Custom content for mobile view
+  if (isMobile && open) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex flex-col">
+        <div className="bg-black px-4 py-3 flex justify-between items-center">
+          <h3 className="font-semibold text-white">{placeholder}</h3>
+          <button 
+            onClick={() => setOpen(false)}
+            className="text-white"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <div className="flex-1 bg-popover p-2 flex flex-col">
+          <div className="mb-2">
+            <Input
+              placeholder="Search customers..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              className="h-9 w-full"
+              autoComplete="off"
+            />
+          </div>
+          
+          <ScrollArea className="flex-1 rounded-md border">
+            {filteredCustomers.length === 0 ? (
+              <div className="text-center p-4 text-sm text-muted-foreground">
+                No customer found.
+              </div>
+            ) : (
+              <div className="p-1">
+                {filteredCustomers.map((customer) => (
+                  customer && customer.account_ref && customer.account_name ? (
+                    <button
+                      key={customer.account_ref}
+                      type="button"
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer text-left",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        "break-all whitespace-normal",
+                        selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
+                      )}
+                      onClick={(e) => handleSelect(e, customer)}
+                    >
+                      <Check
+                        className={cn(
+                          "h-4 w-4 flex-shrink-0",
+                          selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="text-wrap break-all line-clamp-2">{customer.account_name}</span>
+                    </button>
+                  ) : null
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -69,12 +133,8 @@ export function SimpleCustomerSelect({
         className="p-0 bg-popover" 
         align="start"
         sideOffset={4}
-        onInteractOutside={(e) => {
-          // Only close if clicking outside the popover
-          e.preventDefault();
-        }}
         style={{ 
-          zIndex: 100,
+          zIndex: 999,
           width: isMobile ? '85vw' : 'var(--radix-popover-trigger-width)',
           maxWidth: isMobile ? '85vw' : 'none'
         }}
@@ -86,7 +146,6 @@ export function SimpleCustomerSelect({
             onChange={(e) => setSearchValue(e.target.value)}
             className="h-9"
             autoComplete="off"
-            onClick={(e) => e.stopPropagation()}
           />
         </div>
         <div className="max-h-[300px] overflow-y-auto p-1">
@@ -103,11 +162,10 @@ export function SimpleCustomerSelect({
                   className={cn(
                     "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer text-left",
                     "hover:bg-accent hover:text-accent-foreground",
-                    "break-words whitespace-normal",
+                    "break-all whitespace-normal",
                     selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                   )}
                   onClick={(e) => handleSelect(e, customer)}
-                  onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                 >
                   <Check
                     className={cn(
@@ -115,7 +173,7 @@ export function SimpleCustomerSelect({
                       selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <span className="text-wrap break-words line-clamp-2">{customer.account_name}</span>
+                  <span className="text-wrap break-all line-clamp-2">{customer.account_name}</span>
                 </button>
               ) : null
             ))
