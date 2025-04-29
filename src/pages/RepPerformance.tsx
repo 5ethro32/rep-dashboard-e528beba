@@ -40,7 +40,9 @@ const RepPerformance = () => {
     febRevaRepData,
     aprWholesaleRepData,
     marchWholesaleRepData,
-    febWholesaleRepData
+    febWholesaleRepData,
+    marchBaseSummary,
+    febBaseSummary
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
@@ -54,6 +56,16 @@ const RepPerformance = () => {
   const includeRetail = true;
   const includeReva = true;
   const includeWholesale = true;
+  
+  // Determine the previous month summary based on current selected month
+  const getPreviousMonthSummary = () => {
+    if (selectedMonth === 'April') {
+      return marchBaseSummary;
+    } else if (selectedMonth === 'March') {
+      return febBaseSummary;
+    }
+    return undefined;
+  };
   
   const renderChangeIndicator = (
     changeValue: number, 
@@ -114,6 +126,7 @@ const RepPerformance = () => {
         <SummaryMetrics 
           summary={summary}
           summaryChanges={summaryChanges}
+          previousMonthSummary={getPreviousMonthSummary()}
           isLoading={isLoading}
           selectedMonth={selectedMonth}
           includeRetail={includeRetail}
