@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -91,6 +92,7 @@ export const useRepPerformanceData = () => {
       
       console.log(`Loaded fresh performance data for ${selectedMonth}:`, data);
       
+      // Store the raw summaries separately to ensure we have the correct data for each month
       setAprRepData(data.repData);
       setAprRevaRepData(data.revaData);
       setAprWholesaleRepData(data.wholesaleData);
@@ -108,9 +110,17 @@ export const useRepPerformanceData = () => {
       setFebRepData(data.febRepData || defaultRepData);
       setFebRevaRepData(data.febRevaData || defaultRevaData);
       setFebWholesaleRepData(data.febWholesaleData || defaultWholesaleData);
+      
+      // Make sure the February summary data is correctly loaded
+      console.log("February base summary data:", data.febBaseSummary);
       setFebBaseSummary(data.febBaseSummary);
       setFebRevaValues(data.febRevaValues);
       setFebWholesaleValues(data.febWholesaleValues);
+      
+      // Log February data for debugging
+      console.log("February Base Summary (should match February view):", data.febBaseSummary);
+      console.log("February REVA Values:", data.febRevaValues);
+      console.log("February Wholesale Values:", data.febWholesaleValues);
       
       setSummaryChanges(data.summaryChanges);
       setMarchSummaryChanges(data.marchSummaryChanges);
@@ -232,6 +242,7 @@ export const useRepPerformanceData = () => {
   
   const isRawDataMonth = selectedMonth === 'April' || selectedMonth === 'March';
   
+  // Ensure we properly calculate the direct summaries for each month
   const currentSummary = calculateDirectSummary(
     selectedMonth === 'April' ? aprBaseSummary : 
       selectedMonth === 'March' ? marchBaseSummary : febBaseSummary,
@@ -241,6 +252,16 @@ export const useRepPerformanceData = () => {
       selectedMonth === 'March' ? marchWholesaleValues : febWholesaleValues,
     isRawDataMonth
   );
+  
+  // Fixed - Calculate a combined February summary for March comparison
+  const febDirectSummary = calculateDirectSummary(
+    febBaseSummary,
+    febRevaValues,
+    febWholesaleValues,
+    true // Treat February data as raw data
+  );
+  
+  console.log("February direct summary for March comparison:", febDirectSummary);
   
   const currentChanges = selectedMonth === 'April' ? summaryChanges : 
                       selectedMonth === 'March' ? marchSummaryChanges : 
@@ -280,6 +301,8 @@ export const useRepPerformanceData = () => {
     marchWholesaleRepData,
     febWholesaleRepData,
     marchBaseSummary,
-    febBaseSummary
+    febBaseSummary,
+    // Add the direct February summary for March comparison
+    febDirectSummary
   };
 };

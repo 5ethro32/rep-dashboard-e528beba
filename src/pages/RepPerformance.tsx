@@ -42,7 +42,8 @@ const RepPerformance = () => {
     marchWholesaleRepData,
     febWholesaleRepData,
     marchBaseSummary,
-    febBaseSummary
+    febBaseSummary,
+    febDirectSummary
   } = useRepPerformanceData();
   
   const activeData = getActiveData('overall');
@@ -62,10 +63,15 @@ const RepPerformance = () => {
     if (selectedMonth === 'April') {
       return marchBaseSummary;
     } else if (selectedMonth === 'March') {
-      return febBaseSummary;
+      // Use the direct February summary data for March comparison
+      console.log("Using febDirectSummary for March comparison:", febDirectSummary);
+      return febDirectSummary;
     }
     return undefined;
   };
+  
+  // Log the previous month summary for debugging
+  console.log("Previous month summary for", selectedMonth, ":", getPreviousMonthSummary());
   
   const renderChangeIndicator = (
     changeValue: number, 
