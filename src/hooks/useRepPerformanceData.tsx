@@ -278,6 +278,8 @@ export const useRepPerformanceData = () => {
     febRevaRepData,
     aprWholesaleRepData,
     marchWholesaleRepData,
-    febWholesaleRepData
+    febWholesaleRepData,
+    marchBaseSummary,
+    febBaseSummary
   };
 };
