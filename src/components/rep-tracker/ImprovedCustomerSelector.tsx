@@ -1,29 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
+import { Check, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-
-interface Customer {
-  account_name: string;
-  account_ref: string;
-}
+import { CustomerCommand } from './CustomerCommand';
 
 interface ImprovedCustomerSelectorProps {
-  customers: Customer[];
+  customers: Array<{ account_name: string; account_ref: string }>;
   selectedCustomer: string;
   onSelect: (ref: string, name: string) => void;
   placeholder?: string;
@@ -40,126 +24,48 @@ export function ImprovedCustomerSelector({
   disabled = false
 }: ImprovedCustomerSelectorProps) {
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Safety check for customers array
+  const [searchValue, setSearchValue] = useState('');
+
+  // Safely handle customers array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  // Filter customers based on search
-  const filteredCustomers = searchQuery === '' 
-    ? safeCustomers 
-    : safeCustomers.filter(customer => {
-        if (!customer || typeof customer.account_name !== 'string') return false;
-        return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
-      });
-  
-  // Clear search when popover closes
+  // Clear search when selection is made
   useEffect(() => {
     if (!open) {
-      setSearchQuery('');
+      setSearchValue('');
     }
   }, [open]);
   
-  // Select a customer safely with explicit event handling
-  const selectCustomer = (customer: Customer) => {
-    if (!customer || !customer.account_ref || !customer.account_name) return;
-    
-    onSelect(customer.account_ref, customer.account_name);
-    setOpen(false);
-    setSearchQuery('');
-  };
-
-  // Using DropdownMenu instead of Popover for better mobile support
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          disabled={disabled}
-          className={cn("w-full justify-between text-left font-normal", className)}
-        >
-          {selectedCustomer ? (
-            <span className="truncate">{selectedCustomer}</span>
-          ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </DropdownMenuTrigger>
-      
-      <DropdownMenuContent 
-        className="w-[var(--radix-dropdown-menu-trigger-width)] p-0" 
-        align="start"
-        sideOffset={4}
+    <div className={cn("relative w-full", className)}>
+      <Button
+        variant="outline"
+        role="combobox"
+        aria-expanded={open}
+        className={cn("w-full justify-between text-left font-normal", className)}
+        onClick={() => setOpen(!open)}
+        disabled={disabled}
       >
-        {/* Search input with clear button */}
-        <div className="flex items-center border-b p-2">
-          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search customers..."
-            className="border-0 bg-transparent p-1 text-sm focus-visible:outline-none focus-visible:ring-0"
-            onKeyDown={(e) => {
-              // Prevent form submission on Enter key
-              if (e.key === 'Enter') {
-                e.preventDefault();
-              }
+        {selectedCustomer ? (
+          <span className="truncate">{selectedCustomer}</span>
+        ) : (
+          <span className="text-muted-foreground">{placeholder}</span>
+        )}
+      </Button>
+      
+      {open && (
+        <div className="absolute w-full z-50 top-full mt-1 rounded-md border bg-popover shadow-md">
+          <CustomerCommand 
+            customers={safeCustomers}
+            selectedCustomer={selectedCustomer}
+            onSelect={(ref, name) => {
+              onSelect(ref, name);
+              setOpen(false);
             }}
-            // Stop propagation to prevent dropdown from closing
-            onClick={(e) => e.stopPropagation()}
+            className="rounded-t-none border-t-0"
           />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 w-5 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSearchQuery('');
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
         </div>
-        
-        {/* Customer list with scroll area */}
-        <ScrollArea className="max-h-[300px] overflow-y-auto">
-          {filteredCustomers.length > 0 ? (
-            <div className="p-1">
-              {filteredCustomers.map((customer) => {
-                const isSelected = selectedCustomer === customer.account_name;
-                
-                return (
-                  <DropdownMenuItem
-                    key={customer.account_ref}
-                    className={cn(
-                      "flex cursor-pointer items-center px-3 py-2 text-sm rounded-sm",
-                      isSelected && "bg-accent text-accent-foreground"
-                    )}
-                    onSelect={() => selectCustomer(customer)}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        isSelected ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <span className="truncate">{customer.account_name}</span>
-                  </DropdownMenuItem>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              No customers found
-            </div>
-          )}
-        </ScrollArea>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      )}
+    </div>
   );
 }

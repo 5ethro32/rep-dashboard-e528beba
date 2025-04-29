@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Check, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -18,8 +18,9 @@ export function CustomerCommand({
   onSelect,
   className 
 }: CustomerCommandProps) {
-  const [inputValue, setInputValue] = useState(selectedCustomer || "");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [inputValue, setInputValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
@@ -30,42 +31,67 @@ export function CustomerCommand({
     return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
   });
   
+  // Focus input on mount
+  useEffect(() => {
+    // Short delay to ensure the dialog has rendered and focus can be set
+    const timeoutId = setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 50);
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
+  
   const handleSelect = (e: React.MouseEvent, customer: { account_ref: string; account_name: string }) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
-      setInputValue(customer.account_name); 
+      setInputValue('');
+      setSearchQuery('');
     }
   };
 
-  const handleInputChange = (value: string) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
     setInputValue(value);
     setSearchQuery(value);
   };
 
-  // Update input value when selectedCustomer changes externally
-  useEffect(() => {
-    if (selectedCustomer) {
-      setInputValue(selectedCustomer);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Prevent form submission when pressing Enter within the search field
+    if (e.key === 'Enter' && filteredCustomers.length > 0) {
+      e.preventDefault();
+      const firstCustomer = filteredCustomers[0];
+      if (firstCustomer) {
+        onSelect(firstCustomer.account_ref, firstCustomer.account_name);
+        setInputValue('');
+        setSearchQuery('');
+      }
     }
-  }, [selectedCustomer]);
+  };
   
   return (
-    <div className={cn("rounded-lg border shadow-md", className)}>
+    <div className={cn("rounded-lg border shadow-md bg-popover", className)}>
       <div className="flex items-center border-b px-3">
         <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
         <Input 
           placeholder="Search customer..." 
-          className="border-none focus:ring-0"
+          className="border-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
           value={inputValue}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onClick={(e) => e.stopPropagation()}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          ref={inputRef}
+          onClick={(e) => {
+            // Ensure click doesn't propagate and close the dropdown
+            e.stopPropagation();
+          }}
         />
       </div>
       
-      <ScrollArea className="max-h-[200px]">
+      <ScrollArea className="max-h-[200px] overflow-y-auto">
         {filteredCustomers.length === 0 ? (
           <div className="py-6 text-center text-sm">No customer found.</div>
         ) : (

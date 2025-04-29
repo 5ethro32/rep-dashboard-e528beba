@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import { SimpleCustomerSelect } from './SimpleCustomerSelect';
+import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import DatePickerField from './DatePickerField';
 
 interface Visit {
@@ -157,7 +156,7 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
-            <SimpleCustomerSelect 
+            <ImprovedCustomerSelector 
               customers={safeCustomers}
               selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}
