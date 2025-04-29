@@ -59,12 +59,13 @@ const RepPerformance = () => {
   const includeWholesale = true;
   
   // Determine the previous month summary based on current selected month
+  // FIX: Use febDirectSummary (raw Feb data) when in March view
   const getPreviousMonthSummary = () => {
     if (selectedMonth === 'April') {
       return marchBaseSummary;
     } else if (selectedMonth === 'March') {
-      // Use the direct February summary data for March comparison
-      console.log("Using febDirectSummary for March comparison:", febDirectSummary);
+      // Always use the raw February summary data directly
+      console.log("Using raw febDirectSummary for March comparison:", febDirectSummary);
       return febDirectSummary;
     }
     return undefined;

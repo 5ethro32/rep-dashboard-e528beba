@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -253,15 +252,11 @@ export const useRepPerformanceData = () => {
     isRawDataMonth
   );
   
-  // Fixed - Calculate a combined February summary for March comparison
-  const febDirectSummary = calculateDirectSummary(
-    febBaseSummary,
-    febRevaValues,
-    febWholesaleValues,
-    true // Treat February data as raw data
-  );
+  // FIX: Always use raw February data directly instead of calculating it
+  // This ensures the February comparison data is the same as when viewing February directly
+  const febDirectSummary = febBaseSummary;
   
-  console.log("February direct summary for March comparison:", febDirectSummary);
+  console.log("February direct summary for March comparison (using raw data directly):", febDirectSummary);
   
   const currentChanges = selectedMonth === 'April' ? summaryChanges : 
                       selectedMonth === 'March' ? marchSummaryChanges : 

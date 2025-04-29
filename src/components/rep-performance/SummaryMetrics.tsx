@@ -66,9 +66,9 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     };
   };
 
-  // Get previous value directly from previousMonthSummary when available
+  // FIX: Always use direct previous month summary when available
+  // This ensures consistent comparison data across all views
   const getPreviousValue = (metric: keyof typeof summary) => {
-    // FIXED: Always use direct previous month data when available, with no fallbacks
     if (previousMonthSummary && previousMonthSummary[metric] !== undefined) {
       console.log(`Using direct previousMonthSummary for ${metric}:`, previousMonthSummary[metric]);
       return previousMonthSummary[metric];
