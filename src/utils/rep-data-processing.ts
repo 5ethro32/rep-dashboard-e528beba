@@ -212,7 +212,37 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   const accountSet = new Set<string>();
   const activeAccountSet = new Set<string>();
   
-  data.forEach(item => {
+  // Check if this is February data by examining fields present in the data
+  const isFebruaryData = data.length > 0 && data[0] && 
+                        (data[0].hasOwnProperty('Department') || 
+                         (data[0].hasOwnProperty('Rep') && data[0].hasOwnProperty('Sub-Rep')));
+  
+  // Track processed items to avoid double counting in February data
+  const processedEntries = new Set<string>();
+  
+  if (isFebruaryData) {
+    console.log("February data detected - implementing special handling for February raw summary data");
+  }
+  
+  data.forEach((item, index) => {
+    // For February data, avoid double-counting entries where Rep is a department and there's a Sub-Rep
+    if (isFebruaryData) {
+      const mainRep = item.Rep || '';
+      const subRep = item['Sub-Rep'] || '';
+      const accountRef = item['Account Ref'] || '';
+      const entryId = `${accountRef}-${index}`;
+      
+      // Skip if this entry combination has already been processed
+      // or if it's a department-level entry with Sub-Rep already counted
+      if (processedEntries.has(entryId) || 
+          (['RETAIL', 'REVA', 'Wholesale', 'WHOLESALE'].includes(mainRep) && 
+           subRep && subRep.trim() !== '' && subRep.trim().toUpperCase() !== 'NONE')) {
+        return;
+      }
+      
+      processedEntries.add(entryId);
+    }
+    
     const spend = extractNumericValue(item, ['Spend', 'spend']);
     const profit = extractNumericValue(item, ['Profit', 'profit']);
     const packs = extractNumericValue(item, ['Packs', 'packs']);
@@ -234,6 +264,16 @@ export const calculateRawMtdSummary = (data: any[]): SummaryData => {
   });
   
   const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+  
+  // Log summary for verification
+  console.log(`Raw MTD Summary ${isFebruaryData ? "(February data)" : ""}:`, {
+    totalSpend,
+    totalProfit,
+    totalPacks,
+    totalAccounts,
+    activeAccounts,
+    averageMargin
+  });
   
   return {
     totalSpend,
