@@ -11,9 +11,23 @@ import { ChevronDown } from 'lucide-react';
 interface PerformanceHeaderProps {
   selectedMonth: string;
   setSelectedMonth: (value: string) => void;
+  onRefresh?: () => void; // Added onRefresh prop
 }
 
-const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ selectedMonth, setSelectedMonth }) => {
+const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ 
+  selectedMonth, 
+  setSelectedMonth,
+  onRefresh 
+}) => {
+  // Function to handle month selection and trigger refresh
+  const handleMonthSelection = (month: string) => {
+    setSelectedMonth(month);
+    // Automatically trigger refresh when month changes
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
   return (
     <header className="py-8 md:py-16 px-4 md:px-6 container max-w-7xl mx-auto animate-fade-in bg-transparent">
       <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
@@ -32,19 +46,19 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ selectedMonth, se
           <DropdownMenuContent className="bg-gray-800 border-gray-700 z-50">
             <DropdownMenuItem 
               className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
-              onClick={() => setSelectedMonth('April')}
+              onClick={() => handleMonthSelection('April')}
             >
               April 2025
             </DropdownMenuItem>
             <DropdownMenuItem 
               className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
-              onClick={() => setSelectedMonth('March')}
+              onClick={() => handleMonthSelection('March')}
             >
               March 2025
             </DropdownMenuItem>
             <DropdownMenuItem 
               className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
-              onClick={() => setSelectedMonth('February')}
+              onClick={() => handleMonthSelection('February')}
             >
               February 2025
             </DropdownMenuItem>

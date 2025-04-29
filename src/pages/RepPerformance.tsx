@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
@@ -15,6 +16,8 @@ import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const RepPerformance = () => {
+  const [autoRefreshed, setAutoRefreshed] = useState(false);
+  
   const {
     includeRetail,
     setIncludeRetail,
@@ -43,6 +46,23 @@ const RepPerformance = () => {
     aprWholesaleValues,
   } = useRepPerformanceData();
   
+  // Clear auto-refreshed status after a delay
+  useEffect(() => {
+    if (autoRefreshed) {
+      const timer = setTimeout(() => {
+        setAutoRefreshed(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autoRefreshed]);
+  
+  // Custom refresh handler to track if it's an auto refresh
+  const handleRefresh = () => {
+    loadDataFromSupabase();
+    setAutoRefreshed(true);
+  };
+  
   const activeData = getActiveData('overall');
   const isMobile = useIsMobile();
   
@@ -60,12 +80,14 @@ const RepPerformance = () => {
         <PerformanceHeader 
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
+          onRefresh={handleRefresh} // Passing refresh function to header
         />
         
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
           <ActionsHeader 
-            onRefresh={loadDataFromSupabase}
-            isLoading={isLoading} 
+            onRefresh={handleRefresh}
+            isLoading={isLoading}
+            autoRefreshed={autoRefreshed}
           />
           
           <div className="flex space-x-2">
