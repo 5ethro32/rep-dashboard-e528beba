@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -58,17 +57,29 @@ const RepPerformance = () => {
   }, [autoRefreshed]);
   
   // Custom refresh handler to track if it's an auto refresh
-  const handleRefresh = () => {
-    loadDataFromSupabase();
+  const handleRefresh = async () => {
+    await loadDataFromSupabase();
+    setAutoRefreshed(true);
+  };
+
+  // Handle month selection with proper data refresh
+  const handleMonthSelection = async (month: string) => {
+    // Set month first to avoid UI flicker
+    setSelectedMonth(month);
+    // Then refresh data completely
+    await loadDataFromSupabase();
     setAutoRefreshed(true);
   };
   
   const activeData = getActiveData('overall');
   const isMobile = useIsMobile();
   
-  const currentBaseSummary = selectedMonth === 'April' ? aprBaseSummary : baseSummary;
-  const currentRevaValues = selectedMonth === 'April' ? aprRevaValues : revaValues;
-  const currentWholesaleValues = selectedMonth === 'April' ? aprWholesaleValues : wholesaleValues;
+  const currentBaseSummary = selectedMonth === 'April' ? aprBaseSummary : 
+                             selectedMonth === 'February' ? febBaseSummary : baseSummary;
+  const currentRevaValues = selectedMonth === 'April' ? aprRevaValues : 
+                            selectedMonth === 'February' ? febRevaValues : revaValues;
+  const currentWholesaleValues = selectedMonth === 'April' ? aprWholesaleValues : 
+                                 selectedMonth === 'February' ? febWholesaleValues : wholesaleValues;
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -79,8 +90,7 @@ const RepPerformance = () => {
         
         <PerformanceHeader 
           selectedMonth={selectedMonth}
-          setSelectedMonth={setSelectedMonth}
-          onRefresh={handleRefresh} // Passing refresh function to header
+          setSelectedMonth={handleMonthSelection}
         />
         
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
@@ -135,7 +145,7 @@ const RepPerformance = () => {
           includeWholesale={includeWholesale}
           selectedMonth={selectedMonth}
         />
-        
+
         <PerformanceContent
           tabValues={['overall', 'rep', 'reva', 'wholesale']}
           getActiveData={getActiveData}
