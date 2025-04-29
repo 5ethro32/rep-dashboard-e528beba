@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -97,39 +98,39 @@ export const useRepPerformanceData = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Pass the current selectedMonth to ensure we get the right data from the service
+      // Always pass the current selectedMonth to ensure we get the right data from the service
       console.log(`Loading data for ${selectedMonth} from database...`);
       const data = await fetchRepPerformanceData(selectedMonth);
       
       console.log(`Loaded fresh performance data for ${selectedMonth}:`, data);
       
       // Store April data
-      setAprRepData(data.repData);
-      setAprRevaRepData(data.revaData);
-      setAprWholesaleRepData(data.wholesaleData);
-      setAprBaseSummary(data.baseSummary);
-      setAprRevaValues(data.revaValues);
-      setAprWholesaleValues(data.wholesaleValues);
-      setAprSummaryChanges(data.summaryChanges);
-      setAprRepChanges(data.repChanges);
+      setAprRepData(data.repData || defaultRepData);
+      setAprRevaRepData(data.revaData || defaultRevaData);
+      setAprWholesaleRepData(data.wholesaleData || defaultWholesaleData);
+      setAprBaseSummary(data.baseSummary || defaultBaseSummary);
+      setAprRevaValues(data.revaValues || defaultRevaValues);
+      setAprWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      setAprSummaryChanges(data.summaryChanges || defaultSummaryChanges);
+      setAprRepChanges(data.repChanges || defaultRepChanges);
       
       // Store March data
-      setMarchRepData(data.marchRepData);
-      setMarchRevaRepData(data.marchRevaData);
-      setMarchWholesaleRepData(data.marchWholesaleData);
-      setMarchBaseSummary(data.marchBaseSummary);
-      setMarchRevaValues(data.marchRevaValues);
-      setMarchWholesaleValues(data.marchWholesaleValues);
-      setMarchSummaryChanges(data.marchSummaryChanges);
-      setMarchRepChanges(data.marchRepChanges);
+      setMarchRepData(data.marchRepData || defaultRepData);
+      setMarchRevaRepData(data.marchRevaData || defaultRevaData);
+      setMarchWholesaleRepData(data.marchWholesaleData || defaultWholesaleData);
+      setMarchBaseSummary(data.marchBaseSummary || defaultBaseSummary);
+      setMarchRevaValues(data.marchRevaValues || defaultRevaValues);
+      setMarchWholesaleValues(data.marchWholesaleValues || defaultWholesaleValues);
+      setMarchSummaryChanges(data.marchSummaryChanges || defaultSummaryChanges);
+      setMarchRepChanges(data.marchRepChanges || defaultRepChanges);
       
       // Store February data
       setFebRepData(data.febRepData || defaultRepData);
       setFebRevaRepData(data.febRevaData || defaultRevaData);
       setFebWholesaleRepData(data.febWholesaleData || defaultWholesaleData);
-      setFebBaseSummary(data.febBaseSummary);
-      setFebRevaValues(data.febRevaValues);
-      setFebWholesaleValues(data.febWholesaleValues);
+      setFebBaseSummary(data.febBaseSummary || defaultBaseSummary);
+      setFebRevaValues(data.febRevaValues || defaultRevaValues);
+      setFebWholesaleValues(data.febWholesaleValues || defaultWholesaleValues);
       
       // CRITICAL: Ensure rawFebSummary is properly set for March comparisons
       if (data.rawFebSummary) {
@@ -164,10 +165,11 @@ export const useRepPerformanceData = () => {
       return false;
     } finally {
       setIsLoading(false);
+      setMonthChangeInProgress(false);
     }
   };
   
-  // CRITICAL CHANGE: Completely revised setSelectedMonth to always fetch fresh data
+  // COMPLETELY REVISED: Always fetch fresh data on month change
   const setSelectedMonthAndLoad = useCallback(async (month: string) => {
     if (month === selectedMonth) return; // No change needed
     
@@ -177,85 +179,110 @@ export const useRepPerformanceData = () => {
     setIsLoading(true);
     setMonthChangeInProgress(true);
     
-    // Update the month first so UI can show the right month immediately
+    // Update the month first so UI shows the right month immediately
     setSelectedMonth(month);
     
     try {
-      // Instead of using cached data, always load fresh data from the database
-      // This ensures we always have the most up-to-date data for each month
-      await loadData();
-      console.log(`Successfully loaded fresh data for ${month}`);
-    } catch (error) {
-      console.error(`Error loading data for ${month}:`, error);
-      // If loading fails, at least update the displayed data from cache
-      updateDisplayedDataForMonth();
-    } finally {
-      // Always reset flags after operation completes
-      setMonthChangeInProgress(false);
+      // Directly load fresh data from the database with the new month
+      // This ensures we always have the most current data
+      await fetchRepPerformanceData(month).then(data => {
+        console.log(`Successfully loaded fresh data for ${month}:`, data);
+        
+        // Store data based on which month we're viewing
+        if (month === 'April') {
+          setAprRepData(data.repData || defaultRepData);
+          setAprRevaRepData(data.revaData || defaultRevaData);
+          setAprWholesaleRepData(data.wholesaleData || defaultWholesaleData);
+          setAprBaseSummary(data.baseSummary || defaultBaseSummary);
+          setAprRevaValues(data.revaValues || defaultRevaValues);
+          setAprWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+          setAprSummaryChanges(data.summaryChanges || defaultSummaryChanges);
+          setAprRepChanges(data.repChanges || defaultRepChanges);
+          
+          // Set the active data
+          setRepData(data.repData || defaultRepData);
+          setRevaData(data.revaData || defaultRevaData);
+          setWholesaleData(data.wholesaleData || defaultWholesaleData);
+          
+          const combinedData = getCombinedRepData(
+            data.repData || defaultRepData,
+            data.revaData || defaultRevaData,
+            data.wholesaleData || defaultWholesaleData,
+            true, true, true
+          );
+          
+          setOverallData(combinedData);
+        } 
+        else if (month === 'March') {
+          setMarchRepData(data.repData || defaultRepData);
+          setMarchRevaRepData(data.revaData || defaultRevaData);
+          setMarchWholesaleRepData(data.wholesaleData || defaultWholesaleData);
+          setMarchBaseSummary(data.baseSummary || defaultBaseSummary);
+          setMarchRevaValues(data.revaValues || defaultRevaValues);
+          setMarchWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+          setMarchSummaryChanges(data.summaryChanges || defaultSummaryChanges);
+          setMarchRepChanges(data.repChanges || defaultRepChanges);
+          
+          // Set the active data
+          setRepData(data.repData || defaultRepData);
+          setRevaData(data.revaData || defaultRevaData);
+          setWholesaleData(data.wholesaleData || defaultWholesaleData);
+          
+          const combinedData = getCombinedRepData(
+            data.repData || defaultRepData,
+            data.revaData || defaultRevaData,
+            data.wholesaleData || defaultWholesaleData,
+            true, true, true
+          );
+          
+          setOverallData(combinedData);
+        } 
+        else if (month === 'February') {
+          setFebRepData(data.repData || defaultRepData);
+          setFebRevaRepData(data.revaData || defaultRevaData);
+          setFebWholesaleRepData(data.wholesaleData || defaultWholesaleData);
+          setFebBaseSummary(data.baseSummary || defaultBaseSummary);
+          setFebRevaValues(data.revaValues || defaultRevaValues);
+          setFebWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+          
+          if (data.rawFebSummary) {
+            setRawFebSummary(data.rawFebSummary);
+          }
+          
+          // Set the active data
+          setRepData(data.repData || defaultRepData);
+          setRevaData(data.revaData || defaultRevaData);
+          setWholesaleData(data.wholesaleData || defaultWholesaleData);
+          
+          const combinedData = getCombinedRepData(
+            data.repData || defaultRepData,
+            data.revaData || defaultRevaData,
+            data.wholesaleData || defaultWholesaleData,
+            true, true, true
+          );
+          
+          setOverallData(combinedData);
+        }
+      });
+      
+      setDataLoaded(true);
+      console.log(`Month change to ${month} completed successfully`);
+    } 
+    catch (error) {
+      console.error(`Error during month change to ${month}:`, error);
+      toast({
+        title: "Error changing month",
+        description: "Could not load data for the selected month. Please try again.",
+        variant: "destructive",
+      });
+    } 
+    finally {
       setIsLoading(false);
-      console.log(`Month change to ${month} completed`);
+      setMonthChangeInProgress(false);
     }
-    
   }, [selectedMonth]);
   
-  // New function to update state based on cached data without API call
-  const updateCachedDataForMonth = async (month: string) => {
-    console.log(`Updating data from cache for month: ${month}`);
-    
-    // Different logic based on selected month
-    if (month === 'April') {
-      setRepData(aprRepData);
-      setRevaData(aprRevaRepData);
-      setWholesaleData(aprWholesaleRepData);
-      
-      const combinedData = getCombinedRepData(
-        aprRepData,
-        aprRevaRepData,
-        aprWholesaleRepData,
-        true,
-        true,
-        true
-      );
-      
-      setOverallData(combinedData);
-      
-    } else if (month === 'March') {
-      setRepData(marchRepData);
-      setRevaData(marchRevaRepData);
-      setWholesaleData(marchWholesaleRepData);
-      
-      const combinedData = getCombinedRepData(
-        marchRepData,
-        marchRevaRepData,
-        marchWholesaleRepData,
-        true,
-        true,
-        true
-      );
-      
-      setOverallData(combinedData);
-      
-    } else if (month === 'February') {
-      setRepData(febRepData);
-      setRevaData(febRevaRepData);
-      setWholesaleData(febWholesaleRepData);
-      
-      const combinedData = getCombinedRepData(
-        febRepData,
-        febRevaRepData,
-        febWholesaleRepData,
-        true,
-        true,
-        true
-      );
-      
-      setOverallData(combinedData);
-    }
-    
-    console.log(`Cache update for ${month} completed`);
-  };
-  
-  // Similar but separated updateDisplayedDataForMonth function for when fresh data is loaded
+  // This function is only used for internal state updates, not for fetching
   const updateDisplayedDataForMonth = () => {
     console.log(`Updating displayed data for month: ${selectedMonth}`);
     

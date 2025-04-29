@@ -1,8 +1,14 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
 import { processRepData, calculateSummary, calculateRawMtdSummary, calculateSummaryFromData, processRawData } from '@/utils/rep-data-processing';
+import { 
+  defaultBaseSummary, 
+  defaultRevaValues, 
+  defaultWholesaleValues, 
+  defaultSummaryChanges, 
+  defaultRepChanges 
+} from '@/data/rep-performance-default-data';
 
 // Define valid table and view names for type safety
 // Tables

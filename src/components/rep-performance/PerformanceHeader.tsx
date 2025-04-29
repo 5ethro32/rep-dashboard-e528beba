@@ -35,34 +35,34 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
             disabled={isLoading}
           >
             {isLoading ? (
-              <div className="flex items-center">
-                <span className="mr-2">Loading {selectedMonth} data</span>
-                <Loader2 className="h-4 w-4 ml-1 animate-spin" />
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                <span className="mr-2">Loading {selectedMonth} data...</span>
               </div>
             ) : (
-              <>
+              <div className="flex items-center">
                 {selectedMonth} 2025
                 <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
-              </>
+              </div>
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white z-50">
             <DropdownMenuItem 
-              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
+              className={`text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer ${selectedMonth === 'April' ? 'bg-gray-700/50' : ''}`}
               onClick={() => setSelectedMonth('April')}
               disabled={isLoading}
             >
               April 2025
             </DropdownMenuItem>
             <DropdownMenuItem 
-              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
+              className={`text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer ${selectedMonth === 'March' ? 'bg-gray-700/50' : ''}`}
               onClick={() => setSelectedMonth('March')}
               disabled={isLoading}
             >
               March 2025
             </DropdownMenuItem>
             <DropdownMenuItem 
-              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
+              className={`text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer ${selectedMonth === 'February' ? 'bg-gray-700/50' : ''}`}
               onClick={() => setSelectedMonth('February')}
               disabled={isLoading}
             >
