@@ -222,27 +222,14 @@ const RepTracker: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="visits" className="mt-6">
-            {isMobile ? (
-              <ScrollArea className="h-[calc(100vh-380px)]" orientation="both">
-                <CustomerVisitsList 
-                  weekStartDate={weekStart} 
-                  weekEndDate={weekEnd}
-                  customers={customers || []} 
-                  isLoadingCustomers={isLoadingCustomers}
-                  onDataChange={handleDataChange}
-                  onAddVisit={() => setShowAddVisit(true)}
-                />
-              </ScrollArea>
-            ) : (
-              <CustomerVisitsList 
-                weekStartDate={weekStart} 
-                weekEndDate={weekEnd}
-                customers={customers || []} 
-                isLoadingCustomers={isLoadingCustomers}
-                onDataChange={handleDataChange}
-                onAddVisit={() => setShowAddVisit(true)}
-              />
-            )}
+            <CustomerVisitsList 
+              weekStartDate={weekStart} 
+              weekEndDate={weekEnd}
+              customers={customers || []} 
+              isLoadingCustomers={isLoadingCustomers}
+              onDataChange={handleDataChange}
+              onAddVisit={() => setShowAddVisit(true)}
+            />
           </TabsContent>
           
           <TabsContent value="customer-history" className="mt-6">

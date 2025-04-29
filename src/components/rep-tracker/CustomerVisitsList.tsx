@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -188,105 +189,108 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         </div>
       </div>
 
-      <div className="border border-gray-800 rounded-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table className="w-full">
-            <TableHeader className="bg-black/30">
-              <TableRow className="hover:bg-transparent border-b border-gray-800">
-                <TableHead className="text-white font-medium">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort('date')}
-                    className="text-white font-medium hover:text-white"
-                  >
-                    Date
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-white font-medium">Type</TableHead>
-                <TableHead className="text-white font-medium">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort('customer_name')}
-                    className="text-white font-medium hover:text-white"
-                  >
-                    Customer
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-white font-medium">Contact</TableHead>
-                <TableHead className="text-white font-medium">Order</TableHead>
-                <TableHead className="text-white font-medium">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort('profit')}
-                    className="text-white font-medium hover:text-white"
-                  >
-                    Profit (£)
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-white font-medium">Comments</TableHead>
-                <TableHead className="text-white font-medium text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-4 text-white/60">
-                    Loading visits...
-                  </TableCell>
+      {/* Modified table container with scrolling capability like rep dashboard */}
+      <div className="-mx-3 md:mx-0 overflow-x-auto scrollbar-hide relative">
+        <div className="min-w-full inline-block align-middle">
+          <div className="border border-gray-800 rounded-md overflow-hidden">
+            <Table className="w-full">
+              <TableHeader className="bg-black/30">
+                <TableRow className="hover:bg-transparent border-b border-gray-800">
+                  <TableHead className="text-white font-medium">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort('date')}
+                      className="text-white font-medium hover:text-white"
+                    >
+                      Date
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-white font-medium">Type</TableHead>
+                  <TableHead className="text-white font-medium">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort('customer_name')}
+                      className="text-white font-medium hover:text-white"
+                    >
+                      Customer
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-white font-medium">Contact</TableHead>
+                  <TableHead className="text-white font-medium">Order</TableHead>
+                  <TableHead className="text-white font-medium">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort('profit')}
+                      className="text-white font-medium hover:text-white"
+                    >
+                      Profit (£)
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-white font-medium">Comments</TableHead>
+                  <TableHead className="text-white font-medium text-right">Actions</TableHead>
                 </TableRow>
-              ) : filteredVisits?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-4 text-white/60">
-                    No visits found for this week.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredVisits?.map((visit) => (
-                  <TableRow 
-                    key={visit.id}
-                    className="hover:bg-black/20 border-b border-gray-800 text-white"
-                  >
-                    <TableCell>{new Date(visit.date).toLocaleDateString('en-GB')}</TableCell>
-                    <TableCell>{visit.visit_type}</TableCell>
-                    <TableCell>{visit.customer_name}</TableCell>
-                    <TableCell>{visit.contact_name}</TableCell>
-                    <TableCell>{visit.has_order ? 'Yes' : 'No'}</TableCell>
-                    <TableCell>
-                      {visit.has_order ? formatCurrency(visit.profit) : 'N/A'}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {visit.comments}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-blue-400"
-                          onClick={() => setVisitToEdit(visit)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-red-400"
-                          onClick={() => setVisitToDelete(visit.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-4 text-white/60">
+                      Loading visits...
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : filteredVisits?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-4 text-white/60">
+                      No visits found for this week.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredVisits?.map((visit) => (
+                    <TableRow 
+                      key={visit.id}
+                      className="hover:bg-black/20 border-b border-gray-800 text-white"
+                    >
+                      <TableCell>{new Date(visit.date).toLocaleDateString('en-GB')}</TableCell>
+                      <TableCell>{visit.visit_type}</TableCell>
+                      <TableCell>{visit.customer_name}</TableCell>
+                      <TableCell>{visit.contact_name}</TableCell>
+                      <TableCell>{visit.has_order ? 'Yes' : 'No'}</TableCell>
+                      <TableCell>
+                        {visit.has_order ? formatCurrency(visit.profit) : 'N/A'}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {visit.comments}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-blue-400"
+                            onClick={() => setVisitToEdit(visit)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-red-400"
+                            onClick={() => setVisitToDelete(visit.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
       
