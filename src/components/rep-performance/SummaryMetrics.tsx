@@ -41,6 +41,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
 }) => {
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
+  // Track if data is available for comparison
+  const [dataAvailable, setDataAvailable] = useState(false);
 
   // Show change indicators for months with comparison data
   const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April';
@@ -49,16 +51,26 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     // Recalculate changes whenever toggle states change
     setFilteredChanges(summaryChanges);
     
+    // Check if we have valid comparison data
+    const hasValidData = previousMonthSummary !== undefined && 
+                         previousMonthSummary !== null &&
+                         Object.keys(previousMonthSummary).length > 0;
+    setDataAvailable(hasValidData);
+    
     console.log("SummaryMetrics useEffect: Selected Month:", selectedMonth);
     console.log("SummaryMetrics useEffect: Summary Data:", summary);
     console.log("SummaryMetrics useEffect: Summary Changes:", summaryChanges);
     console.log("SummaryMetrics useEffect: Previous Month Summary:", previousMonthSummary);
+    console.log("SummaryMetrics useEffect: Data available for comparison:", hasValidData);
   }, [summaryChanges, includeRetail, includeReva, includeWholesale, selectedMonth, summary, previousMonthSummary]);
 
   // Create a change indicator for the KPI cards
   const renderChangeIndicator = (changeValue: number) => {
+    // Check if we have valid data and should show indicators
+    if (!dataAvailable || !showChangeIndicators || isLoading) return undefined;
+    
     // Safety check to avoid NaN or null values
-    if (!showChangeIndicators || changeValue === undefined || changeValue === null || isNaN(changeValue) || Math.abs(changeValue) < 0.1) return undefined;
+    if (changeValue === undefined || changeValue === null || isNaN(changeValue) || Math.abs(changeValue) < 0.1) return undefined;
     
     return {
       value: `${Math.abs(changeValue).toFixed(1)}%`,
@@ -69,7 +81,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // IMPROVED: Get previous value with better logging and validation for February data comparisons
   const getPreviousValue = (metric: keyof typeof summary) => {
     // Make sure we have valid previous month data
-    if (previousMonthSummary) {
+    if (previousMonthSummary && dataAvailable) {
       // Check if the data exists for this metric
       if (previousMonthSummary[metric] !== undefined) {
         const prevValue = previousMonthSummary[metric];
@@ -102,6 +114,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     summaryChanges: filteredChanges,
     previousMonthSummary,
     showChangeIndicators,
+    dataAvailable,
     filters: { includeRetail, includeReva, includeWholesale }
   });
 
@@ -120,6 +133,24 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     packs: filteredChanges?.totalPacks || 0
   };
 
+  // Determine what to display in the subtitle
+  const getSubtitleText = (metric: keyof typeof summary) => {
+    if (isLoading) return undefined;
+    
+    if (showChangeIndicators && dataAvailable) {
+      return `${getComparisonMonthText()}: ${
+        metric === 'totalSpend' ? formatCurrency(getPreviousValue(metric), 0) :
+        metric === 'totalProfit' ? formatCurrency(getPreviousValue(metric), 0) :
+        metric === 'averageMargin' ? formatPercent(getPreviousValue(metric)) :
+        formatNumber(getPreviousValue(metric))
+      }`;
+    } else if (selectedMonth === 'February') {
+      return 'No comparison data available';
+    } 
+    
+    return undefined;
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
       {/* Revenue Card */}
@@ -127,10 +158,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         title="Revenue"
         value={formatCurrency(safeTotal.spend, 0)}
         change={renderChangeIndicator(safeChanges.spend)}
-        subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue('totalSpend'), 0)}` : 
-          selectedMonth === 'February' ? 'No comparison data available' : undefined
-        }
+        subtitle={getSubtitleText('totalSpend')}
         isLoading={isLoading}
       />
       
@@ -139,10 +167,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         title="Profit"
         value={formatCurrency(safeTotal.profit, 0)}
         change={renderChangeIndicator(safeChanges.profit)}
-        subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue('totalProfit'), 0)}` :
-          selectedMonth === 'February' ? 'No comparison data available' : undefined
-        }
+        subtitle={getSubtitleText('totalProfit')}
         valueClassName="text-finance-red"
         isLoading={isLoading}
       />
@@ -152,10 +177,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         title="Margin"
         value={formatPercent(safeTotal.margin)}
         change={renderChangeIndicator(safeChanges.margin)}
-        subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatPercent(getPreviousValue('averageMargin'))}` :
-          selectedMonth === 'February' ? 'No comparison data available' : undefined
-        }
+        subtitle={getSubtitleText('averageMargin')}
         isLoading={isLoading}
       />
       
@@ -164,10 +186,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         title="Packs"
         value={formatNumber(safeTotal.packs)}
         change={renderChangeIndicator(safeChanges.packs)}
-        subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatNumber(getPreviousValue('totalPacks'))}` :
-          selectedMonth === 'February' ? 'No comparison data available' : undefined
-        }
+        subtitle={getSubtitleText('totalPacks')}
         isLoading={isLoading}
       />
     </div>

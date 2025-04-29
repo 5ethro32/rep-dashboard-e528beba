@@ -28,6 +28,8 @@ const RepPerformance = () => {
     loadDataFromSupabase,
     selectedMonth,
     setSelectedMonth,
+    dataLoaded,
+    monthChangeInProgress,
     baseSummary,
     revaValues,
     wholesaleValues,
@@ -52,7 +54,7 @@ const RepPerformance = () => {
   
   useEffect(() => {
     console.log('RepPerformance: Initial data load starting');
-    loadDataFromSupabase();
+    // Initial load now handled directly in the hook
   }, []);
   
   const includeRetail = true;
@@ -61,6 +63,12 @@ const RepPerformance = () => {
   
   // IMPROVED: More robust previous month summary selection with better logging
   const getPreviousMonthSummary = () => {
+    // If month change is in progress, return undefined to prevent incorrect data display
+    if (monthChangeInProgress || !dataLoaded) {
+      console.log("Month change in progress or data not fully loaded, showing loading state");
+      return undefined;
+    }
+    
     if (selectedMonth === 'April') {
       console.log("Using March data as previous month for April view:", marchBaseSummary);
       return marchBaseSummary;
@@ -125,6 +133,7 @@ const RepPerformance = () => {
         <PerformanceHeader 
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
+          isLoading={isLoading || monthChangeInProgress}
         />
         
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
@@ -162,7 +171,7 @@ const RepPerformance = () => {
           summary={summary}
           summaryChanges={summaryChanges}
           previousMonthSummary={previousMonthSummary}
-          isLoading={isLoading}
+          isLoading={isLoading || monthChangeInProgress || !dataLoaded}
           selectedMonth={selectedMonth}
           includeRetail={includeRetail}
           includeReva={includeReva}
@@ -181,7 +190,7 @@ const RepPerformance = () => {
           formatPercent={formatPercent}
           formatNumber={formatNumber}
           renderChangeIndicator={renderChangeIndicator}
-          isLoading={isLoading}
+          isLoading={isLoading || monthChangeInProgress || !dataLoaded}
           selectedMonth={selectedMonth}
           summary={summary}
           baseSummary={baseSummary}

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { calculateSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData, calculateRawMtdSummary } from '@/utils/rep-data-processing';
@@ -43,6 +44,8 @@ export const useRepPerformanceData = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('April');
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [monthChangeInProgress, setMonthChangeInProgress] = useState(false);
   
   const [overallData, setOverallData] = useState(defaultOverallData);
   const [repData, setRepData] = useState(defaultRepData);
@@ -78,15 +81,21 @@ export const useRepPerformanceData = () => {
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
   const [marchRepChanges, setMarchRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
 
+  // Modified to ensure complete data load at app startup
   useEffect(() => {
-    loadData();
+    const initialLoad = async () => {
+      await loadData();
+      setDataLoaded(true);
+    };
+    
+    initialLoad();
   }, []);
   
-  useEffect(() => {
-    console.log(`Month selection changed to: ${selectedMonth} - Loading fresh data`);
-    loadData();
-  }, [selectedMonth]);
+  // Modified to handle month changes properly
+  // Removed the useEffect dependency on selectedMonth to prevent automatic triggering
+  // We'll manage month changes explicitly with the enhanced setSelectedMonth function
   
+  // Enhanced loadData function that returns a promise to allow proper sequencing
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -149,6 +158,7 @@ export const useRepPerformanceData = () => {
       // Update displayed data after loading fresh data
       updateDisplayedDataForMonth();
       
+      return true; // Indicate successful data load
     } catch (error) {
       console.error(`Error loading data for ${selectedMonth}:`, error);
       toast({
@@ -156,10 +166,37 @@ export const useRepPerformanceData = () => {
         description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
+      return false; // Indicate failed data load
     } finally {
       setIsLoading(false);
     }
   };
+  
+  // Enhanced setSelectedMonth that coordinates the data loading process
+  const setSelectedMonthAndLoad = useCallback(async (month: string) => {
+    if (month === selectedMonth) return; // No change needed
+    
+    // Set loading and month change flags
+    setIsLoading(true);
+    setMonthChangeInProgress(true);
+    
+    // Update the month first
+    setSelectedMonth(month);
+    
+    console.log(`Month selection changed to: ${month} - Loading fresh data`);
+    
+    // Load data for new month
+    await loadData();
+    
+    // After data is fully loaded, update display
+    updateDisplayedDataForMonth();
+    
+    // Reset flags
+    setMonthChangeInProgress(false);
+    setIsLoading(false);
+    
+    console.log(`Month change to ${month} completed successfully`);
+  }, [selectedMonth]);
   
   const updateDisplayedDataForMonth = () => {
     console.log(`Updating displayed data for month: ${selectedMonth}`);
@@ -299,7 +336,9 @@ export const useRepPerformanceData = () => {
     loadDataFromSupabase: loadData,
     getFebValue,
     selectedMonth,
-    setSelectedMonth,
+    setSelectedMonth: setSelectedMonthAndLoad,
+    dataLoaded,
+    monthChangeInProgress,
     baseSummary: selectedMonth === 'April' ? aprBaseSummary : 
                 selectedMonth === 'March' ? marchBaseSummary : febBaseSummary,
     revaValues: selectedMonth === 'April' ? aprRevaValues : 
