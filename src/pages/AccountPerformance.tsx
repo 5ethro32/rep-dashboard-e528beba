@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -184,12 +183,16 @@ const AccountPerformance = () => {
         setTopRep({ name: topRepName, profit: maxProfit });
       }
       
-      toast({
-        title: "Data loaded successfully",
-        description: `Loaded ${currentData?.length || 0} records for ${selectedMonth}`,
-      });
+      // Only show toast on non-mobile devices
+      if (!isMobile) {
+        toast({
+          title: "Data loaded successfully",
+          description: `Loaded ${currentData?.length || 0} records for ${selectedMonth}`,
+        });
+      }
     } catch (error) {
       console.error('Error fetching comparison data:', error);
+      // Always show error toasts regardless of device
       toast({
         title: "Error loading data",
         description: error instanceof Error ? error.message : "An unknown error occurred",
