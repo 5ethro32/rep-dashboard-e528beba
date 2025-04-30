@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -13,6 +14,7 @@ import { BarChart3, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
+import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
@@ -46,6 +48,7 @@ const RepPerformance = () => {
     febBaseSummary,
     febRevaValues,
     febWholesaleValues,
+    updateComparisonDataForMonth
   } = useRepPerformanceData();
   
   // Clear auto-refreshed status after a delay
@@ -69,8 +72,13 @@ const RepPerformance = () => {
   const handleMonthSelection = async (month: string) => {
     // Set month first to avoid UI flicker
     setSelectedMonth(month);
-    // Then refresh data completely
-    await loadDataFromSupabase();
+    
+    // Important: Update the comparison data for this month without reloading everything
+    // This ensures that the correct comparison data is shown immediately
+    updateComparisonDataForMonth(month);
+    
+    // No need for a full data reload in most cases, as we already have the data
+    // but we'll set the auto-refresh flag to show the user something happened
     setAutoRefreshed(true);
   };
   
@@ -83,6 +91,15 @@ const RepPerformance = () => {
                             selectedMonth === 'February' ? febRevaValues : revaValues;
   const currentWholesaleValues = selectedMonth === 'April' ? aprWholesaleValues : 
                                  selectedMonth === 'February' ? febWholesaleValues : wholesaleValues;
+  
+  // Get the appropriate months for comparison
+  const currentMonthData = selectedMonth === 'April' ? getActiveData('overall') : 
+                           selectedMonth === 'February' ? febRepData :
+                           getActiveData('overall');
+  
+  const previousMonthData = selectedMonth === 'April' ? repData :  
+                            selectedMonth === 'February' ? [] : // Feb has no comparison
+                            febRepData;
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -136,7 +153,13 @@ const RepPerformance = () => {
           includeWholesale={includeWholesale}
           setIncludeWholesale={setIncludeWholesale}
           selectedMonth={selectedMonth}
-          setSelectedMonth={setSelectedMonth}
+          setSelectedMonth={handleMonthSelection}
+        />
+        
+        <AccountSummaryCards
+          currentMonthData={currentMonthData}
+          previousMonthData={previousMonthData}
+          isLoading={isLoading}
         />
 
         <SummaryMetrics 
@@ -188,3 +211,4 @@ const RepPerformance = () => {
 };
 
 export default RepPerformance;
+
