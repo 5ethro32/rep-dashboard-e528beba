@@ -17,6 +17,7 @@ import {
   DrawerContent,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import { reformulateQuery, determineQuestionType, generateFollowUpQuestions } from '@/utils/aiAssistantUtils';
 
 // Import refactored components
 import ChatMessage from './ChatMessage';
@@ -33,6 +34,17 @@ interface Message {
   chartType?: 'bar' | 'line' | 'pie';
   tableData?: any[];
   tableHeaders?: string[];
+  insights?: string[];
+  trends?: {
+    type: 'up' | 'down' | 'neutral';
+    value: string;
+    description: string;
+  }[];
+  highlightedEntities?: {
+    type: 'rep' | 'customer' | 'department' | 'metric';
+    name: string;
+    value: string;
+  }[];
 }
 
 interface ConversationContext {
@@ -51,22 +63,23 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: '1', 
-      content: "Hello! I'm Vera, your sales data assistant. Ask me anything about February, March, or April 2025 performance data.", 
+      content: "Hello! I'm Vera, your sales data assistant. Ask me about the performance of your sales representatives, departments, or specific customers across different months.", 
       isUser: false, 
       timestamp: new Date(),
       examples: [
-        "Who are the top performers?",
+        "Who are the top performers this month?",
         "Tell me about Craig's sales",
         "Compare February and March profit",
         "How did Murray perform in February vs March?",
         "Show me April's best reps by margin",
         "Why did profit drop last month?",
-        "What insights can you share about our performance?",
-        "Which products had the highest growth?",
-        "Give me a summary of March sales",
-        "Performance trends since February",
-        "Who improved the most since last month?",
-        "Show me data visualizations for top reps"
+        "Which customers have the highest profit?",
+        "Show me department comparison"
+      ],
+      insights: [
+        "April saw a 3.8% increase in overall profit compared to March",
+        "Jonny Cunningham showed the biggest margin improvement",
+        "The Wholesale department has the highest margin at 20.7%"
       ]
     }
   ]);
@@ -129,7 +142,12 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
     };
     
     setMessages(prev => [...prev, userMessage]);
+    
+    // Reformulate vague queries for better responses
     const userQuery = message;
+    const enhancedQuery = reformulateQuery(userQuery);
+    const isReformulated = enhancedQuery !== userQuery;
+    
     setMessage('');
     setIsLoading(true);
     
@@ -148,7 +166,8 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
       // Call Supabase Edge Function with the full conversation context
       const { data, error } = await supabase.functions.invoke('rep-chat', {
         body: {
-          message: userQuery,
+          message: isReformulated ? enhancedQuery : userQuery,
+          originalMessage: userQuery,
           selectedMonth,
           conversationContext: {
             conversationId: conversationContext.conversationId,
@@ -159,7 +178,12 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
 
       if (error) throw new Error(error.message);
       
-      // Add assistant response to chat with any visualization data
+      // Generate follow-up suggestions based on the conversation
+      const questionType = data?.questionType || 'general';
+      const entities = data?.entities || { months: [selectedMonth], repNames: [], departments: [], metrics: [] };
+      const followUps = generateFollowUpQuestions(questionType, entities, selectedMonth);
+      
+      // Add assistant response to chat with any visualization data and enhanced fields
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data?.response || "Sorry, I couldn't process your request. Please try again.",
@@ -168,7 +192,11 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
         chartData: data?.chartData,
         chartType: data?.chartType,
         tableData: data?.tableData,
-        tableHeaders: data?.tableHeaders
+        tableHeaders: data?.tableHeaders,
+        insights: data?.insights,
+        trends: data?.trends,
+        highlightedEntities: data?.highlightedEntities,
+        examples: followUps
       };
       
       setMessages(prev => [...prev, botMessage]);
@@ -212,7 +240,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
   };
 
   const renderChatContent = () => (
-    <div className="flex flex-col h-96">
+    <div className="flex flex-col h-[500px]">
       <div className="flex-grow overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
           <ChatMessage 
@@ -250,7 +278,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
             <MessageCircle className="h-6 w-6" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="bg-gray-900/95 backdrop-blur-lg border border-white/10 p-0 max-h-[80vh]">
+        <DrawerContent className="bg-gray-900/95 backdrop-blur-lg border border-white/10 p-0 max-h-[90vh]">
           <div className="p-3 border-b border-white/10 bg-gradient-to-r from-finance-red to-rose-700 flex items-center">
             <Avatar className="h-6 w-6 mr-2">
               <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
@@ -276,7 +304,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
               <Avatar className="h-6 w-6 mr-2">
                 <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
               </Avatar>
-              Vera
+              Vera - Sales Assistant
             </span>
             {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
           </Button>

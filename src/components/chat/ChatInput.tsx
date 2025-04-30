@@ -1,6 +1,6 @@
 
 import React, { RefObject, FormEvent } from 'react';
-import { SendIcon } from 'lucide-react';
+import { SendIcon, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -21,8 +21,38 @@ const ChatInput = ({
   textareaRef, 
   isLoading 
 }: ChatInputProps) => {
+  
+  const suggestedQuestions = [
+    "Who are the top performers by profit?",
+    "Compare February and March margins",
+    "Show me Craig's most profitable customers",
+    "Why did profit increase in April?"
+  ];
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setMessage(suggestion);
+    // Focus the textarea
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+  
   return (
-    <form onSubmit={handleSubmit} className="border-t border-white/10 p-3">
+    <div className="border-t border-white/10 p-3">
+      {!isLoading && message.length === 0 && (
+        <div className="mb-2 flex gap-2 flex-wrap">
+          {suggestedQuestions.map((question, index) => (
+            <button
+              key={index}
+              onClick={() => handleSuggestionClick(question)}
+              className="text-xs py-1 px-3 bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors flex items-center gap-1"
+            >
+              <Sparkles className="h-3 w-3" />
+              {question}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex items-end gap-2">
         <Textarea
           ref={textareaRef}
@@ -38,11 +68,12 @@ const ChatInput = ({
           size="icon" 
           className="h-10 w-10 rounded-full bg-gradient-to-r from-finance-red to-rose-700 text-white"
           disabled={isLoading || !message.trim()}
+          onClick={handleSubmit}
         >
           <SendIcon className="h-5 w-5" />
         </Button>
       </div>
-    </form>
+    </div>
   );
 };
 
