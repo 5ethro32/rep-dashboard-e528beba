@@ -14,17 +14,24 @@ interface DonutChartProps {
   innerLabel?: string;
 }
 
+// Format currency values with £ symbol and k/m suffixes
+const formatCurrency = (value: number): string => {
+  if (value >= 1000000) {
+    return `£${(value / 1000000).toFixed(1)}m`;
+  } else if (value >= 1000) {
+    return `£${(value / 1000).toFixed(0)}k`;
+  } else {
+    return `£${value}`;
+  }
+};
+
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-gray-800 p-2 border border-white/10 rounded-md text-xs md:text-sm shadow-lg backdrop-blur-sm">
         <p className="text-white font-medium">{payload[0].name}</p>
         <p className="text-white/80">{`${payload[0].value}%`}</p>
-        <p className="text-white/80">{payload[0].payload.profit.toLocaleString('en-GB', {
-          style: 'currency',
-          currency: 'GBP',
-          maximumFractionDigits: 0
-        })}</p>
+        <p className="text-white/80">{payload[0].payload.profit ? formatCurrency(payload[0].payload.profit) : ''}</p>
       </div>
     );
   }

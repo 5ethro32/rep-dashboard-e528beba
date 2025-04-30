@@ -16,12 +16,23 @@ interface LineChartProps {
   yAxisFormatter?: (value: number) => string;
 }
 
+// Format currency values with £ symbol and k/m suffixes
+const defaultFormatter = (value: number): string => {
+  if (value >= 1000000) {
+    return `£${(value / 1000000).toFixed(1)}m`;
+  } else if (value >= 1000) {
+    return `£${(value / 1000).toFixed(0)}k`;
+  } else {
+    return `£${value}`;
+  }
+};
+
 const LineChart: React.FC<LineChartProps> = ({ 
   data, 
   color = "#ea384c", 
   avgColor = "#8E9196", 
   showAverage = true,
-  yAxisFormatter = (value) => `£${value}k`
+  yAxisFormatter = defaultFormatter
 }) => {
   // Calculate the minimum and maximum values for the Y-axis
   const minValue = Math.min(...data.map(item => item.value));
@@ -53,7 +64,7 @@ const LineChart: React.FC<LineChartProps> = ({
           tick={{ fill: '#8E9196', fontSize: 12 }}
           tickFormatter={yAxisFormatter}
           allowDecimals={false}
-          width={50}
+          width={60}
         />
         <Tooltip 
           contentStyle={{ 
@@ -66,6 +77,7 @@ const LineChart: React.FC<LineChartProps> = ({
           labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '5px' }}
           itemStyle={{ padding: '2px 0' }}
           cursor={{ stroke: 'rgba(255,255,255,0.2)' }}
+          formatter={(value: any) => [yAxisFormatter(value), 'Value']}
         />
         <Line 
           type="monotone" 

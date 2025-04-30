@@ -53,6 +53,17 @@ const parseMarkdownBold = (text: string): React.ReactNode[] => {
   });
 };
 
+// Format currency values with £ symbol and k/m suffixes
+const formatCurrency = (value: number): string => {
+  if (value >= 1000000) {
+    return `£${(value / 1000000).toFixed(1)}m`;
+  } else if (value >= 1000) {
+    return `£${(value / 1000).toFixed(0)}k`;
+  } else {
+    return `£${value}`;
+  }
+};
+
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) => {
   const renderChart = () => {
     if (!message.chartData) return null;
@@ -61,9 +72,30 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
       <div className="mt-4 mb-2 bg-gray-800 p-4 rounded-lg">
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={message.chartData}>
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
+            <XAxis 
+              dataKey="name" 
+              tick={{ fill: '#ffffff', fontSize: 12 }}
+              tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
+            />
+            <YAxis 
+              tick={{ fill: '#ffffff', fontSize: 12 }}
+              tickFormatter={(value) => formatCurrency(value)}
+              width={60}
+            />
+            <Tooltip 
+              formatter={(value: number) => [formatCurrency(value), 'Value']}
+              labelFormatter={(label) => `${label}`}
+              contentStyle={{ 
+                backgroundColor: '#1A1F2C', 
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '6px',
+                padding: '10px',
+                color: '#ffffff',
+                fontSize: '12px',
+                fontWeight: 500,
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+              }}
+            />
             <Bar dataKey="value" fill="#f43f5e" />
           </BarChart>
         </ResponsiveContainer>
@@ -189,11 +221,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
         
         {!message.isUser && (
           <>
+            {/* Reordered to show insights and highlighted info first */}
+            {renderInsights()}
+            {renderHighlightedEntities()}
+            {renderTrends()}
             {renderChart()}
             {renderTable()}
-            {renderTrends()}
-            {renderHighlightedEntities()}
-            {renderInsights()}
             {/* Removed renderExamples() call here to hide the example questions */}
           </>
         )}
