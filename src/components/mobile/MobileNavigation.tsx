@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, Bot } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const MobileNavigation = () => {
@@ -24,7 +24,7 @@ const MobileNavigation = () => {
       path: '/rep-tracker',
     },
     {
-      icon: Bot,
+      icon: MessageCircle,
       label: 'Vera',
       path: '/ai-vera',
     },
@@ -40,14 +40,13 @@ const MobileNavigation = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex flex-col items-center justify-center space-y-1",
+                "flex items-center justify-center",
                 isActive 
                   ? "text-finance-red" 
                   : "text-white/60 hover:text-white"
               )}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs">{item.label}</span>
+              <item.icon className="h-6 w-6" />
             </Link>
           );
         })}
