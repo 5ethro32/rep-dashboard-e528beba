@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -200,7 +201,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
           ? 'bg-finance-red text-white' 
           : 'bg-gray-800 text-gray-100'
       }`}>
-        <div className="whitespace-pre-wrap">{message.content}</div>
+        <div className="whitespace-pre-wrap">
+          {typeof message.content === 'string' ? parseMarkdownBold(message.content) : message.content}
+        </div>
         
         {!message.isUser && (
           <>
