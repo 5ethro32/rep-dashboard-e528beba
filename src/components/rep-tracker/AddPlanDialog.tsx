@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -33,23 +33,29 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
-  // Use the selectedDate if provided, otherwise default to today
-  const defaultDate = selectedDate || new Date();
   
   const { register, handleSubmit, reset, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
-      planned_date: defaultDate.toISOString().split('T')[0],
+      planned_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       customer_ref: '',
       customer_name: '',
       notes: '',
     }
   });
 
+  // Update the form values when selectedDate changes
+  useEffect(() => {
+    if (selectedDate) {
+      setValue('planned_date', selectedDate.toISOString().split('T')[0]);
+    }
+  }, [selectedDate, setValue]);
+
   const safeCustomers = Array.isArray(customers) ? customers : [];
 
   const addPlanMutation = usePlanMutation(() => {
+    // When resetting the form, use the current selectedDate, not the initial defaultDate
     reset({
-      planned_date: defaultDate.toISOString().split('T')[0],
+      planned_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       customer_ref: '',
       customer_name: '',
       notes: '',
