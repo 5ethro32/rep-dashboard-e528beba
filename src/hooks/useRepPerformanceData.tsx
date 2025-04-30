@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -52,7 +53,7 @@ export const useRepPerformanceData = () => {
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
   
-  // New state to store April's specific comparison data
+  // New state to store month-specific comparison data
   const [aprilSummaryChanges, setAprilSummaryChanges] = useState(defaultSummaryChanges);
   const [aprilRepChanges, setAprilRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
   // March's specific comparison data (compared to February)
@@ -432,7 +433,7 @@ export const useRepPerformanceData = () => {
         true, true, true
       );
       
-      const aprilSummaryChanges = {
+      const aprilSummaryChangesData = {
         totalSpend: marchSummary.totalSpend > 0 ? 
           ((aprSummary.totalSpend - marchSummary.totalSpend) / marchSummary.totalSpend) * 100 : 0,
         totalProfit: marchSummary.totalProfit > 0 ? 
@@ -447,12 +448,12 @@ export const useRepPerformanceData = () => {
       };
       
       // Store the April-to-March comparison data
-      setAprilSummaryChanges(aprilSummaryChanges);
+      setAprilSummaryChanges(aprilSummaryChangesData);
       setAprilRepChanges(aprilMarchChanges);
       
       // If currently viewing April, apply these comparison values
       if (selectedMonth === 'April') {
-        setSummaryChanges(aprilSummaryChanges);
+        setSummaryChanges(aprilSummaryChangesData);
         setRepChanges(aprilMarchChanges);
       }
       
@@ -484,10 +485,10 @@ export const useRepPerformanceData = () => {
         marchRollingRevaSummary: marchRevaSummary,
         marchRollingWholesaleSummary: marchWholesaleSummary,
         aprilMarchChanges: aprilMarchChanges,
-        aprilSummaryChanges: aprilSummaryChanges,
+        aprilSummaryChanges: aprilSummaryChangesData,
         // Store month-specific changes
         aprilRepChanges: aprilMarchChanges,
-        aprilSummaryChanges: aprilSummaryChanges
+        aprilSummaryChanges: aprilSummaryChangesData
       });
       
       if (selectedMonth === 'April') {
@@ -807,3 +808,4 @@ export const useRepPerformanceData = () => {
     updateComparisonDataForMonth
   };
 };
+

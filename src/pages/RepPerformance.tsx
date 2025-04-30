@@ -93,13 +93,10 @@ const RepPerformance = () => {
                                  selectedMonth === 'February' ? febWholesaleValues : wholesaleValues;
   
   // Get the appropriate months for comparison
-  const currentMonthData = selectedMonth === 'April' ? getActiveData('overall') : 
-                           selectedMonth === 'February' ? febRepData :
-                           getActiveData('overall');
+  const currentMonthData = getActiveData('overall');
   
-  const previousMonthData = selectedMonth === 'April' ? repData :  
-                            selectedMonth === 'February' ? [] : // Feb has no comparison
-                            febRepData;
+  // Create appropriate previous month data based on selected month
+  const previousMonthData = selectedMonth === 'February' ? [] : getActiveData('overall');
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
