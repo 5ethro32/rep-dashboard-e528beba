@@ -62,10 +62,11 @@ serve(async (req) => {
 
     // Parse request body
     const requestData = await req.json();
-    const { message, originalMessage, selectedMonth, conversationContext } = requestData;
+    const { message, originalMessage, selectedMonth, conversationContext, enableAI } = requestData;
 
     console.log(`Processing user message: ${originalMessage}\n`);
     console.log("Conversation context:", JSON.stringify(conversationContext, null, 2));
+    console.log("AI analysis enabled:", enableAI);
 
     // Process the month selection - default to March if not specified
     const month = (selectedMonth || "march").toLowerCase();
@@ -77,6 +78,9 @@ serve(async (req) => {
 
     // Check if the query requires AI analysis
     const requiresAnalysis = requiresAIAnalysis(message, entities);
+    
+    // Track whether AI analysis was actually used
+    let aiAnalysisUsed = false;
     
     // Check if the query is about a specific rep's customers
     const isCustomerQuery = message.toLowerCase().includes("customer") || 
@@ -99,8 +103,8 @@ serve(async (req) => {
     let trends = null;
     let highlightedEntities = null;
 
-    // Handle AI analysis queries first (new feature)
-    if (requiresAnalysis) {
+    // Handle AI analysis queries first (new feature), but only if AI is enabled
+    if (requiresAnalysis && enableAI) {
       try {
         // Get the current month data
         let currentMonthData;
@@ -145,6 +149,7 @@ serve(async (req) => {
               openAIApiKey
             );
             
+            aiAnalysisUsed = true;
             response = aiResponse.text;
             insights = aiResponse.insights;
             
@@ -183,7 +188,7 @@ serve(async (req) => {
           
           // If we have OpenAI API key, analyze with AI
           const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
-          if (openAIApiKey) {
+          if (openAIApiKey && enableAI) {
             const aiResponse = await analyzeWithAI(
               currentMonthData, 
               previousMonthData, 
@@ -193,6 +198,7 @@ serve(async (req) => {
               openAIApiKey
             );
             
+            aiAnalysisUsed = true;
             response = aiResponse.text;
             insights = aiResponse.insights;
             
@@ -203,7 +209,7 @@ serve(async (req) => {
             ];
             chartType = "bar";
           } else {
-            // Fallback if no OpenAI API key is available
+            // Fallback if no OpenAI API key is available or AI is disabled
             response = analyzeMonthlyChange(currentMonthData, previousMonthData, "April", "March");
             
             // Create basic insights
@@ -225,6 +231,9 @@ serve(async (req) => {
         console.error('Error analyzing data:', error);
         response = `I encountered an error while analyzing the data. Please try again or ask a more specific question.`;
       }
+    } else if (requiresAnalysis && !enableAI) {
+      // If AI analysis is needed but disabled, provide a basic response
+      response = "I can see you're asking for a detailed analysis. For in-depth insights, please enable AI analysis with the toggle at the top of the chat.";
     }
     // Handle specific query types
     else if (isTopPerformersQuery) {
@@ -282,7 +291,7 @@ serve(async (req) => {
       const customerData = await getRepTopCustomers(supabaseClient, repName, tableName);
       
       if (customerData && customerData.length > 0) {
-        response = `Here are ${repName}'s top customers by profit:\n`;
+        response = `Here are ${repName}'s top 10 customers by profit:\n`;
         
         tableHeaders = ["Customer", "Profit", "Spend", "Margin", "Department"];
         tableData = customerData.map(customer => ({
@@ -307,15 +316,14 @@ serve(async (req) => {
         const topCustomerPercentage = (topProfit / totalProfit * 100).toFixed(1);
         
         insights = [
-          `${repName}'s top customer represents ${topCustomerPercentage}% of their total profit`,
-          `${repName} serves ${customerData.length} profitable customers`,
-          `The average profit per customer is £${(totalProfit / customerData.length).toFixed(2)}`
+          `${repName}'s top customer represents ${topCustomerPercentage}% of their total profit across top 10 customers`,
+          `The average profit per customer in the top 10 is £${(totalProfit / customerData.length).toFixed(2)}`
         ];
         
         // Add highlighted entities
         highlightedEntities = [
           { type: 'rep', name: 'Rep', value: repName },
-          { type: 'metric', name: 'Total Profit', value: `£${totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` },
+          { type: 'metric', name: 'Total Profit (Top 10)', value: `£${totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` },
           { type: 'customer', name: 'Top Customer', value: customerData[0].accountName }
         ];
       } else {
@@ -357,6 +365,7 @@ serve(async (req) => {
         highlightedEntities,
         entities,
         questionType,
+        aiAnalysisUsed,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

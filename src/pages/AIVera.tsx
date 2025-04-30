@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -11,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { reformulateQuery, generateFollowUpQuestions } from '@/utils/aiAssistantUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { Switch } from '@/components/ui/switch';
 
 // Reuse interface definitions from ChatInterface
 interface Message {
@@ -34,6 +36,7 @@ interface Message {
     name: string;
     value: string;
   }[];
+  aiAnalysisUsed?: boolean;
 }
 
 interface ConversationContext {
@@ -47,6 +50,7 @@ const AIVera = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>('April');
+  const [enableAI, setEnableAI] = useState<boolean>(false);
   const [conversationContext, setConversationContext] = useState<ConversationContext>({
     conversationId: `vera-${Date.now()}`,
     history: [],
@@ -74,8 +78,6 @@ const AIVera = () => {
         examples: [
           "Who are the top performers this month?",
           "Tell me about Craig's sales",
-          "Compare February and March profit",
-          "How did Murray perform in February vs March?",
           "Show me April's best reps by margin",
           "Why did profit drop last month?",
           "Which customers have the highest profit?",
@@ -139,12 +141,36 @@ const AIVera = () => {
     }));
     
     try {
+      // Detect if the query might benefit from AI analysis
+      const mightNeedAI = userQuery.toLowerCase().includes('why') || 
+                         userQuery.toLowerCase().includes('explain') ||
+                         userQuery.toLowerCase().includes('reason');
+      
+      // Check if the user might benefit from AI but has it disabled
+      if (mightNeedAI && !enableAI) {
+        // Show a notification that AI analysis might be helpful
+        toast({
+          title: "AI Analysis Available",
+          description: "This question might benefit from AI analysis. Consider enabling the AI toggle above.",
+          action: <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setEnableAI(true)}
+            className="bg-finance-red/10 text-finance-red border-finance-red/20"
+          >
+            <Sparkles className="h-4 w-4 mr-1" />
+            Enable AI
+          </Button>
+        });
+      }
+      
       // Call Supabase Edge Function with the full conversation context
       const { data, error } = await supabase.functions.invoke('rep-chat', {
         body: {
           message: isReformulated ? enhancedQuery : userQuery,
           originalMessage: userQuery,
           selectedMonth,
+          enableAI, // Pass the AI toggle state to the edge function
           conversationContext: {
             conversationId: conversationContext.conversationId,
             history: updatedHistory
@@ -159,6 +185,9 @@ const AIVera = () => {
       const entities = data?.entities || { months: [selectedMonth], repNames: [], departments: [], metrics: [] };
       const followUps = generateFollowUpQuestions(questionType, entities, selectedMonth);
       
+      // Check if AI analysis was used
+      const aiAnalysisUsed = data?.aiAnalysisUsed || false;
+      
       // Add assistant response to chat with any visualization data and enhanced fields
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -172,7 +201,8 @@ const AIVera = () => {
         insights: data?.insights,
         trends: data?.trends,
         highlightedEntities: data?.highlightedEntities,
-        examples: followUps
+        examples: followUps,
+        aiAnalysisUsed
       };
       
       setMessages(prev => [...prev, botMessage]);
@@ -230,11 +260,24 @@ const AIVera = () => {
         </div>
         
         <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white">V</AvatarFallback>
-            </Avatar>
-            <h1 className="text-2xl font-bold">Vera AI</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white">V</AvatarFallback>
+              </Avatar>
+              <h1 className="text-2xl font-bold">Vera AI</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">AI Analysis</span>
+              <div className="flex items-center gap-1">
+                <Switch 
+                  checked={enableAI} 
+                  onCheckedChange={setEnableAI} 
+                  id="ai-toggle"
+                />
+                <Sparkles className={`h-4 w-4 ${enableAI ? 'text-finance-red' : 'text-gray-500'}`} />
+              </div>
+            </div>
           </div>
           <p className="text-white/60">
             Your sales data assistant. Ask me anything about your sales performance.

@@ -24,8 +24,8 @@ const ChatInput = ({
   
   const suggestedQuestions = [
     "Who are the top performers by profit?",
-    "Compare February and March margins",
     "Show me Craig's most profitable customers",
+    "Show me April's best reps by margin",
     "Why did profit increase in April?"
   ];
 

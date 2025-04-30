@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -5,7 +6,8 @@ import {
   Lightbulb,
   ArrowUpRight,
   ArrowDownRight,
-  Minus
+  Minus,
+  Sparkles
 } from 'lucide-react';
 
 // Import charts if needed for visualizing data
@@ -32,6 +34,7 @@ interface Message {
     name: string;
     value: string;
   }[];
+  aiAnalysisUsed?: boolean;
 }
 
 interface ChatMessageProps {
@@ -261,6 +264,28 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
       </div>
     );
   };
+
+  // Render examples as clickable buttons
+  const renderExamples = () => {
+    if (!message.examples || message.examples.length === 0) return null;
+    
+    return (
+      <div className="mt-4">
+        <div className="text-sm text-gray-400 mb-2">Try asking:</div>
+        <div className="flex flex-wrap gap-2">
+          {message.examples.map((example, index) => (
+            <button
+              key={index}
+              onClick={() => onExampleClick(example)}
+              className="text-xs py-1 px-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-full transition-colors"
+            >
+              {example}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
   
   return (
     <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
@@ -274,6 +299,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
           ? 'bg-finance-red text-white' 
           : 'bg-gray-800 text-gray-100'
       }`}>
+        {!message.isUser && message.aiAnalysisUsed && (
+          <div className="flex items-center gap-1 mb-2 text-xs text-amber-300/70">
+            <Sparkles className="h-3 w-3" />
+            <span>AI Analysis</span>
+          </div>
+        )}
         <div className="whitespace-pre-wrap">
           {typeof enhancedContent === 'string' ? parseMarkdownBold(enhancedContent) : enhancedContent}
         </div>
@@ -286,6 +317,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
             {renderInsights()}
             {renderChart()}
             {renderTable()}
+            {renderExamples()}
           </>
         )}
       </div>
