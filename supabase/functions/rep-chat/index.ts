@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -857,4 +858,1193 @@ const extractEntities = (message: string) => {
     { regex: /current month/i, value: 'thisMonth' }
   ];
   
-  monthPatterns.
+  monthPatterns.forEach(pattern => {
+    if (pattern.regex.test(message)) {
+      entities.months.push(pattern.value);
+    }
+  });
+
+  // Extract departments
+  const departmentPatterns = [
+    { regex: /\b(retail)\b/i, value: 'retail' },
+    { regex: /\b(reva)\b/i, value: 'reva' },
+    { regex: /\b(wholesale)\b/i, value: 'wholesale' }
+  ];
+
+  departmentPatterns.forEach(pattern => {
+    if (pattern.regex.test(message)) {
+      entities.departments.push(pattern.value);
+    }
+  });
+
+  // Extract key metrics
+  const metricPatterns = [
+    { regex: /\b(profit)\b/i, value: 'profit' },
+    { regex: /\b(sales|spend|revenue)\b/i, value: 'sales' },
+    { regex: /\b(margin|margins)\b/i, value: 'margin' },
+    { regex: /\b(pack|packs)\b/i, value: 'packs' },
+    { regex: /\b(account|accounts)\b/i, value: 'accounts' },
+    { regex: /\b(active account|active accounts)\b/i, value: 'activeAccounts' }
+  ];
+
+  metricPatterns.forEach(pattern => {
+    if (pattern.regex.test(message)) {
+      entities.metrics.push(pattern.value);
+    }
+  });
+
+  // Detect comparison intent
+  if (/\b(compare|vs\.?|versus|against|difference|comparison)\b/i.test(message) ||
+      /\b(better than|worse than|higher|lower)\b/i.test(message) ||
+      message.includes('to') && (entities.months.length > 1)) {
+    entities.comparisons = true;
+  }
+
+  // Detect insights request
+  if (/\b(insight|insights|analysis|analyze|understand|explain|why)\b/i.test(message) ||
+      /\b(what do you think|observations|trends|patterns|conclusions)\b/i.test(message)) {
+    entities.insights = true;
+  }
+
+  // Detect trend analysis request
+  if (/\b(trend|trends|over time|pattern|patterns|growth|decline|trajectory|progress|development|evolution)\b/i.test(message)) {
+    entities.trend = true;
+  }
+
+  // Detect reasons analysis request
+  if (/\b(why|reason|reasons|cause|causes|explain|because|due to|result of|factor|factors)\b/i.test(message)) {
+    entities.reasons = true;
+  }
+
+  // Detect visualization request
+  if (/\b(show|chart|graph|plot|visual|visualize|visualization|display|figure|diagram)\b/i.test(message)) {
+    entities.visualization = true;
+    
+    // Try to determine visualization type
+    if (/\b(bar chart|bar graph|column chart|column graph)\b/i.test(message)) {
+      entities.visualization_type = 'bar';
+    } else if (/\b(line chart|line graph|trend line|trend chart|time series)\b/i.test(message)) {
+      entities.visualization_type = 'line';
+    } else if (/\b(pie chart|pie graph|donut chart|donut graph|circle chart)\b/i.test(message)) {
+      entities.visualization_type = 'pie';
+    } else if (/\b(table)\b/i.test(message)) {
+      entities.visualization_type = 'table';
+    }
+  }
+
+  // Look for customer mentions - this is more fuzzy as we don't have a predefined list
+  if (/\b(customer|customers|client|clients|account|accounts)\b/i.test(message)) {
+    // Extract words that might be customer names
+    const words = message.split(/\s+/);
+    const potentialCustomers = words.filter(word => 
+      word.length > 3 && 
+      !commonRepNames.some(rep => word.toLowerCase().includes(rep.toLowerCase())) &&
+      !metricPatterns.some(pat => pat.regex.test(word)) &&
+      !monthPatterns.some(pat => pat.regex.test(word)) &&
+      !departmentPatterns.some(pat => pat.regex.test(word))
+    );
+    
+    // Add potential customer names
+    if (potentialCustomers.length > 0) {
+      entities.customers = potentialCustomers;
+    }
+  }
+
+  // If no specific metrics are mentioned but the query asks about performance,
+  // default to profit and sales
+  if (entities.metrics.length === 0 && 
+      /\b(performance|how did|how is|doing|results|overview|summary)\b/i.test(message)) {
+    entities.metrics.push('profit', 'sales');
+  }
+
+  // Set default month if none specified - use most recent data
+  if (entities.months.length === 0) {
+    entities.months.push('april'); // Default to most recent month
+  }
+
+  // Convert relative month references to actual months
+  entities.months = entities.months.map(month => {
+    if (month === 'thisMonth' || month === 'currentMonth') {
+      return 'april'; // Current month is April
+    } else if (month === 'lastMonth' || month === 'previousMonth') {
+      return 'march'; // Last month is March
+    }
+    return month;
+  });
+
+  return entities;
+};
+
+// Analyze trends across months for specific metrics
+const analyzeTrends = (allMonths: Record<string, MonthData>, metric: string) => {
+  const trends = {
+    overall: { 
+      trend: 'stable',
+      percentage: 0,
+      analysis: ''
+    },
+    retail: {
+      trend: 'stable',
+      percentage: 0,
+      analysis: ''
+    },
+    reva: {
+      trend: 'stable',
+      percentage: 0,
+      analysis: ''
+    },
+    wholesale: {
+      trend: 'stable',
+      percentage: 0,
+      analysis: ''
+    }
+  };
+  
+  // Helper function to calculate percentage change
+  const calculateChange = (current, previous) => {
+    if (!previous || previous === 0) return 0;
+    return ((current - previous) / previous) * 100;
+  };
+  
+  // Helper function to determine trend direction
+  const determineTrend = (percentage) => {
+    if (percentage > 5) return 'increasing';
+    if (percentage < -5) return 'decreasing';
+    return 'stable';
+  };
+  
+  // Helper function to get metric value from metrics object
+  const getMetricValue = (metrics, metricName) => {
+    if (!metrics) return 0;
+    
+    switch(metricName) {
+      case 'profit':
+        return metrics.totalProfit;
+      case 'sales':
+      case 'spend':
+        return metrics.totalSpend;
+      case 'margin':
+        return metrics.averageMargin;
+      case 'packs':
+        return metrics.totalPacks;
+      case 'accounts':
+        return metrics.totalAccounts ? metrics.totalAccounts.size : 0;
+      case 'activeAccounts':
+        return metrics.activeAccounts ? metrics.activeAccounts.size : 0;
+      default:
+        return 0;
+    }
+  };
+  
+  // Helper function to get department metrics
+  const getDepartmentMetrics = (metrics, department) => {
+    if (!metrics || !metrics.departmentBreakdown) return null;
+    return metrics.departmentBreakdown.find(dept => dept.department.toLowerCase() === department.toLowerCase());
+  };
+  
+  // Calculate overall trends (February to April)
+  if (allMonths.april && allMonths.april.metrics && allMonths.february && allMonths.february.metrics) {
+    const aprilValue = getMetricValue(allMonths.april.metrics, metric);
+    const februaryValue = getMetricValue(allMonths.february.metrics, metric);
+    const change = calculateChange(aprilValue, februaryValue);
+    
+    trends.overall.percentage = change;
+    trends.overall.trend = determineTrend(change);
+    
+    // Generate analysis text
+    const direction = change > 0 ? 'increased' : 'decreased';
+    const magnitude = Math.abs(change);
+    
+    if (magnitude > 20) {
+      trends.overall.analysis = `${metric} has ${direction} significantly by ${magnitude.toFixed(1)}% from February to April.`;
+    } else if (magnitude > 5) {
+      trends.overall.analysis = `${metric} has ${direction} moderately by ${magnitude.toFixed(1)}% from February to April.`;
+    } else {
+      trends.overall.analysis = `${metric} has remained relatively stable from February to April (${change.toFixed(1)}% change).`;
+    }
+    
+    // Add month-to-month analysis
+    if (allMonths.march && allMonths.march.metrics) {
+      const marchValue = getMetricValue(allMonths.march.metrics, metric);
+      const feb_to_march = calculateChange(marchValue, februaryValue);
+      const march_to_april = calculateChange(aprilValue, marchValue);
+      
+      if (Math.sign(feb_to_march) !== Math.sign(march_to_april)) {
+        const firstTrend = feb_to_march > 0 ? 'increased' : 'decreased';
+        const secondTrend = march_to_april > 0 ? 'increased' : 'decreased';
+        
+        trends.overall.analysis += ` There was a trend reversal - ${metric} ${firstTrend} by ${Math.abs(feb_to_march).toFixed(1)}% from February to March, but then ${secondTrend} by ${Math.abs(march_to_april).toFixed(1)}% from March to April.`;
+      }
+    }
+  }
+  
+  // Calculate department trends
+  const departments = ['retail', 'reva', 'wholesale'];
+  
+  departments.forEach(department => {
+    const normalizedDept = department.toLowerCase();
+    let aprilDept = null, marchDept = null, februaryDept = null;
+    
+    if (allMonths.april && allMonths.april.metrics) {
+      aprilDept = getDepartmentMetrics(allMonths.april.metrics, normalizedDept);
+    }
+    
+    if (allMonths.february && allMonths.february.metrics) {
+      februaryDept = getDepartmentMetrics(allMonths.february.metrics, normalizedDept);
+    }
+    
+    if (allMonths.march && allMonths.march.metrics) {
+      marchDept = getDepartmentMetrics(allMonths.march.metrics, normalizedDept);
+    }
+    
+    if (aprilDept && februaryDept) {
+      let aprilValue, februaryValue;
+      
+      switch(metric) {
+        case 'profit':
+          aprilValue = aprilDept.profit;
+          februaryValue = februaryDept.profit;
+          break;
+        case 'sales':
+        case 'spend':
+          aprilValue = aprilDept.spend;
+          februaryValue = februaryDept.spend;
+          break;
+        case 'margin':
+          aprilValue = aprilDept.margin;
+          februaryValue = februaryDept.margin;
+          break;
+        case 'packs':
+          aprilValue = aprilDept.packs;
+          februaryValue = februaryDept.packs;
+          break;
+        case 'accounts':
+          aprilValue = aprilDept.accounts;
+          februaryValue = februaryDept.accounts;
+          break;
+        case 'activeAccounts':
+          aprilValue = aprilDept.activeAccounts;
+          februaryValue = februaryDept.activeAccounts;
+          break;
+        default:
+          aprilValue = 0;
+          februaryValue = 0;
+      }
+      
+      const change = calculateChange(aprilValue, februaryValue);
+      
+      trends[normalizedDept].percentage = change;
+      trends[normalizedDept].trend = determineTrend(change);
+      
+      // Generate analysis
+      const direction = change > 0 ? 'increased' : 'decreased';
+      const magnitude = Math.abs(change);
+      
+      if (magnitude > 20) {
+        trends[normalizedDept].analysis = `${department} ${metric} has ${direction} significantly by ${magnitude.toFixed(1)}% from February to April.`;
+      } else if (magnitude > 5) {
+        trends[normalizedDept].analysis = `${department} ${metric} has ${direction} moderately by ${magnitude.toFixed(1)}% from February to April.`;
+      } else {
+        trends[normalizedDept].analysis = `${department} ${metric} has remained relatively stable from February to April (${change.toFixed(1)}% change).`;
+      }
+      
+      // Add month-to-month analysis if available
+      if (marchDept) {
+        let marchValue;
+        
+        switch(metric) {
+          case 'profit':
+            marchValue = marchDept.profit;
+            break;
+          case 'sales':
+          case 'spend':
+            marchValue = marchDept.spend;
+            break;
+          case 'margin':
+            marchValue = marchDept.margin;
+            break;
+          case 'packs':
+            marchValue = marchDept.packs;
+            break;
+          case 'accounts':
+            marchValue = marchDept.accounts;
+            break;
+          case 'activeAccounts':
+            marchValue = marchDept.activeAccounts;
+            break;
+          default:
+            marchValue = 0;
+        }
+        
+        const feb_to_march = calculateChange(marchValue, februaryValue);
+        const march_to_april = calculateChange(aprilValue, marchValue);
+        
+        if (Math.sign(feb_to_march) !== Math.sign(march_to_april)) {
+          const firstTrend = feb_to_march > 0 ? 'increased' : 'decreased';
+          const secondTrend = march_to_april > 0 ? 'increased' : 'decreased';
+          
+          trends[normalizedDept].analysis += ` There was a trend reversal - ${metric} ${firstTrend} by ${Math.abs(feb_to_march).toFixed(1)}% from February to March, but then ${secondTrend} by ${Math.abs(march_to_april).toFixed(1)}% from March to April.`;
+        }
+      }
+    }
+  });
+  
+  return trends;
+};
+
+// Function to identify potential reasons for changes in metrics
+const analyzeReasons = (allMonths, metric, entity = null) => {
+  // Default entity refers to overall performance
+  const entityType = entity ? (entity.type || 'overall') : 'overall';
+  const entityName = entity ? (entity.name || 'overall') : 'overall';
+  
+  let reasons = [];
+  const insightData = {};
+  
+  // Analyze based on the metric type
+  switch(metric) {
+    case 'profit':
+      if (entityType === 'rep' && entityName) {
+        // For rep profit analysis
+        if (allMonths.march?.repDetails?.[entityName] && allMonths.april?.repDetails?.[entityName]) {
+          const marchProfit = allMonths.march.repDetails[entityName].totalProfit;
+          const aprilProfit = allMonths.april.repDetails[entityName].totalProfit;
+          const marchActiveAccounts = allMonths.march.repDetails[entityName].activeAccounts;
+          const aprilActiveAccounts = allMonths.april.repDetails[entityName].activeAccounts;
+          const marchMargin = allMonths.march.repDetails[entityName].margin;
+          const aprilMargin = allMonths.april.repDetails[entityName].margin;
+          
+          const profitChange = ((aprilProfit - marchProfit) / marchProfit) * 100;
+          const accountsChange = ((aprilActiveAccounts - marchActiveAccounts) / marchActiveAccounts) * 100;
+          const marginChange = aprilMargin - marchMargin;
+          
+          insightData.profitChange = profitChange;
+          insightData.accountsChange = accountsChange;
+          insightData.marginChange = marginChange;
+          
+          // Identify possible reasons
+          if (profitChange > 0) {
+            if (accountsChange > 0) {
+              reasons.push(`Increase in active accounts (${accountsChange.toFixed(1)}% more accounts) contributed to the profit growth.`);
+            }
+            
+            if (marginChange > 0) {
+              reasons.push(`Improved margin (${marginChange.toFixed(1)} percentage points higher) helped increase profitability.`);
+            } else if (marginChange < 0) {
+              reasons.push(`Despite lower margins, profit increased due to higher sales volume or more active accounts.`);
+            }
+          } else if (profitChange < 0) {
+            if (accountsChange < 0) {
+              reasons.push(`Decrease in active accounts (${Math.abs(accountsChange).toFixed(1)}% fewer accounts) likely contributed to the profit decline.`);
+            }
+            
+            if (marginChange < 0) {
+              reasons.push(`Lower margins (${Math.abs(marginChange).toFixed(1)} percentage points lower) reduced profitability.`);
+            }
+          }
+        }
+      } else if (entityType === 'department' && entityName) {
+        // For department profit analysis
+        const deptMetricMarch = allMonths.march?.metrics?.departmentBreakdown?.find(d => d.department.toLowerCase() === entityName.toLowerCase());
+        const deptMetricApril = allMonths.april?.metrics?.departmentBreakdown?.find(d => d.department.toLowerCase() === entityName.toLowerCase());
+        
+        if (deptMetricMarch && deptMetricApril) {
+          const profitChange = ((deptMetricApril.profit - deptMetricMarch.profit) / deptMetricMarch.profit) * 100;
+          const marginChange = deptMetricApril.margin - deptMetricMarch.margin;
+          const accountsChange = ((deptMetricApril.activeAccounts - deptMetricMarch.activeAccounts) / deptMetricMarch.activeAccounts) * 100;
+          
+          insightData.profitChange = profitChange;
+          insightData.marginChange = marginChange;
+          insightData.accountsChange = accountsChange;
+          
+          if (profitChange > 0) {
+            if (accountsChange > 0) {
+              reasons.push(`${entityName} department's increase in active accounts (${accountsChange.toFixed(1)}% more) drove profit growth.`);
+            }
+            
+            if (marginChange > 0) {
+              reasons.push(`${entityName} department's improved margin (${marginChange.toFixed(1)} percentage points higher) contributed to better profitability.`);
+            }
+          } else if (profitChange < 0) {
+            if (accountsChange < 0) {
+              reasons.push(`${entityName} department's decrease in active accounts (${Math.abs(accountsChange).toFixed(1)}% fewer) impacted profit negatively.`);
+            }
+            
+            if (marginChange < 0) {
+              reasons.push(`${entityName} department's decreased margins (${Math.abs(marginChange).toFixed(1)} percentage points lower) reduced profitability.`);
+            }
+          }
+        }
+      } else {
+        // Overall profit analysis
+        const marchMetrics = allMonths.march?.metrics;
+        const aprilMetrics = allMonths.april?.metrics;
+        
+        if (marchMetrics && aprilMetrics) {
+          const profitChange = ((aprilMetrics.totalProfit - marchMetrics.totalProfit) / marchMetrics.totalProfit) * 100;
+          const marginChange = aprilMetrics.averageMargin - marchMetrics.averageMargin;
+          const accountsChange = ((aprilMetrics.activeAccounts.size - marchMetrics.activeAccounts.size) / marchMetrics.activeAccounts.size) * 100;
+          
+          insightData.profitChange = profitChange;
+          insightData.marginChange = marginChange;
+          insightData.accountsChange = accountsChange;
+          
+          // Analyze department contributions
+          const deptContributions = [];
+          aprilMetrics.departmentBreakdown.forEach(aprilDept => {
+            const marchDept = marchMetrics.departmentBreakdown.find(d => d.department === aprilDept.department);
+            if (marchDept) {
+              const deptChange = ((aprilDept.profit - marchDept.profit) / marchDept.profit) * 100;
+              deptContributions.push({
+                department: aprilDept.department,
+                change: deptChange,
+                marchProfit: marchDept.profit,
+                aprilProfit: aprilDept.profit,
+                impact: aprilDept.profit - marchDept.profit
+              });
+            }
+          });
+          
+          // Sort by impact (absolute difference)
+          deptContributions.sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact));
+          
+          insightData.deptContributions = deptContributions;
+          
+          // Generate insights
+          if (profitChange > 0) {
+            // Positive profit change
+            const topPositiveContributor = deptContributions.find(d => d.change > 0);
+            if (topPositiveContributor) {
+              reasons.push(`${topPositiveContributor.department}'s strong performance (${topPositiveContributor.change.toFixed(1)}% profit increase) was a major factor in the overall profit growth.`);
+            }
+            
+            if (marginChange > 0) {
+              reasons.push(`Higher overall margins (${marginChange.toFixed(1)} percentage points increase) across the business contributed to profit growth.`);
+            }
+            
+            if (accountsChange > 0) {
+              reasons.push(`Increase in active accounts (${accountsChange.toFixed(1)}% more) helped drive overall profitability.`);
+            }
+          } else if (profitChange < 0) {
+            // Negative profit change
+            const topNegativeContributor = deptContributions.find(d => d.change < 0);
+            if (topNegativeContributor) {
+              reasons.push(`${topNegativeContributor.department}'s performance decline (${Math.abs(topNegativeContributor.change).toFixed(1)}% profit decrease) significantly impacted overall profit.`);
+            }
+            
+            if (marginChange < 0) {
+              reasons.push(`Lower overall margins (${Math.abs(marginChange).toFixed(1)} percentage points decrease) reduced business profitability.`);
+            }
+            
+            if (accountsChange < 0) {
+              reasons.push(`Decrease in active accounts (${Math.abs(accountsChange).toFixed(1)}% fewer) contributed to profit decline.`);
+            }
+          }
+        }
+      }
+      break;
+      
+    case 'margin':
+      if (entityType === 'rep' && entityName) {
+        // Rep margin analysis
+        if (allMonths.march?.repDetails?.[entityName] && allMonths.april?.repDetails?.[entityName]) {
+          const marchMargin = allMonths.march.repDetails[entityName].margin;
+          const aprilMargin = allMonths.april.repDetails[entityName].margin;
+          const marginChange = aprilMargin - marchMargin;
+          
+          insightData.marginChange = marginChange;
+          
+          if (marginChange > 0) {
+            reasons.push(`${entityName} likely focused on selling higher-margin products or negotiated better terms in April.`);
+          } else if (marginChange < 0) {
+            reasons.push(`${entityName}'s margin decline could be due to price pressure, higher costs, or a shift in product mix.`);
+          }
+        }
+      } else {
+        // Overall margin analysis
+        const marchMetrics = allMonths.march?.metrics;
+        const aprilMetrics = allMonths.april?.metrics;
+        
+        if (marchMetrics && aprilMetrics) {
+          const marginChange = aprilMetrics.averageMargin - marchMetrics.averageMargin;
+          insightData.marginChange = marginChange;
+          
+          if (marginChange > 0) {
+            // Positive margin change
+            reasons.push(`Higher overall margins could be due to a shift toward more profitable products or departments.`);
+            
+            // Check department contributions
+            const deptChanges = aprilMetrics.departmentBreakdown.map(aprilDept => {
+              const marchDept = marchMetrics.departmentBreakdown.find(d => d.department === aprilDept.department);
+              if (marchDept) {
+                return {
+                  department: aprilDept.department,
+                  marchMargin: marchDept.margin,
+                  aprilMargin: aprilDept.margin,
+                  change: aprilDept.margin - marchDept.margin
+                };
+              }
+              return null;
+            }).filter(Boolean);
+            
+            // Sort by change
+            deptChanges.sort((a, b) => b.change - a.change);
+            
+            if (deptChanges.length > 0 && deptChanges[0].change > 0) {
+              reasons.push(`${deptChanges[0].department} saw the highest margin improvement (${deptChanges[0].change.toFixed(1)} percentage points), which contributed to the overall increase.`);
+            }
+          } else if (marginChange < 0) {
+            // Negative margin change
+            reasons.push(`Margin pressure could be due to increased competition, higher costs, or promotional pricing.`);
+            
+            // Check department contributions
+            const deptChanges = aprilMetrics.departmentBreakdown.map(aprilDept => {
+              const marchDept = marchMetrics.departmentBreakdown.find(d => d.department === aprilDept.department);
+              if (marchDept) {
+                return {
+                  department: aprilDept.department,
+                  marchMargin: marchDept.margin,
+                  aprilMargin: aprilDept.margin,
+                  change: aprilDept.margin - marchDept.margin
+                };
+              }
+              return null;
+            }).filter(Boolean);
+            
+            // Sort by change (ascending for negative impact)
+            deptChanges.sort((a, b) => a.change - b.change);
+            
+            if (deptChanges.length > 0 && deptChanges[0].change < 0) {
+              reasons.push(`${deptChanges[0].department} saw the largest margin decline (${Math.abs(deptChanges[0].change).toFixed(1)} percentage points), which affected the overall margin negatively.`);
+            }
+          }
+        }
+      }
+      break;
+    
+    default:
+      reasons.push(`Analysis for ${metric} changes is not available at this time.`);
+  }
+  
+  return {
+    reasons,
+    insightData
+  };
+};
+
+// Function to handle conversations and generate responses based on user messages
+const handleConversation = async (supabase, message: string, conversationContext: ConversationContext) => {
+  console.log('Processing user message:', message);
+  console.log('Conversation context:', conversationContext);
+  
+  // Extract entities from the user message
+  const entities = extractEntities(message);
+  console.log('Extracted entities:', entities);
+  
+  // Gather data from all months for comprehensive analysis
+  const allMonthsData = await gatherAllMonthsData(supabase);
+  console.log('Gathered data for all months');
+  
+  // Build response based on the entities and intent
+  let response = '';
+  let chartData = null;
+  let chartType = null;
+  let tableData = null;
+  let tableHeaders = null;
+  
+  // Determine the main user intent
+  if (entities.repNames.length > 0) {
+    // User is asking about specific reps
+    const repName = entities.repNames[0]; // Use the first mentioned rep name
+    response = `Let me tell you about ${repName}'s performance. `;
+    
+    if (entities.comparisons && entities.months.length > 1) {
+      // Comparison across months for specific rep
+      const monthsToCompare = entities.months.slice(0, 2);
+      const month1Data = monthsToCompare[0] && allMonthsData[monthsToCompare[0]]?.repDetails?.[repName];
+      const month2Data = monthsToCompare[1] && allMonthsData[monthsToCompare[1]]?.repDetails?.[repName];
+      
+      if (month1Data && month2Data) {
+        const profitChange = ((month2Data.totalProfit - month1Data.totalProfit) / month1Data.totalProfit) * 100;
+        const spendChange = ((month2Data.totalSpend - month1Data.totalSpend) / month1Data.totalSpend) * 100;
+        const marginChange = month2Data.margin - month1Data.margin;
+        
+        response += `Comparing ${monthsToCompare[0]} to ${monthsToCompare[1]}, ${repName}'s profit ${profitChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(profitChange).toFixed(1)}% `;
+        response += `(${month1Data.totalProfit.toLocaleString('en-US', {style: 'currency', currency: 'GBP', maximumFractionDigits: 0})} vs ${month2Data.totalProfit.toLocaleString('en-US', {style: 'currency', currency: 'GBP', maximumFractionDigits: 0})}). `;
+        
+        response += `Sales ${spendChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(spendChange).toFixed(1)}% `;
+        response += `and margin ${marginChange > 0 ? 'improved' : 'declined'} by ${Math.abs(marginChange).toFixed(1)} percentage points `;
+        response += `(${month1Data.margin.toFixed(1)}% vs ${month2Data.margin.toFixed(1)}%). `;
+        
+        if (month2Data.activeAccounts !== month1Data.activeAccounts) {
+          const accountsChange = ((month2Data.activeAccounts - month1Data.activeAccounts) / month1Data.activeAccounts) * 100;
+          response += `${repName} had ${accountsChange > 0 ? 'more' : 'fewer'} active accounts in ${monthsToCompare[1]} (${month2Data.activeAccounts} vs ${month1Data.activeAccounts} in ${monthsToCompare[0]}).`;
+        }
+        
+        // Prepare chart data for comparison visualization
+        if (entities.visualization || entities.metrics.length > 0) {
+          chartData = {
+            labels: [monthsToCompare[0], monthsToCompare[1]],
+            datasets: [
+              {
+                label: 'Profit',
+                data: [month1Data.totalProfit, month2Data.totalProfit]
+              },
+              {
+                label: 'Sales',
+                data: [month1Data.totalSpend, month2Data.totalSpend]
+              }
+            ]
+          };
+          chartType = entities.visualization_type || 'bar';
+        }
+      } else {
+        response += `I don't have enough data to compare ${repName}'s performance across those months.`;
+      }
+    } else {
+      // Single month analysis for specific rep
+      const month = entities.months[0] || 'april'; // Default to most recent month
+      const monthData = allMonthsData[month]?.repDetails?.[repName];
+      
+      if (monthData) {
+        response += `In ${month}, ${repName} generated £${monthData.totalProfit.toLocaleString()} in profit from £${monthData.totalSpend.toLocaleString()} in sales, `;
+        response += `with a margin of ${monthData.margin.toFixed(1)}%. `;
+        
+        if (monthData.departments && monthData.departments.length > 0) {
+          response += `${repName} worked across ${monthData.departments.length} departments: ${monthData.departments.join(', ')}. `;
+        }
+        
+        response += `They handled ${monthData.activeAccounts} active accounts out of ${monthData.totalAccounts} total accounts, `;
+        response += `with an average profit per active account of £${monthData.profitPerActiveAccount.toFixed(0)}.`;
+        
+        // Add trend analysis if insights were requested
+        if (entities.insights || entities.trend || entities.reasons) {
+          const previousMonth = month === 'april' ? 'march' : (month === 'march' ? 'february' : null);
+          
+          if (previousMonth && allMonthsData[previousMonth]?.repDetails?.[repName]) {
+            const prevMonthData = allMonthsData[previousMonth].repDetails[repName];
+            
+            const profitChange = ((monthData.totalProfit - prevMonthData.totalProfit) / prevMonthData.totalProfit) * 100;
+            const spendChange = ((monthData.totalSpend - prevMonthData.totalSpend) / prevMonthData.totalSpend) * 100;
+            const marginChange = monthData.margin - prevMonthData.margin;
+            
+            response += `\n\nCompared to ${previousMonth}, ${repName}'s profit ${profitChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(profitChange).toFixed(1)}%, `;
+            response += `sales ${spendChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(spendChange).toFixed(1)}%, `;
+            response += `and margin ${marginChange > 0 ? 'improved' : 'declined'} by ${Math.abs(marginChange).toFixed(1)} percentage points.`;
+            
+            // Add potential reasons for the changes
+            if (entities.reasons) {
+              const profitAnalysis = analyzeReasons(allMonthsData, 'profit', { type: 'rep', name: repName });
+              if (profitAnalysis.reasons && profitAnalysis.reasons.length > 0) {
+                response += `\n\nPossible reasons for these changes:\n- ${profitAnalysis.reasons.join('\n- ')}`;
+              }
+            }
+          }
+        }
+        
+        // Prepare visualization if requested
+        if (entities.visualization) {
+          const relatedMonths = ['february', 'march', 'april'].filter(m => allMonthsData[m]?.repDetails?.[repName]);
+          
+          if (relatedMonths.length > 1) {
+            chartData = {
+              labels: relatedMonths,
+              datasets: [
+                {
+                  label: 'Profit',
+                  data: relatedMonths.map(m => allMonthsData[m].repDetails[repName].totalProfit)
+                },
+                {
+                  label: 'Sales',
+                  data: relatedMonths.map(m => allMonthsData[m].repDetails[repName].totalSpend)
+                }
+              ]
+            };
+            chartType = entities.visualization_type || 'line';
+          }
+        }
+      } else {
+        response += `I don't have any data for ${repName} in ${month}.`;
+      }
+    }
+  } else if (entities.departments.length > 0) {
+    // User is asking about specific departments
+    const department = entities.departments[0];
+    response = `Let me tell you about the ${department} department's performance. `;
+    
+    if (entities.comparisons && entities.months.length > 1) {
+      // Comparison across months for specific department
+      const monthsToCompare = entities.months.slice(0, 2);
+      
+      // Get department metrics for both months
+      const month1Metrics = allMonthsData[monthsToCompare[0]]?.metrics?.departmentBreakdown?.find(
+        dept => dept.department.toLowerCase() === department.toLowerCase()
+      );
+      
+      const month2Metrics = allMonthsData[monthsToCompare[1]]?.metrics?.departmentBreakdown?.find(
+        dept => dept.department.toLowerCase() === department.toLowerCase()
+      );
+      
+      if (month1Metrics && month2Metrics) {
+        const profitChange = ((month2Metrics.profit - month1Metrics.profit) / month1Metrics.profit) * 100;
+        const spendChange = ((month2Metrics.spend - month1Metrics.spend) / month1Metrics.spend) * 100;
+        const marginChange = month2Metrics.margin - month1Metrics.margin;
+        
+        response += `Comparing ${monthsToCompare[0]} to ${monthsToCompare[1]}, the ${department} department's profit ${profitChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(profitChange).toFixed(1)}% `;
+        response += `(${month1Metrics.profit.toLocaleString('en-US', {style: 'currency', currency: 'GBP', maximumFractionDigits: 0})} vs ${month2Metrics.profit.toLocaleString('en-US', {style: 'currency', currency: 'GBP', maximumFractionDigits: 0})}). `;
+        
+        response += `Sales ${spendChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(spendChange).toFixed(1)}% `;
+        response += `and margin ${marginChange > 0 ? 'improved' : 'declined'} by ${Math.abs(marginChange).toFixed(1)} percentage points `;
+        response += `(${month1Metrics.margin.toFixed(1)}% vs ${month2Metrics.margin.toFixed(1)}%). `;
+        
+        if (month2Metrics.activeAccounts !== month1Metrics.activeAccounts) {
+          const accountsChange = ((month2Metrics.activeAccounts - month1Metrics.activeAccounts) / month1Metrics.activeAccounts) * 100;
+          response += `The department had ${accountsChange > 0 ? 'more' : 'fewer'} active accounts in ${monthsToCompare[1]} (${month2Metrics.activeAccounts} vs ${month1Metrics.activeAccounts} in ${monthsToCompare[0]}).`;
+        }
+        
+        // Prepare chart data
+        if (entities.visualization || entities.metrics.length > 0) {
+          chartData = {
+            labels: [monthsToCompare[0], monthsToCompare[1]],
+            datasets: [
+              {
+                label: 'Profit',
+                data: [month1Metrics.profit, month2Metrics.profit]
+              },
+              {
+                label: 'Sales',
+                data: [month1Metrics.spend, month2Metrics.spend]
+              }
+            ]
+          };
+          chartType = entities.visualization_type || 'bar';
+        }
+      } else {
+        response += `I don't have enough data to compare the ${department} department's performance across those months.`;
+      }
+    } else {
+      // Single month analysis for specific department
+      const month = entities.months[0] || 'april';
+      const monthMetrics = allMonthsData[month]?.metrics?.departmentBreakdown?.find(
+        dept => dept.department.toLowerCase() === department.toLowerCase()
+      );
+      
+      if (monthMetrics) {
+        response += `In ${month}, the ${department} department generated £${monthMetrics.profit.toLocaleString()} in profit from £${monthMetrics.spend.toLocaleString()} in sales, `;
+        response += `with a margin of ${monthMetrics.margin.toFixed(1)}%. `;
+        response += `The department had ${monthMetrics.activeAccounts} active accounts out of ${monthMetrics.accounts} total accounts `;
+        response += `and sold ${monthMetrics.packs.toLocaleString()} packs.`;
+        
+        // Add trend analysis if insights were requested
+        if (entities.insights || entities.trend || entities.reasons) {
+          const previousMonth = month === 'april' ? 'march' : (month === 'march' ? 'february' : null);
+          
+          if (previousMonth) {
+            const prevMonthMetrics = allMonthsData[previousMonth]?.metrics?.departmentBreakdown?.find(
+              dept => dept.department.toLowerCase() === department.toLowerCase()
+            );
+            
+            if (prevMonthMetrics) {
+              const profitChange = ((monthMetrics.profit - prevMonthMetrics.profit) / prevMonthMetrics.profit) * 100;
+              const spendChange = ((monthMetrics.spend - prevMonthMetrics.spend) / prevMonthMetrics.spend) * 100;
+              const marginChange = monthMetrics.margin - prevMonthMetrics.margin;
+              
+              response += `\n\nCompared to ${previousMonth}, the department's profit ${profitChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(profitChange).toFixed(1)}%, `;
+              response += `sales ${spendChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(spendChange).toFixed(1)}%, `;
+              response += `and margin ${marginChange > 0 ? 'improved' : 'declined'} by ${Math.abs(marginChange).toFixed(1)} percentage points.`;
+              
+              // Add reasons analysis if requested
+              if (entities.reasons) {
+                const profitAnalysis = analyzeReasons(allMonthsData, 'profit', { type: 'department', name: department });
+                if (profitAnalysis.reasons && profitAnalysis.reasons.length > 0) {
+                  response += `\n\nPossible reasons for these changes:\n- ${profitAnalysis.reasons.join('\n- ')}`;
+                }
+              }
+            }
+          }
+        }
+        
+        // Prepare visualization if requested
+        if (entities.visualization) {
+          const allMonths = ['february', 'march', 'april'];
+          const monthsWithData = [];
+          const profitData = [];
+          const salesData = [];
+          
+          for (const m of allMonths) {
+            const metrics = allMonthsData[m]?.metrics?.departmentBreakdown?.find(
+              dept => dept.department.toLowerCase() === department.toLowerCase()
+            );
+            
+            if (metrics) {
+              monthsWithData.push(m);
+              profitData.push(metrics.profit);
+              salesData.push(metrics.spend);
+            }
+          }
+          
+          if (monthsWithData.length > 1) {
+            chartData = {
+              labels: monthsWithData,
+              datasets: [
+                {
+                  label: 'Profit',
+                  data: profitData
+                },
+                {
+                  label: 'Sales',
+                  data: salesData
+                }
+              ]
+            };
+            chartType = entities.visualization_type || 'line';
+          }
+        }
+      } else {
+        response += `I don't have any data for the ${department} department in ${month}.`;
+      }
+    }
+  } else if (entities.comparisons && entities.months.length > 1) {
+    // User is asking for a comparison between months (overall performance)
+    const monthsToCompare = entities.months.slice(0, 2); // Use first two mentioned months
+    response = `Let me compare overall performance between ${monthsToCompare[0]} and ${monthsToCompare[1]}. `;
+    
+    const month1Metrics = allMonthsData[monthsToCompare[0]]?.metrics;
+    const month2Metrics = allMonthsData[monthsToCompare[1]]?.metrics;
+    
+    if (month1Metrics && month2Metrics) {
+      const profitChange = ((month2Metrics.totalProfit - month1Metrics.totalProfit) / month1Metrics.totalProfit) * 100;
+      const spendChange = ((month2Metrics.totalSpend - month1Metrics.totalSpend) / month1Metrics.totalSpend) * 100;
+      const marginChange = month2Metrics.averageMargin - month1Metrics.averageMargin;
+      
+      response += `Total profit ${profitChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(profitChange).toFixed(1)}% `;
+      response += `(${month1Metrics.totalProfit.toLocaleString('en-US', {style: 'currency', currency: 'GBP', maximumFractionDigits: 0})} vs ${month2Metrics.totalProfit.toLocaleString('en-US', {style: 'currency', currency: 'GBP', maximumFractionDigits: 0})}). `;
+      
+      response += `Total sales ${spendChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(spendChange).toFixed(1)}% `;
+      response += `and overall margin ${marginChange > 0 ? 'improved' : 'declined'} by ${Math.abs(marginChange).toFixed(1)} percentage points `;
+      response += `(${month1Metrics.averageMargin.toFixed(1)}% vs ${month2Metrics.averageMargin.toFixed(1)}%). `;
+      
+      // Add more detailed comparisons if insights were requested
+      if (entities.insights || entities.reasons) {
+        // Compare department performance
+        response += `\n\nDepartment comparison:`;
+        
+        for (const dept1 of month1Metrics.departmentBreakdown) {
+          const dept2 = month2Metrics.departmentBreakdown.find(d => d.department === dept1.department);
+          
+          if (dept2) {
+            const deptProfitChange = ((dept2.profit - dept1.profit) / dept1.profit) * 100;
+            response += `\n- ${dept1.department}: ${deptProfitChange > 0 ? '+' : ''}${deptProfitChange.toFixed(1)}% profit change`;
+          }
+        }
+        
+        // Add reasons for changes if specifically requested
+        if (entities.reasons) {
+          const profitAnalysis = analyzeReasons(allMonthsData, 'profit');
+          if (profitAnalysis.reasons && profitAnalysis.reasons.length > 0) {
+            response += `\n\nPossible reasons for these changes:\n- ${profitAnalysis.reasons.join('\n- ')}`;
+          }
+        }
+      }
+      
+      // Prepare table data for comparison
+      tableHeaders = ['Metric', monthsToCompare[0], monthsToCompare[1], 'Change'];
+      tableData = [
+        { 
+          metric: 'Total Profit', 
+          [monthsToCompare[0]]: `£${month1Metrics.totalProfit.toLocaleString()}`, 
+          [monthsToCompare[1]]: `£${month2Metrics.totalProfit.toLocaleString()}`,
+          change: `${profitChange > 0 ? '+' : ''}${profitChange.toFixed(1)}%`
+        },
+        { 
+          metric: 'Total Sales', 
+          [monthsToCompare[0]]: `£${month1Metrics.totalSpend.toLocaleString()}`, 
+          [monthsToCompare[1]]: `£${month2Metrics.totalSpend.toLocaleString()}`,
+          change: `${spendChange > 0 ? '+' : ''}${spendChange.toFixed(1)}%`
+        },
+        { 
+          metric: 'Margin', 
+          [monthsToCompare[0]]: `${month1Metrics.averageMargin.toFixed(1)}%`, 
+          [monthsToCompare[1]]: `${month2Metrics.averageMargin.toFixed(1)}%`,
+          change: `${marginChange > 0 ? '+' : ''}${marginChange.toFixed(1)} pts`
+        },
+        { 
+          metric: 'Total Packs', 
+          [monthsToCompare[0]]: month1Metrics.totalPacks.toLocaleString(), 
+          [monthsToCompare[1]]: month2Metrics.totalPacks.toLocaleString(),
+          change: `${((month2Metrics.totalPacks - month1Metrics.totalPacks) / month1Metrics.totalPacks * 100).toFixed(1)}%`
+        },
+        { 
+          metric: 'Active Accounts', 
+          [monthsToCompare[0]]: month1Metrics.activeAccounts.size.toString(), 
+          [monthsToCompare[1]]: month2Metrics.activeAccounts.size.toString(),
+          change: `${(((month2Metrics.activeAccounts.size - month1Metrics.activeAccounts.size) / month1Metrics.activeAccounts.size) * 100).toFixed(1)}%`
+        }
+      ];
+      
+      // Prepare chart data
+      chartData = {
+        labels: ['Profit', 'Sales'],
+        datasets: [
+          {
+            label: monthsToCompare[0],
+            data: [month1Metrics.totalProfit, month1Metrics.totalSpend]
+          },
+          {
+            label: monthsToCompare[1],
+            data: [month2Metrics.totalProfit, month2Metrics.totalSpend]
+          }
+        ]
+      };
+      chartType = entities.visualization_type || 'bar';
+    } else {
+      response += `I don't have enough data to compare performance across those months.`;
+    }
+  } else if (entities.months.length > 0) {
+    // User is asking about a specific month's performance
+    const month = entities.months[0];
+    response = `Here's an overview of performance in ${month}: `;
+    
+    const monthMetrics = allMonthsData[month]?.metrics;
+    
+    if (monthMetrics) {
+      response += `Total profit was £${monthMetrics.totalProfit.toLocaleString()} from £${monthMetrics.totalSpend.toLocaleString()} in sales, `;
+      response += `achieving an overall margin of ${monthMetrics.averageMargin.toFixed(1)}%. `;
+      response += `There were ${monthMetrics.activeAccounts.size} active accounts out of ${monthMetrics.totalAccounts.size} total accounts, `;
+      response += `with ${monthMetrics.totalPacks.toLocaleString()} packs sold.`;
+      
+      // Add top performers if insights were requested
+      if (entities.insights || message.toLowerCase().includes('top') || message.toLowerCase().includes('best')) {
+        response += `\n\nTop performers by profit:`;
+        monthMetrics.topPerformersByProfit.slice(0, 3).forEach((rep, index) => {
+          response += `\n${index + 1}. ${rep.rep}: £${rep.profit.toLocaleString()}`;
+        });
+        
+        response += `\n\nTop performers by margin:`;
+        monthMetrics.topPerformersByMargin.slice(0, 3).forEach((rep, index) => {
+          response += `\n${index + 1}. ${rep.rep}: ${rep.margin.toFixed(1)}%`;
+        });
+      }
+      
+      // Add department breakdown
+      response += `\n\nDepartment breakdown:`;
+      monthMetrics.departmentBreakdown.forEach(dept => {
+        response += `\n- ${dept.department}: £${dept.profit.toLocaleString()} profit (${dept.margin.toFixed(1)}% margin)`;
+      });
+      
+      // Prepare visualization if requested or appropriate
+      if (entities.visualization || entities.metrics.includes('profit')) {
+        // Create department profit comparison chart
+        chartData = {
+          labels: monthMetrics.departmentBreakdown.map(dept => dept.department),
+          datasets: [{
+            label: 'Profit',
+            data: monthMetrics.departmentBreakdown.map(dept => dept.profit)
+          }]
+        };
+        chartType = entities.visualization_type || 'bar';
+      }
+      
+      // Prepare table data
+      tableHeaders = ['Department', 'Profit', 'Sales', 'Margin', 'Active Accounts'];
+      tableData = monthMetrics.departmentBreakdown.map(dept => ({
+        department: dept.department,
+        profit: `£${dept.profit.toLocaleString()}`,
+        sales: `£${dept.spend.toLocaleString()}`,
+        margin: `${dept.margin.toFixed(1)}%`,
+        activeAccounts: dept.activeAccounts
+      }));
+    } else {
+      response += `I don't have data for ${month}.`;
+    }
+  } else if (message.toLowerCase().includes('top performer') || message.toLowerCase().includes('best rep') || message.toLowerCase().includes('best performer')) {
+    // User is asking about top performers
+    const month = entities.months[0] || 'april';
+    response = `Here are the top performers for ${month}: `;
+    
+    const monthMetrics = allMonthsData[month]?.metrics;
+    
+    if (monthMetrics) {
+      // Extract top performers by profit
+      response += `\nTop performers by profit:`;
+      monthMetrics.topPerformersByProfit.slice(0, 5).forEach((rep, index) => {
+        response += `\n${index + 1}. ${rep.rep}: £${rep.profit.toLocaleString()}`;
+      });
+      
+      // Extract top performers by margin
+      response += `\n\nTop performers by margin:`;
+      monthMetrics.topPerformersByMargin.slice(0, 5).forEach((rep, index) => {
+        response += `\n${index + 1}. ${rep.rep}: ${rep.margin.toFixed(1)}%`;
+      });
+      
+      // Prepare visualization
+      chartData = {
+        labels: monthMetrics.topPerformersByProfit.slice(0, 5).map(rep => rep.rep),
+        datasets: [{
+          label: 'Profit',
+          data: monthMetrics.topPerformersByProfit.slice(0, 5).map(rep => rep.profit)
+        }]
+      };
+      chartType = entities.visualization_type || 'bar';
+      
+      // Prepare table data
+      tableHeaders = ['Rep', 'Profit', 'Margin'];
+      tableData = monthMetrics.topPerformersByProfit.slice(0, 5).map((rep, index) => {
+        const marginData = monthMetrics.topPerformersByMargin.find(r => r.rep === rep.rep);
+        return {
+          rep: `${index + 1}. ${rep.rep}`,
+          profit: `£${rep.profit.toLocaleString()}`,
+          margin: marginData ? `${marginData.margin.toFixed(1)}%` : 'N/A'
+        };
+      });
+    } else {
+      response += `I don't have data for ${month}.`;
+    }
+  } else if (entities.insights || entities.trend) {
+    // User is asking for general insights or trends
+    response = `Here are some key insights from the sales data:\n\n`;
+    
+    // Analyze profit trends
+    const profitTrends = analyzeTrends(allMonthsData, 'profit');
+    response += `Profit trend (Feb-Apr): ${profitTrends.overall.analysis}\n\n`;
+    
+    // Add department trends if available
+    const departments = ['retail', 'reva', 'wholesale'];
+    response += `Department performance:\n`;
+    
+    for (const dept of departments) {
+      if (profitTrends[dept] && profitTrends[dept].analysis) {
+        response += `- ${profitTrends[dept].analysis}\n`;
+      }
+    }
+    
+    // Add top performer insights
+    const aprilMetrics = allMonthsData.april?.metrics;
+    const marchMetrics = allMonthsData.march?.metrics;
+    
+    if (aprilMetrics && marchMetrics) {
+      response += `\nTop performers in April:\n`;
+      
+      // Compare current top performers to previous performance
+      for (let i = 0; i < Math.min(3, aprilMetrics.topPerformersByProfit.length); i++) {
+        const rep = aprilMetrics.topPerformersByProfit[i];
+        const marchRepData = allMonthsData.march?.repDetails?.[rep.rep];
+        
+        response += `${i + 1}. ${rep.rep}: £${rep.profit.toLocaleString()} `;
+        
+        if (marchRepData) {
+          const change = ((rep.profit - marchRepData.totalProfit) / marchRepData.totalProfit) * 100;
+          response += `(${change > 0 ? '+' : ''}${change.toFixed(1)}% vs March)\n`;
+        } else {
+          response += `(new to top performers)\n`;
+        }
+      }
+      
+      // Prepare chart data for trend visualization
+      const months = ['february', 'march', 'april'];
+      chartData = {
+        labels: months,
+        datasets: [
+          {
+            label: 'Total Profit',
+            data: months.map(m => allMonthsData[m]?.metrics?.totalProfit || 0)
+          },
+          {
+            label: 'Total Sales',
+            data: months.map(m => allMonthsData[m]?.metrics?.totalSpend || 0)
+          }
+        ]
+      };
+      chartType = entities.visualization_type || 'line';
+    } else {
+      response += `\nDetailed month-to-month comparison is not available.`;
+    }
+  } else {
+    // Default response for general queries
+    const month = entities.months[0] || conversationContext.selectedMonth || 'april'; // Default to most recent or selected month
+    response = `Here's a summary of sales performance for ${month}: `;
+    
+    const monthData = allMonthsData[month];
+    
+    if (monthData && monthData.metrics) {
+      response += `Total profit was £${monthData.metrics.totalProfit.toLocaleString()} from £${monthData.metrics.totalSpend.toLocaleString()} in sales, `;
+      response += `with an overall margin of ${monthData.metrics.averageMargin.toFixed(1)}%. `;
+      
+      // Add comparison to previous month if available
+      const previousMonth = month === 'april' ? 'march' : (month === 'march' ? 'february' : null);
+      
+      if (previousMonth && allMonthsData[previousMonth]?.metrics) {
+        const prevMetrics = allMonthsData[previousMonth].metrics;
+        const profitChange = ((monthData.metrics.totalProfit - prevMetrics.totalProfit) / prevMetrics.totalProfit) * 100;
+        
+        response += `This represents a ${profitChange > 0 ? 'growth' : 'decline'} of ${Math.abs(profitChange).toFixed(1)}% in profit compared to ${previousMonth}. `;
+      }
+      
+      // Add top performers
+      response += `\n\nTop performers by profit:`;
+      monthData.metrics.topPerformersByProfit.slice(0, 3).forEach((rep, index) => {
+        response += `\n${index + 1}. ${rep.rep}: £${rep.profit.toLocaleString()}`;
+      });
+      
+      // Add department breakdown summary
+      response += `\n\nDepartment breakdown:`;
+      monthData.metrics.departmentBreakdown.forEach(dept => {
+        response += `\n- ${dept.department}: £${dept.profit.toLocaleString()} profit (${dept.margin.toFixed(1)}% margin)`;
+      });
+      
+      // Suggest follow-up questions
+      response += `\n\nYou can ask me about specific reps, departments, or for a comparison between months. Try "Compare February and April profit" or "Show me Craig's performance trend".`;
+    } else {
+      response += `I don't have data for ${month}.`;
+    }
+  }
+  
+  // Return the response and any visualization data
+  return {
+    response,
+    chartData,
+    chartType,
+    tableData,
+    tableHeaders
+  };
+};
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+  
+  try {
+    // Parse the request body
+    const { message, selectedMonth, conversationContext } = await req.json();
+    
+    // Initialize Supabase client
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Process the message and generate a response
+    const responseData = await handleConversation(
+      supabase, 
+      message, 
+      conversationContext || { 
+        conversationId: `vera-${Date.now()}`, 
+        history: [], 
+        selectedMonth: selectedMonth || 'march' 
+      }
+    );
+    
+    // Return the response
+    return new Response(JSON.stringify(responseData), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error in rep-chat function:', error);
+    
+    return new Response(JSON.stringify({
+      response: "I'm sorry, I encountered an error processing your request. Please try again."
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
