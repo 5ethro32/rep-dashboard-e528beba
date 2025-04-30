@@ -193,7 +193,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
     <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
       {!message.isUser && (
         <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
-          <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
+          <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white text-xs">V</AvatarFallback>
         </Avatar>
       )}
       <div className={`max-w-[80%] rounded-lg p-4 ${
@@ -212,6 +212,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
             {renderTrends()}
             {renderHighlightedEntities()}
             {renderInsights()}
+            {renderExamples()}
           </>
         )}
       </div>
