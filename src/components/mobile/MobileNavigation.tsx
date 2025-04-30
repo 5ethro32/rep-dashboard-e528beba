@@ -25,7 +25,7 @@ const MobileNavigation = () => {
     },
     {
       icon: MessageCircle,
-      label: 'Vera',
+      label: 'Carlos AI',
       path: '/ai-vera',
     },
   ];
