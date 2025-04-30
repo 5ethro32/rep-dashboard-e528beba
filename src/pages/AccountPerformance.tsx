@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
-import ChatInterface from '@/components/chat/ChatInterface';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -82,7 +81,7 @@ const AccountPerformance = () => {
       switch (selectedMonth) {
         case 'April':
           currentTable = "mtd_daily";
-          previousTable = "march_rolling";  // Changed from "sales_data" to "march_rolling"
+          previousTable = "march_rolling";
           break;
         case 'March':
           currentTable = "sales_data";
@@ -201,59 +200,56 @@ const AccountPerformance = () => {
   };
 
   return (
-    <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-        <div className="flex justify-between items-center mb-6 pt-4">
-          <Link to="/rep-performance">
-            <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
-          
-          <UserProfileButton />
-        </div>
-        
-        <PerformanceHeader 
-          selectedMonth={selectedMonth}
-          setSelectedMonth={setSelectedMonth}
-        />
-        
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Account Performance Analysis</h1>
-          <p className="text-white/60">
-            Compare all accounts performance between months to identify declining or improving accounts.
-          </p>
-        </div>
-        
-        <div className="mb-4">
-          <Button 
-            onClick={fetchComparisonData} 
-            disabled={isLoading}
-            variant="default"
-            className="bg-finance-red hover:bg-finance-red/80"
-          >
-            {isLoading ? "Loading data..." : "Refresh Data"}
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
+      <div className="flex justify-between items-center mb-6 pt-4">
+        <Link to="/rep-performance">
+          <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
           </Button>
-        </div>
+        </Link>
         
-        <AccountSummaryCards
+        <UserProfileButton />
+      </div>
+      
+      <PerformanceHeader 
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+      />
+      
+      <div className="mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Account Performance Analysis</h1>
+        <p className="text-white/60">
+          Compare all accounts performance between months to identify declining or improving accounts.
+        </p>
+      </div>
+      
+      <div className="mb-4">
+        <Button 
+          onClick={fetchComparisonData} 
+          disabled={isLoading}
+          variant="default"
+          className="bg-finance-red hover:bg-finance-red/80"
+        >
+          {isLoading ? "Loading data..." : "Refresh Data"}
+        </Button>
+      </div>
+      
+      <AccountSummaryCards
+        currentMonthData={currentMonthRawData}
+        previousMonthData={previousMonthRawData}
+        isLoading={isLoading}
+      />
+      
+      <div className="mb-12">
+        <AccountPerformanceComparison 
           currentMonthData={currentMonthRawData}
           previousMonthData={previousMonthRawData}
           isLoading={isLoading}
+          selectedMonth={selectedMonth}
+          formatCurrency={formatCurrency}
         />
-        
-        <div className="mb-12">
-          <AccountPerformanceComparison 
-            currentMonthData={currentMonthRawData}
-            previousMonthData={previousMonthRawData}
-            isLoading={isLoading}
-            selectedMonth={selectedMonth}
-            formatCurrency={formatCurrency}
-          />
-        </div>
       </div>
-      <ChatInterface selectedMonth={selectedMonth} />
     </div>
   );
 };

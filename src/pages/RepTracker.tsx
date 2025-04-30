@@ -109,134 +109,132 @@ const RepTracker: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
-        <div className="flex justify-between items-center mb-6 pt-4">
-          <Link to="/rep-performance">
-            <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
-          
-          <UserProfileButton />
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
+      <div className="flex justify-between items-center mb-6 pt-4">
+        <Link to="/rep-performance">
+          <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </Link>
+        
+        <UserProfileButton />
+      </div>
+      
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Rep Tracker</h1>
+        <p className="text-white/60">
+          Track your customer visits, orders, and performance metrics.
+        </p>
+      </div>
+      
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="flex items-center">
+          <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
+          <h2 className="text-base sm:text-lg font-semibold truncate">
+            Week: {weekStartFormatted} - {weekEndFormatted}
+          </h2>
         </div>
         
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Rep Tracker</h1>
-          <p className="text-white/60">
-            Track your customer visits, orders, and performance metrics.
-          </p>
-        </div>
-        
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-          <div className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
-            <h2 className="text-base sm:text-lg font-semibold truncate">
-              Week: {weekStartFormatted} - {weekEndFormatted}
-            </h2>
-          </div>
+        <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="w-full sm:w-auto text-xs sm:text-sm"
+            onClick={() => {
+              setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
+            }}
+          >
+            Previous
+          </Button>
           
-          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="w-full sm:w-auto text-xs sm:text-sm"
-              onClick={() => {
-                setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
-              }}
-            >
-              Previous
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="w-full sm:w-auto text-xs sm:text-sm"
-              onClick={() => {
-                setSelectedDate(new Date());
-              }}
-            >
-              Current
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="w-full sm:w-auto text-xs sm:text-sm"
-              onClick={() => {
-                setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
-              }}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-        
-        <WeeklySummary 
-          data={currentWeekMetrics || {
-            totalVisits: 0,
-            totalProfit: 0,
-            totalOrders: 0,
-            conversionRate: 0,
-            dailyAvgProfit: 0,
-            topProfitOrder: 0,
-            avgProfitPerOrder: 0,
-            plannedVisits: 0
-          }}
-          previousData={previousWeekMetrics}
-          weekStartDate={weekStart} 
-          weekEndDate={weekEnd}
-          isLoading={isLoadingCurrentMetrics}
-        />
-        
-        <Tabs 
-          value={selectedTab} 
-          onValueChange={setSelectedTab} 
-          className="space-y-6"
-        >
-          <TabsList className="bg-black/20 border-gray-800">
-            <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
-            <TabsTrigger value="visits">Customer Visits</TabsTrigger>
-            <TabsTrigger value="customer-history">Customer History</TabsTrigger>
-          </TabsList>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="w-full sm:w-auto text-xs sm:text-sm"
+            onClick={() => {
+              setSelectedDate(new Date());
+            }}
+          >
+            Current
+          </Button>
           
-          <TabsContent value="week-plan-v2" className="mt-6">
-            {isMobile ? (
-              <ScrollArea className="h-[calc(100vh-380px)]">
-                <WeekPlanTabV2 
-                  weekStartDate={weekStart}
-                  weekEndDate={weekEnd}
-                  customers={customers || []}
-                  onAddPlanSuccess={handleAddPlanSuccess}
-                />
-              </ScrollArea>
-            ) : (
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="w-full sm:w-auto text-xs sm:text-sm"
+            onClick={() => {
+              setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
+            }}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+      
+      <WeeklySummary 
+        data={currentWeekMetrics || {
+          totalVisits: 0,
+          totalProfit: 0,
+          totalOrders: 0,
+          conversionRate: 0,
+          dailyAvgProfit: 0,
+          topProfitOrder: 0,
+          avgProfitPerOrder: 0,
+          plannedVisits: 0
+        }}
+        previousData={previousWeekMetrics}
+        weekStartDate={weekStart} 
+        weekEndDate={weekEnd}
+        isLoading={isLoadingCurrentMetrics}
+      />
+      
+      <Tabs 
+        value={selectedTab} 
+        onValueChange={setSelectedTab} 
+        className="space-y-6"
+      >
+        <TabsList className="bg-black/20 border-gray-800">
+          <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
+          <TabsTrigger value="visits">Customer Visits</TabsTrigger>
+          <TabsTrigger value="customer-history">Customer History</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="week-plan-v2" className="mt-6">
+          {isMobile ? (
+            <ScrollArea className="h-[calc(100vh-380px)]">
               <WeekPlanTabV2 
                 weekStartDate={weekStart}
                 weekEndDate={weekEnd}
                 customers={customers || []}
                 onAddPlanSuccess={handleAddPlanSuccess}
               />
-            )}
-          </TabsContent>
-          
-          <TabsContent value="visits" className="mt-6">
-            <CustomerVisitsList 
-              weekStartDate={weekStart} 
+            </ScrollArea>
+          ) : (
+            <WeekPlanTabV2 
+              weekStartDate={weekStart}
               weekEndDate={weekEnd}
-              customers={customers || []} 
-              isLoadingCustomers={isLoadingCustomers}
-              onDataChange={handleDataChange}
-              onAddVisit={() => setShowAddVisit(true)}
+              customers={customers || []}
+              onAddPlanSuccess={handleAddPlanSuccess}
             />
-          </TabsContent>
-          
-          <TabsContent value="customer-history" className="mt-6">
-            <CustomerHistoryTable customers={customers || []} />
-          </TabsContent>
-        </Tabs>
-      </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="visits" className="mt-6">
+          <CustomerVisitsList 
+            weekStartDate={weekStart} 
+            weekEndDate={weekEnd}
+            customers={customers || []} 
+            isLoadingCustomers={isLoadingCustomers}
+            onDataChange={handleDataChange}
+            onAddVisit={() => setShowAddVisit(true)}
+          />
+        </TabsContent>
+        
+        <TabsContent value="customer-history" className="mt-6">
+          <CustomerHistoryTable customers={customers || []} />
+        </TabsContent>
+      </Tabs>
       
       {showAddVisit && (
         <AddVisitDialog
