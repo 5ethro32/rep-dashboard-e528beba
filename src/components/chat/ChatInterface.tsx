@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -281,7 +280,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
         <DrawerContent className="bg-gray-900/95 backdrop-blur-lg border border-white/10 p-0 max-h-[90vh]">
           <div className="p-3 border-b border-white/10 bg-gradient-to-r from-finance-red to-rose-700 flex items-center">
             <Avatar className="h-6 w-6 mr-2">
-              <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
+              <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white text-xs">V</AvatarFallback>
             </Avatar>
             <span className="font-medium text-white">Vera</span>
           </div>
@@ -302,7 +301,7 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
           >
             <span className="flex items-center">
               <Avatar className="h-6 w-6 mr-2">
-                <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
+                <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white text-xs">V</AvatarFallback>
               </Avatar>
               Vera - Sales Assistant
             </span>
