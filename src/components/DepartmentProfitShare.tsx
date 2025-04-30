@@ -30,7 +30,7 @@ const DepartmentProfitShare: React.FC<DepartmentProfitShareProps> = ({
   // Updated colors to match the red theme from Profit Share By Rep chart
   const colors = {
     retail: "#ef4444",   // Primary red (same as in rep chart)
-    reva: "#f97316",     // Orange shade - similar to rep chart secondary colors
+    reva: "#f87171",     // Light red/pink shade - similar to rep chart secondary colors
     wholesale: "#dc2626" // Darker red shade - similar to rep chart tertiary colors
   };
   
