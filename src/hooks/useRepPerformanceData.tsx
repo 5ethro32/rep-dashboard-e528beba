@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -52,13 +51,6 @@ export const useRepPerformanceData = () => {
   
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
-  
-  // New state to store month-specific comparison data
-  const [aprilSummaryChanges, setAprilSummaryChanges] = useState(defaultSummaryChanges);
-  const [aprilRepChanges, setAprilRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
-  // March's specific comparison data (compared to February)
-  const [marchSummaryChanges, setMarchSummaryChanges] = useState(defaultSummaryChanges);
-  const [marchRepChanges, setMarchRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
 
   useEffect(() => {
     const storedData = loadStoredRepPerformanceData();
@@ -88,20 +80,6 @@ export const useRepPerformanceData = () => {
       
       setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
       setRepChanges(storedData.repChanges || defaultRepChanges);
-      
-      // Store month-specific comparison data if available
-      if (storedData.aprilSummaryChanges) {
-        setAprilSummaryChanges(storedData.aprilSummaryChanges);
-      }
-      if (storedData.aprilRepChanges) {
-        setAprilRepChanges(storedData.aprilRepChanges);
-      }
-      if (storedData.marchSummaryChanges) {
-        setMarchSummaryChanges(storedData.marchSummaryChanges);
-      }
-      if (storedData.marchRepChanges) {
-        setMarchRepChanges(storedData.marchRepChanges);
-      }
     }
     
     loadAprilData();
@@ -135,52 +113,48 @@ export const useRepPerformanceData = () => {
     
     setOverallData(combinedData);
 
-    // Now update the comparison data (summaryChanges and repChanges) based on selected month
-    updateComparisonDataForMonth(selectedMonth);
-    
-  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData, aprRepData, aprRevaData, aprWholesaleData]);
-  
-  // New function to handle updating comparison data based on selected month
-  const updateComparisonDataForMonth = (month: string) => {
-    if (month === 'February') {
-      // February shows inverted March-to-February changes
+    if (selectedMonth === 'February') {
       const invertedChanges: Record<string, any> = {};
-      Object.keys(marchRepChanges).forEach(rep => {
-        if (marchRepChanges[rep]) {
+      Object.keys(repChanges).forEach(rep => {
+        if (repChanges[rep]) {
           invertedChanges[rep] = {
-            profit: marchRepChanges[rep].profit ? -marchRepChanges[rep].profit / (1 + marchRepChanges[rep].profit / 100) * 100 : 0,
-            spend: marchRepChanges[rep].spend ? -marchRepChanges[rep].spend / (1 + marchRepChanges[rep].spend / 100) * 100 : 0,
-            margin: -marchRepChanges[rep].margin,
-            packs: marchRepChanges[rep].packs ? -marchRepChanges[rep].packs / (1 + marchRepChanges[rep].packs / 100) * 100 : 0,
-            activeAccounts: marchRepChanges[rep].activeAccounts ? -marchRepChanges[rep].activeAccounts / (1 + marchRepChanges[rep].activeAccounts / 100) * 100 : 0,
-            totalAccounts: marchRepChanges[rep].totalAccounts ? -marchRepChanges[rep].totalAccounts / (1 + marchRepChanges[rep].totalAccounts / 100) * 100 : 0
+            profit: repChanges[rep].profit ? -repChanges[rep].profit / (1 + repChanges[rep].profit / 100) * 100 : 0,
+            spend: repChanges[rep].spend ? -repChanges[rep].spend / (1 + repChanges[rep].spend / 100) * 100 : 0,
+            margin: -repChanges[rep].margin,
+            packs: repChanges[rep].packs ? -repChanges[rep].packs / (1 + repChanges[rep].packs / 100) * 100 : 0,
+            activeAccounts: repChanges[rep].activeAccounts ? -repChanges[rep].activeAccounts / (1 + repChanges[rep].activeAccounts / 100) * 100 : 0,
+            totalAccounts: repChanges[rep].totalAccounts ? -repChanges[rep].totalAccounts / (1 + repChanges[rep].totalAccounts / 100) * 100 : 0
           };
         }
       });
       
       const invertedSummaryChanges = {
-        totalSpend: marchSummaryChanges.totalSpend ? -marchSummaryChanges.totalSpend / (1 + marchSummaryChanges.totalSpend / 100) * 100 : 0,
-        totalProfit: marchSummaryChanges.totalProfit ? -marchSummaryChanges.totalProfit / (1 + marchSummaryChanges.totalProfit / 100) * 100 : 0,
-        averageMargin: -marchSummaryChanges.averageMargin,
-        totalPacks: marchSummaryChanges.totalPacks ? -marchSummaryChanges.totalPacks / (1 + marchSummaryChanges.totalPacks / 100) * 100 : 0,
-        totalAccounts: marchSummaryChanges.totalAccounts ? -marchSummaryChanges.totalAccounts / (1 + marchSummaryChanges.totalAccounts / 100) * 100 : 0,
-        activeAccounts: marchSummaryChanges.activeAccounts ? -marchSummaryChanges.activeAccounts / (1 + marchSummaryChanges.activeAccounts / 100) * 100 : 0
+        totalSpend: summaryChanges.totalSpend ? -summaryChanges.totalSpend / (1 + summaryChanges.totalSpend / 100) * 100 : 0,
+        totalProfit: summaryChanges.totalProfit ? -summaryChanges.totalProfit / (1 + summaryChanges.totalProfit / 100) * 100 : 0,
+        averageMargin: -summaryChanges.averageMargin,
+        totalPacks: summaryChanges.totalPacks ? -summaryChanges.totalPacks / (1 + summaryChanges.totalPacks / 100) * 100 : 0,
+        totalAccounts: summaryChanges.totalAccounts ? -summaryChanges.totalAccounts / (1 + summaryChanges.totalAccounts / 100) * 100 : 0,
+        activeAccounts: summaryChanges.activeAccounts ? -summaryChanges.activeAccounts / (1 + summaryChanges.activeAccounts / 100) * 100 : 0
       };
       
       setSummaryChanges(invertedSummaryChanges);
       setRepChanges(invertedChanges);
+    } else if (selectedMonth === 'April') {
+      if (repChanges) {
+        setRepChanges(repChanges);
+      }
       
-    } else if (month === 'April') {
-      // For April, use the stored April-to-March comparison data
-      setSummaryChanges(aprilSummaryChanges);
-      setRepChanges(aprilRepChanges);
-      
+      if (summaryChanges) {
+        setSummaryChanges(summaryChanges);
+      }
     } else {
-      // For March, use the standard March-to-February comparison data
-      setSummaryChanges(marchSummaryChanges);
-      setRepChanges(marchRepChanges);
+      const storedData = loadStoredRepPerformanceData();
+      if (storedData) {
+        setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
+        setRepChanges(storedData.repChanges || defaultRepChanges);
+      }
     }
-  };
+  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, febRepData, febRevaData, febWholesaleData, aprRepData, aprRevaData, aprWholesaleData]);
 
   const loadAprilData = async () => {
     setIsLoading(true);
@@ -433,7 +407,7 @@ export const useRepPerformanceData = () => {
         true, true, true
       );
       
-      const aprilSummaryChangesData = {
+      const aprilSummaryChanges = {
         totalSpend: marchSummary.totalSpend > 0 ? 
           ((aprSummary.totalSpend - marchSummary.totalSpend) / marchSummary.totalSpend) * 100 : 0,
         totalProfit: marchSummary.totalProfit > 0 ? 
@@ -447,14 +421,9 @@ export const useRepPerformanceData = () => {
           ((aprSummary.activeAccounts - marchSummary.activeAccounts) / marchSummary.activeAccounts) * 100 : 0
       };
       
-      // Store the April-to-March comparison data
-      setAprilSummaryChanges(aprilSummaryChangesData);
-      setAprilRepChanges(aprilMarchChanges);
-      
-      // If currently viewing April, apply these comparison values
       if (selectedMonth === 'April') {
-        setSummaryChanges(aprilSummaryChangesData);
         setRepChanges(aprilMarchChanges);
+        setSummaryChanges(aprilSummaryChanges);
       }
       
       const combinedAprilData = getCombinedRepData(
@@ -485,10 +454,7 @@ export const useRepPerformanceData = () => {
         marchRollingRevaSummary: marchRevaSummary,
         marchRollingWholesaleSummary: marchWholesaleSummary,
         aprilMarchChanges: aprilMarchChanges,
-        aprilSummaryChanges: aprilSummaryChangesData,
-        // Store month-specific changes
-        aprilRepChanges: aprilMarchChanges,
-        aprilSummaryChanges: aprilSummaryChangesData
+        aprilSummaryChanges: aprilSummaryChanges
       });
       
       if (selectedMonth === 'April') {
@@ -585,15 +551,16 @@ export const useRepPerformanceData = () => {
         averageMargin: data.febWholesaleValues.averageMargin
       });
       
-      // Store March-to-February comparison data
-      setMarchSummaryChanges(data.summaryChanges);
-      setMarchRepChanges(data.repChanges);
+      setSummaryChanges({
+        totalSpend: data.summaryChanges.totalSpend,
+        totalProfit: data.summaryChanges.totalProfit,
+        totalPacks: data.summaryChanges.totalPacks,
+        averageMargin: data.summaryChanges.averageMargin,
+        totalAccounts: data.summaryChanges.totalAccounts || 0,
+        activeAccounts: data.summaryChanges.activeAccounts || 0
+      });
       
-      // Set current comparison data based on selected month
-      if (selectedMonth === 'March') {
-        setSummaryChanges(data.summaryChanges);
-        setRepChanges(data.repChanges);
-      }
+      setRepChanges(data.repChanges);
       
       const combinedData = getCombinedRepData(
         data.repData,
@@ -622,13 +589,7 @@ export const useRepPerformanceData = () => {
         febWholesaleValues: data.febWholesaleValues,
         
         summaryChanges: data.summaryChanges,
-        repChanges: data.repChanges,
-        
-        // Store month-specific changes
-        marchSummaryChanges: data.summaryChanges,
-        marchRepChanges: data.repChanges,
-        aprilSummaryChanges: aprilSummaryChanges,
-        aprilRepChanges: aprilRepChanges
+        repChanges: data.repChanges
       });
 
       await loadAprilData();
@@ -805,7 +766,5 @@ export const useRepPerformanceData = () => {
     febBaseSummary,
     febRevaValues,
     febWholesaleValues,
-    updateComparisonDataForMonth
   };
 };
-
