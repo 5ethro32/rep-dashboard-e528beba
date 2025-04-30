@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -82,9 +81,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
                   </td>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   };
@@ -195,7 +194,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
             {renderTrends()}
             {renderHighlightedEntities()}
             {renderInsights()}
-            {renderExamples()}
           </>
         )}
       </div>
@@ -204,4 +202,3 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
 };
 
 export default ChatMessage;
-
