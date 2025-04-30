@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useUpdatePlanMutation } from '@/hooks/usePlanMutation';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import DatePickerField from './DatePickerField';
-import { format } from 'date-fns';
 
 interface EditPlanDialogProps {
   isOpen: boolean;
@@ -67,12 +66,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
   };
 
   const onSubmit = (data: PlanFormData) => {
-    // Ensure the date is correctly formatted without timezone issues
-    const formattedDate = new Date(data.planned_date);
-    updatePlanMutation.mutate({
-      ...data,
-      planned_date: format(formattedDate, 'yyyy-MM-dd')
-    });
+    updatePlanMutation.mutate(data);
   };
 
   return (

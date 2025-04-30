@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
 import DatePickerField from './DatePickerField';
-import { format } from 'date-fns';
 
 interface AddPlanDialogProps {
   isOpen: boolean;
@@ -34,29 +33,19 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
+  const defaultDate = selectedDate || new Date();
   
   const { register, handleSubmit, reset, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
-      planned_date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-      customer_ref: '',
-      customer_name: '',
-      notes: '',
+      planned_date: defaultDate.toISOString().split('T')[0],
     }
   });
-
-  // Update the form values when selectedDate changes
-  useEffect(() => {
-    if (selectedDate) {
-      setValue('planned_date', format(selectedDate, 'yyyy-MM-dd'));
-    }
-  }, [selectedDate, setValue]);
 
   const safeCustomers = Array.isArray(customers) ? customers : [];
 
   const addPlanMutation = usePlanMutation(() => {
-    // When resetting the form, use the current selectedDate, not the initial defaultDate
     reset({
-      planned_date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+      planned_date: defaultDate.toISOString().split('T')[0],
       customer_ref: '',
       customer_name: '',
       notes: '',
@@ -80,7 +69,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
     addPlanMutation.mutate({ 
       ...data, 
       user_id: user.id,
-      planned_date: format(formattedDate, 'yyyy-MM-dd')
+      planned_date: formattedDate.toISOString().split('T')[0] 
     });
   };
 

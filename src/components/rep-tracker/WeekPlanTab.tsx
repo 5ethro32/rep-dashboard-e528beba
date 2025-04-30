@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,7 +86,6 @@ const WeekPlanTab: React.FC<{
       onSuccess: (deletedId) => {
         queryClient.invalidateQueries({ 
           queryKey: ['week-plans'],
-          exact: false,
           refetchType: 'all'
         });
         refetch();
