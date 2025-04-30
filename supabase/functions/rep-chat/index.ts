@@ -1,7 +1,13 @@
 
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
-import { ChatCompletionRequestMessage } from "https://esm.sh/v135/@types/openai@4.28.0/dist/chat/index.d.ts";
+
+// Define our own ChatCompletionRequestMessage type instead of importing it
+interface ChatCompletionRequestMessage {
+  role: 'system' | 'user' | 'assistant' | 'function';
+  content: string;
+  name?: string;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
