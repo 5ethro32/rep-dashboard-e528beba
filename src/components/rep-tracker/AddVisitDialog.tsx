@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -54,7 +55,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   const queryClient = useQueryClient();
   const { register, handleSubmit, reset, setValue, watch } = useForm<VisitFormData>({
     defaultValues: {
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split('T')[0], // Always default to today's date
       visit_type: 'Customer Visit',
       has_order: false,
     }
@@ -96,7 +97,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
       });
       
       reset({
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0], // Reset to today's date
         visit_type: 'Customer Visit',
         has_order: false,
       });

@@ -33,11 +33,15 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
+  // Use the selectedDate if provided, otherwise default to today
   const defaultDate = selectedDate || new Date();
   
   const { register, handleSubmit, reset, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
       planned_date: defaultDate.toISOString().split('T')[0],
+      customer_ref: '',
+      customer_name: '',
+      notes: '',
     }
   });
 
