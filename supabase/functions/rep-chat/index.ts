@@ -80,6 +80,13 @@ serve(async (req) => {
                            originalMessage.toLowerCase().includes("customer");
     const isRepSpecific = entities.repNames.length > 0;
     
+    // Check if the query is about top performers
+    const isTopPerformersQuery = 
+      originalMessage.toLowerCase().includes("top") && 
+      (originalMessage.toLowerCase().includes("performer") ||
+       originalMessage.toLowerCase().includes("rep") ||
+       originalMessage.toLowerCase().includes("sales"));
+    
     let response = "";
     let chartData = null;
     let tableData = null;
@@ -89,7 +96,56 @@ serve(async (req) => {
     let highlightedEntities = null;
 
     // Handle specific query types
-    if (isRepSpecific && isCustomerQuery) {
+    if (isTopPerformersQuery) {
+      // Handle query about top performers
+      try {
+        const topRepsByProfit = await getTopRepsByProfit(supabaseClient, tableName, month, 5);
+        
+        if (topRepsByProfit && topRepsByProfit.length > 0) {
+          response = `Here are the top performers by profit for ${selectedMonth}:\n\n`;
+          
+          tableHeaders = ["Rep", "Profit", "Spend", "Margin"];
+          tableData = topRepsByProfit.map(rep => ({
+            rep: rep.repName,
+            profit: `£${rep.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+            spend: `£${rep.totalSpend.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+            margin: `${rep.margin.toFixed(1)}%`
+          }));
+          
+          // Create chart data for visualization
+          chartData = topRepsByProfit.map(rep => ({
+            name: rep.repName.length > 10 ? 
+              rep.repName.substring(0, 10) + "..." : 
+              rep.repName,
+            value: rep.totalProfit
+          }));
+          
+          // Create insights
+          const topRep = topRepsByProfit[0];
+          const secondRep = topRepsByProfit[1];
+          const totalProfit = topRepsByProfit.reduce((sum, rep) => sum + rep.totalProfit, 0);
+          const topRepPercentage = (topRep.totalProfit / totalProfit * 100).toFixed(1);
+          
+          insights = [
+            `${topRep.repName} is the top performer with £${topRep.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} profit`,
+            `${topRep.repName} accounts for ${topRepPercentage}% of the total profit among top performers`,
+            `${topRep.repName} is leading ${secondRep.repName} by £${(topRep.totalProfit - secondRep.totalProfit).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+          ];
+          
+          // Add highlighted entities
+          highlightedEntities = [
+            { type: 'rep', name: 'Top Rep', value: topRep.repName },
+            { type: 'metric', name: 'Profit', value: `£${topRep.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` },
+            { type: 'metric', name: 'Margin', value: `${topRep.margin.toFixed(1)}%` }
+          ];
+        } else {
+          response = `I don't have any performance data for ${selectedMonth}.`;
+        }
+      } catch (error) {
+        console.error('Error getting top performers:', error);
+        response = `I encountered an error while trying to get the top performers for ${selectedMonth}.`;
+      }
+    } else if (isRepSpecific && isCustomerQuery) {
       // Handle rep-specific customer queries (e.g., "Show me Craig's most profitable customers")
       const repName = entities.repNames[0];
       const customerData = await getRepTopCustomers(supabaseClient, repName, tableName);
@@ -150,8 +206,8 @@ serve(async (req) => {
         const marchData = await fetchMonthlyData(supabaseClient, "sales_data");
       }
 
-      // Integrate with OpenAI for general response
-      response = `Let me tell you about Craig's performance. I don't have any data for Craig in ${month}.`;
+      // Default response if no specific handlers match
+      response = `I don't have information about that query for ${selectedMonth}. You can ask me about top performers, specific reps, or customers.`;
     }
 
     // Determine the question type for better response formatting
@@ -373,6 +429,127 @@ function determineQuestionType(entities: any, message: string): string {
   }
   
   return 'general';
+}
+
+// New function to get top reps by profit
+async function getTopRepsByProfit(supabaseClient, tableName: string, month: string, limit = 5): Promise<RepData[]> {
+  try {
+    console.log(`Getting top performers by profit from ${tableName} for ${month}`);
+    
+    const repMap = new Map<string, {
+      repName: string;
+      totalSpend: number;
+      totalProfit: number;
+      departments: Set<string>;
+    }>();
+    
+    let data;
+    if (tableName === "sales_data") {
+      // For March data (newer format)
+      const { data: repData, error } = await supabaseClient
+        .from(tableName)
+        .select('rep_name, sub_rep, profit, spend, rep_type')
+        .order('profit', { ascending: false });
+        
+      if (error) throw error;
+      
+      // Process the data to combine rep and sub-rep data
+      repData.forEach(item => {
+        // Handle main rep
+        if (item.rep_name && !['RETAIL', 'REVA', 'Wholesale'].includes(item.rep_name)) {
+          if (!repMap.has(item.rep_name)) {
+            repMap.set(item.rep_name, {
+              repName: item.rep_name,
+              totalSpend: 0,
+              totalProfit: 0,
+              departments: new Set()
+            });
+          }
+          const repData = repMap.get(item.rep_name)!;
+          repData.totalSpend += Number(item.spend || 0);
+          repData.totalProfit += Number(item.profit || 0);
+          if (item.rep_type) repData.departments.add(item.rep_type);
+        }
+        
+        // Handle sub-rep
+        if (item.sub_rep && item.sub_rep.trim() !== '') {
+          if (!repMap.has(item.sub_rep)) {
+            repMap.set(item.sub_rep, {
+              repName: item.sub_rep,
+              totalSpend: 0,
+              totalProfit: 0,
+              departments: new Set()
+            });
+          }
+          const repData = repMap.get(item.sub_rep)!;
+          repData.totalSpend += Number(item.spend || 0);
+          repData.totalProfit += Number(item.profit || 0);
+          if (item.rep_type) repData.departments.add(item.rep_type);
+        }
+      });
+    } else {
+      // For February/April data (original format)
+      const { data: repData, error } = await supabaseClient
+        .from(tableName)
+        .select('"Rep", "Sub-Rep", "Profit", "Spend", "Department"');
+        
+      if (error) throw error;
+      
+      // Process the data to combine rep and sub-rep data
+      repData.forEach(item => {
+        // Handle main rep
+        if (item.Rep && !['RETAIL', 'REVA', 'Wholesale'].includes(item.Rep)) {
+          if (!repMap.has(item.Rep)) {
+            repMap.set(item.Rep, {
+              repName: item.Rep,
+              totalSpend: 0,
+              totalProfit: 0,
+              departments: new Set()
+            });
+          }
+          const repData = repMap.get(item.Rep)!;
+          repData.totalSpend += Number(item.Spend || 0);
+          repData.totalProfit += Number(item.Profit || 0);
+          if (item.Department) repData.departments.add(item.Department);
+        }
+        
+        // Handle sub-rep
+        if (item["Sub-Rep"] && item["Sub-Rep"].trim() !== '') {
+          if (!repMap.has(item["Sub-Rep"])) {
+            repMap.set(item["Sub-Rep"], {
+              repName: item["Sub-Rep"],
+              totalSpend: 0,
+              totalProfit: 0,
+              departments: new Set()
+            });
+          }
+          const repData = repMap.get(item["Sub-Rep"])!;
+          repData.totalSpend += Number(item.Spend || 0);
+          repData.totalProfit += Number(item.Profit || 0);
+          if (item.Department) repData.departments.add(item.Department);
+        }
+      });
+    }
+    
+    // Convert map to array and calculate margin
+    const result = Array.from(repMap.values())
+      .map(rep => ({
+        repName: rep.repName,
+        totalSpend: rep.totalSpend,
+        totalProfit: rep.totalProfit,
+        margin: rep.totalSpend > 0 ? (rep.totalProfit / rep.totalSpend) * 100 : 0,
+        departments: Array.from(rep.departments)
+      }))
+      .filter(rep => rep.totalProfit > 0)
+      .sort((a, b) => b.totalProfit - a.totalProfit)
+      .slice(0, limit);
+    
+    console.log(`Found ${result.length} top performers for ${month} from ${tableName}`);
+    return result;
+  } catch (error) {
+    console.error(`Error getting top performers from ${tableName}:`, error);
+    return [];
+  }
 }
 
 // New function to get a rep's top customers
