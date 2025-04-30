@@ -1,7 +1,7 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { format, parseISO } from 'date-fns';
 
 interface PlanFormData {
   planned_date: string;
@@ -31,9 +31,13 @@ export function usePlanMutation(onSuccess: () => void) {
       
       console.log("Plan created successfully:", insertedPlan);
       
+      // Create date for customer visit ensuring proper local date preservation
+      const planDate = new Date(data.planned_date);
+      planDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+      
       // Now create a corresponding customer visit entry
       const visitData = {
-        date: new Date(data.planned_date).toISOString(),
+        date: planDate.toISOString(), // Set to noon to avoid timezone issues
         customer_ref: data.customer_ref,
         customer_name: data.customer_name,
         user_id: data.user_id,
@@ -184,10 +188,14 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
         // Only update if the visit hasn't been marked as having an order yet
         // This prevents overwriting important order information
         if (!visitToUpdate.has_order) {
+          // Create date for customer visit ensuring proper local date preservation
+          const planDate = new Date(data.planned_date);
+          planDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+          
           const { error: visitError } = await supabase
             .from('customer_visits')
             .update({
-              date: new Date(data.planned_date).toISOString(),
+              date: planDate.toISOString(),
               customer_ref: data.customer_ref,
               customer_name: data.customer_name,
               comments: data.notes

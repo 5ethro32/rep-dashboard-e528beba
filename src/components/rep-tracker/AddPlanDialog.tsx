@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
 import DatePickerField from './DatePickerField';
+import { format } from 'date-fns';
 
 interface AddPlanDialogProps {
   isOpen: boolean;
@@ -36,7 +37,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   
   const { register, handleSubmit, reset, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
-      planned_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      planned_date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       customer_ref: '',
       customer_name: '',
       notes: '',
@@ -46,7 +47,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   // Update the form values when selectedDate changes
   useEffect(() => {
     if (selectedDate) {
-      setValue('planned_date', selectedDate.toISOString().split('T')[0]);
+      setValue('planned_date', format(selectedDate, 'yyyy-MM-dd'));
     }
   }, [selectedDate, setValue]);
 
@@ -55,7 +56,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const addPlanMutation = usePlanMutation(() => {
     // When resetting the form, use the current selectedDate, not the initial defaultDate
     reset({
-      planned_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      planned_date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       customer_ref: '',
       customer_name: '',
       notes: '',
@@ -79,7 +80,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
     addPlanMutation.mutate({ 
       ...data, 
       user_id: user.id,
-      planned_date: formattedDate.toISOString().split('T')[0] 
+      planned_date: format(formattedDate, 'yyyy-MM-dd')
     });
   };
 
