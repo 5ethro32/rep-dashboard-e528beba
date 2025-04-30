@@ -34,7 +34,9 @@ const RepTracker: React.FC = () => {
   const weekEndFormatted = format(weekEnd, 'EEE do MMM yy');
 
   // Determine the user's first name for the greeting
-  const userFirstName = user?.email?.split('@')[0] || 'User';
+  let userFirstName = user?.email?.split('@')[0] || 'User';
+  // Capitalize first letter
+  userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
 
   const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate);
   const previousWeekDate = new Date(weekStart);
@@ -124,15 +126,11 @@ const RepTracker: React.FC = () => {
         <UserProfileButton />
       </div>
       
-      {/* New personalized greeting */}
-      <div className="mb-2">
-        <h2 className="text-xl md:text-2xl font-medium text-white">
-          Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-semibold">{userFirstName}</span>
-        </h2>
-      </div>
-      
+      {/* Enhanced personalized greeting - now the main heading */}
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Rep Tracker</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-semibold">{userFirstName}</span>
+        </h1>
         <p className="text-white/60">
           Track your customer visits, orders, and performance metrics.
         </p>
