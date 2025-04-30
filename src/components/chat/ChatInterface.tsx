@@ -1,11 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { SendIcon, ChevronUp, ChevronDown, MessageCircle, LineChart, PieChart, BarChart } from 'lucide-react';
+import { MessageCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { GradientAvatar, GradientAvatarFallback } from '@/components/ui/gradient-avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -20,16 +18,21 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
+// Import refactored components
+import ChatMessage from './ChatMessage';
+import ChatInput from './ChatInput';
+import LoadingIndicator from './LoadingIndicator';
+
 interface Message {
   id: string;
   content: string;
   isUser: boolean;
   timestamp: Date;
-  examples?: string[]; // Added examples property for prompt messages
-  chartData?: any; // Added for chart visualization data
-  chartType?: 'bar' | 'line' | 'pie'; // Type of chart to display
-  tableData?: any[]; // For tabular data
-  tableHeaders?: string[]; // Table headers
+  examples?: string[];
+  chartData?: any;
+  chartType?: 'bar' | 'line' | 'pie';
+  tableData?: any[];
+  tableHeaders?: string[];
 }
 
 interface ConversationContext {
@@ -59,7 +62,11 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
         "Show me April's best reps by margin",
         "Why did profit drop last month?",
         "What insights can you share about our performance?",
-        "Which products had the highest growth?"
+        "Which products had the highest growth?",
+        "Give me a summary of March sales",
+        "Performance trends since February",
+        "Who improved the most since last month?",
+        "Show me data visualizations for top reps"
       ]
     }
   ]);
@@ -96,48 +103,6 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
       selectedMonth
     }));
   }, [selectedMonth]);
-
-  const renderChart = (message: Message) => {
-    if (!message.chartData || !message.chartType) return null;
-    
-    // Implement simple chart visualization here based on chartType
-    // This is a placeholder - in a real implementation, you'd use Recharts or another visualization library
-    return (
-      <div className="mt-3 bg-gray-900 p-3 rounded-md border border-gray-700">
-        {message.chartType === 'bar' && <BarChart className="h-6 w-6 mr-2" />}
-        {message.chartType === 'line' && <LineChart className="h-6 w-6 mr-2" />}
-        {message.chartType === 'pie' && <PieChart className="h-6 w-6 mr-2" />}
-        <span className="text-xs text-gray-400">Charts would render here based on the data</span>
-      </div>
-    );
-  };
-
-  const renderTable = (message: Message) => {
-    if (!message.tableData || !message.tableHeaders) return null;
-    
-    return (
-      <div className="mt-3 overflow-x-auto">
-        <table className="min-w-full bg-gray-800 text-sm text-gray-200 rounded-md">
-          <thead>
-            <tr className="border-b border-gray-600">
-              {message.tableHeaders.map((header, i) => (
-                <th key={i} className="px-3 py-2 text-left">{header}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {message.tableData.map((row, i) => (
-              <tr key={i} className="border-b border-gray-700">
-                {Object.values(row).map((cell: any, j) => (
-                  <td key={j} className="px-3 py-2">{cell}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
 
   const handleExampleClick = (exampleText: string) => {
     // Set the example text as the current message and submit
@@ -250,95 +215,26 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
     <div className="flex flex-col h-96">
       <div className="flex-grow overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
-          <div 
+          <ChatMessage 
             key={msg.id} 
-            className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
-          >
-            {!msg.isUser && (
-              <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
-                <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
-              </Avatar>
-            )}
-            
-            <div className="flex flex-col max-w-[75%]">
-              <div 
-                className={`rounded-lg p-3 ${
-                  msg.isUser 
-                    ? 'bg-gradient-to-r from-finance-red to-rose-700 text-white' 
-                    : 'bg-gray-800 text-gray-100'
-                } whitespace-pre-line`}
-              >
-                {msg.content}
-              </div>
-              
-              {/* Render charts if available */}
-              {!msg.isUser && renderChart(msg)}
-              
-              {/* Render tables if available */}
-              {!msg.isUser && renderTable(msg)}
-              
-              {msg.examples && msg.examples.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {msg.examples.map((example, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleExampleClick(example)}
-                      className="px-3 py-1.5 text-sm bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
-                    >
-                      {example}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {msg.isUser && (
-              <GradientAvatar className="h-8 w-8 ml-2 flex-shrink-0 mt-1">
-                <GradientAvatarFallback className="text-white text-xs">U</GradientAvatarFallback>
-              </GradientAvatar>
-            )}
-          </div>
+            message={msg} 
+            onExampleClick={handleExampleClick} 
+          />
         ))}
         
-        {isLoading && (
-          <div className="flex justify-start">
-            <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
-              <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
-            </Avatar>
-            <div className="bg-gray-800 text-gray-100 rounded-lg p-4">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                <div className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '600ms' }}></div>
-              </div>
-            </div>
-          </div>
-        )}
+        {isLoading && <LoadingIndicator />}
         
         <div ref={messagesEndRef} />
       </div>
       
-      <form onSubmit={handleSubmit} className="border-t border-white/10 p-3">
-        <div className="flex items-end gap-2">
-          <Textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Vera about your sales data..."
-            className="min-h-[60px] resize-none bg-gray-800 border-gray-700 text-white"
-            disabled={isLoading}
-          />
-          <Button 
-            type="submit" 
-            size="icon" 
-            className="h-10 w-10 rounded-full bg-gradient-to-r from-finance-red to-rose-700 text-white"
-            disabled={isLoading || !message.trim()}
-          >
-            <SendIcon className="h-5 w-5" />
-          </Button>
-        </div>
-      </form>
+      <ChatInput 
+        message={message}
+        setMessage={setMessage}
+        handleSubmit={handleSubmit}
+        handleKeyDown={handleKeyDown}
+        textareaRef={textareaRef}
+        isLoading={isLoading}
+      />
     </div>
   );
 
