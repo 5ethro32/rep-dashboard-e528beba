@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -16,6 +17,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
+  const isMobile = useIsMobile();
   
   const {
     includeRetail,
@@ -75,7 +77,6 @@ const RepPerformance = () => {
   };
   
   const activeData = getActiveData('overall');
-  const isMobile = useIsMobile();
   
   const currentBaseSummary = selectedMonth === 'April' ? aprBaseSummary : 
                              selectedMonth === 'February' ? febBaseSummary : baseSummary;
@@ -102,29 +103,32 @@ const RepPerformance = () => {
           autoRefreshed={autoRefreshed}
         />
         
-        <div className="flex space-x-2">
-          <Link to="/account-performance">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Account Analysis
-            </Button>
-          </Link>
-          
-          <Link to="/rep-tracker">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
-            >
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Rep Tracker
-            </Button>
-          </Link>
-        </div>
+        {/* Only show these buttons on non-mobile devices */}
+        {!isMobile && (
+          <div className="flex space-x-2">
+            <Link to="/account-performance">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Account Analysis
+              </Button>
+            </Link>
+            
+            <Link to="/rep-tracker">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+              >
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Rep Tracker
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
 
       <PerformanceFilters

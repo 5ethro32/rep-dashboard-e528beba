@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Activity, Users, Bot } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const MobileNavigation = () => {
@@ -14,18 +14,18 @@ const MobileNavigation = () => {
       path: '/rep-performance',
     },
     {
-      icon: Activity,
+      icon: Users,
       label: 'Accounts',
       path: '/account-performance',
     },
     {
-      icon: Users,
+      icon: Calendar,
       label: 'Rep Tracker',
       path: '/rep-tracker',
     },
     {
       icon: Bot,
-      label: 'AI Vera',
+      label: 'Vera',
       path: '/ai-vera',
     },
   ];
