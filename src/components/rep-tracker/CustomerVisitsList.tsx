@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { Edit2, Trash2, ArrowUpDown, PlusCircle } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { 
   AlertDialog,
@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import EditVisitDialog from './EditVisitDialog';
+import { Badge } from "@/components/ui/badge";
 
 interface CustomerVisitsListProps {
   weekStartDate: Date;
@@ -59,6 +60,7 @@ interface Visit {
   profit?: number;
   comments?: string;
   user_id: string;
+  week_plan_id?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -71,7 +73,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   onDataChange,
   onAddVisit
 }) => {
-  const [filter, setFilter] = useState('all'); // 'all', 'ordered', 'no-order'
+  const [filter, setFilter] = useState('all'); // 'all', 'ordered', 'no-order', 'planned'
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
@@ -107,27 +109,42 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
 
   const deleteVisitMutation = useMutation({
     mutationFn: async (visitId: string) => {
+      // First check if this is from a week plan
+      const { data: visitData } = await supabase
+        .from('customer_visits')
+        .select('week_plan_id')
+        .eq('id', visitId)
+        .single();
+        
       const { error } = await supabase
         .from('customer_visits')
         .delete()
         .eq('id', visitId);
 
       if (error) throw error;
+      
+      return { visitId, weekPlanId: visitData?.week_plan_id };
     },
-    onSuccess: () => {
+    onSuccess: ({visitId, weekPlanId}) => {
       queryClient.invalidateQueries({
         queryKey: ['customer-visits'],
         exact: false,
         refetchType: 'all'
       });
       
+      // If this visit was from a week plan, show a different message
+      const toastTitle = weekPlanId ? 'Planned Visit Deleted' : 'Visit Deleted';
+      const toastDescription = weekPlanId 
+        ? 'The visit has been deleted, but the original plan still exists in the Week Plan tab.'
+        : 'The visit has been successfully deleted.';
+      
       if (onDataChange) {
         onDataChange();
       }
       
       toast({
-        title: 'Visit Deleted',
-        description: 'The visit has been successfully deleted.',
+        title: toastTitle,
+        description: toastDescription,
       });
       setVisitToDelete(null);
     },
@@ -151,6 +168,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     if (filter === 'all') return true;
     if (filter === 'ordered') return visit.has_order;
     if (filter === 'no-order') return !visit.has_order;
+    if (filter === 'planned') return !!visit.week_plan_id;
     return true;
   });
 
@@ -169,13 +187,14 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         <h2 className="text-xl font-semibold mb-2 md:mb-0">Customer Visits</h2>
         <div className="flex items-center gap-4">
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[150px] bg-black/30 border-gray-700 text-white">
+            <SelectTrigger className="w-[180px] bg-black/30 border-gray-700 text-white">
               <SelectValue placeholder="Filter visits" />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 text-white border-gray-700">
               <SelectItem value="all">All Visits</SelectItem>
               <SelectItem value="ordered">With Orders</SelectItem>
               <SelectItem value="no-order">No Orders</SelectItem>
+              <SelectItem value="planned">From Week Plan</SelectItem>
             </SelectContent>
           </Select>
           
@@ -230,19 +249,20 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                     </Button>
                   </TableHead>
                   <TableHead className="text-white font-medium">Comments</TableHead>
+                  <TableHead className="text-white font-medium">Source</TableHead>
                   <TableHead className="text-white font-medium text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
                       Loading visits...
                     </TableCell>
                   </TableRow>
                 ) : filteredVisits?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
                       No visits found for this week.
                     </TableCell>
                   </TableRow>
@@ -262,6 +282,14 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate">
                         {visit.comments}
+                      </TableCell>
+                      <TableCell>
+                        {visit.week_plan_id ? (
+                          <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                            <Calendar className="h-3 w-3" /> 
+                            Plan
+                          </Badge>
+                        ) : 'Manual'}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">

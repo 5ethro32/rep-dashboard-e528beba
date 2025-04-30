@@ -23,6 +23,7 @@ export type Database = {
           updated_at: string | null
           user_id: string
           visit_type: string
+          week_plan_id: string | null
         }
         Insert: {
           comments?: string | null
@@ -37,6 +38,7 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           visit_type: string
+          week_plan_id?: string | null
         }
         Update: {
           comments?: string | null
@@ -51,8 +53,17 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           visit_type?: string
+          week_plan_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customer_visits_week_plan_id_fkey"
+            columns: ["week_plan_id"]
+            isOneToOne: false
+            referencedRelation: "week_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       march_rolling: {
         Row: {

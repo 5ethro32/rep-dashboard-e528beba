@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit2, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AddPlanDialog from './AddPlanDialog';
 import EditPlanDialog from './EditPlanDialog';
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
+import { Badge } from '@/components/ui/badge';
 
 interface WeekPlan {
   id: string;
@@ -30,11 +31,17 @@ interface WeekPlan {
   notes: string | null;
 }
 
+interface CustomerVisit {
+  id: string;
+  week_plan_id: string;
+  has_order: boolean;
+}
+
 interface WeekPlanTabV2Props {
   weekStartDate: Date;
   weekEndDate: Date;
   customers: Array<{ account_name: string; account_ref: string }>;
-  onAddPlanSuccess?: () => void; // Add the missing prop as optional
+  onAddPlanSuccess?: () => void;
 }
 
 const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({ 
@@ -76,12 +83,52 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
         });
       },
     },
-    // Remove stale time and set refetch interval to zero to force refresh
+    staleTime: 0
+  });
+
+  // Query to fetch customer visits that are associated with week plans
+  const { data: customerVisits } = useQuery({
+    queryKey: ['customer-visits-for-week-plans', weekStartDate.toISOString(), weekEndDate.toISOString()],
+    queryFn: async () => {
+      if (!weekPlans || weekPlans.length === 0) return [];
+      
+      const planIds = weekPlans.map(plan => plan.id);
+      
+      const { data, error } = await supabase
+        .from('customer_visits')
+        .select('id, week_plan_id, has_order')
+        .in('week_plan_id', planIds);
+      
+      if (error) throw error;
+      return data as CustomerVisit[];
+    },
+    enabled: !!weekPlans && weekPlans.length > 0,
     staleTime: 0
   });
 
   const deletePlanMutation = useMutation({
     mutationFn: async (planId: string) => {
+      // First check if there are any associated customer visits
+      const { data: relatedVisits } = await supabase
+        .from('customer_visits')
+        .select('id')
+        .eq('week_plan_id', planId);
+      
+      // Delete any associated customer visits first
+      if (relatedVisits && relatedVisits.length > 0) {
+        const visitIds = relatedVisits.map(visit => visit.id);
+        const { error: visitDeleteError } = await supabase
+          .from('customer_visits')
+          .delete()
+          .in('id', visitIds);
+        
+        if (visitDeleteError) {
+          console.error("Error deleting associated customer visits:", visitDeleteError);
+          // Continue with deleting the plan even if visit deletion fails
+        }
+      }
+      
+      // Then delete the plan itself
       const { error } = await supabase
         .from('week_plans')
         .delete()
@@ -103,10 +150,17 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
         exact: false,
         refetchType: 'all'
       });
+      
+      // Also invalidate customer visits
+      queryClient.invalidateQueries({ 
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
 
       toast({
         title: 'Plan Deleted',
-        description: 'Week plan has been deleted successfully.',
+        description: 'Week plan and associated customer visit have been deleted successfully.',
       });
 
       setDeleteConfirmOpen(false);
@@ -153,6 +207,13 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
       queryKey: weekPlansQueryKey,
       refetchType: 'all'
     });
+    
+    // Also refresh customer visits data
+    queryClient.invalidateQueries({ 
+      queryKey: ['customer-visits'],
+      exact: false,
+      refetchType: 'all'
+    });
   };
 
   const handleEditPlanSuccess = () => {
@@ -163,6 +224,23 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
       queryKey: weekPlansQueryKey, 
       refetchType: 'all'
     });
+    
+    // Also refresh customer visits data
+    queryClient.invalidateQueries({ 
+      queryKey: ['customer-visits'],
+      exact: false,
+      refetchType: 'all'
+    });
+  };
+
+  // Helper function to check if a plan has an associated customer visit
+  const hasAssociatedVisit = (planId: string) => {
+    return customerVisits?.some(visit => visit.week_plan_id === planId);
+  };
+
+  // Helper function to check if an associated visit has an order
+  const visitHasOrder = (planId: string) => {
+    return customerVisits?.some(visit => visit.week_plan_id === planId && visit.has_order);
   };
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -210,7 +288,18 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                       key={plan.id} 
                       className="p-2 rounded bg-black/30 border border-gray-800"
                     >
-                      <p className="font-medium">{plan.customer_name}</p>
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium">{plan.customer_name}</p>
+                        {hasAssociatedVisit(plan.id) && (
+                          <div className="ml-2">
+                            {visitHasOrder(plan.id) ? (
+                              <Badge className="bg-green-600 text-xs">Order</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs border-gray-500">Visit</Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       {plan.notes && (
                         <p className="text-sm text-gray-400 mt-1">{plan.notes}</p>
                       )}
@@ -265,7 +354,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Plan</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this plan? This action cannot be undone.
+              Are you sure you want to delete this plan? This will also delete any associated customer visit record.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

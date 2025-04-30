@@ -17,20 +17,49 @@ export function usePlanMutation(onSuccess: () => void) {
     mutationFn: async (data: PlanFormData & { user_id: string }) => {
       console.log("Attempting to create new plan with data:", data);
       
-      const { data: insertedData, error } = await supabase
+      // First create the week plan entry
+      const { data: insertedPlan, error: planError } = await supabase
         .from('week_plans')
         .insert([data])
         .select('*')
         .single();
 
-      if (error) {
-        console.error("Supabase insert error:", error);
-        throw error;
+      if (planError) {
+        console.error("Supabase insert error for week plan:", planError);
+        throw planError;
       }
       
-      console.log("Plan created successfully:", insertedData);
-      // Return the inserted data so we can use it for optimistic updates
-      return insertedData;
+      console.log("Plan created successfully:", insertedPlan);
+      
+      // Now create a corresponding customer visit entry
+      const visitData = {
+        date: new Date(data.planned_date).toISOString(),
+        customer_ref: data.customer_ref,
+        customer_name: data.customer_name,
+        user_id: data.user_id,
+        visit_type: "Customer Visit", // Default visit type
+        has_order: false, // Default value
+        profit: 0, // Default value
+        comments: data.notes, // Copy notes from plan
+        week_plan_id: insertedPlan.id, // Reference to the week plan
+      };
+      
+      const { data: insertedVisit, error: visitError } = await supabase
+        .from('customer_visits')
+        .insert([visitData])
+        .select('*')
+        .single();
+        
+      if (visitError) {
+        console.error("Supabase insert error for customer visit:", visitError);
+        // Even if customer visit creation fails, we still return the plan
+        // as it was created successfully
+      } else {
+        console.log("Corresponding customer visit created successfully:", insertedVisit);
+      }
+      
+      // Return the inserted plan data so we can use it for optimistic updates
+      return insertedPlan;
     },
     onSuccess: (newPlan) => {
       console.log("Create mutation success callback with data:", newPlan);
@@ -80,6 +109,13 @@ export function usePlanMutation(onSuccess: () => void) {
         }
       });
       
+      // Also invalidate customer visits queries to ensure they are updated
+      queryClient.invalidateQueries({ 
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
       // Immediately invalidate and refetch all week-plans queries
       queryClient.invalidateQueries({ 
         queryKey: ['week-plans'],
@@ -89,7 +125,7 @@ export function usePlanMutation(onSuccess: () => void) {
       
       toast({
         title: 'Plan Added',
-        description: 'Week plan has been added successfully.',
+        description: 'Week plan has been added successfully and a customer visit has been created.',
       });
       
       // Call the success callback to trigger additional UI updates
@@ -108,7 +144,7 @@ export function usePlanMutation(onSuccess: () => void) {
   });
 }
 
-// Update the update plan mutation function to follow the same pattern
+// Update the update plan mutation function to also update the customer visit
 export function useUpdatePlanMutation(onSuccess: () => void) {
   const queryClient = useQueryClient();
 
@@ -116,7 +152,8 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
     mutationFn: async (data: PlanFormData & { id: string }) => {
       console.log("Attempting to update plan with data:", data);
       
-      const { data: updatedData, error } = await supabase
+      // First update the week plan
+      const { data: updatedPlan, error: planError } = await supabase
         .from('week_plans')
         .update({
           planned_date: data.planned_date,
@@ -128,13 +165,45 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
         .select('*')
         .single();
 
-      if (error) {
-        console.error("Supabase update error:", error);
-        throw error;
+      if (planError) {
+        console.error("Supabase update error for week plan:", planError);
+        throw planError;
       }
       
-      console.log("Plan updated successfully:", updatedData);
-      return updatedData;
+      console.log("Plan updated successfully:", updatedPlan);
+      
+      // Now check if there's a corresponding customer visit and update it
+      const { data: relatedVisits } = await supabase
+        .from('customer_visits')
+        .select('*')
+        .eq('week_plan_id', data.id);
+      
+      if (relatedVisits && relatedVisits.length > 0) {
+        const visitToUpdate = relatedVisits[0];
+        
+        // Only update if the visit hasn't been marked as having an order yet
+        // This prevents overwriting important order information
+        if (!visitToUpdate.has_order) {
+          const { error: visitError } = await supabase
+            .from('customer_visits')
+            .update({
+              date: new Date(data.planned_date).toISOString(),
+              customer_ref: data.customer_ref,
+              customer_name: data.customer_name,
+              comments: data.notes
+            })
+            .eq('id', visitToUpdate.id);
+            
+          if (visitError) {
+            console.error("Supabase update error for customer visit:", visitError);
+            // We continue even if customer visit update fails
+          } else {
+            console.log("Corresponding customer visit updated successfully");
+          }
+        }
+      }
+      
+      return updatedPlan;
     },
     onSuccess: (updatedPlan) => {
       console.log("Update mutation success callback with data:", updatedPlan);
@@ -162,6 +231,13 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
         }
       });
       
+      // Also invalidate customer visits queries
+      queryClient.invalidateQueries({ 
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
       // Then invalidate and refetch all week-plans queries to ensure data consistency
       queryClient.invalidateQueries({ 
         queryKey: ['week-plans'],
@@ -169,10 +245,10 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
         refetchType: 'all'
       });
       
-      // Show toast notification like in Customer Visits
+      // Show toast notification
       toast({
         title: 'Plan Updated',
-        description: 'Week plan has been updated successfully.',
+        description: 'Week plan has been updated successfully and the related customer visit has been updated if applicable.',
       });
       
       // Call the success callback after everything is done
