@@ -75,6 +75,9 @@ serve(async (req) => {
     const entities = extractEntities(message);
     console.log("Extracted entities:", JSON.stringify(entities, null, 2));
 
+    // Check if the query requires AI analysis
+    const requiresAnalysis = requiresAIAnalysis(message, entities);
+    
     // Check if the query is about a specific rep's customers
     const isCustomerQuery = message.toLowerCase().includes("customer") || 
                            originalMessage.toLowerCase().includes("customer");
@@ -95,8 +98,135 @@ serve(async (req) => {
     let trends = null;
     let highlightedEntities = null;
 
+    // Handle AI analysis queries first (new feature)
+    if (requiresAnalysis) {
+      try {
+        // Get the current month data
+        let currentMonthData;
+        if (month === "february") {
+          currentMonthData = await fetchMonthlyData(supabaseClient, "sales_data_februrary");
+        } else if (month === "april") {
+          currentMonthData = await fetchMonthlyData(supabaseClient, "mtd_daily");
+        } else {
+          // Default to March
+          currentMonthData = await fetchMonthlyData(supabaseClient, "sales_data");
+        }
+        
+        // Get the previous month data for comparison
+        let previousMonth = "";
+        let previousMonthData;
+        
+        if (month === "february") {
+          previousMonth = "January";
+          // We don't have January data, so provide a placeholder response
+          response = "I cannot analyze why metrics changed in February as I don't have access to January data for comparison.";
+          
+          // Create generic insights based on February data alone
+          const febMetrics = calculateOverallMetrics(currentMonthData, TABLES.february);
+          insights = [
+            `February's total profit was £${febMetrics.totalProfit.toFixed(2)}`,
+            `February's average margin was ${febMetrics.averageMargin.toFixed(1)}%`,
+            `February had ${febMetrics.activeAccounts} active accounts`
+          ];
+        } else if (month === "march") {
+          previousMonth = "February";
+          previousMonthData = await fetchMonthlyData(supabaseClient, "sales_data_februrary");
+          
+          // If we have OpenAI API key, analyze with AI
+          const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+          if (openAIApiKey) {
+            const aiResponse = await analyzeWithAI(
+              currentMonthData, 
+              previousMonthData, 
+              month, 
+              previousMonth, 
+              message,
+              openAIApiKey
+            );
+            
+            response = aiResponse.text;
+            insights = aiResponse.insights;
+            
+            // Generate basic chart data showing month-over-month change
+            chartData = [
+              { name: previousMonth, value: calculateOverallMetrics(previousMonthData, TABLES.february).totalProfit },
+              { name: month, value: calculateOverallMetrics(currentMonthData, TABLES.march).totalProfit }
+            ];
+            chartType = "bar";
+          } else {
+            // Fallback if no OpenAI API key is available
+            response = analyzeMonthlyChange(currentMonthData, previousMonthData, "March", "February");
+            
+            // Create basic insights
+            const marchMetrics = calculateOverallMetrics(currentMonthData, TABLES.march);
+            const febMetrics = calculateOverallMetrics(previousMonthData, TABLES.february);
+            
+            const profitChange = ((marchMetrics.totalProfit - febMetrics.totalProfit) / febMetrics.totalProfit) * 100;
+            const marginChange = marchMetrics.averageMargin - febMetrics.averageMargin;
+            
+            insights = [
+              `Profit ${profitChange >= 0 ? 'increased' : 'decreased'} by ${Math.abs(profitChange).toFixed(1)}% from February to March`,
+              `Margin ${marginChange >= 0 ? 'improved' : 'declined'} by ${Math.abs(marginChange).toFixed(1)} percentage points`,
+              `Active accounts ${marchMetrics.activeAccounts >= febMetrics.activeAccounts ? 'increased' : 'decreased'} from ${febMetrics.activeAccounts} to ${marchMetrics.activeAccounts}`
+            ];
+          }
+        } else if (month === "april") {
+          previousMonth = "March";
+          // Use march_rolling table for comparison
+          previousMonthData = await fetchMarRollingData(supabaseClient);
+          
+          if (!previousMonthData || previousMonthData.length === 0) {
+            // Fallback to standard March data if march_rolling isn't available
+            previousMonthData = await fetchMonthlyData(supabaseClient, "sales_data");
+          }
+          
+          // If we have OpenAI API key, analyze with AI
+          const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+          if (openAIApiKey) {
+            const aiResponse = await analyzeWithAI(
+              currentMonthData, 
+              previousMonthData, 
+              month, 
+              previousMonth, 
+              message,
+              openAIApiKey
+            );
+            
+            response = aiResponse.text;
+            insights = aiResponse.insights;
+            
+            // Generate basic chart data showing month-over-month change
+            chartData = [
+              { name: previousMonth, value: calculateOverallMetrics(previousMonthData, "march_rolling").totalProfit },
+              { name: month, value: calculateOverallMetrics(currentMonthData, TABLES.april).totalProfit }
+            ];
+            chartType = "bar";
+          } else {
+            // Fallback if no OpenAI API key is available
+            response = analyzeMonthlyChange(currentMonthData, previousMonthData, "April", "March");
+            
+            // Create basic insights
+            const aprMetrics = calculateOverallMetrics(currentMonthData, TABLES.april);
+            const marchMetrics = calculateOverallMetrics(previousMonthData, "march_rolling");
+            
+            const profitChange = ((aprMetrics.totalProfit - marchMetrics.totalProfit) / marchMetrics.totalProfit) * 100;
+            const marginChange = aprMetrics.averageMargin - marchMetrics.averageMargin;
+            
+            insights = [
+              `Profit ${profitChange >= 0 ? 'increased' : 'decreased'} by ${Math.abs(profitChange).toFixed(1)}% from March to April`,
+              `Margin ${marginChange >= 0 ? 'improved' : 'declined'} by ${Math.abs(marginChange).toFixed(1)} percentage points`,
+              `Active accounts ${aprMetrics.activeAccounts >= marchMetrics.activeAccounts ? 'increased' : 'decreased'} from ${marchMetrics.activeAccounts} to ${aprMetrics.activeAccounts}`
+            ];
+          }
+        }
+        
+      } catch (error) {
+        console.error('Error analyzing data:', error);
+        response = `I encountered an error while analyzing the data. Please try again or ask a more specific question.`;
+      }
+    }
     // Handle specific query types
-    if (isTopPerformersQuery) {
+    else if (isTopPerformersQuery) {
       // Handle query about top performers
       try {
         const topRepsByProfit = await getTopRepsByProfit(supabaseClient, tableName, month, 5);
@@ -207,11 +337,11 @@ serve(async (req) => {
       }
 
       // Default response if no specific handlers match
-      response = `I don't have information about that query for ${selectedMonth}. You can ask me about top performers, specific reps, or customers.`;
+      response = `I don't have information about that query for ${selectedMonth}. You can ask me about top performers, specific reps, customers, or ask analytical questions like "Why did profit increase in April?".`;
     }
 
     // Determine the question type for better response formatting
-    const questionType = determineQuestionType(entities, originalMessage);
+    const questionType = determineQuestionType(entities);
 
     // Return the response with any visualization data
     return new Response(
@@ -241,6 +371,178 @@ serve(async (req) => {
     });
   }
 });
+
+// Helper function to analyze data with OpenAI
+async function analyzeWithAI(
+  currentMonthData: any[],
+  previousMonthData: any[],
+  currentMonth: string,
+  previousMonth: string,
+  query: string,
+  apiKey: string
+): Promise<{ text: string; insights: string[] }> {
+  try {
+    // Format data for the prompt
+    const prompt = formatDataForAIAnalysis(
+      currentMonthData,
+      previousMonthData,
+      currentMonth,
+      previousMonth,
+      query
+    );
+    
+    console.log("Sending prompt to OpenAI:", prompt.substring(0, 200) + "...");
+
+    // Call OpenAI API
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a sales analytics assistant. Analyze the sales data provided and give clear, concise insights. Focus on the most important factors that explain changes in performance. Provide 3-5 key insights that would be valuable to sales managers." 
+          },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.5,
+        max_tokens: 1000,
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error("Unexpected OpenAI response:", data);
+      throw new Error("Received invalid response from OpenAI");
+    }
+    
+    const aiResponse = data.choices[0].message.content;
+    console.log("AI Response received:", aiResponse.substring(0, 200) + "...");
+    
+    // Extract 3-5 key insights from the AI response
+    const insights = extractInsightsFromResponse(aiResponse);
+    
+    return {
+      text: aiResponse,
+      insights: insights.length > 0 ? insights : [
+        "Analysis provided by AI based on monthly comparison",
+        "Performance metrics show changes between months", 
+        "Consider investigating top performers for additional insights"
+      ]
+    };
+  } catch (error) {
+    console.error("Error calling OpenAI:", error);
+    return {
+      text: `I encountered an error while analyzing the data. The analysis feature may not be properly configured.`,
+      insights: [
+        "Error occurred during analysis",
+        "Check OpenAI API key configuration",
+        "Try asking a different type of question"
+      ]
+    };
+  }
+}
+
+// Helper function to extract insights from AI response
+function extractInsightsFromResponse(response: string): string[] {
+  // Look for bullet points or numbered lists in the response
+  const bulletPointRegex = /[•\-\*]\s+([^\n]+)/g;
+  const numberedListRegex = /\d+\.\s+([^\n]+)/g;
+  
+  const bulletPoints = [...response.matchAll(bulletPointRegex)].map(match => match[1]);
+  const numberedItems = [...response.matchAll(numberedListRegex)].map(match => match[1]);
+  
+  // Combine all found insights
+  let insights = [...bulletPoints, ...numberedItems];
+  
+  // If no structured insights found, try to extract sentences
+  if (insights.length === 0) {
+    const sentences = response
+      .split(/[.!?]/)
+      .map(s => s.trim())
+      .filter(s => s.length > 15 && s.length < 100); // Filter to reasonable insight length
+      
+    insights = sentences.slice(0, 5); // Take up to 5 sentences
+  }
+  
+  // Limit to at most 5 insights
+  return insights.slice(0, 5);
+}
+
+// Helper function to analyze monthly changes without AI
+function analyzeMonthlyChange(
+  currentMonthData: any[], 
+  previousMonthData: any[], 
+  currentMonth: string, 
+  previousMonth: string
+): string {
+  try {
+    // Calculate summary metrics for current month
+    const currentTotalSpend = currentMonthData.reduce((sum, item) => sum + (Number(item.Spend || item.spend) || 0), 0);
+    const currentTotalProfit = currentMonthData.reduce((sum, item) => sum + (Number(item.Profit || item.profit) || 0), 0);
+    const currentMargin = currentTotalSpend > 0 ? (currentTotalProfit / currentTotalSpend) * 100 : 0;
+    
+    // Calculate summary metrics for previous month
+    const prevTotalSpend = previousMonthData.reduce((sum, item) => sum + (Number(item.Spend || item.spend) || 0), 0);
+    const prevTotalProfit = previousMonthData.reduce((sum, item) => sum + (Number(item.Profit || item.profit) || 0), 0);
+    const prevMargin = prevTotalSpend > 0 ? (prevTotalProfit / prevTotalSpend) * 100 : 0;
+    
+    // Calculate changes
+    const profitChange = prevTotalProfit > 0 ? 
+      ((currentTotalProfit - prevTotalProfit) / prevTotalProfit) * 100 : 0;
+    const spendChange = prevTotalSpend > 0 ? 
+      ((currentTotalSpend - prevTotalSpend) / prevTotalSpend) * 100 : 0;
+    const marginChange = currentMargin - prevMargin;
+
+    // Generate summary text
+    let analysis = `Here's my analysis of the changes from ${previousMonth} to ${currentMonth}:\n\n`;
+    analysis += `Overall profit ${profitChange >= 0 ? 'increased' : 'decreased'} by ${Math.abs(profitChange).toFixed(1)}%, `;
+    analysis += `from £${prevTotalProfit.toFixed(2)} to £${currentTotalProfit.toFixed(2)}.\n\n`;
+    
+    analysis += `Total sales ${spendChange >= 0 ? 'increased' : 'decreased'} by ${Math.abs(spendChange).toFixed(1)}%, `;
+    analysis += `from £${prevTotalSpend.toFixed(2)} to £${currentTotalSpend.toFixed(2)}.\n\n`;
+    
+    analysis += `Overall margin ${marginChange >= 0 ? 'improved' : 'declined'} from ${prevMargin.toFixed(1)}% `;
+    analysis += `to ${currentMargin.toFixed(1)}%, a change of ${Math.abs(marginChange).toFixed(1)} percentage points.\n\n`;
+    
+    // Try to identify top performers in the current month
+    const repMap = new Map();
+    currentMonthData.forEach(item => {
+      const repName = item.Rep || item.rep_name;
+      if (!repName || ['RETAIL', 'REVA', 'Wholesale'].includes(repName)) return;
+      
+      if (!repMap.has(repName)) {
+        repMap.set(repName, { profit: 0 });
+      }
+      
+      repMap.get(repName).profit += Number(item.Profit || item.profit || 0);
+    });
+    
+    const topReps = Array.from(repMap.entries())
+      .map(([name, data]) => ({ name, profit: data.profit }))
+      .filter(rep => rep.profit > 0)
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 3);
+    
+    if (topReps.length > 0) {
+      analysis += `The top performer${topReps.length > 1 ? 's' : ''} in ${currentMonth} ${topReps.length > 1 ? 'were' : 'was'} `;
+      analysis += topReps.map((rep, i) => 
+        `${rep.name} with £${rep.profit.toFixed(2)} profit${i < topReps.length - 1 ? ',' : ''}`
+      ).join(' ');
+      analysis += '.';
+    }
+    
+    return analysis;
+  } catch (error) {
+    console.error("Error analyzing monthly change:", error);
+    return `I encountered an error while analyzing the data between ${previousMonth} and ${currentMonth}.`;
+  }
+}
 
 // Function to extract entities from user query
 function extractEntities(message: string): any {
@@ -405,8 +707,12 @@ function extractEntities(message: string): any {
 }
 
 // Function to determine question type based on content
-function determineQuestionType(entities: any, message: string): string {
+function determineQuestionType(entities: any): string {
   const lowerMessage = message.toLowerCase();
+  
+  if (entities.reasons) {
+    return 'reason';
+  }
   
   if (entities.comparisons || entities.months.length > 1) {
     return 'comparison';
@@ -414,10 +720,6 @@ function determineQuestionType(entities: any, message: string): string {
   
   if (entities.trend) {
     return 'trend';
-  }
-  
-  if (entities.reasons) {
-    return 'reason';
   }
   
   if (lowerMessage.includes("who") || lowerMessage.includes("top") || lowerMessage.includes("best")) {
@@ -428,7 +730,160 @@ function determineQuestionType(entities: any, message: string): string {
     return 'specific';
   }
   
+  // New handling for analytical questions
+  const hasAnalyticalIntent = entities.insights && (entities.reasons || entities.trend);
+  if (hasAnalyticalIntent) {
+    return 'analysis';
+  }
+  
   return 'general';
+}
+
+// Helper function to check if a query requires AI analysis
+function requiresAIAnalysis(query: string, entities: any): boolean {
+  const lowerQuery = query.toLowerCase();
+  
+  // Check for analytical keywords
+  const analyticalKeywords = ['why', 'analyze', 'explain', 'reason', 'factors', 'cause'];
+  const hasAnalyticalKeyword = analyticalKeywords.some(keyword => lowerQuery.includes(keyword));
+  
+  // Check for comparative or trend indicators
+  const hasTrendIndicator = entities.trend || 
+                           lowerQuery.includes('increase') || 
+                           lowerQuery.includes('decrease') ||
+                           lowerQuery.includes('change') ||
+                           lowerQuery.includes('improve');
+  
+  // Check for insight requests
+  const requestsInsights = entities.insights || 
+                          entities.reasons ||
+                          lowerQuery.includes('insight');
+  
+  return (hasAnalyticalKeyword && (hasTrendIndicator || requestsInsights)) || 
+         entities.questionType === 'reason' || 
+         entities.questionType === 'analysis';
+}
+
+// Helper function to format data for AI analysis
+function formatDataForAIAnalysis(
+  monthData: any[], 
+  comparisonData: any[], 
+  currentMonth: string, 
+  previousMonth: string,
+  query: string
+): string {
+  // Calculate summary metrics for current month
+  const currentTotalSpend = monthData.reduce((sum, item) => sum + (Number(item.Spend || item.spend) || 0), 0);
+  const currentTotalProfit = monthData.reduce((sum, item) => sum + (Number(item.Profit || item.profit) || 0), 0);
+  const currentMargin = currentTotalSpend > 0 ? (currentTotalProfit / currentTotalSpend) * 100 : 0;
+  
+  // Calculate summary metrics for previous month
+  const prevTotalSpend = comparisonData.reduce((sum, item) => sum + (Number(item.Spend || item.spend) || 0), 0);
+  const prevTotalProfit = comparisonData.reduce((sum, item) => sum + (Number(item.Profit || item.profit) || 0), 0);
+  const prevMargin = prevTotalSpend > 0 ? (prevTotalProfit / prevTotalSpend) * 100 : 0;
+  
+  // Calculate changes
+  const profitChange = prevTotalProfit > 0 ? 
+    ((currentTotalProfit - prevTotalProfit) / prevTotalProfit) * 100 : 0;
+  const spendChange = prevTotalSpend > 0 ? 
+    ((currentTotalSpend - prevTotalSpend) / prevTotalSpend) * 100 : 0;
+  const marginChange = currentMargin - prevMargin;
+
+  // Get top performing reps in current month (top 5)
+  const repMap = new Map();
+  monthData.forEach(item => {
+    const repName = (item.Rep || item.rep_name) === 'RETAIL' || (item.Rep || item.rep_name) === 'REVA' || (item.Rep || item.rep_name) === 'Wholesale' 
+      ? (item["Sub-Rep"] || item.sub_rep || (item.Rep || item.rep_name)) 
+      : (item.Rep || item.rep_name);
+    
+    if (!repName || repName === 'RETAIL' || repName === 'REVA' || repName === 'Wholesale') return;
+    
+    if (!repMap.has(repName)) {
+      repMap.set(repName, { profit: 0, spend: 0 });
+    }
+    
+    repMap.get(repName).profit += Number(item.Profit || item.profit || 0);
+    repMap.get(repName).spend += Number(item.Spend || item.spend || 0);
+  });
+  
+  // Get top 5 reps
+  const topReps = Array.from(repMap.entries())
+    .map(([name, data]) => ({ 
+      name, 
+      profit: data.profit, 
+      margin: data.spend > 0 ? (data.profit / data.spend) * 100 : 0 
+    }))
+    .sort((a, b) => b.profit - a.profit)
+    .slice(0, 5);
+  
+  // Get department breakdown
+  const deptMap = new Map();
+  monthData.forEach(item => {
+    const dept = item.Department || item.rep_type || 'RETAIL';
+    
+    if (!deptMap.has(dept)) {
+      deptMap.set(dept, { profit: 0, spend: 0 });
+    }
+    
+    deptMap.get(dept).profit += Number(item.Profit || item.profit || 0);
+    deptMap.get(dept).spend += Number(item.Spend || item.spend || 0);
+  });
+  
+  const departments = Array.from(deptMap.entries())
+    .map(([name, data]) => ({ 
+      name, 
+      profit: data.profit, 
+      margin: data.spend > 0 ? (data.profit / data.spend) * 100 : 0,
+      spend: data.spend 
+    }))
+    .sort((a, b) => b.profit - a.profit);
+  
+  // Format the data as a prompt for the AI
+  return `
+Monthly Sales Data Analysis:
+
+Current Month (${currentMonth}):
+- Total Profit: £${currentTotalProfit.toFixed(2)}
+- Total Sales (Spend): £${currentTotalSpend.toFixed(2)}
+- Overall Margin: ${currentMargin.toFixed(2)}%
+
+Previous Month (${previousMonth}):
+- Total Profit: £${prevTotalProfit.toFixed(2)}
+- Total Sales (Spend): £${prevTotalSpend.toFixed(2)}
+- Overall Margin: ${prevMargin.toFixed(2)}%
+
+Change Metrics:
+- Profit Change: ${profitChange > 0 ? '+' : ''}${profitChange.toFixed(2)}%
+- Sales Change: ${spendChange > 0 ? '+' : ''}${spendChange.toFixed(2)}%
+- Margin Change: ${marginChange > 0 ? '+' : ''}${marginChange.toFixed(2)}% points
+
+Top Performers in ${currentMonth}:
+${topReps.map((rep, i) => `${i + 1}. ${rep.name}: £${rep.profit.toFixed(2)} profit, ${rep.margin.toFixed(2)}% margin`).join('\n')}
+
+Department Breakdown for ${currentMonth}:
+${departments.map(dept => `- ${dept.name}: £${dept.profit.toFixed(2)} profit, ${dept.margin.toFixed(2)}% margin, £${dept.spend.toFixed(2)} sales`).join('\n')}
+
+Based on this data, ${query}
+`;
+}
+
+// Function to fetch March Rolling data
+async function fetchMarRollingData(supabaseClient) {
+  try {
+    console.log("Fetching March Rolling data...");
+    
+    const { data, error } = await supabaseClient
+      .from("march_rolling")
+      .select("*");
+      
+    if (error) throw error;
+    
+    console.log(`Retrieved ${data?.length || 0} records from march_rolling`);
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching March Rolling data:", error);
+    return [];
+  }
 }
 
 // New function to get top reps by profit
