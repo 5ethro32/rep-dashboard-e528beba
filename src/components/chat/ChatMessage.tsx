@@ -2,7 +2,6 @@
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  BarChart3, 
   TrendingUp, 
   AlertCircle,
   ArrowUpRight,
@@ -167,8 +166,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
               onClick={() => onExampleClick(example)}
               className="text-xs py-1 px-3 bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors flex items-center gap-1"
             >
-              <BarChart3 className="h-3 w-3" />
-              {example}
+              <span>{example}</span>
             </button>
           ))}
         </div>
@@ -206,3 +204,4 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
 };
 
 export default ChatMessage;
+
