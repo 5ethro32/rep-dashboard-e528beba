@@ -64,6 +64,25 @@ const formatCurrency = (value: number): string => {
   }
 };
 
+// Helper function to improve insight text
+const improveInsightText = (text: string): string => {
+  // Replace text about "serves X profitable customers" with better wording
+  if (text.includes('serves') && text.includes('profitable customers')) {
+    // Extract the rep name if present
+    const repNameMatch = text.match(/(.*?)\s+serves/);
+    const repName = repNameMatch ? repNameMatch[1] : 'The rep';
+    
+    // Change to focus on average profit instead
+    if (text.includes('average profit per customer is')) {
+      const profitMatch = text.match(/average profit per customer is (£[\d,.]+)/);
+      if (profitMatch) {
+        return `${repName}'s top 10 customers have an average profit of ${profitMatch[1]}`;
+      }
+    }
+  }
+  return text;
+};
+
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) => {
   const renderChart = () => {
     if (!message.chartData) return null;
@@ -193,15 +212,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
               <div className="mr-2 p-1 rounded-full bg-blue-500/20 flex-shrink-0">
                 <Lightbulb className="h-3 w-3 text-blue-300" />
               </div>
-              <span className="text-gray-200">{parseMarkdownBold(insight)}</span>
+              <span className="text-gray-200">{parseMarkdownBold(improveInsightText(insight))}</span>
             </div>
           ))}
         </div>
       </div>
     );
   };
-  
-  // Removed renderExamples function to eliminate the suggestion buttons
   
   return (
     <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
@@ -221,13 +238,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
         
         {!message.isUser && (
           <>
-            {/* Reordered to show insights and highlighted info first */}
-            {renderInsights()}
+            {/* Reordered to show highlighted entities and trends first, then insights, then charts */}
             {renderHighlightedEntities()}
             {renderTrends()}
+            {renderInsights()}
             {renderChart()}
             {renderTable()}
-            {/* Removed renderExamples() call here to hide the example questions */}
           </>
         )}
       </div>
