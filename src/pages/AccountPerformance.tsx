@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
@@ -215,6 +216,7 @@ const AccountPerformance = () => {
       <PerformanceHeader 
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}
+        hideTitle={true}
       />
       
       <div className="mb-6">
@@ -224,14 +226,16 @@ const AccountPerformance = () => {
         </p>
       </div>
       
-      <div className="mb-4">
+      <div className="mb-4 flex justify-between items-center">
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
-          variant="default"
-          className="bg-finance-red hover:bg-finance-red/80"
+          variant="outline"
+          size="sm"
+          className="text-white border-white/20 hover:bg-white/10"
         >
-          {isLoading ? "Loading data..." : "Refresh Data"}
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading ? "Refreshing..." : "Refresh Data"}
         </Button>
       </div>
       
