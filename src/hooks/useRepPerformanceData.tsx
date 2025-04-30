@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
-import { toast } from '@/components/ui/use-toast';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
 import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData, fetchMarchRollingData } from '@/services/rep-performance-service';
 import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
@@ -166,11 +165,6 @@ export const useRepPerformanceData = () => {
       if (countError) throw new Error(`Error getting count: ${countError.message}`);
       
       if (!count || count === 0) {
-        toast({
-          title: "No April data found",
-          description: "The MTD Daily table appears to be empty.",
-          variant: "destructive",
-        });
         setIsLoading(false);
         return false;
       }
@@ -206,11 +200,6 @@ export const useRepPerformanceData = () => {
       console.log('Fetched March Rolling records count:', marchRollingData?.length || 0);
       
       if (!mtdData || mtdData.length === 0) {
-        toast({
-          title: "No April data found",
-          description: "The MTD Daily table appears to be empty.",
-          variant: "destructive",
-        });
         setIsLoading(false);
         return false;
       }
@@ -461,19 +450,9 @@ export const useRepPerformanceData = () => {
         setOverallData(combinedAprilData);
       }
       
-      toast({
-        title: "April data loaded successfully",
-        description: `Loaded ${mtdData.length} April MTD records and ${marchRollingData?.length || 0} March Rolling records.`,
-      });
-      
       return true;
     } catch (error) {
       console.error('Error loading April data:', error);
-      toast({
-        title: "Error loading April data",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
       return false;
     } finally {
       setIsLoading(false);
@@ -595,18 +574,9 @@ export const useRepPerformanceData = () => {
       await loadAprilData();
       
       console.log("Successfully loaded data from Supabase");
-      toast({
-        title: "Data loaded successfully",
-        description: "The latest performance data has been loaded with comparison data.",
-      });
       return true;
     } catch (error) {
       console.error('Error loading data from Supabase:', error);
-      toast({
-        title: "Error loading data",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
       throw error;
     } finally {
       setIsLoading(false);
