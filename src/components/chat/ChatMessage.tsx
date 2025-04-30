@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -81,9 +82,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
                   </td>
                 ))}
               </tr>
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   };
