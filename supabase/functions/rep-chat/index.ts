@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 
@@ -341,7 +342,7 @@ serve(async (req) => {
     }
 
     // Determine the question type for better response formatting
-    const questionType = determineQuestionType(entities);
+    const questionType = determineQuestionType(entities, message);
 
     // Return the response with any visualization data
     return new Response(
@@ -707,7 +708,8 @@ function extractEntities(message: string): any {
 }
 
 // Function to determine question type based on content
-function determineQuestionType(entities: any): string {
+// Fixed: Added message parameter
+function determineQuestionType(entities: any, message: string): string {
   const lowerMessage = message.toLowerCase();
   
   if (entities.reasons) {
