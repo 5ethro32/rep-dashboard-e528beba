@@ -168,16 +168,16 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
             <Users size={16} className="text-[#ea384c] mr-2" />
             Active Accounts
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1">{formatNumber(activeAccounts)}</div>
-          <div className="flex items-center">
+          <div className="flex items-center mb-1">
+            <div className="text-2xl md:text-3xl font-bold">{formatNumber(activeAccounts)}</div>
             {accountsChange !== 0 && (
               <Badge variant={accountsChange > 0 ? "default" : "destructive"} 
-                className={`text-xs font-medium ${accountsChange > 0 ? 'bg-green-500/20 text-green-500 hover:bg-green-500/20' : 'bg-[#ea384c]/20 text-[#ea384c] hover:bg-[#ea384c]/20'}`}>
+                className={`ml-2 text-xs font-medium ${accountsChange > 0 ? 'bg-green-500/20 text-green-500 hover:bg-green-500/20' : 'bg-[#ea384c]/20 text-[#ea384c] hover:bg-[#ea384c]/20'}`}>
                 {accountsChange > 0 ? '+' : ''}{accountsChange}
               </Badge>
             )}
-            <span className="text-xs text-white/50 ml-2">vs {previousActiveAccounts} last month</span>
           </div>
+          <div className="text-xs text-white/50">vs {previousActiveAccounts} last month</div>
         </CardContent>
       </Card>
       
