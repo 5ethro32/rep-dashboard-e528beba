@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -16,6 +17,7 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -55,9 +57,12 @@ const Auth = () => {
         if (error) throw error;
         
         toast({
-          title: "Success!",
-          description: "Registration successful. Please check your email for verification.",
+          title: "Registration successful!",
+          description: "Please check your email for verification link.",
         });
+        
+        // Set registration success state to true
+        setRegistrationSuccess(true);
       }
     } catch (error: any) {
       toast({
@@ -110,11 +115,13 @@ const Auth = () => {
     setEmail('');
     setPassword('');
     setIsForgotPassword(false);
+    setRegistrationSuccess(false);
   };
 
   const toggleForgotPassword = () => {
     setIsForgotPassword(!isForgotPassword);
     setPassword('');
+    setRegistrationSuccess(false);
   };
 
   return (
@@ -136,6 +143,19 @@ const Auth = () => {
               Only avergenerics.co.uk email addresses are allowed
             </CardDescription>
           </CardHeader>
+          
+          {/* Show email verification message when registration is successful */}
+          {registrationSuccess && (
+            <div className="px-6 pb-4">
+              <Alert className="bg-green-800/30 border-green-500/50 text-white mb-4">
+                <Mail className="h-4 w-4 mr-2" />
+                <AlertDescription className="text-sm">
+                  <strong>Registration successful!</strong> Please check your email for a verification link. 
+                  You need to verify your email before you can log in.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
           
           {isForgotPassword ? (
             <form onSubmit={handleForgotPassword}>
