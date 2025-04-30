@@ -1,16 +1,24 @@
 
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { GradientAvatar, GradientAvatarFallback } from '@/components/ui/gradient-avatar';
-import { BarChart, LineChart, PieChart, TrendingUp, TrendingDown, Flame, Award } from 'lucide-react';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { 
+  BarChart3, 
+  TrendingUp, 
+  AlertCircle,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus
+} from 'lucide-react';
+
+// Import charts if needed for visualizing data
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Message {
   id: string;
   content: string;
   isUser: boolean;
   timestamp: Date;
-  examples?: string[]; 
+  examples?: string[];
   chartData?: any;
   chartType?: 'bar' | 'line' | 'pie';
   tableData?: any[];
@@ -30,179 +38,169 @@ interface Message {
 
 interface ChatMessageProps {
   message: Message;
-  onExampleClick: (example: string) => void;
+  onExampleClick: (text: string) => void;
 }
 
-const ChatMessage = ({ message, onExampleClick }: ChatMessageProps) => {
-  const renderChart = (message: Message) => {
-    if (!message.chartData || !message.chartType) return null;
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) => {
+  const renderChart = () => {
+    if (!message.chartData) return null;
     
     return (
-      <div className="mt-3 bg-gray-900 p-4 rounded-md border border-gray-700">
-        <div className="flex items-center mb-2">
-          {message.chartType === 'bar' && <BarChart className="h-5 w-5 mr-2 text-finance-red" />}
-          {message.chartType === 'line' && <LineChart className="h-5 w-5 mr-2 text-finance-red" />}
-          {message.chartType === 'pie' && <PieChart className="h-5 w-5 mr-2 text-finance-red" />}
-          <span className="text-sm font-medium text-gray-200">{message.chartType === 'bar' ? 'Performance Chart' : message.chartType === 'line' ? 'Trend Analysis' : 'Distribution Chart'}</span>
-        </div>
-        <div className="h-40 w-full bg-gray-800/50 rounded flex items-center justify-center">
-          <span className="text-xs text-gray-400">Interactive chart would render here based on the data</span>
-        </div>
+      <div className="mt-4 mb-2 bg-gray-800 p-4 rounded-lg">
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={message.chartData}>
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="value" fill="#f43f5e" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     );
   };
-
-  const renderTable = (message: Message) => {
+  
+  const renderTable = () => {
     if (!message.tableData || !message.tableHeaders) return null;
     
     return (
-      <div className="mt-3 overflow-x-auto">
-        <Table className="min-w-full bg-gray-800 text-sm text-gray-200 rounded-md">
-          <TableHeader>
-            <TableRow className="border-b border-gray-600">
-              {message.tableHeaders.map((header, i) => (
-                <TableHead key={i} className="px-3 py-2 text-left font-medium text-gray-300">{header}</TableHead>
+      <div className="mt-4 mb-2 overflow-x-auto">
+        <table className="min-w-full bg-gray-800 rounded-lg">
+          <thead>
+            <tr>
+              {message.tableHeaders.map((header, index) => (
+                <th key={index} className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  {header}
+                </th>
               ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {message.tableData.map((row, i) => (
-              <TableRow key={i} className="border-b border-gray-700 hover:bg-gray-700/50">
-                {Object.values(row).map((cell: any, j) => (
-                  <TableCell key={j} className="px-3 py-2">{cell}</TableCell>
+            </tr>
+          </thead>
+          <tbody>
+            {message.tableData.map((row, rowIndex) => (
+              <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-gray-800' : 'bg-gray-700'}>
+                {Object.values(row).map((cell, cellIndex) => (
+                  <td key={cellIndex} className="px-4 py-2 whitespace-nowrap text-sm text-gray-300">
+                    {cell as React.ReactNode}
+                  </td>
                 ))}
-              </TableRow>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
     );
   };
-
-  const renderInsights = (insights?: string[]) => {
-    if (!insights || insights.length === 0) return null;
+  
+  const renderTrends = () => {
+    if (!message.trends || message.trends.length === 0) return null;
     
     return (
-      <div className="mt-3 bg-gray-900/70 p-3 rounded-md border border-gray-700">
-        <div className="flex items-center mb-2">
-          <Flame className="h-4 w-4 mr-2 text-amber-500" />
-          <span className="text-sm font-medium text-gray-200">Key Insights</span>
-        </div>
-        <ul className="space-y-1.5 text-sm">
-          {insights.map((insight, index) => (
-            <li key={index} className="flex items-start">
-              <span className="text-amber-500/80 mr-2">•</span>
-              <span>{insight}</span>
-            </li>
-          ))}
-        </ul>
+      <div className="mt-4 mb-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+        {message.trends.map((trend, index) => (
+          <div key={index} className="bg-gray-800 rounded-lg p-3 flex items-center">
+            <div className="mr-3">
+              {trend.type === 'up' && <ArrowUpRight className="text-green-500 h-5 w-5" />}
+              {trend.type === 'down' && <ArrowDownRight className="text-rose-500 h-5 w-5" />}
+              {trend.type === 'neutral' && <Minus className="text-gray-400 h-5 w-5" />}
+            </div>
+            <div>
+              <div className="text-lg font-semibold">{trend.value}</div>
+              <div className="text-xs text-gray-400">{trend.description}</div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
-
-  const renderTrends = (trends?: Message['trends']) => {
-    if (!trends || trends.length === 0) return null;
+  
+  const renderHighlightedEntities = () => {
+    if (!message.highlightedEntities || message.highlightedEntities.length === 0) return null;
     
     return (
-      <div className="mt-3 bg-gray-900/70 p-3 rounded-md border border-gray-700">
-        <div className="flex items-center mb-2">
-          <TrendingUp className="h-4 w-4 mr-2 text-emerald-500" />
-          <span className="text-sm font-medium text-gray-200">Trends</span>
+      <div className="mt-4 mb-2 flex flex-wrap gap-2">
+        {message.highlightedEntities.map((entity, index) => (
+          <div 
+            key={index} 
+            className={`rounded-full px-3 py-1 text-xs font-medium ${
+              entity.type === 'rep' ? 'bg-blue-500/20 text-blue-300' : 
+              entity.type === 'customer' ? 'bg-green-500/20 text-green-300' : 
+              entity.type === 'department' ? 'bg-purple-500/20 text-purple-300' : 
+              'bg-amber-500/20 text-amber-300'
+            }`}
+          >
+            {entity.name}: {entity.value}
+          </div>
+        ))}
+      </div>
+    );
+  };
+  
+  const renderInsights = () => {
+    if (!message.insights || message.insights.length === 0) return null;
+    
+    return (
+      <div className="mt-4 mb-2">
+        <div className="font-medium text-sm text-gray-300 mb-2 flex items-center">
+          <TrendingUp className="h-4 w-4 mr-1" />
+          Key Insights
         </div>
         <div className="space-y-2">
-          {trends.map((trend, index) => (
-            <div key={index} className="flex items-center">
-              {trend.type === 'up' && <TrendingUp className="h-4 w-4 mr-2 text-emerald-500" />}
-              {trend.type === 'down' && <TrendingDown className="h-4 w-4 mr-2 text-rose-500" />}
-              {trend.type === 'neutral' && <span className="w-4 h-4 mr-2 inline-block text-center text-gray-400">→</span>}
-              <div>
-                <span className={`font-medium ${trend.type === 'up' ? 'text-emerald-500' : trend.type === 'down' ? 'text-rose-500' : 'text-gray-400'}`}>
-                  {trend.value}
-                </span>
-                <span className="text-sm text-gray-400 ml-1">{trend.description}</span>
-              </div>
+          {message.insights.map((insight, index) => (
+            <div key={index} className="bg-gray-800 rounded-lg p-2 text-sm flex items-start">
+              <AlertCircle className="h-4 w-4 mr-2 text-finance-red mt-0.5 flex-shrink-0" />
+              <span>{insight}</span>
             </div>
           ))}
         </div>
       </div>
     );
   };
-
-  const renderHighlightedEntities = (entities?: Message['highlightedEntities']) => {
-    if (!entities || entities.length === 0) return null;
+  
+  const renderExamples = () => {
+    if (!message.examples || message.examples.length === 0) return null;
     
     return (
-      <div className="mt-3 flex flex-wrap gap-2">
-        {entities.map((entity, index) => (
-          <div key={index} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs bg-gray-700">
-            {entity.type === 'rep' && <Award className="h-3 w-3 mr-1 text-blue-400" />}
-            {entity.type === 'customer' && <span className="mr-1 text-emerald-400">@</span>}
-            {entity.type === 'department' && <span className="mr-1 text-amber-400">#</span>}
-            {entity.type === 'metric' && <span className="mr-1 text-violet-400">$</span>}
-            <span className="font-medium">{entity.name}:</span>
-            <span className="ml-1">{entity.value}</span>
-          </div>
-        ))}
+      <div className="mt-4 mb-2">
+        <div className="flex gap-2 flex-wrap">
+          {message.examples.map((example, index) => (
+            <button
+              key={index}
+              onClick={() => onExampleClick(example)}
+              className="text-xs py-1 px-3 bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors flex items-center gap-1"
+            >
+              <BarChart3 className="h-3 w-3" />
+              {example}
+            </button>
+          ))}
+        </div>
       </div>
     );
   };
-
+  
   return (
-    <div 
-      className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-    >
+    <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
       {!message.isUser && (
         <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
           <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white text-xs">V</AvatarFallback>
         </Avatar>
       )}
-      
-      <div className="flex flex-col max-w-[80%]">
-        <div 
-          className={`rounded-lg p-3 ${
-            message.isUser 
-              ? 'bg-gradient-to-r from-finance-red to-rose-700 text-white' 
-              : 'bg-gray-800 text-gray-100'
-          } whitespace-pre-line`}
-        >
-          {message.content}
-        </div>
+      <div className={`max-w-[80%] rounded-lg p-4 ${
+        message.isUser 
+          ? 'bg-finance-red text-white' 
+          : 'bg-gray-800 text-gray-100'
+      }`}>
+        <div className="whitespace-pre-wrap">{message.content}</div>
         
-        {/* Render highlighted entities if available */}
-        {!message.isUser && renderHighlightedEntities(message.highlightedEntities)}
-        
-        {/* Render insights if available */}
-        {!message.isUser && renderInsights(message.insights)}
-        
-        {/* Render trends if available */}
-        {!message.isUser && renderTrends(message.trends)}
-        
-        {/* Render charts if available */}
-        {!message.isUser && renderChart(message)}
-        
-        {/* Render tables if available */}
-        {!message.isUser && renderTable(message)}
-        
-        {message.examples && message.examples.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {message.examples.map((example, index) => (
-              <button
-                key={index}
-                onClick={() => onExampleClick(example)}
-                className="px-3 py-1.5 text-sm bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
-              >
-                {example}
-              </button>
-            ))}
-          </div>
+        {!message.isUser && (
+          <>
+            {renderChart()}
+            {renderTable()}
+            {renderTrends()}
+            {renderHighlightedEntities()}
+            {renderInsights()}
+            {renderExamples()}
+          </>
         )}
       </div>
-      
-      {message.isUser && (
-        <GradientAvatar className="h-8 w-8 ml-2 flex-shrink-0 mt-1">
-          <GradientAvatarFallback className="text-white text-xs">U</GradientAvatarFallback>
-        </GradientAvatar>
-      )}
     </div>
   );
 };
