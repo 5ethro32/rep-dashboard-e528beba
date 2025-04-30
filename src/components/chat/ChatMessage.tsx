@@ -169,25 +169,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
     );
   };
   
-  const renderExamples = () => {
-    if (!message.examples || message.examples.length === 0) return null;
-    
-    return (
-      <div className="mt-4 mb-2">
-        <div className="flex gap-2 flex-wrap">
-          {message.examples.map((example, index) => (
-            <button
-              key={index}
-              onClick={() => onExampleClick(example)}
-              className="text-xs py-1 px-3 bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors flex items-center gap-1"
-            >
-              <span>{example}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  // Removed renderExamples function to eliminate the suggestion buttons
   
   return (
     <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
@@ -212,7 +194,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
             {renderTrends()}
             {renderHighlightedEntities()}
             {renderInsights()}
-            {renderExamples()}
+            {/* Removed renderExamples() call here to hide the example questions */}
           </>
         )}
       </div>
