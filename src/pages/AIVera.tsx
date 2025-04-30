@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -11,6 +10,7 @@ import ChatInput from '@/components/chat/ChatInput';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { reformulateQuery, generateFollowUpQuestions } from '@/utils/aiAssistantUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Reuse interface definitions from ChatInterface
 interface Message {
@@ -44,29 +44,7 @@ interface ConversationContext {
 
 const AIVera = () => {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    { 
-      id: '1', 
-      content: "Hello! I'm Vera, your sales data assistant. Ask me about the performance of your sales representatives, departments, or specific customers across different months.", 
-      isUser: false, 
-      timestamp: new Date(),
-      examples: [
-        "Who are the top performers this month?",
-        "Tell me about Craig's sales",
-        "Compare February and March profit",
-        "How did Murray perform in February vs March?",
-        "Show me April's best reps by margin",
-        "Why did profit drop last month?",
-        "Which customers have the highest profit?",
-        "Show me department comparison"
-      ],
-      insights: [
-        "April saw a 3.8% increase in overall profit compared to March",
-        "Jonny Cunningham showed the biggest margin improvement",
-        "The Wholesale department has the highest margin at 20.7%"
-      ]
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>('April');
   const [conversationContext, setConversationContext] = useState<ConversationContext>({
@@ -78,6 +56,39 @@ const AIVera = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Determine the user's first name for the greeting
+  let userFirstName = user?.email?.split('@')[0] || 'User';
+  // Capitalise first letter
+  userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
+  
+  // Set initial welcome message
+  useEffect(() => {
+    setMessages([
+      { 
+        id: '1', 
+        content: `Hello, ${userFirstName}! I'm Vera, your sales data assistant. I'm still in development, but ask me about the performance of your sales, departments, or specific customers.`, 
+        isUser: false, 
+        timestamp: new Date(),
+        examples: [
+          "Who are the top performers this month?",
+          "Tell me about Craig's sales",
+          "Compare February and March profit",
+          "How did Murray perform in February vs March?",
+          "Show me April's best reps by margin",
+          "Why did profit drop last month?",
+          "Which customers have the highest profit?",
+          "Show me department comparison"
+        ],
+        insights: [
+          "April saw a 3.8% increase in overall profit compared to March",
+          "Jonny Cunningham showed the biggest margin improvement",
+          "The Wholesale department has the highest margin at 20.7%"
+        ]
+      }
+    ]);
+  }, [userFirstName]);
   
   // Scroll to bottom of messages when messages change
   useEffect(() => {
@@ -221,9 +232,9 @@ const AIVera = () => {
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-gradient-to-br from-pink-500 to-finance-red text-white">V</AvatarFallback>
+              <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white">V</AvatarFallback>
             </Avatar>
-            <h1 className="text-2xl font-bold">AI Vera</h1>
+            <h1 className="text-2xl font-bold">Vera AI</h1>
           </div>
           <p className="text-white/60">
             Your sales data assistant. Ask me anything about your sales performance.

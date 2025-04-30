@@ -66,7 +66,7 @@ const ChatInput = ({
         <Button 
           type="submit" 
           size="icon" 
-          className="h-10 w-10 rounded-full bg-gradient-to-r from-finance-red to-rose-700 text-white"
+          className="h-10 w-10 aspect-square rounded-full bg-gradient-to-r from-finance-red to-finance-red/80 text-white flex items-center justify-center"
           disabled={isLoading || !message.trim()}
           onClick={handleSubmit}
         >
