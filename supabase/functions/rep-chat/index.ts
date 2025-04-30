@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 
@@ -92,6 +91,7 @@ serve(async (req) => {
     
     let response = "";
     let chartData = null;
+    let chartType = null;
     let tableData = null;
     let tableHeaders = null;
     let insights = null;
@@ -348,7 +348,7 @@ serve(async (req) => {
       JSON.stringify({
         response,
         chartData,
-        chartType: "bar",
+        chartType: chartType || "bar",
         tableData,
         tableHeaders,
         insights,
