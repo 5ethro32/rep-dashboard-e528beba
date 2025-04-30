@@ -27,11 +27,11 @@ const DepartmentProfitShare: React.FC<DepartmentProfitShareProps> = ({
 }) => {
   const isMobile = useIsMobile();
   
-  // Colors for the chart
+  // Updated colors to match the red theme from Profit Share By Rep chart
   const colors = {
-    retail: "#ef4444",
-    reva: "#f97316",
-    wholesale: "#8B5CF6"
+    retail: "#ef4444",   // Primary red (same as in rep chart)
+    reva: "#f97316",     // Orange shade - similar to rep chart secondary colors
+    wholesale: "#dc2626" // Darker red shade - similar to rep chart tertiary colors
   };
   
   // Prepare data for the pie chart
