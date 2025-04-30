@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -129,7 +130,7 @@ const RepTracker: React.FC = () => {
       {/* Enhanced personalized greeting - now the main heading */}
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-semibold">{userFirstName}</span>
+          Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{userFirstName}</span>
         </h1>
         <p className="text-white/60">
           Track your customer visits, orders, and performance metrics.
