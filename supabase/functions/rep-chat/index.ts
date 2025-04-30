@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 
@@ -67,10 +66,6 @@ serve(async (req) => {
     console.log(`Processing user message: ${originalMessage}\n`);
     console.log("Conversation context:", JSON.stringify(conversationContext, null, 2));
 
-    // Process the month selection - default to March if not specified
-    const month = (selectedMonth || "march").toLowerCase();
-    const tableName = TABLES[month] || "sales_data"; // Default to March data
-
     // Extract entities from the message
     const entities = extractEntities(message);
     console.log("Extracted entities:", JSON.stringify(entities, null, 2));
@@ -90,6 +85,13 @@ serve(async (req) => {
        originalMessage.toLowerCase().includes("rep") ||
        originalMessage.toLowerCase().includes("sales"));
     
+    // Check if this is a month comparison request
+    const isMonthComparisonQuery = 
+      entities.months.length > 1 || 
+      entities.comparisons || 
+      originalMessage.toLowerCase().includes("compare") || 
+      originalMessage.toLowerCase().includes(" vs ");
+    
     let response = "";
     let chartData = null;
     let chartType = null;
@@ -99,8 +101,112 @@ serve(async (req) => {
     let trends = null;
     let highlightedEntities = null;
 
+    // Handle month comparison queries
+    if (isMonthComparisonQuery && entities.months.length >= 2) {
+      try {
+        const month1 = entities.months[0];
+        const month2 = entities.months[1];
+        
+        // Make sure we have tables for both requested months
+        if (TABLES[month1] && TABLES[month2]) {
+          // Fetch data for both months
+          const data1 = await fetchMonthlyData(supabaseClient, TABLES[month1]);
+          const data2 = await fetchMonthlyData(supabaseClient, TABLES[month2]);
+          
+          // Calculate metrics for both months
+          const metrics1 = calculateOverallMetrics(data1, TABLES[month1]);
+          const metrics2 = calculateOverallMetrics(data2, TABLES[month2]);
+          
+          // Format months for display (capitalize first letter)
+          const displayMonth1 = month1.charAt(0).toUpperCase() + month1.slice(1);
+          const displayMonth2 = month2.charAt(0).toUpperCase() + month2.slice(1);
+          
+          // Check what metrics to compare (default to all if not specified)
+          let metricsToCompare = entities.metrics.length > 0 ? entities.metrics : ['profit', 'margin', 'spend'];
+          
+          // Format comparison response
+          response = `Here's a comparison of ${displayMonth1} vs ${displayMonth2}:\n\n`;
+          
+          // Add comparison data based on requested metrics
+          if (metricsToCompare.includes('profit')) {
+            const profitChange = ((metrics2.totalProfit - metrics1.totalProfit) / metrics1.totalProfit) * 100;
+            response += `**Profit**: ${displayMonth1}: £${metrics1.totalProfit.toFixed(2)} | ${displayMonth2}: £${metrics2.totalProfit.toFixed(2)}\n`;
+            response += `  Change: ${profitChange > 0 ? '+' : ''}${profitChange.toFixed(1)}%\n\n`;
+          }
+          
+          if (metricsToCompare.includes('margin')) {
+            const marginChange = metrics2.averageMargin - metrics1.averageMargin;
+            response += `**Margin**: ${displayMonth1}: ${metrics1.averageMargin.toFixed(2)}% | ${displayMonth2}: ${metrics2.averageMargin.toFixed(2)}%\n`;
+            response += `  Change: ${marginChange > 0 ? '+' : ''}${marginChange.toFixed(2)} percentage points\n\n`;
+          }
+          
+          if (metricsToCompare.includes('spend') || metricsToCompare.includes('sales')) {
+            const spendChange = ((metrics2.totalSpend - metrics1.totalSpend) / metrics1.totalSpend) * 100;
+            response += `**Sales**: ${displayMonth1}: £${metrics1.totalSpend.toFixed(2)} | ${displayMonth2}: £${metrics2.totalSpend.toFixed(2)}\n`;
+            response += `  Change: ${spendChange > 0 ? '+' : ''}${spendChange.toFixed(1)}%\n\n`;
+          }
+          
+          // Add chartData for visualization
+          chartData = [
+            { name: displayMonth1, value: metrics1.totalProfit },
+            { name: displayMonth2, value: metrics2.totalProfit }
+          ];
+          chartType = "bar";
+          
+          // Add table data
+          tableHeaders = ["Metric", displayMonth1, displayMonth2, "Change"];
+          tableData = [
+            { 
+              metric: "Profit",
+              [displayMonth1.toLowerCase()]: `£${metrics1.totalProfit.toFixed(2)}`,
+              [displayMonth2.toLowerCase()]: `£${metrics2.totalProfit.toFixed(2)}`,
+              change: `${((metrics2.totalProfit - metrics1.totalProfit) / metrics1.totalProfit * 100).toFixed(1)}%`
+            },
+            { 
+              metric: "Margin",
+              [displayMonth1.toLowerCase()]: `${metrics1.averageMargin.toFixed(2)}%`,
+              [displayMonth2.toLowerCase()]: `${metrics2.averageMargin.toFixed(2)}%`,
+              change: `${(metrics2.averageMargin - metrics1.averageMargin).toFixed(2)} pts`
+            },
+            { 
+              metric: "Sales",
+              [displayMonth1.toLowerCase()]: `£${metrics1.totalSpend.toFixed(2)}`,
+              [displayMonth2.toLowerCase()]: `£${metrics2.totalSpend.toFixed(2)}`,
+              change: `${((metrics2.totalSpend - metrics1.totalSpend) / metrics1.totalSpend * 100).toFixed(1)}%`
+            }
+          ];
+          
+          // Add insights
+          insights = [
+            `${displayMonth2}'s profit ${metrics2.totalProfit > metrics1.totalProfit ? 'increased' : 'decreased'} by ${Math.abs(((metrics2.totalProfit - metrics1.totalProfit) / metrics1.totalProfit * 100)).toFixed(1)}% compared to ${displayMonth1}`,
+            `${displayMonth2}'s margin ${metrics2.averageMargin > metrics1.averageMargin ? 'improved' : 'declined'} by ${Math.abs(metrics2.averageMargin - metrics1.averageMargin).toFixed(2)} percentage points`,
+            `${displayMonth2} had ${metrics2.activeAccounts > metrics1.activeAccounts ? 'more' : 'fewer'} active accounts (${metrics2.activeAccounts} vs ${metrics1.activeAccounts})`
+          ];
+          
+          // Add trends
+          trends = [
+            {
+              type: metrics2.totalProfit > metrics1.totalProfit ? 'up' : metrics2.totalProfit < metrics1.totalProfit ? 'down' : 'neutral',
+              value: `${Math.abs(((metrics2.totalProfit - metrics1.totalProfit) / metrics1.totalProfit * 100)).toFixed(1)}%`,
+              description: `Profit change from ${displayMonth1} to ${displayMonth2}`
+            },
+            {
+              type: metrics2.averageMargin > metrics1.averageMargin ? 'up' : metrics2.averageMargin < metrics1.averageMargin ? 'down' : 'neutral',
+              value: `${Math.abs(metrics2.averageMargin - metrics1.averageMargin).toFixed(2)} pts`,
+              description: `Margin change from ${displayMonth1} to ${displayMonth2}`
+            }
+          ];
+          
+        } else {
+          response = `I don't have data available for both ${month1} and ${month2} to make a comparison.`;
+        }
+      } catch (error) {
+        console.error("Error comparing months:", error);
+        response = `I encountered an error while trying to compare ${entities.months[0]} and ${entities.months[1]}.`;
+      }
+    }
     // Handle AI analysis queries first (new feature)
-    if (requiresAnalysis) {
+    else if (requiresAnalysis) {
       try {
         // Get the current month data
         let currentMonthData;
