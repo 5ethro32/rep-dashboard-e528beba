@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -39,6 +38,19 @@ interface ChatMessageProps {
   message: Message;
   onExampleClick: (text: string) => void;
 }
+
+// Helper function to parse markdown bold text
+const parseMarkdownBold = (text: string): React.ReactNode[] => {
+  if (!text.includes('**')) return [text];
+  
+  const segments = text.split('**');
+  return segments.map((segment, index) => {
+    // Even indices are regular text, odd indices should be bold
+    return index % 2 === 0 
+      ? segment 
+      : <span key={index} className="font-bold">{segment}</span>;
+  });
+};
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) => {
   const renderChart = () => {
@@ -148,7 +160,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
               <div className="mr-2 p-1 rounded-full bg-blue-500/20 flex-shrink-0">
                 <Lightbulb className="h-3 w-3 text-blue-300" />
               </div>
-              <span className="text-gray-200">{insight.replace(/\*\*/g, '')}</span>
+              <span className="text-gray-200">{parseMarkdownBold(insight)}</span>
             </div>
           ))}
         </div>
