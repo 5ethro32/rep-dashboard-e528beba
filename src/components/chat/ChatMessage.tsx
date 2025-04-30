@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -64,26 +63,54 @@ const formatCurrency = (value: number): string => {
   }
 };
 
-// Helper function to improve insight text
+// Helper function to improve insight text and content
 const improveInsightText = (text: string): string => {
-  // Replace text about "serves X profitable customers" with better wording
+  // Case 1: Remove or replace misleading "serves X profitable customers" insights
   if (text.includes('serves') && text.includes('profitable customers')) {
-    // Extract the rep name if present
-    const repNameMatch = text.match(/(.*?)\s+serves/);
+    // We want to completely remove this insight as it's misleading
+    return ""; // Return empty string to filter it out later
+  }
+  
+  // Case 2: Make sure average profit explicitly mentions "top 10 customers"
+  if (text.includes('average profit per customer is')) {
+    const repNameMatch = text.match(/(.*?)'s/);
     const repName = repNameMatch ? repNameMatch[1] : 'The rep';
     
-    // Change to focus on average profit instead
-    if (text.includes('average profit per customer is')) {
-      const profitMatch = text.match(/average profit per customer is (£[\d,.]+)/);
-      if (profitMatch) {
-        return `${repName}'s top 10 customers have an average profit of ${profitMatch[1]}`;
-      }
+    const profitMatch = text.match(/average profit per customer is (£[\d,.]+)/);
+    if (profitMatch) {
+      return `${repName}'s top 10 customers have an average profit of ${profitMatch[1]}`;
     }
   }
+  
+  // Case 3: Add "top 10" specification to the total profit text
+  if (text.includes('total profit') && !text.includes('top 10')) {
+    return text.replace('total profit', 'total profit across top 10 customers');
+  }
+  
+  return text;
+};
+
+// Enhanced function to also modify main content text
+const enhanceContentText = (text: string): string => {
+  // Add "top 10" specification to relevant phrases in the main content
+  if (text.includes('top customers by profit') && !text.includes('top 10')) {
+    text = text.replace('top customers by profit', 'top 10 customers by profit');
+  }
+  
+  // Fix any mentions of total profit without context
+  if (text.includes('Total Profit:') && !text.includes('top 10')) {
+    text = text.replace('Total Profit:', 'Total Profit (top 10 customers):');
+  }
+  
   return text;
 };
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) => {
+  // Process message content first to enhance main text
+  const enhancedContent = typeof message.content === 'string' 
+    ? enhanceContentText(message.content)
+    : message.content;
+  
   const renderChart = () => {
     if (!message.chartData) return null;
     
@@ -158,19 +185,27 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
     
     return (
       <div className="mt-4 mb-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-        {message.trends.map((trend, index) => (
-          <div key={index} className="bg-gray-800 rounded-lg p-3 flex items-center">
-            <div className="mr-3">
-              {trend.type === 'up' && <ArrowUpRight className="text-green-500 h-5 w-5" />}
-              {trend.type === 'down' && <ArrowDownRight className="text-rose-500 h-5 w-5" />}
-              {trend.type === 'neutral' && <Minus className="text-gray-400 h-5 w-5" />}
+        {message.trends.map((trend, index) => {
+          // Enhance trend descriptions to clarify context for profit values
+          let enhancedDescription = trend.description;
+          if (trend.description.toLowerCase().includes('profit') && !trend.description.includes('top 10')) {
+            enhancedDescription = trend.description.replace('profit', 'profit (top 10 customers)');
+          }
+          
+          return (
+            <div key={index} className="bg-gray-800 rounded-lg p-3 flex items-center">
+              <div className="mr-3">
+                {trend.type === 'up' && <ArrowUpRight className="text-green-500 h-5 w-5" />}
+                {trend.type === 'down' && <ArrowDownRight className="text-rose-500 h-5 w-5" />}
+                {trend.type === 'neutral' && <Minus className="text-gray-400 h-5 w-5" />}
+              </div>
+              <div>
+                <div className="text-lg font-semibold">{trend.value}</div>
+                <div className="text-xs text-gray-400">{enhancedDescription}</div>
+              </div>
             </div>
-            <div>
-              <div className="text-lg font-semibold">{trend.value}</div>
-              <div className="text-xs text-gray-400">{trend.description}</div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -200,6 +235,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
   const renderInsights = () => {
     if (!message.insights || message.insights.length === 0) return null;
     
+    // Filter out any empty insights (like those we marked for removal)
+    const filteredInsights = message.insights
+      .map(insight => improveInsightText(insight))
+      .filter(insight => insight.length > 0);
+    
+    if (filteredInsights.length === 0) return null;
+    
     return (
       <div className="mt-4 mb-2">
         <div className="font-medium text-sm text-gray-300 mb-2 flex items-center">
@@ -207,12 +249,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
           Key Insights
         </div>
         <div className="space-y-2">
-          {message.insights.map((insight, index) => (
+          {filteredInsights.map((insight, index) => (
             <div key={index} className="bg-gray-800/80 rounded-lg p-2 text-sm flex items-start">
               <div className="mr-2 p-1 rounded-full bg-blue-500/20 flex-shrink-0">
                 <Lightbulb className="h-3 w-3 text-blue-300" />
               </div>
-              <span className="text-gray-200">{parseMarkdownBold(improveInsightText(insight))}</span>
+              <span className="text-gray-200">{parseMarkdownBold(insight)}</span>
             </div>
           ))}
         </div>
@@ -233,7 +275,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
           : 'bg-gray-800 text-gray-100'
       }`}>
         <div className="whitespace-pre-wrap">
-          {typeof message.content === 'string' ? parseMarkdownBold(message.content) : message.content}
+          {typeof enhancedContent === 'string' ? parseMarkdownBold(enhancedContent) : enhancedContent}
         </div>
         
         {!message.isUser && (
