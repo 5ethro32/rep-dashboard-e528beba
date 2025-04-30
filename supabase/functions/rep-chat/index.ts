@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
@@ -54,6 +53,13 @@ interface MonthData {
   data: any[];
   metrics: OverallMetrics | null;
   repDetails: Record<string, RepSummary>;
+}
+
+// Interface for conversation context
+interface ConversationContext {
+  conversationId: string;
+  history: Array<{role: string, content: string}>;
+  selectedMonth?: string;
 }
 
 // Determine if a string is a department name - case insensitive
@@ -791,6 +797,242 @@ const gatherAllMonthsData = async (supabase) => {
   }
 };
 
+// New function to extract entities from user query using enhanced NLP
+const extractEntities = (message: string) => {
+  const entities: {
+    repNames: string[];
+    months: string[];
+    metrics: string[];
+    customers: string[];
+    departments: string[];
+    comparisons: boolean;
+    insights: boolean;
+    trend: boolean;
+    reasons: boolean;
+  } = {
+    repNames: [],
+    months: [],
+    metrics: [],
+    customers: [],
+    departments: [],
+    comparisons: false,
+    insights: false,
+    trend: false,
+    reasons: false
+  };
+
+  // Enhanced rep name detection
+  const commonRepNames = [
+    'Craig', 'Murray', 'John', 'David', 'Simon', 'Laura', 'Paul', 'Steven', 
+    'Craig McDowall', 'Murray Glasgow', 'Mike Cooper', 'Louise Skiba', 'Michael McKay',
+    'Jonny Cunningham', 'Ged Thomas', 'Pete Dhillon', 'Clare Quinn', 'Stuart Geddes', 
+    'Yvonne Walton', 'Adam Forsythe', 'Cammy Stuart'
+  ];
+  
+  for (const name of commonRepNames) {
+    if (message.toLowerCase().includes(name.toLowerCase())) {
+      entities.repNames.push(name);
+    }
+  }
+  
+  // Extract month mentions
+  const monthPatterns = [
+    { regex: /\b(jan|january)\b/i, value: 'january' },
+    { regex: /\b(feb|february)\b/i, value: 'february' },
+    { regex: /\b(mar|march)\b/i, value: 'march' },
+    { regex: /\b(apr|april)\b/i, value: 'april' },
+    { regex: /last month/i, value: 'lastMonth' },
+    { regex: /this month/i, value: 'thisMonth' },
+    { regex: /previous month/i, value: 'previousMonth' }
+  ];
+  
+  monthPatterns.forEach(pattern => {
+    if (pattern.regex.test(message)) {
+      entities.months.push(pattern.value);
+    }
+  });
+  
+  // Extract metric mentions
+  const metricPatterns = [
+    { regex: /\b(profit|profitability|earnings|income)\b/i, value: 'profit' },
+    { regex: /\b(margin|margins)\b/i, value: 'margin' },
+    { regex: /\b(spend|sales|revenue|turnover)\b/i, value: 'spend' },
+    { regex: /\b(pack|packs)\b/i, value: 'packs' },
+    { regex: /\b(account|accounts|customer|customers)\b/i, value: 'accounts' },
+    { regex: /\b(performance|performing)\b/i, value: 'performance' }
+  ];
+  
+  metricPatterns.forEach(pattern => {
+    if (pattern.regex.test(message)) {
+      entities.metrics.push(pattern.value);
+    }
+  });
+  
+  // Check for department mentions
+  const deptPatterns = [
+    { regex: /\b(retail)\b/i, value: 'RETAIL' },
+    { regex: /\b(reva)\b/i, value: 'REVA' },
+    { regex: /\b(wholesale)\b/i, value: 'Wholesale' }
+  ];
+  
+  deptPatterns.forEach(pattern => {
+    if (pattern.regex.test(message)) {
+      entities.departments.push(pattern.value);
+    }
+  });
+  
+  // Check for customer inquiries
+  const customerRegex = /(?:for|about|at|in)\s+([A-Za-z0-9\s]+(?:Pharmacy|Ltd|Limited|Store|Shop))/i;
+  const customerMatch = message.match(customerRegex);
+  if (customerMatch) {
+    entities.customers.push(customerMatch[1].trim());
+  }
+  
+  // Check for comparison intent
+  entities.comparisons = /compare|comparison|versus|vs|difference|change|growth|increased|decreased/i.test(message);
+  
+  // Check for insights request
+  entities.insights = /insight|insights|analysis|analyze|understand|explain|overview/i.test(message);
+  
+  // Check for trend analysis
+  entities.trend = /trend|trending|over time|pattern|trajectory|history|historical/i.test(message);
+  
+  // Check for reasons/explanations
+  entities.reasons = /why|reason|cause|explain|because|lead to|resulted in|due to/i.test(message);
+  
+  return entities;
+};
+
+// New function to reformulate vague queries
+const reformulateQuery = (message: string, entities: any, selectedMonth: string): string => {
+  let reformulation = message;
+  
+  // If query is very short/vague, expand it based on extracted entities
+  if (message.length < 15) {
+    if (entities.repNames.length > 0) {
+      const repName = entities.repNames[0];
+      reformulation = `Tell me about ${repName}'s sales performance${selectedMonth ? ` in ${selectedMonth}` : ''}`;
+    } else if (message.toLowerCase().includes('top')) {
+      reformulation = `Who are the top performing sales reps${selectedMonth ? ` in ${selectedMonth}` : ''}?`;
+    } else if (message.toLowerCase().includes('worst') || message.toLowerCase().includes('bottom')) {
+      reformulation = `Who are the worst performing sales reps${selectedMonth ? ` in ${selectedMonth}` : ''}?`;
+    }
+  }
+  
+  // If no time period specified but comparing, assume last two months
+  if (entities.comparisons && entities.months.length === 0) {
+    if (selectedMonth === 'April') {
+      reformulation += ' comparing March and April';
+    } else if (selectedMonth === 'March') {
+      reformulation += ' comparing February and March';
+    }
+  }
+  
+  // If asking for reasons without specific metrics
+  if (entities.reasons && entities.metrics.length === 0) {
+    reformulation += ' in terms of profit and sales volume';
+  }
+  
+  return reformulation;
+};
+
+// New function to determine if we should include data visualizations
+const shouldIncludeVisualization = (message: string, entities: any): {
+  includeChart: boolean,
+  chartType?: 'bar' | 'line' | 'pie',
+  includeTable: boolean
+} => {
+  const result = {
+    includeChart: false,
+    chartType: undefined as 'bar' | 'line' | 'pie' | undefined,
+    includeTable: false
+  };
+  
+  // Check for explicit visualization requests
+  if (/chart|graph|plot|visual|visually|show me/i.test(message)) {
+    result.includeChart = true;
+    
+    // Determine chart type based on query content
+    if (entities.trend || /over time|history|pattern|trend/i.test(message)) {
+      result.chartType = 'line';
+    } else if (entities.comparisons || entities.months.length > 1 || entities.repNames.length > 1) {
+      result.chartType = 'bar';
+    } else if (/breakdown|distribution|share|split/i.test(message)) {
+      result.chartType = 'pie';
+    } else {
+      result.chartType = 'bar'; // Default
+    }
+  }
+  
+  // Check for tabular data requests
+  if (/table|list|breakdown|details|specifically|exactly/i.test(message)) {
+    result.includeTable = true;
+  }
+  
+  return result;
+};
+
+// Enhanced function to analyze trends and anomalies
+const analyzeDataTrends = (
+  februaryData: OverallMetrics | null, 
+  marchData: OverallMetrics | null, 
+  aprilData: OverallMetrics | null
+): string => {
+  if (!februaryData || !marchData) {
+    return '';
+  }
+  
+  const insights = [];
+  
+  // Calculate month-over-month changes for key metrics
+  const febToMarProfit = marchData.totalProfit - februaryData.totalProfit;
+  const febToMarProfitPercent = (febToMarProfit / februaryData.totalProfit) * 100;
+  
+  const febToMarSpend = marchData.totalSpend - februaryData.totalSpend;
+  const febToMarSpendPercent = (febToMarSpend / februaryData.totalSpend) * 100;
+  
+  const febToMarMargin = marchData.averageMargin - februaryData.averageMargin;
+  
+  // Detect significant changes (>10% or <-10%)
+  if (Math.abs(febToMarProfitPercent) > 10) {
+    const direction = febToMarProfitPercent > 0 ? 'increased' : 'decreased';
+    insights.push(`Total profit ${direction} by ${Math.abs(febToMarProfitPercent).toFixed(1)}% from February to March.`);
+    
+    // Add possible explanations
+    if (febToMarProfitPercent > 0 && febToMarSpendPercent > 0) {
+      insights.push(`This growth appears to be driven by higher sales volume.`);
+    } else if (febToMarProfitPercent > 0 && febToMarMargin > 0) {
+      insights.push(`This improvement appears to be driven by better margins rather than volume.`);
+    } else if (febToMarProfitPercent < 0 && febToMarSpendPercent < 0) {
+      insights.push(`This decline appears to be primarily due to lower sales volume.`);
+    } else if (febToMarProfitPercent < 0 && febToMarMargin < 0) {
+      insights.push(`This decline appears to be driven by margin compression.`);
+    }
+  }
+  
+  // Include April data if available
+  if (aprilData) {
+    const marToAprProfit = aprilData.totalProfit - marchData.totalProfit;
+    const marToAprProfitPercent = (marToAprProfit / marchData.totalProfit) * 100;
+    
+    if (Math.abs(marToAprProfitPercent) > 10) {
+      const direction = marToAprProfitPercent > 0 ? 'increasing' : 'decreasing';
+      insights.push(`The trend is continuing with profit ${direction} by ${Math.abs(marToAprProfitPercent).toFixed(1)}% from March to April.`);
+    }
+  }
+  
+  // Add top performer consistency insights
+  const topPerformersFeb = new Set(februaryData.topPerformersByProfit.map(x => x.rep));
+  const topPerformersMar = new Set(marchData.topPerformersByProfit.map(x => x.rep));
+  
+  const consistentTopPerformers = [...topPerformersFeb].filter(rep => topPerformersMar.has(rep));
+  if (consistentTopPerformers.length > 0) {
+    insights.push(`${consistentTopPerformers.join(', ')} ${consistentTopPerformers.length === 1 ? 'has' : 'have'} been among top performers for both February and March.`);
+  }
+  
+  return insights.join(' ');
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -798,7 +1040,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, selectedMonth } = await req.json();
+    const { message, selectedMonth, conversationContext } = await req.json();
 
     if (!message) {
       throw new Error('Message is required');
@@ -810,29 +1052,23 @@ serve(async (req) => {
     // Gather comprehensive data for all months
     const allMonthsData = await gatherAllMonthsData(supabase);
     
-    // Extract any rep name mentioned in the message for detailed lookup
-    const repNameMatch = message.match(/(?:about|on|for|by|craig|murray|john|david|simon|laura|paul|steven)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i) || 
-                          message.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)'s/i);
-    let repName = repNameMatch ? repNameMatch[1] : null;
+    // Apply enhanced entity extraction
+    const entities = extractEntities(message);
     
-    // Special case: check for common rep names directly
-    const commonRepNames = ['Craig', 'Murray', 'John', 'David', 'Simon', 'Laura', 'Paul', 'Steven', 
-                           'Craig McDowall', 'Murray Glasgow'];
+    // Reformulate query if vague
+    const enhancedQuery = reformulateQuery(message, entities, selectedMonth);
     
-    for (const name of commonRepNames) {
-      if (message.toLowerCase().includes(name.toLowerCase())) {
-        repName = name;
-        break;
-      }
-    }
+    // Determine if we should include visualizations
+    const visualizationInfo = shouldIncludeVisualization(message, entities);
+    
+    // Extract repName from entities
+    const repName = entities.repNames.length > 0 ? entities.repNames[0] : null;
     
     // Determine if asking about customers
-    const isAskingAboutCustomers = /customer|account|pharmacy|shop|store|knightswood|account ref|account number/i.test(message);
+    const isAskingAboutCustomers = entities.customers.length > 0 || /customer|account|pharmacy|shop|store|account ref|account number/i.test(message);
     
     // Check for specific account or customer
-    const accountNameMatch = message.match(/(?:for|about|at|in)\s+([A-Za-z0-9\s]+(?:Pharmacy|Ltd|Limited|Store|Shop))/i) ||
-                             message.match(/([A-Za-z0-9\s]+(?:Pharmacy|Ltd|Limited|Store|Shop))/i);
-    let customerName = accountNameMatch ? accountNameMatch[1].trim() : null;
+    const customerName = entities.customers.length > 0 ? entities.customers[0] : null;
     
     // If asking about a customer, fetch the customer data
     let customerData = null;
@@ -840,63 +1076,111 @@ serve(async (req) => {
       customerData = await findCustomerData(supabase, customerName);
     }
     
-    // Determine if asking for top or bottom performers
-    const isAskingAboutTop = /top|best|highest|leading|most profitable/i.test(message);
-    const isAskingAboutWorst = /worst|lowest|poorest|bottom|weakest/i.test(message);
-    const isAskingComparison = /compare|comparison|versus|vs|difference|change|growth|increased|decreased/i.test(message);
+    // Generate data visualizations if needed
+    let chartData = null;
+    let chartType = null;
+    let tableData = null;
+    let tableHeaders = null;
     
-    // Determine if asking about a specific month
-    const isAskingAboutMarch = /march/i.test(message);
-    const isAskingAboutFebruary = /february|feb/i.test(message);
-    const isAskingAboutApril = /april/i.test(message);
+    if (visualizationInfo.includeChart) {
+      // Example chart data structure - in a real implementation, you'd generate this based on the query
+      if (entities.repNames.length > 0 && entities.comparisons) {
+        // Comparison chart for a specific rep across months
+        const repName = entities.repNames[0];
+        chartData = {
+          labels: ['February', 'March', 'April'],
+          datasets: [{
+            name: 'Profit',
+            data: [
+              allMonthsData.february?.repDetails[repName]?.totalProfit || 0,
+              allMonthsData.march?.repDetails[repName]?.totalProfit || 0,
+              allMonthsData.april?.repDetails[repName]?.totalProfit || 0
+            ]
+          }]
+        };
+        chartType = 'bar';
+      } else if (entities.metrics.includes('profit') && !entities.repNames.length) {
+        // Overall profit trend chart
+        chartData = {
+          labels: ['February', 'March', 'April'],
+          datasets: [{
+            name: 'Total Profit',
+            data: [
+              allMonthsData.february?.metrics?.totalProfit || 0,
+              allMonthsData.march?.metrics?.totalProfit || 0,
+              allMonthsData.april?.metrics?.totalProfit || 0
+            ]
+          }]
+        };
+        chartType = visualizationInfo.chartType;
+      }
+    }
     
-    // Determine if asking about specific metrics
-    const isAskingAboutProfit = /profit/i.test(message);
-    const isAskingAboutMargin = /margin/i.test(message);
-    const isAskingAboutPacks = /packs/i.test(message);
-    const isAskingAboutSpend = /spend|sales|selling/i.test(message);
-    const isAskingAboutAccounts = /accounts|customers/i.test(message);
+    if (visualizationInfo.includeTable) {
+      // Example table data structure - in a real implementation, you'd generate this based on the query
+      if (entities.repNames.length > 0) {
+        // Table with rep performance across months
+        const repName = entities.repNames[0];
+        tableHeaders = ['Month', 'Profit', 'Spend', 'Margin', 'Packs'];
+        tableData = [
+          {
+            month: 'February',
+            profit: allMonthsData.february?.repDetails[repName]?.totalProfit?.toFixed(2) || 'N/A',
+            spend: allMonthsData.february?.repDetails[repName]?.totalSpend?.toFixed(2) || 'N/A',
+            margin: allMonthsData.february?.repDetails[repName]?.margin?.toFixed(2) + '%' || 'N/A',
+            packs: allMonthsData.february?.repDetails[repName]?.totalPacks || 'N/A'
+          },
+          {
+            month: 'March',
+            profit: allMonthsData.march?.repDetails[repName]?.totalProfit?.toFixed(2) || 'N/A',
+            spend: allMonthsData.march?.repDetails[repName]?.totalSpend?.toFixed(2) || 'N/A',
+            margin: allMonthsData.march?.repDetails[repName]?.margin?.toFixed(2) + '%' || 'N/A',
+            packs: allMonthsData.march?.repDetails[repName]?.totalPacks || 'N/A'
+          },
+          {
+            month: 'April',
+            profit: allMonthsData.april?.repDetails[repName]?.totalProfit?.toFixed(2) || 'N/A',
+            spend: allMonthsData.april?.repDetails[repName]?.totalSpend?.toFixed(2) || 'N/A',
+            margin: allMonthsData.april?.repDetails[repName]?.margin?.toFixed(2) + '%' || 'N/A',
+            packs: allMonthsData.april?.repDetails[repName]?.totalPacks || 'N/A'
+          }
+        ];
+      } else if (message.toLowerCase().includes('top') || message.toLowerCase().includes('best')) {
+        // Table with top performers
+        tableHeaders = ['Rep', 'Profit', 'Margin'];
+        tableData = allMonthsData[selectedMonth.toLowerCase()]?.metrics?.topPerformersByProfit.map(rep => ({
+          rep: rep.rep,
+          profit: rep.profit.toFixed(2),
+          margin: (allMonthsData[selectedMonth.toLowerCase()]?.repDetails[rep.rep]?.margin || 0).toFixed(2) + '%'
+        })) || [];
+      }
+    }
     
-    // Determine if asking about departments
-    const isAskingAboutRetail = /retail/i.test(message);
-    const isAskingAboutReva = /reva/i.test(message);
-    const isAskingAboutWholesale = /wholesale/i.test(message);
-    
-    // Default to March if no month specified
-    const targetMonth = isAskingAboutFebruary ? 'february' : 
-                        isAskingAboutApril ? 'april' : 'march';
-    
+    // Check if asking for insights or trend analysis
+    let trendAnalysis = '';
+    if (entities.insights || entities.trend || entities.reasons) {
+      trendAnalysis = analyzeDataTrends(
+        allMonthsData.february?.metrics || null, 
+        allMonthsData.march?.metrics || null,
+        allMonthsData.april?.metrics || null
+      );
+    }
+
     // Try to fetch top performers using SQL functions for better performance
     const marchTopPerformers = await fetchTopPerformers(supabase, 'march');
     const aprilTopPerformers = await fetchTopPerformers(supabase, 'april');
     
-    // Determine query focus for improved context
-    const queryFocus = {
-      rep: repName,
-      customer: customerName,
-      performance: isAskingAboutTop ? 'top' : isAskingAboutWorst ? 'bottom' : null,
-      metric: isAskingAboutProfit ? 'profit' : 
-              isAskingAboutMargin ? 'margin' : 
-              isAskingAboutPacks ? 'packs' : 
-              isAskingAboutSpend ? 'spend' : 
-              isAskingAboutAccounts ? 'accounts' : null,
-      department: isAskingAboutRetail ? 'RETAIL' : 
-                 isAskingAboutReva ? 'REVA' : 
-                 isAskingAboutWholesale ? 'Wholesale' : null,
-      comparison: isAskingComparison,
-      months: {
-        february: isAskingAboutFebruary,
-        march: isAskingAboutMarch,
-        april: isAskingAboutApril
-      }
-    };
-
+    // Prepare previous conversation context for the LLM
+    const previousMessages = conversationContext?.history || [];
+    
     // Prepare a system prompt with data context
     const systemPrompt = `
 You are Vera, a sales data analysis assistant specialized in helping sales managers understand their rep performance data.
 You have access to sales data for February, March, and April 2025.
 
 IMPORTANT: Always provide CONSISTENT and ACCURATE data by using the combined totals across all departments (Retail, REVA, and Wholesale) for any rep mentioned.
+
+${trendAnalysis ? `\n\nIMPORTANT INSIGHTS:\n${trendAnalysis}\n\n` : ''}
 
 Here's key information from the data:
 
@@ -1062,26 +1346,26 @@ ${JSON.stringify(customerData.april.map(customer => ({
 ` : 'No April data available for this customer'}
 ` : ''}
 
-QUERY FOCUS:
-${JSON.stringify(queryFocus)}
-
 When answering:
-1. Be extremely CONCISE and DIRECT - only provide exactly what was asked for
+1. Be conversational, helpful, and insightful - not just reporting numbers
 2. If asked about specific numbers, provide the exact figures from the data above
 3. When asked about top or worst performers, specify which metric (profit, margin) and include the actual values
 4. If data isn't available for a specific question, acknowledge that
-5. DO NOT provide ANY sample transactions or unnecessary details that weren't asked for
-6. NEVER FORMAT YOUR RESPONSE WITH MARKDOWN or any formatting symbols
-7. Use plain text formatting with proper line breaks and paragraphs
-8. If responding about a specific rep, use proper paragraph breaks between sections
-9. FOR CONSISTENT ANSWERS - Make sure to use a rep's TOTAL profit/margin across ALL departments (Retail, REVA, Wholesale combined)
-10. When comparing between months, always give the exact amounts and percentage changes
-11. NEVER refer to Wholesale or REVA as sales reps - they are departments, not individuals
+5. NEVER FORMAT YOUR RESPONSE WITH MARKDOWN or any formatting symbols
+6. Use plain text formatting with proper line breaks and paragraphs
+7. If responding about a specific rep, use proper paragraph breaks between sections
+8. FOR CONSISTENT ANSWERS - Make sure to use a rep's TOTAL profit/margin across ALL departments (Retail, REVA, Wholesale combined)
+9. When comparing between months, always give the exact amounts and percentage changes
+10. NEVER refer to Wholesale or REVA as sales reps - they are departments, not individuals
+11. Respond to any questions about WHY something happened with informed analysis
+12. If the user asks a vague question, try to give the most relevant information
 
 IMPORTANT FORMATTING RULES:
 - ALWAYS use £ (pound sterling) as currency symbol, not $ or any other currency
 - Never use any markdown formatting such as bold, italic, or headers
 - Never use any special characters like ** or ## for formatting
+
+I will include visualizations separately in the UI, just focus on providing a clear, insightful textual response.
 `;
 
     // Call OpenAI API to generate response
@@ -1096,12 +1380,13 @@ IMPORTANT FORMATTING RULES:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4-0125-preview',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
+          ...previousMessages.slice(-5), // Include the last 5 messages for context
+          { role: 'user', content: enhancedQuery || message }
         ],
-        temperature: 0.2,
+        temperature: 0.3, // Lower temperature for more consistent responses
         max_tokens: 1000
       })
     });
@@ -1115,7 +1400,13 @@ IMPORTANT FORMATTING RULES:
     const aiResponse = aiData.choices[0].message.content;
 
     return new Response(
-      JSON.stringify({ response: aiResponse }),
+      JSON.stringify({ 
+        response: aiResponse,
+        chartData,
+        chartType,
+        tableData,
+        tableHeaders
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

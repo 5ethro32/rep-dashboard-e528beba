@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { SendIcon, ChevronUp, ChevronDown, MessageCircle } from 'lucide-react';
+import { SendIcon, ChevronUp, ChevronDown, MessageCircle, LineChart, PieChart, BarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,6 +26,16 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   examples?: string[]; // Added examples property for prompt messages
+  chartData?: any; // Added for chart visualization data
+  chartType?: 'bar' | 'line' | 'pie'; // Type of chart to display
+  tableData?: any[]; // For tabular data
+  tableHeaders?: string[]; // Table headers
+}
+
+interface ConversationContext {
+  conversationId: string;
+  history: Array<{role: string, content: string}>;
+  selectedMonth: string;
 }
 
 interface ChatInterfaceProps {
@@ -46,11 +56,19 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
         "Tell me about Craig's sales",
         "Compare February and March profit",
         "How did Murray perform in February vs March?",
-        "Show me April's best reps by margin"
+        "Show me April's best reps by margin",
+        "Why did profit drop last month?",
+        "What insights can you share about our performance?",
+        "Which products had the highest growth?"
       ]
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationContext, setConversationContext] = useState<ConversationContext>({
+    conversationId: `vera-${Date.now()}`,
+    history: [],
+    selectedMonth
+  });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -70,6 +88,56 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
       }, 100);
     }
   }, [isOpen]);
+
+  // Update conversation context when selectedMonth changes
+  useEffect(() => {
+    setConversationContext(prev => ({
+      ...prev,
+      selectedMonth
+    }));
+  }, [selectedMonth]);
+
+  const renderChart = (message: Message) => {
+    if (!message.chartData || !message.chartType) return null;
+    
+    // Implement simple chart visualization here based on chartType
+    // This is a placeholder - in a real implementation, you'd use Recharts or another visualization library
+    return (
+      <div className="mt-3 bg-gray-900 p-3 rounded-md border border-gray-700">
+        {message.chartType === 'bar' && <BarChart className="h-6 w-6 mr-2" />}
+        {message.chartType === 'line' && <LineChart className="h-6 w-6 mr-2" />}
+        {message.chartType === 'pie' && <PieChart className="h-6 w-6 mr-2" />}
+        <span className="text-xs text-gray-400">Charts would render here based on the data</span>
+      </div>
+    );
+  };
+
+  const renderTable = (message: Message) => {
+    if (!message.tableData || !message.tableHeaders) return null;
+    
+    return (
+      <div className="mt-3 overflow-x-auto">
+        <table className="min-w-full bg-gray-800 text-sm text-gray-200 rounded-md">
+          <thead>
+            <tr className="border-b border-gray-600">
+              {message.tableHeaders.map((header, i) => (
+                <th key={i} className="px-3 py-2 text-left">{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {message.tableData.map((row, i) => (
+              <tr key={i} className="border-b border-gray-700">
+                {Object.values(row).map((cell: any, j) => (
+                  <td key={j} className="px-3 py-2">{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   const handleExampleClick = (exampleText: string) => {
     // Set the example text as the current message and submit
@@ -100,26 +168,55 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
     setMessage('');
     setIsLoading(true);
     
+    // Update conversation history with the user's new message
+    const updatedHistory = [
+      ...conversationContext.history,
+      { role: 'user', content: userQuery }
+    ];
+    
+    setConversationContext(prev => ({
+      ...prev,
+      history: updatedHistory
+    }));
+    
     try {
-      // Call Supabase Edge Function
+      // Call Supabase Edge Function with the full conversation context
       const { data, error } = await supabase.functions.invoke('rep-chat', {
         body: {
           message: userQuery,
-          selectedMonth
+          selectedMonth,
+          conversationContext: {
+            conversationId: conversationContext.conversationId,
+            history: updatedHistory
+          }
         }
       });
 
       if (error) throw new Error(error.message);
       
-      // Add assistant response to chat
+      // Add assistant response to chat with any visualization data
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data?.response || "Sorry, I couldn't process your request. Please try again.",
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
+        chartData: data?.chartData,
+        chartType: data?.chartType,
+        tableData: data?.tableData,
+        tableHeaders: data?.tableHeaders
       };
       
       setMessages(prev => [...prev, botMessage]);
+      
+      // Update conversation history with the assistant's response
+      setConversationContext(prev => ({
+        ...prev,
+        history: [
+          ...updatedHistory,
+          { role: 'assistant', content: data?.response || "" }
+        ]
+      }));
+      
     } catch (err) {
       console.error('Error calling chat function:', err);
       toast({
@@ -173,6 +270,12 @@ const ChatInterface = ({ selectedMonth = 'March' }: ChatInterfaceProps) => {
               >
                 {msg.content}
               </div>
+              
+              {/* Render charts if available */}
+              {!msg.isUser && renderChart(msg)}
+              
+              {/* Render tables if available */}
+              {!msg.isUser && renderTable(msg)}
               
               {msg.examples && msg.examples.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
