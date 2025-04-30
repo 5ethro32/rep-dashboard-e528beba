@@ -265,9 +265,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
     );
   };
 
-  // Render examples as clickable buttons
+  // Render examples as clickable buttons - this will only be used for the initial welcome message
   const renderExamples = () => {
-    if (!message.examples || message.examples.length === 0) return null;
+    // Only render examples for the initial welcome message (id = '1')
+    if (!message.examples || message.examples.length === 0 || message.id !== '1') return null;
     
     return (
       <div className="mt-4">
