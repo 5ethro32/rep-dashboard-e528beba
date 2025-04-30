@@ -122,7 +122,7 @@ const Auth = () => {
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-2">
-            S<span className="text-finance-red italic">a</span>les Performance
+            S<span className="text-finance-red italic -ml-1">a</span>les Performance
           </h1>
           <p className="text-finance-gray">Secure access to sales data</p>
         </div>
@@ -180,7 +180,7 @@ const Auth = () => {
                   <Input 
                     id="email"
                     type="email" 
-                    placeholder="name@company.com" 
+                    placeholder="name@avergenerics.co.uk" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
