@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,8 +28,6 @@ interface TrendLineChartProps {
     march: RepData[];
     april: RepData[];
   };
-  compareRepsEnabled?: boolean;
-  selectedReps?: string[];
 }
 
 type MetricType = 'profit' | 'spend' | 'margin' | 'packs';
@@ -59,20 +58,14 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   marchSummary,
   aprilSummary,
   isLoading,
-  repData,
-  compareRepsEnabled = false,
-  selectedReps = []
+  repData
 }) => {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('profit');
   const [chartData, setChartData] = useState<Array<{name: string; value: number; color: string}>>([]);
   const [yAxisDomain, setYAxisDomain] = useState<[number, number]>([0, 'auto' as any]);
   const [compareRepsMode, setCompareRepsMode] = useState<boolean>(false);
+  const [selectedReps, setSelectedReps] = useState<string[]>([]);
   const [repChartData, setRepChartData] = useState<any[]>([]);
-  
-  // Use the passed compareRepsEnabled and selectedReps props
-  useEffect(() => {
-    setCompareRepsMode(compareRepsEnabled);
-  }, [compareRepsEnabled]);
   
   // Get available reps from data
   const availableReps = repData ? 
@@ -83,14 +76,21 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     ])).filter(rep => rep !== 'REVA' && rep !== 'Wholesale') : 
     [];
 
-  // Handle rep selection - now uses parent component's state
+  // Handle rep selection
   const handleRepSelection = (rep: string) => {
-    // This function is no longer used directly since selection is managed by parent
+    setSelectedReps(prev => {
+      if (prev.includes(rep)) {
+        return prev.filter(r => r !== rep);
+      } else {
+        if (prev.length >= 5) return prev; // Max 5 reps
+        return [...prev, rep];
+      }
+    });
   };
 
-  // Clear rep selection - now uses parent component's state
+  // Clear rep selection
   const clearRepSelection = () => {
-    // This function is no longer used directly since selection is managed by parent
+    setSelectedReps([]);
   };
 
   // Function to get metric value from summary data
@@ -242,7 +242,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     }
   }, [selectedMetric, febSummary, marchSummary, aprilSummary, isLoading]);
 
-  // Prepare rep-specific chart data - now uses the selectedReps from props
+  // Prepare rep-specific chart data
   useEffect(() => {
     if (isLoading || !repData || selectedReps.length === 0) return;
 
@@ -363,11 +363,31 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               ))}
             </div>
             
-            {/* We remove the local Compare Reps button since it's now managed by parent component */}
+            {repData && (
+              <Button 
+                size="sm" 
+                variant={compareRepsMode ? "default" : "ghost"}
+                className={`text-xs px-3 ${compareRepsMode ? "bg-white/20 text-white" : "text-white/70"}`}
+                onClick={() => setCompareRepsMode(!compareRepsMode)}
+              >
+                <Users className="h-4 w-4 mr-1" />
+                Compare Reps
+              </Button>
+            )}
           </div>
         </div>
         
-        {/* We remove the RepSelector here since it's now managed by parent component */}
+        {compareRepsMode && repData && (
+          <div className="mt-2">
+            <RepSelector 
+              availableReps={availableReps}
+              selectedReps={selectedReps}
+              onSelectRep={handleRepSelection}
+              onClearSelection={clearRepSelection}
+              maxSelections={5}
+            />
+          </div>
+        )}
       </CardHeader>
       <CardContent className="pt-2">
         <div className="h-[200px] w-full">
