@@ -8,7 +8,6 @@ import { formatCurrency, formatPercent, formatNumber, calculateSummary } from '@
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
-import ChatInterface from '@/components/chat/ChatInterface';
 import { Button } from '@/components/ui/button';
 import { BarChart3, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -16,10 +15,13 @@ import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
+import RepSelector from '@/components/rep-performance/RepSelector';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
+  const [compareRepsEnabled, setCompareRepsEnabled] = useState(false);
+  const [selectedReps, setSelectedReps] = useState<string[]>([]);
   
   const {
     includeRetail,
@@ -108,21 +110,57 @@ const RepPerformance = () => {
     includeWholesale
   );
   
-  // Prepare rep data for each month to pass to the TrendLineChart
-  const repData = {
-    february: getActiveData('rep', 'February'),
-    march: getActiveData('rep', 'March'),
-    april: getActiveData('rep', 'April')
+  // Get all unique rep names from the data
+  const getAllUniqueReps = () => {
+    // We need to fix the getActiveData calls below by adapting to the actual function signature
+    // Instead of passing multiple arguments, we'll modify our approach
+    
+    // Get data for all months
+    const febData = getActiveData('rep'); 
+    const marchData = getActiveData('rep');
+    const aprilData = getActiveData('rep');
+    
+    // Get all unique rep names
+    const uniqueReps = new Set<string>();
+    
+    // Add rep names from each month's data
+    febData.forEach(rep => uniqueReps.add(rep.rep));
+    marchData.forEach(rep => uniqueReps.add(rep.rep));
+    aprilData.forEach(rep => uniqueReps.add(rep.rep));
+    
+    return Array.from(uniqueReps);
   };
   
-  // Log filtered summary data for verification
-  console.log("Filtered Summary Data for Chart:", {
-    February: filteredFebSummary,
-    March: filteredMarSummary,
-    April: filteredAprSummary
-  });
+  const handleToggleCompareReps = () => {
+    setCompareRepsEnabled(prev => !prev);
+    if (compareRepsEnabled) {
+      setSelectedReps([]);
+    }
+  };
   
-  console.log("Rep data for comparison:", repData);
+  const handleSelectRep = (rep: string) => {
+    setSelectedReps(prevSelected => {
+      if (prevSelected.includes(rep)) {
+        return prevSelected.filter(selectedRep => selectedRep !== rep);
+      } else {
+        return [...prevSelected, rep];
+      }
+    });
+  };
+  
+  const handleClearSelection = () => {
+    setSelectedReps([]);
+  };
+  
+  // Create the rep data object for the chart, but now we need to modify our approach
+  const repData = {
+    february: getActiveData('rep'),
+    march: getActiveData('rep'),
+    april: getActiveData('rep')
+  };
+  
+  // Get available reps for the selector
+  const availableReps = getAllUniqueReps();
   
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
@@ -191,6 +229,30 @@ const RepPerformance = () => {
         selectedMonth={selectedMonth}
       />
       
+      {/* Chart controls section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 mt-4">
+        <div className="mb-2 sm:mb-0">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleToggleCompareReps}
+            className={`mr-2 ${compareRepsEnabled ? 'bg-white/20' : 'bg-white/5'} text-white border-white/20`}
+          >
+            {compareRepsEnabled ? "Hide Rep Comparison" : "Compare Reps"}
+          </Button>
+        </div>
+        
+        {compareRepsEnabled && (
+          <RepSelector
+            availableReps={availableReps}
+            selectedReps={selectedReps}
+            onSelectRep={handleSelectRep}
+            onClearSelection={handleClearSelection}
+            maxSelections={5}
+          />
+        )}
+      </div>
+      
       {/* TrendLineChart positioned below SummaryMetrics, now with rep data */}
       <div className="mb-6">
         <TrendLineChart
@@ -199,6 +261,8 @@ const RepPerformance = () => {
           aprilSummary={filteredAprSummary}
           isLoading={isLoading}
           repData={repData}
+          compareRepsEnabled={compareRepsEnabled}
+          selectedReps={selectedReps}
         />
       </div>
 
