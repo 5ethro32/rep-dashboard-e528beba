@@ -108,12 +108,21 @@ const RepPerformance = () => {
     includeWholesale
   );
   
+  // Prepare rep data for each month to pass to the TrendLineChart
+  const repData = {
+    february: getActiveData('rep', 'February'),
+    march: getActiveData('rep', 'March'),
+    april: getActiveData('rep', 'April')
+  };
+  
   // Log filtered summary data for verification
   console.log("Filtered Summary Data for Chart:", {
     February: filteredFebSummary,
     March: filteredMarSummary,
     April: filteredAprSummary
   });
+  
+  console.log("Rep data for comparison:", repData);
   
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
@@ -182,13 +191,14 @@ const RepPerformance = () => {
         selectedMonth={selectedMonth}
       />
       
-      {/* TrendLineChart positioned below SummaryMetrics, now using filtered summaries */}
+      {/* TrendLineChart positioned below SummaryMetrics, now with rep data */}
       <div className="mb-6">
         <TrendLineChart
           febSummary={filteredFebSummary}
           marchSummary={filteredMarSummary}
           aprilSummary={filteredAprSummary}
           isLoading={isLoading}
+          repData={repData}
         />
       </div>
 
