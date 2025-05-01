@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Sparkles } from 'lucide-react';
@@ -180,15 +179,11 @@ const AIVera = () => {
 
       if (error) throw new Error(error.message);
       
-      // Generate follow-up suggestions based on the conversation
-      const questionType = data?.questionType || 'general';
-      const entities = data?.entities || { months: [selectedMonth], repNames: [], departments: [], metrics: [] };
-      const followUps = generateFollowUpQuestions(questionType, entities, selectedMonth);
-      
       // Check if AI analysis was used
       const aiAnalysisUsed = data?.aiAnalysisUsed || false;
       
       // Add assistant response to chat with any visualization data and enhanced fields
+      // But NO examples (follow-up questions) as they are only for the welcome message
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data?.response || "Sorry, I couldn't process your request. Please try again.",
@@ -201,7 +196,6 @@ const AIVera = () => {
         insights: data?.insights,
         trends: data?.trends,
         highlightedEntities: data?.highlightedEntities,
-        examples: followUps,
         aiAnalysisUsed
       };
       
