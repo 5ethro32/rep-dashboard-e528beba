@@ -74,14 +74,6 @@ const AIVera = () => {
         content: `Hello, ${userFirstName}! I'm Vera, your sales data assistant. I'm still in development, but ask me about the performance of your sales, departments, or specific customers.`, 
         isUser: false, 
         timestamp: new Date(),
-        examples: [
-          "Who are the top performers this month?",
-          "Tell me about Craig's sales",
-          "Show me April's best reps by margin",
-          "Why did profit drop last month?",
-          "Which customers have the highest profit?",
-          "Show me department comparison"
-        ],
         insights: [
           "April saw a 3.8% increase in overall profit compared to March",
           "Jonny Cunningham showed the biggest margin improvement",

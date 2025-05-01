@@ -264,31 +264,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
     );
   };
 
-  // Render examples as clickable buttons - this will only appear in first welcome message
+  // Remove the renderExamples function or replace it with an empty function
   const renderExamples = () => {
-    // Only render examples for the initial welcome message (id = '1')
-    if (!message.examples || message.examples.length === 0) return null;
-    
-    // Only show examples in the first welcome message
-    // This will filter out examples from all insight sections and follow-up messages
-    if (message.id !== '1') return null;
-    
-    return (
-      <div className="mt-4">
-        <div className="text-sm text-gray-400 mb-2">Try asking:</div>
-        <div className="flex flex-wrap gap-2">
-          {message.examples.map((example, index) => (
-            <button
-              key={index}
-              onClick={() => onExampleClick(example)}
-              className="text-xs py-1 px-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-full transition-colors"
-            >
-              {example}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
+    return null; // Always return null to never show examples
   };
   
   return (
@@ -321,7 +299,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
             {renderInsights()}
             {renderChart()}
             {renderTable()}
-            {renderExamples()}
+            {/* renderExamples() - removed/not called */}
           </>
         )}
       </div>
