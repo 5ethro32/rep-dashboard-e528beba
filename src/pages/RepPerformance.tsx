@@ -14,6 +14,7 @@ import { BarChart3, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
+import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
@@ -141,6 +142,19 @@ const RepPerformance = () => {
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}
       />
+      
+      {/* Add the TrendLineChart component here */}
+      <div className="mb-6">
+        <TrendLineChart
+          febSummary={febBaseSummary}
+          marchSummary={baseSummary}
+          aprilSummary={aprBaseSummary}
+          includeRetail={includeRetail}
+          includeReva={includeReva}
+          includeWholesale={includeWholesale}
+          isLoading={isLoading}
+        />
+      </div>
 
       <SummaryMetrics 
         summary={summary}
