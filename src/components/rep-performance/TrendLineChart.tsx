@@ -15,8 +15,10 @@ import {
 import { SummaryData, RepData } from "@/types/rep-performance.types";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatPercent, formatNumber } from "@/utils/rep-performance-utils";
-import { ChartLine, BarChart3, Users } from "lucide-react";
+import { ChartLine, BarChart3, Users, Filter } from "lucide-react";
 import RepSelector from './RepSelector';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Toggle } from "@/components/ui/toggle";
 
 interface TrendLineChartProps {
   febSummary: SummaryData;
@@ -28,11 +30,15 @@ interface TrendLineChartProps {
     march: RepData[];
     april: RepData[];
   };
+  includeRetail: boolean;
+  includeReva: boolean;
+  includeWholesale: boolean;
   compareRepsEnabled?: boolean;
   selectedReps?: string[];
 }
 
 type MetricType = 'profit' | 'spend' | 'margin' | 'packs';
+type DataSourceType = 'overall' | 'retail' | 'reva' | 'wholesale';
 
 interface RepDataPoint {
   repName: string;
@@ -61,10 +67,14 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   aprilSummary,
   isLoading,
   repData,
+  includeRetail,
+  includeReva,
+  includeWholesale,
   compareRepsEnabled = false,
   selectedReps = []
 }) => {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('profit');
+  const [selectedDataSource, setSelectedDataSource] = useState<DataSourceType>('overall');
   const [chartData, setChartData] = useState<Array<{name: string; value: number; color: string}>>([]);
   const [yAxisDomain, setYAxisDomain] = useState<[number, number]>([0, 'auto' as any]);
   const [compareRepsMode, setCompareRepsMode] = useState<boolean>(false);
@@ -77,14 +87,25 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     setLocalSelectedReps(selectedReps);
   }, [compareRepsEnabled, selectedReps]);
   
-  // Get available reps from data
-  const availableReps = repData ? 
-    Array.from(new Set([
-      ...repData.february.map(r => r.rep),
-      ...repData.march.map(r => r.rep),
-      ...repData.april.map(r => r.rep)
-    ])).filter(rep => rep !== 'REVA' && rep !== 'Wholesale') : 
-    [];
+  // Get available reps from data based on selected data source
+  const getAvailableRepsForDataSource = (): string[] => {
+    if (!repData) return [];
+    
+    let reps: Set<string> = new Set();
+    
+    // Skip adding reps if the inclusion toggle is off
+    if (selectedDataSource === 'overall' || 
+        (selectedDataSource === 'retail' && includeRetail)) {
+      repData.february.forEach(r => reps.add(r.rep));
+      repData.march.forEach(r => reps.add(r.rep));
+      repData.april.forEach(r => reps.add(r.rep));
+    }
+    
+    // Filter out special department names
+    return Array.from(reps).filter(rep => rep !== 'REVA' && rep !== 'Wholesale');
+  };
+
+  const availableReps = getAvailableRepsForDataSource();
 
   // Handle rep selection
   const handleRepSelection = (rep: string) => {
@@ -119,6 +140,24 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       default:
         return 0;
     }
+  };
+  
+  // Function to get filtered rep data based on data source
+  const getFilteredRepData = (monthData: RepData[], dataSource: DataSourceType): RepData[] => {
+    if (dataSource === 'overall' || dataSource === 'retail') {
+      return monthData;
+    }
+    
+    // Filter for specific department data
+    // Note: This is a simple implementation - in a real app, you might need more sophisticated filtering
+    return monthData.filter(r => {
+      if (dataSource === 'reva') {
+        return r.rep === 'REVA' || r.rep.includes('REVA');
+      } else if (dataSource === 'wholesale') {
+        return r.rep === 'Wholesale' || r.rep.includes('Wholesale');
+      }
+      return true;
+    });
   };
   
   // Function to extract rep data based on metric
@@ -171,6 +210,21 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     }
   };
 
+  // Function to get title for data source
+  const getDataSourceTitle = (dataSource: DataSourceType): string => {
+    switch(dataSource) {
+      case 'retail':
+        return 'Retail';
+      case 'reva':
+        return 'REVA';
+      case 'wholesale':
+        return 'Wholesale';
+      case 'overall':
+      default:
+        return 'Overall';
+    }
+  };
+
   // Function to get color for metric
   const getColorForMetric = (metric: MetricType): string => {
     switch(metric) {
@@ -195,7 +249,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     const marchValue = getMetricValue(marchSummary, selectedMetric);
     const aprilValue = getMetricValue(aprilSummary, selectedMetric);
     
-    console.log("Generating chart data for:", selectedMetric);
+    console.log(`Generating chart data for ${selectedDataSource} ${selectedMetric}:`);
     console.log("February value:", febValue);
     console.log("March value:", marchValue);
     console.log("April value:", aprilValue);
@@ -250,7 +304,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         }
       }
     }
-  }, [selectedMetric, febSummary, marchSummary, aprilSummary, isLoading]);
+  }, [selectedMetric, selectedDataSource, febSummary, marchSummary, aprilSummary, isLoading]);
 
   // Prepare rep-specific chart data
   useEffect(() => {
@@ -270,14 +324,27 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       { name: "April" }
     ];
     
+    // Filter the rep data based on the selected data source
+    const filteredFebData = selectedDataSource === 'overall' 
+      ? repData.february 
+      : getFilteredRepData(repData.february, selectedDataSource);
+      
+    const filteredMarData = selectedDataSource === 'overall'
+      ? repData.march
+      : getFilteredRepData(repData.march, selectedDataSource);
+      
+    const filteredAprData = selectedDataSource === 'overall'
+      ? repData.april
+      : getFilteredRepData(repData.april, selectedDataSource);
+    
     // Add each selected rep's data for each month
     localSelectedReps.forEach(rep => {
       // Get values for this rep across all months
-      const febValue = getRepMetricValue(repData.february, rep, selectedMetric);
-      const marValue = getRepMetricValue(repData.march, rep, selectedMetric);
-      const aprValue = getRepMetricValue(repData.april, rep, selectedMetric);
+      const febValue = getRepMetricValue(filteredFebData, rep, selectedMetric);
+      const marValue = getRepMetricValue(filteredMarData, rep, selectedMetric);
+      const aprValue = getRepMetricValue(filteredAprData, rep, selectedMetric);
       
-      console.log(`Rep ${rep} values:`, { 
+      console.log(`Rep ${rep} values for ${selectedDataSource}:`, { 
         february: febValue, 
         march: marValue, 
         april: aprValue 
@@ -310,7 +377,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       setYAxisDomain([calculatedMin, calculatedMax]);
     }
     
-  }, [localSelectedReps, selectedMetric, repData, isLoading, compareRepsMode]);
+  }, [localSelectedReps, selectedMetric, selectedDataSource, repData, isLoading, compareRepsMode]);
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -359,6 +426,21 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     { label: 'Packs', value: 'packs' }
   ];
 
+  const dataSourceButtons: { label: string; value: DataSourceType }[] = [
+    { label: 'Overall', value: 'overall' },
+    { label: 'Retail', value: 'retail' },
+    { label: 'REVA', value: 'reva' },
+    { label: 'Wholesale', value: 'wholesale' }
+  ];
+
+  // Filtering for disabled data sources based on inclusion toggles
+  const isDataSourceDisabled = (dataSource: DataSourceType): boolean => {
+    if (dataSource === 'retail') return !includeRetail;
+    if (dataSource === 'reva') return !includeReva;
+    if (dataSource === 'wholesale') return !includeWholesale;
+    return false;
+  };
+
   const colorForChart = getColorForMetric(selectedMetric);
 
   return (
@@ -369,49 +451,78 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             <ChartLine className="w-5 h-5 mr-2" /> 
             {compareRepsMode && localSelectedReps.length > 0 
               ? `Rep Comparison: ${getMetricTitle(selectedMetric)}` 
-              : `3-Month Trend: ${getMetricTitle(selectedMetric)}`}
+              : `3-Month Trend: ${getDataSourceTitle(selectedDataSource)} ${getMetricTitle(selectedMetric)}`}
           </CardTitle>
+        </div>
           
-          <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
-            <div className="flex space-x-2">
+        <div className="flex flex-col space-y-3 mt-2">
+          {/* Metric selection */}
+          <div className="flex flex-wrap gap-2">
+            <ToggleGroup type="single" value={selectedMetric} onValueChange={(val) => val && setSelectedMetric(val as MetricType)}>
               {metricButtons.map((button) => (
-                <Button
-                  key={button.value}
+                <ToggleGroupItem 
+                  key={button.value} 
+                  value={button.value}
+                  variant="outline"
                   size="sm"
-                  variant={selectedMetric === button.value ? "default" : "ghost"}
-                  className={`text-xs px-3 ${selectedMetric === button.value ? "bg-white/20 text-white" : "text-white/70"}`}
-                  onClick={() => setSelectedMetric(button.value)}
+                  className={`text-xs ${selectedMetric === button.value ? "bg-white/20 text-white" : "text-white/70"}`}
                 >
                   {button.label}
-                </Button>
+                </ToggleGroupItem>
               ))}
+            </ToggleGroup>
+          </div>
+          
+          {/* Data source and rep comparison controls */}
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            {/* Data source selection */}
+            <div className="flex flex-wrap gap-2">
+              <ToggleGroup type="single" value={selectedDataSource} onValueChange={(val) => val && setSelectedDataSource(val as DataSourceType)}>
+                {dataSourceButtons.map((button) => (
+                  <ToggleGroupItem 
+                    key={button.value} 
+                    value={button.value}
+                    variant="outline"
+                    size="sm"
+                    disabled={isDataSourceDisabled(button.value)}
+                    className={`text-xs ${selectedDataSource === button.value ? "bg-white/20 text-white" : "text-white/70"} ${
+                      isDataSourceDisabled(button.value) ? "opacity-30 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {button.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
             </div>
             
-            {repData && !compareRepsEnabled && (
-              <Button 
-                size="sm" 
-                variant={compareRepsMode ? "default" : "ghost"}
-                className={`text-xs px-3 ${compareRepsMode ? "bg-white/20 text-white" : "text-white/70"}`}
-                onClick={() => setCompareRepsMode(!compareRepsMode)}
+            {/* Compare reps toggle */}
+            <div className="flex items-center gap-2">
+              <Toggle
+                pressed={compareRepsMode}
+                onPressedChange={setCompareRepsMode}
+                size="sm"
+                variant="outline"
+                className={`${compareRepsMode ? "bg-white/20 text-white" : "text-white/70"}`}
               >
                 <Users className="h-4 w-4 mr-1" />
                 Compare Reps
-              </Button>
-            )}
+              </Toggle>
+            </div>
           </div>
+          
+          {/* Rep selector */}
+          {compareRepsMode && (
+            <div className="mt-1">
+              <RepSelector 
+                availableReps={availableReps}
+                selectedReps={localSelectedReps}
+                onSelectRep={handleRepSelection}
+                onClearSelection={clearRepSelection}
+                maxSelections={5}
+              />
+            </div>
+          )}
         </div>
-        
-        {compareRepsMode && repData && !compareRepsEnabled && (
-          <div className="mt-2">
-            <RepSelector 
-              availableReps={availableReps}
-              selectedReps={localSelectedReps}
-              onSelectRep={handleRepSelection}
-              onClearSelection={clearRepSelection}
-              maxSelections={5}
-            />
-          </div>
-        )}
       </CardHeader>
       <CardContent className="pt-2">
         <div className="h-[200px] w-full">
@@ -419,7 +530,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             <div className="h-full w-full flex items-center justify-center">
               <div className="animate-pulse text-white/50">Loading chart data...</div>
             </div>
-          ) : (compareRepsMode && localSelectedReps.length > 0) || (compareRepsEnabled && selectedReps.length > 0) ? (
+          ) : compareRepsMode && localSelectedReps.length > 0 ? (
             // Rep comparison chart
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
@@ -453,7 +564,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                   iconSize={8}
                   wrapperStyle={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}
                 />
-                {(compareRepsEnabled ? selectedReps : localSelectedReps).map((rep, index) => (
+                {localSelectedReps.map((rep, index) => (
                   <Line
                     key={rep}
                     type="monotone"

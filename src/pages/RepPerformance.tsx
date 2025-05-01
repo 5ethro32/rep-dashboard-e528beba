@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -14,13 +15,10 @@ import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
-import RepSelector from '@/components/rep-performance/RepSelector';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
-  const [compareRepsEnabled, setCompareRepsEnabled] = useState(false);
-  const [selectedReps, setSelectedReps] = useState<string[]>([]);
   
   const {
     includeRetail,
@@ -109,46 +107,6 @@ const RepPerformance = () => {
     includeWholesale
   );
   
-  // Get all unique rep names from the data
-  const getAllUniqueReps = () => {
-    // Get data for all months using the specific month parameter
-    const febData = getActiveData('rep', 'February'); 
-    const marchData = getActiveData('rep', 'March');
-    const aprilData = getActiveData('rep', 'April');
-    
-    // Get all unique rep names
-    const uniqueReps = new Set<string>();
-    
-    // Add rep names from each month's data
-    febData.forEach(rep => uniqueReps.add(rep.rep));
-    marchData.forEach(rep => uniqueReps.add(rep.rep));
-    aprilData.forEach(rep => uniqueReps.add(rep.rep));
-    
-    console.log(`Unique reps found: ${uniqueReps.size}`);
-    return Array.from(uniqueReps);
-  };
-  
-  const handleToggleCompareReps = () => {
-    setCompareRepsEnabled(prev => !prev);
-    if (compareRepsEnabled) {
-      setSelectedReps([]);
-    }
-  };
-  
-  const handleSelectRep = (rep: string) => {
-    setSelectedReps(prevSelected => {
-      if (prevSelected.includes(rep)) {
-        return prevSelected.filter(selectedRep => selectedRep !== rep);
-      } else {
-        return [...prevSelected, rep];
-      }
-    });
-  };
-  
-  const handleClearSelection = () => {
-    setSelectedReps([]);
-  };
-  
   // Create the rep data object for the chart with month-specific data
   const repData = {
     february: getActiveData('rep', 'February'),
@@ -170,9 +128,6 @@ const RepPerformance = () => {
       april: repData.april.find(r => r.rep === sampleRep)?.profit
     });
   }
-  
-  // Get available reps for the selector
-  const availableReps = getAllUniqueReps();
   
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
@@ -241,31 +196,7 @@ const RepPerformance = () => {
         selectedMonth={selectedMonth}
       />
       
-      {/* Chart controls section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 mt-4">
-        <div className="mb-2 sm:mb-0">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleToggleCompareReps}
-            className={`mr-2 ${compareRepsEnabled ? 'bg-white/20' : 'bg-white/5'} text-white border-white/20`}
-          >
-            {compareRepsEnabled ? "Hide Rep Comparison" : "Compare Reps"}
-          </Button>
-        </div>
-        
-        {compareRepsEnabled && (
-          <RepSelector
-            availableReps={availableReps}
-            selectedReps={selectedReps}
-            onSelectRep={handleSelectRep}
-            onClearSelection={handleClearSelection}
-            maxSelections={5}
-          />
-        )}
-      </div>
-      
-      {/* TrendLineChart positioned below SummaryMetrics, now with rep data */}
+      {/* TrendLineChart with enhanced capabilities */}
       <div className="mb-6">
         <TrendLineChart
           febSummary={filteredFebSummary}
@@ -273,8 +204,9 @@ const RepPerformance = () => {
           aprilSummary={filteredAprSummary}
           isLoading={isLoading}
           repData={repData}
-          compareRepsEnabled={compareRepsEnabled}
-          selectedReps={selectedReps}
+          includeRetail={includeRetail}
+          includeReva={includeReva}
+          includeWholesale={includeWholesale}
         />
       </div>
 
