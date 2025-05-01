@@ -153,7 +153,7 @@ const RepPerformance = () => {
         selectedMonth={selectedMonth}
       />
       
-      {/* Moved the TrendLineChart component below SummaryMetrics */}
+      {/* TrendLineChart positioned below SummaryMetrics */}
       <div className="mb-6">
         <TrendLineChart
           febSummary={febBaseSummary}

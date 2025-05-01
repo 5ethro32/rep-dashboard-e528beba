@@ -40,19 +40,19 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 }) => {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('profit');
   const [chartData, setChartData] = useState<Array<{name: string; value: number; color: string}>>([]);
-  const [yAxisDomain, setYAxisDomain] = useState<[number, number]>([0, 'auto']);
+  const [yAxisDomain, setYAxisDomain] = useState<[number, number]>([0, 'auto' as any]);
 
   // Function to get metric value from summary data
   const getMetricValue = (summary: SummaryData, metric: MetricType): number => {
     switch(metric) {
       case 'profit':
-        return summary.totalProfit;
+        return Number(summary.totalProfit) || 0;
       case 'spend':
-        return summary.totalSpend;
+        return Number(summary.totalSpend) || 0;
       case 'margin':
-        return summary.averageMargin;
+        return Number(summary.averageMargin) || 0;
       case 'packs':
-        return summary.totalPacks;
+        return Number(summary.totalPacks) || 0;
       default:
         return 0;
     }
@@ -109,27 +109,31 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   useEffect(() => {
     if (isLoading) return;
     
+    const febValue = getMetricValue(febSummary, selectedMetric);
+    const marchValue = getMetricValue(marchSummary, selectedMetric);
+    const aprilValue = getMetricValue(aprilSummary, selectedMetric);
+    
     console.log("Generating chart data for:", selectedMetric);
-    console.log("February value:", getMetricValue(febSummary, selectedMetric));
-    console.log("March value:", getMetricValue(marchSummary, selectedMetric));
-    console.log("April value:", getMetricValue(aprilSummary, selectedMetric));
+    console.log("February value:", febValue);
+    console.log("March value:", marchValue);
+    console.log("April value:", aprilValue);
     
     const metricColor = getColorForMetric(selectedMetric);
     
     const data = [
       {
         name: 'February',
-        value: getMetricValue(febSummary, selectedMetric),
+        value: febValue,
         color: metricColor
       },
       {
         name: 'March',
-        value: getMetricValue(marchSummary, selectedMetric),
+        value: marchValue,
         color: metricColor
       },
       {
         name: 'April',
-        value: getMetricValue(aprilSummary, selectedMetric),
+        value: aprilValue,
         color: metricColor
       }
     ];
@@ -138,22 +142,33 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     
     // Calculate appropriate Y-axis domain
     if (data.length > 0) {
-      const values = data.map(item => item.value).filter(val => !isNaN(val) && val !== null);
+      const values = data.map(item => item.value).filter(val => !isNaN(val) && val !== null && val !== undefined);
       
       if (values.length > 0) {
         const minValue = Math.min(...values);
         const maxValue = Math.max(...values);
-        const range = maxValue - minValue;
         
-        // Set min to be slightly lower than the minimum value (80% of lowest point)
-        // This gives space at the bottom and makes variations more visible
-        const calculatedMin = Math.max(0, minValue - (range * 0.2));
-        
-        // Set max to be slightly higher than the maximum value
-        const calculatedMax = maxValue + (range * 0.1);
-        
-        setYAxisDomain([calculatedMin, calculatedMax]);
-        console.log("Calculated Y-axis domain:", [calculatedMin, calculatedMax]);
+        if (minValue === maxValue) {
+          // If all values are the same, create a range around that value
+          const valueOffset = Math.max(maxValue * 0.05, 10);
+          const calculatedMin = Math.max(0, minValue - valueOffset);
+          const calculatedMax = maxValue + valueOffset;
+          
+          setYAxisDomain([calculatedMin, calculatedMax]);
+          console.log("Y-axis domain for identical values:", [calculatedMin, calculatedMax]);
+        } else {
+          const range = maxValue - minValue;
+          
+          // Make the Y-axis show more variation by zooming in on the data
+          // Use at most 80% of the lowest value as the minimum
+          const calculatedMin = Math.max(0, minValue - (range * 0.1));
+          
+          // Set max to be slightly higher than the maximum value
+          const calculatedMax = maxValue + (range * 0.1);
+          
+          setYAxisDomain([calculatedMin, calculatedMax]);
+          console.log("Calculated Y-axis domain:", [calculatedMin, calculatedMax]);
+        }
       }
     }
   }, [selectedMetric, febSummary, marchSummary, aprilSummary, includeRetail, includeReva, includeWholesale, isLoading]);

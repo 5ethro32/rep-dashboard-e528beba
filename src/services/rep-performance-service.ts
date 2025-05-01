@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -12,24 +11,6 @@ export const fetchRepPerformanceData = async () => {
     
     console.log('Fetching rep performance data from Supabase...');
     
-    // Use direct SQL queries for accurate department profit totals for March
-    const { data: retailProfitData, error: retailProfitError } = await supabase
-      .rpc('get_retail_profit');
-    
-    const { data: revaProfitData, error: revaProfitError } = await supabase
-      .rpc('get_reva_profit');
-      
-    const { data: wholesaleProfitData, error: wholesaleProfitError } = await supabase
-      .rpc('get_wholesale_profit');
-
-    if (retailProfitError || revaProfitError || wholesaleProfitError) {
-      console.error("Error fetching profit data:", { 
-        retailProfitError, 
-        revaProfitError, 
-        wholesaleProfitError 
-      });
-    }
-    
     // MARCH DATA FETCHING
     // Instead of fetching all data at once, fetch by department to avoid pagination issues
     // RETAIL data
@@ -42,7 +23,7 @@ export const fetchRepPerformanceData = async () => {
     if (revaError) throw new Error(`Error fetching REVA data: ${revaError.message}`);
     console.log('Fetched REVA records:', revaData?.length || 0);
     
-    // Wholesale data - Note: In sales_data table, it might be "WHOLESALE" instead of "Wholesale"
+    // Wholesale data
     const { data: wholesaleData, error: wholesaleError } = await fetchDepartmentData('Wholesale', true);
     if (wholesaleError) throw new Error(`Error fetching Wholesale data: ${wholesaleError.message}`);
     console.log('Fetched Wholesale records:', wholesaleData?.length || 0);
@@ -58,7 +39,8 @@ export const fetchRepPerformanceData = async () => {
     }
 
     // FEBRUARY DATA FETCHING
-    // Fetching February data for comparison
+    console.log('Fetching February data from sales_data_februrary table...');
+    
     // RETAIL data from February
     const { data: febRetailData, error: febRetailError } = await fetchDepartmentData('RETAIL', false);
     if (febRetailError) throw new Error(`Error fetching February RETAIL data: ${febRetailError.message}`);
@@ -74,19 +56,21 @@ export const fetchRepPerformanceData = async () => {
     if (febWholesaleError) throw new Error(`Error fetching February Wholesale data: ${febWholesaleError.message}`);
     console.log('Fetched February Wholesale records:', febWholesaleData?.length || 0);
     
-    // Count total records for verification - March
-    const totalCount = (retailData?.length || 0) + (revaData?.length || 0) + (finalWholesaleData?.length || 0);
-    console.log('Total fetched records (March):', totalCount);
+    // Try to fetch with uppercase WHOLESALE if no results for February
+    let finalFebWholesaleData = febWholesaleData;
+    if (!febWholesaleData || febWholesaleData.length === 0) {
+      const { data: upperFebWholesaleData, error: upperFebWholesaleError } = await fetchDepartmentData('WHOLESALE', false);
+      if (!upperFebWholesaleError) {
+        finalFebWholesaleData = upperFebWholesaleData;
+        console.log('Fetched February WHOLESALE (uppercase) records:', upperFebWholesaleData?.length || 0);
+      }
+    }
 
-    // Count total records for verification - February
-    const totalFebCount = (febRetailData?.length || 0) + (febRevaData?.length || 0) + (febWholesaleData?.length || 0);
-    console.log('Total fetched records (February):', totalFebCount);
-    
     // Process all March data
     const allDataFromDb = [...(retailData || []), ...(revaData || []), ...(finalWholesaleData || [])];
     
     // Process all February data
-    const allFebDataFromDb = [...(febRetailData || []), ...(febRevaData || []), ...(febWholesaleData || [])];
+    const allFebDataFromDb = [...(febRetailData || []), ...(febRevaData || []), ...(finalFebWholesaleData || [])];
     
     if (!allDataFromDb || allDataFromDb.length === 0) {
       throw new Error('No data found for March.');
@@ -95,8 +79,7 @@ export const fetchRepPerformanceData = async () => {
     console.log('Total combined data rows (March):', allDataFromDb.length);
     console.log('Total combined data rows (February):', allFebDataFromDb.length || 0);
     
-    // Map the data to our standard format, handling special cases for REVA and Wholesale
-    // March data mapping
+    // Map the March data
     const mappedData = allDataFromDb.map((item: any) => {
       // Parse numerical values properly, ensuring they're numbers and not strings
       const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
@@ -136,20 +119,13 @@ export const fetchRepPerformanceData = async () => {
       };
     });
 
-    // February data mapping
+    // Map the February data - ensure we're using different values from March
     const mappedFebData = allFebDataFromDb.map((item: any) => {
-      const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-      const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-      const cost = typeof item.Cost === 'string' ? parseFloat(item.Cost) : Number(item.Cost || 0);
-      const credit = typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0);
-      const margin = typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0);
-      const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
-      
       let repName = item.Rep || '';
       const subRep = item['Sub-Rep'] || '';
       const department = item.Department || 'RETAIL';
       
-      if ((department === 'REVA' || department === 'Wholesale') && subRep) {
+      if ((department === 'REVA' || department === 'Wholesale' || department === 'WHOLESALE') && subRep) {
         repName = subRep;
       }
       
@@ -160,12 +136,12 @@ export const fetchRepPerformanceData = async () => {
         sub_rep: subRep,
         account_ref: item['Account Ref'] || '',
         account_name: item['Account Name'] || '',
-        spend: spend,
-        cost: cost,
-        credit: credit,
-        profit: profit,
-        margin: margin,
-        packs: packs,
+        spend: typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0),
+        cost: typeof item.Cost === 'string' ? parseFloat(item.Cost) : Number(item.Cost || 0),
+        credit: typeof item.Credit === 'string' ? parseFloat(item.Credit) : Number(item.Credit || 0),
+        profit: typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0),
+        margin: typeof item.Margin === 'string' ? parseFloat(item.Margin) : Number(item.Margin || 0),
+        packs: typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0),
         rep_type: department,
         original_dept: department,
         import_date: new Date().toISOString()
@@ -180,7 +156,7 @@ export const fetchRepPerformanceData = async () => {
     // Filter data by department for further processing - February data
     const febRepDataFromDb = mappedFebData.filter(item => item.rep_type === 'RETAIL');
     const febRevaDataFromDb = mappedFebData.filter(item => item.rep_type === 'REVA');
-    const febWholesaleDataFromDb = mappedFebData.filter(item => item.rep_type === 'Wholesale');
+    const febWholesaleDataFromDb = mappedFebData.filter(item => item.rep_type === 'Wholesale' || item.rep_type === 'WHOLESALE');
     
     // Process the data to RepData format - March data
     const processedRepData = processRepData(repDataFromDb as SalesDataItem[] || []);
@@ -201,6 +177,18 @@ export const fetchRepPerformanceData = async () => {
     const calculatedFebSummary = calculateSummaryFromData(processedFebRepData);
     const revaFebSummary = calculateSummaryFromData(processedFebRevaData);
     const wholesaleFebSummary = calculateSummaryFromData(processedFebWholesaleData);
+    
+    console.log('February summary data calculated:', {
+      retailSummary: calculatedFebSummary,
+      revaSummary: revaFebSummary,
+      wholesaleSummary: wholesaleFebSummary
+    });
+    
+    console.log('March summary data calculated:', {
+      retailSummary: calculatedSummary,
+      revaSummary: revaSummary,
+      wholesaleSummary: wholesaleSummary
+    });
     
     // Calculate percentage changes between February and March
     const summaryChanges = calculateSummaryChanges(
@@ -469,6 +457,8 @@ const fetchDepartmentData = async (department: string, isMarch: boolean) => {
   let page = 0;
   let hasMoreData = true;
   
+  console.log(`Fetching ${isMarch ? 'March' : 'February'} data for department: ${department}`);
+  
   // Use explicit table name strings rather than dynamic ones
   // This avoids TypeScript's deep type instantiation error
   const tableName = isMarch ? 'sales_data' : 'sales_data_februrary';
@@ -530,6 +520,7 @@ const fetchDepartmentData = async (department: string, isMarch: boolean) => {
     }
   }
   
+  console.log(`Completed fetching ${isMarch ? 'March' : 'February'} data for ${department}. Total records: ${allData.length}`);
   return { data: allData, error: null };
 };
 
@@ -596,4 +587,3 @@ export const loadStoredRepPerformanceData = () => {
     return null;
   }
 };
-

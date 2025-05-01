@@ -55,6 +55,7 @@ export const useRepPerformanceData = () => {
     const storedData = loadStoredRepPerformanceData();
     
     if (storedData) {
+      // Load all stored data for all months
       setOverallData(storedData.overallData || defaultOverallData);
       setRepData(storedData.repData || defaultRepData);
       setRevaData(storedData.revaData || defaultRevaData);
@@ -79,9 +80,18 @@ export const useRepPerformanceData = () => {
       
       setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
       setRepChanges(storedData.repChanges || defaultRepChanges);
+      
+      // Log stored data to help diagnose issues
+      console.log("February stored summary data:", storedData.febBaseSummary);
+      console.log("March stored summary data:", storedData.baseSummary);
+      console.log("April stored summary data:", storedData.aprBaseSummary);
     }
     
+    // Ensure we load April data if not already loaded
     loadAprilData();
+    
+    // Also ensure we load all months' data on initial load
+    loadDataFromSupabase();
   }, []);
 
   useEffect(() => {
@@ -467,6 +477,18 @@ export const useRepPerformanceData = () => {
       }
       
       const data = await fetchRepPerformanceData();
+      
+      console.log("February data from fetchRepPerformanceData:", {
+        febBaseSummary: data.febBaseSummary,
+        febRevaValues: data.febRevaValues,
+        febWholesaleValues: data.febWholesaleValues
+      });
+      
+      console.log("March data from fetchRepPerformanceData:", {
+        baseSummary: data.baseSummary,
+        revaValues: data.revaValues,
+        wholesaleValues: data.wholesaleValues
+      });
       
       setRepData(data.repData);
       setRevaData(data.revaData);
