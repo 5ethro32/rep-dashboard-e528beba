@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -112,13 +111,10 @@ const RepPerformance = () => {
   
   // Get all unique rep names from the data
   const getAllUniqueReps = () => {
-    // We need to fix the getActiveData calls below by adapting to the actual function signature
-    // Instead of passing multiple arguments, we'll modify our approach
-    
-    // Get data for all months
-    const febData = getActiveData('rep'); 
-    const marchData = getActiveData('rep');
-    const aprilData = getActiveData('rep');
+    // Get data for all months using the specific month parameter
+    const febData = getActiveData('rep', 'February'); 
+    const marchData = getActiveData('rep', 'March');
+    const aprilData = getActiveData('rep', 'April');
     
     // Get all unique rep names
     const uniqueReps = new Set<string>();
@@ -128,6 +124,7 @@ const RepPerformance = () => {
     marchData.forEach(rep => uniqueReps.add(rep.rep));
     aprilData.forEach(rep => uniqueReps.add(rep.rep));
     
+    console.log(`Unique reps found: ${uniqueReps.size}`);
     return Array.from(uniqueReps);
   };
   
@@ -152,12 +149,27 @@ const RepPerformance = () => {
     setSelectedReps([]);
   };
   
-  // Create the rep data object for the chart, but now we need to modify our approach
+  // Create the rep data object for the chart with month-specific data
   const repData = {
-    february: getActiveData('rep'),
-    march: getActiveData('rep'),
-    april: getActiveData('rep')
+    february: getActiveData('rep', 'February'),
+    march: getActiveData('rep', 'March'),
+    april: getActiveData('rep', 'April')
   };
+  
+  // Add debugging logs to verify we're getting different data for each month
+  console.log('February rep data count:', repData.february.length);
+  console.log('March rep data count:', repData.march.length);
+  console.log('April rep data count:', repData.april.length);
+  
+  // Sample rep for debugging - show first rep's data across months if available
+  if (repData.february.length > 0 && repData.march.length > 0 && repData.april.length > 0) {
+    const sampleRep = repData.february[0].rep;
+    console.log(`Sample rep "${sampleRep}" data:`, {
+      february: repData.february.find(r => r.rep === sampleRep)?.profit,
+      march: repData.march.find(r => r.rep === sampleRep)?.profit,
+      april: repData.april.find(r => r.rep === sampleRep)?.profit
+    });
+  }
   
   // Get available reps for the selector
   const availableReps = getAllUniqueReps();

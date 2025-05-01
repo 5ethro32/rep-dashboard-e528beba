@@ -605,21 +605,25 @@ export const useRepPerformanceData = () => {
     }
   };
 
-  const getActiveData = (tabValue: string) => {
+  // Modified getActiveData function to accept an optional month parameter
+  const getActiveData = (tabValue: string, month?: string) => {
+    const monthToUse = month || selectedMonth;
+    
     let currentRepData = repData;
     let currentRevaData = revaData;
     let currentWholesaleData = wholesaleData;
     
-    if (selectedMonth === 'February') {
+    if (monthToUse === 'February') {
       currentRepData = febRepData;
       currentRevaData = febRevaData;
       currentWholesaleData = febWholesaleData;
-    } else if (selectedMonth === 'April') {
+    } else if (monthToUse === 'April') {
       currentRepData = aprRepData;
       currentRevaData = aprRevaData;
       currentWholesaleData = aprWholesaleData;
     }
     
+    // Determine which data to return based on the tab value
     switch (tabValue) {
       case 'rep':
         return includeRetail ? currentRepData : [];
@@ -629,6 +633,21 @@ export const useRepPerformanceData = () => {
         return includeWholesale ? currentWholesaleData : [];
       case 'overall':
       default:
+        if (monthToUse !== selectedMonth) {
+          // If we're requesting data for a specific month different from the selected month,
+          // we need to recombine the data for that specific month
+          return getCombinedRepData(
+            monthToUse === 'February' ? febRepData :
+            monthToUse === 'April' ? aprRepData : repData,
+            monthToUse === 'February' ? febRevaData :
+            monthToUse === 'April' ? aprRevaData : revaData,
+            monthToUse === 'February' ? febWholesaleData :
+            monthToUse === 'April' ? aprWholesaleData : wholesaleData,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+        }
         return overallData;
     }
   };

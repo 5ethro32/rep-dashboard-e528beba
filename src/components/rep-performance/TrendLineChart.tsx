@@ -28,6 +28,8 @@ interface TrendLineChartProps {
     march: RepData[];
     april: RepData[];
   };
+  compareRepsEnabled?: boolean;
+  selectedReps?: string[];
 }
 
 type MetricType = 'profit' | 'spend' | 'margin' | 'packs';
@@ -58,14 +60,22 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   marchSummary,
   aprilSummary,
   isLoading,
-  repData
+  repData,
+  compareRepsEnabled = false,
+  selectedReps = []
 }) => {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('profit');
   const [chartData, setChartData] = useState<Array<{name: string; value: number; color: string}>>([]);
   const [yAxisDomain, setYAxisDomain] = useState<[number, number]>([0, 'auto' as any]);
   const [compareRepsMode, setCompareRepsMode] = useState<boolean>(false);
-  const [selectedReps, setSelectedReps] = useState<string[]>([]);
+  const [localSelectedReps, setLocalSelectedReps] = useState<string[]>([]);
   const [repChartData, setRepChartData] = useState<any[]>([]);
+  
+  // Effect to sync props with local state
+  useEffect(() => {
+    setCompareRepsMode(compareRepsEnabled);
+    setLocalSelectedReps(selectedReps);
+  }, [compareRepsEnabled, selectedReps]);
   
   // Get available reps from data
   const availableReps = repData ? 
@@ -78,7 +88,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 
   // Handle rep selection
   const handleRepSelection = (rep: string) => {
-    setSelectedReps(prev => {
+    setLocalSelectedReps(prev => {
       if (prev.includes(rep)) {
         return prev.filter(r => r !== rep);
       } else {
@@ -90,7 +100,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 
   // Clear rep selection
   const clearRepSelection = () => {
-    setSelectedReps([]);
+    setLocalSelectedReps([]);
   };
 
   // Function to get metric value from summary data
@@ -244,33 +254,47 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 
   // Prepare rep-specific chart data
   useEffect(() => {
-    if (isLoading || !repData || selectedReps.length === 0) return;
+    if (isLoading || !repData || !compareRepsMode || localSelectedReps.length === 0) return;
 
-    const monthlyData = [
-      { month: "February", key: "feb", data: repData.february },
-      { month: "March", key: "mar", data: repData.march },
-      { month: "April", key: "apr", data: repData.april }
-    ];
-    
-    // Format the data for the chart
-    const formattedData = monthlyData.map(monthly => {
-      const dataPoint: any = { name: monthly.month };
-      
-      // Add data for each selected rep
-      selectedReps.forEach((rep, index) => {
-        const value = getRepMetricValue(monthly.data, rep, selectedMetric);
-        dataPoint[rep] = value;
-      });
-      
-      return dataPoint;
+    // Log rep data sources for debugging
+    console.log("Rep data sources for chart:", {
+      february: repData.february.length,
+      march: repData.march.length,
+      april: repData.april.length
     });
     
-    console.log("Rep comparison data:", formattedData);
+    // Format the data for the chart - one data point per month
+    const formattedData = [
+      { name: "February" },
+      { name: "March" },
+      { name: "April" }
+    ];
+    
+    // Add each selected rep's data for each month
+    localSelectedReps.forEach(rep => {
+      // Get values for this rep across all months
+      const febValue = getRepMetricValue(repData.february, rep, selectedMetric);
+      const marValue = getRepMetricValue(repData.march, rep, selectedMetric);
+      const aprValue = getRepMetricValue(repData.april, rep, selectedMetric);
+      
+      console.log(`Rep ${rep} values:`, { 
+        february: febValue, 
+        march: marValue, 
+        april: aprValue 
+      });
+      
+      // Add to the formatted data
+      formattedData[0][rep] = febValue;
+      formattedData[1][rep] = marValue;
+      formattedData[2][rep] = aprValue;
+    });
+    
+    console.log("Rep comparison formatted data:", formattedData);
     setRepChartData(formattedData);
     
     // Calculate Y-axis domain for rep comparison
     const allValues = formattedData.flatMap(point => {
-      return selectedReps.map(rep => point[rep] || 0);
+      return localSelectedReps.map(rep => point[rep] || 0);
     }).filter(v => !isNaN(v) && v !== null && v !== undefined);
     
     if (allValues.length > 0) {
@@ -286,14 +310,14 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       setYAxisDomain([calculatedMin, calculatedMax]);
     }
     
-  }, [selectedReps, selectedMetric, repData, isLoading]);
+  }, [localSelectedReps, selectedMetric, repData, isLoading, compareRepsMode]);
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const formatter = getMetricFormatter(selectedMetric);
       
-      if (!compareRepsMode || selectedReps.length === 0) {
+      if (!compareRepsMode || localSelectedReps.length === 0) {
         // Single line tooltip
         return (
           <div className="bg-background/90 border border-border p-2 rounded-md shadow-sm">
@@ -343,7 +367,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <CardTitle className="text-lg text-white flex items-center">
             <ChartLine className="w-5 h-5 mr-2" /> 
-            {compareRepsMode && selectedReps.length > 0 
+            {compareRepsMode && localSelectedReps.length > 0 
               ? `Rep Comparison: ${getMetricTitle(selectedMetric)}` 
               : `3-Month Trend: ${getMetricTitle(selectedMetric)}`}
           </CardTitle>
@@ -363,7 +387,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               ))}
             </div>
             
-            {repData && (
+            {repData && !compareRepsEnabled && (
               <Button 
                 size="sm" 
                 variant={compareRepsMode ? "default" : "ghost"}
@@ -377,11 +401,11 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           </div>
         </div>
         
-        {compareRepsMode && repData && (
+        {compareRepsMode && repData && !compareRepsEnabled && (
           <div className="mt-2">
             <RepSelector 
               availableReps={availableReps}
-              selectedReps={selectedReps}
+              selectedReps={localSelectedReps}
               onSelectRep={handleRepSelection}
               onClearSelection={clearRepSelection}
               maxSelections={5}
@@ -395,7 +419,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             <div className="h-full w-full flex items-center justify-center">
               <div className="animate-pulse text-white/50">Loading chart data...</div>
             </div>
-          ) : compareRepsMode && selectedReps.length > 0 ? (
+          ) : (compareRepsMode && localSelectedReps.length > 0) || (compareRepsEnabled && selectedReps.length > 0) ? (
             // Rep comparison chart
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
@@ -429,7 +453,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                   iconSize={8}
                   wrapperStyle={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}
                 />
-                {selectedReps.map((rep, index) => (
+                {(compareRepsEnabled ? selectedReps : localSelectedReps).map((rep, index) => (
                   <Line
                     key={rep}
                     type="monotone"
