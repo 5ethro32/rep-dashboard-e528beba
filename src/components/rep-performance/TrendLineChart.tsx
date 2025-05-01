@@ -88,14 +88,18 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     setLocalSelectedReps(selectedReps);
   }, [compareRepsEnabled, selectedReps]);
   
-  // Show rep selector when in compare mode
+  // Update this effect to immediately show the rep selector when compare mode is toggled
   useEffect(() => {
+    console.log("compareRepsMode changed:", compareRepsMode);
     setShowRepSelector(compareRepsMode);
   }, [compareRepsMode]);
   
   // Get available reps from data based on selected data source
   const getAvailableRepsForDataSource = (): string[] => {
-    if (!repData) return [];
+    if (!repData) {
+      console.log("No rep data available");
+      return [];
+    }
     
     let reps: Set<string> = new Set();
     
@@ -104,13 +108,38 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     const shouldProcessReva = (selectedDataSource === 'overall' || selectedDataSource === 'reva') && includeReva;
     const shouldProcessWholesale = (selectedDataSource === 'overall' || selectedDataSource === 'wholesale') && includeWholesale;
     
+    console.log("Data processing flags:", {
+      shouldProcessRetail,
+      shouldProcessReva,
+      shouldProcessWholesale,
+      selectedDataSource
+    });
+    
+    // Only process retail data if we should include it
     if (shouldProcessRetail) {
-      repData.february.forEach(r => reps.add(r.rep));
-      repData.march.forEach(r => reps.add(r.rep));
-      repData.april.forEach(r => reps.add(r.rep));
+      console.log("Processing retail data for available reps");
+      repData.february.forEach(r => {
+        // Only add retail reps (exclude REVA and Wholesale markers)
+        if (r.rep !== 'REVA' && r.rep !== 'Wholesale' && r.rep !== 'WHOLESALE') {
+          reps.add(r.rep);
+        }
+      });
+      repData.march.forEach(r => {
+        if (r.rep !== 'REVA' && r.rep !== 'Wholesale' && r.rep !== 'WHOLESALE') {
+          reps.add(r.rep);
+        }
+      });
+      repData.april.forEach(r => {
+        if (r.rep !== 'REVA' && r.rep !== 'Wholesale' && r.rep !== 'WHOLESALE') {
+          reps.add(r.rep);
+        }
+      });
     }
     
+    // Only process REVA data if we should include it
     if (shouldProcessReva) {
+      console.log("Processing REVA data for available reps");
+      // For REVA, add reps that have REVA data
       repData.february.forEach(r => {
         if (r.rep !== 'REVA' && !r.rep.includes('WHOLESALE')) {
           reps.add(r.rep);
@@ -128,7 +157,9 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       });
     }
     
+    // Only process Wholesale data if we should include it
     if (shouldProcessWholesale) {
+      console.log("Processing wholesale data for available reps");
       repData.february.forEach(r => {
         if (r.rep !== 'Wholesale' && r.rep !== 'WHOLESALE') {
           reps.add(r.rep);
@@ -178,6 +209,15 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 
   // Helper function to get summary data for a specific data source
   const getDataSourceSummary = (dataSource: DataSourceType, febData: SummaryData, marchData: SummaryData, aprilData: SummaryData) => {
+    console.log("Getting data source summary for:", dataSource, {
+      febData,
+      marchData,
+      aprilData,
+      includeRetail,
+      includeReva,
+      includeWholesale
+    });
+    
     // Early return if data source is overall
     if (dataSource === 'overall') {
       return { febData, marchData, aprilData };
@@ -202,92 +242,71 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         // For retail, only return data if includeRetail is true
         if (!includeRetail) return { febData: emptyFebSummary, marchData: emptyMarchSummary, aprilData: emptyAprilSummary };
         
-        return {
-          febData: {
-            totalSpend: febData.totalSpend,
-            totalProfit: febData.totalProfit,
-            totalPacks: febData.totalPacks,
-            totalAccounts: febData.totalAccounts,
-            activeAccounts: febData.activeAccounts,
-            averageMargin: febData.averageMargin
-          },
-          marchData: {
-            totalSpend: marchData.totalSpend,
-            totalProfit: marchData.totalProfit,
-            totalPacks: marchData.totalPacks,
-            totalAccounts: marchData.totalAccounts,
-            activeAccounts: marchData.activeAccounts,
-            averageMargin: marchData.averageMargin
-          },
-          aprilData: {
-            totalSpend: aprilData.totalSpend,
-            totalProfit: aprilData.totalProfit,
-            totalPacks: aprilData.totalPacks,
-            totalAccounts: aprilData.totalAccounts,
-            activeAccounts: aprilData.activeAccounts,
-            averageMargin: aprilData.averageMargin
-          }
-        };
+        // Use the original (retail) data directly
+        return { febData, marchData, aprilData };
+        
       case 'reva':
         // For REVA, only return data if includeReva is true
         if (!includeReva) return { febData: emptyFebSummary, marchData: emptyMarchSummary, aprilData: emptyAprilSummary };
         
         return {
           febData: {
-            totalSpend: febSummary.totalProfit,
-            totalProfit: febSummary.totalProfit,
-            totalPacks: febSummary.totalPacks,
-            totalAccounts: febSummary.totalAccounts,
-            activeAccounts: febSummary.activeAccounts,
-            averageMargin: febSummary.averageMargin
+            totalSpend: febData.totalSpend || 0,
+            totalProfit: febData.totalProfit || 0,
+            totalPacks: febData.totalPacks || 0,
+            totalAccounts: febData.totalAccounts || 0,
+            activeAccounts: febData.activeAccounts || 0,
+            averageMargin: febData.averageMargin || 0
           },
           marchData: {
-            totalSpend: marchSummary.totalSpend,
-            totalProfit: marchSummary.totalProfit,
-            totalPacks: marchSummary.totalPacks,
-            totalAccounts: marchSummary.totalAccounts,
-            activeAccounts: marchSummary.activeAccounts,
-            averageMargin: marchSummary.averageMargin
+            totalSpend: marchData.totalSpend || 0,
+            totalProfit: marchData.totalProfit || 0,
+            totalPacks: marchData.totalPacks || 0,
+            totalAccounts: marchData.totalAccounts || 0,
+            activeAccounts: marchData.activeAccounts || 0,
+            averageMargin: marchData.averageMargin || 0
           },
           aprilData: {
-            totalSpend: aprilSummary.totalSpend,
-            totalProfit: aprilSummary.totalProfit,
-            totalPacks: aprilSummary.totalPacks,
-            totalAccounts: aprilSummary.totalAccounts,
-            activeAccounts: aprilSummary.activeAccounts,
-            averageMargin: aprilSummary.averageMargin
+            totalSpend: aprilData.totalSpend || 0,
+            totalProfit: aprilData.totalProfit || 0,
+            totalPacks: aprilData.totalPacks || 0,
+            totalAccounts: aprilData.totalAccounts || 0,
+            activeAccounts: aprilData.activeAccounts || 0,
+            averageMargin: aprilData.averageMargin || 0
           }
         };
+        
       case 'wholesale':
         // For Wholesale, only return data if includeWholesale is true
         if (!includeWholesale) return { febData: emptyFebSummary, marchData: emptyMarchSummary, aprilData: emptyAprilSummary };
         
         return {
           febData: {
-            totalSpend: febSummary.totalSpend,
-            totalProfit: febSummary.totalProfit,
-            totalPacks: febSummary.totalPacks,
-            totalAccounts: febSummary.totalAccounts,
-            activeAccounts: febSummary.activeAccounts,
-            averageMargin: febSummary.averageMargin
+            totalSpend: febData.totalSpend || 0,
+            totalProfit: febData.totalProfit || 0,
+            totalPacks: febData.totalPacks || 0,
+            totalAccounts: febData.totalAccounts || 0,
+            activeAccounts: febData.activeAccounts || 0,
+            averageMargin: febData.averageMargin || 0
           },
           marchData: {
-            totalSpend: marchSummary.totalSpend,
-            totalProfit: marchSummary.totalProfit,
-            totalPacks: marchSummary.totalPacks,
-            totalAccounts: marchSummary.totalAccounts,
-            activeAccounts: marchSummary.activeAccounts,
-            averageMargin: marchSummary.averageMargin
+            totalSpend: marchData.totalSpend || 0,
+            totalProfit: marchData.totalProfit || 0,
+            totalPacks: marchData.totalPacks || 0,
+            totalAccounts: marchData.totalAccounts || 0,
+            activeAccounts: marchData.activeAccounts || 0,
+            averageMargin: marchData.averageMargin || 0
           },
           aprilData: {
-            totalSpend: aprilSummary.totalSpend,
-            totalProfit: aprilSummary.totalProfit,
-            totalPacks: aprilSummary.totalPacks,
-            totalAccounts: aprilSummary.totalAccounts,
-            activeAccounts: aprilSummary.activeAccounts,
-            averageMargin: aprilSummary.averageMargin
+            totalSpend: aprilData.totalSpend || 0,
+            totalProfit: aprilData.totalProfit || 0,
+            totalPacks: aprilData.totalPacks || 0,
+            totalAccounts: aprilData.totalAccounts || 0,
+            activeAccounts: aprilData.activeAccounts || 0,
+            averageMargin: aprilData.averageMargin || 0
           }
         };
+        
       default:
         return { febData, marchData, aprilData };
     }
@@ -313,9 +332,24 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   
   // Function to get filtered rep data based on data source
   const getFilteredRepData = (monthData: RepData[], dataSource: DataSourceType): RepData[] => {
+    console.log(`Filtering rep data for ${dataSource}. Data count: ${monthData.length}`);
+    
+    if (!monthData || monthData.length === 0) {
+      console.log("No data to filter");
+      return [];
+    }
+    
     // Use department-specific filtering only if not in 'overall' mode
     if (dataSource === 'overall') {
-      return monthData;
+      // For overall mode, filter based on each inclusion toggle
+      return monthData.filter(r => {
+        const isReva = r.rep === 'REVA' || r.rep.includes('REVA');
+        const isWholesale = r.rep === 'Wholesale' || r.rep === 'WHOLESALE' || r.rep.includes('Wholesale') || r.rep.includes('WHOLESALE');
+        
+        if (isReva) return includeReva;
+        if (isWholesale) return includeWholesale;
+        return includeRetail; // Assume retail for other reps
+      });
     }
     
     // Filter for specific department data
@@ -436,10 +470,11 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     const marchValue = getMetricValue(marchData, selectedMetric);
     const aprilValue = getMetricValue(aprilData, selectedMetric);
     
-    console.log(`Generating chart data for ${selectedDataSource} ${selectedMetric}:`);
-    console.log("February value:", febValue);
-    console.log("March value:", marchValue);
-    console.log("April value:", aprilValue);
+    console.log(`Generating chart data for ${selectedDataSource} ${selectedMetric}:`, {
+      february: febValue,
+      march: marchValue, 
+      april: aprilValue
+    });
     
     const metricColor = getColorForMetric(selectedMetric);
     
@@ -495,13 +530,22 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 
   // Prepare rep-specific chart data
   useEffect(() => {
-    if (isLoading || !repData || !compareRepsMode || localSelectedReps.length === 0) return;
+    if (isLoading || !repData || !compareRepsMode || localSelectedReps.length === 0) {
+      console.log("Skipping rep chart data preparation:", {
+        isLoading,
+        hasRepData: !!repData,
+        compareRepsMode,
+        selectedRepsCount: localSelectedReps.length
+      });
+      return;
+    }
 
     // Log rep data sources for debugging
     console.log("Rep data sources for chart:", {
       february: repData.february.length,
       march: repData.march.length,
-      april: repData.april.length
+      april: repData.april.length,
+      selectedReps: localSelectedReps
     });
     
     // Format the data for the chart - one data point per month
@@ -523,7 +567,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     });
     
     // Add each selected rep's data for each month
-    localSelectedReps.forEach(rep => {
+    localSelectedReps.forEach((rep, index) => {
       // Get values for this rep across all months
       const febValue = getRepMetricValue(filteredFebData, rep, selectedMetric);
       const marValue = getRepMetricValue(filteredMarData, rep, selectedMetric);
@@ -667,7 +711,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           </div>
           
           {/* Rep selector */}
-          {compareRepsMode && showRepSelector && (
+          {showRepSelector && (
             <div className="mt-1">
               <RepSelector 
                 availableReps={availableReps}
