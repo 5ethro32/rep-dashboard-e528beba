@@ -79,7 +79,6 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const [compareRepsMode, setCompareRepsMode] = useState<boolean>(false);
   const [localSelectedReps, setLocalSelectedReps] = useState<string[]>([]);
   const [repChartData, setRepChartData] = useState<any[]>([]);
-  const [showRepSelector, setShowRepSelector] = useState<boolean>(false);
   
   // Effect to sync props with local state
   useEffect(() => {
@@ -87,20 +86,9 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     setLocalSelectedReps(selectedReps);
   }, [compareRepsEnabled, selectedReps]);
   
-  // Fix the rep selector visibility issue - separate the toggle response from the visibility change
+  // Keep track of when compare mode changes for debugging
   useEffect(() => {
     console.log("compareRepsMode changed:", compareRepsMode);
-  }, [compareRepsMode]);
-  
-  // This is a separate effect that only handles the UI visibility
-  // We're decoupling the state update from the UI update to prevent conflicts
-  useEffect(() => {
-    // Small timeout to ensure the state has been updated before changing visibility
-    const timer = setTimeout(() => {
-      setShowRepSelector(compareRepsMode);
-    }, 50);
-    
-    return () => clearTimeout(timer);
   }, [compareRepsMode]);
   
   // Get available reps from data based on selected data source
@@ -718,21 +706,22 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               Compare Reps
             </Toggle>
           </div>
-          
-          {/* Rep selector */}
-          {showRepSelector && (
-            <div className="mt-1">
-              <RepSelector 
-                availableReps={availableReps}
-                selectedReps={localSelectedReps}
-                onSelectRep={handleRepSelection}
-                onClearSelection={clearRepSelection}
-                maxSelections={5}
-              />
-            </div>
-          )}
         </div>
       </CardHeader>
+      
+      {/* Rep selector moved outside CardHeader to fix visibility issues */}
+      {compareRepsMode && (
+        <div className="px-6 pb-2">
+          <RepSelector 
+            availableReps={availableReps}
+            selectedReps={localSelectedReps}
+            onSelectRep={handleRepSelection}
+            onClearSelection={clearRepSelection}
+            maxSelections={5}
+          />
+        </div>
+      )}
+      
       <CardContent className="pt-2">
         <div className="h-[200px] w-full">
           {isLoading ? (
