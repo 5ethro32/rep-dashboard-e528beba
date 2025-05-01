@@ -21,9 +21,6 @@ interface TrendLineChartProps {
   febSummary: SummaryData;
   marchSummary: SummaryData;
   aprilSummary: SummaryData;
-  includeRetail: boolean;
-  includeReva: boolean;
-  includeWholesale: boolean;
   isLoading: boolean;
 }
 
@@ -33,9 +30,6 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   febSummary,
   marchSummary,
   aprilSummary,
-  includeRetail,
-  includeReva,
-  includeWholesale,
   isLoading
 }) => {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('profit');
@@ -44,6 +38,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 
   // Function to get metric value from summary data
   const getMetricValue = (summary: SummaryData, metric: MetricType): number => {
+    if (!summary) return 0;
+    
     switch(metric) {
       case 'profit':
         return Number(summary.totalProfit) || 0;
@@ -140,7 +136,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     
     setChartData(data);
     
-    // Calculate appropriate Y-axis domain
+    // Calculate appropriate Y-axis domain with improved logic
     if (data.length > 0) {
       const values = data.map(item => item.value).filter(val => !isNaN(val) && val !== null && val !== undefined);
       
@@ -148,30 +144,29 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         const minValue = Math.min(...values);
         const maxValue = Math.max(...values);
         
-        if (minValue === maxValue) {
-          // If all values are the same, create a range around that value
-          const valueOffset = Math.max(maxValue * 0.05, 10);
-          const calculatedMin = Math.max(0, minValue - valueOffset);
-          const calculatedMax = maxValue + valueOffset;
+        const range = maxValue - minValue;
+        
+        // For very small ranges, create a more visible difference
+        if (range < maxValue * 0.01) {
+          // If the range is less than 1% of the max value
+          const padding = maxValue * 0.05; // 5% padding
+          const calculatedMin = Math.max(0, minValue - padding);
+          const calculatedMax = maxValue + padding;
           
           setYAxisDomain([calculatedMin, calculatedMax]);
-          console.log("Y-axis domain for identical values:", [calculatedMin, calculatedMax]);
+          console.log("Y-axis domain for small range:", [calculatedMin, calculatedMax]);
         } else {
-          const range = maxValue - minValue;
-          
-          // Make the Y-axis show more variation by zooming in on the data
-          // Use at most 80% of the lowest value as the minimum
-          const calculatedMin = Math.max(0, minValue - (range * 0.1));
-          
-          // Set max to be slightly higher than the maximum value
-          const calculatedMax = maxValue + (range * 0.1);
+          // Normal range calculation with 10% padding
+          const padding = range * 0.1;
+          const calculatedMin = Math.max(0, minValue - padding);
+          const calculatedMax = maxValue + padding;
           
           setYAxisDomain([calculatedMin, calculatedMax]);
           console.log("Calculated Y-axis domain:", [calculatedMin, calculatedMax]);
         }
       }
     }
-  }, [selectedMetric, febSummary, marchSummary, aprilSummary, includeRetail, includeReva, includeWholesale, isLoading]);
+  }, [selectedMetric, febSummary, marchSummary, aprilSummary, isLoading]);
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {

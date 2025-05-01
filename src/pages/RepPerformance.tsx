@@ -4,7 +4,7 @@ import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
 import PerformanceContent from '@/components/rep-performance/PerformanceContent';
-import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
+import { formatCurrency, formatPercent, formatNumber, calculateSummary } from '@/utils/rep-performance-utils';
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
+import { SummaryData } from '@/types/rep-performance.types';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
@@ -79,12 +80,40 @@ const RepPerformance = () => {
   
   const activeData = getActiveData('overall');
   
-  const currentBaseSummary = selectedMonth === 'April' ? aprBaseSummary : 
-                             selectedMonth === 'February' ? febBaseSummary : baseSummary;
-  const currentRevaValues = selectedMonth === 'April' ? aprRevaValues : 
-                            selectedMonth === 'February' ? febRevaValues : revaValues;
-  const currentWholesaleValues = selectedMonth === 'April' ? aprWholesaleValues : 
-                                 selectedMonth === 'February' ? febWholesaleValues : wholesaleValues;
+  // Calculate filtered summary data for each month using the same calculation as metric cards
+  const filteredFebSummary: SummaryData = calculateSummary(
+    febBaseSummary,
+    febRevaValues,
+    febWholesaleValues,
+    includeRetail,
+    includeReva,
+    includeWholesale
+  );
+  
+  const filteredMarSummary: SummaryData = calculateSummary(
+    baseSummary,
+    revaValues,
+    wholesaleValues,
+    includeRetail,
+    includeReva,
+    includeWholesale
+  );
+  
+  const filteredAprSummary: SummaryData = calculateSummary(
+    aprBaseSummary,
+    aprRevaValues,
+    aprWholesaleValues,
+    includeRetail,
+    includeReva,
+    includeWholesale
+  );
+  
+  // Log filtered summary data for verification
+  console.log("Filtered Summary Data for Chart:", {
+    February: filteredFebSummary,
+    March: filteredMarSummary,
+    April: filteredAprSummary
+  });
   
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
@@ -153,15 +182,12 @@ const RepPerformance = () => {
         selectedMonth={selectedMonth}
       />
       
-      {/* TrendLineChart positioned below SummaryMetrics */}
+      {/* TrendLineChart positioned below SummaryMetrics, now using filtered summaries */}
       <div className="mb-6">
         <TrendLineChart
-          febSummary={febBaseSummary}
-          marchSummary={baseSummary}
-          aprilSummary={aprBaseSummary}
-          includeRetail={includeRetail}
-          includeReva={includeReva}
-          includeWholesale={includeWholesale}
+          febSummary={filteredFebSummary}
+          marchSummary={filteredMarSummary}
+          aprilSummary={filteredAprSummary}
           isLoading={isLoading}
         />
       </div>
@@ -194,9 +220,18 @@ const RepPerformance = () => {
         includeRetail={includeRetail}
         includeReva={includeReva}
         includeWholesale={includeWholesale}
-        baseSummary={currentBaseSummary}
-        revaValues={currentRevaValues}
-        wholesaleValues={currentWholesaleValues}
+        baseSummary={
+          selectedMonth === 'March' ? baseSummary : 
+          selectedMonth === 'February' ? febBaseSummary : aprBaseSummary
+        }
+        revaValues={
+          selectedMonth === 'March' ? revaValues : 
+          selectedMonth === 'February' ? febRevaValues : aprRevaValues
+        }
+        wholesaleValues={
+          selectedMonth === 'March' ? wholesaleValues : 
+          selectedMonth === 'February' ? febWholesaleValues : aprWholesaleValues
+        }
       />
     </div>
   );
