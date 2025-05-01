@@ -15,7 +15,7 @@ import {
 import { SummaryData, RepData } from "@/types/rep-performance.types";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatPercent, formatNumber } from "@/utils/rep-performance-utils";
-import { ChartLine, BarChart3, Users, Filter } from "lucide-react";
+import { ChartLine, Users } from "lucide-react";
 import RepSelector from './RepSelector';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Toggle } from "@/components/ui/toggle";
@@ -620,21 +620,6 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     { label: 'Packs', value: 'packs' }
   ];
 
-  const dataSourceButtons: { label: string; value: DataSourceType }[] = [
-    { label: 'Overall', value: 'overall' },
-    { label: 'Retail', value: 'retail' },
-    { label: 'REVA', value: 'reva' },
-    { label: 'Wholesale', value: 'wholesale' }
-  ];
-
-  // Filtering for disabled data sources based on inclusion toggles
-  const isDataSourceDisabled = (dataSource: DataSourceType): boolean => {
-    if (dataSource === 'retail') return !includeRetail;
-    if (dataSource === 'reva') return !includeReva;
-    if (dataSource === 'wholesale') return !includeWholesale;
-    return false;
-  };
-
   const colorForChart = getColorForMetric(selectedMetric);
 
   return (
@@ -667,41 +652,18 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             </ToggleGroup>
           </div>
           
-          {/* Data source and rep comparison controls */}
-          <div className="flex flex-wrap justify-between items-center gap-2">
-            {/* Data source selection */}
-            <div className="flex flex-wrap gap-2">
-              <ToggleGroup type="single" value={selectedDataSource} onValueChange={(val) => val && handleDataSourceChange(val as DataSourceType)}>
-                {dataSourceButtons.map((button) => (
-                  <ToggleGroupItem 
-                    key={button.value} 
-                    value={button.value}
-                    variant="outline"
-                    size="sm"
-                    disabled={isDataSourceDisabled(button.value)}
-                    className={`text-xs ${selectedDataSource === button.value ? "bg-white/20 text-white" : "text-white/70"} ${
-                      isDataSourceDisabled(button.value) ? "opacity-30 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    {button.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-            
-            {/* Compare reps toggle */}
-            <div className="flex items-center gap-2">
-              <Toggle
-                pressed={compareRepsMode}
-                onPressedChange={setCompareRepsMode}
-                size="sm"
-                variant="outline"
-                className={`${compareRepsMode ? "bg-white/20 text-white" : "text-white/70"}`}
-              >
-                <Users className="h-4 w-4 mr-1" />
-                Compare Reps
-              </Toggle>
-            </div>
+          {/* Compare reps toggle only - removed data source toggles */}
+          <div className="flex flex-wrap justify-end items-center gap-2">
+            <Toggle
+              pressed={compareRepsMode}
+              onPressedChange={setCompareRepsMode}
+              size="sm"
+              variant="outline"
+              className={`${compareRepsMode ? "bg-white/20 text-white" : "text-white/70"}`}
+            >
+              <Users className="h-4 w-4 mr-1" />
+              Compare Reps
+            </Toggle>
           </div>
           
           {/* Rep selector */}
