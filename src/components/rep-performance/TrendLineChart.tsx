@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,10 +87,20 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     setLocalSelectedReps(selectedReps);
   }, [compareRepsEnabled, selectedReps]);
   
-  // Update this effect to immediately show the rep selector when compare mode is toggled
+  // Fix the rep selector visibility issue - separate the toggle response from the visibility change
   useEffect(() => {
     console.log("compareRepsMode changed:", compareRepsMode);
-    setShowRepSelector(compareRepsMode);
+  }, [compareRepsMode]);
+  
+  // This is a separate effect that only handles the UI visibility
+  // We're decoupling the state update from the UI update to prevent conflicts
+  useEffect(() => {
+    // Small timeout to ensure the state has been updated before changing visibility
+    const timer = setTimeout(() => {
+      setShowRepSelector(compareRepsMode);
+    }, 50);
+    
+    return () => clearTimeout(timer);
   }, [compareRepsMode]);
   
   // Get available reps from data based on selected data source

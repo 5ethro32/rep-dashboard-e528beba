@@ -22,6 +22,13 @@ const RepSelector: React.FC<RepSelectorProps> = ({
   // Sort reps alphabetically for better UX
   const sortedReps = [...availableReps].sort((a, b) => a.localeCompare(b));
   
+  // Add console log to help debug
+  console.log("RepSelector rendering with:", {
+    availableRepsCount: availableReps.length,
+    selectedRepsCount: selectedReps.length,
+    sortedReps
+  });
+  
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
