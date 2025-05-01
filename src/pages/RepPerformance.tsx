@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -112,11 +111,8 @@ const RepPerformance = () => {
   
   // Get all unique rep names from the data
   const getAllUniqueReps = () => {
-    // We need to fix the getActiveData calls below by adapting to the actual function signature
-    // Instead of passing multiple arguments, we'll modify our approach
-    
-    // Get data for all months
-    const febData = getActiveData('rep'); 
+    // Get data for all months - fix by removing the extra arguments
+    const febData = getActiveData('rep');
     const marchData = getActiveData('rep');
     const aprilData = getActiveData('rep');
     
@@ -152,7 +148,7 @@ const RepPerformance = () => {
     setSelectedReps([]);
   };
   
-  // Create the rep data object for the chart, but now we need to modify our approach
+  // Create the rep data object for the chart - fix by removing the extra arguments
   const repData = {
     february: getActiveData('rep'),
     march: getActiveData('rep'),
