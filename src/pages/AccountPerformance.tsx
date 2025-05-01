@@ -183,13 +183,16 @@ const AccountPerformance = () => {
         setTopRep({ name: topRepName, profit: maxProfit });
       }
       
-      // Only show toast on non-mobile devices
-      if (!isMobile) {
-        toast({
-          title: "Data loaded successfully",
-          description: `Loaded ${currentData?.length || 0} records for ${selectedMonth}`,
-        });
-      }
+      // Remove the toast notification for this page only
+      // Previously was: 
+      // if (!isMobile) {
+      //   toast({
+      //     title: "Data loaded successfully",
+      //     description: `Loaded ${currentData?.length || 0} records for ${selectedMonth}`,
+      //   });
+      // }
+      
+      // Keep error toasts only
     } catch (error) {
       console.error('Error fetching comparison data:', error);
       // Always show error toasts regardless of device
