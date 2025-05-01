@@ -142,8 +142,18 @@ const RepPerformance = () => {
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}
       />
+
+      <SummaryMetrics 
+        summary={summary}
+        summaryChanges={summaryChanges}
+        isLoading={isLoading}
+        includeRetail={includeRetail}
+        includeReva={includeReva}
+        includeWholesale={includeWholesale}
+        selectedMonth={selectedMonth}
+      />
       
-      {/* Add the TrendLineChart component here */}
+      {/* Moved the TrendLineChart component below SummaryMetrics */}
       <div className="mb-6">
         <TrendLineChart
           febSummary={febBaseSummary}
@@ -155,16 +165,6 @@ const RepPerformance = () => {
           isLoading={isLoading}
         />
       </div>
-
-      <SummaryMetrics 
-        summary={summary}
-        summaryChanges={summaryChanges}
-        isLoading={isLoading}
-        includeRetail={includeRetail}
-        includeReva={includeReva}
-        includeWholesale={includeWholesale}
-        selectedMonth={selectedMonth}
-      />
 
       <PerformanceContent
         tabValues={['overall', 'rep', 'reva', 'wholesale']}
