@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
@@ -69,21 +68,30 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   const repOptions = useMemo(() => {
     if (!currentMonthData || currentMonthData.length === 0) return [];
     
-    // Filter out reps with no data or zero metrics across the board
-    const repNames = Array.from(new Set(
-      currentMonthData
-        .filter(item => {
-          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
-          return spend > 0 || profit > 0 || packs > 0;
-        })
-        .map((item: any) => {
-          return item.Rep || item.rep_name || '';
-        })
-    )).filter(Boolean);
+    // Updated to collect reps from both Rep and Sub-Rep fields
+    const repSet = new Set<string>();
     
-    return repNames.sort();
+    currentMonthData.forEach(item => {
+      // Add main rep if it has data
+      const mainRep = item.Rep || item.rep_name || '';
+      const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+      const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+      const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+      
+      if (mainRep && mainRep !== 'REVA' && mainRep !== 'Wholesale' && mainRep !== 'WHOLESALE' && 
+          (spend > 0 || profit > 0 || packs > 0)) {
+        repSet.add(mainRep);
+      }
+      
+      // Also add sub-rep if it exists
+      const subRep = item['Sub-Rep'] || item.sub_rep || '';
+      if (subRep && subRep.trim() !== '') {
+        repSet.add(subRep);
+      }
+    });
+    
+    console.log(`Found ${repSet.size} unique reps (including sub-reps) from ${currentMonthData.length} records`);
+    return Array.from(repSet).sort();
   }, [currentMonthData]);
   
   const accountComparisons = useMemo(() => {
@@ -91,26 +99,33 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     
     console.log(`Processing data comparison for ${selectedRep}. ${selectedMonth} data: ${currentMonthData.length}, Previous month data: ${previousMonthData?.length || 0}`);
     
-    // Filter out accounts with zero metrics for the selected rep
+    // Modified to include accounts where the rep is EITHER the main rep OR the sub-rep
     const currentRepAccounts = currentMonthData.filter(
       (item: any) => {
         const repName = item.Rep || item.rep_name || '';
+        const subRep = item['Sub-Rep'] || item.sub_rep || '';
         const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
         const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
         const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
         
-        return repName === selectedRep && (spend > 0 || profit > 0 || packs > 0);
+        const isMainRep = repName === selectedRep;
+        const isSubRep = subRep === selectedRep;
+        const hasData = (spend > 0 || profit > 0 || packs > 0);
+        
+        return (isMainRep || isSubRep) && hasData;
       }
     );
     
     const previousRepAccounts = previousMonthData?.filter(
       (item: any) => {
         const repName = item.Rep || item.rep_name || '';
-        return repName === selectedRep;
+        const subRep = item['Sub-Rep'] || item.sub_rep || '';
+        return repName === selectedRep || subRep === selectedRep;
       }
     ) || [];
     
     console.log(`Filtered data for ${selectedRep}: ${selectedMonth} accounts: ${currentRepAccounts.length}, Previous month accounts: ${previousRepAccounts.length}`);
+    console.log(`Breakdown - As main rep: ${currentRepAccounts.filter((item: any) => (item.Rep || item.rep_name) === selectedRep).length}, As sub-rep: ${currentRepAccounts.filter((item: any) => (item['Sub-Rep'] || item.sub_rep) === selectedRep).length}`);
     
     const accountMap = new Map<string, AccountComparison>();
     
