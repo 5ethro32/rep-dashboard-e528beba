@@ -103,50 +103,31 @@ const AccountPerformance = () => {
       console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
       
       let currentData: DataItem[] = [];
-      if (currentTable === "sales_data") {
-        const rawData = await fetchAllRecordsFromTable(currentTable);
-        
-        currentData = rawData.map((item: any) => ({
-          "Account Name": item.account_name,
-          "Account Ref": item.account_ref,
-          "Rep": item.rep_name,
-          "Sub-Rep": item.sub_rep,
-          "Profit": item.profit,
-          "Spend": item.spend,
-          "Margin": item.margin,
-          "Packs": item.packs,
-          "Department": item.rep_type
-        }));
-      } else {
-        currentData = await fetchAllRecordsFromTable(currentTable);
+      currentData = await fetchAllRecordsFromTable(currentTable);
+      
+      console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} from ${currentTable}`);
+
+      if (currentData && currentData.length > 0) {
+        // Log a sample record to help with debugging
+        console.log(`Sample record from ${currentTable}:`, currentData[0]);
       }
       
       let previousData: DataItem[] = [];
       if (previousTable) {
-        if (previousTable === "sales_data") {
-          const rawData = await fetchAllRecordsFromTable(previousTable);
-          
-          previousData = rawData.map((item: any) => ({
-            "Account Name": item.account_name,
-            "Account Ref": item.account_ref,
-            "Rep": item.rep_name,
-            "Sub-Rep": item.sub_rep,
-            "Profit": item.profit,
-            "Spend": item.spend,
-            "Margin": item.margin,
-            "Packs": item.packs,
-            "Department": item.rep_type
-          }));
-        } else {
-          previousData = await fetchAllRecordsFromTable(previousTable);
+        previousData = await fetchAllRecordsFromTable(previousTable);
+        console.log(`Fetched ${previousData?.length || 0} records for previous month from ${previousTable}`);
+
+        if (previousData && previousData.length > 0) {
+          // Log a sample record to help with debugging
+          console.log(`Sample record from ${previousTable}:`, previousData[0]);
         }
       }
       
-      console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} and ${previousData?.length || 0} for previous month`);
-      
+      // Set state with fetched data
       setCurrentMonthRawData(currentData || []);
       setPreviousMonthRawData(previousData);
       
+      // Calculate active accounts
       const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
         return item["Account Name"] || item.account_name;
       }).filter(Boolean)).size || 0;
@@ -160,6 +141,7 @@ const AccountPerformance = () => {
         previous: previousActiveAccounts
       });
       
+      // Calculate top rep
       if (currentData && currentData.length > 0) {
         const repProfits = new Map();
         
@@ -187,10 +169,8 @@ const AccountPerformance = () => {
         setTopRep({ name: topRepName, profit: maxProfit });
       }
       
-      // Keep error toasts only
     } catch (error) {
       console.error('Error fetching comparison data:', error);
-      // Always show error toasts regardless of device
       toast({
         title: "Error loading data",
         description: error instanceof Error ? error.message : "An unknown error occurred",

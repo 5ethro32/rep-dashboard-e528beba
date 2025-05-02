@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
@@ -187,6 +188,9 @@ export const useRepPerformanceData = () => {
   const loadMayData = async () => {
     setIsLoading(true);
     try {
+      console.log('Starting to fetch May data from May_Data table...');
+      
+      // First, check if there's any data in the May_Data table
       const { count, error: countError } = await supabase
         .from('May_Data')
         .select('*', { count: 'exact', head: true });
@@ -195,12 +199,13 @@ export const useRepPerformanceData = () => {
       
       if (!count || count === 0) {
         setIsLoading(false);
-        console.log('No May data found in the May_Data table');
+        console.log('No data found in the May_Data table');
         return false;
       }
       
-      console.log(`Found ${count} total records in May_Data`);
+      console.log(`Found ${count} total records in May_Data table`);
       
+      // Fetch all records from May_Data using pagination
       let allRecords = [];
       const pageSize = 1000;
       const pages = Math.ceil(count / pageSize);
@@ -217,7 +222,7 @@ export const useRepPerformanceData = () => {
         if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
         if (pageData) allRecords = [...allRecords, ...pageData];
         
-        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records`);
+        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records from May_Data`);
       }
       
       const mayData = allRecords;
@@ -258,6 +263,12 @@ export const useRepPerformanceData = () => {
         return false;
       }
       
+      // Let's log some sample data to check what we're receiving
+      if (mayData.length > 0) {
+        console.log('Sample May_Data record:', mayData[0]);
+      }
+      
+      // Filter the data by department
       const retailData = mayData.filter(item => !item.Department || item.Department === 'RETAIL');
       const revaData = mayData.filter(item => item.Department === 'REVA');
       const wholesaleData = mayData.filter(item => 
@@ -276,6 +287,12 @@ export const useRepPerformanceData = () => {
 
       const transformData = (data: any[], isDepartmentData = false): RepData[] => {
         console.log(`Transforming ${data.length} records`);
+        
+        // Log the structure of the data to make sure we're accessing fields correctly
+        if (data.length > 0) {
+          console.log('Data structure sample:', data[0]);
+        }
+        
         const repMap = new Map<string, {
           rep: string;
           spend: number;
@@ -359,6 +376,7 @@ export const useRepPerformanceData = () => {
         });
       };
       
+      // Transform the data
       const mayRetailData = transformData(retailData);
       const mayRevaData = transformData(revaData, true);
       const mayWholesaleData = transformData(wholesaleData, true);
@@ -370,6 +388,49 @@ export const useRepPerformanceData = () => {
       console.log(`Transformed Rep Data - Retail: ${mayRetailData.length}, REVA: ${mayRevaData.length}, Wholesale: ${mayWholesaleData.length}`);
       console.log(`Transformed Prior Rep Data - Retail: ${priorRetailRepData.length}, REVA: ${priorRevaRepData.length}, Wholesale: ${priorWholesaleRepData.length}`);
       
+      // Calculate summary data
+      const calculateDeptSummary = (data: any[]) => {
+        const totalProfit = data.reduce((sum, item) => {
+          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+          return sum + profit;
+        }, 0);
+      
+        const totalSpend = data.reduce((sum, item) => {
+          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+          return sum + spend;
+        }, 0);
+      
+        const totalPacks = data.reduce((sum, item) => {
+          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          return sum + packs;
+        }, 0);
+      
+        const uniqueAccounts = new Set();
+        const activeAccounts = new Set();
+      
+        data.forEach(item => {
+          if (item["Account Ref"]) {
+            uniqueAccounts.add(item["Account Ref"]);
+            
+            const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+            if (spend > 0) {
+              activeAccounts.add(item["Account Ref"]);
+            }
+          }
+        });
+      
+        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+      
+        return {
+          totalProfit,
+          totalSpend,
+          totalPacks,
+          totalAccounts: uniqueAccounts.size,
+          activeAccounts: activeAccounts.size,
+          averageMargin
+        };
+      };
+      
       const mayRetailSummary = calculateDeptSummary(retailData);
       const mayRevaSummary = calculateDeptSummary(revaData);
       const mayWholesaleSummary = calculateDeptSummary(wholesaleData);
@@ -378,6 +439,7 @@ export const useRepPerformanceData = () => {
       const priorRevaSummary = calculateDeptSummary(priorRevaData);
       const priorWholesaleSummary = calculateDeptSummary(priorWholesaleData);
       
+      // Log the calculated summary data to help with debugging
       console.log('May Department Summaries:');
       console.log('Retail:', mayRetailSummary);
       console.log('REVA:', mayRevaSummary);
@@ -388,6 +450,7 @@ export const useRepPerformanceData = () => {
       console.log('REVA:', priorRevaSummary);
       console.log('Wholesale:', priorWholesaleSummary);
       
+      // Update state with May data
       setMayRepData(mayRetailData);
       setMayRevaData(mayRevaData);
       setMayWholesaleData(mayWholesaleData);
@@ -395,6 +458,7 @@ export const useRepPerformanceData = () => {
       setMayRevaValues(mayRevaSummary);
       setMayWholesaleValues(mayWholesaleSummary);
       
+      // Calculate changes between May and April
       const calculateChanges = (mayData: RepData[], priorData: RepData[]): RepChangesRecord => {
         const changes: RepChangesRecord = {};
         
@@ -422,6 +486,7 @@ export const useRepPerformanceData = () => {
         return changes;
       };
       
+      // Create combined data for all departments
       const mayAllData = getCombinedRepData(
         mayRetailData,
         mayRevaData,
@@ -438,6 +503,40 @@ export const useRepPerformanceData = () => {
       
       const mayPriorChanges = calculateChanges(mayAllData, priorAllData);
       
+      // Calculate combined summary for all departments
+      const calculateSummary = (retail: SummaryData, reva: SummaryData, wholesale: SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean) => {
+        const totalSpend = (includeRetail ? retail.totalSpend : 0) + 
+                          (includeReva ? reva.totalSpend : 0) + 
+                          (includeWholesale ? wholesale.totalSpend : 0);
+        
+        const totalProfit = (includeRetail ? retail.totalProfit : 0) + 
+                           (includeReva ? reva.totalProfit : 0) + 
+                           (includeWholesale ? wholesale.totalProfit : 0);
+        
+        const totalPacks = (includeRetail ? retail.totalPacks : 0) + 
+                          (includeReva ? reva.totalPacks : 0) + 
+                          (includeWholesale ? wholesale.totalPacks : 0);
+        
+        const totalAccounts = (includeRetail ? retail.totalAccounts : 0) + 
+                             (includeReva ? reva.totalAccounts : 0) + 
+                             (includeWholesale ? wholesale.totalAccounts : 0);
+        
+        const activeAccounts = (includeRetail ? retail.activeAccounts : 0) + 
+                              (includeReva ? reva.activeAccounts : 0) + 
+                              (includeWholesale ? wholesale.activeAccounts : 0);
+        
+        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+        
+        return {
+          totalSpend,
+          totalProfit,
+          totalPacks,
+          totalAccounts,
+          activeAccounts,
+          averageMargin
+        };
+      };
+      
       const maySummary = calculateSummary(
         mayRetailSummary,
         mayRevaSummary,
@@ -452,6 +551,7 @@ export const useRepPerformanceData = () => {
         true, true, true
       );
       
+      // Calculate summary percentage changes
       const maySummaryChanges = {
         totalSpend: priorSummary.totalSpend > 0 ? 
           ((maySummary.totalSpend - priorSummary.totalSpend) / priorSummary.totalSpend) * 100 : 0,
@@ -466,23 +566,28 @@ export const useRepPerformanceData = () => {
           ((maySummary.activeAccounts - priorSummary.activeAccounts) / priorSummary.activeAccounts) * 100 : 0
       };
       
+      // Update the state if May is currently selected
       if (selectedMonth === 'May') {
         setRepChanges(mayPriorChanges);
         setSummaryChanges(maySummaryChanges);
+        
+        // Create combined data based on selected toggles
+        const combinedMayData = getCombinedRepData(
+          mayRetailData,
+          mayRevaData,
+          mayWholesaleData,
+          includeRetail,
+          includeReva,
+          includeWholesale
+        );
+        
+        setOverallData(combinedMayData);
+        
+        console.log('Combined May Data length:', combinedMayData.length);
+        console.log('Combined May Total Profit:', combinedMayData.reduce((sum, item) => sum + item.profit, 0));
       }
       
-      const combinedMayData = getCombinedRepData(
-        mayRetailData,
-        mayRevaData,
-        mayWholesaleData,
-        includeRetail,
-        includeReva,
-        includeWholesale
-      );
-      
-      console.log('Combined May Data length:', combinedMayData.length);
-      console.log('Combined May Total Profit:', combinedMayData.reduce((sum, item) => sum + item.profit, 0));
-      
+      // Save the data to localStorage
       const currentData = loadStoredRepPerformanceData() || {};
       saveRepPerformanceData({
         ...currentData,
@@ -502,10 +607,7 @@ export const useRepPerformanceData = () => {
         maySummaryChanges: maySummaryChanges
       });
       
-      if (selectedMonth === 'May') {
-        setOverallData(combinedMayData);
-      }
-      
+      // Successfully loaded May data
       return true;
     } catch (error) {
       console.error('Error loading May data:', error);
