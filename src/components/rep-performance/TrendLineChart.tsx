@@ -50,7 +50,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   aprilSummary,
   maySummary,
   isLoading,
-  repData,
+  repData: repDataProp,
   includeRetail,
   includeReva,
   includeWholesale
@@ -71,8 +71,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     
     // Collect unique rep names from all months
     ['february', 'march', 'april', 'may'].forEach(month => {
-      if (repData[month]) {
-        repData[month].forEach(item => {
+      if (repDataProp[month]) {
+        repDataProp[month].forEach(item => {
           if (item.rep) {
             allReps.add(item.rep);
           }
@@ -81,7 +81,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     });
     
     setAvailableReps(Array.from(allReps).sort());
-  }, [repData]);
+  }, [repDataProp]);
 
   const chartData = useMemo(() => {
     const data: TrendData[] = [
@@ -124,10 +124,10 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     
     const repData = selectedReps.map((rep, index) => {
       // Get rep data for each month
-      const febRepData = repData.february.find(r => r.rep === rep);
-      const marRepData = repData.march.find(r => r.rep === rep);
-      const aprRepData = repData.april.find(r => r.rep === rep);
-      const mayRepData = repData.may.find(r => r.rep === rep);
+      const febRepData = repDataProp.february.find(r => r.rep === rep);
+      const marRepData = repDataProp.march.find(r => r.rep === rep);
+      const aprRepData = repDataProp.april.find(r => r.rep === rep);
+      const mayRepData = repDataProp.may.find(r => r.rep === rep);
       
       return {
         rep,
@@ -162,8 +162,9 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     });
     
     return repData;
-  }, [selectedReps, repData]);
+  }, [selectedReps, repDataProp]);
 
+  // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       const isRepData = payload.some(p => p.dataKey.toString().includes('rep'));
