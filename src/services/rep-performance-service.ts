@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -562,6 +563,64 @@ export const fetchMarchRollingData = async () => {
   }
   
   console.log(`Completed fetching March Rolling data. Total records: ${allData.length}`);
+  return { data: allData, error: null };
+};
+
+// New function to fetch March data from sales_data table instead of march_rolling
+export const fetchMarchDataFromSalesData = async () => {
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let page = 0;
+  let hasMoreData = true;
+  
+  console.log('Starting to fetch March data from sales_data with pagination...');
+  
+  while (hasMoreData) {
+    try {
+      const { data, error, count } = await supabase
+        .from('sales_data')
+        .select('*')
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      
+      if (error) {
+        console.error('Error fetching sales_data page', page, error);
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        // Transform sales_data format to match march_rolling format
+        const transformedData = data.map(item => ({
+          'id': item.id,
+          'Rep': item.rep_name,
+          'Sub-Rep': item.sub_rep || '',
+          'Department': item.rep_type,
+          'Account Ref': item.account_ref,
+          'Account Name': item.account_name,
+          'Spend': item.spend,
+          'Cost': item.cost,
+          'Credit': item.credit,
+          'Profit': item.profit,
+          'Margin': item.margin,
+          'Packs': item.packs
+        }));
+        
+        allData = [...allData, ...transformedData];
+        console.log(`Fetched sales_data page ${page+1} with ${data.length} records. Total so far: ${allData.length}`);
+        page++;
+        
+        // Check if we've fetched all available data
+        hasMoreData = data.length === PAGE_SIZE;
+      } else {
+        hasMoreData = false;
+      }
+    } catch (error) {
+      console.error('Error in pagination loop for sales_data:', error);
+      hasMoreData = false;
+    }
+  }
+  
+  console.log(`Completed fetching March data from sales_data. Total records: ${allData.length}`);
+  console.log('Sample transformed record:', allData.length > 0 ? allData[0] : 'No data');
   return { data: allData, error: null };
 };
 

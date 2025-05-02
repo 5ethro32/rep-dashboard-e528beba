@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
-import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData, fetchMarchRollingData } from '@/services/rep-performance-service';
+import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData, fetchMarchRollingData, fetchMarchDataFromSalesData } from '@/services/rep-performance-service';
 import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -203,11 +203,13 @@ export const useRepPerformanceData = () => {
       const mtdData = allRecords;
       console.log('Fetched April MTD records total count:', mtdData.length);
       
-      const { data: marchRollingData, error: marchRollingError } = await fetchMarchRollingData();
+      // Use fetchMarchDataFromSalesData instead of fetchMarchRollingData
+      console.log('Fetching March data from sales_data table for April comparison...');
+      const { data: marchData, error: marchDataError } = await fetchMarchDataFromSalesData();
       
-      if (marchRollingError) throw new Error(`Error fetching March rolling data: ${marchRollingError.message}`);
+      if (marchDataError) throw new Error(`Error fetching March data from sales_data: ${marchDataError.message}`);
       
-      console.log('Fetched March Rolling records count:', marchRollingData?.length || 0);
+      console.log('Fetched March data from sales_data count:', marchData?.length || 0);
       
       if (!mtdData || mtdData.length === 0) {
         setIsLoading(false);
@@ -222,11 +224,13 @@ export const useRepPerformanceData = () => {
       
       console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
       
-      const marchRetailData = marchRollingData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
-      const marchRevaData = marchRollingData?.filter(item => item.Department === 'REVA') || [];
-      const marchWholesaleData = marchRollingData?.filter(item => 
+      const marchRetailData = marchData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
+      const marchRevaData = marchData?.filter(item => item.Department === 'REVA') || [];
+      const marchWholesaleData = marchData?.filter(item => 
         item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
       ) || [];
+      
+      console.log(`March data breakdown - Retail: ${marchRetailData.length}, REVA: ${marchRevaData.length}, Wholesale: ${marchWholesaleData.length}`);
 
       const transformData = (data: any[], isDepartmentData = false): RepData[] => {
         console.log(`Transforming ${data.length} records`);

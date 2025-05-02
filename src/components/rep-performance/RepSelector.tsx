@@ -43,12 +43,15 @@ const RepSelector: React.FC<RepSelectorProps> = ({
   // Handle rep selection with debugging
   const handleRepSelection = (rep: string) => {
     console.log(`Rep selection triggered for: ${rep}`);
+    console.log(`Selection state before: ${selectedReps.includes(rep) ? 'selected' : 'not selected'}`);
+    console.log(`Current selections: [${selectedReps.join(', ')}]`);
     onSelectRep(rep);
   };
   
   // Handle clear with debugging
   const handleClearSelection = () => {
     console.log("Clear selection triggered");
+    console.log(`Clearing selections: [${selectedReps.join(', ')}]`);
     onClearSelection();
   };
   
