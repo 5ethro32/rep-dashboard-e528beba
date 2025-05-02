@@ -35,8 +35,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
 
-  // Only show change indicators if we're viewing March or April data (compared to previous month)
-  const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April';
+  // Only show change indicators if we're viewing March, April, or May data (compared to previous month)
+  const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April' || selectedMonth === 'May';
 
   useEffect(() => {
     // Recalculate changes whenever toggle states change
