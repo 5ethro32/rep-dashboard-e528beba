@@ -85,7 +85,7 @@ const RepPerformance = () => {
     setSelectedMonth(month);
     
     try {
-      // Then refresh data completely
+      // Then refresh data completely for the selected month
       await loadDataFromSupabase();
       setAutoRefreshed(true);
       
@@ -159,7 +159,8 @@ const RepPerformance = () => {
     febBaseSummary, febRevaValues, febWholesaleValues,
     baseSummary, revaValues, wholesaleValues,
     aprBaseSummary, aprRevaValues, aprWholesaleValues,
-    mayBaseSummary, mayRevaValues, mayWholesaleValues
+    mayBaseSummary, mayRevaValues, mayWholesaleValues,
+    getActiveData
   ]);
   
   // Effect to monitor data changes

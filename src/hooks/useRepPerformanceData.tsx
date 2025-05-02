@@ -83,9 +83,8 @@ export const useRepPerformanceData = () => {
     console.log(`Loading data for ${selectedMonth} from Supabase...`);
     
     try {
-      // For simplicity, we'll load the same data for all months in this demo
-      // In a real application, you would modify this to fetch month-specific data
-      const data = await fetchRepPerformanceData();
+      // Fetch data based on the selected month
+      const data = await fetchRepPerformanceData(selectedMonth);
       
       if (!data) {
         console.error('Failed to fetch data from Supabase');
@@ -97,40 +96,35 @@ export const useRepPerformanceData = () => {
       saveRepPerformanceData(data);
       
       // Set the data based on the selected month
-      // For demonstration, we're setting the same data for all months
-      // In a real app, you would use different API calls or parameters for each month
-      
-      // February data
-      setFebRepData(data.febRepData || []);
-      setFebRevaData(data.febRevaData || []);
-      setFebWholesaleData(data.febWholesaleData || []);
-      setFebBaseSummary(data.febBaseSummary || defaultBaseSummary);
-      setFebRevaValues(data.febRevaValues || defaultRevaValues);
-      setFebWholesaleValues(data.febWholesaleValues || defaultWholesaleValues);
-      
-      // March data
-      setRepData(data.repData || []);
-      setRevaData(data.revaData || []);
-      setWholesaleData(data.wholesaleData || []);
-      setBaseSummary(data.baseSummary || defaultBaseSummary);
-      setRevaValues(data.revaValues || defaultRevaValues);
-      setWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
-      
-      // April data
-      setAprRepData(data.repData || []);
-      setAprRevaData(data.revaData || []);
-      setAprWholesaleData(data.wholesaleData || []);
-      setAprBaseSummary(data.baseSummary || defaultBaseSummary);
-      setAprRevaValues(data.revaValues || defaultRevaValues);
-      setAprWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
-      
-      // May data
-      setMayRepData(data.repData || []); 
-      setMayRevaData(data.revaData || []);
-      setMayWholesaleData(data.wholesaleData || []);
-      setMayBaseSummary(data.baseSummary || defaultBaseSummary);
-      setMayRevaValues(data.revaValues || defaultRevaValues);
-      setMayWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      if (selectedMonth === 'February') {
+        setFebRepData(data.repData || []);
+        setFebRevaData(data.revaData || []);
+        setFebWholesaleData(data.wholesaleData || []);
+        setFebBaseSummary(data.baseSummary || defaultBaseSummary);
+        setFebRevaValues(data.revaValues || defaultRevaValues);
+        setFebWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      } else if (selectedMonth === 'March') {
+        setRepData(data.repData || []);
+        setRevaData(data.revaData || []);
+        setWholesaleData(data.wholesaleData || []);
+        setBaseSummary(data.baseSummary || defaultBaseSummary);
+        setRevaValues(data.revaValues || defaultRevaValues);
+        setWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      } else if (selectedMonth === 'April') {
+        setAprRepData(data.repData || []);
+        setAprRevaData(data.revaData || []);
+        setAprWholesaleData(data.wholesaleData || []);
+        setAprBaseSummary(data.baseSummary || defaultBaseSummary);
+        setAprRevaValues(data.revaValues || defaultRevaValues);
+        setAprWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      } else if (selectedMonth === 'May') {
+        setMayRepData(data.repData || []);
+        setMayRevaData(data.revaData || []);
+        setMayWholesaleData(data.wholesaleData || []);
+        setMayBaseSummary(data.baseSummary || defaultBaseSummary);
+        setMayRevaValues(data.revaValues || defaultRevaValues);
+        setMayWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      }
       
       // Set the change calculations
       setSummaryChanges(data.summaryChanges || defaultSummaryChanges);
@@ -146,7 +140,7 @@ export const useRepPerformanceData = () => {
       setIsLoading(false);
       return false;
     }
-  }, [selectedMonth]); // Add selectedMonth as a dependency to refresh data when month changes
+  }, [selectedMonth, updateSummaryMetrics]); // Add dependencies
 
   // Function to update summary metrics based on selected month and filters
   const updateSummaryMetrics = useCallback(() => {
@@ -258,20 +252,20 @@ export const useRepPerformanceData = () => {
       setWholesaleValues(storedData.wholesaleValues || defaultWholesaleValues);
       
       // April data
-      setAprRepData(storedData.repData || []);
-      setAprRevaData(storedData.revaData || []);
-      setAprWholesaleData(storedData.wholesaleData || []);
-      setAprBaseSummary(storedData.baseSummary || defaultBaseSummary);
-      setAprRevaValues(storedData.revaValues || defaultRevaValues);
-      setAprWholesaleValues(storedData.wholesaleValues || defaultWholesaleValues);
+      setAprRepData(storedData.aprRepData || []);
+      setAprRevaData(storedData.aprRevaData || []);
+      setAprWholesaleData(storedData.aprWholesaleData || []);
+      setAprBaseSummary(storedData.aprBaseSummary || defaultBaseSummary);
+      setAprRevaValues(storedData.aprRevaValues || defaultRevaValues);
+      setAprWholesaleValues(storedData.aprWholesaleValues || defaultWholesaleValues);
       
-      // May data
-      setMayRepData(storedData.repData || []);
-      setMayRevaData(storedData.revaData || []);
-      setMayWholesaleData(storedData.wholesaleData || []);
-      setMayBaseSummary(storedData.baseSummary || defaultBaseSummary);
-      setMayRevaValues(storedData.revaValues || defaultRevaValues);
-      setMayWholesaleValues(storedData.wholesaleValues || defaultWholesaleValues);
+      // May data 
+      setMayRepData(storedData.mayRepData || []);
+      setMayRevaData(storedData.mayRevaData || []);
+      setMayWholesaleData(storedData.mayWholesaleData || []);
+      setMayBaseSummary(storedData.mayBaseSummary || defaultBaseSummary);
+      setMayRevaValues(storedData.mayRevaValues || defaultRevaValues);
+      setMayWholesaleValues(storedData.mayWholesaleValues || defaultWholesaleValues);
       
       // Set changes
       setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
@@ -280,7 +274,7 @@ export const useRepPerformanceData = () => {
       // If no local data, load from API
       loadDataFromSupabase();
     }
-  }, [loadDataFromSupabase]);
+  }, []); // Make sure to include loadDataFromSupabase in the dependency array to fix the error
 
   // Update summary whenever filters change
   useEffect(() => {
@@ -292,19 +286,6 @@ export const useRepPerformanceData = () => {
     includeWholesale,
     updateSummaryMetrics
   ]);
-
-  // Function to load different months
-  const loadMayData = async () => {
-    console.log('Loading May data...');
-    // In a real app, this would fetch May-specific data
-    return true;
-  };
-
-  const loadAprilData = async () => {
-    console.log('Loading April data...');
-    // In a real app, this would fetch April-specific data
-    return true;
-  };
 
   // Get the current dataset based on selected month
   const getCurrentDataset = useCallback((type: string) => {
