@@ -1,10 +1,11 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface TrendLineChartProps {
   febSummary: SummaryData;
@@ -42,6 +43,11 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   includeReva,
   includeWholesale
 }) => {
+  // State to track which metrics are visible
+  const [showProfit, setShowProfit] = useState(true);
+  const [showSpend, setShowSpend] = useState(true);
+  const [showPacks, setShowPacks] = useState(true);
+
   const chartData = useMemo(() => {
     const data: TrendData[] = [
       {
@@ -95,14 +101,27 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       return (
         <div className="bg-gray-800 border border-gray-700 p-3 rounded-md shadow-lg backdrop-blur-sm">
           <p className="font-semibold text-gray-200">{label}</p>
-          <p className="text-sm text-finance-red">Profit: {formatCurrency(payload[0].value || 0)}</p>
-          <p className="text-sm text-blue-400">Spend: {formatCurrency(payload[1].value || 0)}</p>
-          <p className="text-sm text-green-400">Packs: {Math.round(payload[2].value || 0).toLocaleString()}</p>
+          {showProfit && payload.find(p => p.dataKey === 'profit') && (
+            <p className="text-sm text-finance-red">Profit: {formatCurrency(payload.find(p => p.dataKey === 'profit')?.value || 0)}</p>
+          )}
+          {showSpend && payload.find(p => p.dataKey === 'spend') && (
+            <p className="text-sm text-blue-400">Spend: {formatCurrency(payload.find(p => p.dataKey === 'spend')?.value || 0)}</p>
+          )}
+          {showPacks && payload.find(p => p.dataKey === 'packs') && (
+            <p className="text-sm text-green-400">Packs: {Math.round(payload.find(p => p.dataKey === 'packs')?.value || 0).toLocaleString()}</p>
+          )}
         </div>
       );
     }
   
     return null;
+  };
+
+  // Handler for toggle changes
+  const handleToggleChange = (value: string[]) => {
+    setShowProfit(value.includes('profit'));
+    setShowSpend(value.includes('spend'));
+    setShowPacks(value.includes('packs'));
   };
   
   if (isLoading) {
@@ -118,6 +137,13 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       </Card>
     );
   }
+
+  // Calculate which toggles are active
+  const activeToggles = [
+    ...(showProfit ? ['profit'] : []),
+    ...(showSpend ? ['spend'] : []),
+    ...(showPacks ? ['packs'] : [])
+  ];
   
   return (
     <Card className="bg-gray-900/40 border border-white/10 backdrop-blur-sm shadow-lg">
@@ -126,7 +152,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           <span>Monthly Performance Trends</span>
           <span className="text-sm text-finance-red">Feb-May Growth: {overallGrowth}</span>
         </CardTitle>
-        <CardDescription className="text-xs text-gray-400">
+        <CardDescription className="text-xs md:text-sm mb-3 md:mb-4 text-white/60">
           {includeRetail && includeReva && includeWholesale ? 'Showing all departments' : 
             `Showing ${[
               includeRetail ? 'Retail' : '', 
@@ -135,6 +161,31 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             ].filter(Boolean).join(', ')}`
           }
         </CardDescription>
+        <ToggleGroup 
+          type="multiple" 
+          value={activeToggles} 
+          onValueChange={handleToggleChange}
+          className="justify-start mb-2"
+        >
+          <ToggleGroupItem value="profit" aria-label="Toggle Profit" className="data-[state=on]:bg-finance-red/20 data-[state=on]:text-finance-red border-gray-700">
+            <div className="flex items-center gap-1">
+              <span className="h-3 w-3 rounded-full bg-finance-red"></span>
+              <span className="text-xs">Profit</span>
+            </div>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="spend" aria-label="Toggle Spend" className="data-[state=on]:bg-blue-500/20 data-[state=on]:text-blue-400 border-gray-700">
+            <div className="flex items-center gap-1">
+              <span className="h-3 w-3 rounded-full bg-blue-500"></span>
+              <span className="text-xs">Spend</span>
+            </div>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="packs" aria-label="Toggle Packs" className="data-[state=on]:bg-green-500/20 data-[state=on]:text-green-400 border-gray-700">
+            <div className="flex items-center gap-1">
+              <span className="h-3 w-3 rounded-full bg-green-500"></span>
+              <span className="text-xs">Packs</span>
+            </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </CardHeader>
       <CardContent>
         <div className="h-56">
@@ -162,36 +213,42 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Line 
-                yAxisId="left"
-                type="monotone" 
-                dataKey="profit" 
-                name="Profit" 
-                stroke="#ef4444" 
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line 
-                yAxisId="left"
-                type="monotone" 
-                dataKey="spend" 
-                name="Spend" 
-                stroke="#60a5fa" 
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line 
-                yAxisId="right"
-                type="monotone" 
-                dataKey="packs" 
-                name="Packs" 
-                stroke="#4ade80" 
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
+              {showProfit && (
+                <Line 
+                  yAxisId="left"
+                  type="monotone" 
+                  dataKey="profit" 
+                  name="Profit" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              )}
+              {showSpend && (
+                <Line 
+                  yAxisId="left"
+                  type="monotone" 
+                  dataKey="spend" 
+                  name="Spend" 
+                  stroke="#60a5fa" 
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              )}
+              {showPacks && (
+                <Line 
+                  yAxisId="right"
+                  type="monotone" 
+                  dataKey="packs" 
+                  name="Packs" 
+                  stroke="#4ade80" 
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </div>
