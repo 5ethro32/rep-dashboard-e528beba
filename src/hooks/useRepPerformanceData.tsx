@@ -77,71 +77,6 @@ export const useRepPerformanceData = () => {
     return sortRepData(data, sortBy, sortOrder);
   }, [sortBy, sortOrder]);
 
-  // Define loadDataFromSupabase before using it
-  const loadDataFromSupabase = useCallback(async () => {
-    setIsLoading(true);
-    console.log(`Loading data for ${selectedMonth} from Supabase...`);
-    
-    try {
-      // Fetch data based on the selected month
-      const data = await fetchRepPerformanceData(selectedMonth);
-      
-      if (!data) {
-        console.error('Failed to fetch data from Supabase');
-        setIsLoading(false);
-        return false;
-      }
-      
-      // Store the fetched data
-      saveRepPerformanceData(data);
-      
-      // Set the data based on the selected month
-      if (selectedMonth === 'February') {
-        setFebRepData(data.repData || []);
-        setFebRevaData(data.revaData || []);
-        setFebWholesaleData(data.wholesaleData || []);
-        setFebBaseSummary(data.baseSummary || defaultBaseSummary);
-        setFebRevaValues(data.revaValues || defaultRevaValues);
-        setFebWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
-      } else if (selectedMonth === 'March') {
-        setRepData(data.repData || []);
-        setRevaData(data.revaData || []);
-        setWholesaleData(data.wholesaleData || []);
-        setBaseSummary(data.baseSummary || defaultBaseSummary);
-        setRevaValues(data.revaValues || defaultRevaValues);
-        setWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
-      } else if (selectedMonth === 'April') {
-        setAprRepData(data.repData || []);
-        setAprRevaData(data.revaData || []);
-        setAprWholesaleData(data.wholesaleData || []);
-        setAprBaseSummary(data.baseSummary || defaultBaseSummary);
-        setAprRevaValues(data.revaValues || defaultRevaValues);
-        setAprWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
-      } else if (selectedMonth === 'May') {
-        setMayRepData(data.repData || []);
-        setMayRevaData(data.revaData || []);
-        setMayWholesaleData(data.wholesaleData || []);
-        setMayBaseSummary(data.baseSummary || defaultBaseSummary);
-        setMayRevaValues(data.revaValues || defaultRevaValues);
-        setMayWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
-      }
-      
-      // Set the change calculations
-      setSummaryChanges(data.summaryChanges || defaultSummaryChanges);
-      setRepChanges(data.repChanges || defaultRepChanges);
-      
-      // Update summary metrics based on the selected month
-      updateSummaryMetrics();
-      
-      setIsLoading(false);
-      return true;
-    } catch (error) {
-      console.error('Error loading data:', error);
-      setIsLoading(false);
-      return false;
-    }
-  }, [selectedMonth, updateSummaryMetrics]); // Add dependencies
-
   // Function to update summary metrics based on selected month and filters
   const updateSummaryMetrics = useCallback(() => {
     let currentBaseSummary: SummaryData;
@@ -226,6 +161,71 @@ export const useRepPerformanceData = () => {
     mayBaseSummary, mayRevaValues, mayWholesaleValues
   ]);
 
+  // Define loadDataFromSupabase before using it
+  const loadDataFromSupabase = useCallback(async () => {
+    setIsLoading(true);
+    console.log(`Loading data for ${selectedMonth} from Supabase...`);
+    
+    try {
+      // Fetch data based on the selected month
+      const data = await fetchRepPerformanceData(selectedMonth);
+      
+      if (!data) {
+        console.error('Failed to fetch data from Supabase');
+        setIsLoading(false);
+        return false;
+      }
+      
+      // Store the fetched data
+      saveRepPerformanceData(data);
+      
+      // Set the data based on the selected month
+      if (selectedMonth === 'February') {
+        setFebRepData(data.repData || []);
+        setFebRevaData(data.revaData || []);
+        setFebWholesaleData(data.wholesaleData || []);
+        setFebBaseSummary(data.baseSummary || defaultBaseSummary);
+        setFebRevaValues(data.revaValues || defaultRevaValues);
+        setFebWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      } else if (selectedMonth === 'March') {
+        setRepData(data.repData || []);
+        setRevaData(data.revaData || []);
+        setWholesaleData(data.wholesaleData || []);
+        setBaseSummary(data.baseSummary || defaultBaseSummary);
+        setRevaValues(data.revaValues || defaultRevaValues);
+        setWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      } else if (selectedMonth === 'April') {
+        setAprRepData(data.repData || []);
+        setAprRevaData(data.revaData || []);
+        setAprWholesaleData(data.wholesaleData || []);
+        setAprBaseSummary(data.baseSummary || defaultBaseSummary);
+        setAprRevaValues(data.revaValues || defaultRevaValues);
+        setAprWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      } else if (selectedMonth === 'May') {
+        setMayRepData(data.repData || []);
+        setMayRevaData(data.revaData || []);
+        setMayWholesaleData(data.wholesaleData || []);
+        setMayBaseSummary(data.baseSummary || defaultBaseSummary);
+        setMayRevaValues(data.revaValues || defaultRevaValues);
+        setMayWholesaleValues(data.wholesaleValues || defaultWholesaleValues);
+      }
+      
+      // Set the change calculations
+      setSummaryChanges(data.summaryChanges || defaultSummaryChanges);
+      setRepChanges(data.repChanges || defaultRepChanges);
+      
+      // Update summary metrics based on the selected month
+      updateSummaryMetrics();
+      
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setIsLoading(false);
+      return false;
+    }
+  }, [selectedMonth, updateSummaryMetrics]); // Add dependencies
+
   // Load initial data
   useEffect(() => {
     // Try to load from local storage first
@@ -274,7 +274,7 @@ export const useRepPerformanceData = () => {
       // If no local data, load from API
       loadDataFromSupabase();
     }
-  }, []); // Make sure to include loadDataFromSupabase in the dependency array to fix the error
+  }, [loadDataFromSupabase]); // Make sure to include loadDataFromSupabase in the dependency array
 
   // Update summary whenever filters change
   useEffect(() => {

@@ -480,20 +480,35 @@ const fetchDepartmentData = async (department: string, tableName: string, monthF
     try {
       let query;
       
+      // Explicitly type the table name to fix "Type instantiation is excessively deep" errors
+      // and "Argument of type 'string' is not assignable to parameter of type..." errors
       if (tableName === 'sales_data') {
-        // For sales_data table
         query = supabase
-          .from(tableName)
+          .from('sales_data')
+          .select('*')
+          .eq(isDepartmentField, department)
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      } else if (tableName === 'sales_data_februrary') {
+        query = supabase
+          .from('sales_data_februrary')
+          .select('*')
+          .eq(isDepartmentField, department)
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      } else if (tableName === 'May_Data') {
+        query = supabase
+          .from('May_Data')
+          .select('*')
+          .eq(isDepartmentField, department)
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      } else if (tableName === 'mtd_daily') {
+        query = supabase
+          .from('mtd_daily')
           .select('*')
           .eq(isDepartmentField, department)
           .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
       } else {
-        // For other tables (May_Data, sales_data_februrary)
-        query = supabase
-          .from(tableName)
-          .select('*')
-          .eq(isDepartmentField, department)
-          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        // For any other tables, throw an error to let us know we need to add explicit handling
+        throw new Error(`Unsupported table name: ${tableName}. Please add explicit handling for this table.`);
       }
       
       const { data, error, count } = await query;
