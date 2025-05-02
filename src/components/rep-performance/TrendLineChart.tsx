@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -42,10 +43,10 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   includeReva,
   includeWholesale
 }) => {
-  // State to track which metrics are visible
+  // State to track which metrics are visible - only profit selected by default
   const [showProfit, setShowProfit] = useState(true);
-  const [showSpend, setShowSpend] = useState(true);
-  const [showPacks, setShowPacks] = useState(true);
+  const [showSpend, setShowSpend] = useState(false);
+  const [showPacks, setShowPacks] = useState(false);
 
   const chartData = useMemo(() => {
     const data: TrendData[] = [
@@ -81,20 +82,6 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     
     return data;
   }, [febSummary, marchSummary, aprilSummary, maySummary]);
-  
-  // Calculate month-to-month growth instead of Feb-May growth
-  const monthToMonthGrowth = useMemo(() => {
-    // Calculate the most recent month-to-month growth (May compared to April)
-    const currentProfit = maySummary.totalProfit || 0;
-    const previousProfit = aprilSummary.totalProfit || 0;
-    
-    if (previousProfit > 0) {
-      const growth = ((currentProfit - previousProfit) / previousProfit) * 100;
-      return growth.toFixed(1) + '%';
-    }
-    
-    return '0.0%';
-  }, [maySummary, aprilSummary]);
 
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
@@ -150,7 +137,6 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-medium text-white/90 flex justify-between">
           <span>Monthly Performance Trends</span>
-          <span className="text-sm text-finance-red">May vs Apr MTD: {monthToMonthGrowth}</span>
         </CardTitle>
         <CardDescription className="text-xs md:text-sm mb-3 md:mb-4 text-white/60">
           {includeRetail && includeReva && includeWholesale ? 'Showing all departments' : 
