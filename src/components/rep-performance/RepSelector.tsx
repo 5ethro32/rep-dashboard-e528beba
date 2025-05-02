@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Check, X } from "lucide-react";
@@ -22,12 +22,35 @@ const RepSelector: React.FC<RepSelectorProps> = ({
   // Sort reps alphabetically for better UX
   const sortedReps = [...availableReps].sort((a, b) => a.localeCompare(b));
   
-  // Add console log to help debug
+  // Add effect hook to log when the component renders with new props
+  useEffect(() => {
+    console.log("RepSelector rendering with updated props:", {
+      availableRepsCount: availableReps.length,
+      selectedRepsCount: selectedReps.length,
+      availableReps,
+      selectedReps
+    });
+  }, [availableReps, selectedReps]);
+  
+  // Add console log on initial render
   console.log("RepSelector rendering with:", {
     availableRepsCount: availableReps.length,
     selectedRepsCount: selectedReps.length,
-    sortedReps
+    sortedReps,
+    selectedReps
   });
+  
+  // Handle rep selection with debugging
+  const handleRepSelection = (rep: string) => {
+    console.log(`Rep selection triggered for: ${rep}`);
+    onSelectRep(rep);
+  };
+  
+  // Handle clear with debugging
+  const handleClearSelection = () => {
+    console.log("Clear selection triggered");
+    onClearSelection();
+  };
   
   return (
     <div className="w-full">
@@ -40,7 +63,7 @@ const RepSelector: React.FC<RepSelectorProps> = ({
             variant="ghost" 
             size="sm"
             className="h-6 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10"
-            onClick={onClearSelection}
+            onClick={handleClearSelection}
           >
             <X className="h-3 w-3 mr-1" /> Clear
           </Button>
@@ -68,7 +91,7 @@ const RepSelector: React.FC<RepSelectorProps> = ({
                     ? "opacity-50 cursor-not-allowed"
                     : ""
                 }`}
-                onClick={() => onSelectRep(rep)}
+                onClick={() => handleRepSelection(rep)}
                 disabled={selectedReps.length >= maxSelections && !selectedReps.includes(rep)}
               >
                 {selectedReps.includes(rep) && (

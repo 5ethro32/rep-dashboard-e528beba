@@ -206,22 +206,33 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 
   // Helper function to get summary data for a specific data source
   const getDataSourceSummary = (dataSource: DataSourceType, febData: SummaryData, marchData: SummaryData, aprilData: SummaryData) => {
+    // Log all incoming data for debugging purposes
     console.log("Getting data source summary for:", dataSource, {
-      febData,
-      marchData,
-      aprilData,
+      febData: JSON.stringify(febData),
+      marchData: JSON.stringify(marchData),
+      aprilData: JSON.stringify(aprilData),
       includeRetail,
       includeReva,
       includeWholesale
     });
     
+    // Verify data integrity
+    if (!febData || !marchData || !aprilData) {
+      console.error("Missing summary data for one or more months:", {
+        hasFebData: !!febData,
+        hasMarchData: !!marchData,
+        hasAprilData: !!aprilData
+      });
+    }
+    
     // Early return if data source is overall
     if (dataSource === 'overall') {
+      console.log("Returning overall data for all months");
       return { febData, marchData, aprilData };
     }
     
     // Create empty summary objects for each data source
-    const emptyFebSummary: SummaryData = {
+    const emptySummary: SummaryData = {
       totalSpend: 0,
       totalProfit: 0,
       totalPacks: 0,
@@ -230,101 +241,154 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       averageMargin: 0
     };
     
-    const emptyMarchSummary = { ...emptyFebSummary };
-    const emptyAprilSummary = { ...emptyFebSummary };
-    
     // Return department-specific data based on selection
     switch(dataSource) {
       case 'retail':
         // For retail, only return data if includeRetail is true
-        if (!includeRetail) return { febData: emptyFebSummary, marchData: emptyMarchSummary, aprilData: emptyAprilSummary };
+        if (!includeRetail) {
+          console.log("Retail is disabled, returning empty data");
+          return { 
+            febData: emptySummary, 
+            marchData: emptySummary, 
+            aprilData: emptySummary 
+          };
+        }
         
-        // Use the original (retail) data directly
+        // Retail data is the base data directly from the inputs
+        console.log("Returning retail data for all months");
         return { febData, marchData, aprilData };
         
       case 'reva':
         // For REVA, only return data if includeReva is true
-        if (!includeReva) return { febData: emptyFebSummary, marchData: emptyMarchSummary, aprilData: emptyAprilSummary };
+        if (!includeReva) {
+          console.log("REVA is disabled, returning empty data");
+          return { 
+            febData: emptySummary, 
+            marchData: emptySummary, 
+            aprilData: emptySummary 
+          };
+        }
         
+        console.log("Returning REVA data for all months");
+        // Make a explicit, shallow copy for each month to avoid reference issues
         return {
+          // Use February REVA data for February
           febData: {
-            totalSpend: febData.totalSpend || 0,
-            totalProfit: febData.totalProfit || 0,
-            totalPacks: febData.totalPacks || 0,
-            totalAccounts: febData.totalAccounts || 0,
-            activeAccounts: febData.activeAccounts || 0,
-            averageMargin: febData.averageMargin || 0
+            totalSpend: 0,
+            totalProfit: 0,
+            totalPacks: 0,
+            totalAccounts: 0,
+            activeAccounts: 0,
+            averageMargin: 0,
+            ...febData // Include original data properties
           },
+          // Use March REVA data for March
           marchData: {
-            totalSpend: marchData.totalSpend || 0,
-            totalProfit: marchData.totalProfit || 0,
-            totalPacks: marchData.totalPacks || 0,
-            totalAccounts: marchData.totalAccounts || 0,
-            activeAccounts: marchData.activeAccounts || 0,
-            averageMargin: marchData.averageMargin || 0
+            totalSpend: 0,
+            totalProfit: 0,
+            totalPacks: 0,
+            totalAccounts: 0,
+            activeAccounts: 0,
+            averageMargin: 0,
+            ...marchData // Include original data properties
           },
+          // Use April REVA data for April
           aprilData: {
-            totalSpend: aprilData.totalSpend || 0,
-            totalProfit: aprilData.totalProfit || 0,
-            totalPacks: aprilData.totalPacks || 0,
-            totalAccounts: aprilData.totalAccounts || 0,
-            activeAccounts: aprilData.activeAccounts || 0,
-            averageMargin: aprilData.averageMargin || 0
+            totalSpend: 0,
+            totalProfit: 0,
+            totalPacks: 0,
+            totalAccounts: 0,
+            activeAccounts: 0,
+            averageMargin: 0,
+            ...aprilData // Include original data properties
           }
         };
         
       case 'wholesale':
         // For Wholesale, only return data if includeWholesale is true
-        if (!includeWholesale) return { febData: emptyFebSummary, marchData: emptyMarchSummary, aprilData: emptyAprilSummary };
+        if (!includeWholesale) {
+          console.log("Wholesale is disabled, returning empty data");
+          return { 
+            febData: emptySummary, 
+            marchData: emptySummary, 
+            aprilData: emptySummary 
+          };
+        }
         
+        console.log("Returning wholesale data for all months");
+        // Make explicit, shallow copies for each month's data
         return {
+          // Use February Wholesale data for February
           febData: {
-            totalSpend: febData.totalSpend || 0,
-            totalProfit: febData.totalProfit || 0,
-            totalPacks: febData.totalPacks || 0,
-            totalAccounts: febData.totalAccounts || 0,
-            activeAccounts: febData.activeAccounts || 0,
-            averageMargin: febData.averageMargin || 0
+            totalSpend: 0,
+            totalProfit: 0,
+            totalPacks: 0,
+            totalAccounts: 0,
+            activeAccounts: 0,
+            averageMargin: 0,
+            ...febData // Include original data properties
           },
+          // Use March Wholesale data for March
           marchData: {
-            totalSpend: marchData.totalSpend || 0,
-            totalProfit: marchData.totalProfit || 0,
-            totalPacks: marchData.totalPacks || 0,
-            totalAccounts: marchData.totalAccounts || 0,
-            activeAccounts: marchData.activeAccounts || 0,
-            averageMargin: marchData.averageMargin || 0
+            totalSpend: 0,
+            totalProfit: 0,
+            totalPacks: 0,
+            totalAccounts: 0,
+            activeAccounts: 0,
+            averageMargin: 0,
+            ...marchData // Include original data properties
           },
+          // Use April Wholesale data for April
           aprilData: {
-            totalSpend: aprilData.totalSpend || 0,
-            totalProfit: aprilData.totalProfit || 0,
-            totalPacks: aprilData.totalPacks || 0,
-            totalAccounts: aprilData.totalAccounts || 0,
-            activeAccounts: aprilData.activeAccounts || 0,
-            averageMargin: aprilData.averageMargin || 0
+            totalSpend: 0,
+            totalProfit: 0,
+            totalPacks: 0,
+            totalAccounts: 0,
+            activeAccounts: 0,
+            averageMargin: 0,
+            ...aprilData // Include original data properties
           }
         };
         
       default:
+        console.log("Unknown data source, returning all data");
         return { febData, marchData, aprilData };
     }
   };
 
   // Function to get metric value from summary data
   const getMetricValue = (summary: SummaryData, metric: MetricType): number => {
-    if (!summary) return 0;
+    if (!summary) {
+      console.warn("Missing summary data in getMetricValue");
+      return 0;
+    }
     
+    // Add validation to prevent NaN values
+    let result = 0;
     switch(metric) {
       case 'profit':
-        return Number(summary.totalProfit) || 0;
+        result = Number(summary.totalProfit) || 0;
+        break;
       case 'spend':
-        return Number(summary.totalSpend) || 0;
+        result = Number(summary.totalSpend) || 0;
+        break;
       case 'margin':
-        return Number(summary.averageMargin) || 0;
+        result = Number(summary.averageMargin) || 0;
+        break;
       case 'packs':
-        return Number(summary.totalPacks) || 0;
+        result = Number(summary.totalPacks) || 0;
+        break;
       default:
-        return 0;
+        result = 0;
     }
+    
+    // Verify the result is a valid number
+    if (isNaN(result)) {
+      console.error(`Invalid ${metric} value:`, summary);
+      return 0;
+    }
+    
+    return result;
   };
   
   // Function to get filtered rep data based on data source
@@ -462,6 +526,30 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       marchSummary,
       aprilSummary
     );
+    
+    // Log the data to verify correct month data is being used
+    console.log("Chart data preparation:", {
+      selectedDataSource,
+      selectedMetric,
+      febSummary: {
+        profit: febData.totalProfit,
+        spend: febData.totalSpend,
+        packs: febData.totalPacks,
+        margin: febData.averageMargin
+      },
+      marchSummary: {
+        profit: marchData.totalProfit,
+        spend: marchData.totalSpend,
+        packs: marchData.totalPacks,
+        margin: marchData.averageMargin
+      },
+      aprilSummary: {
+        profit: aprilData.totalProfit,
+        spend: aprilData.totalSpend,
+        packs: aprilData.totalPacks,
+        margin: aprilData.averageMargin
+      }
+    });
     
     const febValue = getMetricValue(febData, selectedMetric);
     const marchValue = getMetricValue(marchData, selectedMetric);
