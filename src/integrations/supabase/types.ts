@@ -65,7 +65,7 @@ export type Database = {
           },
         ]
       }
-      march_rolling: {
+      May_Data: {
         Row: {
           "Account Name": string | null
           "Account Ref": string | null
@@ -111,6 +111,96 @@ export type Database = {
         Relationships: []
       }
       mtd_daily: {
+        Row: {
+          "Account Name": string | null
+          "Account Ref": string | null
+          Cost: number | null
+          Credit: number | null
+          Department: string | null
+          id: string
+          Margin: number | null
+          Packs: number | null
+          Profit: number | null
+          Rep: string
+          Spend: number | null
+          "Sub-Rep": string | null
+        }
+        Insert: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Update: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep?: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Relationships: []
+      }
+      "Prior Month Rolling Old": {
+        Row: {
+          "Account Name": string | null
+          "Account Ref": string | null
+          Cost: number | null
+          Credit: number | null
+          Department: string | null
+          id: string
+          Margin: number | null
+          Packs: number | null
+          Profit: number | null
+          Rep: string
+          Spend: number | null
+          "Sub-Rep": string | null
+        }
+        Insert: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Update: {
+          "Account Name"?: string | null
+          "Account Ref"?: string | null
+          Cost?: number | null
+          Credit?: number | null
+          Department?: string | null
+          id?: string
+          Margin?: number | null
+          Packs?: number | null
+          Profit?: number | null
+          Rep?: string
+          Spend?: number | null
+          "Sub-Rep"?: string | null
+        }
+        Relationships: []
+      }
+      Prior_Month_Rolling: {
         Row: {
           "Account Name": string | null
           "Account Ref": string | null
@@ -347,7 +437,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      clear_may_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       clear_mtd_daily: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      clear_prior_month_rolling: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

@@ -49,6 +49,9 @@ const RepPerformance = () => {
     febBaseSummary,
     febRevaValues,
     febWholesaleValues,
+    mayBaseSummary,
+    mayRevaValues,
+    mayWholesaleValues,
   } = useRepPerformanceData();
   
   // Clear auto-refreshed status after a delay
@@ -107,25 +110,37 @@ const RepPerformance = () => {
     includeWholesale
   );
   
+  const filteredMaySummary: SummaryData = calculateSummary(
+    mayBaseSummary,
+    mayRevaValues,
+    mayWholesaleValues,
+    includeRetail,
+    includeReva,
+    includeWholesale
+  );
+  
   // Create the rep data object for the chart with month-specific data
   const repData = {
     february: getActiveData('rep', 'February'),
     march: getActiveData('rep', 'March'),
-    april: getActiveData('rep', 'April')
+    april: getActiveData('rep', 'April'),
+    may: getActiveData('rep', 'May')
   };
   
   // Add debugging logs to verify we're getting different data for each month
   console.log('February rep data count:', repData.february.length);
   console.log('March rep data count:', repData.march.length);
   console.log('April rep data count:', repData.april.length);
+  console.log('May rep data count:', repData.may.length);
   
   // Sample rep for debugging - show first rep's data across months if available
-  if (repData.february.length > 0 && repData.march.length > 0 && repData.april.length > 0) {
+  if (repData.february.length > 0 && repData.march.length > 0 && repData.april.length > 0 && repData.may.length > 0) {
     const sampleRep = repData.february[0].rep;
     console.log(`Sample rep "${sampleRep}" data:`, {
       february: repData.february.find(r => r.rep === sampleRep)?.profit,
       march: repData.march.find(r => r.rep === sampleRep)?.profit,
-      april: repData.april.find(r => r.rep === sampleRep)?.profit
+      april: repData.april.find(r => r.rep === sampleRep)?.profit,
+      may: repData.may.find(r => r.rep === sampleRep)?.profit
     });
   }
   
@@ -202,6 +217,7 @@ const RepPerformance = () => {
           febSummary={filteredFebSummary}
           marchSummary={filteredMarSummary}
           aprilSummary={filteredAprSummary}
+          maySummary={filteredMaySummary}
           isLoading={isLoading}
           repData={repData}
           includeRetail={includeRetail}
@@ -240,15 +256,18 @@ const RepPerformance = () => {
         includeWholesale={includeWholesale}
         baseSummary={
           selectedMonth === 'March' ? baseSummary : 
-          selectedMonth === 'February' ? febBaseSummary : aprBaseSummary
+          selectedMonth === 'February' ? febBaseSummary : 
+          selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary
         }
         revaValues={
           selectedMonth === 'March' ? revaValues : 
-          selectedMonth === 'February' ? febRevaValues : aprRevaValues
+          selectedMonth === 'February' ? febRevaValues : 
+          selectedMonth === 'April' ? aprRevaValues : mayRevaValues
         }
         wholesaleValues={
           selectedMonth === 'March' ? wholesaleValues : 
-          selectedMonth === 'February' ? febWholesaleValues : aprWholesaleValues
+          selectedMonth === 'February' ? febWholesaleValues : 
+          selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues
         }
       />
     </div>
