@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -302,26 +301,26 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           </ToggleGroupItem>
         </ToggleGroup>
         
-        {/* Rep comparison section */}
-        <div className="mt-2">
+        {/* Rep comparison section with improved styling */}
+        <div className="mt-3">
           <div 
-            className="flex items-center justify-between text-sm text-white/80 cursor-pointer mb-1"
+            className="flex items-center justify-between text-sm cursor-pointer mb-1"
             onClick={() => setShowRepComparison(!showRepComparison)}
           >
-            <span className="font-medium flex items-center">
+            <span className="font-medium flex items-center bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
               Compare Reps
               {showRepComparison ? 
-                <ChevronUp className="ml-1 h-4 w-4 opacity-70" /> : 
-                <ChevronDown className="ml-1 h-4 w-4 opacity-70" />
+                <ChevronUp className="ml-1 h-4 w-4 text-blue-400" /> : 
+                <ChevronDown className="ml-1 h-4 w-4 text-blue-400" />
               }
             </span>
             
             <TooltipProvider>
               <UITooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-xs text-white/50">
-                    {selectedReps.length > 0 ? `${selectedReps.length} rep${selectedReps.length > 1 ? 's' : ''} selected` : 'No reps selected'}
-                  </span>
+                  <button className="text-xs px-3 py-1 rounded-full border border-purple-400/30 bg-purple-400/10 text-purple-300 hover:bg-purple-400/20 transition-colors">
+                    Compare Reps
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs">Select up to 3 reps to compare their performance</p>
