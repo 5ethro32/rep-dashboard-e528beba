@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -219,7 +218,7 @@ const RepPerformance = () => {
           aprilSummary={filteredAprSummary}
           maySummary={filteredMaySummary}
           isLoading={isLoading}
-          repData={repData}
+          repDataProp={repData}
           includeRetail={includeRetail}
           includeReva={includeReva}
           includeWholesale={includeWholesale}
