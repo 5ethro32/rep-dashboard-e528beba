@@ -81,9 +81,6 @@ const RepPerformance = () => {
   const handleMonthSelection = async (month: string) => {
     console.log(`Changing month to ${month}...`);
     
-    // Set loading state to true
-    // Don't need to use isLoading since it's already managed by loadDataFromSupabase
-    
     // Set month first to avoid UI flicker
     setSelectedMonth(month);
     
@@ -108,8 +105,6 @@ const RepPerformance = () => {
       });
     }
   };
-  
-  const activeData = getActiveData('overall');
   
   // Calculate filtered summary data for each month using the same calculation as metric cards
   const filteredFebSummary: SummaryData = calculateSummary(
@@ -166,24 +161,6 @@ const RepPerformance = () => {
     aprBaseSummary, aprRevaValues, aprWholesaleValues,
     mayBaseSummary, mayRevaValues, mayWholesaleValues
   ]);
-  
-  // Add debugging logs to verify we're getting different data for each month
-  console.log('Current month selection:', selectedMonth);
-  console.log('February rep data count:', repData.february.length);
-  console.log('March rep data count:', repData.march.length);
-  console.log('April rep data count:', repData.april.length);
-  console.log('May rep data count:', repData.may.length);
-  
-  // Sample rep for debugging - show first rep's data across months if available
-  if (repData.february.length > 0 && repData.march.length > 0 && repData.april.length > 0 && repData.may.length > 0) {
-    const sampleRep = repData.february[0].rep;
-    console.log(`Sample rep "${sampleRep}" data:`, {
-      february: repData.february.find(r => r.rep === sampleRep)?.profit,
-      march: repData.march.find(r => r.rep === sampleRep)?.profit,
-      april: repData.april.find(r => r.rep === sampleRep)?.profit,
-      may: repData.may.find(r => r.rep === sampleRep)?.profit
-    });
-  }
   
   // Effect to monitor data changes
   useEffect(() => {
