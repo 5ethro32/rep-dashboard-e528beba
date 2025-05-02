@@ -17,6 +17,7 @@ import {
   defaultRepChanges
 } from '@/data/rep-performance-default-data';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
+import { toast } from '@/components/ui/use-toast';
 
 export const useRepPerformanceData = () => {
   const [includeRetail, setIncludeRetail] = useState(true);
@@ -58,6 +59,33 @@ export const useRepPerformanceData = () => {
   
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
+
+  // Define the loadDataFromSupabase function before it's used in useEffect
+  const loadDataFromSupabase = async () => {
+    // Logic to load data based on the selected month
+    setIsLoading(true);
+    let success = false;
+    
+    try {
+      if (selectedMonth === 'May') {
+        success = await loadMayData();
+      } else if (selectedMonth === 'April') {
+        success = await loadAprilData();
+      } else {
+        // For February and March, you can implement similar functions
+        success = true; // Placeholder
+      }
+    } catch (error) {
+      console.error(`Error loading data for ${selectedMonth}:`, error);
+      success = false;
+    } finally {
+      setIsLoading(false);
+    }
+    
+    // Always update the summary metrics after loading data
+    updateSummaryMetrics();
+    return success;
+  };
 
   // Load initial data
   useEffect(() => {
@@ -823,31 +851,7 @@ export const useRepPerformanceData = () => {
     repChanges,
     
     // Methods for data loading and processing
-    loadDataFromSupabase: async () => {
-      // Logic to load data based on the selected month
-      setIsLoading(true);
-      let success = false;
-      
-      try {
-        if (selectedMonth === 'May') {
-          success = await loadMayData();
-        } else if (selectedMonth === 'April') {
-          success = await loadAprilData();
-        } else {
-          // For February and March, you can implement similar functions
-          success = true; // Placeholder
-        }
-      } catch (error) {
-        console.error(`Error loading data for ${selectedMonth}:`, error);
-        success = false;
-      } finally {
-        setIsLoading(false);
-      }
-      
-      // Always update the summary metrics after loading data
-      updateSummaryMetrics();
-      return success;
-    },
+    loadDataFromSupabase,
     
     // Method to get the appropriate data for each tab/view
     getActiveData: (type: string, monthOverride?: string): RepData[] => {

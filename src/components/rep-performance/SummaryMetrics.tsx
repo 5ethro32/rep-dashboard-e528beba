@@ -39,7 +39,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // Only show change indicators if we're viewing March, April, or May data (compared to previous month)
   const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April' || selectedMonth === 'May';
 
-  // Update filtered changes whenever summary data, toggles, or selected month changes
+  // Update filtered changes whenever any of the dependencies change
   useEffect(() => {
     console.log(`SummaryMetrics: Updating for ${selectedMonth} with changes:`, summaryChanges);
     console.log(`SummaryMetrics: New summary data:`, summary);
