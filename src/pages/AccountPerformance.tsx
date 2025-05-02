@@ -11,7 +11,7 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'march_rolling';
+type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling';
 
 type DataItem = {
   [key: string]: any;
@@ -79,9 +79,13 @@ const AccountPerformance = () => {
       let previousTable: AllowedTable | null;
       
       switch (selectedMonth) {
+        case 'May':
+          currentTable = "May_Data" as AllowedTable;
+          previousTable = "Prior_Month_Rolling";
+          break;
         case 'April':
           currentTable = "mtd_daily";
-          previousTable = "march_rolling";
+          previousTable = "Prior_Month_Rolling";
           break;
         case 'March':
           currentTable = "sales_data";
@@ -182,15 +186,6 @@ const AccountPerformance = () => {
         
         setTopRep({ name: topRepName, profit: maxProfit });
       }
-      
-      // Remove the toast notification for this page only
-      // Previously was: 
-      // if (!isMobile) {
-      //   toast({
-      //     title: "Data loaded successfully",
-      //     description: `Loaded ${currentData?.length || 0} records for ${selectedMonth}`,
-      //   });
-      // }
       
       // Keep error toasts only
     } catch (error) {

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { SalesDataItem, RepData, SummaryData } from '@/types/rep-performance.types';
@@ -305,8 +304,8 @@ const calculateSummaryChanges = (
                                 (previousWholesale?.totalAccounts || 0);
   
   const previousActiveAccounts = (previousRetail?.activeAccounts || 0) + 
-                                 (previousReva?.activeAccounts || 0) + 
-                                 (previousWholesale?.activeAccounts || 0);
+                                 (previousReva?.totalAccounts || 0) + 
+                                 (previousWholesale?.totalAccounts || 0);
   
   // Calculate average margin for previous month (weighted by spend)
   const previousAverageMargin = previousTotalSpend > 0 ? 
@@ -537,7 +536,7 @@ export const fetchMarchRollingData = async () => {
   while (hasMoreData) {
     try {
       const { data, error, count } = await supabase
-        .from('march_rolling')
+        .from('Prior_Month_Rolling')
         .select('*')
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
       
