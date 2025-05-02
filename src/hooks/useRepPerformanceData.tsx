@@ -1,5 +1,4 @@
 
-// At the top with the other imports
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   fetchRepPerformanceData, 
@@ -72,6 +71,11 @@ export const useRepPerformanceData = () => {
   
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
+
+  // Function to sort data based on current sort settings
+  const sortDataFunction = useCallback((data: RepData[]): RepData[] => {
+    return sortRepData(data, sortBy, sortOrder);
+  }, [sortBy, sortOrder]);
 
   // Define loadDataFromSupabase before using it
   const loadDataFromSupabase = useCallback(async () => {
@@ -389,7 +393,7 @@ export const useRepPerformanceData = () => {
           );
       }
       
-      return sortData(dataToUse);
+      return sortDataFunction(dataToUse);
     }
     
     // For specific department tabs, check if we should include that data type
@@ -431,20 +435,16 @@ export const useRepPerformanceData = () => {
         if (type === 'wholesale') currentDataset = wholesaleData;
     }
     
-    return sortData(currentDataset);
+    return sortDataFunction(currentDataset);
   }, [
     selectedMonth,
     repData, revaData, wholesaleData,
     febRepData, febRevaData, febWholesaleData,
     aprRepData, aprRevaData, aprWholesaleData,
     mayRepData, mayRevaData, mayWholesaleData,
-    includeRetail, includeReva, includeWholesale
+    includeRetail, includeReva, includeWholesale,
+    sortDataFunction
   ]);
-
-  // Function to sort data based on current sort settings
-  const sortDataFunction = useCallback((data: RepData[]): RepData[] => {
-    return sortRepData(data, sortBy, sortOrder);
-  }, [sortBy, sortOrder]);
 
   // Handle sorting column click
   const handleSort = useCallback((column: string) => {
