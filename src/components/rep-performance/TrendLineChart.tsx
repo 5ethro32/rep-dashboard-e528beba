@@ -82,18 +82,19 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     return data;
   }, [febSummary, marchSummary, aprilSummary, maySummary]);
   
-  // Calculate overall growth across all 4 months
-  const overallGrowth = useMemo(() => {
-    const startProfit = febSummary.totalProfit || 0;
-    const endProfit = maySummary.totalProfit || 0;
+  // Calculate month-to-month growth instead of Feb-May growth
+  const monthToMonthGrowth = useMemo(() => {
+    // Calculate the most recent month-to-month growth (May compared to April)
+    const currentProfit = maySummary.totalProfit || 0;
+    const previousProfit = aprilSummary.totalProfit || 0;
     
-    if (startProfit > 0) {
-      const growth = ((endProfit - startProfit) / startProfit) * 100;
+    if (previousProfit > 0) {
+      const growth = ((currentProfit - previousProfit) / previousProfit) * 100;
       return growth.toFixed(1) + '%';
     }
     
     return '0.0%';
-  }, [febSummary, maySummary]);
+  }, [maySummary, aprilSummary]);
 
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
@@ -149,7 +150,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-medium text-white/90 flex justify-between">
           <span>Monthly Performance Trends</span>
-          <span className="text-sm text-finance-red">Feb-May Growth: {overallGrowth}</span>
+          <span className="text-sm text-finance-red">May vs Apr MTD: {monthToMonthGrowth}</span>
         </CardTitle>
         <CardDescription className="text-xs md:text-sm mb-3 md:mb-4 text-white/60">
           {includeRetail && includeReva && includeWholesale ? 'Showing all departments' : 
