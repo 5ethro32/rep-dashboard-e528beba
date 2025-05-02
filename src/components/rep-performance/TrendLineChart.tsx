@@ -17,7 +17,7 @@ interface TrendLineChartProps {
   aprilSummary: SummaryData;
   maySummary: SummaryData;
   isLoading: boolean;
-  repData: {
+  repDataProp: {
     february: any[];
     march: any[];
     april: any[];
@@ -53,7 +53,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   aprilSummary,
   maySummary,
   isLoading,
-  repData: repDataProp,
+  repDataProp,
   includeRetail,
   includeReva,
   includeWholesale
@@ -182,15 +182,19 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         <div className="bg-gray-800 border border-gray-700 p-3 rounded-md shadow-lg backdrop-blur-sm">
           <p className="font-semibold text-gray-200">{label}</p>
           
-          {/* Show overall metrics */}
-          {showProfit && payload.find(p => p.dataKey === 'profit') && (
-            <p className="text-sm text-finance-red">Profit: {formatCurrency(payload.find(p => p.dataKey === 'profit')?.value || 0)}</p>
-          )}
-          {showSpend && payload.find(p => p.dataKey === 'spend') && (
-            <p className="text-sm text-blue-400">Spend: {formatCurrency(payload.find(p => p.dataKey === 'spend')?.value || 0)}</p>
-          )}
-          {showPacks && payload.find(p => p.dataKey === 'packs') && (
-            <p className="text-sm text-green-400">Packs: {Math.round(payload.find(p => p.dataKey === 'packs')?.value || 0).toLocaleString()}</p>
+          {/* Show overall metrics only if no reps are selected */}
+          {selectedReps.length === 0 && (
+            <>
+              {showProfit && payload.find(p => p.dataKey === 'profit') && (
+                <p className="text-sm text-finance-red">Profit: {formatCurrency(payload.find(p => p.dataKey === 'profit')?.value || 0)}</p>
+              )}
+              {showSpend && payload.find(p => p.dataKey === 'spend') && (
+                <p className="text-sm text-blue-400">Spend: {formatCurrency(payload.find(p => p.dataKey === 'spend')?.value || 0)}</p>
+              )}
+              {showPacks && payload.find(p => p.dataKey === 'packs') && (
+                <p className="text-sm text-green-400">Packs: {Math.round(payload.find(p => p.dataKey === 'packs')?.value || 0).toLocaleString()}</p>
+              )}
+            </>
           )}
           
           {/* Show rep-specific metrics */}
@@ -203,7 +207,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             // Only show this rep section if at least one of their metrics is found in the payload
             if (profitValue !== undefined || spendValue !== undefined || packsValue !== undefined) {
               return (
-                <div key={rep} className="mt-2 border-t border-gray-700 pt-2">
+                <div key={rep} className={`${index === 0 && selectedReps.length > 0 ? '' : 'mt-2 border-t border-gray-700 pt-2'}`}>
                   <p className="text-sm font-medium" style={{ color: repColor }}>{rep}</p>
                   
                   {showProfit && profitValue !== undefined && (
@@ -388,8 +392,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               
-              {/* Overall metrics lines */}
-              {showProfit && (
+              {/* Overall metrics lines - only display when no reps are selected */}
+              {selectedReps.length === 0 && showProfit && (
                 <Line 
                   yAxisId="left"
                   type="monotone" 
@@ -401,7 +405,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                   activeDot={{ r: 6 }}
                 />
               )}
-              {showSpend && (
+              {selectedReps.length === 0 && showSpend && (
                 <Line 
                   yAxisId="left"
                   type="monotone" 
@@ -413,7 +417,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                   activeDot={{ r: 6 }}
                 />
               )}
-              {showPacks && (
+              {selectedReps.length === 0 && showPacks && (
                 <Line 
                   yAxisId="right"
                   type="monotone" 
@@ -485,3 +489,4 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 };
 
 export default TrendLineChart;
+
