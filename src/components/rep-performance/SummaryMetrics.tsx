@@ -34,15 +34,18 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
 }) => {
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
+  const [currentSummary, setCurrentSummary] = useState(summary);
 
   // Only show change indicators if we're viewing March, April, or May data (compared to previous month)
   const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April' || selectedMonth === 'May';
 
-  // Update filtered changes whenever summary data or toggles change
+  // Update filtered changes whenever summary data, toggles, or selected month changes
   useEffect(() => {
     console.log(`SummaryMetrics: Updating for ${selectedMonth} with changes:`, summaryChanges);
+    console.log(`SummaryMetrics: New summary data:`, summary);
     setFilteredChanges(summaryChanges);
-  }, [summaryChanges, includeRetail, includeReva, includeWholesale, selectedMonth]);
+    setCurrentSummary(summary);
+  }, [summaryChanges, summary, includeRetail, includeReva, includeWholesale, selectedMonth]);
 
   // Create a change indicator for the KPI cards
   const renderChangeIndicator = (changeValue: number) => {
@@ -69,7 +72,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   };
 
   console.log("Rendering SummaryMetrics with data and filter state:", { 
-    summary, 
+    summary: currentSummary, 
     summaryChanges: filteredChanges,
     filters: { includeRetail, includeReva, includeWholesale },
     selectedMonth,
@@ -81,10 +84,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       {/* Revenue Card */}
       <MetricCard
         title="Revenue"
-        value={formatCurrency(summary.totalSpend || 0, 0)}
+        value={formatCurrency(currentSummary.totalSpend || 0, 0)}
         change={renderChangeIndicator(filteredChanges.totalSpend)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalSpend || 0, filteredChanges.totalSpend), 0)}` : 
+          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(currentSummary.totalSpend || 0, filteredChanges.totalSpend), 0)}` : 
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         isLoading={isLoading}
@@ -93,10 +96,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       {/* Profit Card */}
       <MetricCard
         title="Profit"
-        value={formatCurrency(summary.totalProfit || 0, 0)}
+        value={formatCurrency(currentSummary.totalProfit || 0, 0)}
         change={renderChangeIndicator(filteredChanges.totalProfit)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalProfit || 0, filteredChanges.totalProfit), 0)}` :
+          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(currentSummary.totalProfit || 0, filteredChanges.totalProfit), 0)}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         valueClassName="text-finance-red"
@@ -106,10 +109,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       {/* Margin Card */}
       <MetricCard
         title="Margin"
-        value={formatPercent(summary.averageMargin || 0)}
+        value={formatPercent(currentSummary.averageMargin || 0)}
         change={renderChangeIndicator(filteredChanges.averageMargin)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatPercent(getPreviousValue(summary.averageMargin || 0, filteredChanges.averageMargin))}` :
+          `${getComparisonMonthText()}: ${formatPercent(getPreviousValue(currentSummary.averageMargin || 0, filteredChanges.averageMargin))}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         isLoading={isLoading}
@@ -118,10 +121,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       {/* Packs Card */}
       <MetricCard
         title="Packs"
-        value={formatNumber(summary.totalPacks || 0)}
+        value={formatNumber(currentSummary.totalPacks || 0)}
         change={renderChangeIndicator(filteredChanges.totalPacks)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatNumber(getPreviousValue(summary.totalPacks || 0, filteredChanges.totalPacks))}` :
+          `${getComparisonMonthText()}: ${formatNumber(getPreviousValue(currentSummary.totalPacks || 0, filteredChanges.totalPacks))}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         isLoading={isLoading}

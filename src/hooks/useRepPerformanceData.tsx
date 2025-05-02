@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
 import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
@@ -706,4 +707,244 @@ export const useRepPerformanceData = () => {
           .select('*')
           .range(from, to);
         
-        if (
+        if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
+        if (pageData) allRecords = [...allRecords, ...pageData];
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error loading April data:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Add a new method to update SummaryMetrics when month selection changes
+  const updateSummaryMetrics = useCallback(() => {
+    // This function will calculate the summary data for the currently selected month
+    let currentBaseSummary = baseSummary;
+    let currentRevaValues = revaValues;
+    let currentWholesaleValues = wholesaleValues;
+    
+    if (selectedMonth === 'February') {
+      currentBaseSummary = febBaseSummary;
+      currentRevaValues = febRevaValues;
+      currentWholesaleValues = febWholesaleValues;
+    } else if (selectedMonth === 'April') {
+      currentBaseSummary = aprBaseSummary;
+      currentRevaValues = aprRevaValues;
+      currentWholesaleValues = aprWholesaleValues;
+    } else if (selectedMonth === 'May') {
+      currentBaseSummary = mayBaseSummary;
+      currentRevaValues = mayRevaValues;
+      currentWholesaleValues = mayWholesaleValues;
+    }
+    
+    const summary = calculateSummary(
+      currentBaseSummary,
+      currentRevaValues,
+      currentWholesaleValues,
+      includeRetail,
+      includeReva,
+      includeWholesale
+    );
+    
+    console.log(`Summary metrics updated for ${selectedMonth}:`, summary);
+    return summary;
+  }, [
+    selectedMonth,
+    includeRetail,
+    includeReva,
+    includeWholesale,
+    baseSummary,
+    revaValues,
+    wholesaleValues,
+    febBaseSummary,
+    febRevaValues,
+    febWholesaleValues,
+    aprBaseSummary,
+    aprRevaValues, 
+    aprWholesaleValues,
+    mayBaseSummary,
+    mayRevaValues,
+    mayWholesaleValues
+  ]);
+
+  // Return all the data and methods from our hook
+  return {
+    // All the states
+    includeRetail,
+    setIncludeRetail,
+    includeReva,
+    setIncludeReva,
+    includeWholesale,
+    setIncludeWholesale,
+    sortBy,
+    setSortBy,
+    sortOrder,
+    setSortOrder,
+    isLoading,
+    selectedMonth,
+    setSelectedMonth,
+    
+    // Data for all months
+    overallData,
+    repData,
+    revaData,
+    wholesaleData,
+    baseSummary,
+    revaValues,
+    wholesaleValues,
+    
+    febRepData,
+    febRevaData,
+    febWholesaleData,
+    febBaseSummary,
+    febRevaValues,
+    febWholesaleValues,
+    
+    aprRepData,
+    aprRevaData,
+    aprWholesaleData,
+    aprBaseSummary,
+    aprRevaValues,
+    aprWholesaleValues,
+    
+    mayRepData,
+    mayRevaData,
+    mayWholesaleData,
+    mayBaseSummary,
+    mayRevaValues,
+    mayWholesaleValues,
+    
+    // Changes data
+    summaryChanges,
+    repChanges,
+    
+    // Methods for data loading and processing
+    loadDataFromSupabase: async () => {
+      // Logic to load data based on the selected month
+      setIsLoading(true);
+      let success = false;
+      
+      try {
+        if (selectedMonth === 'May') {
+          success = await loadMayData();
+        } else if (selectedMonth === 'April') {
+          success = await loadAprilData();
+        } else {
+          // For February and March, you can implement similar functions
+          success = true; // Placeholder
+        }
+      } catch (error) {
+        console.error(`Error loading data for ${selectedMonth}:`, error);
+        success = false;
+      } finally {
+        setIsLoading(false);
+      }
+      
+      // Always update the summary metrics after loading data
+      updateSummaryMetrics();
+      return success;
+    },
+    
+    // Method to get the appropriate data for each tab/view
+    getActiveData: (type: string, monthOverride?: string): RepData[] => {
+      // Use either the provided month override or the selected month
+      const month = monthOverride || selectedMonth;
+      
+      // Select the appropriate data based on month and type
+      if (type === 'overall') {
+        // For overall data, we use the currently selected overallData
+        // which is updated in the useEffect that responds to month changes
+        return overallData;
+      } else if (type === 'rep') {
+        if (month === 'February') return febRepData;
+        if (month === 'April') return aprRepData;
+        if (month === 'May') return mayRepData;
+        return repData; // Default for March
+      } else if (type === 'reva') {
+        if (month === 'February') return febRevaData;
+        if (month === 'April') return aprRevaData;
+        if (month === 'May') return mayRevaData;
+        return revaData; // Default for March
+      } else if (type === 'wholesale') {
+        if (month === 'February') return febWholesaleData;
+        if (month === 'April') return aprWholesaleData;
+        if (month === 'May') return mayWholesaleData;
+        return wholesaleData; // Default for March
+      }
+      
+      return [];
+    },
+    
+    // Method to sort data
+    sortData: (data: RepData[]): RepData[] => {
+      return sortRepData(data, sortBy, sortOrder);
+    },
+    
+    // Method to handle sorting changes
+    handleSort: (field: string) => {
+      if (field === sortBy) {
+        // Toggle sort direction if clicking the same column
+        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      } else {
+        // Set new sort field and default to descending order
+        setSortBy(field);
+        setSortOrder('desc');
+      }
+    },
+    
+    // Helper method to get the previous month's value for a metric
+    getFebValue: (rep: string, metricType: string, currentValue: number, changePercent: number): string => {
+      if (!changePercent || Math.abs(changePercent) < 0.1) return '';
+      
+      // Calculate previous month's value based on current value and percent change
+      let previousValue: number;
+      
+      if (metricType === 'margin') {
+        // For margin, the change is absolute, not percentage
+        previousValue = currentValue - changePercent;
+      } else {
+        // For other metrics, change is percentage
+        previousValue = currentValue / (1 + changePercent / 100);
+      }
+      
+      // Format the previous value based on the metric type
+      if (metricType === 'spend' || metricType === 'profit') {
+        return formatCurrency(previousValue, 0);
+      } else if (metricType === 'margin') {
+        return formatPercent(previousValue);
+      } else if (metricType === 'packs' || metricType === 'activeAccounts' || metricType === 'totalAccounts') {
+        return formatNumber(previousValue);
+      }
+      
+      return previousValue.toString();
+    },
+    
+    // Get the current summary based on filters
+    get summary() {
+      return calculateSummary(
+        selectedMonth === 'February' ? febBaseSummary :
+        selectedMonth === 'April' ? aprBaseSummary :
+        selectedMonth === 'May' ? mayBaseSummary : baseSummary,
+        
+        selectedMonth === 'February' ? febRevaValues :
+        selectedMonth === 'April' ? aprRevaValues :
+        selectedMonth === 'May' ? mayRevaValues : revaValues,
+        
+        selectedMonth === 'February' ? febWholesaleValues :
+        selectedMonth === 'April' ? aprWholesaleValues :
+        selectedMonth === 'May' ? mayWholesaleValues : wholesaleValues,
+        
+        includeRetail,
+        includeReva,
+        includeWholesale
+      );
+    },
+    
+    // Method to update summary metrics
+    updateSummaryMetrics
+  };
+};
