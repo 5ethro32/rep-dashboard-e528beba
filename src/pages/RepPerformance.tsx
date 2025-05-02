@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -14,6 +15,7 @@ import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
+import { toast } from '@/components/ui/use-toast';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
@@ -68,15 +70,43 @@ const RepPerformance = () => {
   const handleRefresh = async () => {
     await loadDataFromSupabase();
     setAutoRefreshed(true);
+    toast({
+      title: "Data refreshed",
+      description: "The latest performance data has been loaded.",
+      duration: 3000
+    });
   };
 
-  // Handle month selection with proper data refresh
+  // Enhanced month selection handler that updates all components
   const handleMonthSelection = async (month: string) => {
+    console.log(`Changing month to ${month}...`);
+    
+    // Set loading state to true
+    // Don't need to use isLoading since it's already managed by loadDataFromSupabase
+    
     // Set month first to avoid UI flicker
     setSelectedMonth(month);
-    // Then refresh data completely
-    await loadDataFromSupabase();
-    setAutoRefreshed(true);
+    
+    try {
+      // Then refresh data completely
+      await loadDataFromSupabase();
+      setAutoRefreshed(true);
+      
+      console.log(`Month successfully changed to ${month}`);
+      toast({
+        title: `${month} data loaded`,
+        description: `Performance data for ${month} 2025 has been loaded.`,
+        duration: 3000
+      });
+    } catch (error) {
+      console.error(`Error loading data for ${month}:`, error);
+      toast({
+        title: "Error loading data",
+        description: `Could not load data for ${month}. Please try again.`,
+        variant: "destructive",
+        duration: 5000
+      });
+    }
   };
   
   const activeData = getActiveData('overall');
@@ -119,14 +149,26 @@ const RepPerformance = () => {
   );
   
   // Create the rep data object for the chart with month-specific data
-  const repData = {
+  // Memoize this to avoid recalculating on every render
+  const repData = React.useMemo(() => ({
     february: getActiveData('rep', 'February'),
     march: getActiveData('rep', 'March'),
     april: getActiveData('rep', 'April'),
     may: getActiveData('rep', 'May')
-  };
+  }), [
+    selectedMonth, 
+    includeRetail, 
+    includeReva, 
+    includeWholesale,
+    // Include all data dependencies
+    febBaseSummary, febRevaValues, febWholesaleValues,
+    baseSummary, revaValues, wholesaleValues,
+    aprBaseSummary, aprRevaValues, aprWholesaleValues,
+    mayBaseSummary, mayRevaValues, mayWholesaleValues
+  ]);
   
   // Add debugging logs to verify we're getting different data for each month
+  console.log('Current month selection:', selectedMonth);
   console.log('February rep data count:', repData.february.length);
   console.log('March rep data count:', repData.march.length);
   console.log('April rep data count:', repData.april.length);
@@ -142,6 +184,19 @@ const RepPerformance = () => {
       may: repData.may.find(r => r.rep === sampleRep)?.profit
     });
   }
+  
+  // Effect to monitor data changes
+  useEffect(() => {
+    console.log('RepPerformance: Data or filters changed. Current month:', selectedMonth);
+    console.log('Summary data for current month:', summary);
+  }, [
+    selectedMonth, 
+    includeRetail, 
+    includeReva, 
+    includeWholesale, 
+    summary, 
+    repData
+  ]);
   
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
@@ -197,7 +252,7 @@ const RepPerformance = () => {
         includeWholesale={includeWholesale}
         setIncludeWholesale={setIncludeWholesale}
         selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
+        setSelectedMonth={handleMonthSelection}
       />
 
       <SummaryMetrics 
