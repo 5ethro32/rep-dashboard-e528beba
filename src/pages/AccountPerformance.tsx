@@ -11,7 +11,7 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling';
+type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 
 type DataItem = {
   [key: string]: any;
@@ -80,7 +80,7 @@ const AccountPerformance = () => {
       
       switch (selectedMonth) {
         case 'May':
-          currentTable = "May_Data" as AllowedTable;
+          currentTable = "May_Data";
           previousTable = "Prior_Month_Rolling";
           break;
         case 'April':
