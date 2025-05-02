@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -28,7 +29,7 @@ type DataItem = {
 };
 
 const AccountPerformance = () => {
-  const [selectedMonth, setSelectedMonth] = useState<string>('April');
+  const [selectedMonth, setSelectedMonth] = useState<string>('May'); // Changed default from 'April' to 'May'
   const [currentMonthRawData, setCurrentMonthRawData] = useState<DataItem[]>([]);
   const [previousMonthRawData, setPreviousMonthRawData] = useState<DataItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);

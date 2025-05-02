@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -192,7 +191,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={chartData}
-              margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+              margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis 
@@ -204,6 +203,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 orientation="left"
                 tick={{ fill: 'rgba(255,255,255,0.6)' }}
                 tickFormatter={(value) => `£${(value / 1000)}k`}
+                width={60}
               />
               <YAxis 
                 yAxisId="right"
