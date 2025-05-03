@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Sparkles } from 'lucide-react';
@@ -232,69 +233,79 @@ const AIVera = () => {
   };
 
   return (
-    <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-20">
-        <div className="flex justify-between items-center mb-6 pt-4">
+    <div className="min-h-screen bg-finance-darkBg text-white overflow-hidden">
+      {/* App header - fixed position, app-like */}
+      <header className="fixed top-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-b border-white/10 z-10">
+        <div className="flex justify-between items-center px-4 h-14">
           <Link to="/rep-performance">
-            <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
+            <Button variant="ghost" className="text-white hover:bg-white/10 p-0 h-9 w-9">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           
-          <UserProfileButton />
-        </div>
-        
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white">V</AvatarFallback>
-              </Avatar>
-              <h1 className="text-2xl font-bold">Vera AI</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">AI Analysis</span>
-              <div className="flex items-center gap-1">
-                <Switch 
-                  checked={enableAI} 
-                  onCheckedChange={setEnableAI} 
-                  id="ai-toggle"
-                />
-                <Sparkles className={`h-4 w-4 ${enableAI ? 'text-finance-red' : 'text-gray-500'}`} />
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white">V</AvatarFallback>
+            </Avatar>
+            <h1 className="text-xl font-semibold">Vera AI</h1>
           </div>
-          <p className="text-white/60">
-            Your sales data assistant. Ask me anything about your sales performance.
-          </p>
-        </div>
-        
-        <div className="flex flex-col h-[calc(100vh-220px)] border border-white/10 rounded-lg">
-          <div className="flex-grow overflow-y-auto p-4 space-y-4">
-            {messages.map((msg) => (
-              <ChatMessage 
-                key={msg.id} 
-                message={msg} 
-                onExampleClick={handleExampleClick} 
+          
+          <div className="flex gap-2">
+            <div className="flex items-center">
+              <Switch 
+                checked={enableAI} 
+                onCheckedChange={setEnableAI} 
+                id="ai-toggle"
+                className="data-[state=checked]:bg-finance-red"
               />
+              <Sparkles className={`h-4 w-4 ml-1 ${enableAI ? 'text-finance-red' : 'text-gray-500'}`} />
+            </div>
+            <UserProfileButton />
+          </div>
+        </div>
+      </header>
+      
+      {/* Main chat container - adjusted for fixed header and footer */}
+      <main className="flex flex-col h-screen pt-14 pb-16">
+        {/* Messages section with improved styling */}
+        <div className="flex-grow overflow-y-auto px-2 py-4">
+          <div className="max-w-3xl mx-auto space-y-4">
+            {messages.map((msg) => (
+              <div 
+                key={msg.id}
+                className="animate-fade-in"
+              >
+                <ChatMessage 
+                  message={msg} 
+                  onExampleClick={handleExampleClick} 
+                />
+              </div>
             ))}
             
-            {isLoading && <LoadingIndicator />}
+            {isLoading && (
+              <div className="flex justify-center py-4">
+                <LoadingIndicator />
+              </div>
+            )}
             
             <div ref={messagesEndRef} />
           </div>
-          
-          <ChatInput 
-            message={message}
-            setMessage={setMessage}
-            handleSubmit={handleSubmit}
-            handleKeyDown={handleKeyDown}
-            textareaRef={textareaRef}
-            isLoading={isLoading}
-          />
         </div>
-      </div>
+        
+        {/* Fixed chat input at the bottom */}
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-white/10 py-2 px-3">
+          <div className="max-w-3xl mx-auto">
+            <ChatInput 
+              message={message}
+              setMessage={setMessage}
+              handleSubmit={handleSubmit}
+              handleKeyDown={handleKeyDown}
+              textareaRef={textareaRef}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
+      </main>
     </div>
   );
 };

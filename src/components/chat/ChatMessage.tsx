@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -117,7 +118,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
     if (!message.chartData) return null;
     
     return (
-      <div className="mt-4 mb-2 bg-gray-800 p-4 rounded-lg">
+      <div className="mt-4 mb-2 bg-gray-800/80 p-4 rounded-xl overflow-hidden">
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={message.chartData}>
             <XAxis 
@@ -156,7 +157,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
     
     return (
       <div className="mt-4 mb-2 overflow-x-auto">
-        <table className="min-w-full bg-gray-800 rounded-lg">
+        <table className="min-w-full bg-gray-800/80 rounded-xl">
           <thead>
             <tr>
               {message.tableHeaders.map((header, index) => (
@@ -168,7 +169,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
           </thead>
           <tbody>
             {message.tableData.map((row, rowIndex) => (
-              <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-gray-800' : 'bg-gray-700'}>
+              <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-gray-800/80' : 'bg-gray-700/80'}>
                 {Object.values(row).map((cell, cellIndex) => (
                   <td key={cellIndex} className="px-4 py-2 whitespace-nowrap text-sm text-gray-300">
                     {cell as React.ReactNode}
@@ -195,8 +196,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
           }
           
           return (
-            <div key={index} className="bg-gray-800 rounded-lg p-3 flex items-center">
-              <div className="mr-3">
+            <div key={index} className="bg-gray-800/60 rounded-xl p-3 flex items-center">
+              <div className="mr-3 p-2 rounded-full bg-gray-700/60">
                 {trend.type === 'up' && <ArrowUpRight className="text-green-500 h-5 w-5" />}
                 {trend.type === 'down' && <ArrowDownRight className="text-rose-500 h-5 w-5" />}
                 {trend.type === 'neutral' && <Minus className="text-gray-400 h-5 w-5" />}
@@ -252,7 +253,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
         </div>
         <div className="space-y-2">
           {filteredInsights.map((insight, index) => (
-            <div key={index} className="bg-gray-800/80 rounded-lg p-2 text-sm flex items-start">
+            <div key={index} className="bg-gray-800/60 rounded-xl p-3 text-sm flex items-start">
               <div className="mr-2 p-1 rounded-full bg-blue-500/20 flex-shrink-0">
                 <Lightbulb className="h-3 w-3 text-blue-300" />
               </div>
@@ -263,31 +264,51 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
       </div>
     );
   };
-
-  // Remove the renderExamples function or replace it with an empty function
+  
+  // New function to render example suggestions/quick replies
   const renderExamples = () => {
-    return null; // Always return null to never show examples
+    if (!message.examples || message.examples.length === 0) return null;
+    
+    return (
+      <div className="mt-4">
+        <div className="font-medium text-sm text-gray-300 mb-2">Suggested questions:</div>
+        <div className="flex flex-wrap gap-2">
+          {message.examples.slice(0, 4).map((example, index) => (
+            <button
+              key={index}
+              onClick={() => onExampleClick(example)}
+              className="bg-gray-800/60 hover:bg-gray-700/60 text-sm text-white/90 rounded-full px-3 py-1.5 transition-colors flex items-center gap-1.5"
+            >
+              <Sparkles className="h-3 w-3 text-finance-red" />
+              {example}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   };
   
   return (
-    <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex mb-4 ${message.isUser ? 'justify-end' : 'justify-start'}`}>
       {!message.isUser && (
         <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
           <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white text-xs">V</AvatarFallback>
         </Avatar>
       )}
-      <div className={`max-w-[80%] rounded-lg p-4 ${
-        message.isUser 
-          ? 'bg-finance-red text-white' 
-          : 'bg-gray-800 text-gray-100'
-      }`}>
+      <div 
+        className={`max-w-[85%] rounded-2xl px-4 py-3 shadow-md ${
+          message.isUser 
+            ? 'bg-finance-red/90 text-white rounded-tr-none' 
+            : 'bg-gray-800/90 text-gray-100 rounded-tl-none'
+        }`}
+      >
         {!message.isUser && message.aiAnalysisUsed && (
-          <div className="flex items-center gap-1 mb-2 text-xs text-amber-300/70">
+          <div className="flex items-center gap-1 mb-2 text-xs text-amber-300/80">
             <Sparkles className="h-3 w-3" />
             <span>AI Analysis</span>
           </div>
         )}
-        <div className="whitespace-pre-wrap">
+        <div className="whitespace-pre-wrap text-[15px] leading-relaxed">
           {typeof enhancedContent === 'string' ? parseMarkdownBold(enhancedContent) : enhancedContent}
         </div>
         
@@ -299,7 +320,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
             {renderInsights()}
             {renderChart()}
             {renderTable()}
-            {/* renderExamples() - removed/not called */}
+            {renderExamples()}
           </>
         )}
       </div>

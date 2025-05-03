@@ -38,16 +38,16 @@ const ChatInput = ({
   };
   
   return (
-    <div className="border-t border-white/10 p-3">
+    <div className="w-full">
       {!isLoading && message.length === 0 && (
-        <div className="mb-2 flex gap-2 flex-wrap">
+        <div className="mb-3 flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
           {suggestedQuestions.map((question, index) => (
             <button
               key={index}
               onClick={() => handleSuggestionClick(question)}
-              className="text-xs py-1 px-3 bg-gray-700/50 hover:bg-gray-600 text-gray-300 rounded-full transition-colors flex items-center gap-1"
+              className="text-xs py-2 px-3 bg-gray-800/90 hover:bg-gray-700 text-white rounded-full transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0"
             >
-              <Sparkles className="h-3 w-3" />
+              <Sparkles className="h-3 w-3 text-finance-red" />
               {question}
             </button>
           ))}
@@ -59,14 +59,15 @@ const ChatInput = ({
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Vera about your sales data..."
-          className="min-h-[60px] resize-none bg-gray-800 border-gray-700 text-white"
+          placeholder="Message Vera..."
+          className="min-h-[56px] max-h-28 resize-none bg-gray-800/90 border-gray-700 focus:border-gray-500 text-white rounded-2xl px-4 py-3"
           disabled={isLoading}
+          style={{ paddingRight: '60px' }} // Make room for the send button
         />
         <Button 
           type="submit" 
           size="icon" 
-          className="h-10 w-10 aspect-square rounded-full bg-gradient-to-r from-finance-red to-finance-red/80 text-white flex items-center justify-center"
+          className="h-10 w-10 rounded-full absolute right-4 bottom-4 bg-finance-red hover:bg-finance-red/90 text-white flex items-center justify-center border-none"
           disabled={isLoading || !message.trim()}
           onClick={handleSubmit}
         >
