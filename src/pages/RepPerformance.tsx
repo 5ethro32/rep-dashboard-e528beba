@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -15,7 +14,6 @@ import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
-import { toast } from '@/components/ui/use-toast';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
@@ -70,41 +68,18 @@ const RepPerformance = () => {
   const handleRefresh = async () => {
     await loadDataFromSupabase();
     setAutoRefreshed(true);
-    toast({
-      title: "Data refreshed",
-      description: "The latest performance data has been loaded.",
-      duration: 3000
-    });
   };
 
-  // Enhanced month selection handler that updates all components
+  // Handle month selection with proper data refresh
   const handleMonthSelection = async (month: string) => {
-    console.log(`Changing month to ${month}...`);
-    
     // Set month first to avoid UI flicker
     setSelectedMonth(month);
-    
-    try {
-      // Then refresh data completely for the selected month
-      await loadDataFromSupabase();
-      setAutoRefreshed(true);
-      
-      console.log(`Month successfully changed to ${month}`);
-      toast({
-        title: `${month} data loaded`,
-        description: `Performance data for ${month} 2025 has been loaded.`,
-        duration: 3000
-      });
-    } catch (error) {
-      console.error(`Error loading data for ${month}:`, error);
-      toast({
-        title: "Error loading data",
-        description: `Could not load data for ${month}. Please try again.`,
-        variant: "destructive",
-        duration: 5000
-      });
-    }
+    // Then refresh data completely
+    await loadDataFromSupabase();
+    setAutoRefreshed(true);
   };
+  
+  const activeData = getActiveData('overall');
   
   // Calculate filtered summary data for each month using the same calculation as metric cards
   const filteredFebSummary: SummaryData = calculateSummary(
@@ -144,37 +119,29 @@ const RepPerformance = () => {
   );
   
   // Create the rep data object for the chart with month-specific data
-  // Memoize this to avoid recalculating on every render
-  const repData = React.useMemo(() => ({
+  const repData = {
     february: getActiveData('rep', 'February'),
     march: getActiveData('rep', 'March'),
     april: getActiveData('rep', 'April'),
     may: getActiveData('rep', 'May')
-  }), [
-    selectedMonth, 
-    includeRetail, 
-    includeReva, 
-    includeWholesale,
-    // Include all data dependencies
-    febBaseSummary, febRevaValues, febWholesaleValues,
-    baseSummary, revaValues, wholesaleValues,
-    aprBaseSummary, aprRevaValues, aprWholesaleValues,
-    mayBaseSummary, mayRevaValues, mayWholesaleValues,
-    getActiveData
-  ]);
+  };
   
-  // Effect to monitor data changes
-  useEffect(() => {
-    console.log('RepPerformance: Data or filters changed. Current month:', selectedMonth);
-    console.log('Summary data for current month:', summary);
-  }, [
-    selectedMonth, 
-    includeRetail, 
-    includeReva, 
-    includeWholesale, 
-    summary, 
-    repData
-  ]);
+  // Add debugging logs to verify we're getting different data for each month
+  console.log('February rep data count:', repData.february.length);
+  console.log('March rep data count:', repData.march.length);
+  console.log('April rep data count:', repData.april.length);
+  console.log('May rep data count:', repData.may.length);
+  
+  // Sample rep for debugging - show first rep's data across months if available
+  if (repData.february.length > 0 && repData.march.length > 0 && repData.april.length > 0 && repData.may.length > 0) {
+    const sampleRep = repData.february[0].rep;
+    console.log(`Sample rep "${sampleRep}" data:`, {
+      february: repData.february.find(r => r.rep === sampleRep)?.profit,
+      march: repData.march.find(r => r.rep === sampleRep)?.profit,
+      april: repData.april.find(r => r.rep === sampleRep)?.profit,
+      may: repData.may.find(r => r.rep === sampleRep)?.profit
+    });
+  }
   
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
@@ -230,7 +197,7 @@ const RepPerformance = () => {
         includeWholesale={includeWholesale}
         setIncludeWholesale={setIncludeWholesale}
         selectedMonth={selectedMonth}
-        setSelectedMonth={handleMonthSelection}
+        setSelectedMonth={setSelectedMonth}
       />
 
       <SummaryMetrics 
