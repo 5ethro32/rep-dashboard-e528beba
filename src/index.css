@@ -119,10 +119,17 @@
     @apply font-display font-bold;
   }
   
-  /* Fix height issues on mobile browsers */
-  html {
-    font-size: 14px;
-    height: -webkit-fill-available;
+  /* Default styling for all pages except AI Vera chat */
+  html, body, #root {
+    height: 100%;
+    min-height: 100vh;
+    width: 100%;
+    overscroll-behavior-y: contain;
+  }
+  
+  /* Only for AI Vera page will these styles be applied */
+  .ai-vera-page {
+    position: fixed;
     overflow: hidden;
     overscroll-behavior-y: none;
   }
@@ -131,6 +138,14 @@
     html {
       font-size: 16px;
     }
+  }
+
+  /* Fix height issues on mobile browsers */
+  html {
+    font-size: 14px;
+    height: -webkit-fill-available;
+    overflow: hidden;
+    overscroll-behavior-y: none;
   }
   
   /* Fix for mobile height */

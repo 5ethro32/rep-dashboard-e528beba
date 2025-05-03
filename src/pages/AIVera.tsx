@@ -89,6 +89,7 @@ const AIVera = () => {
   }, [messages]);
 
   // Add event listener to prevent viewport scaling on input focus
+  // But ONLY for this component
   useEffect(() => {
     // This meta tag prevents the viewport from scaling when focused on inputs
     const metaTag = document.createElement('meta');
@@ -97,7 +98,14 @@ const AIVera = () => {
     document.head.appendChild(metaTag);
 
     return () => {
+      // Important: When component unmounts, restore default viewport behavior
       document.head.removeChild(metaTag);
+      
+      // Add back the default viewport meta tag
+      const defaultMetaTag = document.createElement('meta');
+      defaultMetaTag.name = 'viewport';
+      defaultMetaTag.content = 'width=device-width, initial-scale=1.0';
+      document.head.appendChild(defaultMetaTag);
     };
   }, []);
 
