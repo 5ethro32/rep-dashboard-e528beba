@@ -11,6 +11,8 @@ interface ChatInputProps {
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   textareaRef: RefObject<HTMLTextAreaElement>;
   isLoading: boolean;
+  selectedModel?: string;
+  setSelectedModel?: (model: string) => void;
 }
 
 const ChatInput = ({ 
@@ -19,7 +21,9 @@ const ChatInput = ({
   handleSubmit, 
   handleKeyDown, 
   textareaRef, 
-  isLoading 
+  isLoading,
+  selectedModel,
+  setSelectedModel
 }: ChatInputProps) => {
   
   const suggestedQuestions = [
@@ -36,6 +40,11 @@ const ChatInput = ({
       textareaRef.current.focus();
     }
   };
+
+  const models = [
+    { id: 'default', name: 'Vera Standard' },
+    { id: 'enhanced', name: 'Vera Enhanced' }
+  ];
   
   return (
     <div className="w-full">
@@ -53,26 +62,46 @@ const ChatInput = ({
           ))}
         </div>
       )}
-      <div className="flex items-end gap-2">
-        <Textarea
-          ref={textareaRef}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Message Vera..."
-          className="min-h-[56px] max-h-28 resize-none bg-gray-800/90 border-gray-700 focus:border-gray-500 text-white rounded-2xl px-4 py-3"
-          disabled={isLoading}
-          style={{ paddingRight: '60px' }} // Make room for the send button
-        />
-        <Button 
-          type="submit" 
-          size="icon" 
-          className="h-10 w-10 rounded-full absolute right-4 bottom-4 bg-finance-red hover:bg-finance-red/90 text-white flex items-center justify-center border-none"
-          disabled={isLoading || !message.trim()}
-          onClick={handleSubmit}
-        >
-          <SendIcon className="h-5 w-5" />
-        </Button>
+      <div className="relative w-full flex flex-col">
+        <div className="flex items-center w-full relative">
+          <Textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Message Vera..."
+            className="min-h-[56px] max-h-28 resize-none bg-gray-800/90 border-gray-700 focus:border-gray-500 text-white rounded-2xl px-4 pt-4 pb-4 pr-16"
+            disabled={isLoading}
+          />
+          <Button 
+            type="submit" 
+            size="icon" 
+            className="absolute right-3 h-10 w-10 rounded-full bg-finance-red hover:bg-finance-red/90 text-white flex items-center justify-center border-none top-1/2 transform -translate-y-1/2 z-10"
+            disabled={isLoading || !message.trim()}
+            onClick={handleSubmit}
+          >
+            <SendIcon className="h-5 w-5" />
+          </Button>
+        </div>
+        
+        {setSelectedModel && (
+          <div className="flex justify-between items-center px-1 pt-2 text-xs text-gray-400">
+            <div className="flex items-center gap-1">
+              <select 
+                value={selectedModel || 'default'} 
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="bg-transparent border-none text-xs text-gray-400 focus:outline-none cursor-pointer"
+              >
+                {models.map(model => (
+                  <option key={model.id} value={model.id} className="bg-gray-800 text-white">
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="text-xs text-gray-500">Lovable Labs</div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -51,6 +51,7 @@ const AIVera = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>('April');
   const [enableAI, setEnableAI] = useState<boolean>(false);
+  const [selectedModel, setSelectedModel] = useState<string>('default');
   const [conversationContext, setConversationContext] = useState<ConversationContext>({
     conversationId: `vera-${Date.now()}`,
     history: [],
@@ -88,6 +89,19 @@ const AIVera = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Add event listener to prevent viewport scaling on input focus
+  useEffect(() => {
+    // This meta tag prevents the viewport from scaling when focused on inputs
+    const metaTag = document.createElement('meta');
+    metaTag.name = 'viewport';
+    metaTag.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    document.head.appendChild(metaTag);
+
+    return () => {
+      document.head.removeChild(metaTag);
+    };
+  }, []);
 
   const handleExampleClick = (exampleText: string) => {
     setMessage(exampleText);
@@ -163,6 +177,7 @@ const AIVera = () => {
           originalMessage: userQuery,
           selectedMonth,
           enableAI, // Pass the AI toggle state to the edge function
+          modelType: selectedModel, // Pass the selected model to the edge function
           conversationContext: {
             conversationId: conversationContext.conversationId,
             history: updatedHistory
@@ -233,9 +248,9 @@ const AIVera = () => {
   };
 
   return (
-    <div className="min-h-screen bg-finance-darkBg text-white overflow-hidden">
-      {/* App header - fixed position, app-like */}
-      <header className="fixed top-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-b border-white/10 z-10">
+    <div className="h-screen w-screen bg-finance-darkBg text-white overflow-hidden flex flex-col">
+      {/* App header - fixed position */}
+      <header className="flex-shrink-0 bg-gray-900/95 backdrop-blur-lg border-b border-white/10 z-10">
         <div className="flex justify-between items-center px-4 h-14">
           <Link to="/rep-performance">
             <Button variant="ghost" className="text-white hover:bg-white/10 p-0 h-9 w-9">
@@ -265,47 +280,46 @@ const AIVera = () => {
         </div>
       </header>
       
-      {/* Main chat container - adjusted for fixed header and footer */}
-      <main className="flex flex-col h-screen pt-14 pb-16">
-        {/* Messages section with improved styling */}
-        <div className="flex-grow overflow-y-auto px-2 py-4">
-          <div className="max-w-3xl mx-auto space-y-4">
-            {messages.map((msg) => (
-              <div 
-                key={msg.id}
-                className="animate-fade-in"
-              >
-                <ChatMessage 
-                  message={msg} 
-                  onExampleClick={handleExampleClick} 
-                />
-              </div>
-            ))}
-            
-            {isLoading && (
-              <div className="flex justify-center py-4">
-                <LoadingIndicator />
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-        </div>
-        
-        {/* Fixed chat input at the bottom */}
-        <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-white/10 py-2 px-3">
-          <div className="max-w-3xl mx-auto">
-            <ChatInput 
-              message={message}
-              setMessage={setMessage}
-              handleSubmit={handleSubmit}
-              handleKeyDown={handleKeyDown}
-              textareaRef={textareaRef}
-              isLoading={isLoading}
-            />
-          </div>
+      {/* Main chat container - flexible grow */}
+      <main className="flex-grow overflow-y-auto pb-32 pt-2">
+        <div className="max-w-3xl mx-auto px-2 py-2 space-y-4">
+          {messages.map((msg) => (
+            <div 
+              key={msg.id}
+              className="animate-fade-in"
+            >
+              <ChatMessage 
+                message={msg} 
+                onExampleClick={handleExampleClick} 
+              />
+            </div>
+          ))}
+          
+          {isLoading && (
+            <div className="flex justify-center py-4">
+              <LoadingIndicator />
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
         </div>
       </main>
+      
+      {/* Fixed chat input at the bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-white/10 py-3 px-3 z-10">
+        <div className="max-w-3xl mx-auto">
+          <ChatInput 
+            message={message}
+            setMessage={setMessage}
+            handleSubmit={handleSubmit}
+            handleKeyDown={handleKeyDown}
+            textareaRef={textareaRef}
+            isLoading={isLoading}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+          />
+        </div>
+      </div>
     </div>
   );
 };

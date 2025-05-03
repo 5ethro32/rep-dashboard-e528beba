@@ -95,6 +95,13 @@
   body {
     @apply bg-finance-darkBg text-white;
     -webkit-tap-highlight-color: transparent;
+    /* Prevent iOS Safari zoom */
+    touch-action: manipulation;
+  }
+  
+  /* Prevent iOS zooming on input */
+  input, textarea, select, button {
+    font-size: 16px; /* iOS won't zoom for font-size >= 16px */
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -104,12 +111,23 @@
   /* Set text size scale for mobile */
   html {
     font-size: 14px;
+    height: -webkit-fill-available;
   }
   
   @media (min-width: 768px) {
     html {
       font-size: 16px;
     }
+  }
+  
+  /* Fix for mobile height */
+  body, #root {
+    min-height: 100vh;
+    /* mobile viewport bug fix */
+    min-height: -webkit-fill-available;
+    width: 100%;
+    position: fixed;
+    overflow: hidden;
   }
   
   /* Add extra small text size for mobile */
@@ -185,5 +203,15 @@
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Hide scrollbar for chat container */
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
   }
 }
