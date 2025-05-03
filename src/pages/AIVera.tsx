@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -12,7 +12,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { reformulateQuery, generateFollowUpQuestions } from '@/utils/aiAssistantUtils';
 import { useAuth } from '@/contexts/AuthContext';
-import { Switch } from '@/components/ui/switch';
 
 // Reuse interface definitions from ChatInterface
 interface Message {
@@ -50,8 +49,7 @@ const AIVera = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>('April');
-  const [enableAI, setEnableAI] = useState<boolean>(false);
-  const [selectedModel, setSelectedModel] = useState<string>('default');
+  const [selectedModel, setSelectedModel] = useState<string>('enhanced'); // Default to enhanced model
   const [conversationContext, setConversationContext] = useState<ConversationContext>({
     conversationId: `vera-${Date.now()}`,
     history: [],
@@ -91,15 +89,29 @@ const AIVera = () => {
   }, [messages]);
 
   // Add event listener to prevent viewport scaling on input focus
+  // But ONLY for this component
   useEffect(() => {
     // This meta tag prevents the viewport from scaling when focused on inputs
     const metaTag = document.createElement('meta');
     metaTag.name = 'viewport';
     metaTag.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
     document.head.appendChild(metaTag);
+    
+    // Add AI Vera specific body class when component mounts
+    document.body.classList.add('ai-vera-page');
 
     return () => {
+      // Important: When component unmounts, restore default viewport behavior
       document.head.removeChild(metaTag);
+      
+      // Add back the default viewport meta tag
+      const defaultMetaTag = document.createElement('meta');
+      defaultMetaTag.name = 'viewport';
+      defaultMetaTag.content = 'width=device-width, initial-scale=1.0';
+      document.head.appendChild(defaultMetaTag);
+      
+      // Remove AI Vera specific body class when component unmounts
+      document.body.classList.remove('ai-vera-page');
     };
   }, []);
 
@@ -147,36 +159,13 @@ const AIVera = () => {
     }));
     
     try {
-      // Detect if the query might benefit from AI analysis
-      const mightNeedAI = userQuery.toLowerCase().includes('why') || 
-                         userQuery.toLowerCase().includes('explain') ||
-                         userQuery.toLowerCase().includes('reason');
-      
-      // Check if the user might benefit from AI but has it disabled
-      if (mightNeedAI && !enableAI) {
-        // Show a notification that AI analysis might be helpful
-        toast({
-          title: "AI Analysis Available",
-          description: "This question might benefit from AI analysis. Consider enabling the AI toggle above.",
-          action: <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setEnableAI(true)}
-            className="bg-finance-red/10 text-finance-red border-finance-red/20"
-          >
-            <Sparkles className="h-4 w-4 mr-1" />
-            Enable AI
-          </Button>
-        });
-      }
-      
       // Call Supabase Edge Function with the full conversation context
       const { data, error } = await supabase.functions.invoke('rep-chat', {
         body: {
           message: isReformulated ? enhancedQuery : userQuery,
           originalMessage: userQuery,
           selectedMonth,
-          enableAI, // Pass the AI toggle state to the edge function
+          enableAI: true, // Always enable AI analysis
           modelType: selectedModel, // Pass the selected model to the edge function
           conversationContext: {
             conversationId: conversationContext.conversationId,
@@ -265,18 +254,7 @@ const AIVera = () => {
             <h1 className="text-xl font-semibold">Vera AI</h1>
           </div>
           
-          <div className="flex gap-2">
-            <div className="flex items-center">
-              <Switch 
-                checked={enableAI} 
-                onCheckedChange={setEnableAI} 
-                id="ai-toggle"
-                className="data-[state=checked]:bg-finance-red"
-              />
-              <Sparkles className={`h-4 w-4 ml-1 ${enableAI ? 'text-finance-red' : 'text-gray-500'}`} />
-            </div>
-            <UserProfileButton />
-          </div>
+          <UserProfileButton />
         </div>
       </header>
       

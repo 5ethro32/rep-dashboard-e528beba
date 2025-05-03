@@ -11,9 +11,9 @@ import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RepTracker from "./pages/RepTracker";
-import AIVera from "./pages/AIVera"; // Import the new AI Vera page
-import AppLayout from "./components/layout/AppLayout"; // Import the layout component
-import { useIsMobile } from "./hooks/use-mobile"; // Import the mobile hook
+import AIVera from "./pages/AIVera";
+import AppLayout from "./components/layout/AppLayout";
+import { useIsMobile } from "./hooks/use-mobile";
 
 const queryClient = new QueryClient();
 
