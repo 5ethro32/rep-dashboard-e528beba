@@ -96,6 +96,9 @@ const AIVera = () => {
     metaTag.name = 'viewport';
     metaTag.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
     document.head.appendChild(metaTag);
+    
+    // Add AI Vera specific body class when component mounts
+    document.body.classList.add('ai-vera-page');
 
     return () => {
       // Important: When component unmounts, restore default viewport behavior
@@ -106,6 +109,9 @@ const AIVera = () => {
       defaultMetaTag.name = 'viewport';
       defaultMetaTag.content = 'width=device-width, initial-scale=1.0';
       document.head.appendChild(defaultMetaTag);
+      
+      // Remove AI Vera specific body class when component unmounts
+      document.body.classList.remove('ai-vera-page');
     };
   }, []);
 
