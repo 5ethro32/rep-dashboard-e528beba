@@ -305,8 +305,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
       <div 
         className={`max-w-[85%] rounded-2xl px-4 py-3 ${
           message.isUser 
-            ? 'bg-gray-800/80 text-white rounded-tr-none' // Changed from purple to a subtle gray
-            : 'bg-transparent text-gray-100 rounded-tl-none' // Removed background for AI messages
+            ? 'bg-[#7C3AED] text-white rounded-tr-none' 
+            : 'bg-transparent text-gray-100 rounded-tl-none'
         }`}
       >
         {!message.isUser && message.aiAnalysisUsed && (
