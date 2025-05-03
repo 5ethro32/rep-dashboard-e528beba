@@ -62,7 +62,7 @@ const ChatInput = ({
           ))}
         </div>
       )}
-      <div className="relative w-full flex flex-col">
+      <form onSubmit={handleSubmit} className="relative w-full">
         <div className="flex items-center w-full relative">
           <Textarea
             ref={textareaRef}
@@ -70,7 +70,7 @@ const ChatInput = ({
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Message Vera..."
-            className="min-h-[56px] max-h-28 resize-none bg-gray-800/90 border-gray-700 focus:border-gray-500 text-white rounded-2xl px-4 pt-4 pb-4 pr-16"
+            className="min-h-[50px] max-h-24 resize-none bg-gray-800/90 border-gray-700 focus:border-gray-500 text-white rounded-2xl px-4 pt-3 pb-3 pr-16"
             disabled={isLoading}
           />
           <Button 
@@ -78,7 +78,6 @@ const ChatInput = ({
             size="icon" 
             className="absolute right-3 h-10 w-10 rounded-full bg-finance-red hover:bg-finance-red/90 text-white flex items-center justify-center border-none top-1/2 transform -translate-y-1/2 z-10"
             disabled={isLoading || !message.trim()}
-            onClick={handleSubmit}
           >
             <SendIcon className="h-5 w-5" />
           </Button>
@@ -102,7 +101,7 @@ const ChatInput = ({
             <div className="text-xs text-gray-500">Lovable Labs</div>
           </div>
         )}
-      </div>
+      </form>
     </div>
   );
 };

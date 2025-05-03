@@ -99,6 +99,17 @@
     touch-action: manipulation;
   }
   
+  /* Ensure fixed elements don't get cut off by mobile browsers */
+  @supports (-webkit-touch-callout: none) {
+    .h-screen {
+      height: -webkit-fill-available;
+    }
+    
+    .min-h-screen {
+      min-height: -webkit-fill-available;
+    }
+  }
+  
   /* Prevent iOS zooming on input */
   input, textarea, select, button {
     font-size: 16px; /* iOS won't zoom for font-size >= 16px */
@@ -108,10 +119,11 @@
     @apply font-display font-bold;
   }
   
-  /* Set text size scale for mobile */
+  /* Fix height issues on mobile browsers */
   html {
     font-size: 14px;
     height: -webkit-fill-available;
+    overflow: hidden;
   }
   
   @media (min-width: 768px) {
