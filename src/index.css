@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
@@ -97,6 +96,7 @@
     -webkit-tap-highlight-color: transparent;
     /* Prevent iOS Safari zoom */
     touch-action: manipulation;
+    overscroll-behavior-y: none;
   }
   
   /* Ensure fixed elements don't get cut off by mobile browsers */
@@ -124,6 +124,7 @@
     font-size: 14px;
     height: -webkit-fill-available;
     overflow: hidden;
+    overscroll-behavior-y: none;
   }
   
   @media (min-width: 768px) {
@@ -140,6 +141,7 @@
     width: 100%;
     position: fixed;
     overflow: hidden;
+    overscroll-behavior-y: none;
   }
   
   /* Add extra small text size for mobile */
@@ -194,30 +196,6 @@
   }
   
   /* Hide scrollbars but keep functionality */
-  .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari and Opera */
-  }
-  
-  /* Add subtle animations */
-  .hover-scale {
-    @apply transition-transform duration-300 hover:scale-105;
-  }
-  
-  .fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  /* Hide scrollbar for chat container */
   .hide-scrollbar {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
@@ -225,5 +203,20 @@
   
   .hide-scrollbar::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
+  }
+  
+  /* Add animations */
+  @keyframes typewriter {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
   }
 }

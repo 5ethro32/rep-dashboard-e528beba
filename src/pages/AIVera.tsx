@@ -250,7 +250,7 @@ const AIVera = () => {
   return (
     <div className="h-screen w-screen bg-finance-darkBg text-white flex flex-col">
       {/* App header with fixed position */}
-      <header className="flex-shrink-0 bg-gray-900/95 backdrop-blur-lg border-b border-white/10 z-50">
+      <header className="sticky top-0 flex-shrink-0 bg-gray-900/95 backdrop-blur-lg border-b border-white/10 z-50">
         <div className="flex justify-between items-center px-4 h-14">
           <Link to="/rep-performance">
             <Button variant="ghost" className="text-white hover:bg-white/10 p-0 h-9 w-9">
@@ -281,7 +281,7 @@ const AIVera = () => {
       </header>
       
       {/* Chat content area - scrollable, with safe areas for fixed header and input */}
-      <main className="flex-grow overflow-y-auto pt-2 pb-32">
+      <main className="flex-grow overflow-y-auto pt-2 pb-36">
         <div className="max-w-3xl mx-auto px-2 space-y-4">
           {messages.map((msg) => (
             <div 
@@ -306,7 +306,7 @@ const AIVera = () => {
       </main>
       
       {/* Fixed input container at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-white/10 pb-6 pt-3 px-3 z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-white/10 pb-8 pt-3 px-3 z-50">
         <div className="max-w-3xl mx-auto">
           <ChatInput 
             message={message}

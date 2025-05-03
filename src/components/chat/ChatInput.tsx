@@ -1,6 +1,6 @@
 
 import React, { RefObject, FormEvent } from 'react';
-import { SendIcon, Sparkles } from 'lucide-react';
+import { SendIcon, Sparkles, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -84,12 +84,17 @@ const ChatInput = ({
         </div>
         
         {setSelectedModel && (
-          <div className="flex justify-between items-center px-1 pt-2 text-xs text-gray-400">
-            <div className="flex items-center gap-1">
+          <div className="flex justify-between items-center px-1 pt-2 text-xs">
+            <div className="flex items-center gap-1 bg-gray-800/60 rounded-full px-3 py-1.5 border border-gray-700/50">
+              <Cpu className="h-3 w-3 text-finance-red" />
               <select 
                 value={selectedModel || 'default'} 
                 onChange={(e) => setSelectedModel(e.target.value)}
-                className="bg-transparent border-none text-xs text-gray-400 focus:outline-none cursor-pointer"
+                className="bg-transparent border-none text-xs text-white focus:outline-none cursor-pointer appearance-none pr-4"
+                style={{
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none'
+                }}
               >
                 {models.map(model => (
                   <option key={model.id} value={model.id} className="bg-gray-800 text-white">
