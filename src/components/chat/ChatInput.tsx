@@ -1,8 +1,19 @@
 
-import React, { RefObject, FormEvent } from 'react';
-import { SendIcon, Sparkles, Cpu } from 'lucide-react';
+import React, { RefObject, FormEvent, useState } from 'react';
+import { SendIcon, Sparkles, Cpu, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ChatInputProps {
   message: string;
@@ -42,9 +53,13 @@ const ChatInput = ({
   };
 
   const models = [
-    { id: 'default', name: 'Vera Standard' },
-    { id: 'enhanced', name: 'Vera Enhanced' }
+    { id: 'default', name: 'Vera Standard', description: 'Our standard model for everyday tasks' },
+    { id: 'enhanced', name: 'Vera Enhanced', description: 'Our most intelligent model yet', new: false },
+    { id: 'basic', name: 'Vera Basic', description: 'Fastest model for simple queries', new: true }
   ];
+  
+  // Find the current model name
+  const currentModel = models.find(m => m.id === (selectedModel || 'default'));
   
   return (
     <div className="w-full">
@@ -85,24 +100,39 @@ const ChatInput = ({
         
         {setSelectedModel && (
           <div className="flex justify-between items-center px-1 pt-2 text-xs">
-            <div className="flex items-center gap-1 bg-gray-800/60 rounded-full px-3 py-1.5 border border-gray-700/50">
-              <Cpu className="h-3 w-3 text-finance-red" />
-              <select 
-                value={selectedModel || 'default'} 
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="bg-transparent border-none text-xs text-white focus:outline-none cursor-pointer appearance-none pr-4"
-                style={{
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'none'
-                }}
-              >
-                {models.map(model => (
-                  <option key={model.id} value={model.id} className="bg-gray-800 text-white">
-                    {model.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-1 bg-gray-800/60 rounded-full px-3 py-1.5 border border-gray-700/50 hover:bg-gray-700/60 transition-colors">
+                  <Cpu className="h-3 w-3 text-finance-red" />
+                  <span className="text-xs text-white">{currentModel?.name || 'Vera Standard'}</span>
+                  <ChevronDown className="h-3 w-3 text-gray-400 ml-1" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-0 bg-gray-800 border-gray-700 text-white">
+                <div className="py-2">
+                  {models.map((model) => (
+                    <div
+                      key={model.id}
+                      className={`px-4 py-2 flex flex-col hover:bg-gray-700 cursor-pointer ${model.id === selectedModel ? 'bg-gray-700/50' : ''}`}
+                      onClick={() => setSelectedModel && setSelectedModel(model.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{model.name}</span>
+                        {model.id === selectedModel && (
+                          <span className="text-blue-400">✓</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400">{model.description}</span>
+                      {model.new && (
+                        <span className="text-xs mt-1 bg-gray-700 text-white px-2 py-0.5 rounded-full w-fit">
+                          New chat
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
             <div className="text-xs text-gray-500">Lovable Labs</div>
           </div>
         )}
