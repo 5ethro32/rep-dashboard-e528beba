@@ -4,11 +4,12 @@ import PerformanceFilters from '@/components/rep-performance/PerformanceFilters'
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
 import PerformanceContent from '@/components/rep-performance/PerformanceContent';
 import { formatCurrency, formatPercent, formatNumber, calculateSummary } from '@/utils/rep-performance-utils';
+import { useEnhancedPerformanceData } from '@/hooks/useEnhancedPerformanceData';
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import { Button } from '@/components/ui/button';
-import { BarChart3, ClipboardList, Bug } from 'lucide-react';
+import { BarChart3, ClipboardList, Bug, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -18,6 +19,17 @@ import { SummaryData } from '@/types/rep-performance.types';
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
+  const [useEnhanced, setUseEnhanced] = useState(true);
+  
+  // Get the performance data
+  let performanceData;
+  try {
+    performanceData = useEnhanced ? useEnhancedPerformanceData() : useRepPerformanceData();
+  } catch (error) {
+    console.error('Error using enhanced performance data, falling back to original implementation', error);
+    setUseEnhanced(false);
+    performanceData = useRepPerformanceData();
+  }
   
   const {
     includeRetail,
@@ -51,7 +63,19 @@ const RepPerformance = () => {
     mayBaseSummary,
     mayRevaValues,
     mayWholesaleValues,
-  } = useRepPerformanceData();
+  } = performanceData;
+  
+  // Get the previous month summary if available (only in enhanced hook)
+  const previousMonthSummary = useEnhanced && (performanceData as any).previousMonthSummary ? 
+    (performanceData as any).previousMonthSummary : 
+    {
+      totalSpend: 0,
+      totalProfit: 0,
+      averageMargin: 0,
+      totalPacks: 0,
+      totalAccounts: 0,
+      activeAccounts: 0
+    };
   
   // Clear auto-refreshed status after a delay
   useEffect(() => {
@@ -164,6 +188,13 @@ const RepPerformance = () => {
         {/* Only show these buttons on non-mobile devices */}
         {!isMobile && (
           <div className="flex space-x-2">
+            {useEnhanced && (
+              <div className="flex items-center text-xs text-green-500 mr-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                Enhanced Data
+              </div>
+            )}
+            
             <Link to="/account-performance">
               <Button 
                 variant="ghost" 
@@ -211,9 +242,19 @@ const RepPerformance = () => {
         setSelectedMonth={setSelectedMonth}
       />
 
-      {/* Updated SummaryMetrics with simplified props */}
+      {/* Updated SummaryMetrics with enhanced data */}
       <SummaryMetrics 
         selectedMonth={selectedMonth}
+        metrics={summary}
+        changes={summaryChanges}
+        previousMonthMetrics={previousMonthSummary}
+        isLoading={isLoading}
+        includeRetail={includeRetail}
+        includeReva={includeReva}
+        includeWholesale={includeWholesale}
+        setIncludeRetail={setIncludeRetail}
+        setIncludeReva={setIncludeReva}
+        setIncludeWholesale={setIncludeWholesale}
       />
       
       {/* TrendLineChart with enhanced capabilities */}
@@ -243,12 +284,10 @@ const RepPerformance = () => {
         formatPercent={formatPercent}
         formatNumber={formatNumber}
         renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
-          const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
           return (
             <RenderChangeIndicator 
               changeValue={changeValue} 
               size={size === "small" ? "small" : "large"}
-              previousValue={previousValue}
             />
           );
         }}

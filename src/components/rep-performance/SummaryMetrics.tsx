@@ -1,43 +1,55 @@
 import React from 'react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
-import useDepartmentMetrics from '@/hooks/useDepartmentMetrics';
+import { SummaryData } from '@/types/rep-performance.types';
 
 interface SummaryMetricsProps {
   selectedMonth: string;
+  // Add new props to accept metrics from parent component
+  metrics?: SummaryData;
+  changes?: {
+    totalSpend: number;
+    totalProfit: number;
+    averageMargin: number;
+    totalPacks: number;
+    totalAccounts?: number;
+    activeAccounts?: number;
+  };
+  // Add previous month metrics
+  previousMonthMetrics?: SummaryData;
+  isLoading?: boolean;
+  includeRetail?: boolean;
+  includeReva?: boolean;
+  includeWholesale?: boolean;
+  setIncludeRetail?: (value: boolean) => void;
+  setIncludeReva?: (value: boolean) => void;
+  setIncludeWholesale?: (value: boolean) => void;
 }
 
-const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ selectedMonth }) => {
-  // Use the department metrics hook to get standardized metrics across all months
-  const {
-    combinedMetrics: metrics,
-    combinedChanges: changes,
-    isLoading,
-    includeRetail,
-    includeReva,
-    includeWholesale,
-    setIncludeRetail,
-    setIncludeReva, 
-    setIncludeWholesale
-  } = useDepartmentMetrics(selectedMonth);
-
+const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ 
+  selectedMonth,
+  metrics,
+  changes,
+  previousMonthMetrics,
+  isLoading = false,
+  includeRetail,
+  includeReva,
+  includeWholesale,
+  setIncludeRetail,
+  setIncludeReva,
+  setIncludeWholesale
+}) => {
   // Only show change indicators if we're viewing a month other than February
   const showChangeIndicators = selectedMonth !== 'February';
 
   // Create a change indicator for the KPI cards
   const renderChangeIndicator = (changeValue: number) => {
-    if (!showChangeIndicators || Math.abs(changeValue) < 0.1) return undefined; // No significant change or not showing changes
+    if (!showChangeIndicators || !changes || Math.abs(changeValue) < 0.1) return undefined; // No significant change or not showing changes
     
     return {
       value: `${Math.abs(changeValue).toFixed(1)}%`,
       type: changeValue > 0 ? 'increase' as const : 'decrease' as const
     };
-  };
-
-  // Calculate previous value based on current value and percent change
-  const getPreviousValue = (current: number, changePercent: number) => {
-    if (!showChangeIndicators || !changePercent || Math.abs(changePercent) < 0.1) return current;
-    return current / (1 + changePercent / 100);
   };
 
   // Calculate comparison month for subtitle
@@ -48,40 +60,47 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ selectedMonth }) => {
     return '';
   };
 
-  // Render department filter toggle buttons
-  const renderFilterToggle = () => (
-    <div className="flex flex-wrap gap-2 mb-4">
-      <label className="flex items-center space-x-2 cursor-pointer">
-        <input 
-          type="checkbox" 
-          checked={includeRetail} 
-          onChange={e => setIncludeRetail(e.target.checked)}
-          className="form-checkbox h-4 w-4 text-green-600"
-        />
-        <span>Retail</span>
-      </label>
-      
-      <label className="flex items-center space-x-2 cursor-pointer">
-        <input 
-          type="checkbox" 
-          checked={includeReva} 
-          onChange={e => setIncludeReva(e.target.checked)}
-          className="form-checkbox h-4 w-4 text-blue-600" 
-        />
-        <span>REVA</span>
-      </label>
-      
-      <label className="flex items-center space-x-2 cursor-pointer">
-        <input 
-          type="checkbox" 
-          checked={includeWholesale} 
-          onChange={e => setIncludeWholesale(e.target.checked)}
-          className="form-checkbox h-4 w-4 text-purple-600" 
-        />
-        <span>Wholesale</span>
-      </label>
-    </div>
-  );
+  // Render department filter toggle buttons if the state handlers are provided
+  const renderFilterToggle = () => {
+    // Only render if we have the state handlers
+    if (!setIncludeRetail || !setIncludeReva || !setIncludeWholesale) {
+      return null;
+    }
+    
+    return (
+      <div className="flex flex-wrap gap-2 mb-4">
+        <label className="flex items-center space-x-2 cursor-pointer">
+          <input 
+            type="checkbox" 
+            checked={includeRetail} 
+            onChange={e => setIncludeRetail(e.target.checked)}
+            className="form-checkbox h-4 w-4 text-green-600"
+          />
+          <span>Retail</span>
+        </label>
+        
+        <label className="flex items-center space-x-2 cursor-pointer">
+          <input 
+            type="checkbox" 
+            checked={includeReva} 
+            onChange={e => setIncludeReva(e.target.checked)}
+            className="form-checkbox h-4 w-4 text-blue-600" 
+          />
+          <span>REVA</span>
+        </label>
+        
+        <label className="flex items-center space-x-2 cursor-pointer">
+          <input 
+            type="checkbox" 
+            checked={includeWholesale} 
+            onChange={e => setIncludeWholesale(e.target.checked)}
+            className="form-checkbox h-4 w-4 text-purple-600" 
+          />
+          <span>Wholesale</span>
+        </label>
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -91,10 +110,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ selectedMonth }) => {
         {/* Revenue Card */}
         <MetricCard
           title="Revenue"
-          value={formatCurrency(metrics.totalSpend || 0, 0)}
-          change={renderChangeIndicator(changes.totalSpend)}
-          subtitle={showChangeIndicators ? 
-            `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(metrics.totalSpend || 0, changes.totalSpend), 0)}` : 
+          value={formatCurrency(metrics?.totalSpend || 0, 0)}
+          change={changes ? renderChangeIndicator(changes.totalSpend) : undefined}
+          subtitle={showChangeIndicators && previousMonthMetrics ? 
+            `${getComparisonMonthText()}: ${formatCurrency(previousMonthMetrics.totalSpend || 0, 0)}` : 
             selectedMonth === 'February' ? 'No comparison data available' : undefined
           }
           isLoading={isLoading}
@@ -103,10 +122,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ selectedMonth }) => {
         {/* Profit Card */}
         <MetricCard
           title="Profit"
-          value={formatCurrency(metrics.totalProfit || 0, 0)}
-          change={renderChangeIndicator(changes.totalProfit)}
-          subtitle={showChangeIndicators ? 
-            `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(metrics.totalProfit || 0, changes.totalProfit), 0)}` :
+          value={formatCurrency(metrics?.totalProfit || 0, 0)}
+          change={changes ? renderChangeIndicator(changes.totalProfit) : undefined}
+          subtitle={showChangeIndicators && previousMonthMetrics ? 
+            `${getComparisonMonthText()}: ${formatCurrency(previousMonthMetrics.totalProfit || 0, 0)}` :
             selectedMonth === 'February' ? 'No comparison data available' : undefined
           }
           valueClassName="text-finance-red"
@@ -116,10 +135,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ selectedMonth }) => {
         {/* Margin Card */}
         <MetricCard
           title="Margin"
-          value={formatPercent(metrics.averageMargin || 0)}
-          change={renderChangeIndicator(changes.averageMargin)}
-          subtitle={showChangeIndicators ? 
-            `${getComparisonMonthText()}: ${formatPercent(getPreviousValue(metrics.averageMargin || 0, changes.averageMargin))}` :
+          value={formatPercent(metrics?.averageMargin || 0)}
+          change={changes ? renderChangeIndicator(changes.averageMargin) : undefined}
+          subtitle={showChangeIndicators && previousMonthMetrics ? 
+            `${getComparisonMonthText()}: ${formatPercent(previousMonthMetrics.averageMargin || 0)}` :
             selectedMonth === 'February' ? 'No comparison data available' : undefined
           }
           isLoading={isLoading}
@@ -128,10 +147,10 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ selectedMonth }) => {
         {/* Packs Card */}
         <MetricCard
           title="Packs"
-          value={formatNumber(metrics.totalPacks || 0)}
-          change={renderChangeIndicator(changes.totalPacks)}
-          subtitle={showChangeIndicators ? 
-            `${getComparisonMonthText()}: ${formatNumber(getPreviousValue(metrics.totalPacks || 0, changes.totalPacks))}` :
+          value={formatNumber(metrics?.totalPacks || 0)}
+          change={changes ? renderChangeIndicator(changes.totalPacks) : undefined}
+          subtitle={showChangeIndicators && previousMonthMetrics ? 
+            `${getComparisonMonthText()}: ${formatNumber(previousMonthMetrics.totalPacks || 0)}` :
             selectedMonth === 'February' ? 'No comparison data available' : undefined
           }
           isLoading={isLoading}
