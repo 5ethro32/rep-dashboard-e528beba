@@ -8,7 +8,7 @@ import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import { Button } from '@/components/ui/button';
-import { BarChart3, ClipboardList } from 'lucide-react';
+import { BarChart3, ClipboardList, Bug } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -185,6 +185,17 @@ const RepPerformance = () => {
                 Rep Tracker
               </Button>
             </Link>
+            
+            <Link to="/dashboard-test">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+              >
+                <Bug className="h-4 w-4 mr-2" />
+                Test Dashboard
+              </Button>
+            </Link>
           </div>
         )}
       </div>
@@ -200,13 +211,8 @@ const RepPerformance = () => {
         setSelectedMonth={setSelectedMonth}
       />
 
+      {/* Updated SummaryMetrics with simplified props */}
       <SummaryMetrics 
-        summary={summary}
-        summaryChanges={summaryChanges}
-        isLoading={isLoading}
-        includeRetail={includeRetail}
-        includeReva={includeReva}
-        includeWholesale={includeWholesale}
         selectedMonth={selectedMonth}
       />
       
