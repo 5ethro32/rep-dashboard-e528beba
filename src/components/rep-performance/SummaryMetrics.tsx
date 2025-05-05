@@ -60,52 +60,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     return '';
   };
 
-  // Render department filter toggle buttons if the state handlers are provided
-  const renderFilterToggle = () => {
-    // Only render if we have the state handlers
-    if (!setIncludeRetail || !setIncludeReva || !setIncludeWholesale) {
-      return null;
-    }
-    
-    return (
-      <div className="flex flex-wrap gap-2 mb-4">
-        <label className="flex items-center space-x-2 cursor-pointer">
-          <input 
-            type="checkbox" 
-            checked={includeRetail} 
-            onChange={e => setIncludeRetail(e.target.checked)}
-            className="form-checkbox h-4 w-4 text-green-600"
-          />
-          <span>Retail</span>
-        </label>
-        
-        <label className="flex items-center space-x-2 cursor-pointer">
-          <input 
-            type="checkbox" 
-            checked={includeReva} 
-            onChange={e => setIncludeReva(e.target.checked)}
-            className="form-checkbox h-4 w-4 text-blue-600" 
-          />
-          <span>REVA</span>
-        </label>
-        
-        <label className="flex items-center space-x-2 cursor-pointer">
-          <input 
-            type="checkbox" 
-            checked={includeWholesale} 
-            onChange={e => setIncludeWholesale(e.target.checked)}
-            className="form-checkbox h-4 w-4 text-purple-600" 
-          />
-          <span>Wholesale</span>
-        </label>
-      </div>
-    );
-  };
-
   return (
     <div>
-      {renderFilterToggle()}
-      
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
         {/* Revenue Card */}
         <MetricCard
