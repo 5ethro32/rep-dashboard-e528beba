@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
-import { formatCurrency } from '@/utils/rep-performance-utils';
+import { formatCurrency, formatPercent } from '@/utils/rep-performance-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -33,6 +33,7 @@ interface TrendData {
   profit: number;
   spend: number;
   packs: number;
+  margin: number;
   activeAccounts: number;
   // Add rep-specific data
   [key: string]: any;
@@ -42,6 +43,7 @@ const CHART_COLORS = {
   profit: '#ef4444',
   spend: '#60a5fa',
   packs: '#4ade80',
+  margin: '#fef08a', // Yellow color for margin
   rep1: '#f97316',   // Orange for first rep
   rep2: '#8b5cf6',   // Purple for second rep
   rep3: '#06b6d4',   // Cyan for third rep
@@ -62,6 +64,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const [showProfit, setShowProfit] = useState(true);
   const [showSpend, setShowSpend] = useState(false);
   const [showPacks, setShowPacks] = useState(false);
+  const [showMargin, setShowMargin] = useState(false);
   
   // State for rep comparison
   const [showRepComparison, setShowRepComparison] = useState(false);
@@ -74,7 +77,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     
     // Collect unique rep names from all months
     ['february', 'march', 'april', 'may'].forEach(month => {
-      if (repDataProp[month]) {
+      if (repDataProp && repDataProp[month]) {
         repDataProp[month].forEach(item => {
           if (item.rep) {
             allReps.add(item.rep);
@@ -94,6 +97,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         profit: febSummary.totalProfit || 0,
         spend: febSummary.totalSpend || 0,
         packs: febSummary.totalPacks || 0,
+        margin: febSummary.averageMargin || 0,
         activeAccounts: febSummary.activeAccounts || 0
       },
       {
@@ -101,6 +105,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         profit: marchSummary.totalProfit || 0,
         spend: marchSummary.totalSpend || 0,
         packs: marchSummary.totalPacks || 0,
+        margin: marchSummary.averageMargin || 0,
         activeAccounts: marchSummary.activeAccounts || 0
       },
       {
@@ -108,6 +113,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         profit: aprilSummary.totalProfit || 0,
         spend: aprilSummary.totalSpend || 0,
         packs: aprilSummary.totalPacks || 0,
+        margin: aprilSummary.averageMargin || 0,
         activeAccounts: aprilSummary.activeAccounts || 0
       },
       {
@@ -115,6 +121,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         profit: maySummary.totalProfit || 0,
         spend: maySummary.totalSpend || 0,
         packs: maySummary.totalPacks || 0,
+        margin: maySummary.averageMargin || 0,
         activeAccounts: maySummary.activeAccounts || 0
       }
     ];
@@ -132,16 +139,21 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     // Add rep-specific data to each month
     selectedReps.forEach((rep, repIndex) => {
       // Get rep data for each month
-      const febRepData = repDataProp.february.find(r => r.rep === rep);
-      const marRepData = repDataProp.march.find(r => r.rep === rep);
-      const aprRepData = repDataProp.april.find(r => r.rep === rep);
-      const mayRepData = repDataProp.may.find(r => r.rep === rep);
+      const febRepData = repDataProp && repDataProp.february ? 
+        repDataProp.february.find(r => r.rep === rep) : null;
+      const marRepData = repDataProp && repDataProp.march ? 
+        repDataProp.march.find(r => r.rep === rep) : null;
+      const aprRepData = repDataProp && repDataProp.april ? 
+        repDataProp.april.find(r => r.rep === rep) : null;
+      const mayRepData = repDataProp && repDataProp.may ? 
+        repDataProp.may.find(r => r.rep === rep) : null;
       
       // Feb data (index 0)
       if (febRepData) {
         enhancedData[0][`profit-rep-${repIndex}`] = febRepData.profit || 0;
         enhancedData[0][`spend-rep-${repIndex}`] = febRepData.spend || 0;
         enhancedData[0][`packs-rep-${repIndex}`] = febRepData.packs || 0;
+        enhancedData[0][`margin-rep-${repIndex}`] = febRepData.margin || 0;
         enhancedData[0][`rep-name-${repIndex}`] = rep;
       }
       
@@ -150,6 +162,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         enhancedData[1][`profit-rep-${repIndex}`] = marRepData.profit || 0;
         enhancedData[1][`spend-rep-${repIndex}`] = marRepData.spend || 0;
         enhancedData[1][`packs-rep-${repIndex}`] = marRepData.packs || 0;
+        enhancedData[1][`margin-rep-${repIndex}`] = marRepData.margin || 0;
         enhancedData[1][`rep-name-${repIndex}`] = rep;
       }
       
@@ -158,6 +171,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         enhancedData[2][`profit-rep-${repIndex}`] = aprRepData.profit || 0;
         enhancedData[2][`spend-rep-${repIndex}`] = aprRepData.spend || 0;
         enhancedData[2][`packs-rep-${repIndex}`] = aprRepData.packs || 0;
+        enhancedData[2][`margin-rep-${repIndex}`] = aprRepData.margin || 0;
         enhancedData[2][`rep-name-${repIndex}`] = rep;
       }
       
@@ -166,6 +180,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         enhancedData[3][`profit-rep-${repIndex}`] = mayRepData.profit || 0;
         enhancedData[3][`spend-rep-${repIndex}`] = mayRepData.spend || 0;
         enhancedData[3][`packs-rep-${repIndex}`] = mayRepData.packs || 0;
+        enhancedData[3][`margin-rep-${repIndex}`] = mayRepData.margin || 0;
         enhancedData[3][`rep-name-${repIndex}`] = rep;
       }
     });
@@ -194,6 +209,9 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               {showPacks && payload.find(p => p.dataKey === 'packs') && (
                 <p className="text-sm text-green-400">Packs: {Math.round(payload.find(p => p.dataKey === 'packs')?.value || 0).toLocaleString()}</p>
               )}
+              {showMargin && payload.find(p => p.dataKey === 'margin') && (
+                <p className="text-sm text-yellow-300">Margin: {formatPercent(payload.find(p => p.dataKey === 'margin')?.value || 0)}</p>
+              )}
             </>
           )}
           
@@ -203,9 +221,10 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             const profitValue = payload.find(p => p.dataKey === `profit-rep-${index}`)?.value;
             const spendValue = payload.find(p => p.dataKey === `spend-rep-${index}`)?.value;
             const packsValue = payload.find(p => p.dataKey === `packs-rep-${index}`)?.value;
+            const marginValue = payload.find(p => p.dataKey === `margin-rep-${index}`)?.value;
             
             // Only show this rep section if at least one of their metrics is found in the payload
-            if (profitValue !== undefined || spendValue !== undefined || packsValue !== undefined) {
+            if (profitValue !== undefined || spendValue !== undefined || packsValue !== undefined || marginValue !== undefined) {
               return (
                 <div key={rep} className={`${index === 0 && selectedReps.length > 0 ? '' : 'mt-2 border-t border-gray-700 pt-2'}`}>
                   <p className="text-sm font-medium" style={{ color: repColor }}>{rep}</p>
@@ -227,6 +246,12 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                       Packs: {Math.round(packsValue).toLocaleString()}
                     </p>
                   )}
+
+                  {showMargin && marginValue !== undefined && (
+                    <p className="text-sm" style={{ color: repColor }}>
+                      Margin: {formatPercent(marginValue)}
+                    </p>
+                  )}
                 </div>
               );
             }
@@ -244,6 +269,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     setShowProfit(value.includes('profit'));
     setShowSpend(value.includes('spend'));
     setShowPacks(value.includes('packs'));
+    setShowMargin(value.includes('margin'));
   };
 
   // Handle rep selection
@@ -278,7 +304,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const activeToggles = [
     ...(showProfit ? ['profit'] : []),
     ...(showSpend ? ['spend'] : []),
-    ...(showPacks ? ['packs'] : [])
+    ...(showPacks ? ['packs'] : []),
+    ...(showMargin ? ['margin'] : [])
   ];
   
   return (
@@ -318,6 +345,12 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             <div className="flex items-center gap-1">
               <span className="h-3 w-3 rounded-full bg-green-500"></span>
               <span className="text-xs">Packs</span>
+            </div>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="margin" aria-label="Toggle Margin" className="data-[state=on]:bg-yellow-300/20 data-[state=on]:text-yellow-300 border-gray-700">
+            <div className="flex items-center gap-1">
+              <span className="h-3 w-3 rounded-full bg-yellow-300"></span>
+              <span className="text-xs">Margin</span>
             </div>
           </ToggleGroupItem>
         </ToggleGroup>
@@ -387,7 +420,15 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 yAxisId="right"
                 orientation="right"
                 tick={{ fill: 'rgba(255,255,255,0.6)' }}
-                tickFormatter={(value) => `${(value / 1000)}k`}
+                tickFormatter={(value) => value > 1000 ? `${(value / 1000)}k` : `${value}`}
+              />
+              <YAxis 
+                yAxisId="margin"
+                orientation="right"
+                tick={{ fill: 'rgba(255,255,255,0.6)' }}
+                tickFormatter={(value) => `${value.toFixed(1)}%`}
+                domain={[0, 100]}
+                hide={true}  // Hide this axis but use it for margin values
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
@@ -426,6 +467,18 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                   stroke={CHART_COLORS.packs}
                   strokeWidth={2}
                   dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              )}
+              {selectedReps.length === 0 && showMargin && (
+                <Line 
+                  yAxisId="margin"
+                  type="monotone" 
+                  dataKey="margin" 
+                  name="Margin" 
+                  stroke={CHART_COLORS.margin}
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: CHART_COLORS.margin }}
                   activeDot={{ r: 6 }}
                 />
               )}
@@ -477,6 +530,20 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         activeDot={{ r: 5 }}
                       />
                     )}
+                    
+                    {showMargin && (
+                      <Line
+                        yAxisId="margin"
+                        type="monotone"
+                        dataKey={`margin-rep-${repIndex}`}
+                        name={`${rep} - Margin`}
+                        stroke={color}
+                        strokeWidth={1.5}
+                        strokeDasharray="2 2"
+                        dot={{ r: 3, strokeDasharray: '', fill: CHART_COLORS.margin, stroke: color }}
+                        activeDot={{ r: 5 }}
+                      />
+                    )}
                   </React.Fragment>
                 );
               })}
@@ -489,4 +556,3 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 };
 
 export default TrendLineChart;
-
