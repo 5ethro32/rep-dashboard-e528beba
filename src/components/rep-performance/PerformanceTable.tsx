@@ -209,7 +209,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                       </Tooltip>
                     </TooltipProvider>
                   </TableCell>
-                  <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm text-finance-red">
+                  <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-bold text-white">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

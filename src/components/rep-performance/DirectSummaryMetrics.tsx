@@ -212,7 +212,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
           title="Direct Profit"
           value={formatCurrency(filteredTotals.totalProfit || 0, 0)}
           subtitle="From Supabase query"
-          valueClassName="text-finance-red"
+          valueClassName="font-extrabold text-white"
           isLoading={isLoading}
         />
         

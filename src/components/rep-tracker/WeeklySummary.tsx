@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Info, Award } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
@@ -103,7 +102,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           value={formatCurrency(data.totalProfit)}
           change={previousData ? calculateChange(data.totalProfit, previousData.totalProfit) : undefined}
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.totalProfit)}` : undefined}
-          valueClassName="text-finance-red"
+          valueClassName="font-extrabold text-white"
           isLoading={isLoading}
           className="h-full"
         />

@@ -97,7 +97,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
           `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalProfit || 0, filteredChanges.totalProfit), 0)}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
-        valueClassName="text-finance-red"
+        valueClassName="font-extrabold text-white"
         isLoading={isLoading}
       />
       
