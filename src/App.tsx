@@ -13,7 +13,6 @@ import RepTracker from "./pages/RepTracker";
 import AIVera from "./pages/AIVera";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
-import DashboardTest from "./pages/DashboardTest";
 
 const queryClient = new QueryClient();
 
@@ -63,10 +62,6 @@ const AppRoutes = () => {
             </AppLayout>
           </ProtectedRoute>
         } 
-      />
-      <Route 
-        path="/dashboard-test" 
-        element={<DashboardTest />} 
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
