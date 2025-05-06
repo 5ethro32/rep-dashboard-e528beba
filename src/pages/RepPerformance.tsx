@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -120,10 +121,10 @@ const RepPerformance = () => {
   
   // Create the rep data object for the chart with month-specific data
   const repData = {
-    february: getActiveData('rep', 'February'),
-    march: getActiveData('rep', 'March'),
-    april: getActiveData('rep', 'April'),
-    may: getActiveData('rep', 'May')
+    february: getActiveData('rep', 'February') || [],
+    march: getActiveData('rep', 'March') || [],
+    april: getActiveData('rep', 'April') || [],
+    may: getActiveData('rep', 'May') || []
   };
   
   // Add debugging logs to verify we're getting different data for each month

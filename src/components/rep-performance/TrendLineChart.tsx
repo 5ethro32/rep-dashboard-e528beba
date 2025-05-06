@@ -72,16 +72,19 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   React.useEffect(() => {
     const allReps = new Set<string>();
     
-    // Collect unique rep names from all months
-    ['february', 'march', 'april', 'may'].forEach(month => {
-      if (repDataProp[month]) {
-        repDataProp[month].forEach(item => {
-          if (item.rep) {
-            allReps.add(item.rep);
-          }
-        });
-      }
-    });
+    // Make sure repDataProp is defined and has month properties with data
+    if (repDataProp && repDataProp.february && repDataProp.march && repDataProp.april && repDataProp.may) {
+      // Collect unique rep names from all months
+      ['february', 'march', 'april', 'may'].forEach(month => {
+        if (repDataProp[month as keyof typeof repDataProp]) {
+          repDataProp[month as keyof typeof repDataProp].forEach((item: any) => {
+            if (item && item.rep) {
+              allReps.add(item.rep);
+            }
+          });
+        }
+      });
+    }
     
     setAvailableReps(Array.from(allReps).sort());
   }, [repDataProp]);
@@ -125,17 +128,18 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   // Enhance chart data with rep-specific metrics instead of creating separate data arrays
   const enhancedChartData = useMemo(() => {
     if (!selectedReps.length) return chartData;
+    if (!repDataProp) return chartData;
     
     // Clone the base chart data
     const enhancedData = chartData.map(item => ({...item}));
     
     // Add rep-specific data to each month
     selectedReps.forEach((rep, repIndex) => {
-      // Get rep data for each month
-      const febRepData = repDataProp.february.find(r => r.rep === rep);
-      const marRepData = repDataProp.march.find(r => r.rep === rep);
-      const aprRepData = repDataProp.april.find(r => r.rep === rep);
-      const mayRepData = repDataProp.may.find(r => r.rep === rep);
+      // Get rep data for each month, with null checks
+      const febRepData = repDataProp.february?.find(r => r.rep === rep);
+      const marRepData = repDataProp.march?.find(r => r.rep === rep);
+      const aprRepData = repDataProp.april?.find(r => r.rep === rep);
+      const mayRepData = repDataProp.may?.find(r => r.rep === rep);
       
       // Feb data (index 0)
       if (febRepData) {
@@ -489,4 +493,3 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 };
 
 export default TrendLineChart;
-
