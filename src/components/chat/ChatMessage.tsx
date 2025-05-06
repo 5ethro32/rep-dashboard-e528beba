@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   TrendingUp, 
@@ -9,7 +8,6 @@ import {
   Minus,
   Sparkles
 } from 'lucide-react';
-import Typewriter from '@/components/ui/typewriter';
 
 // Import charts if needed for visualizing data
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -110,8 +108,6 @@ const enhanceContentText = (text: string): string => {
 };
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) => {
-  const [isTyping, setIsTyping] = useState(!message.isUser);
-  
   // Process message content first to enhance main text
   const enhancedContent = typeof message.content === 'string' 
     ? enhanceContentText(message.content)
@@ -121,7 +117,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
     if (!message.chartData) return null;
     
     return (
-      <div className="mt-4 mb-2 bg-gray-800/40 p-4 rounded-xl overflow-hidden">
+      <div className="mt-4 mb-2 bg-gray-800 p-4 rounded-lg">
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={message.chartData}>
             <XAxis 
@@ -160,7 +156,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
     
     return (
       <div className="mt-4 mb-2 overflow-x-auto">
-        <table className="min-w-full bg-gray-800/40 rounded-xl">
+        <table className="min-w-full bg-gray-800 rounded-lg">
           <thead>
             <tr>
               {message.tableHeaders.map((header, index) => (
@@ -172,7 +168,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
           </thead>
           <tbody>
             {message.tableData.map((row, rowIndex) => (
-              <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-gray-800/40' : 'bg-gray-700/40'}>
+              <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-gray-800' : 'bg-gray-700'}>
                 {Object.values(row).map((cell, cellIndex) => (
                   <td key={cellIndex} className="px-4 py-2 whitespace-nowrap text-sm text-gray-300">
                     {cell as React.ReactNode}
@@ -199,8 +195,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
           }
           
           return (
-            <div key={index} className="bg-gray-800/40 rounded-xl p-3 flex items-center">
-              <div className="mr-3 p-2 rounded-full bg-gray-700/40">
+            <div key={index} className="bg-gray-800 rounded-lg p-3 flex items-center">
+              <div className="mr-3">
                 {trend.type === 'up' && <ArrowUpRight className="text-green-500 h-5 w-5" />}
                 {trend.type === 'down' && <ArrowDownRight className="text-rose-500 h-5 w-5" />}
                 {trend.type === 'neutral' && <Minus className="text-gray-400 h-5 w-5" />}
@@ -256,7 +252,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
         </div>
         <div className="space-y-2">
           {filteredInsights.map((insight, index) => (
-            <div key={index} className="bg-gray-800/40 rounded-xl p-3 text-sm flex items-start">
+            <div key={index} className="bg-gray-800/80 rounded-lg p-2 text-sm flex items-start">
               <div className="mr-2 p-1 rounded-full bg-blue-500/20 flex-shrink-0">
                 <Lightbulb className="h-3 w-3 text-blue-300" />
               </div>
@@ -267,69 +263,35 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
       </div>
     );
   };
-  
-  // New function to render example suggestions/quick replies
+
+  // Remove the renderExamples function or replace it with an empty function
   const renderExamples = () => {
-    if (!message.examples || message.examples.length === 0) return null;
-    
-    return (
-      <div className="mt-4">
-        <div className="font-medium text-sm text-gray-300 mb-2">Suggested questions:</div>
-        <div className="flex flex-wrap gap-2">
-          {message.examples.slice(0, 4).map((example, index) => (
-            <button
-              key={index}
-              onClick={() => onExampleClick(example)}
-              className="bg-gray-800/60 hover:bg-gray-700/60 text-sm text-white/90 rounded-full px-3 py-1.5 transition-colors flex items-center gap-1.5"
-            >
-              <Sparkles className="h-3 w-3 text-finance-red" />
-              {example}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-  
-  const handleTypewriterComplete = () => {
-    setIsTyping(false);
+    return null; // Always return null to never show examples
   };
   
   return (
-    <div className={`flex mb-4 ${message.isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
       {!message.isUser && (
         <Avatar className="h-8 w-8 mr-2 flex-shrink-0 mt-1">
           <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white text-xs">V</AvatarFallback>
         </Avatar>
       )}
-      <div 
-        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-          message.isUser 
-            ? 'bg-gray-800/80 text-white rounded-tr-none' // Changed from purple to a subtle gray
-            : 'bg-transparent text-gray-100 rounded-tl-none' // Removed background for AI messages
-        }`}
-      >
+      <div className={`max-w-[80%] rounded-lg p-4 ${
+        message.isUser 
+          ? 'bg-finance-red text-white' 
+          : 'bg-gray-800 text-gray-100'
+      }`}>
         {!message.isUser && message.aiAnalysisUsed && (
-          <div className="flex items-center gap-1 mb-2 text-xs text-amber-300/80">
+          <div className="flex items-center gap-1 mb-2 text-xs text-amber-300/70">
             <Sparkles className="h-3 w-3" />
             <span>AI Analysis</span>
           </div>
         )}
-        <div className="whitespace-pre-wrap text-[15px] leading-relaxed">
-          {message.isUser ? (
-            // User messages show immediately
-            typeof enhancedContent === 'string' ? parseMarkdownBold(enhancedContent) : enhancedContent
-          ) : (
-            // AI messages get typewriter effect
-            <Typewriter 
-              text={typeof enhancedContent === 'string' ? enhancedContent : String(enhancedContent)} 
-              speed={10}
-              onComplete={handleTypewriterComplete}
-            />
-          )}
+        <div className="whitespace-pre-wrap">
+          {typeof enhancedContent === 'string' ? parseMarkdownBold(enhancedContent) : enhancedContent}
         </div>
         
-        {!message.isUser && !isTyping && (
+        {!message.isUser && (
           <>
             {/* Reordered to show highlighted entities and trends first, then insights, then charts */}
             {renderHighlightedEntities()}
@@ -337,7 +299,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onExampleClick }) =>
             {renderInsights()}
             {renderChart()}
             {renderTable()}
-            {renderExamples()}
+            {/* renderExamples() - removed/not called */}
           </>
         )}
       </div>

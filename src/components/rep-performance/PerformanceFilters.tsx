@@ -1,4 +1,5 @@
-import React, { ReactNode } from 'react';
+
+import React from 'react';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -11,7 +12,6 @@ interface PerformanceFiltersProps {
   setIncludeWholesale: (value: boolean) => void;
   selectedMonth: string;
   setSelectedMonth: (value: string) => void;
-  navigationButtons?: ReactNode;
 }
 
 const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
@@ -20,12 +20,12 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   includeReva,
   setIncludeReva,
   includeWholesale,
-  setIncludeWholesale,
-  navigationButtons
+  setIncludeWholesale
 }) => {
   return (
-    <div className="mb-6 md:mb-8 flex flex-col md:flex-row gap-4 md:gap-8 md:items-center md:justify-between">
+    <div className="mb-6 md:mb-8 flex flex-col md:flex-row gap-4 md:gap-8 md:items-center">
       <div className="flex flex-col">
+        <h2 className="text-sm font-medium mb-2 text-white/80">Include Data Sources</h2>
         <div className="flex flex-wrap gap-6">
           <div className="flex items-center space-x-2">
             <Switch id="retail-toggle" checked={includeRetail} onCheckedChange={setIncludeRetail} />
@@ -43,12 +43,6 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
           </div>
         </div>
       </div>
-      
-      {navigationButtons && (
-        <div className="ml-auto">
-          {navigationButtons}
-        </div>
-      )}
     </div>
   );
 };

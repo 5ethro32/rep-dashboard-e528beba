@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,7 +51,7 @@ const RepTracker: React.FC = () => {
         .from('sales_data')
         .select('account_name, account_ref')
         .order('account_name')
-        .limit(100000);
+        .limit(1000);
       
       if (error) {
         throw error;

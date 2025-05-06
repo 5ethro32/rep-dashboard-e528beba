@@ -368,78 +368,6 @@ export type Database = {
         }
         Relationships: []
       }
-      unified_sales_data: {
-        Row: {
-          account_name: string | null
-          account_ref: string | null
-          cost: number | null
-          credit: number | null
-          data_month: string | null
-          department: string | null
-          id: string
-          import_date: string | null
-          margin: number | null
-          packs: number | null
-          profit: number | null
-          record_type: string | null
-          rep_name: string
-          reporting_day: number | null
-          reporting_month: string | null
-          reporting_period: string | null
-          reporting_year: number | null
-          source_id: string | null
-          source_table: string | null
-          spend: number | null
-          sub_rep: string | null
-        }
-        Insert: {
-          account_name?: string | null
-          account_ref?: string | null
-          cost?: number | null
-          credit?: number | null
-          data_month?: string | null
-          department?: string | null
-          id?: string
-          import_date?: string | null
-          margin?: number | null
-          packs?: number | null
-          profit?: number | null
-          record_type?: string | null
-          rep_name: string
-          reporting_day?: number | null
-          reporting_month?: string | null
-          reporting_period?: string | null
-          reporting_year?: number | null
-          source_id?: string | null
-          source_table?: string | null
-          spend?: number | null
-          sub_rep?: string | null
-        }
-        Update: {
-          account_name?: string | null
-          account_ref?: string | null
-          cost?: number | null
-          credit?: number | null
-          data_month?: string | null
-          department?: string | null
-          id?: string
-          import_date?: string | null
-          margin?: number | null
-          packs?: number | null
-          profit?: number | null
-          record_type?: string | null
-          rep_name?: string
-          reporting_day?: number | null
-          reporting_month?: string | null
-          reporting_period?: string | null
-          reporting_year?: number | null
-          source_id?: string | null
-          source_table?: string | null
-          spend?: number | null
-          sub_rep?: string | null
-        }
-        Relationships: []
-      }
       week_plans: {
         Row: {
           created_at: string | null
@@ -499,23 +427,8 @@ export type Database = {
         }
         Relationships: []
       }
-      unified_sales_stats: {
-        Row: {
-          record_count: number | null
-          reporting_month: string | null
-          total_profit: number | null
-          total_spend: number | null
-          unique_accounts: number | null
-          unique_reps: number | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
-      check_table_exists: {
-        Args: { table_name: string }
-        Returns: boolean
-      }
       clear_last_mtd_daily: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -533,10 +446,6 @@ export type Database = {
         Returns: undefined
       }
       clear_prior_month_rolling: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      create_unified_sales_table: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -632,15 +541,6 @@ export type Database = {
       }
       get_wholesale_profit: {
         Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      migrate_table_data: {
-        Args: {
-          source_table_name: string
-          month_name: string
-          month_code: string
-          year_value: number
-        }
         Returns: number
       }
       replace_mtd_daily: {

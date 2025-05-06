@@ -11,11 +11,9 @@ import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RepTracker from "./pages/RepTracker";
-import AIVera from "./pages/AIVera";
-import AppLayout from "./components/layout/AppLayout";
-import { useIsMobile } from "./hooks/use-mobile";
-import { MaintenanceProvider } from "./contexts/MaintenanceContext";
-import MaintenancePage from "./pages/MaintenancePage";
+import AIVera from "./pages/AIVera"; // Import the new AI Vera page
+import AppLayout from "./components/layout/AppLayout"; // Import the layout component
+import { useIsMobile } from "./hooks/use-mobile"; // Import the mobile hook
 
 const queryClient = new QueryClient();
 
@@ -26,7 +24,6 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/rep-performance" replace />} />
       <Route path="/auth" element={<Auth />} />
-      <Route path="/maintenance" element={<MaintenancePage />} />
       <Route 
         path="/rep-performance" 
         element={
@@ -75,15 +72,13 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <MaintenanceProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
-      </MaintenanceProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

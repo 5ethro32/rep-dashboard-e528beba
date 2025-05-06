@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -12,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { reformulateQuery, generateFollowUpQuestions } from '@/utils/aiAssistantUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { Switch } from '@/components/ui/switch';
 
 // Reuse interface definitions from ChatInterface
 interface Message {
@@ -49,7 +49,7 @@ const AIVera = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState<string>('April');
-  const [selectedModel, setSelectedModel] = useState<string>('enhanced'); // Default to enhanced model
+  const [enableAI, setEnableAI] = useState<boolean>(false);
   const [conversationContext, setConversationContext] = useState<ConversationContext>({
     conversationId: `vera-${Date.now()}`,
     history: [],
@@ -87,33 +87,6 @@ const AIVera = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Add event listener to prevent viewport scaling on input focus
-  // But ONLY for this component
-  useEffect(() => {
-    // This meta tag prevents the viewport from scaling when focused on inputs
-    const metaTag = document.createElement('meta');
-    metaTag.name = 'viewport';
-    metaTag.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-    document.head.appendChild(metaTag);
-    
-    // Add AI Vera specific body class when component mounts
-    document.body.classList.add('ai-vera-page');
-
-    return () => {
-      // Important: When component unmounts, restore default viewport behavior
-      document.head.removeChild(metaTag);
-      
-      // Add back the default viewport meta tag
-      const defaultMetaTag = document.createElement('meta');
-      defaultMetaTag.name = 'viewport';
-      defaultMetaTag.content = 'width=device-width, initial-scale=1.0';
-      document.head.appendChild(defaultMetaTag);
-      
-      // Remove AI Vera specific body class when component unmounts
-      document.body.classList.remove('ai-vera-page');
-    };
-  }, []);
 
   const handleExampleClick = (exampleText: string) => {
     setMessage(exampleText);
@@ -159,14 +132,36 @@ const AIVera = () => {
     }));
     
     try {
+      // Detect if the query might benefit from AI analysis
+      const mightNeedAI = userQuery.toLowerCase().includes('why') || 
+                         userQuery.toLowerCase().includes('explain') ||
+                         userQuery.toLowerCase().includes('reason');
+      
+      // Check if the user might benefit from AI but has it disabled
+      if (mightNeedAI && !enableAI) {
+        // Show a notification that AI analysis might be helpful
+        toast({
+          title: "AI Analysis Available",
+          description: "This question might benefit from AI analysis. Consider enabling the AI toggle above.",
+          action: <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setEnableAI(true)}
+            className="bg-finance-red/10 text-finance-red border-finance-red/20"
+          >
+            <Sparkles className="h-4 w-4 mr-1" />
+            Enable AI
+          </Button>
+        });
+      }
+      
       // Call Supabase Edge Function with the full conversation context
       const { data, error } = await supabase.functions.invoke('rep-chat', {
         body: {
           message: isReformulated ? enhancedQuery : userQuery,
           originalMessage: userQuery,
           selectedMonth,
-          enableAI: true, // Always enable AI analysis
-          modelType: selectedModel, // Pass the selected model to the edge function
+          enableAI, // Pass the AI toggle state to the edge function
           conversationContext: {
             conversationId: conversationContext.conversationId,
             history: updatedHistory
@@ -237,55 +232,59 @@ const AIVera = () => {
   };
 
   return (
-    <div className="h-screen w-screen bg-finance-darkBg text-white flex flex-col">
-      {/* App header with fixed position */}
-      <header className="sticky top-0 flex-shrink-0 bg-gray-900/95 backdrop-blur-lg border-b border-white/10 z-50">
-        <div className="flex justify-between items-center px-4 h-14">
+    <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-20">
+        <div className="flex justify-between items-center mb-6 pt-4">
           <Link to="/rep-performance">
-            <Button variant="ghost" className="text-white hover:bg-white/10 p-0 h-9 w-9">
-              <ArrowLeft className="h-5 w-5" />
+            <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
             </Button>
           </Link>
           
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white">V</AvatarFallback>
-            </Avatar>
-            <h1 className="text-xl font-semibold">Vera AI</h1>
-          </div>
-          
           <UserProfileButton />
         </div>
-      </header>
-      
-      {/* Chat content area - scrollable, with safe areas for fixed header and input */}
-      <main className="flex-grow overflow-y-auto pt-2 pb-36">
-        <div className="max-w-3xl mx-auto px-2 space-y-4">
-          {messages.map((msg) => (
-            <div 
-              key={msg.id}
-              className="animate-fade-in"
-            >
+        
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-gradient-to-r from-finance-red to-finance-red/80 text-white">V</AvatarFallback>
+              </Avatar>
+              <h1 className="text-2xl font-bold">Vera AI</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">AI Analysis</span>
+              <div className="flex items-center gap-1">
+                <Switch 
+                  checked={enableAI} 
+                  onCheckedChange={setEnableAI} 
+                  id="ai-toggle"
+                />
+                <Sparkles className={`h-4 w-4 ${enableAI ? 'text-finance-red' : 'text-gray-500'}`} />
+              </div>
+            </div>
+          </div>
+          <p className="text-white/60">
+            Your sales data assistant. Ask me anything about your sales performance.
+          </p>
+        </div>
+        
+        <div className="flex flex-col h-[calc(100vh-220px)] border border-white/10 rounded-lg">
+          <div className="flex-grow overflow-y-auto p-4 space-y-4">
+            {messages.map((msg) => (
               <ChatMessage 
+                key={msg.id} 
                 message={msg} 
                 onExampleClick={handleExampleClick} 
               />
-            </div>
-          ))}
+            ))}
+            
+            {isLoading && <LoadingIndicator />}
+            
+            <div ref={messagesEndRef} />
+          </div>
           
-          {isLoading && (
-            <div className="flex justify-center py-4">
-              <LoadingIndicator />
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
-      
-      {/* Fixed input container at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-white/10 pb-8 pt-3 px-3 z-50">
-        <div className="max-w-3xl mx-auto">
           <ChatInput 
             message={message}
             setMessage={setMessage}
@@ -293,8 +292,6 @@ const AIVera = () => {
             handleKeyDown={handleKeyDown}
             textareaRef={textareaRef}
             isLoading={isLoading}
-            selectedModel={selectedModel}
-            setSelectedModel={setSelectedModel}
           />
         </div>
       </div>
