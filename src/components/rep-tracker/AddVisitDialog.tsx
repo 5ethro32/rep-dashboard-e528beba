@@ -1,230 +1,303 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
+import { useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  Dialog, 
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
-import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
+import { useAuth } from '@/contexts/AuthContext';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import CustomerSearch from './CustomerSearch';
 import DatePickerField from './DatePickerField';
 
 interface AddVisitDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  customers?: Array<{ account_name: string; account_ref: string }>;
+  customers: Array<{
+    account_name: string;
+    account_ref: string;
+  }>;
+  userId?: string | null;
 }
 
-interface VisitFormData {
-  date: string;
+interface VisitFormValues {
+  date: Date;
   customer_ref: string;
   customer_name: string;
-  contact_name: string;
+  contact_name?: string;
   visit_type: string;
   has_order: boolean;
-  profit: number;
-  comments: string;
+  profit?: number;
+  comments?: string;
 }
 
 const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  customers = [],
+  customers,
+  userId
 }) => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const { register, handleSubmit, reset, setValue, watch } = useForm<VisitFormData>({
-    defaultValues: {
-      date: new Date().toISOString().split('T')[0],
-      visit_type: 'Customer Visit',
-      has_order: false,
-    }
-  });
 
-  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const form = useForm<VisitFormValues>({
+    defaultValues: {
+      date: new Date(),
+      customer_ref: '',
+      customer_name: '',
+      contact_name: '',
+      visit_type: 'In-Person',
+      has_order: false,
+      profit: undefined,
+      comments: '',
+    },
+  });
+  
+  const { watch } = form;
+  const hasOrder = watch('has_order');
 
   const addVisitMutation = useMutation({
-    mutationFn: async (data: VisitFormData) => {
-      const formattedDate = new Date(data.date);
-      formattedDate.setHours(12, 0, 0, 0);
-      
-      const { error } = await supabase
-        .from('customer_visits')
-        .insert([{ 
-          ...data, 
-          user_id: user?.id,
-          date: formattedDate.toISOString()
-        }]);
+    mutationFn: async (data: VisitFormValues) => {
+      const { error } = await supabase.from('customer_visits').insert({
+        date: data.date.toISOString(),
+        customer_ref: data.customer_ref,
+        customer_name: data.customer_name,
+        contact_name: data.contact_name || null,
+        visit_type: data.visit_type,
+        has_order: data.has_order,
+        profit: data.has_order ? data.profit : null,
+        comments: data.comments || null,
+        user_id: userId || user?.id, // Use the selected user ID (for admins) or current user
+      });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['customer-visits'],
-        exact: false,
-        refetchType: 'all'
-      });
-      
-      queryClient.invalidateQueries({
-        queryKey: ['visit-metrics'],
-        exact: false,
-        refetchType: 'all'
-      });
-      
       toast({
         title: 'Visit Added',
-        description: 'Customer visit has been recorded successfully.',
-      });
-      
-      reset({
-        date: new Date().toISOString().split('T')[0],
-        visit_type: 'Customer Visit',
-        has_order: false,
+        description: 'The customer visit has been successfully recorded.',
       });
       
       if (onSuccess) {
         onSuccess();
+      } else {
+        onClose();
       }
       
-      onClose();
+      form.reset({
+        date: new Date(),
+        customer_ref: '',
+        customer_name: '',
+        contact_name: '',
+        visit_type: 'In-Person',
+        has_order: false,
+        profit: undefined,
+        comments: '',
+      });
     },
-    onError: (error: Error) => {
-      console.error("Error adding visit:", error);
+    onError: (error) => {
+      console.error('Error adding visit:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add visit. Please try again.',
+        description: 'Failed to add the visit. Please try again.',
         variant: 'destructive',
       });
     },
   });
 
-  const handleCustomerSelect = (ref: string, name: string) => {
-    setValue('customer_ref', ref);
-    setValue('customer_name', name);
-  };
-
-  const onSubmit = (data: VisitFormData) => {
+  const handleSubmit = (data: VisitFormValues) => {
     addVisitMutation.mutate(data);
+  };
+  
+  const handleCustomerSelect = (customer: { account_name: string; account_ref: string }) => {
+    form.setValue('customer_ref', customer.account_ref);
+    form.setValue('customer_name', customer.account_name);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="bg-gray-900 text-white border border-gray-800 sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add Customer Visit</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            Add details about your customer visit below.
-          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <DatePickerField
-            id="date"
-            label="Date"
-            value={watch('date')}
-            onChange={(date) => setValue('date', date)}
-          />
-
-          <div className="space-y-2">
-            <Label htmlFor="customer">Customer</Label>
-            <ImprovedCustomerSelector
-              customers={safeCustomers}
-              selectedCustomer={watch('customer_name') || ''}
-              onSelect={handleCustomerSelect}
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-2">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Visit Date</FormLabel>
+                  <DatePickerField
+                    date={field.value}
+                    setDate={field.onChange}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contact_name">Contact Name</Label>
-            <Input
-              id="contact_name"
-              {...register('contact_name')}
-              placeholder="Optional"
+            
+            <FormField
+              control={form.control}
+              name="customer_name"
+              rules={{ required: 'Customer is required' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Customer</FormLabel>
+                  <CustomerSearch 
+                    customers={customers} 
+                    onSelect={handleCustomerSelect}
+                    selectedCustomer={form.getValues('customer_ref') || ''}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="visit_type">Visit Type</Label>
-            <Select
-              defaultValue="Customer Visit"
-              onValueChange={(value) => setValue('visit_type', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Customer Visit">Customer Visit</SelectItem>
-                <SelectItem value="Outbound Call">Outbound Call</SelectItem>
-                <SelectItem value="Office">Office</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="has_order">Order Placed</Label>
-            <Select
-              defaultValue="false"
-              onValueChange={(value) => setValue('has_order', value === 'true')}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="true">Yes</SelectItem>
-                <SelectItem value="false">No</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {watch('has_order') && (
-            <div className="space-y-2">
-              <Label htmlFor="profit">Profit (£)</Label>
-              <Input
-                id="profit"
-                type="number"
-                step="0.01"
-                {...register('profit', { valueAsNumber: true })}
-                placeholder="0.00"
+            
+            <FormField
+              control={form.control}
+              name="contact_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Contact name (optional)"
+                      className="bg-gray-800 border-gray-700"
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="visit_type"
+              rules={{ required: 'Visit type is required' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Visit Type</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="In-Person, Phone, Video, Email, etc"
+                      className="bg-gray-800 border-gray-700"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="has_order"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-800 p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Order Placed</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            {hasOrder && (
+              <FormField
+                control={form.control}
+                name="profit"
+                rules={{
+                  required: hasOrder ? 'Profit amount is required' : false,
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profit (£)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Enter profit amount"
+                        className="bg-gray-800 border-gray-700"
+                        {...field}
+                        value={field.value === undefined ? '' : field.value}
+                        onChange={(e) => {
+                          const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                          field.onChange(value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="comments">Comments</Label>
-            <Textarea
-              id="comments"
-              {...register('comments')}
-              placeholder="Optional"
+            )}
+            
+            <FormField
+              control={form.control}
+              name="comments"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Comments</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add any notes about the visit"
+                      className="bg-gray-800 border-gray-700 resize-none min-h-[80px]"
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={addVisitMutation.isPending}>
-              {addVisitMutation.isPending ? 'Saving...' : 'Add Visit'}
-            </Button>
-          </DialogFooter>
-        </form>
+            
+            <DialogFooter className="pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                className="border-gray-700 hover:bg-gray-800"
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit"
+                className="bg-finance-red hover:bg-finance-red/90"
+                disabled={addVisitMutation.isPending}
+              >
+                {addVisitMutation.isPending ? 'Adding...' : 'Add Visit'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

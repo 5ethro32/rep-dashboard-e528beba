@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { 
   AlertDialog,
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import EditVisitDialog from './EditVisitDialog';
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerVisitsListProps {
   weekStartDate: Date;
@@ -44,6 +45,8 @@ interface CustomerVisitsListProps {
   isLoadingCustomers: boolean;
   onDataChange?: () => void;
   onAddVisit: () => void;
+  userId?: string | null;
+  isAdmin?: boolean;
 }
 
 type SortField = 'date' | 'customer_name' | 'profit';
@@ -71,25 +74,70 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   customers,
   isLoadingCustomers,
   onDataChange,
-  onAddVisit
+  onAddVisit,
+  userId,
+  isAdmin
 }) => {
   const [filter, setFilter] = useState('all'); // 'all', 'ordered', 'no-order', 'planned'
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
   const [visitToEdit, setVisitToEdit] = useState<Visit | null>(null);
+  const { user } = useAuth();
   
   const queryClient = useQueryClient();
 
-  const { data: visits, isLoading } = useQuery({
-    queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder],
+  // Fetch user profiles if admin viewing all users
+  const { data: userProfiles } = useQuery({
+    queryKey: ['user-profiles'],
     queryFn: async () => {
+      if (!isAdmin) return {};
+      
       const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name');
+        
+      if (error) throw error;
+      
+      // Convert to a map for easy lookup
+      const profileMap = (data || []).reduce((acc, profile) => {
+        acc[profile.id] = {
+          firstName: profile.first_name || '',
+          lastName: profile.last_name || ''
+        };
+        return acc;
+      }, {} as Record<string, { firstName: string; lastName: string }>);
+      
+      return profileMap;
+    },
+    enabled: !!isAdmin,
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch user profiles:', error);
+      }
+    }
+  });
+
+  const { data: visits, isLoading } = useQuery({
+    queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder, userId],
+    queryFn: async () => {
+      let query = supabase
         .from('customer_visits')
         .select('*')
         .gte('date', weekStartDate.toISOString())
-        .lte('date', weekEndDate.toISOString())
-        .order(sortField, { ascending: sortOrder === 'asc' });
+        .lte('date', weekEndDate.toISOString());
+        
+      // Only filter by user_id if we have one and not viewing all users
+      if (userId) {
+        query = query.eq('user_id', userId);
+      } else if (!isAdmin) {
+        // Non-admins only see their own visits
+        query = query.eq('user_id', user?.id);
+      }
+        
+      query = query.order(sortField, { ascending: sortOrder === 'asc' });
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as Visit[];
@@ -112,9 +160,14 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
       // First check if this is from a week plan
       const { data: visitData } = await supabase
         .from('customer_visits')
-        .select('week_plan_id')
+        .select('week_plan_id, user_id')
         .eq('id', visitId)
         .single();
+        
+      // Only allow deletion if the visit belongs to the current user or admin is viewing
+      if (visitData && !isAdmin && visitData.user_id !== user?.id) {
+        throw new Error('You do not have permission to delete this visit');
+      }
         
       const { error } = await supabase
         .from('customer_visits')
@@ -151,7 +204,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     onError: (error: Error) => {
       toast({
         title: 'Error',
-        description: 'Failed to delete visit. Please try again.',
+        description: error.message || 'Failed to delete visit. Please try again.',
         variant: 'destructive',
       });
       console.error("Error deleting visit:", error);
@@ -181,11 +234,21 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     }
   };
 
+  // Format user name for display (admin view only)
+  const formatUserName = (userId: string) => {
+    if (!userProfiles || !userId) return "";
+    const profile = userProfiles[userId];
+    if (!profile) return "Unknown";
+    
+    const name = `${profile.firstName} ${profile.lastName}`.trim();
+    return name || "User";
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between mb-4">
         <h2 className="text-xl font-semibold mb-2 md:mb-0">Customer Visits</h2>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col md:flex-row items-center gap-4">
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-[180px] bg-black/30 border-gray-700 text-white">
               <SelectValue placeholder="Filter visits" />
@@ -201,6 +264,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
           <Button 
             className="bg-finance-red hover:bg-finance-red/80"
             onClick={onAddVisit}
+            disabled={!!userId && userId !== user?.id} // Disable if viewing another user's data
           >
             <PlusCircle className="h-4 w-4 mr-2" />
             Add Visit
@@ -250,19 +314,22 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                   </TableHead>
                   <TableHead className="text-white font-medium">Comments</TableHead>
                   <TableHead className="text-white font-medium">Source</TableHead>
+                  {(!userId || isAdmin) && (
+                    <TableHead className="text-white font-medium">Rep</TableHead>
+                  )}
                   <TableHead className="text-white font-medium text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={isAdmin ? 10 : 9} className="text-center py-4 text-white/60">
                       Loading visits...
                     </TableCell>
                   </TableRow>
                 ) : filteredVisits?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={isAdmin ? 10 : 9} className="text-center py-4 text-white/60">
                       No visits found for this week.
                     </TableCell>
                   </TableRow>
@@ -291,6 +358,14 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                           </Badge>
                         ) : 'Manual'}
                       </TableCell>
+                      {(!userId || isAdmin) && (
+                        <TableCell>
+                          <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                            <User className="h-3 w-3" />
+                            {formatUserName(visit.user_id)}
+                          </Badge>
+                        </TableCell>
+                      )}
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
                           <Button 
@@ -298,6 +373,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                             size="sm" 
                             className="h-8 w-8 p-0 text-blue-400"
                             onClick={() => setVisitToEdit(visit)}
+                            disabled={!isAdmin && visit.user_id !== user?.id}
                           >
                             <Edit2 className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
@@ -307,6 +383,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                             size="sm" 
                             className="h-8 w-8 p-0 text-red-400"
                             onClick={() => setVisitToDelete(visit.id)}
+                            disabled={!isAdmin && visit.user_id !== user?.id}
                           >
                             <Trash2 className="h-4 w-4" />
                             <span className="sr-only">Delete</span>
@@ -350,6 +427,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
           onClose={() => setVisitToEdit(null)}
           visit={visitToEdit}
           customers={customers}
+          userId={userId || undefined}
           onSuccess={() => {
             queryClient.invalidateQueries({
               queryKey: ['customer-visits'],
@@ -360,6 +438,8 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
             if (onDataChange) {
               onDataChange();
             }
+            
+            setVisitToEdit(null);
           }}
         />
       )}
