@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,8 @@ import RepTracker from "./pages/RepTracker";
 import AIVera from "./pages/AIVera";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
+import { MaintenanceProvider } from "./contexts/MaintenanceContext";
+import MaintenancePage from "./pages/MaintenancePage";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +26,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/rep-performance" replace />} />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/maintenance" element={<MaintenancePage />} />
       <Route 
         path="/rep-performance" 
         element={
@@ -71,13 +75,15 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
+      <MaintenanceProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </MaintenanceProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

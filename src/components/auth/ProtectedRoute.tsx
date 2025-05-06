@@ -2,6 +2,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMaintenance } from '@/contexts/MaintenanceContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,6 +10,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
+  const { isInMaintenance } = useMaintenance();
 
   if (loading) {
     return (
@@ -20,6 +22,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // If user is logged in but app is in maintenance mode,
+  // redirect to maintenance page
+  if (isInMaintenance) {
+    return <Navigate to="/maintenance" replace />;
   }
 
   return <>{children}</>;
