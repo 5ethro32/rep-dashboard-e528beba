@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -327,6 +326,11 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     ...(showMargin ? ['margin'] : [])
   ];
   
+  // Determine which axes to show based on selected metrics
+  const showLeftAxis = showProfit || showSpend || selectedReps.length > 0;
+  const showRightAxis = showPacks || selectedReps.length > 0;
+  const showMarginAxis = showMargin || selectedReps.some((_, i) => showMargin && enhancedChartData.some(item => item[`margin-rep-${i}`] !== undefined));
+  
   return (
     <Card className="bg-gray-900/40 border border-white/10 backdrop-blur-sm shadow-lg">
       <CardHeader className="pb-2">
@@ -428,28 +432,34 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 dataKey="month" 
                 tick={{ fill: 'rgba(255,255,255,0.6)' }}
               />
-              <YAxis 
-                yAxisId="left"
-                orientation="left"
-                tick={{ fill: 'rgba(255,255,255,0.6)' }}
-                tickFormatter={(value) => `£${(value / 1000)}k`}
-                width={60}
-              />
-              <YAxis 
-                yAxisId="right"
-                orientation="right"
-                tick={{ fill: 'rgba(255,255,255,0.6)' }}
-                tickFormatter={(value) => value > 1000 ? `${(value / 1000)}k` : `${value}`}
-              />
-              <YAxis 
-                yAxisId="margin"
-                orientation="right"
-                tick={{ fill: 'rgba(255,255,255,0.6)' }}
-                tickFormatter={(value) => `${value.toFixed(1)}%`}
-                domain={marginDomain}
-                hide={false}
-                width={45}
-              />
+              {showLeftAxis && (
+                <YAxis 
+                  yAxisId="left"
+                  orientation="left"
+                  tick={{ fill: 'rgba(255,255,255,0.6)' }}
+                  tickFormatter={(value) => `£${(value / 1000)}k`}
+                  width={60}
+                />
+              )}
+              {showRightAxis && (
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fill: 'rgba(255,255,255,0.6)' }}
+                  tickFormatter={(value) => value > 1000 ? `${(value / 1000)}k` : `${value}`}
+                />
+              )}
+              {showMarginAxis && (
+                <YAxis 
+                  yAxisId="margin"
+                  orientation="right"
+                  tick={{ fill: 'rgba(255,255,255,0.6)' }}
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  domain={marginDomain}
+                  hide={false}
+                  width={45}
+                />
+              )}
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               
