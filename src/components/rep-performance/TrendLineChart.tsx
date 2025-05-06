@@ -1,5 +1,6 @@
+
 import React, { useMemo, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
 import { formatCurrency, formatPercent } from '@/utils/rep-performance-utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -7,9 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import RepSelector from '@/components/rep-performance/RepSelector';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface TrendLineChartProps {
   febSummary: SummaryData;
@@ -343,7 +342,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   
   return (
     <Card className="bg-gray-900/40 border border-white/10 backdrop-blur-sm shadow-lg">
-      <CardHeader className="pb-4">
+      <CardHeader className="pb-6">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-medium text-white/90">
             Monthly Performance Trends
@@ -353,7 +352,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           </CardDescription>
         </div>
         
-        <div className="flex justify-between items-center mt-6">
+        <div className="flex justify-between items-center mt-8">
           <ToggleGroup 
             type="multiple" 
             value={activeToggles} 
@@ -398,8 +397,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         
         {/* Rep comparison section */}
         {showRepComparison && (
-          <div className="mt-6">
-            <Separator className="mb-4 bg-gray-700/50" />
+          <div className="mt-8">
+            <Separator className="mb-6 bg-gray-700/50" />
             <RepSelector
               availableReps={availableReps}
               selectedReps={selectedReps}
@@ -410,7 +409,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           </div>
         )}
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="pt-6 pb-8">
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
@@ -451,7 +450,6 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 />
               )}
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
               
               {/* Overall metrics lines - only display when no reps are selected */}
               {selectedReps.length === 0 && showProfit && (
