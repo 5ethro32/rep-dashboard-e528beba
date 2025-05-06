@@ -121,10 +121,10 @@ const RepPerformance = () => {
   
   // Create the rep data object for the chart with month-specific data
   const repData = {
-    february: getActiveData('rep', 'February') || [],
-    march: getActiveData('rep', 'March') || [],
-    april: getActiveData('rep', 'April') || [],
-    may: getActiveData('rep', 'May') || []
+    february: getActiveData('rep', 'February'),
+    march: getActiveData('rep', 'March'),
+    april: getActiveData('rep', 'April'),
+    may: getActiveData('rep', 'May')
   };
   
   // Add debugging logs to verify we're getting different data for each month
@@ -219,7 +219,7 @@ const RepPerformance = () => {
           aprilSummary={filteredAprSummary}
           maySummary={filteredMaySummary}
           isLoading={isLoading}
-          repDataProp={repData}
+          repData={repData}
           includeRetail={includeRetail}
           includeReva={includeReva}
           includeWholesale={includeWholesale}
