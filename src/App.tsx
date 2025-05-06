@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -35,7 +36,9 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <AppLayout />
+                  <AppLayout>
+                    {/* Providing children prop to AppLayout */}
+                  </AppLayout>
                 </ProtectedRoute>
               }
             >

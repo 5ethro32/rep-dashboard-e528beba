@@ -17,6 +17,12 @@ interface UserSelectorProps {
   onSelectUser: (userId: string, userName: string) => void;
 }
 
+interface Profile {
+  id: string;
+  name: string;
+  email: string;
+}
+
 const UserSelector: React.FC<UserSelectorProps> = ({ selectedUserId, onSelectUser }) => {
   const { user, isAdmin } = useAuth();
 
@@ -34,24 +40,15 @@ const UserSelector: React.FC<UserSelectorProps> = ({ selectedUserId, onSelectUse
         
       if (error) throw error;
       
-      // Get emails from auth.users table separately, since we can't join directly
-      const userEmails = new Map();
-      const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
-      
-      if (usersError) throw usersError;
-      
-      users?.users.forEach(user => {
-        userEmails.set(user.id, user.email);
-      });
-      
-      // Combine profiles with emails
+      // Since we can't directly access auth.users data through the client,
+      // we'll work with what we have from profiles
       return data.map(profile => ({
         id: profile.id,
         name: profile.first_name && profile.last_name 
           ? `${profile.first_name} ${profile.last_name}`
-          : userEmails.get(profile.id) || 'Unknown User',
-        email: userEmails.get(profile.id) || ''
-      }));
+          : 'User',
+        email: '' // We'll leave email empty as we can't easily get it
+      })) as Profile[];
     },
     enabled: isAdmin === true
   });
@@ -88,9 +85,11 @@ const UserSelector: React.FC<UserSelectorProps> = ({ selectedUserId, onSelectUse
           {profiles?.filter(profile => profile.id !== user?.id).map((profile) => (
             <SelectItem key={profile.id} value={profile.id}>
               {profile.name}
-              <span className="text-xs text-gray-400 ml-2">
-                ({profile.email?.split('@')[0]})
-              </span>
+              {profile.email && (
+                <span className="text-xs text-gray-400 ml-2">
+                  ({profile.email.split('@')[0]})
+                </span>
+              )}
             </SelectItem>
           ))}
         </SelectContent>
