@@ -3,17 +3,22 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMaintenance } from '@/contexts/MaintenanceContext';
 import { useToast } from '@/hooks/use-toast';
 import { LogOut } from 'lucide-react';
 
 const UserProfileButton = () => {
   const { user, signOut } = useAuth();
+  const { resetMaintenanceBypass } = useMaintenance();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { toast } = useToast();
   
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
+      // Reset maintenance bypass before signing out
+      resetMaintenanceBypass();
+      
       await signOut();
       toast({
         title: "Signed out",
