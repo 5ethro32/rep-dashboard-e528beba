@@ -1,86 +1,57 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { Toaster } from "./components/ui/toaster";
+import AppLayout from "./components/layout/AppLayout";
 import RepPerformance from "./pages/RepPerformance";
 import AccountPerformance from "./pages/AccountPerformance";
-import NotFound from "./pages/NotFound";
+import AIVera from "./pages/AIVera";
 import Auth from "./pages/Auth";
-import { AuthProvider } from "./contexts/AuthContext";
+import NotFound from "./pages/NotFound";
+import DataUpload from "./pages/DataUpload";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RepTracker from "./pages/RepTracker";
-import AIVera from "./pages/AIVera"; // Import the new AI Vera page
-import AppLayout from "./components/layout/AppLayout"; // Import the layout component
-import { useIsMobile } from "./hooks/use-mobile"; // Import the mobile hook
+import React, { ReactNode } from "react";
+import "@/App.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+    },
+  },
+});
 
-const AppRoutes = () => {
-  const isMobile = useIsMobile();
-
+function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/rep-performance" replace />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route 
-        path="/rep-performance" 
-        element={
-          <ProtectedRoute>
-            <AppLayout showChatInterface={!isMobile}>
-              <RepPerformance />
-            </AppLayout>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/account-performance" 
-        element={
-          <ProtectedRoute>
-            <AppLayout showChatInterface={!isMobile}>
-              <AccountPerformance />
-            </AppLayout>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/rep-tracker" 
-        element={
-          <ProtectedRoute>
-            <AppLayout showChatInterface={!isMobile}>
-              <RepTracker />
-            </AppLayout>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/ai-vera" 
-        element={
-          <ProtectedRoute>
-            <AppLayout showChatInterface={false}>
-              <AIVera />
-            </AppLayout>
-          </ProtectedRoute>
-        } 
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <BrowserRouter>
-          <AppRoutes />
+          <Toaster />
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<RepPerformance />} />
+              <Route path="/rep-performance" element={<RepPerformance />} />
+              <Route path="/account-performance" element={<AccountPerformance />} />
+              <Route path="/ai-vera" element={<AIVera />} />
+              <Route path="/upload" element={<DataUpload />} />
+              <Route path="/rep-tracker" element={<RepTracker />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
         </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

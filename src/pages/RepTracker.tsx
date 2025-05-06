@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar, UserCog } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
@@ -18,10 +18,14 @@ import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { UserViewProvider, useUserView } from '@/contexts/UserViewContext';
+import UserSelector from '@/components/rep-tracker/UserSelector';
+import { Badge } from '@/components/ui/badge';
 
-const RepTracker: React.FC = () => {
+const RepTrackerContent: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const { viewingUserId, viewingUserName, isViewingOtherUser, setViewingUser } = useUserView();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddVisit, setShowAddVisit] = useState(false);
   const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
@@ -39,10 +43,10 @@ const RepTracker: React.FC = () => {
   // Capitalize first letter
   userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
 
-  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate);
+  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate, viewingUserId);
   const previousWeekDate = new Date(weekStart);
   previousWeekDate.setDate(previousWeekDate.getDate() - 7);
-  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate);
+  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate, viewingUserId);
 
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
@@ -127,10 +131,25 @@ const RepTracker: React.FC = () => {
         <UserProfileButton />
       </div>
       
+      {/* Admin user selector */}
+      <UserSelector 
+        selectedUserId={viewingUserId} 
+        onSelectUser={setViewingUser} 
+      />
+      
       {/* Enhanced personalized greeting - now the main heading */}
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{userFirstName}</span>
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 flex items-center">
+          <span>
+            Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{userFirstName}</span>
+          </span>
+          
+          {isViewingOtherUser && (
+            <Badge variant="outline" className="ml-4 flex items-center gap-1 bg-amber-800/30 text-amber-300 border-amber-500/50">
+              <UserCog size={14} />
+              Viewing: {viewingUserName || "Other User"}
+            </Badge>
+          )}
         </h1>
         <p className="text-white/60">
           Track your customer visits, orders, and performance metrics.
@@ -217,6 +236,8 @@ const RepTracker: React.FC = () => {
                 weekEndDate={weekEnd}
                 customers={customers || []}
                 onAddPlanSuccess={handleAddPlanSuccess}
+                userId={viewingUserId}
+                isViewingOtherUser={isViewingOtherUser}
               />
             </ScrollArea>
           ) : (
@@ -225,6 +246,8 @@ const RepTracker: React.FC = () => {
               weekEndDate={weekEnd}
               customers={customers || []}
               onAddPlanSuccess={handleAddPlanSuccess}
+              userId={viewingUserId}
+              isViewingOtherUser={isViewingOtherUser}
             />
           )}
         </TabsContent>
@@ -237,11 +260,16 @@ const RepTracker: React.FC = () => {
             isLoadingCustomers={isLoadingCustomers}
             onDataChange={handleDataChange}
             onAddVisit={() => setShowAddVisit(true)}
+            userId={viewingUserId}
+            isViewingOtherUser={isViewingOtherUser}
           />
         </TabsContent>
         
         <TabsContent value="customer-history" className="mt-6">
-          <CustomerHistoryTable customers={customers || []} />
+          <CustomerHistoryTable 
+            customers={customers || []}
+            userId={viewingUserId} 
+          />
         </TabsContent>
       </Tabs>
       
@@ -254,6 +282,15 @@ const RepTracker: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+// Wrap the main component with UserViewProvider
+const RepTracker: React.FC = () => {
+  return (
+    <UserViewProvider>
+      <RepTrackerContent />
+    </UserViewProvider>
   );
 };
 

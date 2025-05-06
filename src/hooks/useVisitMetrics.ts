@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, endOfWeek, differenceInDays } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface VisitMetrics {
   totalVisits: number;
@@ -14,22 +15,28 @@ interface VisitMetrics {
   plannedVisits: number;
 }
 
-export const useVisitMetrics = (selectedDate: Date) => {
+export const useVisitMetrics = (selectedDate: Date, userId?: string) => {
+  const { user } = useAuth();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+  
+  // If no userId is provided, use the current user's ID
+  const targetUserId = userId || user?.id;
 
   return useQuery({
-    queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString()],
+    queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString(), targetUserId],
     queryFn: async (): Promise<VisitMetrics> => {
       const [{ data: visits, error: visitsError }, { data: plans, error: plansError }] = await Promise.all([
         supabase
           .from('customer_visits')
           .select('*')
+          .eq('user_id', targetUserId)
           .gte('date', weekStart.toISOString())
           .lte('date', weekEnd.toISOString()),
         supabase
           .from('week_plans')
           .select('*')
+          .eq('user_id', targetUserId)
           .gte('planned_date', weekStart.toISOString().split('T')[0])
           .lte('planned_date', weekEnd.toISOString().split('T')[0])
       ]);
@@ -84,6 +91,7 @@ export const useVisitMetrics = (selectedDate: Date) => {
     // Disable any background refresh - only fetch when explicitly asked
     refetchInterval: 0,
     // Don't cache result - always re-fetch from server
-    gcTime: 0
+    gcTime: 0,
+    enabled: !!targetUserId
   });
 };

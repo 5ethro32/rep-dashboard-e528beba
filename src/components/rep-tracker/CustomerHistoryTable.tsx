@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { Search } from 'lucide-react';
+import { Search, UserCog } from 'lucide-react';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import {
   Table,
@@ -18,6 +18,7 @@ import { formatCurrency } from '@/utils/rep-performance-utils';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerVisit {
   id: string;
@@ -33,22 +34,31 @@ interface CustomerVisit {
 
 interface CustomerHistoryTableProps {
   customers: Array<{ account_name: string; account_ref: string }>;
+  userId?: string;
 }
 
-const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers }) => {
+const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers, userId }) => {
   const [selectedCustomerRef, setSelectedCustomerRef] = useState<string>('');
   const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
+  const { user } = useAuth();
+
+  // If no userId is provided, use the current user's ID
+  const targetUserId = userId || user?.id;
+  
+  // Check if viewing another user's data
+  const isViewingOtherUser = user?.id !== userId && !!userId;
 
   // Query to fetch all visits for a specific customer
   const { data: customerVisits, isLoading } = useQuery({
-    queryKey: ['customer-history', selectedCustomerRef],
+    queryKey: ['customer-history', selectedCustomerRef, targetUserId],
     queryFn: async (): Promise<CustomerVisit[]> => {
-      if (!selectedCustomerRef) return [];
+      if (!selectedCustomerRef || !targetUserId) return [];
       
       const { data, error } = await supabase
         .from('customer_visits')
         .select('*')
         .eq('customer_ref', selectedCustomerRef)
+        .eq('user_id', targetUserId)
         .order('date', { ascending: false });
         
       if (error) {
@@ -57,7 +67,7 @@ const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers }
       
       return data || [];
     },
-    enabled: !!selectedCustomerRef
+    enabled: !!selectedCustomerRef && !!targetUserId
   });
 
   const handleCustomerSelect = (ref: string, name: string) => {
@@ -77,7 +87,15 @@ const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers }
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Customer Visit History</h3>
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          Customer Visit History
+          {isViewingOtherUser && (
+            <Badge variant="outline" className="ml-2 bg-amber-800/30 text-amber-300 border-amber-500/50">
+              <UserCog size={14} className="mr-1" />
+              Viewing Only
+            </Badge>
+          )}
+        </h3>
       </div>
       
       <div className="space-y-4">
