@@ -21,56 +21,8 @@ const convertDataFormat = (repPerformanceData: any[]): RepData[] => {
     totalAccounts: Set<string>;
   }> = {};
   
-  // Create a special record to track department sales without reps
-  // This won't be displayed but will be used for totals
-  const departmentSales = {
-    rep: "DEPARTMENT_SALES_DO_NOT_DISPLAY",
-    spend: 0,
-    profit: 0,
-    packs: 0,
-    activeAccounts: new Set<string>(),
-    totalAccounts: new Set<string>(),
-  };
-  
   repPerformanceData.forEach(item => {
-    // Determine which rep name to use based on the department
-    let repName;
-    const department = (item.department || '').toLowerCase();
-    
-    // For REVA and Wholesale departments, use sub_rep when available
-    if (department.includes('reva') || department.includes('wholesale')) {
-      repName = item.sub_rep || item.rep_name; // Fallback to rep_name if sub_rep is not available
-    } else {
-      // For Retail or any other department, use rep_name
-      repName = item.rep_name;
-    }
-    
-    // Skip if we don't have a valid rep name
-    if (!repName) return;
-    
-    const spend = Number(item.spend) || 0;
-    const profit = Number(item.profit) || 0;
-    const packs = Number(item.packs) || 0;
-    
-    // Check if this is a department name used as a rep name
-    const normalizedRepName = repName.toLowerCase();
-    if (normalizedRepName === 'reva' || 
-        normalizedRepName === 'wholesale' || 
-        normalizedRepName === 'retail') {
-      console.log(`Department name "${repName}" used as rep name - aggregating instead of displaying`);
-      // Add to department sales instead of skipping
-      departmentSales.spend += spend;
-      departmentSales.profit += profit;
-      departmentSales.packs += packs;
-      
-      if (item.account_ref) {
-        departmentSales.totalAccounts.add(item.account_ref);
-        if (spend > 0) {
-          departmentSales.activeAccounts.add(item.account_ref);
-        }
-      }
-      return;
-    }
+    const repName = item.rep_name;
     
     if (!repGrouped[repName]) {
       repGrouped[repName] = {
@@ -83,6 +35,10 @@ const convertDataFormat = (repPerformanceData: any[]): RepData[] => {
       };
     }
     
+    const spend = Number(item.spend) || 0;
+    const profit = Number(item.profit) || 0;
+    const packs = Number(item.packs) || 0;
+    
     repGrouped[repName].spend += spend;
     repGrouped[repName].profit += profit;
     repGrouped[repName].packs += packs;
@@ -93,11 +49,6 @@ const convertDataFormat = (repPerformanceData: any[]): RepData[] => {
     
     repGrouped[repName].totalAccounts.add(item.account_ref);
   });
-  
-  // Add the department sales to the result if it has non-zero values
-  if (departmentSales.spend > 0 || departmentSales.profit > 0 || departmentSales.packs > 0) {
-    repGrouped[departmentSales.rep] = departmentSales;
-  }
   
   return Object.values(repGrouped).map(rep => {
     const spend = rep.spend;
@@ -581,33 +532,19 @@ export const useEnhancedPerformanceData = () => {
       currentWholesaleData = mayWholesaleData;
     }
     
-    // Extract any departmental sales from each dataset (for totals)
-    const getDeptSalesRecord = (data: RepData[]) => {
-      return data.find(rep => rep.rep === "DEPARTMENT_SALES_DO_NOT_DISPLAY");
-    };
-    
-    const retailDeptSales = getDeptSalesRecord(currentRepData);
-    const revaDeptSales = getDeptSalesRecord(currentRevaData);
-    const wholesaleDeptSales = getDeptSalesRecord(currentWholesaleData);
-    
-    // Filter function to remove reps with $0 spend and the special department record
-    const filterForDisplay = (data: RepData[]) => data.filter(rep => 
-      rep.spend > 0 && rep.rep !== "DEPARTMENT_SALES_DO_NOT_DISPLAY"
-    );
-    
     // Determine which data to return based on the tab value
     switch (tabValue) {
       case 'rep':
-        return includeRetail ? filterForDisplay(currentRepData) : [];
+        return includeRetail ? currentRepData : [];
       case 'reva':
-        return includeReva ? filterForDisplay(currentRevaData) : [];
+        return includeReva ? currentRevaData : [];
       case 'wholesale':
-        return includeWholesale ? filterForDisplay(currentWholesaleData) : [];
+        return includeWholesale ? currentWholesaleData : [];
       case 'overall':
       default:
         if (monthToUse !== selectedMonth) {
           // Recombine data for specific month
-          const combinedData = getCombinedRepData(
+          return getCombinedRepData(
             monthToUse === 'February' ? febRepData :
             monthToUse === 'April' ? aprRepData :
             monthToUse === 'May' ? mayRepData : repData,
@@ -624,9 +561,8 @@ export const useEnhancedPerformanceData = () => {
             includeReva,
             includeWholesale
           );
-          return filterForDisplay(combinedData);
         }
-        return filterForDisplay(overallData);
+        return overallData;
     }
   };
   

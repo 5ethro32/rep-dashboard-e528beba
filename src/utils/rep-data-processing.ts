@@ -1,3 +1,4 @@
+
 import { RepData, SalesDataItem, SummaryData } from "@/types/rep-performance.types";
 
 export const processRepData = (salesData: SalesDataItem[]): RepData[] => {
@@ -120,40 +121,10 @@ export const getCombinedRepData = (
     totalAccounts: Set<string>;
   }>();
   
-  // Special handling for department sales placeholder
-  const deptSalesRep = "DEPARTMENT_SALES_DO_NOT_DISPLAY";
-  const deptSales = {
-    rep: deptSalesRep,
-    spend: 0,
-    profit: 0,
-    packs: 0,
-    activeAccounts: new Set<string>(),
-    totalAccounts: new Set<string>()
-  };
-  
-  // Process retail data
   if (includeRetailData) {
     console.log("Including Retail data in combined data");
     
     retailData.forEach(rep => {
-      if (rep.rep === deptSalesRep) {
-        // Add to department sales
-        deptSales.spend += rep.spend;
-        deptSales.profit += rep.profit;
-        deptSales.packs += rep.packs;
-        
-        // We don't have direct access to the accounts so we estimate
-        const activeAccountsArr = Array(rep.activeAccounts).fill(null)
-          .map((_, i) => `retail_dept_${i}`);
-        const totalAccountsArr = Array(rep.totalAccounts).fill(null)
-          .map((_, i) => `retail_dept_${i}`);
-          
-        activeAccountsArr.forEach(account => deptSales.activeAccounts.add(account));
-        totalAccountsArr.forEach(account => deptSales.totalAccounts.add(account));
-        
-        return;
-      }
-      
       repMap.set(rep.rep, {
         rep: rep.rep,
         spend: rep.spend,
@@ -171,24 +142,6 @@ export const getCombinedRepData = (
     console.log("Including REVA data in combined data");
     
     revaData.forEach(rep => {
-      if (rep.rep === deptSalesRep) {
-        // Add to department sales
-        deptSales.spend += rep.spend;
-        deptSales.profit += rep.profit;
-        deptSales.packs += rep.packs;
-        
-        // We don't have direct access to the accounts so we estimate
-        const activeAccountsArr = Array(rep.activeAccounts).fill(null)
-          .map((_, i) => `reva_dept_${i}`);
-        const totalAccountsArr = Array(rep.totalAccounts).fill(null)
-          .map((_, i) => `reva_dept_${i}`);
-          
-        activeAccountsArr.forEach(account => deptSales.activeAccounts.add(account));
-        totalAccountsArr.forEach(account => deptSales.totalAccounts.add(account));
-        
-        return;
-      }
-      
       if (rep.rep === 'REVA') {
         return;
       }
@@ -223,24 +176,6 @@ export const getCombinedRepData = (
     console.log("Including Wholesale data in combined data");
     
     wholesaleData.forEach(rep => {
-      if (rep.rep === deptSalesRep) {
-        // Add to department sales
-        deptSales.spend += rep.spend;
-        deptSales.profit += rep.profit;
-        deptSales.packs += rep.packs;
-        
-        // We don't have direct access to the accounts so we estimate
-        const activeAccountsArr = Array(rep.activeAccounts).fill(null)
-          .map((_, i) => `wholesale_dept_${i}`);
-        const totalAccountsArr = Array(rep.totalAccounts).fill(null)
-          .map((_, i) => `wholesale_dept_${i}`);
-          
-        activeAccountsArr.forEach(account => deptSales.activeAccounts.add(account));
-        totalAccountsArr.forEach(account => deptSales.totalAccounts.add(account));
-        
-        return;
-      }
-      
       if (rep.rep === 'Wholesale') {
         return;
       }
@@ -269,11 +204,6 @@ export const getCombinedRepData = (
       wholesaleActiveAccounts.forEach(account => repData.activeAccounts.add(account));
       wholesaleTotalAccounts.forEach(account => repData.totalAccounts.add(account));
     });
-  }
-  
-  // Add the department sales to the map if there's data
-  if (deptSales.spend > 0 || deptSales.profit > 0 || deptSales.packs > 0) {
-    repMap.set(deptSalesRep, deptSales);
   }
   
   const combinedData: RepData[] = Array.from(repMap.values()).map(rep => {

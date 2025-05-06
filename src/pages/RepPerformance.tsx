@@ -6,9 +6,10 @@ import PerformanceContent from '@/components/rep-performance/PerformanceContent'
 import { formatCurrency, formatPercent, formatNumber, calculateSummary } from '@/utils/rep-performance-utils';
 import { useEnhancedPerformanceData } from '@/hooks/useEnhancedPerformanceData';
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
+import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import { Button } from '@/components/ui/button';
-import { BarChart3, ClipboardList } from 'lucide-react';
+import { BarChart3, ClipboardList, Bug, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -87,6 +88,12 @@ const RepPerformance = () => {
     }
   }, [autoRefreshed]);
   
+  // Custom refresh handler to track if it's an auto refresh
+  const handleRefresh = async () => {
+    await loadDataFromSupabase();
+    setAutoRefreshed(true);
+  };
+
   // Handle month selection with proper data refresh
   const handleMonthSelection = async (month: string) => {
     // Set month first to avoid UI flicker
@@ -160,33 +167,6 @@ const RepPerformance = () => {
     });
   }
   
-  // Navigation buttons component
-  const navigationButtons = !isMobile && (
-    <div className="flex space-x-2">
-      <Link to="/account-performance">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
-        >
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Account Analysis
-        </Button>
-      </Link>
-      
-      <Link to="/rep-tracker">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
-        >
-          <ClipboardList className="h-4 w-4 mr-2" />
-          Rep Tracker
-        </Button>
-      </Link>
-    </div>
-  );
-  
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
       <div className="flex justify-end pt-4">
@@ -197,6 +177,59 @@ const RepPerformance = () => {
         selectedMonth={selectedMonth}
         setSelectedMonth={handleMonthSelection}
       />
+      
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
+        <ActionsHeader 
+          onRefresh={handleRefresh}
+          isLoading={isLoading}
+          autoRefreshed={autoRefreshed}
+        />
+        
+        {/* Only show these buttons on non-mobile devices */}
+        {!isMobile && (
+          <div className="flex space-x-2">
+            {useEnhanced && (
+              <div className="flex items-center text-xs text-green-500 mr-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                Enhanced Data
+              </div>
+            )}
+            
+            <Link to="/account-performance">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Account Analysis
+              </Button>
+            </Link>
+            
+            <Link to="/rep-tracker">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+              >
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Rep Tracker
+              </Button>
+            </Link>
+            
+            <Link to="/dashboard-test">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+              >
+                <Bug className="h-4 w-4 mr-2" />
+                Test Dashboard
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
 
       <PerformanceFilters
         includeRetail={includeRetail}
@@ -206,8 +239,7 @@ const RepPerformance = () => {
         includeWholesale={includeWholesale}
         setIncludeWholesale={setIncludeWholesale}
         selectedMonth={selectedMonth}
-        setSelectedMonth={handleMonthSelection}
-        navigationButtons={navigationButtons}
+        setSelectedMonth={setSelectedMonth}
       />
 
       {/* Updated SummaryMetrics with enhanced data */}
@@ -225,8 +257,8 @@ const RepPerformance = () => {
         setIncludeWholesale={setIncludeWholesale}
       />
       
-      {/* Trend line chart */}
-      <div className="mt-6 mb-8">
+      {/* TrendLineChart with enhanced capabilities */}
+      <div className="mb-6">
         <TrendLineChart
           febSummary={filteredFebSummary}
           marchSummary={filteredMarSummary}
