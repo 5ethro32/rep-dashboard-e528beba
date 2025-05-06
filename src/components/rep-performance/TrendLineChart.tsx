@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -347,9 +346,6 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           <CardTitle className="text-lg font-medium text-white/90">
             Monthly Performance Trends
           </CardTitle>
-          <CardDescription className="text-sm text-white/70 mt-0">
-            {getDepartmentDisplayText()}
-          </CardDescription>
         </div>
         
         <div className="flex justify-between items-center mt-8">
@@ -409,7 +405,13 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           </div>
         )}
       </CardHeader>
-      <CardContent className="pt-6 pb-8">
+      
+      {/* Added departments display above the chart */}
+      <div className="px-6 pb-3 text-sm text-white/70">
+        <span className="font-medium">Data Sources:</span> {getDepartmentDisplayText()}
+      </div>
+      
+      <CardContent className="pt-3 pb-8">
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
