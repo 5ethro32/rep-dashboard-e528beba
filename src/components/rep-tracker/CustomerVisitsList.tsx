@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar, UserCog } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { 
   AlertDialog,
@@ -44,8 +44,6 @@ interface CustomerVisitsListProps {
   isLoadingCustomers: boolean;
   onDataChange?: () => void;
   onAddVisit: () => void;
-  userId?: string;
-  isViewingOtherUser?: boolean;
 }
 
 type SortField = 'date' | 'customer_name' | 'profit';
@@ -73,9 +71,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   customers,
   isLoadingCustomers,
   onDataChange,
-  onAddVisit,
-  userId,
-  isViewingOtherUser = false
+  onAddVisit
 }) => {
   const [filter, setFilter] = useState('all'); // 'all', 'ordered', 'no-order', 'planned'
   const [sortField, setSortField] = useState<SortField>('date');
@@ -86,12 +82,11 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   const queryClient = useQueryClient();
 
   const { data: visits, isLoading } = useQuery({
-    queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder, userId],
+    queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customer_visits')
         .select('*')
-        .eq('user_id', userId)
         .gte('date', weekStartDate.toISOString())
         .lte('date', weekEndDate.toISOString())
         .order(sortField, { ascending: sortOrder === 'asc' });
@@ -110,7 +105,6 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     },
     refetchInterval: 0,
     staleTime: 0,
-    enabled: !!userId
   });
 
   const deleteVisitMutation = useMutation({
@@ -190,15 +184,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between mb-4">
-        <h2 className="text-xl font-semibold mb-2 md:mb-0 flex items-center gap-2">
-          Customer Visits
-          {isViewingOtherUser && (
-            <Badge variant="outline" className="ml-2 bg-amber-800/30 text-amber-300 border-amber-500/50">
-              <UserCog size={14} className="mr-1" />
-              Viewing Only
-            </Badge>
-          )}
-        </h2>
+        <h2 className="text-xl font-semibold mb-2 md:mb-0">Customer Visits</h2>
         <div className="flex items-center gap-4">
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-[180px] bg-black/30 border-gray-700 text-white">
@@ -212,15 +198,13 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
             </SelectContent>
           </Select>
           
-          {!isViewingOtherUser && (
-            <Button 
-              className="bg-finance-red hover:bg-finance-red/80"
-              onClick={onAddVisit}
-            >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Visit
-            </Button>
-          )}
+          <Button 
+            className="bg-finance-red hover:bg-finance-red/80"
+            onClick={onAddVisit}
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Visit
+          </Button>
         </div>
       </div>
 
@@ -266,21 +250,19 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                   </TableHead>
                   <TableHead className="text-white font-medium">Comments</TableHead>
                   <TableHead className="text-white font-medium">Source</TableHead>
-                  {!isViewingOtherUser && (
-                    <TableHead className="text-white font-medium text-right">Actions</TableHead>
-                  )}
+                  <TableHead className="text-white font-medium text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={isViewingOtherUser ? 8 : 9} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
                       Loading visits...
                     </TableCell>
                   </TableRow>
                 ) : filteredVisits?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isViewingOtherUser ? 8 : 9} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
                       No visits found for this week.
                     </TableCell>
                   </TableRow>
@@ -309,30 +291,28 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                           </Badge>
                         ) : 'Manual'}
                       </TableCell>
-                      {!isViewingOtherUser && (
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 w-8 p-0 text-blue-400"
-                              onClick={() => setVisitToEdit(visit)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 w-8 p-0 text-red-400"
-                              onClick={() => setVisitToDelete(visit.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-blue-400"
+                            onClick={() => setVisitToEdit(visit)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-red-400"
+                            onClick={() => setVisitToDelete(visit.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -342,50 +322,46 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         </div>
       </div>
       
-      {!isViewingOtherUser && (
-        <>
-          <AlertDialog open={!!visitToDelete} onOpenChange={() => setVisitToDelete(null)}>
-            <AlertDialogContent className="bg-gray-900 border border-gray-800">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-white">Confirm Delete</AlertDialogTitle>
-                <AlertDialogDescription className="text-gray-400">
-                  Are you sure you want to delete this visit record? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="bg-transparent border-gray-700 text-white hover:bg-gray-800">
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDeleteConfirm}
-                  className="bg-finance-red hover:bg-finance-red/80 text-white"
-                >
-                  {deleteVisitMutation.isPending ? 'Deleting...' : 'Delete'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          
-          {visitToEdit && (
-            <EditVisitDialog
-              isOpen={!!visitToEdit}
-              onClose={() => setVisitToEdit(null)}
-              visit={visitToEdit}
-              customers={customers}
-              onSuccess={() => {
-                queryClient.invalidateQueries({
-                  queryKey: ['customer-visits'],
-                  exact: false,
-                  refetchType: 'all'
-                });
-                
-                if (onDataChange) {
-                  onDataChange();
-                }
-              }}
-            />
-          )}
-        </>
+      <AlertDialog open={!!visitToDelete} onOpenChange={() => setVisitToDelete(null)}>
+        <AlertDialogContent className="bg-gray-900 border border-gray-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Confirm Delete</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete this visit record? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-gray-700 text-white hover:bg-gray-800">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-finance-red hover:bg-finance-red/80 text-white"
+            >
+              {deleteVisitMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {visitToEdit && (
+        <EditVisitDialog
+          isOpen={!!visitToEdit}
+          onClose={() => setVisitToEdit(null)}
+          visit={visitToEdit}
+          customers={customers}
+          onSuccess={() => {
+            queryClient.invalidateQueries({
+              queryKey: ['customer-visits'],
+              exact: false,
+              refetchType: 'all'
+            });
+            
+            if (onDataChange) {
+              onDataChange();
+            }
+          }}
+        />
       )}
     </div>
   );
