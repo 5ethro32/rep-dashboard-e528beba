@@ -378,51 +378,16 @@ export interface Database {
       }
     }
     Views: {
-      combined_rep_performance: {
-        Row: {
-          margin: number | null
-          rep_name: string | null
-          reporting_period: string | null
-          retail_accounts: number | null
-          retail_packs: number | null
-          retail_profit: number | null
-          retail_spend: number | null
-          reva_accounts: number | null
-          reva_packs: number | null
-          reva_profit: number | null
-          reva_spend: number | null
-          total_accounts: number | null
-          total_packs: number | null
-          total_profit: number | null
-          total_spend: number | null
-          wholesale_accounts: number | null
-          wholesale_packs: number | null
-          wholesale_profit: number | null
-          wholesale_spend: number | null
-        }
-        Relationships: []
-      }
-      unified_sales_stats: {
-        Row: {
-          record_count: number | null
-          reporting_month: string | null
-          total_profit: number | null
-          total_spend: number | null
-          unique_accounts: number | null
-          unique_reps: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
-      execute_sql: {
-        Args: {
-          sql_query: string
-        }
-        Returns: unknown
-      }
+      [_ in never]: never
     }
-    Enums: {}
-    CompositeTypes: {}
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }

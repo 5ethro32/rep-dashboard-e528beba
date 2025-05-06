@@ -161,26 +161,6 @@
     animation: spin-slow 8s linear infinite;
   }
   
-  /* Add cogFall animation */
-  @keyframes cogFall {
-    from { 
-      transform: translateY(-100px);
-    }
-    to { 
-      transform: translateY(100vh);
-    }
-  }
-
-  /* Add cogSpin animation */
-  @keyframes cogSpin {
-    from { 
-      transform: rotate(0deg);
-    }
-    to { 
-      transform: rotate(360deg);
-    }
-  }
-
   /* Rest of the styles */
   .metric-value {
     @apply text-4xl md:text-5xl font-bold;

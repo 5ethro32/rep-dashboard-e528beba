@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -34,56 +33,39 @@ const DataVerification = () => {
       
       // 2. Get stats for each table
       const tableStatsPromises = tableNames.map(async (tableName) => {
-        // Use direct query instead of RPC since get_table_stats isn't in the type definitions
-        let recordCount = 0;
-        let totalSpend = 0;
-        let totalProfit = 0;
-        let totalPacks = 0;
+        const { data, error } = await supabase.rpc('get_table_stats', { table_name: tableName });
         
-        try {
-          // Count records first
+        if (error) {
+          console.error(`Error getting stats for ${tableName}:`, error);
+          
+          // Fallback to direct SQL count query if RPC fails
           const { count, error: countError } = await supabase
-            .from(tableName as any)
+            .from(tableName)
             .select('*', { count: 'exact', head: true });
             
           if (countError) {
             console.error(`Error counting ${tableName}:`, countError);
-          } else {
-            recordCount = count || 0;
+            return {
+              tableName,
+              recordCount: 0,
+              totalSpend: 0,
+              totalProfit: 0,
+              totalPacks: 0
+            };
           }
           
-          // Now get aggregated metrics using direct SQL query instead of RPC
-          const { data: metricsData, error: metricsError } = await supabase
-            .rpc('execute_sql', { 
-              sql_query: `
-                SELECT 
-                  SUM(CASE WHEN "Spend" IS NOT NULL THEN "Spend" 
-                       WHEN spend IS NOT NULL THEN spend ELSE 0 END) as total_spend,
-                  SUM(CASE WHEN "Profit" IS NOT NULL THEN "Profit" 
-                       WHEN profit IS NOT NULL THEN profit ELSE 0 END) as total_profit,
-                  SUM(CASE WHEN "Packs" IS NOT NULL THEN "Packs" 
-                       WHEN packs IS NOT NULL THEN packs ELSE 0 END) as total_packs
-                FROM ${tableName}
-              ` 
-            } as any);
-            
-          if (metricsError) {
-            console.error(`Error getting metrics for ${tableName}:`, metricsError);
-          } else if (metricsData && metricsData[0]) {
-            totalSpend = metricsData[0].total_spend || 0;
-            totalProfit = metricsData[0].total_profit || 0;
-            totalPacks = metricsData[0].total_packs || 0;
-          }
-        } catch (err) {
-          console.error(`Error processing ${tableName}:`, err);
+          return {
+            tableName,
+            recordCount: count || 0,
+            totalSpend: 0,
+            totalProfit: 0,
+            totalPacks: 0
+          };
         }
         
         return {
           tableName,
-          recordCount,
-          totalSpend,
-          totalProfit,
-          totalPacks
+          ...data[0]
         };
       });
       
@@ -116,7 +98,7 @@ const DataVerification = () => {
       const tableName = monthToTableMap[month];
       
       const { data: legacyData, error: legacyError } = await supabase
-        .from(tableName as any)
+        .from(tableName)
         .select('*')
         .limit(10);
         
@@ -139,32 +121,44 @@ const DataVerification = () => {
       const months = ['February', 'March', 'April', 'May'];
       
       const totalsPromises = months.map(async (month) => {
-        // Use direct SQL query instead of RPC
-        const { data, error } = await supabase
-          .rpc('execute_sql', { 
-            sql_query: `
-              SELECT 
-                COUNT(*) as record_count,
-                SUM(spend) as total_spend,
-                SUM(profit) as total_profit,
-                SUM(packs) as total_packs
-              FROM unified_sales_data
-              WHERE reporting_month = '${month}'
-            `
-          } as any);
+        // Get totals from unified table
+        const { data, error } = await supabase.rpc('get_month_totals', { 
+          month_name: month 
+        });
         
         if (error) {
           console.error(`Error getting totals for ${month}:`, error);
-          return { month, recordCount: 0, totalSpend: 0, totalProfit: 0, totalPacks: 0 };
+          
+          // Fallback to direct SQL query
+          const sqlQuery = `
+            SELECT 
+              COUNT(*) as record_count,
+              SUM(spend) as total_spend,
+              SUM(profit) as total_profit,
+              SUM(packs) as total_packs
+            FROM unified_sales_data
+            WHERE reporting_month = '${month}'
+          `;
+          
+          const { data: sqlData, error: sqlError } = await supabase.rpc('select', { 
+            query: sqlQuery 
+          });
+          
+          if (sqlError) {
+            console.error(`Error with SQL query for ${month}:`, sqlError);
+            return { month, recordCount: 0, totalSpend: 0, totalProfit: 0, totalPacks: 0 };
+          }
+          
+          return { 
+            month, 
+            recordCount: sqlData?.[0]?.record_count || 0,
+            totalSpend: sqlData?.[0]?.total_spend || 0,
+            totalProfit: sqlData?.[0]?.total_profit || 0,
+            totalPacks: sqlData?.[0]?.total_packs || 0 
+          };
         }
         
-        return { 
-          month, 
-          recordCount: data?.[0]?.record_count || 0,
-          totalSpend: data?.[0]?.total_spend || 0,
-          totalProfit: data?.[0]?.total_profit || 0,
-          totalPacks: data?.[0]?.total_packs || 0 
-        };
+        return { month, ...data[0] };
       });
       
       const results = await Promise.all(totalsPromises);
@@ -180,20 +174,19 @@ const DataVerification = () => {
     setLoading(true);
     try {
       // Query to check department values in unified table vs original tables
-      const { data, error } = await supabase
-        .rpc('execute_sql', { 
-          sql_query: `
-            SELECT 
-              reporting_month as month,
-              department, 
-              COUNT(*) as record_count,
-              SUM(spend) as total_spend,
-              SUM(profit) as total_profit
-            FROM unified_sales_data
-            GROUP BY reporting_month, department
-            ORDER BY reporting_month, department
-          `
-        } as any);
+      const sqlQuery = `
+        SELECT 
+          reporting_month as month,
+          department, 
+          COUNT(*) as record_count,
+          SUM(spend) as total_spend,
+          SUM(profit) as total_profit
+        FROM unified_sales_data
+        GROUP BY reporting_month, department
+        ORDER BY reporting_month, department
+      `;
+      
+      const { data, error } = await supabase.rpc('select', { query: sqlQuery });
       
       if (error) {
         console.error('Error with direct SQL query:', error);
@@ -325,4 +318,4 @@ const DataVerification = () => {
   );
 };
 
-export default DataVerification;
+export default DataVerification; 

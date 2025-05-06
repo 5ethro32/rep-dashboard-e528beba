@@ -1,23 +1,19 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
 // Helper function to check if a table exists
 export const tableExists = async (tableName: string): Promise<boolean> => {
   try {
-    // Using execute_sql instead of direct query to avoid type errors
+    // Using direct SQL query instead of RPC since check_table_exists isn't recognized
     const { data, error } = await supabase
-      .rpc('execute_sql', {
-        sql_query: `
-          SELECT table_name 
-          FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = '${tableName}'
-        `
-      } as any);
+      .from('information_schema.tables')
+      .select('table_name')
+      .eq('table_schema', 'public')
+      .eq('table_name', tableName)
+      .single();
     
     if (error) throw error;
-    return data && data.length > 0;
+    return !!data;
   } catch (error) {
     console.error(`Error checking if table ${tableName} exists:`, error);
     return false;
@@ -34,39 +30,36 @@ export const createUnifiedTable = async (): Promise<boolean> => {
       return true;
     }
 
-    // Try to use the RPC function for creating the table
-    const { error } = await supabase.rpc('create_unified_sales_table' as any);
+    // Use a direct SQL query instead of RPC
+    const { error } = await supabase.rpc('create_unified_sales_table');
     
     if (error) {
       // Fallback to direct SQL if RPC fails
       console.log('RPC failed, trying direct SQL instead');
-      const { error: sqlError } = await supabase
-        .rpc('execute_sql', {
-          sql_query: `
-            CREATE TABLE IF NOT EXISTS unified_sales_data (
-              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-              source_id TEXT,
-              source_table TEXT,
-              reporting_year INTEGER,
-              reporting_month TEXT,
-              reporting_period TEXT,
-              rep_name TEXT NOT NULL,
-              sub_rep TEXT,
-              account_ref TEXT,
-              account_name TEXT,
-              department TEXT,
-              spend DECIMAL(12,2),
-              profit DECIMAL(12,2),
-              margin DECIMAL(6,2),
-              packs INTEGER,
-              cost DECIMAL(12,2),
-              credit DECIMAL(12,2),
-              import_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              data_month TEXT
-            );
-          `
-        } as any);
-        
+      const sqlQuery = `
+        CREATE TABLE IF NOT EXISTS unified_sales_data (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          source_id TEXT,
+          source_table TEXT,
+          reporting_year INTEGER,
+          reporting_month TEXT,
+          reporting_period TEXT,
+          rep_name TEXT NOT NULL,
+          sub_rep TEXT,
+          account_ref TEXT,
+          account_name TEXT,
+          department TEXT,
+          spend DECIMAL(12,2),
+          profit DECIMAL(12,2),
+          margin DECIMAL(6,2),
+          packs INTEGER,
+          cost DECIMAL(12,2),
+          credit DECIMAL(12,2),
+          import_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          data_month TEXT
+        );
+      `;
+      const { error: sqlError } = await supabase.rpc('select', { query: sqlQuery });
       if (sqlError) throw sqlError;
     }
     
@@ -140,14 +133,11 @@ export const executeMigrationSQL = async (
       `;
     }
     
-    // Execute the SQL using rpc to avoid type errors
-    const { data, error } = await supabase
-      .rpc('execute_sql', { sql_query: sqlQuery } as any);
-      
+    const { data, error } = await supabase.rpc('select', { query: sqlQuery });
     if (error) throw error;
     
-    const count = data && data[0] ? parseInt(data[0].count) : 0;
-    return count;
+    const count = data?.[0]?.count || 0;
+    return parseInt(count as string);
   } catch (error) {
     console.error(`Error migrating data from ${sourceTable}:`, error);
     return 0;
@@ -166,13 +156,12 @@ export const migrateDataFromTable = async (
     
     // First try using the RPC function
     try {
-      const { data, error } = await supabase
-        .rpc('migrate_table_data', {
-          source_table_name: sourceTable,
-          month_name: monthName,
-          month_code: monthCode,
-          year_value: year
-        } as any);
+      const { data, error } = await supabase.rpc('migrate_table_data', {
+        source_table_name: sourceTable,
+        month_name: monthName,
+        month_code: monthCode,
+        year_value: year
+      });
       
       if (error) throw error;
       console.log(`Successfully migrated ${data} records from ${sourceTable}`);
@@ -271,4 +260,4 @@ export const migrateAllData = async (): Promise<{
     });
     return results;
   }
-};
+}; 
