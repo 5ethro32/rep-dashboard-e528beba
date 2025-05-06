@@ -8,6 +8,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import RepSelector from '@/components/rep-performance/RepSelector';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface TrendLineChartProps {
@@ -331,94 +332,83 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const showRightAxis = showPacks || selectedReps.length > 0;
   const showMarginAxis = showMargin || selectedReps.some((_, i) => showMargin && enhancedChartData.some(item => item[`margin-rep-${i}`] !== undefined));
   
+  // Generate department display text
+  const getDepartmentDisplayText = () => {
+    const departments = [];
+    if (includeRetail) departments.push('Retail');
+    if (includeReva) departments.push('REVA');
+    if (includeWholesale) departments.push('Wholesale');
+    return departments.join(', ');
+  };
+  
   return (
     <Card className="bg-gray-900/40 border border-white/10 backdrop-blur-sm shadow-lg">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium text-white/90 flex justify-between">
-          <span>Monthly Performance Trends</span>
-        </CardTitle>
-        <CardDescription className="text-xs md:text-sm mb-3 md:mb-4 text-white/60">
-          {includeRetail && includeReva && includeWholesale ? 'Showing all departments' : 
-            `Showing ${[
-              includeRetail ? 'Retail' : '', 
-              includeReva ? 'REVA' : '', 
-              includeWholesale ? 'Wholesale' : ''
-            ].filter(Boolean).join(', ')}`
-          }
-        </CardDescription>
-        <ToggleGroup 
-          type="multiple" 
-          value={activeToggles} 
-          onValueChange={handleToggleChange}
-          className="justify-start mb-2"
-        >
-          <ToggleGroupItem value="profit" aria-label="Toggle Profit" className="data-[state=on]:bg-finance-red/20 data-[state=on]:text-finance-red border-gray-700">
-            <div className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-finance-red"></span>
-              <span className="text-xs">Profit</span>
-            </div>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="spend" aria-label="Toggle Spend" className="data-[state=on]:bg-blue-500/20 data-[state=on]:text-blue-400 border-gray-700">
-            <div className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-blue-500"></span>
-              <span className="text-xs">Spend</span>
-            </div>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="packs" aria-label="Toggle Packs" className="data-[state=on]:bg-green-500/20 data-[state=on]:text-green-400 border-gray-700">
-            <div className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-green-500"></span>
-              <span className="text-xs">Packs</span>
-            </div>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="margin" aria-label="Toggle Margin" className="data-[state=on]:bg-yellow-300/20 data-[state=on]:text-yellow-300 border-gray-700">
-            <div className="flex items-center gap-1">
-              <span className="h-3 w-3 rounded-full bg-yellow-300"></span>
-              <span className="text-xs">Margin</span>
-            </div>
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg font-medium text-white/90">
+            Monthly Performance Trends
+          </CardTitle>
+          <CardDescription className="text-xs md:text-sm text-white/60 mt-0">
+            {getDepartmentDisplayText()}
+          </CardDescription>
+        </div>
         
-        {/* Rep comparison section with improved styling */}
-        <div className="mt-3">
-          <div 
-            className="flex items-center justify-between text-sm cursor-pointer mb-1"
+        <div className="flex justify-between items-center mt-3">
+          <ToggleGroup 
+            type="multiple" 
+            value={activeToggles} 
+            onValueChange={handleToggleChange}
+            className="justify-start"
+          >
+            <ToggleGroupItem value="profit" aria-label="Toggle Profit" className="data-[state=on]:bg-finance-red/20 data-[state=on]:text-finance-red border-gray-700">
+              <div className="flex items-center gap-1">
+                <span className="h-3 w-3 rounded-full bg-finance-red"></span>
+                <span className="text-xs">Profit</span>
+              </div>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="spend" aria-label="Toggle Spend" className="data-[state=on]:bg-blue-500/20 data-[state=on]:text-blue-400 border-gray-700">
+              <div className="flex items-center gap-1">
+                <span className="h-3 w-3 rounded-full bg-blue-500"></span>
+                <span className="text-xs">Spend</span>
+              </div>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="packs" aria-label="Toggle Packs" className="data-[state=on]:bg-green-500/20 data-[state=on]:text-green-400 border-gray-700">
+              <div className="flex items-center gap-1">
+                <span className="h-3 w-3 rounded-full bg-green-500"></span>
+                <span className="text-xs">Packs</span>
+              </div>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="margin" aria-label="Toggle Margin" className="data-[state=on]:bg-yellow-300/20 data-[state=on]:text-yellow-300 border-gray-700">
+              <div className="flex items-center gap-1">
+                <span className="h-3 w-3 rounded-full bg-yellow-300"></span>
+                <span className="text-xs">Margin</span>
+              </div>
+            </ToggleGroupItem>
+          </ToggleGroup>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="px-3 py-1 rounded-full border border-purple-400/30 bg-purple-400/10 text-purple-300 hover:bg-purple-400/20 transition-colors"
             onClick={() => setShowRepComparison(!showRepComparison)}
           >
-            <span className="font-medium flex items-center bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Compare Reps
-              {showRepComparison ? 
-                <ChevronUp className="ml-1 h-4 w-4 text-blue-400" /> : 
-                <ChevronDown className="ml-1 h-4 w-4 text-blue-400" />
-              }
-            </span>
-            
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button className="text-xs px-3 py-1 rounded-full border border-purple-400/30 bg-purple-400/10 text-purple-300 hover:bg-purple-400/20 transition-colors">
-                    Compare Reps
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">Select up to 3 reps to compare their performance</p>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-          </div>
-
-          {showRepComparison && (
-            <div className="mt-2 mb-3">
-              <Separator className="mb-3 bg-gray-700/50" />
-              <RepSelector
-                availableReps={availableReps}
-                selectedReps={selectedReps}
-                onSelectRep={handleRepSelect}
-                onClearSelection={clearSelectedReps}
-                maxSelections={3}
-              />
-            </div>
-          )}
+            Compare Reps
+          </Button>
         </div>
+        
+        {/* Rep comparison section */}
+        {showRepComparison && (
+          <div className="mt-4">
+            <Separator className="mb-3 bg-gray-700/50" />
+            <RepSelector
+              availableReps={availableReps}
+              selectedReps={selectedReps}
+              onSelectRep={handleRepSelect}
+              onClearSelection={clearSelectedReps}
+              maxSelections={3}
+            />
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="h-56">
