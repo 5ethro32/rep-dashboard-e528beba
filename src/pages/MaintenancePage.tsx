@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Info, AlertTriangle, Settings } from "lucide-react";
+import { Lock, Info, Shield, Zap } from "lucide-react";
+import { GradientAvatar, GradientAvatarFallback } from "@/components/ui/gradient-avatar";
 
 const MaintenancePage: React.FC = () => {
   const [password, setPassword] = useState('');
@@ -43,26 +44,34 @@ const MaintenancePage: React.FC = () => {
     <div className="min-h-screen bg-finance-darkBg flex items-center justify-center p-4 bg-gradient-to-b from-gray-950 to-gray-900">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
         <div className="text-center">
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-8">
+            {/* New futuristic maintenance icon design */}
             <div className="relative">
-              <Settings className="h-16 w-16 text-finance-red animate-spin-slow" />
-              <AlertTriangle className="h-8 w-8 text-finance-red absolute top-4 left-4" />
+              <div className="absolute inset-0 bg-gradient-to-br from-finance-red/40 to-rose-600/20 rounded-full blur-lg"></div>
+              <GradientAvatar className="h-24 w-24 border-2 border-white/10 shadow-lg relative">
+                <GradientAvatarFallback className="flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center animate-pulse opacity-50">
+                    <Shield className="h-12 w-12 text-white/30" />
+                  </div>
+                  <Zap className="h-10 w-10 text-white relative z-10" strokeWidth={1.5} />
+                </GradientAvatarFallback>
+              </GradientAvatar>
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-2 text-white">
-            <span className="text-finance-red">Down</span> for Maintenance
+            <span className="text-finance-red">System</span> Maintenance
           </h1>
-          <p className="text-finance-gray mb-6">We're currently performing scheduled system updates.</p>
+          <p className="text-finance-gray mb-8">We're currently implementing advanced system upgrades.</p>
         </div>
 
         <Card className="border border-white/10 bg-gray-900/70 backdrop-blur-sm text-white glass-card">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Lock className="mr-2 h-5 w-5 text-finance-red" />
-              Admin Access
+              Secure Access Portal
             </CardTitle>
             <CardDescription className="text-finance-gray">
-              Enter the maintenance password to proceed
+              Authorized personnel only - Enter credentials to proceed
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -81,8 +90,8 @@ const MaintenancePage: React.FC = () => {
                 <div className="flex items-start gap-2 p-3 rounded-md bg-gray-800/50 border border-white/5">
                   <Info className="h-5 w-5 text-finance-gray flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-finance-gray">
-                    The system is currently undergoing scheduled maintenance. 
-                    Regular users will not be able to access the application until maintenance is complete.
+                    The system is currently in restricted access mode due to scheduled maintenance. 
+                    Standard user access will resume upon completion.
                   </p>
                 </div>
               </div>
@@ -93,7 +102,7 @@ const MaintenancePage: React.FC = () => {
                 className="w-full bg-finance-red hover:bg-finance-red/80 text-white" 
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Verifying..." : "Access System"}
+                {isSubmitting ? "Authenticating..." : "Access System"}
               </Button>
             </CardFooter>
           </form>
