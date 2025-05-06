@@ -24,6 +24,9 @@ const MaintenancePage: React.FC = () => {
           title: "Access granted",
           description: "You now have access to the application.",
         });
+        
+        // Important: Clear the form and invoke the bypass function
+        setPassword('');
         bypassMaintenance();
       } else {
         toast({

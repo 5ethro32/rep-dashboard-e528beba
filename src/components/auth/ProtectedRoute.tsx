@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaintenance } from '@/contexts/MaintenanceContext';
 
@@ -11,6 +11,14 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
   const { isInMaintenance } = useMaintenance();
+  const location = useLocation();
+
+  // Log the maintenance status to help with debugging
+  useEffect(() => {
+    console.log('Maintenance status:', isInMaintenance);
+    console.log('Current location:', location.pathname);
+    console.log('Maintenance bypass status:', localStorage.getItem('maintenance_bypassed'));
+  }, [isInMaintenance, location]);
 
   if (loading) {
     return (
@@ -22,6 +30,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // If we're already on the maintenance page, don't redirect again
+  if (location.pathname === '/maintenance') {
+    return <>{children}</>;
   }
 
   // If user is logged in but app is in maintenance mode,

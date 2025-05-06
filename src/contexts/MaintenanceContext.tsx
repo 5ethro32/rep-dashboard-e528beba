@@ -14,6 +14,8 @@ export const MaintenanceProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const bypassMaintenance = () => {
     setIsInMaintenance(false);
     localStorage.setItem('maintenance_bypassed', 'true');
+    // Force a reload to ensure all components recognize the maintenance state change
+    window.location.href = '/rep-performance';
   };
   
   useEffect(() => {
