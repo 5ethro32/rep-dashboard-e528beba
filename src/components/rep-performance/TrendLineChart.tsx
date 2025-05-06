@@ -343,17 +343,17 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   
   return (
     <Card className="bg-gray-900/40 border border-white/10 backdrop-blur-sm shadow-lg">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-4">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-medium text-white/90">
             Monthly Performance Trends
           </CardTitle>
-          <CardDescription className="text-xs md:text-sm text-white/60 mt-0">
+          <CardDescription className="text-sm text-white/70 mt-0">
             {getDepartmentDisplayText()}
           </CardDescription>
         </div>
         
-        <div className="flex justify-between items-center mt-3">
+        <div className="flex justify-between items-center mt-6">
           <ToggleGroup 
             type="multiple" 
             value={activeToggles} 
@@ -389,7 +389,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           <Button
             variant="outline"
             size="sm"
-            className="px-3 py-1 rounded-full border border-purple-400/30 bg-purple-400/10 text-purple-300 hover:bg-purple-400/20 transition-colors"
+            className="px-4 py-1 rounded-full border border-white/30 bg-transparent text-white/80 hover:bg-white/10 hover:text-white transition-colors"
             onClick={() => setShowRepComparison(!showRepComparison)}
           >
             Compare Reps
@@ -398,8 +398,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         
         {/* Rep comparison section */}
         {showRepComparison && (
-          <div className="mt-4">
-            <Separator className="mb-3 bg-gray-700/50" />
+          <div className="mt-6">
+            <Separator className="mb-4 bg-gray-700/50" />
             <RepSelector
               availableReps={availableReps}
               selectedReps={selectedReps}
@@ -410,7 +410,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           </div>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
