@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -64,7 +63,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const [showProfit, setShowProfit] = useState(true);
   const [showSpend, setShowSpend] = useState(false);
   const [showPacks, setShowPacks] = useState(false);
-  const [showMargin, setShowMargin] = useState(false);
+  const [showMargin, setShowMargin] = useState(true); // Set to true by default now
   
   // State for rep comparison
   const [showRepComparison, setShowRepComparison] = useState(false);
@@ -402,7 +401,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={enhancedChartData}
-              margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+              margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis 
@@ -428,7 +427,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 tick={{ fill: 'rgba(255,255,255,0.6)' }}
                 tickFormatter={(value) => `${value.toFixed(1)}%`}
                 domain={[0, 100]}
-                hide={true}  // Hide this axis but use it for margin values
+                hide={false} // Now showing this axis
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
@@ -475,7 +474,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                   yAxisId="margin"
                   type="monotone" 
                   dataKey="margin" 
-                  name="Margin" 
+                  name="Margin %" 
                   stroke={CHART_COLORS.margin}
                   strokeWidth={2}
                   dot={{ r: 4, fill: CHART_COLORS.margin }}
@@ -536,7 +535,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         yAxisId="margin"
                         type="monotone"
                         dataKey={`margin-rep-${repIndex}`}
-                        name={`${rep} - Margin`}
+                        name={`${rep} - Margin %`}
                         stroke={color}
                         strokeWidth={1.5}
                         strokeDasharray="2 2"
