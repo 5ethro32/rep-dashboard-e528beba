@@ -1,35 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { z } from 'zod';
 import { useForm } from 'react-hook-form';
-import { useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  Dialog, 
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import CustomerSearch from './CustomerSearch';
+import { CustomerSearch } from './CustomerSearch';
 import DatePickerField from './DatePickerField';
 import { parseISO } from 'date-fns';
 
 interface EditVisitDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
   visit: {
     id: string;
     date: string;
@@ -41,141 +31,121 @@ interface EditVisitDialogProps {
     profit?: number;
     comments?: string;
     user_id: string;
+    week_plan_id?: string;
+    created_at?: string;
+    updated_at?: string;
   };
   customers: Array<{
     account_name: string;
     account_ref: string;
   }>;
   userId?: string;
+  onSuccess: () => void;
 }
 
-interface VisitFormValues {
-  date: Date;
-  customer_ref: string;
-  customer_name: string;
-  contact_name?: string;
-  visit_type: string;
-  has_order: boolean;
-  profit?: number;
-  comments?: string;
-}
+const formSchema = z.object({
+  date: z.date(),
+  customer_ref: z.string().min(1, {
+    message: "Please select a customer.",
+  }),
+  contact_name: z.string().optional(),
+  visit_type: z.string().min(1, {
+    message: "Please select a visit type.",
+  }),
+  has_order: z.boolean().default(false),
+  profit: z.number().optional(),
+  comments: z.string().optional(),
+});
 
-const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
-  isOpen,
-  onClose,
-  onSuccess,
-  visit,
-  customers,
-  userId
-}) => {
-  const form = useForm<VisitFormValues>({
+const EditVisitDialog: React.FC<EditVisitDialogProps> = ({ isOpen, onClose, visit, customers, userId, onSuccess }) => {
+  const [isOrdered, setIsOrdered] = useState(visit.has_order);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       date: parseISO(visit.date),
       customer_ref: visit.customer_ref,
-      customer_name: visit.customer_name,
-      contact_name: visit.contact_name || '',
+      contact_name: visit.contact_name,
       visit_type: visit.visit_type,
       has_order: visit.has_order,
       profit: visit.profit,
-      comments: visit.comments || '',
+      comments: visit.comments,
     },
   });
-  
-  const { watch } = form;
-  const hasOrder = watch('has_order');
 
-  const updateVisitMutation = useMutation({
-    mutationFn: async (data: VisitFormValues) => {
+  const { mutate: updateVisit, isLoading: isUpdating } = useMutation({
+    mutationFn: async (values: z.infer<typeof formSchema>) => {
       const { error } = await supabase
         .from('customer_visits')
         .update({
-          date: data.date.toISOString(),
-          customer_ref: data.customer_ref,
-          customer_name: data.customer_name,
-          contact_name: data.contact_name || null,
-          visit_type: data.visit_type,
-          has_order: data.has_order,
-          profit: data.has_order ? data.profit : null,
-          comments: data.comments || null,
-          updated_at: new Date().toISOString(),
-          // Don't update user_id - keep the original owner
+          date: values.date.toISOString(),
+          customer_ref: values.customer_ref,
+          customer_name: customers.find(c => c.account_ref === values.customer_ref)?.account_name,
+          contact_name: values.contact_name,
+          visit_type: values.visit_type,
+          has_order: values.has_order,
+          profit: values.has_order ? values.profit : null,
+          comments: values.comments,
+          user_id: userId || user?.id,
         })
         .eq('id', visit.id);
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Visit Updated',
-        description: 'The customer visit has been successfully updated.',
-      });
-      
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        onClose();
+      if (error) {
+        throw error;
       }
     },
-    onError: (error) => {
-      console.error('Error updating visit:', error);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer-visits'] });
+      toast({
+        title: 'Success',
+        description: 'Visit updated successfully.',
+      });
+      onSuccess();
+      onClose();
+    },
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to update the visit. Please try again.',
+        description: error.message || 'Failed to update visit. Please try again.',
         variant: 'destructive',
       });
     },
   });
 
-  const handleSubmit = (data: VisitFormValues) => {
-    updateVisitMutation.mutate(data);
-  };
-  
-  const handleCustomerSelect = (customer: { account_name: string; account_ref: string }) => {
-    form.setValue('customer_ref', customer.account_ref);
-    form.setValue('customer_name', customer.account_name);
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    updateVisit(values);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-900 text-white border border-gray-800 sm:max-w-md">
+      <DialogContent className="sm:max-w-[425px] bg-gray-900 border border-gray-700 text-white">
         <DialogHeader>
-          <DialogTitle>Edit Customer Visit</DialogTitle>
+          <DialogTitle>Edit Visit</DialogTitle>
         </DialogHeader>
-        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-2">
-            <FormField
-              control={form.control}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <DatePickerField
               name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Visit Date</FormLabel>
-                  <DatePickerField
-                    date={field.value}
-                    setDate={field.onChange}
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
+              control={form.control}
+              label="Date"
             />
-            
             <FormField
               control={form.control}
-              name="customer_name"
-              rules={{ required: 'Customer is required' }}
+              name="customer_ref"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Customer</FormLabel>
-                  <CustomerSearch 
-                    customers={customers} 
-                    onSelect={handleCustomerSelect}
-                    selectedCustomer={form.getValues('customer_ref')}
-                  />
-                  <FormMessage />
+                  <FormControl>
+                    <CustomerSearch
+                      customers={customers}
+                      field={field}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />
-            
             <FormField
               control={form.control}
               name="contact_name"
@@ -183,85 +153,71 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
                 <FormItem>
                   <FormLabel>Contact Name</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Contact name (optional)"
-                      className="bg-gray-800 border-gray-700"
-                      {...field}
-                      value={field.value || ''}
-                    />
+                    <Input placeholder="Contact name" {...field} />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-            
             <FormField
               control={form.control}
               name="visit_type"
-              rules={{ required: 'Visit type is required' }}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Visit Type</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="In-Person, Phone, Video, Email, etc"
-                      className="bg-gray-800 border-gray-700"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                        <SelectValue placeholder="Select a visit type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                      <SelectItem value="In-Person">In-Person</SelectItem>
+                      <SelectItem value="Phone Call">Phone Call</SelectItem>
+                      <SelectItem value="Email">Email</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </FormItem>
               )}
             />
-            
             <FormField
               control={form.control}
               name="has_order"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-800 p-3 shadow-sm">
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-700 p-4">
                   <div className="space-y-0.5">
-                    <FormLabel>Order Placed</FormLabel>
+                    <FormLabel className="text-sm">Order Placed?</FormLabel>
                   </div>
                   <FormControl>
                     <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
+                      checked={isOrdered}
+                      onCheckedChange={(checked) => {
+                        setIsOrdered(checked);
+                        field.onChange(checked);
+                      }}
                     />
                   </FormControl>
                 </FormItem>
               )}
             />
-            
-            {hasOrder && (
+            {isOrdered && (
               <FormField
                 control={form.control}
                 name="profit"
-                rules={{
-                  required: hasOrder ? 'Profit amount is required' : false,
-                }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Profit (£)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        step="0.01"
-                        placeholder="Enter profit amount"
-                        className="bg-gray-800 border-gray-700"
+                        placeholder="Profit from order"
                         {...field}
-                        value={field.value === undefined ? '' : field.value}
-                        onChange={(e) => {
-                          const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                          field.onChange(value);
-                        }}
                       />
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
             )}
-            
             <FormField
               control={form.control}
               name="comments"
@@ -270,34 +226,27 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
                   <FormLabel>Comments</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Add any notes about the visit"
-                      className="bg-gray-800 border-gray-700 resize-none min-h-[80px]"
+                      placeholder="Additional comments about the visit"
+                      className="resize-none"
                       {...field}
-                      value={field.value || ''}
                     />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <DialogFooter className="pt-4">
+            <div className="flex justify-end space-x-2">
               <Button
                 type="button"
                 variant="outline"
-                className="border-gray-700 hover:bg-gray-800"
                 onClick={onClose}
+                disabled={isUpdating}
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit"
-                className="bg-finance-red hover:bg-finance-red/90"
-                disabled={updateVisitMutation.isPending}
-              >
-                {updateVisitMutation.isPending ? 'Updating...' : 'Update Visit'}
+              <Button type="submit" disabled={isUpdating}>
+                {isUpdating ? 'Updating...' : 'Update Visit'}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </Form>
       </DialogContent>

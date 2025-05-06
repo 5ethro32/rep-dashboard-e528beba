@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +17,7 @@ import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { CheckAdminStatus } from '@/components/auth/CheckAdminStatus';
 import {
   Select,
   SelectContent,
@@ -200,55 +200,16 @@ const RepTracker: React.FC = () => {
         <UserProfileButton />
       </div>
       
-      {/* Enhanced personalized greeting with user selection for admins */}
+      {/* Enhanced personalized greeting with admin status check */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
             Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{userFirstName}</span>
           </h1>
           
-          {isAdmin && (
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-finance-red" />
-              <span className="text-sm text-white/60">View colleague data:</span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="bg-black/30 border-gray-700 text-white hover:bg-black/50"
-                    size="sm"
-                  >
-                    {selectedUser ? getCurrentViewName() : "My Activity"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-gray-900 border border-gray-800 text-white">
-                  <DropdownMenuLabel>Select Rep</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-gray-800" />
-                  <div className="max-h-[300px] overflow-y-auto">
-                    <SelectContent className="bg-gray-900 border-0">
-                      <SelectItem value="all" className="text-white hover:bg-gray-800 cursor-pointer py-2 px-4" onClick={() => handleUserChange('all')}>
-                        All Reps
-                      </SelectItem>
-                      <SelectItem value={user?.id || ''} className="text-white hover:bg-gray-800 cursor-pointer py-2 px-4" onClick={() => handleUserChange(user?.id || '')}>
-                        My Activity
-                      </SelectItem>
-                      {allUsers?.map((u) => (
-                        <SelectItem 
-                          key={u.id} 
-                          value={u.id} 
-                          className="text-white hover:bg-gray-800 cursor-pointer py-2 px-4"
-                          onClick={() => handleUserChange(u.id)}
-                        >
-                          {formatUserName(u.first_name, u.last_name)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
+          <CheckAdminStatus />
         </div>
+        
         <p className="text-white/60">
           {viewingAnotherUser ? (
             `Viewing ${getCurrentViewName()}'s customer visits, orders, and performance metrics.`
@@ -256,6 +217,48 @@ const RepTracker: React.FC = () => {
             `Track your customer visits, orders, and performance metrics.`
           )}
         </p>
+        
+        {isAdmin && (
+          <div className="flex items-center gap-2 mt-2">
+            <Users className="h-4 w-4 text-finance-red" />
+            <span className="text-sm text-white/60">View colleague data:</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="bg-black/30 border-gray-700 text-white hover:bg-black/50"
+                  size="sm"
+                >
+                  {selectedUser ? getCurrentViewName() : "My Activity"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-gray-900 border border-gray-800 text-white">
+                <DropdownMenuLabel>Select Rep</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-gray-800" />
+                <div className="max-h-[300px] overflow-y-auto">
+                  <SelectContent className="bg-gray-900 border-0">
+                    <SelectItem value="all" className="text-white hover:bg-gray-800 cursor-pointer py-2 px-4" onClick={() => handleUserChange('all')}>
+                      All Reps
+                    </SelectItem>
+                    <SelectItem value={user?.id || ''} className="text-white hover:bg-gray-800 cursor-pointer py-2 px-4" onClick={() => handleUserChange(user?.id || '')}>
+                      My Activity
+                    </SelectItem>
+                    {allUsers?.map((u) => (
+                      <SelectItem 
+                        key={u.id} 
+                        value={u.id} 
+                        className="text-white hover:bg-gray-800 cursor-pointer py-2 px-4"
+                        onClick={() => handleUserChange(u.id)}
+                      >
+                        {formatUserName(u.first_name, u.last_name)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
       
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">

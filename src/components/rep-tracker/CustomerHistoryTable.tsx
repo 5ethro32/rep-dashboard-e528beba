@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { format, parseISO } from 'date-fns';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import CustomerSelector from './CustomerSelector';
+import { CustomerSelector } from './CustomerSelector';
 import { Check, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
