@@ -37,18 +37,20 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    {/* Providing children prop to AppLayout */}
+                    <Routes>
+                      <Route path="/" element={<RepPerformance />} />
+                      <Route path="/rep-performance" element={<RepPerformance />} />
+                      <Route path="/account-performance" element={<AccountPerformance />} />
+                      <Route path="/ai-vera" element={<AIVera />} />
+                      <Route path="/upload" element={<DataUpload />} />
+                      <Route path="/rep-tracker" element={<RepTracker />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
                   </AppLayout>
                 </ProtectedRoute>
               }
             >
-              <Route path="/" element={<RepPerformance />} />
-              <Route path="/rep-performance" element={<RepPerformance />} />
-              <Route path="/account-performance" element={<AccountPerformance />} />
-              <Route path="/ai-vera" element={<AIVera />} />
-              <Route path="/upload" element={<DataUpload />} />
-              <Route path="/rep-tracker" element={<RepTracker />} />
-              <Route path="*" element={<NotFound />} />
+              {/* Remove nested routes from here since we moved them inside AppLayout */}
             </Route>
           </Routes>
         </BrowserRouter>
