@@ -63,7 +63,6 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   const getComparisonMonthText = () => {
     if (selectedMonth === 'March') return 'February';
     if (selectedMonth === 'April') return 'March';
-    if (selectedMonth === 'May') return 'April';
     return '';
   };
 
