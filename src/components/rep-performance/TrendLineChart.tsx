@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -63,7 +64,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const [showProfit, setShowProfit] = useState(true);
   const [showSpend, setShowSpend] = useState(false);
   const [showPacks, setShowPacks] = useState(false);
-  const [showMargin, setShowMargin] = useState(true); // Set to true by default now
+  const [showMargin, setShowMargin] = useState(false); // Changed to false by default
   
   // State for rep comparison
   const [showRepComparison, setShowRepComparison] = useState(false);
@@ -127,6 +128,25 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     
     return data;
   }, [febSummary, marchSummary, aprilSummary, maySummary]);
+
+  // Calculate min and max margin values for the Y-axis domain
+  const marginDomain = useMemo(() => {
+    const margins = chartData.map(item => item.margin).filter(Boolean);
+    if (!margins.length) return [0, 100]; // Default range
+    
+    const minMargin = Math.max(0, Math.min(...margins) - 5); // Min with 5% padding, but not below 0
+    const maxMargin = Math.min(100, Math.max(...margins) + 5); // Max with 5% padding, but not above 100%
+    
+    // Ensure there's at least a 10% range to show variation
+    if (maxMargin - minMargin < 10) {
+      return [
+        Math.max(0, Math.floor(minMargin - 5)),
+        Math.min(100, Math.ceil(maxMargin + 5))
+      ];
+    }
+    
+    return [Math.floor(minMargin), Math.ceil(maxMargin)];
+  }, [chartData]);
 
   // Enhance chart data with rep-specific metrics instead of creating separate data arrays
   const enhancedChartData = useMemo(() => {
@@ -426,8 +446,9 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 orientation="right"
                 tick={{ fill: 'rgba(255,255,255,0.6)' }}
                 tickFormatter={(value) => `${value.toFixed(1)}%`}
-                domain={[0, 100]}
-                hide={false} // Now showing this axis
+                domain={marginDomain}
+                hide={false}
+                width={45}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
