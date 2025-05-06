@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import MetricCard from '@/components/MetricCard';
+import FlippableMetricCard from '@/components/FlippableMetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 interface SummaryMetricsProps {
@@ -21,6 +22,12 @@ interface SummaryMetricsProps {
   includeReva: boolean;
   includeWholesale: boolean;
   selectedMonth?: string;
+  historyData?: {
+    revenue: { name: string; value: number }[];
+    profit: { name: string; value: number }[];
+    margin: { name: string; value: number }[];
+    packs: { name: string; value: number }[];
+  };
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ 
@@ -30,7 +37,13 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   includeRetail,
   includeReva,
   includeWholesale,
-  selectedMonth = 'March'
+  selectedMonth = 'March',
+  historyData = {
+    revenue: [],
+    profit: [],
+    margin: [],
+    packs: []
+  }
 }) => {
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
@@ -63,6 +76,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   const getComparisonMonthText = () => {
     if (selectedMonth === 'March') return 'February';
     if (selectedMonth === 'April') return 'March';
+    if (selectedMonth === 'May') return 'April MTD';
     return '';
   };
 
@@ -77,7 +91,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
       {/* Revenue Card */}
-      <MetricCard
+      <FlippableMetricCard
         title="Revenue"
         value={formatCurrency(summary.totalSpend || 0, 0)}
         change={renderChangeIndicator(filteredChanges.totalSpend)}
@@ -86,10 +100,12 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         isLoading={isLoading}
+        historyData={historyData.revenue}
+        metricType="revenue"
       />
       
       {/* Profit Card */}
-      <MetricCard
+      <FlippableMetricCard
         title="Profit"
         value={formatCurrency(summary.totalProfit || 0, 0)}
         change={renderChangeIndicator(filteredChanges.totalProfit)}
@@ -99,10 +115,12 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         }
         valueClassName="text-finance-red"
         isLoading={isLoading}
+        historyData={historyData.profit}
+        metricType="profit"
       />
       
       {/* Margin Card */}
-      <MetricCard
+      <FlippableMetricCard
         title="Margin"
         value={formatPercent(summary.averageMargin || 0)}
         change={renderChangeIndicator(filteredChanges.averageMargin)}
@@ -111,10 +129,12 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         isLoading={isLoading}
+        historyData={historyData.margin}
+        metricType="margin"
       />
       
       {/* Packs Card */}
-      <MetricCard
+      <FlippableMetricCard
         title="Packs"
         value={formatNumber(summary.totalPacks || 0)}
         change={renderChangeIndicator(filteredChanges.totalPacks)}
@@ -123,6 +143,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         isLoading={isLoading}
+        historyData={historyData.packs}
+        metricType="packs"
       />
     </div>
   );

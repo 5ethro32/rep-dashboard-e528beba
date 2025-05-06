@@ -117,6 +117,34 @@ const RepPerformance = () => {
     includeReva,
     includeWholesale
   );
+
+  // Prepare historical data for the metric cards
+  const historyData = {
+    revenue: [
+      { name: 'Feb', value: filteredFebSummary.totalSpend || 0 },
+      { name: 'Mar', value: filteredMarSummary.totalSpend || 0 },
+      { name: 'Apr', value: filteredAprSummary.totalSpend || 0 },
+      { name: 'May', value: filteredMaySummary.totalSpend || 0 }
+    ],
+    profit: [
+      { name: 'Feb', value: filteredFebSummary.totalProfit || 0 },
+      { name: 'Mar', value: filteredMarSummary.totalProfit || 0 },
+      { name: 'Apr', value: filteredAprSummary.totalProfit || 0 },
+      { name: 'May', value: filteredMaySummary.totalProfit || 0 }
+    ],
+    margin: [
+      { name: 'Feb', value: filteredFebSummary.averageMargin || 0 },
+      { name: 'Mar', value: filteredMarSummary.averageMargin || 0 },
+      { name: 'Apr', value: filteredAprSummary.averageMargin || 0 },
+      { name: 'May', value: filteredMaySummary.averageMargin || 0 }
+    ],
+    packs: [
+      { name: 'Feb', value: filteredFebSummary.totalPacks || 0 },
+      { name: 'Mar', value: filteredMarSummary.totalPacks || 0 },
+      { name: 'Apr', value: filteredAprSummary.totalPacks || 0 },
+      { name: 'May', value: filteredMaySummary.totalPacks || 0 }
+    ]
+  };
   
   // Create the rep data object for the chart with month-specific data
   const repData = {
@@ -208,6 +236,7 @@ const RepPerformance = () => {
         includeReva={includeReva}
         includeWholesale={includeWholesale}
         selectedMonth={selectedMonth}
+        historyData={historyData}
       />
       
       {/* TrendLineChart with enhanced capabilities */}
