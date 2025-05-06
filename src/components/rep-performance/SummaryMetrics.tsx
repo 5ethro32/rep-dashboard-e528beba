@@ -89,7 +89,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   });
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-12 animate-slide-in-up">
       {/* Revenue Card */}
       <FlippableMetricCard
         title="Revenue"

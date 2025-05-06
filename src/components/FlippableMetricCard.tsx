@@ -84,26 +84,35 @@ const FlippableMetricCard: React.FC<FlippableMetricCardProps> = ({
   return (
     <div 
       className={cn(
-        "perspective-1000 cursor-pointer w-full h-full",
+        "relative h-full w-full",
+        isFlipped ? "z-50" : "z-10",
         className
       )}
-      onClick={handleClick}
+      style={{ 
+        perspective: "1000px",
+        transformStyle: "preserve-3d",
+      }}
     >
       <div 
         className={cn(
-          "relative transition-transform duration-700 transform-style-preserve-3d",
-          isFlipped ? "rotate-y-180" : ""
+          "h-full w-full cursor-pointer",
+          "transition-transform duration-700"
         )}
+        onClick={handleClick}
         style={{
           transformStyle: 'preserve-3d',
           transition: 'transform 0.7s',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+          transformBox: 'border-box',
         }}
       >
         {/* Front side */}
         <div 
-          className="absolute w-full h-full backface-hidden"
-          style={{ backfaceVisibility: 'hidden' }}
+          className="absolute h-full w-full"
+          style={{ 
+            backfaceVisibility: 'hidden',
+            transformStyle: 'preserve-3d',
+          }}
         >
           <MetricCard
             title={title}
@@ -119,10 +128,11 @@ const FlippableMetricCard: React.FC<FlippableMetricCardProps> = ({
 
         {/* Back side */}
         <div 
-          className="absolute w-full h-full backface-hidden rotate-y-180"
+          className="absolute h-full w-full"
           style={{ 
             backfaceVisibility: 'hidden', 
-            transform: 'rotateY(180deg)'
+            transform: 'rotateY(180deg)',
+            transformStyle: 'preserve-3d',
           }}
         >
           <Card 
