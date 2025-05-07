@@ -341,7 +341,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
       return (
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
-            All
+            Aver's
           </span>{' '}
           Accounts
         </h1>
@@ -372,7 +372,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         {renderPageHeading()}
         <p className="text-white/60">
           {selectedUserId === "all"
-            ? "Compare all accounts performance between months to identify declining or improving accounts."
+            ? "Compare Aver's accounts performance between months to identify declining or improving accounts."
             : selectedUserName && selectedUserName !== 'My Data' 
               ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.`
               : "Compare your accounts performance between months to identify declining or improving accounts."}
