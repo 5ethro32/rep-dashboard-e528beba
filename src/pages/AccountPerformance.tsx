@@ -86,7 +86,7 @@ const AccountPerformance = () => {
           break;
         case 'April':
           currentTable = "mtd_daily";
-          previousTable = "Prior_Month_Rolling";
+          previousTable = "sales_data"; // UPDATED: Now comparing April (mtd_daily) to full March (sales_data)
           break;
         case 'March':
           currentTable = "sales_data";
