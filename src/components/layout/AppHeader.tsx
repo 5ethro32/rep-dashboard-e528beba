@@ -4,7 +4,7 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { ChartLine, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -49,8 +49,8 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
   const navItems = [
     {
       path: '/rep-performance',
-      label: 'Reps',
-      icon: <ChartLine className="h-4 w-4" />
+      label: 'Home',
+      icon: <Home className="h-4 w-4" />
     },
     {
       path: '/account-performance',
@@ -121,28 +121,8 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
           </div>
         </div>
         
-        {/* Navigation bar - desktop: collapsible on hover, mobile: always visible at bottom */}
-        {isMobile ? (
-          <div className="border-t border-white/5 py-1">
-            <nav className="flex items-center overflow-x-auto">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) => cn(
-                    "px-4 py-2 flex items-center gap-2 text-sm font-medium",
-                    isActive 
-                      ? "text-finance-red" 
-                      : "text-white/60 hover:text-white"
-                  )}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-        ) : (
+        {/* Navigation bar - Only collapsible on desktop, not shown on mobile at all as mobile has bottom navbar */}
+        {!isMobile && (
           <div 
             className={cn(
               "border-t border-white/5 overflow-hidden transition-all duration-300",

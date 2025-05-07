@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BarChart3, ClipboardList, ChartLine, UserCircle, Bot } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot } from 'lucide-react';
 
 const MobileNavigation = () => {
   return (
@@ -13,8 +13,8 @@ const MobileNavigation = () => {
             isActive ? 'text-finance-red' : 'text-white/70'
           }`}
         >
-          <ChartLine className="h-5 w-5" />
-          <span className="text-2xs mt-1">Reps</span>
+          <Home className="h-5 w-5" />
+          <span className="text-2xs mt-1">Home</span>
         </NavLink>
         
         <NavLink

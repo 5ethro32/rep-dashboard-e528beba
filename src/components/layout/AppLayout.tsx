@@ -41,7 +41,7 @@ const AppLayout = ({
         showUserSelector={shouldShowUserSelector}
       />
       
-      {/* Main content section - without sidebar */}
+      {/* Main content section */}
       <div className="flex w-full relative">
         <div className={`flex-1 ${isMobile ? 'pb-16' : ''} overflow-x-auto overflow-y-auto`}>
           {children}
