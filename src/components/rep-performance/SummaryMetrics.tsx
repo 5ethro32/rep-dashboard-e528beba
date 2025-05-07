@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
+import { ChartBar, Wallet, Gauge, Package } from 'lucide-react';
 
 interface SummaryMetricsProps {
   summary: {
@@ -78,6 +79,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
           `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalSpend || 0, filteredChanges.totalSpend), 0)}` : 
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
+        icon={<ChartBar className="h-5 w-5" />}
         isLoading={isLoading}
       />
       
@@ -91,6 +93,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         valueClassName="font-extrabold text-white"
+        icon={<Wallet className="h-5 w-5" />}
         isLoading={isLoading}
       />
       
@@ -103,6 +106,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
           `${getComparisonMonthText()}: ${formatPercent(getPreviousValue(summary.averageMargin || 0, filteredChanges.averageMargin))}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
+        icon={<Gauge className="h-5 w-5" />}
         isLoading={isLoading}
       />
       
@@ -115,6 +119,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
           `${getComparisonMonthText()}: ${formatNumber(getPreviousValue(summary.totalPacks || 0, filteredChanges.totalPacks))}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
+        icon={<Package className="h-5 w-5" />}
         isLoading={isLoading}
       />
     </div>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Info, Award } from 'lucide-react';
+import { Info, Users, Package, Award, Calendar, ShoppingBag, TrendingUp, Wallet } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import {
@@ -81,6 +81,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalVisits)}` : undefined}
           isLoading={isLoading}
           className="h-full"
+          icon={<Users className="h-5 w-5" />}
         />
         
         <MetricCard
@@ -93,6 +94,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalOrders)}` : undefined}
           isLoading={isLoading}
           className="h-full"
+          icon={<ShoppingBag className="h-5 w-5" />}
         />
         
         <MetricCard
@@ -106,6 +108,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           valueClassName="font-extrabold text-white"
           isLoading={isLoading}
           className="h-full"
+          icon={<Wallet className="h-5 w-5" />}
         />
 
         <MetricCard
@@ -118,6 +121,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.dailyAvgProfit)}` : undefined}
           isLoading={isLoading}
           className="h-full"
+          icon={<Calendar className="h-5 w-5" />}
         />
         
         <MetricCard
@@ -130,6 +134,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           subtitle={previousData ? `Previous: ${formatCurrency(previousData.avgProfitPerOrder)}` : undefined}
           isLoading={isLoading}
           className="h-full"
+          icon={<TrendingUp className="h-5 w-5" />}
         />
         
         <MetricCard
@@ -143,6 +148,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           isLoading={isLoading}
           className="h-full"
           icon={<Award className="h-5 w-5 text-yellow-400" />}
+          iconClassName="text-yellow-400"
         />
       </div>
     </div>

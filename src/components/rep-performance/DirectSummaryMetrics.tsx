@@ -1,8 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import MetricCard from '@/components/MetricCard';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
+import { ChartBar, Wallet, Gauge, Package } from 'lucide-react';
 
 interface DirectSummaryMetricsProps {
   includeRetail: boolean;
@@ -205,6 +205,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
             includeReva ? 'REVA' : '', 
             includeWholesale ? 'Wholesale' : ''
           ].filter(Boolean).join(', ')}`}
+          icon={<ChartBar className="h-5 w-5" />}
           isLoading={isLoading}
         />
         
@@ -213,6 +214,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
           value={formatCurrency(filteredTotals.totalProfit || 0, 0)}
           subtitle="From Supabase query"
           valueClassName="font-extrabold text-white"
+          icon={<Wallet className="h-5 w-5" />}
           isLoading={isLoading}
         />
         
@@ -220,6 +222,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
           title="Direct Margin"
           value={formatPercent(filteredTotals.averageMargin || 0)}
           subtitle="From Supabase query"
+          icon={<Gauge className="h-5 w-5" />}
           isLoading={isLoading}
         />
         
@@ -227,6 +230,7 @@ const DirectSummaryMetrics: React.FC<DirectSummaryMetricsProps> = ({
           title="Direct Packs"
           value={formatNumber(filteredTotals.totalPacks || 0)}
           subtitle="From Supabase query"
+          icon={<Package className="h-5 w-5" />}
           isLoading={isLoading}
         />
       </div>
