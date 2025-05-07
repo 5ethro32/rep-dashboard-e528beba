@@ -57,6 +57,7 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
         }
         
         // For admin users, fetch all profiles
+        console.log('Admin user detected. Fetching all profiles...');
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, first_name, last_name, role');
@@ -72,7 +73,10 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
         }
 
         // Debug: Log the returned profiles data
-        console.log('Profiles fetched:', profilesData);
+        console.log('Profiles fetched:', profilesData?.length || 0, 'profiles');
+        if (profilesData?.length === 0) {
+          console.warn('No profiles were returned from the database');
+        }
         
         // Get the current user's email
         const currentUserEmail = user?.email;
@@ -87,6 +91,11 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
           const isCurrentUser = profile.id === user?.id;
           const email = isCurrentUser ? currentUserEmail : `${profile.id.split('-')[0]}@${emailDomain}`;
           
+          // Debug: Log each profile
+          if (isCurrentUser) {
+            console.log('Current user profile:', profile);
+          }
+          
           return {
             ...profile,
             email,
@@ -94,7 +103,7 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
           };
         }) || [];
         
-        console.log('Enhanced profiles with emails:', enhancedProfiles);
+        console.log('Enhanced profiles with emails and roles:', enhancedProfiles);
         setUsers(enhancedProfiles);
       } catch (error) {
         console.error('Failed to fetch users:', error);
