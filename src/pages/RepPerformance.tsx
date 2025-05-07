@@ -53,7 +53,7 @@ const RepPerformance = () => {
     mayBaseSummary,
     mayRevaValues,
     mayWholesaleValues,
-  } = useRepPerformanceData();
+  } = useRepPerformanceData(selectedUserId);
 
   // Handle user selection
   const handleSelectUser = (userId: string | null, displayName: string) => {
@@ -87,6 +87,7 @@ const RepPerformance = () => {
     setAutoRefreshed(true);
   };
   
+  // Get active data filtered by the selected user
   const activeData = getActiveData('overall');
   
   // Calculate filtered summary data for each month using the same calculation as metric cards
@@ -218,6 +219,7 @@ const RepPerformance = () => {
         includeReva={includeReva}
         includeWholesale={includeWholesale}
         selectedMonth={selectedMonth}
+        selectedUserName={selectedUserName}
       />
       
       {/* TrendLineChart with enhanced capabilities */}
@@ -232,6 +234,7 @@ const RepPerformance = () => {
           includeRetail={includeRetail}
           includeReva={includeReva}
           includeWholesale={includeWholesale}
+          selectedUserName={selectedUserName}
         />
       </div>
 
@@ -278,6 +281,7 @@ const RepPerformance = () => {
           selectedMonth === 'February' ? febWholesaleValues : 
           selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues
         }
+        selectedUserName={selectedUserName}
       />
     </div>
   );

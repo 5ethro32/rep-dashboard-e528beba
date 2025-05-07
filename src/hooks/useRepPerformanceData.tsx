@@ -1,831 +1,327 @@
-
-import { useState, useEffect } from 'react';
-import { calculateSummary, calculateDeptSummary } from '@/utils/rep-performance-utils';
-import { getCombinedRepData, sortRepData } from '@/utils/rep-data-processing';
-import { fetchRepPerformanceData, saveRepPerformanceData, loadStoredRepPerformanceData, fetchMarchRollingData, fetchMarchDataFromSalesData } from '@/services/rep-performance-service';
-import { RepData, SummaryData, RepChangesRecord } from '@/types/rep-performance.types';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  defaultOverallData,
-  defaultRepData,
-  defaultRevaData,
-  defaultWholesaleData,
-  defaultBaseSummary,
-  defaultRevaValues,
-  defaultWholesaleValues,
-  defaultSummaryChanges,
-  defaultRepChanges
-} from '@/data/rep-performance-default-data';
-import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
+import { RepData, SalesDataItem, SummaryData } from '@/types/rep-performance.types';
+import { 
+  processRepData, 
+  calculateSummaryFromData, 
+  getCombinedRepData, 
+  sortRepData 
+} from '@/utils/rep-data-processing';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import defaultBaseData from '@/data/rep-performance-default-data';
 
-export const useRepPerformanceData = () => {
+export const useRepPerformanceData = (selectedUserId: string | null = "all") => {
+  const [baseRepData, setBaseRepData] = useState<RepData[]>([]);
+  const [revaRepData, setRevaRepData] = useState<RepData[]>([]);
+  const [wholesaleRepData, setWholesaleRepData] = useState<RepData[]>([]);
+  const [febBaseRepData, setFebBaseRepData] = useState<RepData[]>([]);
+  const [febRevaRepData, setFebRevaRepData] = useState<RepData[]>([]);
+  const [febWholesaleRepData, setFebWholesaleRepData] = useState<RepData[]>([]);
+  const [aprBaseRepData, setAprBaseRepData] = useState<RepData[]>([]);
+  const [aprRevaRepData, setAprRevaRepData] = useState<RepData[]>([]);
+  const [aprWholesaleRepData, setAprWholesaleRepData] = useState<RepData[]>([]);
+  const [mayBaseRepData, setMayBaseRepData] = useState<RepData[]>([]);
+  const [mayRevaRepData, setMayRevaRepData] = useState<RepData[]>([]);
+  const [mayWholesaleRepData, setMayWholesaleRepData] = useState<RepData[]>([]);
+  const [baseSummary, setBaseSummary] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [revaValues, setRevaValues] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [wholesaleValues, setWholesaleValues] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [febRevaValues, setFebRevaValues] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+   const [aprBaseSummary, setAprBaseSummary] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [aprRevaValues, setAprRevaValues] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [aprWholesaleValues, setAprWholesaleValues] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [mayBaseSummary, setMayBaseSummary] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [mayRevaValues, setMayRevaValues] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
+  const [mayWholesaleValues, setMayWholesaleValues] = useState<SummaryData>({
+    totalSpend: 0,
+    totalProfit: 0,
+    totalPacks: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    averageMargin: 0
+  });
   const [includeRetail, setIncludeRetail] = useState(true);
   const [includeReva, setIncludeReva] = useState(true);
   const [includeWholesale, setIncludeWholesale] = useState(true);
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState('May');
+  const [selectedMonth, setSelectedMonth] = useState('March');
+  const [baseData, setBaseData] = useState<SalesDataItem[]>(defaultBaseData);
+  const [revaData, setRevaData] = useState<SalesDataItem[]>([]);
+  const [wholesaleData, setWholesaleData] = useState<SalesDataItem[]>([]);
+  const [febBaseData, setFebBaseData] = useState<SalesDataItem[]>([]);
+  const [febRevaData, setFebRevaData] = useState<SalesDataItem[]>([]);
+  const [febWholesaleData, setFebWholesaleData] = useState<SalesDataItem[]>([]);
+  const [aprBaseData, setAprBaseData] = useState<SalesDataItem[]>([]);
+  const [aprRevaData, setAprRevaData] = useState<SalesDataItem[]>([]);
+  const [aprWholesaleData, setAprWholesaleData] = useState<SalesDataItem[]>([]);
+  const [mayBaseData, setMayBaseData] = useState<SalesDataItem[]>([]);
+  const [mayRevaData, setMayRevaData] = useState<SalesDataItem[]>([]);
+  const [mayWholesaleData, setMayWholesaleData] = useState<SalesDataItem[]>([]);
+  const [repChanges, setRepChanges] = useState<Record<string, any>>({});
+  const [summaryChanges, setSummaryChanges] = useState<any>({
+    totalSpend: 0,
+    totalProfit: 0,
+    averageMargin: 0,
+    totalPacks: 0
+  });
   
-  const [overallData, setOverallData] = useState(defaultOverallData);
-  const [repData, setRepData] = useState(defaultRepData);
-  const [revaData, setRevaData] = useState(defaultRevaData);
-  const [wholesaleData, setWholesaleData] = useState(defaultWholesaleData);
-  const [baseSummary, setBaseSummary] = useState<SummaryData>(defaultBaseSummary);
-  const [revaValues, setRevaValues] = useState<SummaryData>(defaultRevaValues);
-  const [wholesaleValues, setWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
-  
-  const [febRepData, setFebRepData] = useState(defaultRepData);
-  const [febRevaData, setFebRevaData] = useState(defaultRevaData);
-  const [febWholesaleData, setFebWholesaleData] = useState(defaultWholesaleData);
-  const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>(defaultBaseSummary);
-  const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
-  const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
-  
-  const [aprRepData, setAprRepData] = useState(defaultRepData);
-  const [aprRevaData, setAprRevaData] = useState(defaultRevaData);
-  const [aprWholesaleData, setAprWholesaleData] = useState(defaultWholesaleData);
-  const [aprBaseSummary, setAprBaseSummary] = useState<SummaryData>(defaultBaseSummary);
-  const [aprRevaValues, setAprRevaValues] = useState<SummaryData>(defaultRevaValues);
-  const [aprWholesaleValues, setAprWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
-  
-  const [mayRepData, setMayRepData] = useState(defaultRepData);
-  const [mayRevaData, setMayRevaData] = useState(defaultRevaData);
-  const [mayWholesaleData, setMayWholesaleData] = useState(defaultWholesaleData);
-  const [mayBaseSummary, setMayBaseSummary] = useState<SummaryData>(defaultBaseSummary);
-  const [mayRevaValues, setMayRevaValues] = useState<SummaryData>(defaultRevaValues);
-  const [mayWholesaleValues, setMayWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
-  
-  const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
-  const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    const storedData = loadStoredRepPerformanceData();
-    
-    if (storedData) {
-      // Load all stored data for all months
-      setOverallData(storedData.overallData || defaultOverallData);
-      setRepData(storedData.repData || defaultRepData);
-      setRevaData(storedData.revaData || defaultRevaData);
-      setWholesaleData(storedData.wholesaleData || defaultWholesaleData);
-      setBaseSummary(storedData.baseSummary || defaultBaseSummary);
-      setRevaValues(storedData.revaValues || defaultRevaValues);
-      setWholesaleValues(storedData.wholesaleValues || defaultWholesaleValues);
-      
-      setFebRepData(storedData.febRepData || defaultRepData);
-      setFebRevaData(storedData.febRevaData || defaultRevaData);
-      setFebWholesaleData(storedData.febWholesaleData || defaultWholesaleData);
-      setFebBaseSummary(storedData.febBaseSummary || defaultBaseSummary);
-      setFebRevaValues(storedData.febRevaValues || defaultRevaValues);
-      setFebWholesaleValues(storedData.febWholesaleValues || defaultWholesaleValues);
-      
-      setAprRepData(storedData.aprRepData || defaultRepData);
-      setAprRevaData(storedData.aprRevaData || defaultRevaData);
-      setAprWholesaleData(storedData.aprWholesaleData || defaultWholesaleData);
-      setAprBaseSummary(storedData.aprBaseSummary || defaultBaseSummary);
-      setAprRevaValues(storedData.aprRevaValues || defaultRevaValues);
-      setAprWholesaleValues(storedData.aprWholesaleValues || defaultWholesaleValues);
-      
-      setMayRepData(storedData.mayRepData || defaultRepData);
-      setMayRevaData(storedData.mayRevaData || defaultRevaData);
-      setMayWholesaleData(storedData.mayWholesaleData || defaultWholesaleData);
-      setMayBaseSummary(storedData.mayBaseSummary || defaultBaseSummary);
-      setMayRevaValues(storedData.mayRevaValues || defaultRevaValues);
-      setMayWholesaleValues(storedData.mayWholesaleValues || defaultWholesaleValues);
-      
-      setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
-      setRepChanges(storedData.repChanges || defaultRepChanges);
-      
-      // Log stored data to help diagnose issues
-      console.log("February stored summary data:", storedData.febBaseSummary);
-      console.log("March stored summary data:", storedData.baseSummary);
-      console.log("April stored summary data:", storedData.aprBaseSummary);
-      console.log("May stored summary data:", storedData.mayBaseSummary);
+  // Helper functions to compute values and filter data by user
+  const filterDataByUser = useCallback((data: any[], userId: string | null = "all") => {
+    if (!userId || userId === "all") {
+      return data;
     }
     
-    // Load all data on initial load
-    loadDataFromSupabase();
+    return data.filter(item => {
+      const repName = item.rep || item.Rep;
+      // Check if the item belongs to the selected user
+      // This is a simple example; adjust the logic based on your actual data structure
+      return repName === userId;
+    });
   }, []);
 
-  useEffect(() => {
-    console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale, selectedMonth });
-
-    let currentRepData = repData;
-    let currentRevaData = revaData;
-    let currentWholesaleData = wholesaleData;
-    
-    if (selectedMonth === 'February') {
-      currentRepData = febRepData;
-      currentRevaData = febRevaData;
-      currentWholesaleData = febWholesaleData;
-    } else if (selectedMonth === 'April') {
-      currentRepData = aprRepData;
-      currentRevaData = aprRevaData;
-      currentWholesaleData = aprWholesaleData;
-    } else if (selectedMonth === 'May') {
-      currentRepData = mayRepData;
-      currentRevaData = mayRevaData;
-      currentWholesaleData = mayWholesaleData;
-    }
-    
-    const combinedData = getCombinedRepData(
-      currentRepData,
-      currentRevaData,
-      currentWholesaleData,
-      includeRetail,
-      includeReva,
-      includeWholesale
-    );
-    
-    setOverallData(combinedData);
-
-    if (selectedMonth === 'February') {
-      const invertedChanges: Record<string, any> = {};
-      Object.keys(repChanges).forEach(rep => {
-        if (repChanges[rep]) {
-          invertedChanges[rep] = {
-            profit: repChanges[rep].profit ? -repChanges[rep].profit / (1 + repChanges[rep].profit / 100) * 100 : 0,
-            spend: repChanges[rep].spend ? -repChanges[rep].spend / (1 + repChanges[rep].spend / 100) * 100 : 0,
-            margin: -repChanges[rep].margin,
-            packs: repChanges[rep].packs ? -repChanges[rep].packs / (1 + repChanges[rep].packs / 100) * 100 : 0,
-            activeAccounts: repChanges[rep].activeAccounts ? -repChanges[rep].activeAccounts / (1 + repChanges[rep].activeAccounts / 100) * 100 : 0,
-            totalAccounts: repChanges[rep].totalAccounts ? -repChanges[rep].totalAccounts / (1 + repChanges[rep].totalAccounts / 100) * 100 : 0
-          };
-        }
-      });
-      
-      const invertedSummaryChanges = {
-        totalSpend: summaryChanges.totalSpend ? -summaryChanges.totalSpend / (1 + summaryChanges.totalSpend / 100) * 100 : 0,
-        totalProfit: summaryChanges.totalProfit ? -summaryChanges.totalProfit / (1 + summaryChanges.totalProfit / 100) * 100 : 0,
-        averageMargin: -summaryChanges.averageMargin,
-        totalPacks: summaryChanges.totalPacks ? -summaryChanges.totalPacks / (1 + summaryChanges.totalPacks / 100) * 100 : 0,
-        totalAccounts: summaryChanges.totalAccounts ? -summaryChanges.totalAccounts / (1 + summaryChanges.totalAccounts / 100) * 100 : 0,
-        activeAccounts: summaryChanges.activeAccounts ? -summaryChanges.activeAccounts / (1 + summaryChanges.activeAccounts / 100) * 100 : 0
-      };
-      
-      setSummaryChanges(invertedSummaryChanges);
-      setRepChanges(invertedChanges);
-    } else if (selectedMonth === 'April' || selectedMonth === 'May') {
-      if (repChanges) {
-        setRepChanges(repChanges);
-      }
-      
-      if (summaryChanges) {
-        setSummaryChanges(summaryChanges);
-      }
-    } else {
-      const storedData = loadStoredRepPerformanceData();
-      if (storedData) {
-        setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
-        setRepChanges(storedData.repChanges || defaultRepChanges);
-      }
-    }
-  }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, 
-      febRepData, febRevaData, febWholesaleData, aprRepData, aprRevaData, aprWholesaleData,
-      mayRepData, mayRevaData, mayWholesaleData]);
-
-  // New loadMayData function to fetch May data from the May_Data table
-  const loadMayData = async () => {
+  // Load base data from mock or Supabase
+  const loadDataFromSupabase = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('Starting to fetch May data from May_Data table...');
-      
-      // First, check if there's any data in the May_Data table
-      const { count, error: countError } = await supabase
-        .from('May_Data')
-        .select('*', { count: 'exact', head: true });
-      
-      if (countError) throw new Error(`Error getting count: ${countError.message}`);
-      
-      if (!count || count === 0) {
-        setIsLoading(false);
-        console.log('No data found in the May_Data table');
-        return false;
-      }
-      
-      console.log(`Found ${count} total records in May_Data table`);
-      
-      // Fetch all records from May_Data using pagination
-      let allRecords = [];
-      const pageSize = 1000;
-      const pages = Math.ceil(count / pageSize);
-      
-      for (let page = 0; page < pages; page++) {
-        const from = page * pageSize;
-        const to = from + pageSize - 1;
+      // Fetch data from Supabase
+      const { data: marchData, error: marchError } = await supabase
+        .from('sales_data')
+        .select('*')
+        .eq('month', 'March');
         
-        const { data: pageData, error: pageError } = await supabase
-          .from('May_Data')
-          .select('*')
-          .range(from, to);
+      const { data: aprilData, error: aprilError } = await supabase
+        .from('sales_data')
+        .select('*')
+         .eq('month', 'April');
+         
+      const { data: mayData, error: mayError } = await supabase
+        .from('sales_data')
+        .select('*')
+        .eq('month', 'May');
         
-        if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
-        if (pageData) allRecords = [...allRecords, ...pageData];
-        
-        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records from May_Data`);
-      }
-      
-      const mayData = allRecords;
-      console.log('Fetched May records total count:', mayData.length);
-      
-      // Use Prior_Month_Rolling for comparison data (April)
-      console.log('Fetching April data from Prior_Month_Rolling table for May comparison...');
-      
-      const { count: priorCount, error: priorCountError } = await supabase
-        .from('Prior_Month_Rolling')
-        .select('*', { count: 'exact', head: true });
-        
-      if (priorCountError) throw new Error(`Error getting prior month count: ${priorCountError.message}`);
-      
-      let priorMonthRecords = [];
-      const priorMonthPages = Math.ceil((priorCount || 0) / pageSize);
-      
-      for (let page = 0; page < priorMonthPages; page++) {
-        const from = page * pageSize;
-        const to = from + pageSize - 1;
-        
-        const { data: priorPageData, error: priorPageError } = await supabase
-          .from('Prior_Month_Rolling')
-          .select('*')
-          .range(from, to);
-        
-        if (priorPageError) throw new Error(`Error fetching prior month page ${page}: ${priorPageError.message}`);
-        if (priorPageData) priorMonthRecords = [...priorMonthRecords, ...priorPageData];
-        
-        console.log(`Fetched prior month page ${page + 1}/${priorMonthPages} with ${priorPageData?.length || 0} records`);
-      }
-      
-      const priorMonthData = priorMonthRecords;
-      console.log('Fetched Prior Month records total count for May comparison:', priorMonthData.length);
-      
-      if (!mayData || mayData.length === 0) {
-        setIsLoading(false);
-        return false;
-      }
-      
-      // Let's log some sample data to check what we're receiving
-      if (mayData.length > 0) {
-        console.log('Sample May_Data record:', mayData[0]);
-      }
-      
-      // Filter the data by department
-      const retailData = mayData.filter(item => !item.Department || item.Department === 'RETAIL');
-      const revaData = mayData.filter(item => item.Department === 'REVA');
-      const wholesaleData = mayData.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-      );
-      
-      console.log(`May data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
-      
-      const priorRetailData = priorMonthData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
-      const priorRevaData = priorMonthData?.filter(item => item.Department === 'REVA') || [];
-      const priorWholesaleData = priorMonthData?.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-      ) || [];
-      
-      console.log(`Prior month data breakdown - Retail: ${priorRetailData.length}, REVA: ${priorRevaData.length}, Wholesale: ${priorWholesaleData.length}`);
+      const { data: februaryData, error: februaryError } = await supabase
+        .from('sales_data')
+        .select('*')
+        .eq('month', 'February');
 
-      const transformData = (data: any[], isDepartmentData = false): RepData[] => {
-        console.log(`Transforming ${data.length} records`);
-        
-        // Log the structure of the data to make sure we're accessing fields correctly
-        if (data.length > 0) {
-          console.log('Data structure sample:', data[0]);
-        }
-        
-        const repMap = new Map<string, {
-          rep: string;
-          spend: number;
-          profit: number;
-          packs: number;
-          activeAccounts: Set<string>;
-          totalAccounts: Set<string>;
-          profitPerActiveShop: number;
-          profitPerPack: number;
-          activeRatio: number;
-        }>();
-        
-        data.forEach(item => {
-          let repName;
-          
-          if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
-            repName = item['Sub-Rep'];
-          } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
-            return;
-          } else {
-            repName = item.Rep;
-          }
-          
-          if (!repName) {
-            console.log('Found item without Rep name:', item);
-            return;
-          }
-          
-          if (!repMap.has(repName)) {
-            repMap.set(repName, {
-              rep: repName,
-              spend: 0,
-              profit: 0,
-              packs: 0,
-              activeAccounts: new Set(),
-              totalAccounts: new Set(),
-              profitPerActiveShop: 0,
-              profitPerPack: 0,
-              activeRatio: 0
-            });
-          }
-          
-          const currentRep = repMap.get(repName)!;
-          
-          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
-          
-          currentRep.spend += spend;
-          currentRep.profit += profit;
-          currentRep.packs += packs;
-          
-          if (item["Account Ref"]) {
-            currentRep.totalAccounts.add(item["Account Ref"]);
-            if (spend > 0) {
-              currentRep.activeAccounts.add(item["Account Ref"]);
-            }
-          }
-          
-          repMap.set(repName, currentRep);
-        });
-        
-        console.log(`Transformed data into ${repMap.size} unique reps`);
-        return Array.from(repMap.values()).map(rep => {
-          const margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
-          
-          return {
-            rep: rep.rep,
-            spend: rep.spend,
-            profit: rep.profit,
-            margin: margin,
-            packs: rep.packs,
-            activeAccounts: rep.activeAccounts.size,
-            totalAccounts: rep.totalAccounts.size,
-            profitPerActiveShop: rep.profitPerActiveShop,
-            profitPerPack: rep.profitPerPack,
-            activeRatio: rep.activeRatio
-          };
-        }).filter(rep => {
-          return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
-        });
-      };
-      
-      // Transform the data
-      const mayRetailData = transformData(retailData);
-      const mayRevaData = transformData(revaData, true);
-      const mayWholesaleData = transformData(wholesaleData, true);
-      
-      const priorRetailRepData = transformData(priorRetailData);
-      const priorRevaRepData = transformData(priorRevaData, true);
-      const priorWholesaleRepData = transformData(priorWholesaleData, true);
-      
-      console.log(`Transformed Rep Data - Retail: ${mayRetailData.length}, REVA: ${mayRevaData.length}, Wholesale: ${mayWholesaleData.length}`);
-      console.log(`Transformed Prior Rep Data - Retail: ${priorRetailRepData.length}, REVA: ${priorRevaRepData.length}, Wholesale: ${priorWholesaleRepData.length}`);
-      
-      // Calculate summary data
-      const calculateDeptSummary = (data: any[]) => {
-        const totalProfit = data.reduce((sum, item) => {
-          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-          return sum + profit;
-        }, 0);
-      
-        const totalSpend = data.reduce((sum, item) => {
-          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-          return sum + spend;
-        }, 0);
-      
-        const totalPacks = data.reduce((sum, item) => {
-          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
-          return sum + packs;
-        }, 0);
-      
-        const uniqueAccounts = new Set();
-        const activeAccounts = new Set();
-      
-        data.forEach(item => {
-          if (item["Account Ref"]) {
-            uniqueAccounts.add(item["Account Ref"]);
-            
-            const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-            if (spend > 0) {
-              activeAccounts.add(item["Account Ref"]);
-            }
-          }
-        });
-      
-        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
-      
-        return {
-          totalProfit,
-          totalSpend,
-          totalPacks,
-          totalAccounts: uniqueAccounts.size,
-          activeAccounts: activeAccounts.size,
-          averageMargin
-        };
-      };
-      
-      const mayRetailSummary = calculateDeptSummary(retailData);
-      const mayRevaSummary = calculateDeptSummary(revaData);
-      const mayWholesaleSummary = calculateDeptSummary(wholesaleData);
-      
-      const priorRetailSummary = calculateDeptSummary(priorRetailData);
-      const priorRevaSummary = calculateDeptSummary(priorRevaData);
-      const priorWholesaleSummary = calculateDeptSummary(priorWholesaleData);
-      
-      // Log the calculated summary data to help with debugging
-      console.log('May Department Summaries:');
-      console.log('Retail:', mayRetailSummary);
-      console.log('REVA:', mayRevaSummary);
-      console.log('Wholesale:', mayWholesaleSummary);
-      
-      console.log('Prior Department Summaries:');
-      console.log('Retail:', priorRetailSummary);
-      console.log('REVA:', priorRevaSummary);
-      console.log('Wholesale:', priorWholesaleSummary);
-      
-      // Update state with May data
-      setMayRepData(mayRetailData);
-      setMayRevaData(mayRevaData);
-      setMayWholesaleData(mayWholesaleData);
-      setMayBaseSummary(mayRetailSummary);
-      setMayRevaValues(mayRevaSummary);
-      setMayWholesaleValues(mayWholesaleSummary);
-      
-      // Calculate changes between May and April
-      const calculateChanges = (mayData: RepData[], priorData: RepData[]): RepChangesRecord => {
-        const changes: RepChangesRecord = {};
-        
-        mayData.forEach(mayRep => {
-          const priorRep = priorData.find(r => r.rep === mayRep.rep);
-          
-          if (priorRep) {
-            changes[mayRep.rep] = {
-              profit: priorRep.profit > 0 ? ((mayRep.profit - priorRep.profit) / priorRep.profit) * 100 : 0,
-              spend: priorRep.spend > 0 ? ((mayRep.spend - priorRep.spend) / priorRep.spend) * 100 : 0,
-              margin: mayRep.margin - priorRep.margin,
-              packs: priorRep.packs > 0 ? ((mayRep.packs - priorRep.packs) / priorRep.packs) * 100 : 0,
-              activeAccounts: priorRep.activeAccounts > 0 ? ((mayRep.activeAccounts - priorRep.activeAccounts) / priorRep.activeAccounts) * 100 : 0,
-              totalAccounts: priorRep.totalAccounts > 0 ? ((mayRep.totalAccounts - priorRep.totalAccounts) / priorRep.totalAccounts) * 100 : 0,
-              profitPerActiveShop: priorRep.profitPerActiveShop > 0 ? 
-                ((mayRep.profitPerActiveShop - priorRep.profitPerActiveShop) / priorRep.profitPerActiveShop) * 100 : 0,
-              profitPerPack: priorRep.profitPerPack > 0 ? 
-                ((mayRep.profitPerPack - priorRep.profitPerPack) / priorRep.profitPerPack) * 100 : 0,
-              activeRatio: priorRep.activeRatio > 0 ? 
-                mayRep.activeRatio - priorRep.activeRatio : 0
-            };
-          }
-        });
-        
-        return changes;
-      };
-      
-      // Create combined data for all departments
-      const mayAllData = getCombinedRepData(
-        mayRetailData,
-        mayRevaData,
-        mayWholesaleData,
-        true, true, true
-      );
-      
-      const priorAllData = getCombinedRepData(
-        priorRetailRepData,
-        priorRevaRepData,
-        priorWholesaleRepData,
-        true, true, true
-      );
-      
-      const mayPriorChanges = calculateChanges(mayAllData, priorAllData);
-      
-      // Calculate combined summary for all departments
-      const calculateSummary = (retail: SummaryData, reva: SummaryData, wholesale: SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean) => {
-        const totalSpend = (includeRetail ? retail.totalSpend : 0) + 
-                          (includeReva ? reva.totalSpend : 0) + 
-                          (includeWholesale ? wholesale.totalSpend : 0);
-        
-        const totalProfit = (includeRetail ? retail.totalProfit : 0) + 
-                           (includeReva ? reva.totalProfit : 0) + 
-                           (includeWholesale ? wholesale.totalProfit : 0);
-        
-        const totalPacks = (includeRetail ? retail.totalPacks : 0) + 
-                          (includeReva ? reva.totalPacks : 0) + 
-                          (includeWholesale ? wholesale.totalPacks : 0);
-        
-        const totalAccounts = (includeRetail ? retail.totalAccounts : 0) + 
-                             (includeReva ? reva.totalAccounts : 0) + 
-                             (includeWholesale ? wholesale.totalAccounts : 0);
-        
-        const activeAccounts = (includeRetail ? retail.activeAccounts : 0) + 
-                              (includeReva ? reva.activeAccounts : 0) + 
-                              (includeWholesale ? wholesale.activeAccounts : 0);
-        
-        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
-        
-        return {
-          totalSpend,
-          totalProfit,
-          totalPacks,
-          totalAccounts,
-          activeAccounts,
-          averageMargin
-        };
-      };
-      
-      const maySummary = calculateSummary(
-        mayRetailSummary,
-        mayRevaSummary,
-        mayWholesaleSummary,
-        true, true, true
-      );
-      
-      const priorSummary = calculateSummary(
-        priorRetailSummary,
-        priorRevaSummary,
-        priorWholesaleSummary,
-        true, true, true
-      );
-      
-      // Calculate summary percentage changes
-      const maySummaryChanges = {
-        totalSpend: priorSummary.totalSpend > 0 ? 
-          ((maySummary.totalSpend - priorSummary.totalSpend) / priorSummary.totalSpend) * 100 : 0,
-        totalProfit: priorSummary.totalProfit > 0 ? 
-          ((maySummary.totalProfit - priorSummary.totalProfit) / priorSummary.totalProfit) * 100 : 0,
-        averageMargin: maySummary.averageMargin - priorSummary.averageMargin,
-        totalPacks: priorSummary.totalPacks > 0 ? 
-          ((maySummary.totalPacks - priorSummary.totalPacks) / priorSummary.totalPacks) * 100 : 0,
-        totalAccounts: priorSummary.totalAccounts > 0 ? 
-          ((maySummary.totalAccounts - priorSummary.totalAccounts) / priorSummary.totalAccounts) * 100 : 0,
-        activeAccounts: priorSummary.activeAccounts > 0 ? 
-          ((maySummary.activeAccounts - priorSummary.activeAccounts) / priorSummary.activeAccounts) * 100 : 0
-      };
-      
-      // Update the state if May is currently selected
-      if (selectedMonth === 'May') {
-        setRepChanges(mayPriorChanges);
-        setSummaryChanges(maySummaryChanges);
-        
-        // Create combined data based on selected toggles
-        const combinedMayData = getCombinedRepData(
-          mayRetailData,
-          mayRevaData,
-          mayWholesaleData,
-          includeRetail,
-          includeReva,
-          includeWholesale
-        );
-        
-        setOverallData(combinedMayData);
-        
-        console.log('Combined May Data length:', combinedMayData.length);
-        console.log('Combined May Total Profit:', combinedMayData.reduce((sum, item) => sum + item.profit, 0));
+      if (marchError || aprilError || mayError || februaryError) {
+        throw new Error(marchError?.message || aprilError?.message || mayError?.message || februaryError?.message || 'Failed to load data from Supabase');
       }
       
-      // Save the data to localStorage
-      const currentData = loadStoredRepPerformanceData() || {};
-      saveRepPerformanceData({
-        ...currentData,
-        mayRepData: mayRetailData,
-        mayRevaData: mayRevaData,
-        mayWholesaleData: mayWholesaleData,
-        mayBaseSummary: mayRetailSummary,
-        mayRevaValues: mayRevaSummary,
-        mayWholesaleValues: mayWholesaleSummary,
-        priorRollingRetailData: priorRetailRepData,
-        priorRollingRevaData: priorRevaRepData,
-        priorRollingWholesaleData: priorWholesaleRepData,
-        priorRollingRetailSummary: priorRetailSummary,
-        priorRollingRevaSummary: priorRevaSummary,
-        priorRollingWholesaleSummary: priorWholesaleSummary,
-        mayPriorChanges: mayPriorChanges,
-        maySummaryChanges: maySummaryChanges
-      });
-      
-      // Successfully loaded May data
-      return true;
-    } catch (error) {
-      console.error('Error loading May data:', error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Update existing loadAprilData function implementation
-  const loadAprilData = async () => {
-    setIsLoading(true);
-    try {
-      const { count, error: countError } = await supabase
-        .from('mtd_daily')
-        .select('*', { count: 'exact', head: true });
-      
-      if (countError) throw new Error(`Error getting count: ${countError.message}`);
-      
-      if (!count || count === 0) {
+      if (!marchData || !aprilData || !mayData || !februaryData) {
+        console.warn('No data found in Supabase');
         setIsLoading(false);
-        return false;
+        return;
       }
       
-      console.log(`Found ${count} total records in mtd_daily`);
+      // Assign data to the appropriate state variables
+      const baseData = marchData;
+      const aprBaseData = aprilData;
+      const mayBaseData = mayData;
+      const febBaseData = februaryData;
       
-      let allRecords = [];
-      const pageSize = 1000;
-      const pages = Math.ceil(count / pageSize);
+      // Filter REVA and Wholesale data
+      const revaData = baseData.filter(item => item.rep_type === 'REVA');
+      const wholesaleData = baseData.filter(item => item.rep_type === 'Wholesale');
+      const febRevaData = febBaseData.filter(item => item.rep_type === 'REVA');
+      const febWholesaleData = febBaseData.filter(item => item.rep_type === 'Wholesale');
+      const aprRevaData = aprBaseData.filter(item => item.rep_type === 'REVA');
+      const aprWholesaleData = aprBaseData.filter(item => item.rep_type === 'Wholesale');
+      const mayRevaData = mayBaseData.filter(item => item.rep_type === 'REVA');
+      const mayWholesaleData = mayBaseData.filter(item => item.rep_type === 'Wholesale');
       
-      for (let page = 0; page < pages; page++) {
-        const from = page * pageSize;
-        const to = from + pageSize - 1;
-        
-        const { data: pageData, error: pageError } = await supabase
-          .from('mtd_daily')
-          .select('*')
-          .range(from, to);
-        
-        if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
-        if (pageData) allRecords = [...allRecords, ...pageData];
-        
-        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records`);
-      }
-      
-      const mtdData = allRecords;
-      console.log('Fetched April MTD records total count:', mtdData.length);
-      
-      // Use fetchMarchDataFromSalesData instead of fetchMarchRollingData
-      console.log('Fetching March data from sales_data table for April comparison...');
-      const { data: marchData, error: marchDataError } = await fetchMarchDataFromSalesData();
-      
-      if (marchDataError) throw new Error(`Error fetching March data from sales_data: ${marchDataError.message}`);
-      
-      console.log('Fetched March data from sales_data count:', marchData?.length || 0);
-      
-      if (!mtdData || mtdData.length === 0) {
-        setIsLoading(false);
-        return false;
-      }
-      
-      const retailData = mtdData.filter(item => !item.Department || item.Department === 'RETAIL');
-      const revaData = mtdData.filter(item => item.Department === 'REVA');
-      const wholesaleData = mtdData.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-      );
-      
-      console.log(`April data breakdown - Retail: ${retailData.length}, REVA: ${revaData.length}, Wholesale: ${wholesaleData.length}`);
-      
-      const marchRetailData = marchData?.filter(item => !item.Department || item.Department === 'RETAIL') || [];
-      const marchRevaData = marchData?.filter(item => item.Department === 'REVA') || [];
-      const marchWholesaleData = marchData?.filter(item => 
-        item.Department === 'Wholesale' || item.Department === 'WHOLESALE'
-      ) || [];
-      
-      console.log(`March data breakdown - Retail: ${marchRetailData.length}, REVA: ${marchRevaData.length}, Wholesale: ${marchWholesaleData.length}`);
-
-      const transformData = (data: any[], isDepartmentData = false): RepData[] => {
-        console.log(`Transforming ${data.length} records`);
-        const repMap = new Map<string, {
-          rep: string;
-          spend: number;
-          profit: number;
-          packs: number;
-          activeAccounts: Set<string>;
-          totalAccounts: Set<string>;
-          profitPerActiveShop: number;
-          profitPerPack: number;
-          activeRatio: number;
-        }>();
-        
-        data.forEach(item => {
-          let repName;
-          
-          if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
-            repName = item['Sub-Rep'];
-          } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
-            return;
-          } else {
-            repName = item.Rep;
-          }
-          
-          if (!repName) {
-            console.log('Found item without Rep name:', item);
-            return;
-          }
-          
-          if (!repMap.has(repName)) {
-            repMap.set(repName, {
-              rep: repName,
-              spend: 0,
-              profit: 0,
-              packs: 0,
-              activeAccounts: new Set(),
-              totalAccounts: new Set(),
-              profitPerActiveShop: 0,
-              profitPerPack: 0,
-              activeRatio: 0
-            });
-          }
-          
-          const currentRep = repMap.get(repName)!;
-          
-          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
-          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
-          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
-          
-          currentRep.spend += spend;
-          currentRep.profit += profit;
-          currentRep.packs += packs;
-          
-          if (item["Account Ref"]) {
-            currentRep.totalAccounts.add(item["Account Ref"]);
-            if (spend > 0) {
-              currentRep.activeAccounts.add(item["Account Ref"]);
-            }
-          }
-          
-          repMap.set(repName, currentRep);
-        });
-        
-        console.log(`Transformed data into ${repMap.size} unique reps`);
-        return Array.from(repMap.values()).map(rep => {
-          const margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
-          
-          return {
-            rep: rep.rep,
-            spend: rep.spend,
-            profit: rep.profit,
-            margin: margin,
-            packs: rep.packs,
-            activeAccounts: rep.activeAccounts.size,
-            totalAccounts: rep.totalAccounts.size,
-            profitPerActiveShop: rep.profitPerActiveShop,
-            profitPerPack: rep.profitPerPack,
-            activeRatio: rep.activeRatio
-          };
-        }).filter(rep => {
-          return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
-        });
-      };
-      
-      const aprRetailData = transformData(retailData);
-      const aprRevaData = transformData(revaData, true);
-      const aprWholesaleData = transformData(wholesaleData, true);
-      
-      const marchRetailRepData = transformData(marchRetailData);
-      const marchRevaRepData = transformData(marchRevaData, true);
-      const marchWholesaleRepData = transformData(marchWholesaleData, true);
-      
-      console.log(`Transformed Rep Data - Retail: ${aprRetailData.length}, REVA: ${aprRevaData.length}, Wholesale: ${aprWholesaleData.length}`);
-      console.log(`Transformed March Rep Data - Retail: ${marchRetailRepData.length}, REVA: ${marchRevaRepData.length}, Wholesale: ${marchWholesaleRepData.length}`);
-      
-      const aprRetailSummary = calculateDeptSummary(retailData);
-      const aprRevaSummary = calculateDeptSummary(revaData);
-      const aprWholesaleSummary = calculateDeptSummary(wholesaleData);
-      
-      const marchRetailSummary = calculateDeptSummary(marchRetailData);
-      const marchRevaSummary = calculateDeptSummary(marchRevaData);
-      const marchWholesaleSummary = calculateDeptSummary(marchWholesaleData);
-      
-      console.log('April Department Summaries:');
-      console.log('Retail:', aprRetailSummary);
-      console.log('REVA:', aprRevaSummary);
-      console.log('Wholesale:', aprWholesaleSummary);
-      
-      console.log('March Department Summaries:');
-      console.log('Retail:', marchRetailSummary);
-      console.log('REVA:', marchRevaSummary);
-      console.log('Wholesale:', marchWholesaleSummary);
-      
-      setAprRepData(aprRetailData);
+      setBaseData(baseData);
+      setRevaData(revaData);
+      setWholesaleData(wholesaleData);
+      setFebBaseData(febBaseData);
+      setFebRevaData(febRevaData);
+      setFebWholesaleData(febWholesaleData);
+      setAprBaseData(aprBaseData);
       setAprRevaData(aprRevaData);
       setAprWholesaleData(aprWholesaleData);
-      setAprBaseSummary(aprRetailSummary);
-      setAprRevaValues(aprRevaSummary);
-      setAprWholesaleValues(aprWholesaleSummary);
+      setMayBaseData(mayBaseData);
+      setMayRevaData(mayRevaData);
+      setMayWholesaleData(mayWholesaleData);
       
-      const calculateChanges = (aprData: RepData[], marchData: RepData[]): RepChangesRecord => {
-        const changes: RepChangesRecord = {};
+      // After loading data from Supabase, apply the user filter
+      const filteredBaseData = filterDataByUser(baseData, selectedUserId);
+      const filteredRevaData = filterDataByUser(revaData, selectedUserId);
+      const filteredWholesaleData = filterDataByUser(wholesaleData, selectedUserId);
+      const filteredFebBaseData = filterDataByUser(febBaseData, selectedUserId);
+      const filteredFebRevaData = filterDataByUser(febRevaData, selectedUserId);
+      const filteredFebWholesaleData = filterDataByUser(febWholesaleData, selectedUserId);
+      const filteredAprBaseData = filterDataByUser(aprBaseData, selectedUserId);
+      const filteredAprRevaData = filterDataByUser(aprRevaData, selectedUserId);
+      const filteredAprWholesaleData = filterDataByUser(aprWholesaleData, selectedUserId);
+      const filteredMayBaseData = filterDataByUser(mayBaseData, selectedUserId);
+      const filteredMayRevaData = filterDataByUser(mayRevaData, selectedUserId);
+      const filteredMayWholesaleData = filterDataByUser(mayWholesaleData, selectedUserId);
+      
+      // Process the filtered data
+      const processedBaseData = processRepData(filteredBaseData);
+      const processedRevaData = processRepData(filteredRevaData);
+      const processedWholesaleData = processRepData(filteredWholesaleData);
+      const processedFebBaseData = processRepData(filteredFebBaseData);
+      const processedFebRevaData = processRepData(filteredFebRevaData);
+      const processedFebWholesaleData = processRepData(filteredFebWholesaleData);
+      const processedAprBaseData = processRepData(filteredAprBaseData);
+      const processedAprRevaData = processRepData(filteredAprRevaData);
+      const processedAprWholesaleData = processRepData(filteredAprWholesaleData);
+      const processedMayBaseData = processRepData(filteredMayBaseData);
+      const processedMayRevaData = processRepData(filteredMayRevaData);
+      const processedMayWholesaleData = processRepData(filteredMayWholesaleData);
+
+      setBaseRepData(processedBaseData);
+      setRevaRepData(processedRevaData);
+      setWholesaleRepData(processedWholesaleData);
+      setFebBaseRepData(processedFebBaseData);
+      setFebRevaRepData(processedFebRevaData);
+      setFebWholesaleRepData(processedFebWholesaleData);
+      setAprBaseRepData(processedAprBaseData);
+      setAprRevaRepData(processedAprRevaData);
+      setAprWholesaleRepData(processedAprWholesaleData);
+      setMayBaseRepData(processedMayBaseData);
+      setMayRevaRepData(processedMayRevaData);
+      setMayWholesaleRepData(processedMayWholesaleData);
+
+      // Calculate summaries from the processed data
+      const baseSummaryData = calculateSummaryFromData(processedBaseData);
+      const revaSummaryData = calculateSummaryFromData(processedRevaData);
+      const wholesaleSummaryData = calculateSummaryFromData(processedWholesaleData);
+      const febBaseSummaryData = calculateSummaryFromData(processedFebBaseData);
+      const febRevaSummaryData = calculateSummaryFromData(processedFebRevaData);
+      const febWholesaleSummaryData = calculateSummaryFromData(processedFebWholesaleData);
+      const aprBaseSummaryData = calculateSummaryFromData(processedAprBaseData);
+      const aprRevaSummaryData = calculateSummaryFromData(processedAprRevaData);
+      const aprWholesaleSummaryData = calculateSummaryFromData(processedAprWholesaleData);
+      const mayBaseSummaryData = calculateSummaryFromData(processedMayBaseData);
+      const mayRevaSummaryData = calculateSummaryFromData(processedMayRevaData);
+      const mayWholesaleSummaryData = calculateSummaryFromData(processedMayWholesaleData);
+
+      setBaseSummary(baseSummaryData);
+      setRevaValues(revaSummaryData);
+      setWholesaleValues(wholesaleSummaryData);
+      setFebBaseSummary(febBaseSummaryData);
+      setFebRevaValues(febRevaSummaryData);
+      setFebWholesaleValues(febWholesaleSummaryData);
+      setAprBaseSummary(aprBaseSummaryData);
+      setAprRevaValues(aprRevaSummaryData);
+      setAprWholesaleValues(aprWholesaleSummaryData);
+      setMayBaseSummary(mayBaseSummaryData);
+      setMayRevaValues(mayRevaSummaryData);
+      setMayWholesaleValues(mayWholesaleSummaryData);
+      
+      // Calculate changes
+      const calculateChanges = (current: SummaryData, previous: SummaryData) => {
+        return {
+          totalSpend: previous.totalSpend !== 0 ? ((current.totalSpend - previous.totalSpend) / previous.totalSpend) * 100 : 0,
+          totalProfit: previous.totalProfit !== 0 ? ((current.totalProfit - previous.totalProfit) / previous.totalProfit) * 100 : 0,
+          averageMargin: previous.averageMargin !== 0 ? ((current.averageMargin - previous.averageMargin) / previous.averageMargin) * 100 : 0,
+          totalPacks: previous.totalPacks !== 0 ? ((current.totalPacks - previous.totalPacks) / previous.totalPacks) * 100 : 0
+        };
+      };
+      
+      setSummaryChanges(calculateChanges(baseSummary, febBaseSummary));
+      
+      // Calculate rep changes
+      const calculateRepChanges = (currentData: RepData[], previousData: RepData[]) => {
+        const changes: Record<string, any> = {};
         
-        aprData.forEach(aprRep => {
-          const marchRep = marchData.find(r => r.rep === aprRep.rep);
+        currentData.forEach(currentRep => {
+          const previousRep = previousData.find(rep => rep.rep === currentRep.rep);
           
-          if (marchRep) {
-            changes[aprRep.rep] = {
-              profit: marchRep.profit > 0 ? ((aprRep.profit - marchRep.profit) / marchRep.profit) * 100 : 0,
-              spend: marchRep.spend > 0 ? ((aprRep.spend - marchRep.spend) / marchRep.spend) * 100 : 0,
-              margin: aprRep.margin - marchRep.margin,
-              packs: marchRep.packs > 0 ? ((aprRep.packs - marchRep.packs) / marchRep.packs) * 100 : 0,
-              activeAccounts: marchRep.activeAccounts > 0 ? ((aprRep.activeAccounts - marchRep.activeAccounts) / marchRep.activeAccounts) * 100 : 0,
-              totalAccounts: marchRep.totalAccounts > 0 ? ((aprRep.totalAccounts - marchRep.totalAccounts) / marchRep.totalAccounts) * 100 : 0,
-              profitPerActiveShop: marchRep.profitPerActiveShop > 0 ? 
-                ((aprRep.profitPerActiveShop - marchRep.profitPerActiveShop) / marchRep.profitPerActiveShop) * 100 : 0,
-              profitPerPack: marchRep.profitPerPack > 0 ? 
-                ((aprRep.profitPerPack - marchRep.profitPerPack) / marchRep.profitPerPack) * 100 : 0,
-              activeRatio: marchRep.activeRatio > 0 ? 
-                aprRep.activeRatio - marchRep.activeRatio : 0
+          if (previousRep) {
+            changes[currentRep.rep] = {
+              spend: previousRep.spend !== 0 ? ((currentRep.spend - previousRep.spend) / previousRep.spend) * 100 : 0,
+              profit: previousRep.profit !== 0 ? ((currentRep.profit - previousRep.profit) / previousRep.profit) * 100 : 0,
+              margin: previousRep.margin !== 0 ? ((currentRep.margin - previousRep.margin) / previousRep.margin) * 100 : 0,
+              packs: previousRep.packs !== 0 ? ((currentRep.packs - previousRep.packs) / previousRep.packs) * 100 : 0,
+              activeAccounts: previousRep.activeAccounts !== 0 ? ((currentRep.activeAccounts - previousRep.activeAccounts) / previousRep.activeAccounts) * 100 : 0,
+              totalAccounts: previousRep.totalAccounts !== 0 ? ((currentRep.totalAccounts - previousRep.totalAccounts) / previousRep.totalAccounts) * 100 : 0
             };
           }
         });
@@ -833,347 +329,174 @@ export const useRepPerformanceData = () => {
         return changes;
       };
       
-      const aprAllData = getCombinedRepData(
-        aprRetailData,
-        aprRevaData,
-        aprWholesaleData,
-        true, true, true
-      );
+      setRepChanges(calculateRepChanges(baseRepData, febBaseRepData));
       
-      const marchAllData = getCombinedRepData(
-        marchRetailRepData,
-        marchRevaRepData,
-        marchWholesaleRepData,
-        true, true, true
-      );
-      
-      const aprilMarchChanges = calculateChanges(aprAllData, marchAllData);
-      
-      const aprSummary = calculateSummary(
-        aprRetailSummary,
-        aprRevaSummary,
-        aprWholesaleSummary,
-        true, true, true
-      );
-      
-      const marchSummary = calculateSummary(
-        marchRetailSummary,
-        marchRevaSummary,
-        marchWholesaleSummary,
-        true, true, true
-      );
-      
-      const aprilSummaryChanges = {
-        totalSpend: marchSummary.totalSpend > 0 ? 
-          ((aprSummary.totalSpend - marchSummary.totalSpend) / marchSummary.totalSpend) * 100 : 0,
-        totalProfit: marchSummary.totalProfit > 0 ? 
-          ((aprSummary.totalProfit - marchSummary.totalProfit) / marchSummary.totalProfit) * 100 : 0,
-        averageMargin: aprSummary.averageMargin - marchSummary.averageMargin,
-        totalPacks: marchSummary.totalPacks > 0 ? 
-          ((aprSummary.totalPacks - marchSummary.totalPacks) / marchSummary.totalPacks) * 100 : 0,
-        totalAccounts: marchSummary.totalAccounts > 0 ? 
-          ((aprSummary.totalAccounts - marchSummary.totalAccounts) / marchSummary.totalAccounts) * 100 : 0,
-        activeAccounts: marchSummary.activeAccounts > 0 ? 
-          ((aprSummary.activeAccounts - marchSummary.activeAccounts) / marchSummary.activeAccounts) * 100 : 0
-      };
-      
-      if (selectedMonth === 'April') {
-        setRepChanges(aprilMarchChanges);
-        setSummaryChanges(aprilSummaryChanges);
-      }
-      
-      const combinedAprilData = getCombinedRepData(
-        aprRetailData,
-        aprRevaData,
-        aprWholesaleData,
-        includeRetail,
-        includeReva,
-        includeWholesale
-      );
-      
-      console.log('Combined April Data length:', combinedAprilData.length);
-      console.log('Combined April Total Profit:', combinedAprilData.reduce((sum, item) => sum + item.profit, 0));
-      
-      const currentData = loadStoredRepPerformanceData() || {};
-      saveRepPerformanceData({
-        ...currentData,
-        aprRepData: aprRetailData,
-        aprRevaData: aprRevaData,
-        aprWholesaleData: aprWholesaleData,
-        aprBaseSummary: aprRetailSummary,
-        aprRevaValues: aprRevaSummary,
-        aprWholesaleValues: aprWholesaleSummary,
-        marchRollingRetailData: marchRetailRepData,
-        marchRollingRevaData: marchRevaRepData,
-        marchRollingWholesaleData: marchWholesaleRepData,
-        marchRollingRetailSummary: marchRetailSummary,
-        marchRollingRevaSummary: marchRevaSummary,
-        marchRollingWholesaleSummary: marchWholesaleSummary,
-        aprilMarchChanges: aprilMarchChanges,
-        aprilSummaryChanges: aprilSummaryChanges
-      });
-      
-      if (selectedMonth === 'April') {
-        setOverallData(combinedAprilData);
-      }
-      
-      return true;
     } catch (error) {
-      console.error('Error loading April data:', error);
-      return false;
+      console.error('Error loading data:', error);
+      toast.error('Failed to load performance data');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedUserId, filterDataByUser]);
 
-  const loadDataFromSupabase = async () => {
-    setIsLoading(true);
-    try {
-      if (selectedMonth === 'April') {
-        return await loadAprilData();
-      } else if (selectedMonth === 'May') {
-        return await loadMayData();
-      }
-      
-      const data = await fetchRepPerformanceData();
-      
-      console.log("February data from fetchRepPerformanceData:", {
-        febBaseSummary: data.febBaseSummary,
-        febRevaValues: data.febRevaValues,
-        febWholesaleValues: data.febWholesaleValues
-      });
-      
-      console.log("March data from fetchRepPerformanceData:", {
-        baseSummary: data.baseSummary,
-        revaValues: data.revaValues,
-        wholesaleValues: data.wholesaleValues
-      });
-      
-      setRepData(data.repData);
-      setRevaData(data.revaData);
-      setWholesaleData(data.wholesaleData);
-      
-      setBaseSummary({
-        totalSpend: data.baseSummary.totalSpend,
-        totalProfit: data.baseSummary.totalProfit,
-        totalPacks: data.baseSummary.totalPacks,
-        totalAccounts: data.baseSummary.totalAccounts,
-        activeAccounts: data.baseSummary.activeAccounts,
-        averageMargin: data.baseSummary.averageMargin
-      });
-      
-      setRevaValues({
-        totalSpend: data.revaValues.totalSpend,
-        totalProfit: data.revaValues.totalProfit,
-        totalPacks: data.revaValues.totalPacks,
-        totalAccounts: data.revaValues.totalAccounts,
-        activeAccounts: data.revaValues.activeAccounts,
-        averageMargin: data.revaValues.averageMargin
-      });
-      
-      setWholesaleValues({
-        totalSpend: data.wholesaleValues.totalSpend,
-        totalProfit: data.wholesaleValues.totalProfit,
-        totalPacks: data.wholesaleValues.totalPacks,
-        totalAccounts: data.wholesaleValues.totalAccounts,
-        activeAccounts: data.wholesaleValues.activeAccounts,
-        averageMargin: data.wholesaleValues.averageMargin
-      });
-      
-      setFebRepData(data.febRepData);
-      setFebRevaData(data.febRevaData);
-      setFebWholesaleData(data.febWholesaleData);
-      
-      setFebBaseSummary({
-        totalSpend: data.febBaseSummary.totalSpend,
-        totalProfit: data.febBaseSummary.totalProfit,
-        totalPacks: data.febBaseSummary.totalPacks,
-        totalAccounts: data.febBaseSummary.totalAccounts,
-        activeAccounts: data.febBaseSummary.activeAccounts,
-        averageMargin: data.febBaseSummary.averageMargin
-      });
-      
-      setFebRevaValues({
-        totalSpend: data.febRevaValues.totalSpend,
-        totalProfit: data.febRevaValues.totalProfit,
-        totalPacks: data.febRevaValues.totalPacks,
-        totalAccounts: data.febRevaValues.totalAccounts,
-        activeAccounts: data.febRevaValues.activeAccounts,
-        averageMargin: data.febRevaValues.averageMargin
-      });
-      
-      setFebWholesaleValues({
-        totalSpend: data.febWholesaleValues.totalSpend,
-        totalProfit: data.febWholesaleValues.totalProfit,
-        totalPacks: data.febWholesaleValues.totalPacks,
-        totalAccounts: data.febWholesaleValues.totalAccounts,
-        activeAccounts: data.febWholesaleValues.activeAccounts,
-        averageMargin: data.febWholesaleValues.averageMargin
-      });
-      
-      setSummaryChanges({
-        totalSpend: data.summaryChanges.totalSpend,
-        totalProfit: data.summaryChanges.totalProfit,
-        totalPacks: data.summaryChanges.totalPacks,
-        averageMargin: data.summaryChanges.averageMargin,
-        totalAccounts: data.summaryChanges.totalAccounts || 0,
-        activeAccounts: data.summaryChanges.activeAccounts || 0
-      });
-      
-      setRepChanges(data.repChanges);
-      
-      const combinedData = getCombinedRepData(
-        data.repData,
-        data.revaData,
-        data.wholesaleData,
-        includeRetail,
-        includeReva,
-        includeWholesale
-      );
-      setOverallData(combinedData);
+  useEffect(() => {
+    loadDataFromSupabase();
+  }, [loadDataFromSupabase]);
 
-      saveRepPerformanceData({
-        overallData: combinedData,
-        repData: data.repData,
-        revaData: data.revaData,
-        wholesaleData: data.wholesaleData,
-        baseSummary: data.baseSummary,
-        revaValues: data.revaValues,
-        wholesaleValues: data.wholesaleValues,
-        
-        febRepData: data.febRepData,
-        febRevaData: data.febRevaData,
-        febWholesaleData: data.febWholesaleData,
-        febBaseSummary: data.febBaseSummary,
-        febRevaValues: data.febRevaValues,
-        febWholesaleValues: data.febWholesaleValues,
-        
-        summaryChanges: data.summaryChanges,
-        repChanges: data.repChanges
-      });
+  const sortData = useCallback((data: any[]) => {
+    return sortRepData(data, sortBy, sortOrder);
+  }, [sortBy, sortOrder]);
 
-      await loadAprilData();
-      await loadMayData();
-      
-      console.log("Successfully loaded data from Supabase");
-      return true;
-    } catch (error) {
-      console.error('Error loading data from Supabase:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Modified getActiveData function to handle May data
-  const getActiveData = (tabValue: string, month?: string) => {
-    const monthToUse = month || selectedMonth;
+  // GetActiveData function now accounts for user filtering
+  const getActiveData = useCallback((tabValue: string, month: string = selectedMonth) => {
+    let data: RepData[] = [];
     
-    let currentRepData = repData;
-    let currentRevaData = revaData;
-    let currentWholesaleData = wholesaleData;
-    
-    if (monthToUse === 'February') {
-      currentRepData = febRepData;
-      currentRevaData = febRevaData;
-      currentWholesaleData = febWholesaleData;
-    } else if (monthToUse === 'April') {
-      currentRepData = aprRepData;
-      currentRevaData = aprRevaData;
-      currentWholesaleData = aprWholesaleData;
-    } else if (monthToUse === 'May') {
-      currentRepData = mayRepData;
-      currentRevaData = mayRevaData;
-      currentWholesaleData = mayWholesaleData;
-    }
-    
-    // Determine which data to return based on the tab value
-    switch (tabValue) {
-      case 'rep':
-        return includeRetail ? currentRepData : [];
-      case 'reva':
-        return includeReva ? currentRevaData : [];
-      case 'wholesale':
-        return includeWholesale ? currentWholesaleData : [];
-      case 'overall':
-      default:
-        if (monthToUse !== selectedMonth) {
-          // If we're requesting data for a specific month different from the selected month,
-          // we need to recombine the data for that specific month
-          return getCombinedRepData(
-            monthToUse === 'February' ? febRepData :
-            monthToUse === 'April' ? aprRepData :
-            monthToUse === 'May' ? mayRepData : repData,
-            
-            monthToUse === 'February' ? febRevaData :
-            monthToUse === 'April' ? aprRevaData :
-            monthToUse === 'May' ? mayRevaData : revaData,
-            
-            monthToUse === 'February' ? febWholesaleData :
-            monthToUse === 'April' ? aprWholesaleData :
-            monthToUse === 'May' ? mayWholesaleData : wholesaleData,
-            
-            includeRetail,
-            includeReva,
-            includeWholesale
-          );
+    switch (month) {
+      case 'February':
+        switch (tabValue) {
+          case 'overall':
+            data = getCombinedRepData(
+              febBaseRepData,
+              febRevaRepData,
+              febWholesaleRepData,
+              includeRetail,
+              includeReva,
+              includeWholesale
+            );
+            break;
+          case 'rep':
+            data = febBaseRepData;
+            break;
+          case 'reva':
+            data = febRevaRepData;
+            break;
+          case 'wholesale':
+            data = febWholesaleRepData;
+            break;
+          default:
+            data = [];
+            break;
         }
-        return overallData;
+        break;
+      case 'April':
+        switch (tabValue) {
+          case 'overall':
+            data = getCombinedRepData(
+              aprBaseRepData,
+              aprRevaRepData,
+              aprWholesaleRepData,
+              includeRetail,
+              includeReva,
+              includeWholesale
+            );
+            break;
+          case 'rep':
+            data = aprBaseRepData;
+            break;
+          case 'reva':
+            data = aprRevaRepData;
+            break;
+          case 'wholesale':
+            data = aprWholesaleRepData;
+            break;
+          default:
+            data = [];
+            break;
+        }
+        break;
+      case 'May':
+        switch (tabValue) {
+          case 'overall':
+            data = getCombinedRepData(
+              mayBaseRepData,
+              mayRevaRepData,
+              mayWholesaleRepData,
+              includeRetail,
+              includeReva,
+              includeWholesale
+            );
+            break;
+          case 'rep':
+            data = mayBaseRepData;
+            break;
+          case 'reva':
+            data = mayRevaRepData;
+            break;
+          case 'wholesale':
+            data = mayWholesaleRepData;
+            break;
+          default:
+            data = [];
+            break;
+        }
+        break;
+      default:
+        switch (tabValue) {
+          case 'overall':
+            data = getCombinedRepData(
+              baseRepData,
+              revaRepData,
+              wholesaleRepData,
+              includeRetail,
+              includeReva,
+              includeWholesale
+            );
+            break;
+          case 'rep':
+            data = baseRepData;
+            break;
+          case 'reva':
+            data = revaRepData;
+            break;
+          case 'wholesale':
+            data = wholesaleRepData;
+            break;
+          default:
+            data = [];
+            break;
+        }
+        break;
     }
-  };
+    
+    // In each case, we're now working with already filtered data since 
+    // loadDataFromSupabase applies filtering when setting the state
+    
+    return data;
+  }, [
+    selectedMonth,
+    includeRetail,
+    includeReva,
+    includeWholesale,
+    baseRepData,
+    revaRepData,
+    wholesaleRepData,
+    febBaseRepData,
+    febRevaRepData,
+    febWholesaleRepData,
+    aprBaseRepData,
+    aprRevaRepData,
+    aprWholesaleRepData,
+    mayBaseRepData,
+    mayRevaRepData,
+    mayWholesaleRepData,
+    getCombinedRepData
+  ]);
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortBy(column);
-      setSortOrder('desc');
+      setSortOrder('asc');
     }
   };
-
-  const sortData = (data: RepData[]) => {
-    return sortRepData(data, sortBy, sortOrder);
-  };
-
-  // Updated summary calculation to include May data
-  const summary = calculateSummary(
-    selectedMonth === 'March' ? baseSummary : 
-    selectedMonth === 'February' ? febBaseSummary : 
-    selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary,
-    
-    selectedMonth === 'March' ? revaValues : 
-    selectedMonth === 'February' ? febRevaValues : 
-    selectedMonth === 'April' ? aprRevaValues : mayRevaValues,
-    
-    selectedMonth === 'March' ? wholesaleValues : 
-    selectedMonth === 'February' ? febWholesaleValues :
-    selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues,
-    
-    includeRetail,
-    includeReva, 
-    includeWholesale
-  );
-
-  // Updated getFebValue function to handle May data for comparison
+  
   const getFebValue = (repName: string, metricType: string, currentValue: number, changePercent: number) => {
-    if (!repName || Math.abs(changePercent) < 0.1) return '';
+    const febRep = febBaseRepData.find(rep => rep.rep === repName);
+    if (!febRep) return 'No data';
     
-    const comparisonRepData = 
-      selectedMonth === 'March' ? febRepData : 
-      selectedMonth === 'April' ? repData :
-      selectedMonth === 'May' ? aprRepData : febRepData;
-      
-    const comparisonRevaData = 
-      selectedMonth === 'March' ? febRevaData : 
-      selectedMonth === 'April' ? revaData :
-      selectedMonth === 'May' ? aprRevaData : febRevaData;
-      
-    const comparisonWholesaleData = 
-      selectedMonth === 'March' ? febWholesaleData : 
-      selectedMonth === 'April' ? wholesaleData :
-      selectedMonth === 'May' ? aprWholesaleData : febWholesaleData;
-    
-    // ... keep existing code (previous value calculation)
+    const previousValue = febRep[metricType as keyof RepData] as number;
+    return previousValue ? previousValue.toString() : 'No data';
   };
 
   return {
@@ -1181,11 +504,11 @@ export const useRepPerformanceData = () => {
     setIncludeRetail,
     includeReva,
     setIncludeReva,
-    includeWholesale, 
+    includeWholesale,
     setIncludeWholesale,
     sortBy,
     sortOrder,
-    summary,
+    summary: baseSummary,
     summaryChanges,
     repChanges,
     getActiveData,

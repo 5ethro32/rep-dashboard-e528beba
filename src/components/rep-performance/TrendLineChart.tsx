@@ -20,14 +20,15 @@ interface TrendLineChartProps {
   maySummary: SummaryData;
   isLoading: boolean;
   repDataProp: {
-    february: any[];
-    march: any[];
-    april: any[];
-    may: any[];
+    february: RepData[];
+    march: RepData[];
+    april: RepData[];
+    may: RepData[];
   };
   includeRetail: boolean;
   includeReva: boolean;
   includeWholesale: boolean;
+  selectedUserName?: string; // Add this prop for user context
 }
 
 interface TrendData {
@@ -69,7 +70,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   repDataProp,
   includeRetail,
   includeReva,
-  includeWholesale
+  includeWholesale,
+  selectedUserName
 }) => {
   // State to track which metrics are visible - only profit selected by default
   const [showProfit, setShowProfit] = useState(true);

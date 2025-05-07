@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PerformanceTable from './PerformanceTable';
@@ -43,6 +42,7 @@ interface PerformanceContentProps {
   wholesaleValues?: {
     totalProfit: number;
   };
+  selectedUserName?: string;
 }
 
 const PerformanceContent: React.FC<PerformanceContentProps> = ({
@@ -66,9 +66,23 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   includeWholesale,
   baseSummary,
   revaValues,
-  wholesaleValues
+  wholesaleValues,
+  selectedUserName = 'All Data'
 }) => {
   const isMobile = useIsMobile();
+
+  // Helper to determine title prefix based on selected user
+  const getTitlePrefix = () => {
+    if (!selectedUserName || selectedUserName === 'All Data') return '';
+    
+    // If it's "My Data", use "My" instead of "My Data's"
+    if (selectedUserName === 'My Data') return 'My ';
+    
+    // Otherwise use the name with apostrophe
+    return `${selectedUserName}'s `;
+  };
+
+  const titlePrefix = getTitlePrefix();
 
   const getTabLabel = (tabValue: string) => {
     switch (tabValue) {
@@ -81,11 +95,13 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
   };
 
   const getTabTitle = (tabValue: string, selectedMonth: string) => {
+    const prefix = titlePrefix ? `${titlePrefix}` : '';
+    
     switch (tabValue) {
-      case 'overall': return `Overall Rep Performance (${selectedMonth} 2025)`;
-      case 'rep': return `Retail Performance (${selectedMonth} 2025)`;
-      case 'reva': return `REVA Performance (${selectedMonth} 2025)`;
-      case 'wholesale': return `Wholesale Performance (${selectedMonth} 2025)`;
+      case 'overall': return `${prefix}Overall Rep Performance (${selectedMonth} 2025)`;
+      case 'rep': return `${prefix}Retail Performance (${selectedMonth} 2025)`;
+      case 'reva': return `${prefix}REVA Performance (${selectedMonth} 2025)`;
+      case 'wholesale': return `${prefix}Wholesale Performance (${selectedMonth} 2025)`;
       default: return '';
     }
   };

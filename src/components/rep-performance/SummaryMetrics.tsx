@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
@@ -21,6 +20,7 @@ interface SummaryMetricsProps {
   includeReva: boolean;
   includeWholesale: boolean;
   selectedMonth?: string;
+  selectedUserName?: string; // Add this prop
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ 
@@ -30,7 +30,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   includeRetail,
   includeReva,
   includeWholesale,
-  selectedMonth = 'March'
+  selectedMonth = 'March',
+  selectedUserName = 'All Data'
 }) => {
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
@@ -67,6 +68,19 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     return '';
   };
 
+  // Helper to determine title prefix based on selected user
+  const getTitlePrefix = () => {
+    if (!selectedUserName || selectedUserName === 'All Data') return '';
+    
+    // If it's "My Data", use "My" instead of "My Data's"
+    if (selectedUserName === 'My Data') return 'My ';
+    
+    // Otherwise use the name with apostrophe
+    return `${selectedUserName}'s `;
+  };
+
+  const titlePrefix = getTitlePrefix();
+
   console.log("Rendering SummaryMetrics with data and filter state:", { 
     summary, 
     summaryChanges: filteredChanges,
@@ -79,7 +93,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
       {/* Revenue Card */}
       <MetricCard
-        title="Revenue"
+        title={`${titlePrefix}Revenue`}
         value={formatCurrency(summary.totalSpend || 0, 0)}
         change={renderChangeIndicator(filteredChanges.totalSpend)}
         subtitle={showChangeIndicators ? 
@@ -91,7 +105,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       
       {/* Profit Card */}
       <MetricCard
-        title="Profit"
+        title={`${titlePrefix}Profit`}
         value={formatCurrency(summary.totalProfit || 0, 0)}
         change={renderChangeIndicator(filteredChanges.totalProfit)}
         subtitle={showChangeIndicators ? 
@@ -104,7 +118,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       
       {/* Margin Card */}
       <MetricCard
-        title="Margin"
+        title={`${titlePrefix}Margin`}
         value={formatPercent(summary.averageMargin || 0)}
         change={renderChangeIndicator(filteredChanges.averageMargin)}
         subtitle={showChangeIndicators ? 
@@ -116,7 +130,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
       
       {/* Packs Card */}
       <MetricCard
-        title="Packs"
+        title={`${titlePrefix}Packs`}
         value={formatNumber(summary.totalPacks || 0)}
         change={renderChangeIndicator(filteredChanges.totalPacks)}
         subtitle={showChangeIndicators ? 
