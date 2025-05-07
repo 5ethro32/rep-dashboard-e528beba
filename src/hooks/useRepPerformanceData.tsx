@@ -70,15 +70,14 @@ export const useRepPerformanceData = (selectedUserId: string | null = "all") => 
   const { user } = useAuth();
 
   // Helper functions to compute values and filter data by user
-  const filterDataByUser = useCallback((data: any[], userId: string | null = "all") => {
+  // Fix the type definition to be more specific and avoid circular references
+  const filterDataByUser = useCallback((data: SalesDataItem[], userId: string | null = "all") => {
     if (!userId || userId === "all") {
       return data;
     }
     
     return data.filter(item => {
-      const repName = item.rep || item.Rep;
-      // Check if the item belongs to the selected user
-      // This is a simple example; adjust the logic based on your actual data structure
+      const repName = item.rep_name || item.Rep;
       return repName === userId;
     });
   }, []);
@@ -378,9 +377,6 @@ export const useRepPerformanceData = (selectedUserId: string | null = "all") => 
         break;
     }
     
-    // In each case, we're now working with already filtered data since 
-    // loadDataFromSupabase applies filtering when setting the state
-    
     return data;
   }, [
     selectedMonth,
@@ -398,8 +394,7 @@ export const useRepPerformanceData = (selectedUserId: string | null = "all") => 
     aprWholesaleRepData,
     mayBaseRepData,
     mayRevaRepData,
-    mayWholesaleRepData,
-    getCombinedRepData
+    mayWholesaleRepData
   ]);
 
   const handleSort = (column: string) => {
