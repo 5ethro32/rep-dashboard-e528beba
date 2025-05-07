@@ -52,7 +52,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           
           {icon && iconPosition === 'right' && (
             <div className={cn(
-              "flex-shrink-0 text-finance-red",
+              "flex-shrink-0 text-finance-gray",
               iconClassName
             )}>
               {icon}
@@ -68,7 +68,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
             <>
               {icon && iconPosition === 'left' && (
                 <div className={cn(
-                  "flex-shrink-0 text-finance-red mr-2",
+                  "flex-shrink-0 text-finance-gray mr-2",
                   iconClassName
                 )}>
                   {icon}

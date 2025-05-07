@@ -9,7 +9,7 @@ import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import { Button } from '@/components/ui/button';
-import { BarChart3, ClipboardList, User } from 'lucide-react';
+import { BarChart3, ClipboardList, UserCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -178,6 +178,17 @@ const RepPerformance = () => {
               >
                 <ClipboardList className="h-4 w-4 mr-2" />
                 Rep Tracker
+              </Button>
+            </Link>
+            
+            <Link to="/my-performance">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
+              >
+                <UserCircle className="h-4 w-4 mr-2" />
+                My Performance
               </Button>
             </Link>
           </div>
