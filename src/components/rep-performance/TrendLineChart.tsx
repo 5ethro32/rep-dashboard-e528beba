@@ -696,7 +696,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         name={`${rep} - Profit`}
                         stroke={color}
                         strokeWidth={1.5}
-                        strokeDasharray={item => item.isProjected ? "5 5" : "0"}
+                        strokeDasharray={enhancedTrajectoryData.find(d => d.month === 'May')?.isProjected ? "5 5" : "0"}
                         dot={{ r: 3 }}
                         activeDot={{ r: 5 }}
                         connectNulls={true}
@@ -711,7 +711,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         name={`${rep} - Spend`}
                         stroke={color}
                         strokeWidth={1.5}
-                        strokeDasharray={item => item.isProjected ? "5 5" : "3 3"}
+                        strokeDasharray={enhancedTrajectoryData.find(d => d.month === 'May')?.isProjected ? "5 5" : "3 3"}
                         dot={{ r: 3, strokeDasharray: '' }}
                         activeDot={{ r: 5 }}
                         connectNulls={true}
@@ -726,7 +726,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         name={`${rep} - Packs`}
                         stroke={color}
                         strokeWidth={1.5}
-                        strokeDasharray={item => item.isProjected ? "5 5" : "1 1"}
+                        strokeDasharray={enhancedTrajectoryData.find(d => d.month === 'May')?.isProjected ? "5 5" : "1 1"}
                         dot={{ r: 3, strokeDasharray: '' }}
                         activeDot={{ r: 5 }}
                         connectNulls={true}
@@ -741,7 +741,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         name={`${rep} - Margin %`}
                         stroke={color}
                         strokeWidth={1.5}
-                        strokeDasharray={item => item.isProjected ? "5 5" : "2 2"}
+                        strokeDasharray={enhancedTrajectoryData.find(d => d.month === 'May')?.isProjected ? "5 5" : "2 2"}
                         dot={{ r: 3, strokeDasharray: '', fill: CHART_COLORS.margin, stroke: color }}
                         activeDot={{ r: 5 }}
                         connectNulls={true}
