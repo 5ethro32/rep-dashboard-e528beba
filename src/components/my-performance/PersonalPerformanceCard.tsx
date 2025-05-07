@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
-import { TrendingUp, Users, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Wallet, LineChart, Percent, Users, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PersonalPerformanceCardProps {
@@ -58,7 +58,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
     {
       title: "Total Profit",
       value: formatCurrency(performanceData?.totalProfit || 0),
-      icon: <TrendingUp className="h-5 w-5 text-finance-red" />,
+      icon: <Wallet className="h-5 w-5 text-finance-gray" />,
       percentChange: hasComparisonData ? 
         calculatePercentChange(
           performanceData?.totalProfit || 0, 
@@ -70,7 +70,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
     {
       title: "Total Spend",
       value: formatCurrency(performanceData?.totalSpend || 0),
-      icon: <TrendingUp className="h-5 w-5 text-finance-red" />,
+      icon: <LineChart className="h-5 w-5 text-finance-gray" />,
       percentChange: hasComparisonData ?
         calculatePercentChange(
           performanceData?.totalSpend || 0, 
@@ -82,7 +82,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
     {
       title: "Margin",
       value: formatPercent(performanceData?.margin || 0),
-      icon: <TrendingUp className="h-5 w-5 text-finance-red" />,
+      icon: <Percent className="h-5 w-5 text-finance-gray" />,
       percentChange: hasComparisonData ?
         performanceData?.margin - (performanceData?.previousMonthData?.margin || 0) : null,
       previousValue: hasComparisonData ?
@@ -92,7 +92,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
     {
       title: "Active Accounts",
       value: `${formatNumber(performanceData?.activeAccounts || 0)}/${formatNumber(performanceData?.totalAccounts || 0)}`,
-      icon: <Users className="h-5 w-5 text-finance-red" />,
+      icon: <Users className="h-5 w-5 text-finance-gray" />,
       activeRatio: performanceData?.totalAccounts ? 
         (performanceData.activeAccounts / performanceData.totalAccounts) * 100 : 0,
       previousValue: hasComparisonData ? 
