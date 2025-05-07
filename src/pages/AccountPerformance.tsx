@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
-import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 
@@ -300,10 +298,11 @@ const AccountPerformance = () => {
       onSelectUser={handleUserChange}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-        <PerformanceHeader 
+        <ActionsHeader 
+          onRefresh={fetchComparisonData}
+          isLoading={isLoading}
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
-          hideTitle={true}
         />
         
         <div className="mb-6">
@@ -315,19 +314,6 @@ const AccountPerformance = () => {
                 ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
                 : "Compare your accounts performance between months to identify declining or improving accounts."}
           </p>
-        </div>
-        
-        <div className="mb-4 flex justify-between items-center">
-          <Button 
-            onClick={fetchComparisonData} 
-            disabled={isLoading}
-            variant="outline"
-            size="sm"
-            className="text-white border-white/20 hover:bg-white/10"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? "Refreshing..." : "Refresh Data"}
-          </Button>
         </div>
         
         <AccountSummaryCards
