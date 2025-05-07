@@ -45,15 +45,17 @@ const AppLayout = ({
     <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900 flex w-full flex-col">
         <AppHeader />
-        <div className="flex flex-1 w-full pt-14"> {/* Added pt-14 for padding-top to account for the header height */}
-          <AppSidebar />
-          <SidebarController>
-            <div className={`relative flex-1 ${isMobile ? 'pb-16' : ''}`}>
-              {children}
-              {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
-              {isMobile && <MobileNavigation />}
-            </div>
-          </SidebarController>
+        <div className="flex flex-1 w-full pt-14"> {/* pt-14 for header space */}
+          <div className="relative flex-1 flex">
+            <AppSidebar />
+            <SidebarController>
+              <div className={`relative flex-1 ${isMobile ? 'pb-16' : ''}`}>
+                {children}
+                {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
+                {isMobile && <MobileNavigation />}
+              </div>
+            </SidebarController>
+          </div>
         </div>
       </div>
     </SidebarProvider>

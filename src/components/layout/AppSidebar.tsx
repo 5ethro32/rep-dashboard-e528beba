@@ -55,7 +55,7 @@ const AppSidebar = () => {
       <Sidebar 
         collapsible="icon" 
         variant="floating" 
-        className={`transition-all duration-300 ease-in-out ${isHovered ? 'w-[var(--sidebar-width)]' : 'w-[var(--sidebar-width-icon)]'}`}
+        className={`transition-all duration-300 ease-in-out ${isHovered ? 'w-[var(--sidebar-width)]' : 'w-[var(--sidebar-width-icon)]'} mt-14`} // Added mt-14 for top margin
       >
         <SidebarContent className="bg-gradient-to-b from-gray-900 to-gray-950 border-r border-white/5 flex flex-col h-full">
           <div className="px-4 py-3">
@@ -103,8 +103,6 @@ const AppSidebar = () => {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          
-          {/* Footer removed */}
         </SidebarContent>
       </Sidebar>
     </div>
