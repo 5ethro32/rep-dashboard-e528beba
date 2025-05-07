@@ -43,6 +43,7 @@ export function ImprovedCustomerSelector({
     if (!open) return;
     
     const handleOutsideClick = (e: MouseEvent) => {
+      // We're just closing the dropdown here, not triggering other actions
       setOpen(false);
     };
     
@@ -85,10 +86,12 @@ export function ImprovedCustomerSelector({
           className
         )}
         onClick={(e) => {
-          e.stopPropagation();
+          e.preventDefault(); // Prevent form submission
+          e.stopPropagation(); // Stop event from propagating up
           setOpen(!open);
         }}
         disabled={disabled}
+        type="button" // Explicitly set type to button to prevent form submission
       >
         {selectedCustomer ? (
           <span className="truncate">{selectedCustomer}</span>
@@ -100,15 +103,23 @@ export function ImprovedCustomerSelector({
       {open && (
         <div 
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center sm:relative sm:inset-auto sm:bg-transparent"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault(); // Prevent form submission
+            e.stopPropagation(); // Stop event propagation
+          }}
           style={{ zIndex: 990 }}
         >
           {isMobile && (
             <div className="fixed top-0 left-0 right-0 bg-black px-4 py-3 flex justify-between items-center z-[1000]">
               <h3 className="font-semibold text-white">Select Customer</h3>
               <button 
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  e.preventDefault(); // Prevent form submission
+                  e.stopPropagation(); // Stop event propagation
+                  setOpen(false);
+                }}
                 className="text-white"
+                type="button" // Explicitly set type to button
               >
                 <X className="h-5 w-5" />
               </button>
@@ -122,7 +133,10 @@ export function ImprovedCustomerSelector({
                 ? "fixed inset-x-2 top-14 bottom-4" 
                 : "absolute w-full top-full mt-1"
             )}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault(); // Prevent form submission
+              e.stopPropagation(); // Stop event propagation
+            }}
           >
             <CustomerCommand 
               customers={safeCustomers}

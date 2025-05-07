@@ -172,12 +172,8 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
               selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}
             />
-            {watch('customer_ref') && (
-              <p className="text-xs text-green-600">Customer selected successfully</p>
-            )}
-            {!watch('customer_ref') && (
-              <p className="text-xs text-muted-foreground">Please select a customer from the list</p>
-            )}
+            {/* Removed the premature feedback messages */}
+            <p className="text-xs text-muted-foreground">Please select a customer from the list</p>
           </div>
 
           <div className="space-y-2">
