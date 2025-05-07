@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { User, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/components/ui/use-toast';
 
 interface UserProfile {
   id: string;
@@ -29,28 +30,49 @@ interface UserSelectorProps {
 }
 
 export default function UserSelector({ selectedUserId, onSelectUser, className }: UserSelectorProps) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
       setIsLoading(true);
+      
       try {
-        // Fetch both profiles and users to get emails
+        // Check if the current user is an admin - only admins can see other users
+        if (!isAdmin) {
+          console.log('Current user is not an admin. Will only show own data.');
+          // For non-admin users, we just include their own profile
+          if (user) {
+            const singleUserProfile: UserProfile = {
+              id: user.id,
+              email: user.email
+            };
+            setUsers([singleUserProfile]);
+          }
+          setIsLoading(false);
+          return;
+        }
+        
+        // For admin users, fetch all profiles
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name');
+          .select('id, first_name, last_name, role');
 
         if (profilesError) {
           console.error('Error fetching profiles:', profilesError);
+          toast({
+            title: "Error fetching users",
+            description: "Could not load user profiles",
+            variant: "destructive"
+          });
           return;
         }
 
         // Debug: Log the returned profiles data
         console.log('Profiles fetched:', profilesData);
         
-        // Try to get the current user's email for reference
+        // Get the current user's email
         const currentUserEmail = user?.email;
         console.log('Current user email:', currentUserEmail);
         
@@ -61,7 +83,7 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
         const enhancedProfiles = profilesData?.map(profile => {
           // For the current user, we can use their email
           const isCurrentUser = profile.id === user?.id;
-          const email = isCurrentUser ? currentUserEmail : `${profile.id}@${emailDomain}`;
+          const email = isCurrentUser ? currentUserEmail : `${profile.id.split('-')[0]}@${emailDomain}`;
           
           return {
             ...profile,
@@ -73,13 +95,18 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
         setUsers(enhancedProfiles);
       } catch (error) {
         console.error('Failed to fetch users:', error);
+        toast({
+          title: "Error loading users",
+          description: "An unexpected error occurred",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchUsers();
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Format user display name with improved fallback to email username
   const getUserDisplayName = (userId: string) => {
@@ -149,7 +176,7 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
             </DropdownMenuItem>
           ) : users.filter(u => u.id !== user?.id).length === 0 ? (
             <DropdownMenuItem disabled>
-              No other users available
+              {isAdmin ? "No other users available" : "Admin access required to view other users"}
             </DropdownMenuItem>
           ) : (
             users
