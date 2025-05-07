@@ -379,8 +379,19 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         </p>
       </div>
       
-      {/* Reduced spacing here from mb-1 to mb-0 */}
-      <div className="mb-0 flex justify-between items-center">
+      {/* Reduced spacing and swapped order of elements */}
+      <div className="flex justify-between items-center">
+        {/* Month dropdown now on the left */}
+        <div className="flex-shrink-0">
+          <PerformanceHeader 
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            hideTitle={true}
+            reducedPadding={true}  // Pass a prop to reduce padding
+          />
+        </div>
+        
+        {/* Refresh button now on the right */}
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
@@ -391,14 +402,6 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           {isLoading ? "Refreshing..." : "Refresh Data"}
         </Button>
-        
-        <div className="flex-shrink-0">
-          <PerformanceHeader 
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            hideTitle={true}
-          />
-        </div>
       </div>
       
       <AccountSummaryCards
@@ -409,7 +412,6 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         accountsTrendData={accountsTrendData}
       />
       
-      {/* Increased spacing here by adding mb-12 */}
       <div className="mb-12">
         <AccountPerformanceComparison 
           currentMonthData={currentMonthRawData}
