@@ -6,6 +6,11 @@ import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 
 const AppHeader = () => {
   const { user } = useAuth();
+  
+  // Determine the user's first name for the greeting
+  let userFirstName = user?.email?.split('@')[0] || 'User';
+  // Capitalize first letter
+  userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-gray-950/80 border-b border-white/10">
@@ -15,7 +20,7 @@ const AppHeader = () => {
             <span className="text-2xl font-bold">
               <span className="font-normal italic mr-1 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700">a</span>
             </span>
-            {/* Username removed as requested */}
+            {userFirstName && <span className="text-white/80 ml-2 hidden sm:inline-block">{userFirstName}</span>}
           </Link>
         </div>
         
