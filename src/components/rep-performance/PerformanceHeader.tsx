@@ -10,9 +10,11 @@ const PerformanceHeader = ({ selectedMonth, setSelectedMonth }: PerformanceHeade
   return (
     <div className="mb-8 pt-4">
       <h1 className="text-3xl md:text-4xl font-bold mb-2">
-        <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text">Rep Performance</span>
+        <span className="text-white">Rep</span><br />
+        <span className="text-white">Performance</span><br />
+        <span className="text-finance-red">Dashboard</span>
       </h1>
-      <p className="text-white/60 text-sm md:text-base">
+      <p className="text-white/60 text-sm md:text-base mt-4">
         Track sales rep performance metrics over time, analyze trends, and identify growth opportunities.
       </p>
     </div>
