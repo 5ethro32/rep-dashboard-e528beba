@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -8,6 +9,9 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import RepSelector from '@/components/rep-performance/RepSelector';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { Info } from 'lucide-react';
+import { getWorkingDayPercentage, projectMonthlyValue } from '@/utils/date-utils';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TrendLineChartProps {
   febSummary: SummaryData;
@@ -33,6 +37,7 @@ interface TrendData {
   packs: number;
   margin: number;
   activeAccounts: number;
+  isProjected?: boolean;
   // Add rep-specific data
   [key: string]: any;
 }
@@ -69,6 +74,9 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const [selectedReps, setSelectedReps] = useState<string[]>([]);
   const [availableReps, setAvailableReps] = useState<string[]>([]);
 
+  // Calculate the working day percentage for the current month (May)
+  const workingDayPercentage = useMemo(() => getWorkingDayPercentage(new Date(2025, 4, 7)), []);
+
   // Generate the list of available reps from all months' data
   React.useEffect(() => {
     const allReps = new Set<string>();
@@ -96,7 +104,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         spend: febSummary.totalSpend || 0,
         packs: febSummary.totalPacks || 0,
         margin: febSummary.averageMargin || 0,
-        activeAccounts: febSummary.activeAccounts || 0
+        activeAccounts: febSummary.activeAccounts || 0,
+        isProjected: false
       },
       {
         month: 'Mar',
@@ -104,7 +113,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         spend: marchSummary.totalSpend || 0,
         packs: marchSummary.totalPacks || 0,
         margin: marchSummary.averageMargin || 0,
-        activeAccounts: marchSummary.activeAccounts || 0
+        activeAccounts: marchSummary.activeAccounts || 0,
+        isProjected: false
       },
       {
         month: 'Apr',
@@ -112,20 +122,49 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         spend: aprilSummary.totalSpend || 0,
         packs: aprilSummary.totalPacks || 0,
         margin: aprilSummary.averageMargin || 0,
-        activeAccounts: aprilSummary.activeAccounts || 0
-      },
-      {
-        month: 'May',
-        profit: maySummary.totalProfit || 0,
-        spend: maySummary.totalSpend || 0,
-        packs: maySummary.totalPacks || 0,
-        margin: maySummary.averageMargin || 0,
-        activeAccounts: maySummary.activeAccounts || 0
+        activeAccounts: aprilSummary.activeAccounts || 0,
+        isProjected: false
       }
     ];
     
+    // Add May's actual data point (partial month)
+    data.push({
+      month: 'May',
+      profit: maySummary.totalProfit || 0,
+      spend: maySummary.totalSpend || 0,
+      packs: maySummary.totalPacks || 0,
+      margin: maySummary.averageMargin || 0,
+      activeAccounts: maySummary.activeAccounts || 0,
+      isProjected: false
+    });
+    
     return data;
   }, [febSummary, marchSummary, aprilSummary, maySummary]);
+
+  // Create trajectory data that includes projected values for May
+  const trajectoryData = useMemo(() => {
+    // Take the data for February through April as is
+    const data = chartData.slice(0, 3);
+    
+    // For May, calculate the projected values
+    const projectedMayProfit = projectMonthlyValue(maySummary.totalProfit || 0, workingDayPercentage);
+    const projectedMaySpend = projectMonthlyValue(maySummary.totalSpend || 0, workingDayPercentage);
+    const projectedMayPacks = projectMonthlyValue(maySummary.totalPacks || 0, workingDayPercentage);
+    const projectedMayMargin = maySummary.averageMargin || 0; // Margin doesn't need projection
+
+    // Add projected May data
+    data.push({
+      month: 'May',
+      profit: projectedMayProfit,
+      spend: projectedMaySpend,
+      packs: projectedMayPacks,
+      margin: projectedMayMargin,
+      activeAccounts: projectMonthlyValue(maySummary.activeAccounts || 0, workingDayPercentage),
+      isProjected: true
+    });
+    
+    return data;
+  }, [chartData, maySummary, workingDayPercentage]);
 
   // Calculate min and max margin values for the Y-axis domain
   const marginDomain = useMemo(() => {
@@ -199,35 +238,123 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         enhancedData[3][`packs-rep-${repIndex}`] = mayRepData.packs || 0;
         enhancedData[3][`margin-rep-${repIndex}`] = mayRepData.margin || 0;
         enhancedData[3][`rep-name-${repIndex}`] = rep;
+        enhancedData[3][`isProjected-rep-${repIndex}`] = false;
       }
     });
     
     return enhancedData;
   }, [chartData, selectedReps, repDataProp]);
 
+  // Create enhanced trajectory data with rep-specific projections
+  const enhancedTrajectoryData = useMemo(() => {
+    if (!selectedReps.length) return trajectoryData;
+    
+    // Clone the trajectory data
+    const enhancedData = trajectoryData.map(item => ({...item}));
+    
+    // Add rep-specific data to each month
+    selectedReps.forEach((rep, repIndex) => {
+      // Get rep data for each month
+      const febRepData = repDataProp && repDataProp.february ? 
+        repDataProp.february.find(r => r.rep === rep) : null;
+      const marRepData = repDataProp && repDataProp.march ? 
+        repDataProp.march.find(r => r.rep === rep) : null;
+      const aprRepData = repDataProp && repDataProp.april ? 
+        repDataProp.april.find(r => r.rep === rep) : null;
+      const mayRepData = repDataProp && repDataProp.may ? 
+        repDataProp.may.find(r => r.rep === rep) : null;
+      
+      // Feb data (index 0)
+      if (febRepData) {
+        enhancedData[0][`profit-rep-${repIndex}`] = febRepData.profit || 0;
+        enhancedData[0][`spend-rep-${repIndex}`] = febRepData.spend || 0;
+        enhancedData[0][`packs-rep-${repIndex}`] = febRepData.packs || 0;
+        enhancedData[0][`margin-rep-${repIndex}`] = febRepData.margin || 0;
+        enhancedData[0][`rep-name-${repIndex}`] = rep;
+        enhancedData[0][`isProjected-rep-${repIndex}`] = false;
+      }
+      
+      // March data (index 1)
+      if (marRepData) {
+        enhancedData[1][`profit-rep-${repIndex}`] = marRepData.profit || 0;
+        enhancedData[1][`spend-rep-${repIndex}`] = marRepData.spend || 0;
+        enhancedData[1][`packs-rep-${repIndex}`] = marRepData.packs || 0;
+        enhancedData[1][`margin-rep-${repIndex}`] = marRepData.margin || 0;
+        enhancedData[1][`rep-name-${repIndex}`] = rep;
+        enhancedData[1][`isProjected-rep-${repIndex}`] = false;
+      }
+      
+      // April data (index 2)
+      if (aprRepData) {
+        enhancedData[2][`profit-rep-${repIndex}`] = aprRepData.profit || 0;
+        enhancedData[2][`spend-rep-${repIndex}`] = aprRepData.spend || 0;
+        enhancedData[2][`packs-rep-${repIndex}`] = aprRepData.packs || 0;
+        enhancedData[2][`margin-rep-${repIndex}`] = aprRepData.margin || 0;
+        enhancedData[2][`rep-name-${repIndex}`] = rep;
+        enhancedData[2][`isProjected-rep-${repIndex}`] = false;
+      }
+      
+      // May data (index 3) - add projections
+      if (mayRepData) {
+        // Project May values
+        const mayProfitProjected = projectMonthlyValue(mayRepData.profit || 0, workingDayPercentage);
+        const maySpendProjected = projectMonthlyValue(mayRepData.spend || 0, workingDayPercentage);
+        const mayPacksProjected = projectMonthlyValue(mayRepData.packs || 0, workingDayPercentage);
+        
+        enhancedData[3][`profit-rep-${repIndex}`] = mayProfitProjected;
+        enhancedData[3][`spend-rep-${repIndex}`] = maySpendProjected;
+        enhancedData[3][`packs-rep-${repIndex}`] = mayPacksProjected;
+        enhancedData[3][`margin-rep-${repIndex}`] = mayRepData.margin || 0; // Margin doesn't need projection
+        enhancedData[3][`rep-name-${repIndex}`] = rep;
+        enhancedData[3][`isProjected-rep-${repIndex}`] = true;
+      }
+    });
+    
+    return enhancedData;
+  }, [trajectoryData, selectedReps, repDataProp, workingDayPercentage]);
+
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
-      const isRepData = payload.some(p => p.dataKey.toString().includes('rep'));
+      // Check if this is a projected month
+      const isProjected = payload[0]?.payload?.isProjected;
       
       return (
         <div className="bg-gray-800 border border-gray-700 p-3 rounded-md shadow-lg backdrop-blur-sm">
           <p className="font-semibold text-gray-200">{label}</p>
           
+          {isProjected && (
+            <p className="text-xs text-yellow-300 mb-1">
+              Projected based on {workingDayPercentage.toFixed(1)}% of working days
+            </p>
+          )}
+          
           {/* Show overall metrics only if no reps are selected */}
           {selectedReps.length === 0 && (
             <>
               {showProfit && payload.find(p => p.dataKey === 'profit') && (
-                <p className="text-sm text-finance-red">Profit: {formatCurrency(payload.find(p => p.dataKey === 'profit')?.value || 0)}</p>
+                <p className="text-sm text-finance-red flex items-center">
+                  Profit: {formatCurrency(payload.find(p => p.dataKey === 'profit')?.value || 0)}
+                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
+                </p>
               )}
               {showSpend && payload.find(p => p.dataKey === 'spend') && (
-                <p className="text-sm text-blue-400">Spend: {formatCurrency(payload.find(p => p.dataKey === 'spend')?.value || 0)}</p>
+                <p className="text-sm text-blue-400 flex items-center">
+                  Spend: {formatCurrency(payload.find(p => p.dataKey === 'spend')?.value || 0)}
+                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
+                </p>
               )}
               {showPacks && payload.find(p => p.dataKey === 'packs') && (
-                <p className="text-sm text-green-400">Packs: {Math.round(payload.find(p => p.dataKey === 'packs')?.value || 0).toLocaleString()}</p>
+                <p className="text-sm text-green-400 flex items-center">
+                  Packs: {Math.round(payload.find(p => p.dataKey === 'packs')?.value || 0).toLocaleString()}
+                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
+                </p>
               )}
               {showMargin && payload.find(p => p.dataKey === 'margin') && (
-                <p className="text-sm text-yellow-300">Margin: {formatPercent(payload.find(p => p.dataKey === 'margin')?.value || 0)}</p>
+                <p className="text-sm text-yellow-300 flex items-center">
+                  Margin: {formatPercent(payload.find(p => p.dataKey === 'margin')?.value || 0)}
+                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
+                </p>
               )}
             </>
           )}
@@ -239,6 +366,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             const spendValue = payload.find(p => p.dataKey === `spend-rep-${index}`)?.value;
             const packsValue = payload.find(p => p.dataKey === `packs-rep-${index}`)?.value;
             const marginValue = payload.find(p => p.dataKey === `margin-rep-${index}`)?.value;
+            const isRepProjected = payload[0]?.payload?.[`isProjected-rep-${index}`];
             
             // Only show this rep section if at least one of their metrics is found in the payload
             if (profitValue !== undefined || spendValue !== undefined || packsValue !== undefined || marginValue !== undefined) {
@@ -247,26 +375,30 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                   <p className="text-sm font-medium" style={{ color: repColor }}>{rep}</p>
                   
                   {showProfit && profitValue !== undefined && (
-                    <p className="text-sm" style={{ color: repColor }}>
+                    <p className="text-sm flex items-center" style={{ color: repColor }}>
                       Profit: {formatCurrency(profitValue)}
+                      {isRepProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
                     </p>
                   )}
                   
                   {showSpend && spendValue !== undefined && (
-                    <p className="text-sm" style={{ color: repColor }}>
+                    <p className="text-sm flex items-center" style={{ color: repColor }}>
                       Spend: {formatCurrency(spendValue)}
+                      {isRepProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
                     </p>
                   )}
                   
                   {showPacks && packsValue !== undefined && (
-                    <p className="text-sm" style={{ color: repColor }}>
+                    <p className="text-sm flex items-center" style={{ color: repColor }}>
                       Packs: {Math.round(packsValue).toLocaleString()}
+                      {isRepProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
                     </p>
                   )}
 
                   {showMargin && marginValue !== undefined && (
-                    <p className="text-sm" style={{ color: repColor }}>
+                    <p className="text-sm flex items-center" style={{ color: repColor }}>
                       Margin: {formatPercent(marginValue)}
+                      {isRepProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
                     </p>
                   )}
                 </div>
@@ -343,9 +475,33 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     <Card className="bg-gray-900/40 border border-white/10 backdrop-blur-sm shadow-lg">
       <CardHeader className="pb-6">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-medium text-white/90">
-            Monthly Performance Trends
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg font-medium text-white/90">
+              Monthly Performance Trends
+            </CardTitle>
+            
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-help">
+                    <Info className="h-4 w-4 text-gray-400" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[280px]">
+                  <p className="text-sm">
+                    May shows projected performance based on {workingDayPercentage.toFixed(1)}% 
+                    of working days completed. Dotted lines indicate projections.
+                  </p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          </div>
+          
+          {workingDayPercentage > 0 && workingDayPercentage < 100 && (
+            <div className="text-xs text-yellow-300/80">
+              May: {workingDayPercentage.toFixed(1)}% complete
+            </div>
+          )}
         </div>
         
         <div className="flex justify-between items-center mt-8">
@@ -415,7 +571,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={enhancedChartData}
+              data={selectedReps.length > 0 ? enhancedTrajectoryData : trajectoryData}
               margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
@@ -453,57 +609,80 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               )}
               <Tooltip content={<CustomTooltip />} />
               
-              {/* Overall metrics lines - only display when no reps are selected */}
+              {/* Actual data lines with solid styling */}
               {selectedReps.length === 0 && showProfit && (
-                <Line 
-                  yAxisId="left"
-                  type="monotone" 
-                  dataKey="profit" 
-                  name="Profit" 
-                  stroke={CHART_COLORS.profit}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              )}
-              {selectedReps.length === 0 && showSpend && (
-                <Line 
-                  yAxisId="left"
-                  type="monotone" 
-                  dataKey="spend" 
-                  name="Spend" 
-                  stroke={CHART_COLORS.spend}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              )}
-              {selectedReps.length === 0 && showPacks && (
-                <Line 
-                  yAxisId="right"
-                  type="monotone" 
-                  dataKey="packs" 
-                  name="Packs" 
-                  stroke={CHART_COLORS.packs}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              )}
-              {selectedReps.length === 0 && showMargin && (
-                <Line 
-                  yAxisId="margin"
-                  type="monotone" 
-                  dataKey="margin" 
-                  name="Margin %" 
-                  stroke={CHART_COLORS.margin}
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: CHART_COLORS.margin }}
-                  activeDot={{ r: 6 }}
-                />
+                <>
+                  {/* Actual data (solid line) */}
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="profit" 
+                    name="Profit" 
+                    stroke={CHART_COLORS.profit}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    data={chartData}
+                    connectNulls={true}
+                  />
+                </>
               )}
               
-              {/* Rep-specific metric lines */}
+              {selectedReps.length === 0 && showSpend && (
+                <>
+                  {/* Actual data (solid line) */}
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="spend" 
+                    name="Spend" 
+                    stroke={CHART_COLORS.spend}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    data={chartData}
+                    connectNulls={true}
+                  />
+                </>
+              )}
+              
+              {selectedReps.length === 0 && showPacks && (
+                <>
+                  {/* Actual data (solid line) */}
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="packs" 
+                    name="Packs" 
+                    stroke={CHART_COLORS.packs}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    data={chartData}
+                    connectNulls={true}
+                  />
+                </>
+              )}
+              
+              {selectedReps.length === 0 && showMargin && (
+                <>
+                  {/* Actual data (solid line) */}
+                  <Line 
+                    yAxisId="margin"
+                    type="monotone" 
+                    dataKey="margin" 
+                    name="Margin %" 
+                    stroke={CHART_COLORS.margin}
+                    strokeWidth={2}
+                    dot={{ r: 4, fill: CHART_COLORS.margin }}
+                    activeDot={{ r: 6 }}
+                    data={chartData}
+                    connectNulls={true}
+                  />
+                </>
+              )}
+              
+              {/* Rep-specific metric lines with dotted trajectories for May */}
               {selectedReps.map((rep, repIndex) => {
                 const color = CHART_COLORS[`rep${repIndex + 1}` as keyof typeof CHART_COLORS];
                 
@@ -517,9 +696,10 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         name={`${rep} - Profit`}
                         stroke={color}
                         strokeWidth={1.5}
-                        strokeDasharray="5 5"
+                        strokeDasharray={item => item.isProjected ? "5 5" : "0"}
                         dot={{ r: 3 }}
                         activeDot={{ r: 5 }}
+                        connectNulls={true}
                       />
                     )}
                     
@@ -531,9 +711,10 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         name={`${rep} - Spend`}
                         stroke={color}
                         strokeWidth={1.5}
-                        strokeDasharray="3 3"
+                        strokeDasharray={item => item.isProjected ? "5 5" : "3 3"}
                         dot={{ r: 3, strokeDasharray: '' }}
                         activeDot={{ r: 5 }}
+                        connectNulls={true}
                       />
                     )}
                     
@@ -545,9 +726,10 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         name={`${rep} - Packs`}
                         stroke={color}
                         strokeWidth={1.5}
-                        strokeDasharray="1 1"
+                        strokeDasharray={item => item.isProjected ? "5 5" : "1 1"}
                         dot={{ r: 3, strokeDasharray: '' }}
                         activeDot={{ r: 5 }}
+                        connectNulls={true}
                       />
                     )}
                     
@@ -559,9 +741,10 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         name={`${rep} - Margin %`}
                         stroke={color}
                         strokeWidth={1.5}
-                        strokeDasharray="2 2"
+                        strokeDasharray={item => item.isProjected ? "5 5" : "2 2"}
                         dot={{ r: 3, strokeDasharray: '', fill: CHART_COLORS.margin, stroke: color }}
                         activeDot={{ r: 5 }}
+                        connectNulls={true}
                       />
                     )}
                   </React.Fragment>

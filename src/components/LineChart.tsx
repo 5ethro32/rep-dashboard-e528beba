@@ -6,6 +6,7 @@ interface DataPoint {
   name: string;
   value: number;
   avg?: number;
+  isProjected?: boolean; // New field to indicate projected data points
 }
 
 interface LineChartProps {
@@ -14,6 +15,9 @@ interface LineChartProps {
   avgColor?: string;
   showAverage?: boolean;
   yAxisFormatter?: (value: number) => string;
+  // New props for trajectory line
+  trajectoryData?: DataPoint[];
+  showTrajectory?: boolean;
 }
 
 // Format currency values with £ symbol and k/m suffixes
@@ -32,7 +36,9 @@ const LineChart: React.FC<LineChartProps> = ({
   color = "#ea384c", 
   avgColor = "#8E9196", 
   showAverage = true,
-  yAxisFormatter = defaultFormatter
+  yAxisFormatter = defaultFormatter,
+  trajectoryData,
+  showTrajectory = false
 }) => {
   // Calculate the minimum and maximum values for the Y-axis
   const minValue = Math.min(...data.map(item => item.value));
@@ -40,9 +46,33 @@ const LineChart: React.FC<LineChartProps> = ({
   const avgValues = data.filter(item => item.avg !== undefined).map(item => item.avg);
   const minAvg = avgValues.length > 0 ? Math.min(...avgValues as number[]) : Infinity;
   
+  // Also consider trajectory data for the domain if provided
+  const trajectoryMinValue = trajectoryData ? Math.min(...trajectoryData.map(item => item.value)) : Infinity;
+  const trajectoryMaxValue = trajectoryData ? Math.max(...trajectoryData.map(item => item.value)) : -Infinity;
+  
   // Set the domain to be slightly padded from the data points for better visualization
-  const yAxisMin = Math.floor(Math.min(minValue, minAvg !== Infinity ? minAvg : minValue) * 0.95);
-  const yAxisMax = Math.ceil(Math.max(...data.map(item => item.value)) * 1.05);
+  const yAxisMin = Math.floor(Math.min(
+    minValue, 
+    minAvg !== Infinity ? minAvg : minValue,
+    trajectoryMinValue !== Infinity ? trajectoryMinValue : minValue
+  ) * 0.95);
+  
+  const yAxisMax = Math.ceil(Math.max(
+    maxValue, 
+    trajectoryMaxValue !== -Infinity ? trajectoryMaxValue : maxValue
+  ) * 1.05);
+  
+  // Custom tooltip formatter to indicate projected values
+  const customTooltipFormatter = (value: any, name: string, props: any) => {
+    const isProjected = props.payload?.isProjected;
+    const formattedValue = yAxisFormatter(value);
+    
+    if (isProjected) {
+      return [`${formattedValue} (Projected)`, name];
+    }
+    
+    return [formattedValue, name];
+  };
   
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -77,8 +107,10 @@ const LineChart: React.FC<LineChartProps> = ({
           labelStyle={{ color: '#ffffff', fontWeight: 'bold', marginBottom: '5px' }}
           itemStyle={{ padding: '2px 0' }}
           cursor={{ stroke: 'rgba(255,255,255,0.2)' }}
-          formatter={(value: any) => [yAxisFormatter(value), 'Value']}
+          formatter={customTooltipFormatter}
         />
+        
+        {/* Main data line */}
         <Line 
           type="monotone" 
           dataKey="value" 
@@ -88,6 +120,23 @@ const LineChart: React.FC<LineChartProps> = ({
           activeDot={{ fill: color, r: 4, strokeWidth: 2 }}
           animationDuration={1500}
         />
+        
+        {/* Trajectory line when enabled */}
+        {showTrajectory && trajectoryData && (
+          <Line 
+            type="monotone" 
+            dataKey="value" 
+            stroke={color}
+            strokeWidth={2.5}
+            strokeDasharray="5 5"
+            dot={{ fill: color, r: 2, strokeWidth: 0 }}
+            activeDot={{ fill: color, r: 4, strokeWidth: 2 }}
+            animationDuration={1500}
+            data={trajectoryData}
+          />
+        )}
+        
+        {/* Average line when enabled */}
         {showAverage && (
           <Line 
             type="monotone" 
