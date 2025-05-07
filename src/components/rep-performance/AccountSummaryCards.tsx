@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
@@ -140,15 +139,16 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     // If it's "My Data", use "My" instead of "My Data's"
     if (selectedUser === 'My Data') return 'My';
     
-    // Otherwise use the name with apostrophe
-    return `${selectedUser}'s`;
+    // Otherwise extract the first name and add apostrophe
+    const firstName = selectedUser.split(' ')[0];
+    return `${firstName}'s`;
   };
 
   // Get the appropriate prefix for titles
   const titlePrefix = getTitlePrefix();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {/* Active Accounts Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">

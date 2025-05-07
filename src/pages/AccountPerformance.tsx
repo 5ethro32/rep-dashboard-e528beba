@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -348,13 +347,18 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         </h1>
       );
     } else {
-      // If it's "My Data", just use "My", otherwise use the name with apostrophe
-      const nameToShow = selectedUserName === 'My Data' ? 'My' : `${selectedUserName}'s`;
+      // Extract first name
+      const firstName = selectedUserName === 'My Data' 
+        ? 'My' 
+        : selectedUserName.split(' ')[0];
+      
+      // Add apostrophe only if it's not "My"
+      const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
       
       return (
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
-            {nameToShow}
+            {displayName}
           </span>{' '}
           Accounts
         </h1>
@@ -370,12 +374,12 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
           {selectedUserId === "all"
             ? "Compare all accounts performance between months to identify declining or improving accounts."
             : selectedUserName && selectedUserName !== 'My Data' 
-              ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
+              ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.`
               : "Compare your accounts performance between months to identify declining or improving accounts."}
         </p>
       </div>
       
-      <div className="mb-2 flex justify-between items-center">
+      <div className="mb-1 flex justify-between items-center">
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
