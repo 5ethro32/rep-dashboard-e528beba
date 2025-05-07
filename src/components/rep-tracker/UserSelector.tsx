@@ -34,49 +34,15 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
   const { user, isAdmin } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [adminStatus, setAdminStatus] = useState<boolean | null>(null);
-
-  // Force check admin status directly from the database
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) return;
-      
-      try {
-        // Directly query the database for the current user's role
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        
-        if (error) {
-          console.error('Error checking admin status:', error);
-          return;
-        }
-        
-        const isUserAdmin = data?.role === 'admin';
-        console.log('Direct DB check - User admin status:', isUserAdmin, 'Role:', data?.role);
-        setAdminStatus(isUserAdmin);
-      } catch (err) {
-        console.error('Failed to check admin status:', err);
-      }
-    };
-    
-    checkAdminStatus();
-  }, [user]);
 
   useEffect(() => {
     const fetchUsers = async () => {
       setIsLoading(true);
+      console.log('Fetching users with admin status:', isAdmin);
       
       try {
-        const isUserAdmin = adminStatus !== null ? adminStatus : isAdmin;
-        console.log('Current user admin status (combined):', isUserAdmin);
-        console.log('Admin status from context:', isAdmin);
-        console.log('Admin status from direct DB check:', adminStatus);
-        
         // For non-admin users, we just include their own profile
-        if (!isUserAdmin) {
+        if (!isAdmin) {
           console.log('Current user is not an admin. Will only show own data.');
           if (user) {
             const singleUserProfile: UserProfile = {
@@ -150,11 +116,11 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
       }
     };
 
-    // Only fetch users if we have determined admin status
-    if (adminStatus !== null || isAdmin !== undefined) {
+    // Only fetch users when we have a valid auth state
+    if (user && typeof isAdmin !== 'undefined') {
       fetchUsers();
     }
-  }, [user, isAdmin, adminStatus]);
+  }, [user, isAdmin]);
 
   // Format user display name with improved fallback to email username
   const getUserDisplayName = (userId: string) => {
@@ -224,7 +190,7 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
             </DropdownMenuItem>
           ) : users.filter(u => u.id !== user?.id).length === 0 ? (
             <DropdownMenuItem disabled>
-              {(adminStatus || isAdmin) ? "No other users available" : "Admin access required to view other users"}
+              {isAdmin ? "No other users available" : "Admin access required to view other users"}
             </DropdownMenuItem>
           ) : (
             users

@@ -19,9 +19,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  // Function to check if user has admin role
+  // Function to check if user has admin role using security definer function
   const checkUserRole = async (userId: string) => {
     try {
+      console.log('Checking role for user:', userId);
+      
+      // First try using our security definer function via RPC
+      const { data: roleData, error: fnError } = await supabase
+        .rpc('get_current_user_role');
+        
+      if (!fnError && roleData) {
+        const isUserAdmin = roleData === 'admin';
+        console.log('AuthContext: Role from function:', roleData, 'isAdmin:', isUserAdmin);
+        setIsAdmin(isUserAdmin);
+        return;
+      }
+      
+      if (fnError) {
+        console.warn('Function check failed, falling back to direct query:', fnError.message);
+      }
+      
+      // Fall back to direct query if function call fails
       const { data, error } = await supabase
         .from('profiles')
         .select('role')
@@ -79,7 +97,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clean up auth state
+    localStorage.removeItem('supabase.auth.token');
+    
+    // Remove all Supabase auth keys
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Same for sessionStorage if used
+    Object.keys(sessionStorage || {}).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+    
+    // Attempt global sign out
+    await supabase.auth.signOut({ scope: 'global' });
   };
 
   const value = {

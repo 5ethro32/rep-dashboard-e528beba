@@ -586,6 +586,10 @@ export type Database = {
         Args: { limit_count?: number }
         Returns: Json
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_department_counts: {
         Args: Record<PropertyKey, never>
         Returns: Json
