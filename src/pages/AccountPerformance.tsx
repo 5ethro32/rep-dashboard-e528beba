@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -95,70 +96,70 @@ const AccountPerformance = () => {
       return allRecords;
     }
     
-    // If a specific user is selected (not the current user and not "all")
-    if (selectedUserName && selectedUserName !== 'My Data' && selectedUserId !== "all") {
-      console.log(`Filtering for specific user: ${selectedUserName}`);
+    // If a specific user is selected (not "all")
+    // This is the case for both "My Data" and specific other user selection
+    if (selectedUserId !== "all") {
+      console.log(`Filtering for user: ${selectedUserName} (${selectedUserId})`);
       
-      // Filter data for the selected rep (regardless of admin status)
-      return allRecords.filter(item => {
-        const rep = item.Rep || item.rep_name || '';
-        const subRep = item['Sub-Rep'] || item.sub_rep || '';
+      // If it's "My Data", we need to get the current user's profile information
+      if (selectedUserId === user?.id) {
+        console.log('Getting profile for current user:', user.id);
         
-        const isMainRep = rep === selectedUserName;
-        const isSubRep = subRep === selectedUserName;
+        // Try to get the user's profile name from the profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', user.id)
+          .single();
         
-        return isMainRep || isSubRep;
-      });
-    } else if (!isAdmin && user) {
-      // For non-admin viewing their own data, filter by their profile name
-      // First, try to get their profile name from the profiles table
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', user.id)
-        .single();
-      
-      if (profileError) {
-        console.error('Error fetching user profile:', profileError);
-        return allRecords; // Return unfiltered as fallback
-      }
-      
-      if (profileData) {
-        const fullName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim();
-        console.log(`Filtering for current user using profile name: "${fullName}"`);
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          // Continue with fallback approach
+        }
         
-        if (fullName) {
+        if (profileData) {
+          const fullName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim();
+          console.log(`Filtering for current user using profile name: "${fullName}"`);
+          
+          if (fullName) {
+            return allRecords.filter(item => {
+              const rep = item.Rep || item.rep_name || '';
+              const subRep = item['Sub-Rep'] || item.sub_rep || '';
+              
+              return rep === fullName || subRep === fullName;
+            });
+          }
+        }
+        
+        // Fallback to email username if profile name isn't available
+        if (user.email) {
+          const username = user.email.split('@')[0];
+          const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1);
+          console.log(`Fallback: Filtering for username: "${capitalizedUsername}"`);
+          
           return allRecords.filter(item => {
             const rep = item.Rep || item.rep_name || '';
             const subRep = item['Sub-Rep'] || item.sub_rep || '';
             
-            const isMainRep = rep === fullName;
-            const isSubRep = subRep === fullName;
-            
-            return isMainRep || isSubRep;
+            return rep.includes(capitalizedUsername) || subRep.includes(capitalizedUsername);
           });
         }
+        
+        console.warn('Could not determine user name for filtering - showing all data as fallback');
+        return allRecords; // Fallback: show all data if we can't determine the user name
       }
       
-      // If we couldn't get a profile name, try using email username as fallback
-      if (user.email) {
-        const username = user.email.split('@')[0];
-        const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1);
-        console.log(`Fallback: Filtering for username: "${capitalizedUsername}"`);
+      // For a specific user (not the current user), filter by the selected user name
+      return allRecords.filter(item => {
+        const rep = item.Rep || item.rep_name || '';
+        const subRep = item['Sub-Rep'] || item.sub_rep || '';
         
-        return allRecords.filter(item => {
-          const rep = item.Rep || item.rep_name || '';
-          const subRep = item['Sub-Rep'] || item.sub_rep || '';
-          
-          const isMainRep = rep.includes(capitalizedUsername);
-          const isSubRep = subRep.includes(capitalizedUsername);
-          
-          return isMainRep || isSubRep;
-        });
-      }
+        return rep === selectedUserName || subRep === selectedUserName;
+      });
     }
     
-    // For admins viewing all data, return unfiltered
+    // This should never happen (we've handled both "all" and specific user cases)
+    // But just in case, return all records
     return allRecords;
   };
   
@@ -280,7 +281,6 @@ const AccountPerformance = () => {
         </Link>
         
         <div className="flex items-center gap-3">
-          {/* Updated UserSelector with showAllDataOption prop */}
           <UserSelector 
             selectedUserId={selectedUserId} 
             onSelectUser={handleUserChange}
@@ -303,14 +303,14 @@ const AccountPerformance = () => {
             ? "Account Performance Analysis"
             : selectedUserName && selectedUserName !== 'My Data' 
               ? `${selectedUserName} - Account Performance Analysis` 
-              : "Account Performance Analysis"}
+              : "My Account Performance Analysis"}
         </h1>
         <p className="text-white/60">
           {selectedUserId === "all"
             ? "Compare all accounts performance between months to identify declining or improving accounts."
             : selectedUserName && selectedUserName !== 'My Data' 
               ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
-              : "Compare all accounts performance between months to identify declining or improving accounts."}
+              : "Compare your accounts performance between months to identify declining or improving accounts."}
         </p>
       </div>
       
@@ -331,7 +331,7 @@ const AccountPerformance = () => {
         currentMonthData={currentMonthRawData}
         previousMonthData={previousMonthRawData}
         isLoading={isLoading}
-        selectedUser={selectedUserId !== "all" && selectedUserName !== 'My Data' ? selectedUserName : undefined}
+        selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
       />
       
       <div className="mb-12">
@@ -341,7 +341,7 @@ const AccountPerformance = () => {
           isLoading={isLoading}
           selectedMonth={selectedMonth}
           formatCurrency={formatCurrency}
-          selectedUser={selectedUserId !== "all" && selectedUserName !== 'My Data' ? selectedUserName : undefined}
+          selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
         />
       </div>
     </div>

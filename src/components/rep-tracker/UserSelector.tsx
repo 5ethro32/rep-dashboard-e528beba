@@ -167,7 +167,7 @@ export default function UserSelector({
           </Badge>
         </>
       );
-    } else if (selectedUserId === user?.id || !selectedUserId) {
+    } else if (selectedUserId === user?.id) {
       return (
         <>
           <User className="h-4 w-4" />
@@ -179,7 +179,7 @@ export default function UserSelector({
         <>
           <Users className="h-4 w-4" />
           <span className="hidden md:inline">
-            {getUserDisplayName(selectedUserId)}
+            {getUserDisplayName(selectedUserId || '')}
           </span>
           <Badge variant="outline" className="ml-2 text-xs">
             Viewing
@@ -220,6 +220,7 @@ export default function UserSelector({
             </>
           )}
           
+          {/* Always show "My Data" option */}
           <DropdownMenuItem 
             onClick={() => onSelectUser(user?.id || null, 'My Data')}
             className="cursor-pointer"
