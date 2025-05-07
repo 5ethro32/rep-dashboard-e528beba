@@ -122,15 +122,17 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
     }
   }, [user, isAdmin]);
 
-  // Format user display name - MODIFIED to use first name only
+  // Format user display name - MODIFIED to use full name (first name + last name)
   const getUserDisplayName = (userId: string) => {
     if (userId === user?.id) return 'My Data';
     
     const userProfile = users.find(u => u.id === userId);
     if (!userProfile) return 'Unknown User';
     
-    // First try to use first_name if available
-    if (userProfile.first_name) {
+    // Use first_name and last_name together if available
+    if (userProfile.first_name && userProfile.last_name) {
+      return `${userProfile.first_name} ${userProfile.last_name}`.trim();
+    } else if (userProfile.first_name) {
       return userProfile.first_name;
     }
     
