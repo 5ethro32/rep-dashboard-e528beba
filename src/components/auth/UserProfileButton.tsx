@@ -5,11 +5,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LogOut } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const UserProfileButton = () => {
   const { user, signOut } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -50,7 +52,7 @@ const UserProfileButton = () => {
         disabled={isSigningOut}
       >
         <LogOut className="h-4 w-4 mr-2" />
-        {isSigningOut ? 'Signing out...' : 'Sign out'}
+        {!isMobile && (isSigningOut ? 'Signing out...' : 'Sign out')}
       </Button>
     </div>
   );
