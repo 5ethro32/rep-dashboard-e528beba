@@ -3,13 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuGroup, 
@@ -44,22 +37,21 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
     const fetchUsers = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
+        // Fetch all profiles from the profiles table
+        const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, first_name, last_name');
 
-        if (error) {
-          console.error('Error fetching users:', error);
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
           return;
         }
 
-        // Also fetch emails from auth.users if we have access (service role)
-        // This is just a fallback; typically we won't have direct access
-        const authUsers = await supabase.auth.admin.listUsers();
+        // Debug: Log the returned profiles data
+        console.log('Profiles fetched:', profilesData);
         
-        // Map users with emails if available
-        let userProfiles = data as UserProfile[];
-        
+        // Map profiles to UserProfile format
+        const userProfiles: UserProfile[] = profilesData || [];
         setUsers(userProfiles);
       } catch (error) {
         console.error('Failed to fetch users:', error);
@@ -82,7 +74,8 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
       return [userProfile.first_name, userProfile.last_name].filter(Boolean).join(' ');
     }
     
-    return userProfile.email || `User ${userId.slice(0, 6)}...`;
+    // If no name is available, show part of the ID
+    return `User ${userId.slice(0, 6)}...`;
   };
 
   return (
