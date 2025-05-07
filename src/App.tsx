@@ -28,7 +28,9 @@ const AppRoutes = () => {
         path="/rep-performance" 
         element={
           <ProtectedRoute>
-            <RepPerformance />
+            <AppLayout showChatInterface={!isMobile}>
+              <RepPerformance />
+            </AppLayout>
           </ProtectedRoute>
         } 
       />
