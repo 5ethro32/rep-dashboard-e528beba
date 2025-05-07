@@ -4,8 +4,7 @@ import AccountPerformanceComparison from '@/components/rep-performance/AccountPe
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -301,15 +300,6 @@ const AccountPerformance = () => {
       onSelectUser={handleUserChange}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-        <div className="flex justify-between items-center mb-6 pt-4">
-          <Link to="/rep-performance">
-            <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
-        
         <PerformanceHeader 
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
@@ -317,7 +307,6 @@ const AccountPerformance = () => {
         />
         
         <div className="mb-6">
-          {/* Helper function to generate heading with gradient username */}
           {renderPageHeading()}
           <p className="text-white/60">
             {selectedUserId === "all"
