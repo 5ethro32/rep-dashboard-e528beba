@@ -46,7 +46,7 @@ const AppLayout = ({
         <SidebarController>
           <div className={`relative flex-1 ${isMobile ? 'pb-16' : ''}`}>
             <div className="py-4 px-4">
-              {/* SidebarToggle has been moved to within AppSidebar */}
+              {/* No SidebarToggle button needed anymore */}
             </div>
             {children}
             {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
