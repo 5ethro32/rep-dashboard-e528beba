@@ -287,7 +287,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     });
   }, [selectedReps, repDataProp, workingDayPercentage]);
 
-  // Enhanced tooltip for the chart - MODIFIED to simplify the tooltip content
+  // Enhanced tooltip for the chart
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       // Check if this is a projected month
@@ -814,4 +814,78 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                           yAxisId="right"
                           type="monotone"
                           dataKey="packs"
-                          name={`${repData.
+                          name={`${repData.rep} - Packs`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5 }}
+                          data={repActualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                        />
+                        {repTrajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="right"
+                            type="monotone"
+                            dataKey="packs"
+                            name={`${repData.rep} - Packs`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
+                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Display rep margin */}
+                    {showMargin && (
+                      <>
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="margin"
+                          name={`${repData.rep} - Margin %`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          dot={{ r: 3, fill: repData.color }}
+                          activeDot={{ r: 5 }}
+                          data={repActualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                          strokeDasharray="1 3"
+                        />
+                        {repTrajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="right"
+                            type="monotone"
+                            dataKey="margin"
+                            name={`${repData.rep} - Margin %`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3, fill: repData.color }}
+                            activeDot={{ r: 5 }}
+                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default TrendLineChart;
