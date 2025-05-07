@@ -15,9 +15,9 @@ const ChangeIndicator = ({ type, value }: ChangeIndicatorProps) => {
       type === 'increase' ? 'text-emerald-500 bg-emerald-500/10' : 
       type === 'decrease' ? 'text-finance-red bg-finance-red/10' : 'text-finance-gray bg-gray-500/10'
     )}>
-      {type === 'increase' && <TrendingUp className="mr-1 h-3 w-3" />}
-      {type === 'decrease' && <TrendingDown className="mr-1 h-3 w-3" />}
-      {type === 'neutral' && <MinusIcon className="mr-1 h-3 w-3" />}
+      {type === 'increase' && <TrendingUp className="mr-1 h-2.5 w-2.5" />}
+      {type === 'decrease' && <TrendingDown className="mr-1 h-2.5 w-2.5" />}
+      {type === 'neutral' && <MinusIcon className="mr-1 h-2.5 w-2.5" />}
       {value}
     </div>
   );

@@ -55,7 +55,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
               "flex-shrink-0 text-finance-gray",
               iconClassName
             )}>
-              {icon}
+              {React.cloneElement(icon as React.ReactElement, { size: 16 })}
             </div>
           )}
         </div>
@@ -71,7 +71,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
                   "flex-shrink-0 text-finance-gray mr-2",
                   iconClassName
                 )}>
-                  {icon}
+                  {React.cloneElement(icon as React.ReactElement, { size: 16 })}
                 </div>
               )}
               
