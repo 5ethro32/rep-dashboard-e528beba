@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -164,7 +163,6 @@ const RepTracker: React.FC = () => {
           </Link>
         </div>
         
-        {/* Main page content starts here */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center">
             <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
