@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
