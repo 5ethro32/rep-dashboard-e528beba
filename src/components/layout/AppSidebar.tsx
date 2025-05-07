@@ -57,7 +57,7 @@ const AppSidebar = () => {
         variant="floating" 
         className={`transition-all duration-300 ease-in-out ${isHovered ? 'w-[var(--sidebar-width)]' : 'w-[var(--sidebar-width-icon)]'} mt-14`} // Added mt-14 for top margin
       >
-        <SidebarContent className="bg-gradient-to-b from-gray-900 to-gray-950 border-r border-white/5 flex flex-col h-full">
+        <SidebarContent className="border-r border-white/5 flex flex-col h-full backdrop-blur-sm bg-black/30">
           <div className="px-4 py-3">
             <SidebarGroupLabel className={`text-sm font-bold text-white/90 ${!isHovered && 'opacity-0'}`}>
               Navigation
