@@ -18,7 +18,7 @@ interface Customer {
 interface CustomerSelectorProps {
   customers: Customer[];
   selectedCustomer: string;
-  onSelect: (ref: string, name: string) => void;
+  onSelect: (ref: string) => void;
   className?: string;
   placeholder?: string;
   isLoading?: boolean;
@@ -62,13 +62,18 @@ export function CustomerSelector({
         );
       });
 
+  // Get the selected customer name
+  const selectedCustomerName = selectedCustomer 
+    ? customers.find(c => c.account_ref === selectedCustomer)?.account_name || selectedCustomer
+    : '';
+
   // Handle customer selection with explicit event handling
   const handleCustomerSelect = (e: React.MouseEvent, customer: Customer) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (customer && customer.account_ref && customer.account_name) {
-      onSelect(customer.account_ref, customer.account_name);
+    if (customer && customer.account_ref) {
+      onSelect(customer.account_ref);
       setOpen(false);
       setSearchQuery('');
     }
@@ -84,7 +89,7 @@ export function CustomerSelector({
           className={cn("w-full justify-between", className)}
           disabled={isLoading}
         >
-          {selectedCustomer || <span className="text-muted-foreground">{placeholder}</span>}
+          {selectedCustomerName || <span className="text-muted-foreground">{placeholder}</span>}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -117,7 +122,7 @@ export function CustomerSelector({
               ref={listRef}
               className="max-h-72 overflow-y-auto"
               style={{ 
-                overflowY: 'auto',
+                overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch'
               }}
             >
@@ -126,7 +131,7 @@ export function CustomerSelector({
                   {filteredCustomers.slice(0, 100).map((customer) => {
                     if (!customer || !customer.account_ref || !customer.account_name) return null;
                     
-                    const isSelected = selectedCustomer === customer.account_name;
+                    const isSelected = selectedCustomer === customer.account_ref;
                     
                     return (
                       <div

@@ -130,8 +130,8 @@ const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers, 
         <div className="max-w-sm mb-6">
           <CustomerSelector 
             customers={customers} 
-            selectedCustomer={selectedCustomer}
-            onSelectCustomer={setSelectedCustomer}
+            selectedCustomer={selectedCustomer || ''}
+            onSelect={setSelectedCustomer}
             placeholder="Select a customer to view history"
           />
         </div>

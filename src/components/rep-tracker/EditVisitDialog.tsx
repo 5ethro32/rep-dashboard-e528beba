@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { z } from 'zod';
@@ -75,7 +76,7 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({ isOpen, onClose, visi
     },
   });
 
-  const { mutate: updateVisit, isLoading: isUpdating } = useMutation({
+  const { mutate: updateVisit, isPending } = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       const { error } = await supabase
         .from('customer_visits')
@@ -126,10 +127,16 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({ isOpen, onClose, visi
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <DatePickerField
-              name="date"
+            <FormField
               control={form.control}
-              label="Date"
+              name="date"
+              render={({ field }) => (
+                <DatePickerField
+                  control={form.control}
+                  label="Date"
+                  fieldName="date"
+                />
+              )}
             />
             <FormField
               control={form.control}
@@ -239,12 +246,12 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({ isOpen, onClose, visi
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                disabled={isUpdating}
+                disabled={isPending}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isUpdating}>
-                {isUpdating ? 'Updating...' : 'Update Visit'}
+              <Button type="submit" disabled={isPending}>
+                {isPending ? 'Updating...' : 'Update Visit'}
               </Button>
             </div>
           </form>

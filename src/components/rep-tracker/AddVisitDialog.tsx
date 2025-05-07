@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { z } from 'zod';
@@ -59,7 +60,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({ isOpen, onClose, onSucc
     },
   });
   
-  const { mutate: addVisit, isLoading } = useMutation({
+  const { mutate: addVisit, isPending } = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       const customer = customers.find(c => c.account_ref === values.customer_ref);
       
@@ -129,10 +130,16 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({ isOpen, onClose, onSucc
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <DatePickerField
-              name="date"
+            <FormField
               control={form.control}
-              label="Date"
+              name="date"
+              render={({ field }) => (
+                <DatePickerField
+                  control={form.control}
+                  label="Date"
+                  fieldName="date"
+                />
+              )}
             />
             
             <FormField
@@ -144,8 +151,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({ isOpen, onClose, onSucc
                   <FormControl>
                     <CustomerSearch
                       customers={customers}
-                      onChange={field.onChange}
-                      value={field.value}
+                      field={field}
                     />
                   </FormControl>
                 </FormItem>
@@ -246,8 +252,8 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({ isOpen, onClose, onSucc
             />
             
             <div className="flex justify-end">
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Adding...' : 'Add Visit'}
+              <Button type="submit" disabled={isPending}>
+                {isPending ? 'Adding...' : 'Add Visit'}
               </Button>
             </div>
           </form>

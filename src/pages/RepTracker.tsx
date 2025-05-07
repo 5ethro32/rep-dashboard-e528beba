@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,18 +20,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { CheckAdminStatus } from '@/components/auth/CheckAdminStatus';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 
 const RepTracker: React.FC = () => {
@@ -236,24 +231,28 @@ const RepTracker: React.FC = () => {
                 <DropdownMenuLabel>Select Rep</DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-gray-800" />
                 <div className="max-h-[300px] overflow-y-auto">
-                  <SelectContent className="bg-gray-900 border-0">
-                    <SelectItem value="all" className="text-white hover:bg-gray-800 cursor-pointer py-2 px-4" onClick={() => handleUserChange('all')}>
-                      All Reps
-                    </SelectItem>
-                    <SelectItem value={user?.id || ''} className="text-white hover:bg-gray-800 cursor-pointer py-2 px-4" onClick={() => handleUserChange(user?.id || '')}>
-                      My Activity
-                    </SelectItem>
-                    {allUsers?.map((u) => (
-                      <SelectItem 
-                        key={u.id} 
-                        value={u.id} 
-                        className="text-white hover:bg-gray-800 cursor-pointer py-2 px-4"
-                        onClick={() => handleUserChange(u.id)}
-                      >
-                        {formatUserName(u.first_name, u.last_name)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
+                  <DropdownMenuItem 
+                    className="cursor-pointer" 
+                    onClick={() => handleUserChange('all')}
+                  >
+                    All Reps
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer" 
+                    onClick={() => handleUserChange(user?.id || '')}
+                  >
+                    My Activity
+                  </DropdownMenuItem>
+                  
+                  {allUsers?.map((u) => (
+                    <DropdownMenuItem
+                      key={u.id}
+                      className="cursor-pointer"
+                      onClick={() => handleUserChange(u.id)}
+                    >
+                      {formatUserName(u.first_name, u.last_name)}
+                    </DropdownMenuItem>
+                  ))}
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ControllerRenderProps } from 'react-hook-form';
 
 interface Customer {
   account_name: string;
@@ -13,19 +14,38 @@ interface Customer {
 
 interface CustomerSearchProps {
   customers: Customer[];
-  selectedCustomer: string;
-  onSelect: (ref: string, name: string) => void;
+  field?: ControllerRenderProps<any, 'customer_ref'>;
+  onChange?: (value: string) => void;
+  value?: string;
 }
 
-export function CustomerSearch({ customers, selectedCustomer, onSelect }: CustomerSearchProps) {
+export function CustomerSearch({ customers, field, onChange, value }: CustomerSearchProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef<Array<HTMLDivElement | null>>([]);
+  
+  // Get the current value from either field or direct value prop
+  const currentValue = field?.value || value || '';
+  
+  // Get the setter function
+  const setValue = (newValue: string) => {
+    if (field) {
+      field.onChange(newValue);
+    }
+    if (onChange) {
+      onChange(newValue);
+    }
+  };
 
   // Ensure customers is always an array
   const safeCustomers = Array.isArray(customers) ? customers : [];
+  
+  // Get the selected customer name
+  const selectedCustomerName = currentValue 
+    ? customers.find(c => c.account_ref === currentValue)?.account_name || ''
+    : '';
   
   // Filter customers based on search query
   const filteredCustomers = !searchQuery 
@@ -58,7 +78,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
         e.preventDefault();
         if (highlightedIndex >= 0 && highlightedIndex < filteredCustomers.length) {
           const selected = filteredCustomers[highlightedIndex];
-          handleSelect(selected.account_ref, selected.account_name);
+          handleSelect(selected.account_ref);
         }
         break;
       case 'Escape':
@@ -69,9 +89,9 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
   };
 
   // Handle customer selection
-  const handleSelect = (ref: string, name: string) => {
-    console.log("Customer selection triggered:", name, ref);
-    onSelect(ref, name);
+  const handleSelect = (ref: string) => {
+    console.log("Customer selection triggered:", ref);
+    setValue(ref);
     setOpen(false);
     setSearchQuery('');
   };
@@ -100,7 +120,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
         className="w-full justify-between"
         onClick={() => setOpen(!open)}
       >
-        {selectedCustomer || "Select customer..."}
+        {selectedCustomerName || "Select customer..."}
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
       
@@ -130,21 +150,21 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
                       e.preventDefault();
                       e.stopPropagation();
                       console.log("Customer item clicked:", customer.account_name);
-                      handleSelect(customer.account_ref, customer.account_name);
+                      handleSelect(customer.account_ref);
                     }}
                     className={cn(
                       "flex cursor-pointer items-center px-3 py-2 text-sm",
                       "hover:bg-accent hover:text-accent-foreground",
-                      (selectedCustomer === customer.account_name || index === highlightedIndex) && 
+                      (currentValue === customer.account_ref || index === highlightedIndex) && 
                         "bg-accent text-accent-foreground"
                     )}
                     role="option"
-                    aria-selected={selectedCustomer === customer.account_name || index === highlightedIndex}
+                    aria-selected={currentValue === customer.account_ref || index === highlightedIndex}
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
+                        currentValue === customer.account_ref ? "opacity-100" : "opacity-0"
                       )}
                     />
                     <span>{customer.account_name}</span>
