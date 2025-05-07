@@ -1,10 +1,12 @@
+
 import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SummaryData, RepData } from '@/types/rep-performance.types';  // Add RepData import
+import { SummaryData, RepData } from '@/types/rep-performance.types';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import { Skeleton } from "@/components/ui/skeleton";
+import { ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 interface TrendLineChartProps {
   febSummary: SummaryData;
@@ -83,13 +85,18 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const dataKey = activeTab === 'revenue' ? 'revenue' : activeTab === 'profit' ? 'profit' : activeTab === 'margin' ? 'margin' : 'packs';
 
   // Format tooltip content based on the active tab
-  const formatTooltip = (value: number) => {
+  const formatTooltip = (value: ValueType) => {
+    if (value === null || value === undefined) return 'N/A';
+    
+    const numericValue = Number(value);
+    if (isNaN(numericValue)) return 'N/A';
+    
     if (activeTab === 'revenue' || activeTab === 'profit') {
-      return formatCurrency(value, 0);
+      return formatCurrency(numericValue, 0);
     } else if (activeTab === 'margin') {
-      return formatPercent(value);
+      return formatPercent(numericValue);
     } else {
-      return formatNumber(value);
+      return formatNumber(numericValue);
     }
   };
 
@@ -128,7 +135,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => formatCurrency(value, 0)} />
+                <YAxis tickFormatter={(value) => formatCurrency(Number(value), 0)} />
                 <Tooltip formatter={(value) => formatTooltip(value)} />
                 <Legend />
                 <Line type="monotone" dataKey={dataKey} stroke="#8884d8" activeDot={{ r: 8 }} />
@@ -140,7 +147,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => formatCurrency(value, 0)} />
+                <YAxis tickFormatter={(value) => formatCurrency(Number(value), 0)} />
                 <Tooltip formatter={(value) => formatTooltip(value)} />
                 <Legend />
                 <Line type="monotone" dataKey={dataKey} stroke="#82ca9d" activeDot={{ r: 8 }} />
@@ -152,7 +159,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => formatPercent(value)} />
+                <YAxis tickFormatter={(value) => formatPercent(Number(value))} />
                 <Tooltip formatter={(value) => formatTooltip(value)} />
                 <Legend />
                 <Line type="monotone" dataKey={dataKey} stroke="#ffc658" activeDot={{ r: 8 }} />
@@ -164,7 +171,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => formatNumber(value)} />
+                <YAxis tickFormatter={(value) => formatNumber(Number(value))} />
                 <Tooltip formatter={(value) => formatTooltip(value)} />
                 <Legend />
                 <Line type="monotone" dataKey={dataKey} stroke="#a458ff" activeDot={{ r: 8 }} />

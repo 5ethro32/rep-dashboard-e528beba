@@ -10,7 +10,6 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { 
-  defaultBaseData, 
   defaultRepData,
   defaultRevaData,
   defaultWholesaleData,
@@ -53,7 +52,7 @@ export const useRepPerformanceData = (selectedUserId: string | null = "all") => 
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('March');
-  const [baseData, setBaseData] = useState<SalesDataItem[]>(defaultBaseData);
+  const [baseData, setBaseData] = useState<SalesDataItem[]>([]);
   const [revaData, setRevaData] = useState<SalesDataItem[]>([]);
   const [wholesaleData, setWholesaleData] = useState<SalesDataItem[]>([]);
   const [febBaseData, setFebBaseData] = useState<SalesDataItem[]>([]);
