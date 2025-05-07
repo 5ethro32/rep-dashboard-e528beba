@@ -299,8 +299,8 @@ const AccountPerformance = () => {
       selectedUserId={selectedUserId}
       onSelectUser={handleUserChange}
     >
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-        <div className="mb-6">
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+        <div className="mb-8">
           {renderPageHeading()}
           <p className="text-white/60">
             {selectedUserId === "all"
