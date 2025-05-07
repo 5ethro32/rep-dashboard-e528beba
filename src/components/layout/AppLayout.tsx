@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation } from 'react-router-dom';
 import MobileNavigation from '@/components/mobile/MobileNavigation';
@@ -25,6 +25,7 @@ const SidebarController = ({ children }: { children: React.ReactNode }) => {
 // Import the useSidebar hook here to use it within the components that are
 // rendered inside the SidebarProvider
 import { useSidebar } from '@/components/ui/sidebar';
+import { useEffect } from 'react';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -45,9 +46,7 @@ const AppLayout = ({
         <AppSidebar />
         <SidebarController>
           <div className={`relative flex-1 ${isMobile ? 'pb-16' : ''}`}>
-            <div className="py-4 px-4">
-              {/* No SidebarToggle button needed anymore */}
-            </div>
+            {/* Removed the header with Back to Dashboard button */}
             {children}
             {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
             {isMobile && <MobileNavigation />}
