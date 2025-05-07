@@ -21,9 +21,9 @@ const AppSidebar = () => {
   const menuItems = [
     {
       title: "Dashboard",
-      url: "/account-performance",
+      url: "/rep-performance",
       icon: Home,
-      isActive: location.pathname === "/account-performance"
+      isActive: location.pathname === "/rep-performance"
     },
     {
       title: "Account Analysis",
