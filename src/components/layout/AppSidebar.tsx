@@ -12,10 +12,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar
 } from "@/components/ui/sidebar";
 
 const AppSidebar = () => {
   const location = useLocation();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
   
   const menuItems = [
     {
@@ -33,7 +36,7 @@ const AppSidebar = () => {
   ];
   
   return (
-    <Sidebar collapsible="offcanvas" variant="floating" className="hidden md:flex">
+    <Sidebar collapsible="icon" variant="floating" className="hidden md:flex">
       <SidebarContent className="bg-gradient-to-b from-gray-900 to-gray-950 border-r border-white/5">
         <div className="px-4 py-3">
           <SidebarGroupLabel className="text-sm font-bold text-white/90">Navigation</SidebarGroupLabel>
