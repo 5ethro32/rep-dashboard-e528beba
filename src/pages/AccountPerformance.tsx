@@ -9,6 +9,7 @@ import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 
@@ -37,10 +38,25 @@ const AccountPerformance = () => {
   const [topRep, setTopRep] = useState({ name: '', profit: 0 });
   const isMobile = useIsMobile();
   const { user, isAdmin } = useAuth();
+  const location = useLocation();
   
-  // Add state for user selection, with "all" as default
-  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
-  const [selectedUserName, setSelectedUserName] = useState<string>('All Data');
+  // Read selectedUserId from App.tsx through the state in location
+  const selectedUserIdFromState = location.state?.selectedUserId;
+  const selectedUserNameFromState = location.state?.selectedUserName;
+  
+  // Add state for user selection, with "all" as default if not provided from location state
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(selectedUserIdFromState || "all");
+  const [selectedUserName, setSelectedUserName] = useState<string>(selectedUserNameFromState || 'All Data');
+  
+  useEffect(() => {
+    // Update local state when location state changes
+    if (selectedUserIdFromState) {
+      setSelectedUserId(selectedUserIdFromState);
+    }
+    if (selectedUserNameFromState) {
+      setSelectedUserName(selectedUserNameFromState);
+    }
+  }, [selectedUserIdFromState, selectedUserNameFromState]);
   
   useEffect(() => {
     fetchComparisonData();

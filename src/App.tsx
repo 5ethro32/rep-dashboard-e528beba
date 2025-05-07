@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import RepPerformance from "./pages/RepPerformance";
 import AccountPerformance from "./pages/AccountPerformance";
 import NotFound from "./pages/NotFound";
@@ -21,10 +21,13 @@ const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const isMobile = useIsMobile();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
+  const [selectedUserName, setSelectedUserName] = useState<string>("All Data");
   
   const handleSelectUser = (userId: string | null, displayName: string) => {
+    console.log(`App.tsx: User selected: ${displayName} (${userId})`);
     setSelectedUserId(userId);
+    setSelectedUserName(displayName);
   };
 
   return (
@@ -46,7 +49,14 @@ const AppRoutes = () => {
         </ProtectedRoute>
       }>
         <Route path="/rep-performance" element={<RepPerformance />} />
-        <Route path="/account-performance" element={<AccountPerformance />} />
+        <Route 
+          path="/account-performance" 
+          element={
+            <AccountPerformance />
+          } 
+          // Pass state to route to be accessed via useLocation
+          state={{ selectedUserId, selectedUserName }}
+        />
         <Route path="/rep-tracker" element={<RepTracker />} />
         <Route path="/my-performance" element={<MyPerformance />} />
         <Route path="/ai-vera" element={<AIVera />} />

@@ -32,6 +32,13 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
         return '';
     }
   };
+  
+  const handleUserSelection = (userId: string | null, displayName: string) => {
+    console.log(`AppHeader: User selection changed to ${displayName} (${userId})`);
+    if (onSelectUser) {
+      onSelectUser(userId, displayName);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-gray-950/80 border-b border-white/10">
@@ -51,10 +58,10 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
         </div>
         
         <div className="flex items-center gap-4">
-          {showUserSelector && onSelectUser && (
+          {showUserSelector && (
             <UserSelector
               selectedUserId={selectedUserId || "all"}
-              onSelectUser={onSelectUser}
+              onSelectUser={handleUserSelection}
               className="mr-2"
               showAllDataOption={true}
             />
