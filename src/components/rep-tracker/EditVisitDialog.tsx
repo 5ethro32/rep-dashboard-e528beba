@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -89,6 +90,11 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
 
   const updateVisitMutation = useMutation({
     mutationFn: async (data: VisitFormData) => {
+      // Validate customer_ref is present
+      if (!data.customer_ref || !data.customer_name) {
+        throw new Error('Please select a customer before saving');
+      }
+      
       const formattedDate = new Date(data.date);
       formattedDate.setHours(12, 0, 0, 0);
       
@@ -123,9 +129,15 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
     },
     onError: (error: Error) => {
       console.error("Error updating visit:", error);
+      
+      // Show a more specific error message
+      const errorMessage = error.message.includes('select a customer') 
+        ? error.message 
+        : 'Failed to update visit. Please try again.';
+        
       toast({
         title: 'Error',
-        description: 'Failed to update visit. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -137,6 +149,16 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
   };
 
   const onSubmit = (data: VisitFormData) => {
+    // Additional validation before submitting
+    if (!data.customer_ref || !data.customer_name) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select a customer before saving',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     updateVisitMutation.mutate(data);
   };
 
@@ -155,12 +177,18 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
           />
 
           <div className="space-y-2">
-            <Label htmlFor="customer">Customer</Label>
+            <Label htmlFor="customer">Customer <span className="text-destructive">*</span></Label>
             <ImprovedCustomerSelector 
               customers={safeCustomers}
               selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}
             />
+            {watch('customer_ref') && (
+              <p className="text-xs text-green-600">Customer selected successfully</p>
+            )}
+            {!watch('customer_ref') && (
+              <p className="text-xs text-muted-foreground">Please select a customer from the list</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -173,7 +201,7 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="visit_type">Visit Type</Label>
+            <Label htmlFor="visit_type">Visit Type <span className="text-destructive">*</span></Label>
             <Select
               defaultValue={visit.visit_type}
               onValueChange={(value) => setValue('visit_type', value)}

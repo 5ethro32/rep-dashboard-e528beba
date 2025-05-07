@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -52,7 +53,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { register, handleSubmit, reset, setValue, watch } = useForm<VisitFormData>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<VisitFormData>({
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
       visit_type: 'Customer Visit',
@@ -64,6 +65,11 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
 
   const addVisitMutation = useMutation({
     mutationFn: async (data: VisitFormData) => {
+      // Validate customer_ref is present
+      if (!data.customer_ref || !data.customer_name) {
+        throw new Error('Please select a customer before saving');
+      }
+      
       const formattedDate = new Date(data.date);
       formattedDate.setHours(12, 0, 0, 0);
       
@@ -109,9 +115,15 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
     },
     onError: (error: Error) => {
       console.error("Error adding visit:", error);
+      
+      // Show a more specific error message
+      const errorMessage = error.message.includes('select a customer') 
+        ? error.message 
+        : 'Failed to add visit. Please try again.';
+        
       toast({
         title: 'Error',
-        description: 'Failed to add visit. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -123,6 +135,16 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   };
 
   const onSubmit = (data: VisitFormData) => {
+    // Additional validation before submitting
+    if (!data.customer_ref || !data.customer_name) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select a customer before saving',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     addVisitMutation.mutate(data);
   };
 
@@ -144,12 +166,18 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
           />
 
           <div className="space-y-2">
-            <Label htmlFor="customer">Customer</Label>
+            <Label htmlFor="customer">Customer <span className="text-destructive">*</span></Label>
             <ImprovedCustomerSelector
               customers={safeCustomers}
               selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}
             />
+            {watch('customer_ref') && (
+              <p className="text-xs text-green-600">Customer selected successfully</p>
+            )}
+            {!watch('customer_ref') && (
+              <p className="text-xs text-muted-foreground">Please select a customer from the list</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -162,7 +190,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="visit_type">Visit Type</Label>
+            <Label htmlFor="visit_type">Visit Type <span className="text-destructive">*</span></Label>
             <Select
               defaultValue="Customer Visit"
               onValueChange={(value) => setValue('visit_type', value)}

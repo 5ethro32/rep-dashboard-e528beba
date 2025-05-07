@@ -56,6 +56,22 @@ export function ImprovedCustomerSelector({
       document.removeEventListener('click', handleOutsideClick);
     };
   }, [open]);
+
+  // Handle customer selection with explicit error handling
+  const handleCustomerSelection = (ref: string, name: string) => {
+    try {
+      if (!ref || !name) {
+        console.error('Invalid customer selection:', { ref, name });
+        return;
+      }
+      
+      // Call the onSelect prop with the selected customer
+      onSelect(ref, name);
+      setOpen(false);
+    } catch (error) {
+      console.error('Error selecting customer:', error);
+    }
+  };
   
   return (
     <div className={cn("relative w-full", className)}>
@@ -63,7 +79,11 @@ export function ImprovedCustomerSelector({
         variant="outline"
         role="combobox"
         aria-expanded={open}
-        className={cn("w-full justify-between text-left font-normal", className)}
+        className={cn(
+          "w-full justify-between text-left font-normal", 
+          selectedCustomer ? "text-foreground" : "text-muted-foreground",
+          className
+        )}
         onClick={(e) => {
           e.stopPropagation();
           setOpen(!open);
@@ -107,10 +127,7 @@ export function ImprovedCustomerSelector({
             <CustomerCommand 
               customers={safeCustomers}
               selectedCustomer={selectedCustomer}
-              onSelect={(ref, name) => {
-                onSelect(ref, name);
-                setOpen(false);
-              }}
+              onSelect={(ref, name) => handleCustomerSelection(ref, name)}
               className={cn(
                 isMobile 
                   ? "rounded-lg border shadow-lg" 
