@@ -6,16 +6,12 @@ interface ActionsHeaderProps {
   onRefresh: () => void;
   isLoading: boolean;
   autoRefreshed?: boolean;
-  selectedMonth?: string;
-  setSelectedMonth?: (month: string) => void;
 }
 
 const ActionsHeader = ({ 
   onRefresh, 
   isLoading, 
-  autoRefreshed,
-  selectedMonth,
-  setSelectedMonth
+  autoRefreshed
 }: ActionsHeaderProps) => {
   return (
     <div className="flex justify-between items-center mb-6">

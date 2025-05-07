@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -301,25 +300,15 @@ const AccountPerformance = () => {
       onSelectUser={handleUserChange}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-        {/* Moved the month picker to the header section */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="mb-6">
-            {renderPageHeading()}
-            <p className="text-white/60">
-              {selectedUserId === "all"
-                ? "Compare all accounts performance between months to identify declining or improving accounts."
-                : selectedUserName && selectedUserName !== 'My Data' 
-                  ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
-                  : "Compare your accounts performance between months to identify declining or improving accounts."}
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <PerformanceHeader 
-              selectedMonth={selectedMonth}
-              setSelectedMonth={setSelectedMonth}
-              hideTitle={true}
-            />
-          </div>
+        <div className="mb-6">
+          {renderPageHeading()}
+          <p className="text-white/60">
+            {selectedUserId === "all"
+              ? "Compare all accounts performance between months to identify declining or improving accounts."
+              : selectedUserName && selectedUserName !== 'My Data' 
+                ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
+                : "Compare your accounts performance between months to identify declining or improving accounts."}
+          </p>
         </div>
         
         <div className="mb-4 flex justify-between items-center">
@@ -333,6 +322,14 @@ const AccountPerformance = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             {isLoading ? "Refreshing..." : "Refresh Data"}
           </Button>
+          
+          <div className="flex-shrink-0">
+            <PerformanceHeader 
+              selectedMonth={selectedMonth}
+              setSelectedMonth={setSelectedMonth}
+              hideTitle={true}
+            />
+          </div>
         </div>
         
         <AccountSummaryCards
