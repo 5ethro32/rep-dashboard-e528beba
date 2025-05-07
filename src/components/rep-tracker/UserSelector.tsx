@@ -21,6 +21,7 @@ interface UserProfile {
   first_name?: string;
   last_name?: string;
   email?: string;
+  role?: string;
 }
 
 interface UserSelectorProps {
@@ -39,10 +40,11 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
       setIsLoading(true);
       
       try {
-        // Check if the current user is an admin - only admins can see other users
+        console.log('Current user admin status:', isAdmin);
+        
+        // For non-admin users, we just include their own profile
         if (!isAdmin) {
           console.log('Current user is not an admin. Will only show own data.');
-          // For non-admin users, we just include their own profile
           if (user) {
             const singleUserProfile: UserProfile = {
               id: user.id,
@@ -87,7 +89,8 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
           
           return {
             ...profile,
-            email
+            email,
+            role: profile.role
           };
         }) || [];
         
