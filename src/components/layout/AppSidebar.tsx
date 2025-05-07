@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, ChevronLeft, ClipboardList } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { BarChart3, ClipboardList } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -12,13 +12,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
-import { Button } from '@/components/ui/button';
 
 const AppSidebar = () => {
   const location = useLocation();
-  const { state, toggleSidebar } = useSidebar();
   
   const menuItems = [
     {
@@ -38,17 +35,8 @@ const AppSidebar = () => {
   return (
     <Sidebar collapsible="offcanvas" variant="floating" className="hidden md:flex">
       <SidebarContent className="bg-gradient-to-b from-gray-900 to-gray-950 border-r border-white/5">
-        <div className="flex justify-between items-center px-4 py-3">
+        <div className="px-4 py-3">
           <SidebarGroupLabel className="text-sm font-bold text-white/90">Navigation</SidebarGroupLabel>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleSidebar} 
-            className="h-7 w-7 text-white/70 hover:text-white hover:bg-white/10"
-          >
-            <ChevronLeft size={18} />
-            <span className="sr-only">Toggle Sidebar</span>
-          </Button>
         </div>
         <SidebarGroup>
           <SidebarGroupContent>
