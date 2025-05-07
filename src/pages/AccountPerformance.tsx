@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -42,17 +41,9 @@ const AccountPerformance = () => {
   const isMobile = useIsMobile();
   const { user, isAdmin } = useAuth();
   
-  // Add state for user selection
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState<string>('');
-  
-  // Set current user as default on initial load
-  useEffect(() => {
-    if (user) {
-      setSelectedUserId(user.id);
-      setSelectedUserName('My Data');
-    }
-  }, [user]);
+  // Add state for user selection, with "all" as default
+  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
+  const [selectedUserName, setSelectedUserName] = useState<string>('All Data');
   
   useEffect(() => {
     fetchComparisonData();
@@ -98,8 +89,14 @@ const AccountPerformance = () => {
       }
     }
     
-    // If a specific user is selected (not the current user)
-    if (selectedUserName && selectedUserName !== 'My Data') {
+    // If "All Data" is selected, return all records (no filtering)
+    if (selectedUserId === "all") {
+      console.log(`Returning all data (${allRecords.length} records)`);
+      return allRecords;
+    }
+    
+    // If a specific user is selected (not the current user and not "all")
+    if (selectedUserName && selectedUserName !== 'My Data' && selectedUserId !== "all") {
       console.log(`Filtering for specific user: ${selectedUserName}`);
       
       // Filter data for the selected rep (regardless of admin status)
@@ -283,11 +280,12 @@ const AccountPerformance = () => {
         </Link>
         
         <div className="flex items-center gap-3">
-          {/* Add UserSelector component */}
+          {/* Updated UserSelector with showAllDataOption prop */}
           <UserSelector 
             selectedUserId={selectedUserId} 
             onSelectUser={handleUserChange}
             className="mr-2"
+            showAllDataOption={true}
           />
           <UserProfileButton />
         </div>
@@ -301,14 +299,18 @@ const AccountPerformance = () => {
       
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          {selectedUserName && selectedUserName !== 'My Data' 
-            ? `${selectedUserName} - Account Performance Analysis` 
-            : "Account Performance Analysis"}
+          {selectedUserId === "all"
+            ? "Account Performance Analysis"
+            : selectedUserName && selectedUserName !== 'My Data' 
+              ? `${selectedUserName} - Account Performance Analysis` 
+              : "Account Performance Analysis"}
         </h1>
         <p className="text-white/60">
-          {selectedUserName && selectedUserName !== 'My Data' 
-            ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
-            : "Compare all accounts performance between months to identify declining or improving accounts."}
+          {selectedUserId === "all"
+            ? "Compare all accounts performance between months to identify declining or improving accounts."
+            : selectedUserName && selectedUserName !== 'My Data' 
+              ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
+              : "Compare all accounts performance between months to identify declining or improving accounts."}
         </p>
       </div>
       
@@ -329,7 +331,7 @@ const AccountPerformance = () => {
         currentMonthData={currentMonthRawData}
         previousMonthData={previousMonthRawData}
         isLoading={isLoading}
-        selectedUser={selectedUserName !== 'My Data' ? selectedUserName : undefined}
+        selectedUser={selectedUserId !== "all" && selectedUserName !== 'My Data' ? selectedUserName : undefined}
       />
       
       <div className="mb-12">
@@ -339,7 +341,7 @@ const AccountPerformance = () => {
           isLoading={isLoading}
           selectedMonth={selectedMonth}
           formatCurrency={formatCurrency}
-          selectedUser={selectedUserName !== 'My Data' ? selectedUserName : undefined}
+          selectedUser={selectedUserId !== "all" && selectedUserName !== 'My Data' ? selectedUserName : undefined}
         />
       </div>
     </div>

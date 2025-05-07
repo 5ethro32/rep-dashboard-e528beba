@@ -28,12 +28,19 @@ interface UserSelectorProps {
   selectedUserId: string | null;
   onSelectUser: (userId: string | null, displayName: string) => void;
   className?: string;
+  showAllDataOption?: boolean;
 }
 
-export default function UserSelector({ selectedUserId, onSelectUser, className }: UserSelectorProps) {
+export default function UserSelector({ 
+  selectedUserId, 
+  onSelectUser, 
+  className,
+  showAllDataOption = false
+}: UserSelectorProps) {
   const { user, isAdmin } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const ALL_DATA_ID = "all";
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -125,6 +132,7 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
   // Format user display name - MODIFIED to use full name (first name + last name)
   const getUserDisplayName = (userId: string) => {
     if (userId === user?.id) return 'My Data';
+    if (userId === ALL_DATA_ID) return 'All Data';
     
     const userProfile = users.find(u => u.id === userId);
     if (!userProfile) return 'Unknown User';
@@ -147,6 +155,40 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
     return `User ${userId.slice(0, 6)}...`;
   };
 
+  // Determine what to show in the trigger button
+  const getTriggerContent = () => {
+    if (selectedUserId === ALL_DATA_ID) {
+      return (
+        <>
+          <Users className="h-4 w-4" />
+          <span className="hidden md:inline">All Data</span>
+          <Badge variant="outline" className="ml-2 text-xs">
+            All Users
+          </Badge>
+        </>
+      );
+    } else if (selectedUserId === user?.id || !selectedUserId) {
+      return (
+        <>
+          <User className="h-4 w-4" />
+          <span className="hidden md:inline">My Data</span>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Users className="h-4 w-4" />
+          <span className="hidden md:inline">
+            {getUserDisplayName(selectedUserId)}
+          </span>
+          <Badge variant="outline" className="ml-2 text-xs">
+            Viewing
+          </Badge>
+        </>
+      );
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -154,46 +196,55 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
           variant="ghost" 
           className={`flex items-center gap-2 ${className}`}
         >
-          {selectedUserId === user?.id || !selectedUserId ? (
-            <User className="h-4 w-4" />
-          ) : (
-            <Users className="h-4 w-4" />
-          )}
-          <span className="hidden md:inline">
-            {selectedUserId ? getUserDisplayName(selectedUserId) : 'My Data'}
-          </span>
-          {selectedUserId !== user?.id && selectedUserId && (
-            <Badge variant="outline" className="ml-2 text-xs">
-              Viewing
-            </Badge>
-          )}
+          {getTriggerContent()}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>User Selection</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
+          {/* Show All Data option if enabled */}
+          {showAllDataOption && (
+            <>
+              <DropdownMenuItem 
+                onClick={() => onSelectUser(ALL_DATA_ID, 'All Data')}
+                className="cursor-pointer"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                <span>All Data</span>
+                {selectedUserId === ALL_DATA_ID && (
+                  <Badge variant="outline" className="ml-auto">Current</Badge>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          
           <DropdownMenuItem 
             onClick={() => onSelectUser(user?.id || null, 'My Data')}
             className="cursor-pointer"
           >
             <User className="mr-2 h-4 w-4" />
             <span>My Data</span>
-            {(selectedUserId === user?.id || !selectedUserId) && (
+            {(selectedUserId === user?.id && selectedUserId !== ALL_DATA_ID) && (
               <Badge variant="outline" className="ml-auto">Current</Badge>
             )}
           </DropdownMenuItem>
           
-          <DropdownMenuSeparator />
+          {isAdmin && users.length > 0 && (
+            <DropdownMenuSeparator />
+          )}
           
           {users.length === 0 && isLoading ? (
             <DropdownMenuItem disabled>
               Loading users...
             </DropdownMenuItem>
           ) : users.filter(u => u.id !== user?.id).length === 0 ? (
-            <DropdownMenuItem disabled>
-              {isAdmin ? "No other users available" : "Admin access required to view other users"}
-            </DropdownMenuItem>
+            isAdmin && (
+              <DropdownMenuItem disabled>
+                No other users available
+              </DropdownMenuItem>
+            )
           ) : (
             users
               .filter(u => u.id !== user?.id)
