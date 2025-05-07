@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +19,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 
-const RepTracker: React.FC = () => {
+interface RepTrackerProps {
+  selectedUserId?: string | null;
+  selectedUserName?: string;
+}
+
+const RepTracker: React.FC<RepTrackerProps> = ({ 
+  selectedUserId: propSelectedUserId,
+  selectedUserName: propSelectedUserName 
+}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -26,7 +35,15 @@ const RepTracker: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
   const isMobile = useIsMobile();
   
-  // Get the selectedUserId from App.tsx via props
+  // Initialize with props if provided, otherwise use the current user
+  const selectedUserId = propSelectedUserId || user?.id;
+  
+  // Determine if user is viewing their own data
+  const isViewingOwnData = selectedUserId === user?.id || selectedUserId === "all";
+  
+  // Get the user's display name
+  const selectedUserName = propSelectedUserName || "My Data";
+  
   const queryClient = useQueryClient();
   
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -39,10 +56,6 @@ const RepTracker: React.FC = () => {
   // Capitalize first letter
   userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
 
-  // Use the currently selected user ID from the main app state
-  const selectedUserId = user?.id;
-  const isViewingOwnData = true; // Since we're always viewing our own data in this simplified version
-  
   // Updated to pass selectedUserId
   const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate, selectedUserId);
   const previousWeekDate = new Date(weekStart);
@@ -125,6 +138,7 @@ const RepTracker: React.FC = () => {
         <div className="flex items-center">
           <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
           <h2 className="text-base sm:text-lg font-semibold truncate">
+            {selectedUserId !== "all" && selectedUserId !== user?.id ? `${selectedUserName}'s ` : ""} 
             Week: {weekStartFormatted} - {weekEndFormatted}
           </h2>
         </div>

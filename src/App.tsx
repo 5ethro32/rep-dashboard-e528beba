@@ -39,6 +39,16 @@ const AppRoutes = () => {
       />
     );
   };
+  
+  // Create a wrapper component that will pass props to RepTracker
+  const RepTrackerWithProps = () => {
+    return (
+      <RepTracker 
+        selectedUserId={selectedUserId} 
+        selectedUserName={selectedUserName}
+      />
+    );
+  };
 
   return (
     <Routes>
@@ -63,7 +73,10 @@ const AppRoutes = () => {
           path="/account-performance" 
           element={<AccountPerformanceWithProps />} 
         />
-        <Route path="/rep-tracker" element={<RepTracker />} />
+        <Route 
+          path="/rep-tracker" 
+          element={<RepTrackerWithProps />} 
+        />
         <Route path="/my-performance" element={<MyPerformance />} />
         <Route path="/ai-vera" element={<AIVera />} />
       </Route>
