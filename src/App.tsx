@@ -12,7 +12,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RepTracker from "./pages/RepTracker";
 import AIVera from "./pages/AIVera"; 
-import MyPerformance from "./pages/MyPerformance"; // Add import for new page
+import MyPerformance from "./pages/MyPerformance";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
 
@@ -25,50 +25,22 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/rep-performance" replace />} />
       <Route path="/auth" element={<Auth />} />
-      <Route 
-        path="/rep-performance" 
-        element={
-          <ProtectedRoute>
-            <AppLayout showChatInterface={!isMobile}>
-              <RepPerformance />
-            </AppLayout>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/account-performance" 
-        element={
-          <ProtectedRoute>
-            <AccountPerformance />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/rep-tracker" 
-        element={
-          <ProtectedRoute>
-            <RepTracker />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/my-performance" 
-        element={
-          <ProtectedRoute>
-            <MyPerformance />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/ai-vera" 
-        element={
-          <ProtectedRoute>
-            <AppLayout showChatInterface={false}>
-              <AIVera />
-            </AppLayout>
-          </ProtectedRoute>
-        } 
-      />
+      
+      {/* Main Layout Routes */}
+      <Route element={
+        <ProtectedRoute>
+          <AppLayout showChatInterface={!isMobile}>
+            <></>
+          </AppLayout>
+        </ProtectedRoute>
+      }>
+        <Route path="/rep-performance" element={<RepPerformance />} />
+        <Route path="/account-performance" element={<AccountPerformance />} />
+        <Route path="/rep-tracker" element={<RepTracker />} />
+        <Route path="/my-performance" element={<MyPerformance />} />
+        <Route path="/ai-vera" element={<AIVera />} />
+      </Route>
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

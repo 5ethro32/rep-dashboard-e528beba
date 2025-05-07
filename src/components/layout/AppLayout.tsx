@@ -4,6 +4,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import MobileNavigation from '@/components/mobile/MobileNavigation';
 import ChatInterface from '@/components/chat/ChatInterface';
 import AppHeader from '@/components/layout/AppHeader';
+import AppSidebar from '@/components/layout/AppSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { useLocation } from 'react-router-dom';
 
 interface AppLayoutProps {
@@ -39,11 +41,19 @@ const AppLayout = ({
         onSelectUser={onSelectUser} 
         showUserSelector={shouldShowUserSelector}
       />
-      <div className={`relative ${isMobile ? 'pb-16' : ''}`}>
-        {children}
-        {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
-        {isMobile && <MobileNavigation />}
-      </div>
+      
+      <SidebarProvider defaultOpen={false}>
+        <div className="flex w-full relative">
+          {!isMobile && <AppSidebar />}
+          
+          <div className={`flex-1 ${isMobile ? 'pb-16' : ''}`}>
+            {children}
+            {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
+          </div>
+          
+          {isMobile && <MobileNavigation />}
+        </div>
+      </SidebarProvider>
     </div>
   );
 };
