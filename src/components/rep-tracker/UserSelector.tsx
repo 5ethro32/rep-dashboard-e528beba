@@ -37,7 +37,7 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
     const fetchUsers = async () => {
       setIsLoading(true);
       try {
-        // Fetch all profiles from the profiles table
+        // Fetch both profiles and users to get emails
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, first_name, last_name');
@@ -50,9 +50,27 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
         // Debug: Log the returned profiles data
         console.log('Profiles fetched:', profilesData);
         
-        // Map profiles to UserProfile format
-        const userProfiles: UserProfile[] = profilesData || [];
-        setUsers(userProfiles);
+        // Try to get the current user's email for reference
+        const currentUserEmail = user?.email;
+        console.log('Current user email:', currentUserEmail);
+        
+        // Get the domain from the current user's email if available
+        const emailDomain = currentUserEmail ? currentUserEmail.split('@')[1] : 'avergenerics.co.uk';
+        
+        // Create enhanced profiles by adding email-based usernames
+        const enhancedProfiles = profilesData?.map(profile => {
+          // For the current user, we can use their email
+          const isCurrentUser = profile.id === user?.id;
+          const email = isCurrentUser ? currentUserEmail : `${profile.id}@${emailDomain}`;
+          
+          return {
+            ...profile,
+            email
+          };
+        }) || [];
+        
+        console.log('Enhanced profiles with emails:', enhancedProfiles);
+        setUsers(enhancedProfiles);
       } catch (error) {
         console.error('Failed to fetch users:', error);
       } finally {
@@ -61,20 +79,28 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
     };
 
     fetchUsers();
-  }, []);
+  }, [user]);
 
-  // Format user display name
+  // Format user display name with improved fallback to email username
   const getUserDisplayName = (userId: string) => {
     if (userId === user?.id) return 'My Data';
     
     const userProfile = users.find(u => u.id === userId);
     if (!userProfile) return 'Unknown User';
     
+    // First try to use first_name and last_name if available
     if (userProfile.first_name || userProfile.last_name) {
       return [userProfile.first_name, userProfile.last_name].filter(Boolean).join(' ');
     }
     
-    // If no name is available, show part of the ID
+    // If we have an email, extract the username part (before @)
+    if (userProfile.email) {
+      const username = userProfile.email.split('@')[0];
+      // Capitalize first letter for better presentation
+      return username.charAt(0).toUpperCase() + username.slice(1);
+    }
+    
+    // Last resort: use a portion of the user ID
     return `User ${userId.slice(0, 6)}...`;
   };
 
