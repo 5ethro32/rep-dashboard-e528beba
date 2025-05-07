@@ -7,6 +7,7 @@ interface DataPoint {
   value: number;
   avg?: number;
   isProjected?: boolean; // New field to indicate projected data points
+  isTrajectory?: boolean; // New field to indicate trajectory line segments
 }
 
 interface LineChartProps {
@@ -18,6 +19,8 @@ interface LineChartProps {
   // New props for trajectory line
   trajectoryData?: DataPoint[];
   showTrajectory?: boolean;
+  // Flag to ensure x-axis only appears once
+  shareXAxis?: boolean;
 }
 
 // Format currency values with £ symbol and k/m suffixes
@@ -38,7 +41,8 @@ const LineChart: React.FC<LineChartProps> = ({
   showAverage = true,
   yAxisFormatter = defaultFormatter,
   trajectoryData,
-  showTrajectory = false
+  showTrajectory = false,
+  shareXAxis = true
 }) => {
   // Calculate the minimum and maximum values for the Y-axis
   const minValue = Math.min(...data.map(item => item.value));
@@ -65,9 +69,12 @@ const LineChart: React.FC<LineChartProps> = ({
   // Custom tooltip formatter to indicate projected values
   const customTooltipFormatter = (value: any, name: string, props: any) => {
     const isProjected = props.payload?.isProjected;
+    const isTrajectory = props.payload?.isTrajectory;
     const formattedValue = yAxisFormatter(value);
     
-    if (isProjected) {
+    if (isProjected && isTrajectory) {
+      return [`${formattedValue} (Trajectory)`, name];
+    } else if (isProjected) {
       return [`${formattedValue} (Projected)`, name];
     }
     
@@ -86,6 +93,9 @@ const LineChart: React.FC<LineChartProps> = ({
           tickLine={false} 
           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
           tick={{ fill: '#8E9196', fontSize: 12 }}
+          // Ensure XAxis only shows once when multiple lines are displayed
+          xAxisId={shareXAxis ? "shared" : undefined}
+          allowDuplicatedCategory={!shareXAxis}
         />
         <YAxis 
           domain={[yAxisMin, yAxisMax]}
@@ -117,8 +127,9 @@ const LineChart: React.FC<LineChartProps> = ({
           stroke={color} 
           strokeWidth={2.5}
           dot={{ fill: color, r: 2, strokeWidth: 0 }}
-          activeDot={{ fill: color, r: 4, strokeWidth: 2 }}
+          activeDot={{ r: 4, stroke: color }}
           animationDuration={1500}
+          xAxisId={shareXAxis ? "shared" : undefined}
         />
         
         {/* Trajectory line when enabled */}
@@ -130,9 +141,10 @@ const LineChart: React.FC<LineChartProps> = ({
             strokeWidth={2.5}
             strokeDasharray="5 5"
             dot={{ fill: color, r: 2, strokeWidth: 0 }}
-            activeDot={{ fill: color, r: 4, strokeWidth: 2 }}
+            activeDot={{ r: 4, stroke: color }}
             animationDuration={1500}
             data={trajectoryData}
+            xAxisId={shareXAxis ? "shared" : undefined}
           />
         )}
         
@@ -145,8 +157,9 @@ const LineChart: React.FC<LineChartProps> = ({
             strokeWidth={1.5}
             strokeDasharray="5 5"
             dot={{ fill: avgColor, r: 1.5, strokeWidth: 0 }}
-            activeDot={{ fill: avgColor, r: 3, strokeWidth: 1 }}
+            activeDot={{ r: 3, stroke: avgColor }}
             animationDuration={1500}
+            xAxisId={shareXAxis ? "shared" : undefined}
           />
         )}
       </RechartLine>

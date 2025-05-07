@@ -10,7 +10,7 @@ import RepSelector from '@/components/rep-performance/RepSelector';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Info } from 'lucide-react';
-import { getWorkingDayPercentage, projectMonthlyValue } from '@/utils/date-utils';
+import { getWorkingDayPercentage, projectMonthlyValue, createTrajectoryPoint } from '@/utils/date-utils';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TrendLineChartProps {
@@ -38,6 +38,7 @@ interface TrendData {
   margin: number;
   activeAccounts: number;
   isProjected?: boolean;
+  isTrajectory?: boolean;
   // Add rep-specific data
   [key: string]: any;
 }
@@ -95,9 +96,9 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     setAvailableReps(Array.from(allReps).sort());
   }, [repDataProp]);
 
-  // Create base chart data with overall metrics
-  const chartData = useMemo(() => {
-    const data: TrendData[] = [
+  // Create base chart data for February through April (actual data)
+  const actualChartData = useMemo(() => {
+    return [
       {
         month: 'Feb',
         profit: febSummary.totalProfit || 0,
@@ -105,7 +106,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         packs: febSummary.totalPacks || 0,
         margin: febSummary.averageMargin || 0,
         activeAccounts: febSummary.activeAccounts || 0,
-        isProjected: false
+        isProjected: false,
+        isTrajectory: false
       },
       {
         month: 'Mar',
@@ -114,7 +116,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         packs: marchSummary.totalPacks || 0,
         margin: marchSummary.averageMargin || 0,
         activeAccounts: marchSummary.activeAccounts || 0,
-        isProjected: false
+        isProjected: false,
+        isTrajectory: false
       },
       {
         month: 'Apr',
@@ -123,52 +126,64 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         packs: aprilSummary.totalPacks || 0,
         margin: aprilSummary.averageMargin || 0,
         activeAccounts: aprilSummary.activeAccounts || 0,
-        isProjected: false
+        isProjected: false,
+        isTrajectory: false
       }
     ];
+  }, [febSummary, marchSummary, aprilSummary]);
+  
+  // Calculate projected May values based on MTD data
+  const projectedMayValues = useMemo(() => {
+    const projectedProfit = projectMonthlyValue(maySummary.totalProfit || 0, workingDayPercentage);
+    const projectedSpend = projectMonthlyValue(maySummary.totalSpend || 0, workingDayPercentage);
+    const projectedPacks = projectMonthlyValue(maySummary.totalPacks || 0, workingDayPercentage);
+    const projectedAccounts = projectMonthlyValue(maySummary.activeAccounts || 0, workingDayPercentage);
+    // Margin doesn't need projection as it's a ratio
+    const projectedMargin = maySummary.averageMargin || 0;
     
-    // Add May's actual data point (partial month)
-    data.push({
-      month: 'May',
-      profit: maySummary.totalProfit || 0,
-      spend: maySummary.totalSpend || 0,
-      packs: maySummary.totalPacks || 0,
-      margin: maySummary.averageMargin || 0,
-      activeAccounts: maySummary.activeAccounts || 0,
-      isProjected: false
-    });
-    
-    return data;
-  }, [febSummary, marchSummary, aprilSummary, maySummary]);
+    return {
+      profit: projectedProfit,
+      spend: projectedSpend,
+      packs: projectedPacks,
+      margin: projectedMargin,
+      activeAccounts: projectedAccounts
+    };
+  }, [maySummary, workingDayPercentage]);
 
-  // Create trajectory data that includes projected values for May
+  // Create trajectory data that connects April to projected May
   const trajectoryData = useMemo(() => {
-    // Take the data for February through April as is
-    const data = chartData.slice(0, 3);
+    if (!actualChartData.length) return [];
     
-    // For May, calculate the projected values
-    const projectedMayProfit = projectMonthlyValue(maySummary.totalProfit || 0, workingDayPercentage);
-    const projectedMaySpend = projectMonthlyValue(maySummary.totalSpend || 0, workingDayPercentage);
-    const projectedMayPacks = projectMonthlyValue(maySummary.totalPacks || 0, workingDayPercentage);
-    const projectedMayMargin = maySummary.averageMargin || 0; // Margin doesn't need projection
-
-    // Add projected May data
-    data.push({
-      month: 'May',
-      profit: projectedMayProfit,
-      spend: projectedMaySpend,
-      packs: projectedMayPacks,
-      margin: projectedMayMargin,
-      activeAccounts: projectMonthlyValue(maySummary.activeAccounts || 0, workingDayPercentage),
-      isProjected: true
-    });
+    const aprilData = actualChartData[2]; // April is the third item
     
-    return data;
-  }, [chartData, maySummary, workingDayPercentage]);
+    // Create trajectory point for May that extends from April to projected May
+    return [
+      // April point for starting the trajectory
+      {
+        ...aprilData,
+        isTrajectory: false
+      },
+      // May trajectory point
+      {
+        month: 'May',
+        profit: projectedMayValues.profit,
+        spend: projectedMayValues.spend,
+        packs: projectedMayValues.packs,
+        margin: projectedMayValues.margin,
+        activeAccounts: projectedMayValues.activeAccounts,
+        isProjected: true,
+        isTrajectory: true
+      }
+    ];
+  }, [actualChartData, projectedMayValues]);
+  
+  // This is the final data we'll use to display the chart - Feb to Apr actual + trajectory to projected May
+  const displayData = actualChartData;
 
   // Calculate min and max margin values for the Y-axis domain
   const marginDomain = useMemo(() => {
-    const margins = chartData.map(item => item.margin).filter(Boolean);
+    const allData = [...actualChartData, ...trajectoryData];
+    const margins = allData.map(item => item.margin).filter(Boolean);
     if (!margins.length) return [0, 100]; // Default range
     
     const minMargin = Math.max(0, Math.min(...margins) - 5); // Min with 5% padding, but not below 0
@@ -183,141 +198,97 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     }
     
     return [Math.floor(minMargin), Math.ceil(maxMargin)];
-  }, [chartData]);
+  }, [actualChartData, trajectoryData]);
 
-  // Enhance chart data with rep-specific metrics instead of creating separate data arrays
-  const enhancedChartData = useMemo(() => {
-    if (!selectedReps.length) return chartData;
+  // Create rep-specific data with the same approach - actuals for Feb-Apr and trajectory for May
+  const repChartData = useMemo(() => {
+    if (!selectedReps.length) return [];
     
-    // Clone the base chart data
-    const enhancedData = chartData.map(item => ({...item}));
-    
-    // Add rep-specific data to each month
-    selectedReps.forEach((rep, repIndex) => {
-      // Get rep data for each month
-      const febRepData = repDataProp && repDataProp.february ? 
-        repDataProp.february.find(r => r.rep === rep) : null;
-      const marRepData = repDataProp && repDataProp.march ? 
-        repDataProp.march.find(r => r.rep === rep) : null;
-      const aprRepData = repDataProp && repDataProp.april ? 
-        repDataProp.april.find(r => r.rep === rep) : null;
-      const mayRepData = repDataProp && repDataProp.may ? 
-        repDataProp.may.find(r => r.rep === rep) : null;
+    const repData = selectedReps.map((rep, repIndex) => {
+      const repActualData: any[] = [];
       
-      // Feb data (index 0)
+      // Get rep data for Feb-Apr
+      const febRepData = repDataProp.february ? repDataProp.february.find(r => r.rep === rep) : null;
+      const marRepData = repDataProp.march ? repDataProp.march.find(r => r.rep === rep) : null;
+      const aprRepData = repDataProp.april ? repDataProp.april.find(r => r.rep === rep) : null;
+      const mayRepData = repDataProp.may ? repDataProp.may.find(r => r.rep === rep) : null;
+      
+      // Add February data
       if (febRepData) {
-        enhancedData[0][`profit-rep-${repIndex}`] = febRepData.profit || 0;
-        enhancedData[0][`spend-rep-${repIndex}`] = febRepData.spend || 0;
-        enhancedData[0][`packs-rep-${repIndex}`] = febRepData.packs || 0;
-        enhancedData[0][`margin-rep-${repIndex}`] = febRepData.margin || 0;
-        enhancedData[0][`rep-name-${repIndex}`] = rep;
+        repActualData.push({
+          month: 'Feb',
+          value: febRepData.profit || 0,
+          spend: febRepData.spend || 0,
+          packs: febRepData.packs || 0,
+          margin: febRepData.margin || 0,
+          rep: rep,
+          isProjected: false,
+          isTrajectory: false
+        });
       }
       
-      // March data (index 1)
+      // Add March data
       if (marRepData) {
-        enhancedData[1][`profit-rep-${repIndex}`] = marRepData.profit || 0;
-        enhancedData[1][`spend-rep-${repIndex}`] = marRepData.spend || 0;
-        enhancedData[1][`packs-rep-${repIndex}`] = marRepData.packs || 0;
-        enhancedData[1][`margin-rep-${repIndex}`] = marRepData.margin || 0;
-        enhancedData[1][`rep-name-${repIndex}`] = rep;
+        repActualData.push({
+          month: 'Mar',
+          value: marRepData.profit || 0,
+          spend: marRepData.spend || 0,
+          packs: marRepData.packs || 0,
+          margin: marRepData.margin || 0,
+          rep: rep,
+          isProjected: false,
+          isTrajectory: false
+        });
       }
       
-      // April data (index 2)
+      // Add April data
       if (aprRepData) {
-        enhancedData[2][`profit-rep-${repIndex}`] = aprRepData.profit || 0;
-        enhancedData[2][`spend-rep-${repIndex}`] = aprRepData.spend || 0;
-        enhancedData[2][`packs-rep-${repIndex}`] = aprRepData.packs || 0;
-        enhancedData[2][`margin-rep-${repIndex}`] = aprRepData.margin || 0;
-        enhancedData[2][`rep-name-${repIndex}`] = rep;
+        repActualData.push({
+          month: 'Apr',
+          value: aprRepData.profit || 0,
+          spend: aprRepData.spend || 0,
+          packs: aprRepData.packs || 0,
+          margin: aprRepData.margin || 0,
+          rep: rep,
+          isProjected: false,
+          isTrajectory: false
+        });
       }
       
-      // May data (index 3)
-      if (mayRepData) {
-        enhancedData[3][`profit-rep-${repIndex}`] = mayRepData.profit || 0;
-        enhancedData[3][`spend-rep-${repIndex}`] = mayRepData.spend || 0;
-        enhancedData[3][`packs-rep-${repIndex}`] = mayRepData.packs || 0;
-        enhancedData[3][`margin-rep-${repIndex}`] = mayRepData.margin || 0;
-        enhancedData[3][`rep-name-${repIndex}`] = rep;
-        enhancedData[3][`isProjected-rep-${repIndex}`] = false;
-      }
+      // Return the final rep data
+      return {
+        rep,
+        color: CHART_COLORS[`rep${repIndex + 1}` as keyof typeof CHART_COLORS],
+        actualData: repActualData,
+        // Create trajectory data from April to projected May
+        trajectoryData: mayRepData ? [
+          // Last actual data point (April)
+          repActualData[repActualData.length - 1],
+          // Trajectory to projected May
+          {
+            month: 'May',
+            value: projectMonthlyValue(mayRepData.profit || 0, workingDayPercentage),
+            spend: projectMonthlyValue(mayRepData.spend || 0, workingDayPercentage),
+            packs: projectMonthlyValue(mayRepData.packs || 0, workingDayPercentage),
+            margin: mayRepData.margin || 0,
+            rep: rep,
+            isProjected: true,
+            isTrajectory: true
+          }
+        ] : []
+      };
     });
     
-    return enhancedData;
-  }, [chartData, selectedReps, repDataProp]);
+    return repData;
+  }, [selectedReps, repDataProp, workingDayPercentage]);
 
-  // Create enhanced trajectory data with rep-specific projections
-  const enhancedTrajectoryData = useMemo(() => {
-    if (!selectedReps.length) return trajectoryData;
-    
-    // Clone the trajectory data
-    const enhancedData = trajectoryData.map(item => ({...item}));
-    
-    // Add rep-specific data to each month
-    selectedReps.forEach((rep, repIndex) => {
-      // Get rep data for each month
-      const febRepData = repDataProp && repDataProp.february ? 
-        repDataProp.february.find(r => r.rep === rep) : null;
-      const marRepData = repDataProp && repDataProp.march ? 
-        repDataProp.march.find(r => r.rep === rep) : null;
-      const aprRepData = repDataProp && repDataProp.april ? 
-        repDataProp.april.find(r => r.rep === rep) : null;
-      const mayRepData = repDataProp && repDataProp.may ? 
-        repDataProp.may.find(r => r.rep === rep) : null;
-      
-      // Feb data (index 0)
-      if (febRepData) {
-        enhancedData[0][`profit-rep-${repIndex}`] = febRepData.profit || 0;
-        enhancedData[0][`spend-rep-${repIndex}`] = febRepData.spend || 0;
-        enhancedData[0][`packs-rep-${repIndex}`] = febRepData.packs || 0;
-        enhancedData[0][`margin-rep-${repIndex}`] = febRepData.margin || 0;
-        enhancedData[0][`rep-name-${repIndex}`] = rep;
-        enhancedData[0][`isProjected-rep-${repIndex}`] = false;
-      }
-      
-      // March data (index 1)
-      if (marRepData) {
-        enhancedData[1][`profit-rep-${repIndex}`] = marRepData.profit || 0;
-        enhancedData[1][`spend-rep-${repIndex}`] = marRepData.spend || 0;
-        enhancedData[1][`packs-rep-${repIndex}`] = marRepData.packs || 0;
-        enhancedData[1][`margin-rep-${repIndex}`] = marRepData.margin || 0;
-        enhancedData[1][`rep-name-${repIndex}`] = rep;
-        enhancedData[1][`isProjected-rep-${repIndex}`] = false;
-      }
-      
-      // April data (index 2)
-      if (aprRepData) {
-        enhancedData[2][`profit-rep-${repIndex}`] = aprRepData.profit || 0;
-        enhancedData[2][`spend-rep-${repIndex}`] = aprRepData.spend || 0;
-        enhancedData[2][`packs-rep-${repIndex}`] = aprRepData.packs || 0;
-        enhancedData[2][`margin-rep-${repIndex}`] = aprRepData.margin || 0;
-        enhancedData[2][`rep-name-${repIndex}`] = rep;
-        enhancedData[2][`isProjected-rep-${repIndex}`] = false;
-      }
-      
-      // May data (index 3) - add projections
-      if (mayRepData) {
-        // Project May values
-        const mayProfitProjected = projectMonthlyValue(mayRepData.profit || 0, workingDayPercentage);
-        const maySpendProjected = projectMonthlyValue(mayRepData.spend || 0, workingDayPercentage);
-        const mayPacksProjected = projectMonthlyValue(mayRepData.packs || 0, workingDayPercentage);
-        
-        enhancedData[3][`profit-rep-${repIndex}`] = mayProfitProjected;
-        enhancedData[3][`spend-rep-${repIndex}`] = maySpendProjected;
-        enhancedData[3][`packs-rep-${repIndex}`] = mayPacksProjected;
-        enhancedData[3][`margin-rep-${repIndex}`] = mayRepData.margin || 0; // Margin doesn't need projection
-        enhancedData[3][`rep-name-${repIndex}`] = rep;
-        enhancedData[3][`isProjected-rep-${repIndex}`] = true;
-      }
-    });
-    
-    return enhancedData;
-  }, [trajectoryData, selectedReps, repDataProp, workingDayPercentage]);
-
-  // Custom tooltip component
+  // Enhanced tooltip for the chart
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       // Check if this is a projected month
-      const isProjected = payload[0]?.payload?.isProjected;
+      const firstPayload = payload[0]?.payload;
+      const isProjected = firstPayload?.isProjected;
+      const isTrajectory = firstPayload?.isTrajectory;
       
       return (
         <div className="bg-gray-800 border border-gray-700 p-3 rounded-md shadow-lg backdrop-blur-sm">
@@ -325,7 +296,10 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           
           {isProjected && (
             <p className="text-xs text-yellow-300 mb-1">
-              Projected based on {workingDayPercentage.toFixed(1)}% of working days
+              {isTrajectory 
+                ? `Projected end of month based on ${workingDayPercentage.toFixed(1)}% of working days` 
+                : `Current MTD (${workingDayPercentage.toFixed(1)}% of working days)`
+              }
             </p>
           )}
           
@@ -335,25 +309,24 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               {showProfit && payload.find(p => p.dataKey === 'profit') && (
                 <p className="text-sm text-finance-red flex items-center">
                   Profit: {formatCurrency(payload.find(p => p.dataKey === 'profit')?.value || 0)}
-                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
+                  {isTrajectory && <span className="text-xs text-yellow-300 ml-1">(Trajectory)</span>}
                 </p>
               )}
               {showSpend && payload.find(p => p.dataKey === 'spend') && (
                 <p className="text-sm text-blue-400 flex items-center">
                   Spend: {formatCurrency(payload.find(p => p.dataKey === 'spend')?.value || 0)}
-                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
+                  {isTrajectory && <span className="text-xs text-yellow-300 ml-1">(Trajectory)</span>}
                 </p>
               )}
               {showPacks && payload.find(p => p.dataKey === 'packs') && (
                 <p className="text-sm text-green-400 flex items-center">
                   Packs: {Math.round(payload.find(p => p.dataKey === 'packs')?.value || 0).toLocaleString()}
-                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
+                  {isTrajectory && <span className="text-xs text-yellow-300 ml-1">(Trajectory)</span>}
                 </p>
               )}
               {showMargin && payload.find(p => p.dataKey === 'margin') && (
                 <p className="text-sm text-yellow-300 flex items-center">
                   Margin: {formatPercent(payload.find(p => p.dataKey === 'margin')?.value || 0)}
-                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
                 </p>
               )}
             </>
@@ -361,46 +334,28 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           
           {/* Show rep-specific metrics */}
           {selectedReps.map((rep, index) => {
-            const repColor = CHART_COLORS[`rep${index + 1}` as keyof typeof CHART_COLORS];
-            const profitValue = payload.find(p => p.dataKey === `profit-rep-${index}`)?.value;
-            const spendValue = payload.find(p => p.dataKey === `spend-rep-${index}`)?.value;
-            const packsValue = payload.find(p => p.dataKey === `packs-rep-${index}`)?.value;
-            const marginValue = payload.find(p => p.dataKey === `margin-rep-${index}`)?.value;
-            const isRepProjected = payload[0]?.payload?.[`isProjected-rep-${index}`];
+            const repData = payload.find(p => p.name === `${rep} - Profit` || p.name === `${rep} - Spend` || 
+                                              p.name === `${rep} - Packs` || p.name === `${rep} - Margin %`);
             
-            // Only show this rep section if at least one of their metrics is found in the payload
-            if (profitValue !== undefined || spendValue !== undefined || packsValue !== undefined || marginValue !== undefined) {
+            if (repData) {
+              const repColor = CHART_COLORS[`rep${index + 1}` as keyof typeof CHART_COLORS];
+              const isRepTrajectory = repData.payload?.isTrajectory;
+              const metricType = repData.name.split(' - ')[1]; // Extract metric type (Profit, Spend, etc.)
+              const value = repData.value;
+              
               return (
-                <div key={rep} className={`${index === 0 && selectedReps.length > 0 ? '' : 'mt-2 border-t border-gray-700 pt-2'}`}>
+                <div key={rep} className={`${index === 0 ? '' : 'mt-2 border-t border-gray-700 pt-2'}`}>
                   <p className="text-sm font-medium" style={{ color: repColor }}>{rep}</p>
-                  
-                  {showProfit && profitValue !== undefined && (
-                    <p className="text-sm flex items-center" style={{ color: repColor }}>
-                      Profit: {formatCurrency(profitValue)}
-                      {isRepProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
-                    </p>
-                  )}
-                  
-                  {showSpend && spendValue !== undefined && (
-                    <p className="text-sm flex items-center" style={{ color: repColor }}>
-                      Spend: {formatCurrency(spendValue)}
-                      {isRepProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
-                    </p>
-                  )}
-                  
-                  {showPacks && packsValue !== undefined && (
-                    <p className="text-sm flex items-center" style={{ color: repColor }}>
-                      Packs: {Math.round(packsValue).toLocaleString()}
-                      {isRepProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
-                    </p>
-                  )}
-
-                  {showMargin && marginValue !== undefined && (
-                    <p className="text-sm flex items-center" style={{ color: repColor }}>
-                      Margin: {formatPercent(marginValue)}
-                      {isRepProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
-                    </p>
-                  )}
+                  <p className="text-sm flex items-center" style={{ color: repColor }}>
+                    {metricType}: 
+                    {metricType === 'Margin %' 
+                      ? ` ${formatPercent(value)}` 
+                      : metricType === 'Packs' 
+                        ? ` ${Math.round(value).toLocaleString()}`
+                        : ` ${formatCurrency(value)}`
+                    }
+                    {isRepTrajectory && <span className="text-xs text-yellow-300 ml-1">(Trajectory)</span>}
+                  </p>
                 </div>
               );
             }
@@ -460,7 +415,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   // Determine which axes to show based on selected metrics
   const showLeftAxis = showProfit || showSpend || selectedReps.length > 0;
   const showRightAxis = showPacks || selectedReps.length > 0;
-  const showMarginAxis = showMargin || selectedReps.some((_, i) => showMargin && enhancedChartData.some(item => item[`margin-rep-${i}`] !== undefined));
+  const showMarginAxis = showMargin;
   
   // Generate department display text
   const getDepartmentDisplayText = () => {
@@ -571,13 +526,14 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={selectedReps.length > 0 ? enhancedTrajectoryData : trajectoryData}
+              data={displayData}
               margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis 
                 dataKey="month" 
                 tick={{ fill: 'rgba(255,255,255,0.6)' }}
+                xAxisId="shared"
               />
               {showLeftAxis && (
                 <YAxis 
@@ -609,10 +565,10 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               )}
               <Tooltip content={<CustomTooltip />} />
               
-              {/* Actual data lines with solid styling */}
+              {/* Display profit metric if selected */}
               {selectedReps.length === 0 && showProfit && (
                 <>
-                  {/* Actual data (solid line) */}
+                  {/* Actual data (Feb-Apr) */}
                   <Line 
                     yAxisId="left"
                     type="monotone" 
@@ -622,15 +578,32 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     activeDot={{ r: 6 }}
-                    data={chartData}
+                    xAxisId="shared"
+                    connectNulls={true}
+                  />
+                  
+                  {/* Trajectory line to May projection */}
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="profit" 
+                    name="Profit Trajectory" 
+                    stroke={CHART_COLORS.profit}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ r: 4, fill: CHART_COLORS.profit }}
+                    activeDot={{ r: 6 }}
+                    data={trajectoryData}
+                    xAxisId="shared"
                     connectNulls={true}
                   />
                 </>
               )}
               
+              {/* Display spend metric if selected */}
               {selectedReps.length === 0 && showSpend && (
                 <>
-                  {/* Actual data (solid line) */}
+                  {/* Actual data (Feb-Apr) */}
                   <Line 
                     yAxisId="left"
                     type="monotone" 
@@ -640,15 +613,32 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     activeDot={{ r: 6 }}
-                    data={chartData}
+                    xAxisId="shared"
+                    connectNulls={true}
+                  />
+                  
+                  {/* Trajectory line to May projection */}
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="spend" 
+                    name="Spend Trajectory" 
+                    stroke={CHART_COLORS.spend}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ r: 4, fill: CHART_COLORS.spend }}
+                    activeDot={{ r: 6 }}
+                    data={trajectoryData}
+                    xAxisId="shared"
                     connectNulls={true}
                   />
                 </>
               )}
               
+              {/* Display packs metric if selected */}
               {selectedReps.length === 0 && showPacks && (
                 <>
-                  {/* Actual data (solid line) */}
+                  {/* Actual data (Feb-Apr) */}
                   <Line 
                     yAxisId="right"
                     type="monotone" 
@@ -658,15 +648,32 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     activeDot={{ r: 6 }}
-                    data={chartData}
+                    xAxisId="shared"
+                    connectNulls={true}
+                  />
+                  
+                  {/* Trajectory line to May projection */}
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="packs" 
+                    name="Packs Trajectory" 
+                    stroke={CHART_COLORS.packs}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ r: 4, fill: CHART_COLORS.packs }}
+                    activeDot={{ r: 6 }}
+                    data={trajectoryData}
+                    xAxisId="shared"
                     connectNulls={true}
                   />
                 </>
               )}
               
+              {/* Display margin metric if selected */}
               {selectedReps.length === 0 && showMargin && (
                 <>
-                  {/* Actual data (solid line) */}
+                  {/* Full margin line including May */}
                   <Line 
                     yAxisId="margin"
                     type="monotone" 
@@ -676,76 +683,158 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                     strokeWidth={2}
                     dot={{ r: 4, fill: CHART_COLORS.margin }}
                     activeDot={{ r: 6 }}
-                    data={chartData}
+                    xAxisId="shared"
                     connectNulls={true}
                   />
                 </>
               )}
               
-              {/* Rep-specific metric lines with dotted trajectories for May */}
-              {selectedReps.map((rep, repIndex) => {
-                const color = CHART_COLORS[`rep${repIndex + 1}` as keyof typeof CHART_COLORS];
-                
+              {/* Rep-specific metrics with separate actual and trajectory lines */}
+              {repChartData.map((repData, repIndex) => {
                 return (
-                  <React.Fragment key={rep}>
+                  <React.Fragment key={repData.rep}>
+                    {/* Display actual data for this rep */}
                     {showProfit && (
-                      <Line
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey={`profit-rep-${repIndex}`}
-                        name={`${rep} - Profit`}
-                        stroke={color}
-                        strokeWidth={1.5}
-                        strokeDasharray={enhancedTrajectoryData.find(d => d.month === 'May')?.isProjected ? "5 5" : "0"}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                        connectNulls={true}
-                      />
+                      <>
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="value"
+                          name={`${repData.rep} - Profit`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5 }}
+                          data={repData.actualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                        />
+                        {/* Trajectory line to May */}
+                        {repData.trajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="left"
+                            type="monotone"
+                            dataKey="value"
+                            name={`${repData.rep} - Profit`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
+                            data={repData.trajectoryData}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
                     )}
                     
                     {showSpend && (
-                      <Line
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey={`spend-rep-${repIndex}`}
-                        name={`${rep} - Spend`}
-                        stroke={color}
-                        strokeWidth={1.5}
-                        strokeDasharray={enhancedTrajectoryData.find(d => d.month === 'May')?.isProjected ? "5 5" : "3 3"}
-                        dot={{ r: 3, strokeDasharray: '' }}
-                        activeDot={{ r: 5 }}
-                        connectNulls={true}
-                      />
+                      <>
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="spend"
+                          name={`${repData.rep} - Spend`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          strokeDasharray="3 3"
+                          dot={{ r: 3, strokeDasharray: '' }}
+                          activeDot={{ r: 5 }}
+                          data={repData.actualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                        />
+                        {/* Trajectory line to May */}
+                        {repData.trajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="left"
+                            type="monotone"
+                            dataKey="spend"
+                            name={`${repData.rep} - Spend`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3, strokeDasharray: '' }}
+                            activeDot={{ r: 5 }}
+                            data={repData.trajectoryData}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
                     )}
                     
                     {showPacks && (
-                      <Line
-                        yAxisId="right"
-                        type="monotone"
-                        dataKey={`packs-rep-${repIndex}`}
-                        name={`${rep} - Packs`}
-                        stroke={color}
-                        strokeWidth={1.5}
-                        strokeDasharray={enhancedTrajectoryData.find(d => d.month === 'May')?.isProjected ? "5 5" : "1 1"}
-                        dot={{ r: 3, strokeDasharray: '' }}
-                        activeDot={{ r: 5 }}
-                        connectNulls={true}
-                      />
+                      <>
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="packs"
+                          name={`${repData.rep} - Packs`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          strokeDasharray="1 1"
+                          dot={{ r: 3, strokeDasharray: '' }}
+                          activeDot={{ r: 5 }}
+                          data={repData.actualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                        />
+                        {/* Trajectory line to May */}
+                        {repData.trajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="right"
+                            type="monotone"
+                            dataKey="packs"
+                            name={`${repData.rep} - Packs`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3, strokeDasharray: '' }}
+                            activeDot={{ r: 5 }}
+                            data={repData.trajectoryData}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
                     )}
                     
                     {showMargin && (
-                      <Line
-                        yAxisId="margin"
-                        type="monotone"
-                        dataKey={`margin-rep-${repIndex}`}
-                        name={`${rep} - Margin %`}
-                        stroke={color}
-                        strokeWidth={1.5}
-                        strokeDasharray={enhancedTrajectoryData.find(d => d.month === 'May')?.isProjected ? "5 5" : "2 2"}
-                        dot={{ r: 3, strokeDasharray: '', fill: CHART_COLORS.margin, stroke: color }}
-                        activeDot={{ r: 5 }}
-                        connectNulls={true}
-                      />
+                      <>
+                        <Line
+                          yAxisId="margin"
+                          type="monotone"
+                          dataKey="margin"
+                          name={`${repData.rep} - Margin %`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          strokeDasharray="2 2"
+                          dot={{ r: 3, strokeDasharray: '', fill: CHART_COLORS.margin, stroke: repData.color }}
+                          activeDot={{ r: 5 }}
+                          data={repData.actualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                        />
+                        {/* Trajectory line to May */}
+                        {repData.trajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="margin"
+                            type="monotone"
+                            dataKey="margin"
+                            name={`${repData.rep} - Margin %`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3, strokeDasharray: '', fill: CHART_COLORS.margin, stroke: repData.color }}
+                            activeDot={{ r: 5 }}
+                            data={repData.trajectoryData}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
                     )}
                   </React.Fragment>
                 );

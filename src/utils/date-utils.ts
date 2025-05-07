@@ -50,3 +50,22 @@ export const projectMonthlyValue = (currentValue: number, percentComplete: numbe
   // Simple linear projection
   return (currentValue / (percentComplete / 100));
 };
+
+/**
+ * Creates a trajectory data point between two months
+ * @param startMonthValue The value from the previous month (e.g., April)
+ * @param projectedEndValue The projected value for the end month (e.g., May)
+ * @param baseDataPoint Base data structure to extend with trajectory values
+ */
+export const createTrajectoryPoint = (
+  startMonthValue: number,
+  projectedEndValue: number,
+  baseDataPoint: any
+): any => {
+  return {
+    ...baseDataPoint,
+    value: projectedEndValue,
+    isTrajectory: true,
+    isProjected: true
+  };
+};
