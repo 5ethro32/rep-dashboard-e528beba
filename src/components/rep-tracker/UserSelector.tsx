@@ -122,16 +122,16 @@ export default function UserSelector({ selectedUserId, onSelectUser, className }
     }
   }, [user, isAdmin]);
 
-  // Format user display name with improved fallback to email username
+  // Format user display name - MODIFIED to use first name only
   const getUserDisplayName = (userId: string) => {
     if (userId === user?.id) return 'My Data';
     
     const userProfile = users.find(u => u.id === userId);
     if (!userProfile) return 'Unknown User';
     
-    // First try to use first_name and last_name if available
-    if (userProfile.first_name || userProfile.last_name) {
-      return [userProfile.first_name, userProfile.last_name].filter(Boolean).join(' ');
+    // First try to use first_name if available
+    if (userProfile.first_name) {
+      return userProfile.first_name;
     }
     
     // If we have an email, extract the username part (before @)
