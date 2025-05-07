@@ -1,8 +1,9 @@
+
 import React from 'react';
-import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
+import { formatCurrency, formatNumber, formatPercent } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Award, Package, TrendingUp } from 'lucide-react';
+import { Users, Award, Star, TrendingUp } from 'lucide-react';
 
 interface AccountSummaryCardsProps {
   currentMonthData: any[];
@@ -37,127 +38,93 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     ? ((accountsChange / previousActiveAccounts) * 100).toFixed(1)
     : 'N/A';
   
-  // Find top rep by combined profit across all departments
-  let topRep = { name: 'No data', profit: 0 };
-  let topPacksRep = { name: 'No data', packs: 0 };
-  let mostImprovedRep = { name: 'No data', improvement: 0, percentImprovement: 0 };
+  // Find top customer (highest profit account)
+  let topCustomer = { name: 'No data', profit: 0 };
   
-  if (currentMonthData.length > 0) {
-    // Group by rep and sum profits, packs, and spend across all departments
-    const repProfits = new Map();
-    const repPacks = new Map();
-    const previousRepProfits = new Map();
-    
-    // Process current month data
+  // Find top margin customer (account with highest margin)
+  let topMarginCustomer = { name: 'No data', margin: 0, spend: 0 };
+  
+  // Find most improved account
+  let mostImprovedAccount = { name: 'No data', improvement: 0, percentImprovement: 0 };
+  
+  if (currentMonthData.length > 0 && previousMonthData.length > 0) {
+    // Process for top customer (highest profit)
     currentMonthData.forEach(item => {
-      // Extract the rep name with fallbacks for different column naming conventions
-      const repName = item.Rep || item.rep_name || '';
-      // Extract the sub-rep name with fallbacks for different column naming
-      const subRepName = item["Sub-Rep"] || item.sub_rep || '';
+      const accountName = item["Account Name"] || item.account_name || '';
+      const profit = typeof item.Profit === 'number' ? item.Profit : 
+                   typeof item.profit === 'number' ? item.profit : 0;
       
-      // Skip RETAIL, REVA, Wholesale, and None as they are department names or invalid reps, not actual reps
-      if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale' && repName !== 'None') {
-        const profit = typeof item.Profit === 'number' ? item.Profit : 
-                      typeof item.profit === 'number' ? item.profit : 0;
-        const packs = typeof item.Packs === 'number' ? item.Packs : 
-                     typeof item.packs === 'number' ? item.packs : 0;
-        
-        // Sum up profits
-        const currentProfit = repProfits.get(repName) || 0;
-        repProfits.set(repName, currentProfit + profit);
-        
-        // Sum up packs
-        const currentPacks = repPacks.get(repName) || 0;
-        repPacks.set(repName, currentPacks + packs);
-      }
-      
-      // Also add metrics for the sub-rep if present and not "None"
-      if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale' && subRepName !== 'None') {
-        const profit = typeof item.Profit === 'number' ? item.Profit : 
-                      typeof item.profit === 'number' ? item.profit : 0;
-        const packs = typeof item.Packs === 'number' ? item.Packs : 
-                     typeof item.packs === 'number' ? item.packs : 0;
-        
-        // Sum up profits for sub-rep
-        const currentProfit = repProfits.get(subRepName) || 0;
-        repProfits.set(subRepName, currentProfit + profit);
-        
-        // Sum up packs for sub-rep
-        const currentPacks = repPacks.get(subRepName) || 0;
-        repPacks.set(subRepName, currentPacks + packs);
+      if (profit > topCustomer.profit) {
+        topCustomer = { name: accountName, profit };
       }
     });
     
-    // Process previous month data
+    // Process for top margin customer
+    currentMonthData.forEach(item => {
+      const accountName = item["Account Name"] || item.account_name || '';
+      const spend = typeof item.Spend === 'number' ? item.Spend : 
+                  typeof item.spend === 'number' ? item.spend : 0;
+      const profit = typeof item.Profit === 'number' ? item.Profit : 
+                   typeof item.profit === 'number' ? item.profit : 0;
+      
+      // Only consider accounts with significant spend to avoid division by zero issues
+      if (spend > 100) {
+        const margin = (profit / spend) * 100;
+        if (margin > topMarginCustomer.margin) {
+          topMarginCustomer = { name: accountName, margin, spend };
+        }
+      }
+    });
+    
+    // Process for most improved account
+    // Create maps to easily look up accounts by reference
+    const currentAccountMap = new Map();
+    const previousAccountMap = new Map();
+    
+    currentMonthData.forEach(item => {
+      const accountRef = item["Account Ref"] || item.account_ref || '';
+      const accountName = item["Account Name"] || item.account_name || '';
+      const profit = typeof item.Profit === 'number' ? item.Profit : 
+                   typeof item.profit === 'number' ? item.profit : 0;
+      
+      if (accountRef) {
+        currentAccountMap.set(accountRef, { name: accountName, profit });
+      }
+    });
+    
     previousMonthData.forEach(item => {
-      // Extract the rep name with fallbacks for different column naming conventions
-      const repName = item.Rep || item.rep_name || '';
-      // Extract the sub-rep name with fallbacks for different column naming
-      const subRepName = item["Sub-Rep"] || item.sub_rep || '';
+      const accountRef = item["Account Ref"] || item.account_ref || '';
+      const accountName = item["Account Name"] || item.account_name || '';
+      const profit = typeof item.Profit === 'number' ? item.Profit : 
+                   typeof item.profit === 'number' ? item.profit : 0;
       
-      // Skip RETAIL, REVA, Wholesale, and None as they are department names or invalid reps, not actual reps
-      if (repName && repName !== 'RETAIL' && repName !== 'REVA' && repName !== 'Wholesale' && repName !== 'None') {
-        const profit = typeof item.Profit === 'number' ? item.Profit : 
-                      typeof item.profit === 'number' ? item.profit : 0;
-        
-        // Sum up profits
-        const prevProfit = previousRepProfits.get(repName) || 0;
-        previousRepProfits.set(repName, prevProfit + profit);
-      }
-      
-      // Also add metrics for the sub-rep if present and not "None"
-      if (subRepName && subRepName !== 'RETAIL' && subRepName !== 'REVA' && subRepName !== 'Wholesale' && subRepName !== 'None') {
-        const profit = typeof item.Profit === 'number' ? item.Profit : 
-                      typeof item.profit === 'number' ? item.profit : 0;
-        
-        // Sum up profits for sub-rep
-        const prevProfit = previousRepProfits.get(subRepName) || 0;
-        previousRepProfits.set(subRepName, prevProfit + profit);
+      if (accountRef) {
+        previousAccountMap.set(accountRef, { name: accountName, profit });
       }
     });
     
-    // Find rep with highest combined profit
-    let maxProfit = 0;
-    repProfits.forEach((profit, rep) => {
-      if (profit > maxProfit) {
-        maxProfit = profit;
-        topRep = { name: rep, profit: maxProfit };
-      }
-    });
-    
-    // Find rep with highest combined packs
-    let maxPacks = 0;
-    repPacks.forEach((packs, rep) => {
-      if (packs > maxPacks) {
-        maxPacks = packs;
-        topPacksRep = { name: rep, packs: maxPacks };
-      }
-    });
-    
-    // Calculate most improved rep - ONLY considering reps who existed in the previous month data
-    let maxImprovement = 0;
+    // Find accounts with the highest improvement
     let maxPercentImprovement = 0;
     
-    repProfits.forEach((currentProfit, rep) => {
-      const previousProfit = previousRepProfits.get(rep) || 0;
+    // Check each current account to see if it exists in the previous data
+    currentAccountMap.forEach((currentData, accountRef) => {
+      const previousData = previousAccountMap.get(accountRef);
       
-      // Only consider reps who exist in both months and had some profit in previous month
-      if (previousRepProfits.has(rep) && previousProfit > 0) {
-        const improvement = currentProfit - previousProfit;
-        const percentImprovement = (improvement / previousProfit) * 100;
+      // Only consider accounts that exist in both periods and had some profit in previous month
+      if (previousData && previousData.profit > 0) {
+        const improvement = currentData.profit - previousData.profit;
+        const percentImprovement = (improvement / previousData.profit) * 100;
         
         // We'll prioritize percentage improvement as our metric
         if (percentImprovement > maxPercentImprovement) {
           maxPercentImprovement = percentImprovement;
-          maxImprovement = improvement;
-          mostImprovedRep = { 
-            name: rep, 
-            improvement: maxImprovement,
-            percentImprovement: maxPercentImprovement
+          mostImprovedAccount = { 
+            name: currentData.name, 
+            improvement,
+            percentImprovement
           };
         }
       }
-      // Remove the edge case for new reps since we only want to include colleagues who had data in the previous month
     });
   }
 
@@ -176,6 +143,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      {/* Active Accounts Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           {cardTitle}
@@ -192,66 +160,53 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         </CardContent>
       </Card>
       
-      {/* Only show the top rep card if not filtering by user or if the card title would be different from the selected user */}
-      {!selectedUser || (topRep.name !== selectedUser && topRep.name !== 'No data') ? (
-        <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
-              <Award size={16} className="text-[#ea384c] mr-2" />
-              {selectedUser ? `${selectedUser}'s Top Account` : 'Top Rep (by Combined Profit)'}
-            </div>
-            <div className="text-2xl md:text-3xl font-bold mb-1">{topRep.name}</div>
-            <div className="text-sm text-white/50">
-              Total profit: {formatCurrency(topRep.profit)}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
-          <CardContent className="p-4 md:p-6">
-            <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
-              <Package size={16} className="text-[#ea384c] mr-2" />
-              Total Packs
-            </div>
-            <div className="text-2xl md:text-3xl font-bold mb-1">
-              {formatNumber(topPacksRep.packs)}
-            </div>
-            <div className="text-sm text-white/50">
-              {selectedUser ? `${selectedUser}'s total packs` : 'Total packs across all accounts'}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
+      {/* Top Customer Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
-            <Package size={16} className="text-[#ea384c] mr-2" />
-            {selectedUser ? `${selectedUser}'s Packs` : 'Top Rep (by Packs)'}
+            <Award size={16} className="text-[#ea384c] mr-2" />
+            {selectedUser ? `${selectedUser}'s Top Customer` : 'Top Customer (Highest Profit)'}
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1">
-            {selectedUser ? formatNumber(topPacksRep.packs) : topPacksRep.name}
+          <div className="text-2xl md:text-3xl font-bold mb-1 line-clamp-1" title={topCustomer.name}>
+            {topCustomer.name}
           </div>
           <div className="text-sm text-white/50">
-            {selectedUser 
-              ? 'Total packs by account' 
-              : `Total packs: ${formatNumber(topPacksRep.packs)}`}
+            Profit: {formatCurrency(topCustomer.profit)}
           </div>
         </CardContent>
       </Card>
 
+      {/* Top Margin Customer Card */}
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <Star size={16} className="text-[#ea384c] mr-2" />
+            Top Margin Customer
+          </div>
+          <div className="text-2xl md:text-3xl font-bold mb-1 line-clamp-1" title={topMarginCustomer.name}>
+            {topMarginCustomer.name}
+          </div>
+          <div className="text-sm text-white/50">
+            {topMarginCustomer.margin > 0 
+              ? `${topMarginCustomer.margin.toFixed(1)}% on ${formatCurrency(topMarginCustomer.spend)}` 
+              : 'No margin data'}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Most Improved Account Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <TrendingUp size={16} className="text-[#ea384c] mr-2" />
-            {selectedUser 
-              ? `${selectedUser}'s Most Improved Account` 
-              : 'Most Improved Rep (By Profit)'}
+            Most Improved Account
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1">{mostImprovedRep.name}</div>
+          <div className="text-2xl md:text-3xl font-bold mb-1 line-clamp-1" title={mostImprovedAccount.name}>
+            {mostImprovedAccount.name}
+          </div>
           <div className="text-sm text-white/50">
-            {mostImprovedRep.percentImprovement > 0 
-              ? `+${mostImprovedRep.percentImprovement.toFixed(1)}% improvement` 
+            {mostImprovedAccount.percentImprovement > 0 
+              ? `+${mostImprovedAccount.percentImprovement.toFixed(1)}% (${formatCurrency(mostImprovedAccount.improvement)})` 
               : 'No improvement data'}
           </div>
         </CardContent>
