@@ -104,28 +104,26 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
           </div>
         </div>
         
-        {/* Navigation bar - only visible on non-mobile */}
-        {!isMobile && (
-          <div className="border-t border-white/5 py-1">
-            <nav className="flex items-center">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) => cn(
-                    "px-4 py-2 flex items-center gap-2 text-sm font-medium",
-                    isActive 
-                      ? "text-finance-red" 
-                      : "text-white/60 hover:text-white"
-                  )}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-        )}
+        {/* Navigation bar - visible on both mobile (as a footer) and desktop (as a header nav) */}
+        <div className="border-t border-white/5 py-1">
+          <nav className="flex items-center">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) => cn(
+                  "px-4 py-2 flex items-center gap-2 text-sm font-medium",
+                  isActive 
+                    ? "text-finance-red" 
+                    : "text-white/60 hover:text-white"
+                )}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
       </div>
     </header>
   );
