@@ -340,10 +340,10 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
     if (selectedUserId === "all") {
       return (
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
+          <span className="bg-clip-text text-transparent bg-gradient-to-l from-finance-red to-rose-700">
             Aver's
           </span>{' '}
-          Accounts
+          Accounts Performance
         </h1>
       );
     } else {
@@ -357,10 +357,10 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
       
       return (
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
+          <span className="bg-clip-text text-transparent bg-gradient-to-l from-finance-red to-rose-700">
             {displayName}
           </span>{' '}
-          Accounts
+          Accounts Performance
         </h1>
       );
     }
