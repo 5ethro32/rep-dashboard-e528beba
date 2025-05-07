@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -103,6 +102,9 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.4s ease-out',
 				'slide-in-up': 'slide-in-up 0.5s ease-out',
+			},
+			backgroundImage: {
+				'toggle-off': 'linear-gradient(to right, #ffffff, #f5f5f5, #ea384c10)',
 			}
 		}
 	},
