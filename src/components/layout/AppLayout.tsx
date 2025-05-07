@@ -43,8 +43,6 @@ const AppLayout = ({
       
       <SidebarProvider defaultOpen={false}>
         <div className="flex w-full relative">
-          {/* Removed sidebar component from here */}
-          
           <div className={`flex-1 ${isMobile ? 'pb-16' : ''} overflow-x-auto overflow-y-auto`}>
             {children}
             {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}

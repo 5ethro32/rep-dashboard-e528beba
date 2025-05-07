@@ -44,8 +44,8 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
   };
 
   return (
-    <>
-      <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-gray-950/80 border-b border-white/10">
+    <div className="sticky top-0 z-40 w-full">
+      <header className="w-full backdrop-blur-sm bg-gray-950/80 border-b border-white/10">
         <div className="container max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/rep-performance" className="flex items-center">
@@ -76,7 +76,7 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
       </header>
       
       {!isMobile && (
-        <nav className="bg-gray-950 border-b border-white/10">
+        <nav className="bg-gray-950 border-b border-white/10 sticky top-16 z-30">
           <div className="container max-w-7xl mx-auto px-6">
             <div className="flex space-x-6">
               <NavLink 
@@ -111,7 +111,7 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
           </div>
         </nav>
       )}
-    </>
+    </div>
   );
 };
 
