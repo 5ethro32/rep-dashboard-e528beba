@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -12,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Info } from 'lucide-react';
 import { getWorkingDayPercentage, projectMonthlyValue } from '@/utils/date-utils';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TrendLineChartProps {
   febSummary: SummaryData;
@@ -102,6 +102,9 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     
     setAvailableReps(Array.from(allReps).sort());
   }, [repDataProp]);
+
+  // Add isMobile hook for responsive design
+  const isMobile = useIsMobile();
 
   // Create actual chart data for February through April
   const actualChartData = useMemo(() => {
@@ -479,7 +482,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
           )}
         </div>
         
-        <div className="flex justify-between items-center mt-8">
+        <div className={`flex ${isMobile ? 'flex-col' : 'justify-between'} items-center mt-8 gap-3`}>
           <ToggleGroup 
             type="multiple" 
             value={activeToggles} 
