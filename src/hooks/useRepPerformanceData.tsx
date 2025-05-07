@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RepData, SalesDataItem, SummaryData } from '@/types/rep-performance.types';
@@ -70,14 +71,14 @@ export const useRepPerformanceData = (selectedUserId: string | null = "all") => 
   const { user } = useAuth();
 
   // Helper functions to compute values and filter data by user
-  // Fix the type definition to be more specific and avoid circular references
   const filterDataByUser = useCallback((data: SalesDataItem[], userId: string | null = "all") => {
     if (!userId || userId === "all") {
       return data;
     }
     
     return data.filter(item => {
-      const repName = item.rep_name || item.Rep;
+      // Access only properties that exist on SalesDataItem
+      const repName = item.rep_name;
       return repName === userId;
     });
   }, []);
