@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -104,7 +103,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
       return (
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
-            All
+            Aver's
           </span>{' '}
           Tracker
         </h1>
@@ -169,7 +168,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
         {renderPageHeading()}
         <p className="text-white/60">
           {selectedUserId === "all"
-            ? "Track all visits and plan your customer interactions across the team."
+            ? "Track Aver's visits and plan customer interactions across the team."
             : selectedUserName && selectedUserName !== 'My Data' 
               ? `Track ${selectedUserName.split(' ')[0]}'s visits and plan customer interactions.`
               : "Track your visits and plan your customer interactions."}
