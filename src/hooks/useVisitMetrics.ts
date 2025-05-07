@@ -38,8 +38,8 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
         .gte('planned_date', weekStart.toISOString().split('T')[0])
         .lte('planned_date', weekEnd.toISOString().split('T')[0]);
         
-      // Apply user filter if a user ID is provided
-      if (userId) {
+      // Apply user filter if a user ID is provided and it's not "all"
+      if (userId && userId !== "all") {
         visitsQuery.eq('user_id', userId);
         plansQuery.eq('user_id', userId);
       }

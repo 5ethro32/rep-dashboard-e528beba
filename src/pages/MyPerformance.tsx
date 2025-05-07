@@ -12,7 +12,15 @@ import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAn
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
 import GoalTrackingComponent from '@/components/my-performance/GoalTrackingComponent';
 
-const MyPerformance = () => {
+interface MyPerformanceProps {
+  selectedUserId?: string | null;
+  selectedUserName?: string;
+}
+
+const MyPerformance: React.FC<MyPerformanceProps> = ({ 
+  selectedUserId: propSelectedUserId, 
+  selectedUserName: propSelectedUserName 
+}) => {
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
   const [isLoading, setIsLoading] = useState(true);
@@ -24,12 +32,15 @@ const MyPerformance = () => {
   const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
   const isMobile = useIsMobile();
   
-  // Set the initial selectedUserId to the current user's ID when component mounts
+  // Initialize with props if provided, otherwise use the current user
   useEffect(() => {
-    if (user && !selectedUserId) {
+    if (propSelectedUserId) {
+      setSelectedUserId(propSelectedUserId);
+      setSelectedUserDisplayName(propSelectedUserName || "My Data");
+    } else if (user && !selectedUserId) {
       setSelectedUserId(user.id);
     }
-  }, [user]);
+  }, [user, propSelectedUserId, propSelectedUserName]);
   
   // Fetch all the data when user changes
   useEffect(() => {
