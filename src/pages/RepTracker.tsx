@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -163,38 +164,7 @@ const RepTracker: React.FC = () => {
           </Link>
         </div>
         
-        {/* Modified personalized greeting - now the main heading */}
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            {isViewingOwnData ? (
-              <>
-                Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{userFirstName}</span>
-              </>
-            ) : (
-              <>
-                Viewing <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{selectedUserName}</span>
-              </>
-            )}
-          </h1>
-          <div className="flex items-center text-white/60">
-            <p>
-              {isViewingOwnData 
-                ? "Track your customer visits, orders, and performance metrics." 
-                : "Viewing customer visits, orders, and performance metrics."}
-            </p>
-            
-            {!isViewingOwnData && (
-              <Badge variant="outline" className="ml-2 bg-finance-red/10 border-finance-red/30 text-finance-red">
-                {isMobile ? (
-                  <Eye className="h-3 w-3" />
-                ) : (
-                  "View Only"
-                )}
-              </Badge>
-            )}
-          </div>
-        </div>
-        
+        {/* Main page content starts here */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center">
             <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
