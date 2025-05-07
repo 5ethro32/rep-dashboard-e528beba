@@ -11,7 +11,6 @@ import { format, startOfWeek, endOfWeek } from 'date-fns';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
 import WeekPlanTabV2 from '@/components/rep-tracker/WeekPlanTabV2';
-import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useVisitMetrics } from '@/hooks/useVisitMetrics';
 import { toast } from '@/components/ui/use-toast';
 import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
@@ -164,7 +163,6 @@ const RepTracker: React.FC = () => {
             selectedUserId={selectedUserId} 
             onSelectUser={handleUserSelect}
           />
-          <UserProfileButton />
         </div>
       </div>
       

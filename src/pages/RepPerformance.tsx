@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -10,7 +11,6 @@ import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndica
 import { Button } from '@/components/ui/button';
 import { BarChart3, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -145,10 +145,6 @@ const RepPerformance = () => {
   
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <div className="flex justify-end pt-4">
-        <UserProfileButton />
-      </div>
-      
       <PerformanceHeader 
         selectedMonth={selectedMonth}
         setSelectedMonth={handleMonthSelection}
