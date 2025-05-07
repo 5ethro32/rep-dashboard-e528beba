@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -9,7 +10,6 @@ import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLocation } from 'react-router-dom';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 
@@ -29,7 +29,12 @@ type DataItem = {
   spend?: number;
 };
 
-const AccountPerformance = () => {
+interface AccountPerformanceProps {
+  selectedUserId?: string | null;
+  selectedUserName?: string;
+}
+
+const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", selectedUserName: propSelectedUserName = "All Data" }: AccountPerformanceProps) => {
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
   const [currentMonthRawData, setCurrentMonthRawData] = useState<DataItem[]>([]);
   const [previousMonthRawData, setPreviousMonthRawData] = useState<DataItem[]>([]);
@@ -38,25 +43,20 @@ const AccountPerformance = () => {
   const [topRep, setTopRep] = useState({ name: '', profit: 0 });
   const isMobile = useIsMobile();
   const { user, isAdmin } = useAuth();
-  const location = useLocation();
   
-  // Read selectedUserId from App.tsx through the state in location
-  const selectedUserIdFromState = location.state?.selectedUserId;
-  const selectedUserNameFromState = location.state?.selectedUserName;
+  // Use the props directly
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId);
+  const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName);
   
-  // Add state for user selection, with "all" as default if not provided from location state
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(selectedUserIdFromState || "all");
-  const [selectedUserName, setSelectedUserName] = useState<string>(selectedUserNameFromState || 'All Data');
-  
+  // Update local state when props change
   useEffect(() => {
-    // Update local state when location state changes
-    if (selectedUserIdFromState) {
-      setSelectedUserId(selectedUserIdFromState);
+    if (propSelectedUserId) {
+      setSelectedUserId(propSelectedUserId);
     }
-    if (selectedUserNameFromState) {
-      setSelectedUserName(selectedUserNameFromState);
+    if (propSelectedUserName) {
+      setSelectedUserName(propSelectedUserName);
     }
-  }, [selectedUserIdFromState, selectedUserNameFromState]);
+  }, [propSelectedUserId, propSelectedUserName]);
   
   useEffect(() => {
     fetchComparisonData();

@@ -30,6 +30,16 @@ const AppRoutes = () => {
     setSelectedUserName(displayName);
   };
 
+  // Create a wrapper component that will pass props to AccountPerformance
+  const AccountPerformanceWithProps = () => {
+    return (
+      <AccountPerformance 
+        selectedUserId={selectedUserId} 
+        selectedUserName={selectedUserName}
+      />
+    );
+  };
+
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/rep-performance" replace />} />
@@ -51,11 +61,7 @@ const AppRoutes = () => {
         <Route path="/rep-performance" element={<RepPerformance />} />
         <Route 
           path="/account-performance" 
-          element={
-            <AccountPerformance />
-          } 
-          // Pass state to route to be accessed via useLocation
-          state={{ selectedUserId, selectedUserName }}
+          element={<AccountPerformanceWithProps />} 
         />
         <Route path="/rep-tracker" element={<RepTracker />} />
         <Route path="/my-performance" element={<MyPerformance />} />
