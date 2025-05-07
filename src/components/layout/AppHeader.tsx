@@ -8,12 +8,12 @@ import UserSelector from '@/components/rep-tracker/UserSelector';
 interface AppHeaderProps {
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
+  showUserSelector?: boolean;
 }
 
-const AppHeader = ({ selectedUserId, onSelectUser }: AppHeaderProps) => {
+const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: AppHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
-  const isAccountPerformancePage = location.pathname === '/account-performance';
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-gray-950/80 border-b border-white/10">
@@ -27,7 +27,7 @@ const AppHeader = ({ selectedUserId, onSelectUser }: AppHeaderProps) => {
         </div>
         
         <div className="flex items-center gap-4">
-          {isAccountPerformancePage && onSelectUser && (
+          {showUserSelector && onSelectUser && (
             <UserSelector
               selectedUserId={selectedUserId || "all"}
               onSelectUser={onSelectUser}
