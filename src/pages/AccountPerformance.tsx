@@ -3,9 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
+import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import UserProfileButton from '@/components/auth/UserProfileButton';
@@ -297,14 +296,7 @@ const AccountPerformance = () => {
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <div className="flex justify-between items-center mb-6 pt-4">
-        <Link to="/rep-performance">
-          <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </Link>
-        
+      <div className="flex justify-end items-center pt-4">
         <div className="flex items-center gap-3">
           <UserSelector 
             selectedUserId={selectedUserId} 
