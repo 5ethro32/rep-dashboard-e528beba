@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Info, Award } from 'lucide-react';
 import MetricCard from '@/components/MetricCard';
@@ -69,19 +70,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
 
   return (
     <div className="mb-8 animate-slide-in-up space-y-3 md:space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <MetricCard
-          title={renderMetricWithTooltip(
-            "Planned Visits",
-            "Number of visits planned for this week"
-          )}
-          value={formatNumber(data.plannedVisits)}
-          change={previousData ? calculateChange(data.plannedVisits, previousData.plannedVisits) : undefined}
-          subtitle={previousData ? `Previous: ${formatNumber(previousData.plannedVisits)}` : undefined}
-          isLoading={isLoading}
-          className="h-full"
-        />
-        
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         <MetricCard
           title={renderMetricWithTooltip(
             "Total Visits",
@@ -90,19 +79,6 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           value={formatNumber(data.totalVisits)}
           change={previousData ? calculateChange(data.totalVisits, previousData.totalVisits) : undefined}
           subtitle={previousData ? `Previous: ${formatNumber(previousData.totalVisits)}` : undefined}
-          isLoading={isLoading}
-          className="h-full"
-        />
-        
-        <MetricCard
-          title={renderMetricWithTooltip(
-            "Total Profit",
-            "Total profit generated from all orders during this week"
-          )}
-          value={formatCurrency(data.totalProfit)}
-          change={previousData ? calculateChange(data.totalProfit, previousData.totalProfit) : undefined}
-          subtitle={previousData ? `Previous: ${formatCurrency(previousData.totalProfit)}` : undefined}
-          valueClassName="font-extrabold text-white"
           isLoading={isLoading}
           className="h-full"
         />
@@ -121,12 +97,13 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
         
         <MetricCard
           title={renderMetricWithTooltip(
-            "Conversion Rate",
-            "Percentage of visits that resulted in an order (Total Orders / Total Visits)"
+            "Total Profit",
+            "Total profit generated from all orders during this week"
           )}
-          value={`${data.conversionRate.toFixed(1)}%`}
-          change={previousData ? calculateChange(data.conversionRate, previousData.conversionRate) : undefined}
-          subtitle={previousData ? `Previous: ${previousData.conversionRate.toFixed(1)}%` : undefined}
+          value={formatCurrency(data.totalProfit)}
+          change={previousData ? calculateChange(data.totalProfit, previousData.totalProfit) : undefined}
+          subtitle={previousData ? `Previous: ${formatCurrency(previousData.totalProfit)}` : undefined}
+          valueClassName="font-extrabold text-white"
           isLoading={isLoading}
           className="h-full"
         />
