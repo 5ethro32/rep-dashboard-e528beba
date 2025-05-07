@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import AppLayout from '@/components/layout/AppLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
@@ -540,114 +538,106 @@ const MyPerformance = () => {
       "All Performance Dashboard" : 
       `${selectedUserDisplayName}'s Performance Dashboard`;
   
-  // Render the page
+  // Render the page directly without the redundant AppLayout wrapper
   return (
-    <AppLayout 
-      showChatInterface={!isMobile}
-      selectedUserId={selectedUserId}
-      onSelectUser={handleSelectUser}
-      showUserSelector={true}
-    >
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
-              {selectedUserId === user?.id || !selectedUserId ? "My" : selectedUserId === "all" ? "All" : selectedUserDisplayName + "'s"}
-            </span>{' '}
-            Performance Dashboard
-          </h1>
-          <p className="text-white/60">
-            {selectedUserId === "all" ? 
-              "Aggregated view of all performance metrics, account health, and team insights." :
-              "Track key metrics, account health, and get personalized insights based on performance data."
-            }
-          </p>
-        </div>
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+      <div className="mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
+            {selectedUserId === user?.id || !selectedUserId ? "My" : selectedUserId === "all" ? "All" : selectedUserDisplayName + "'s"}
+          </span>{' '}
+          Performance Dashboard
+        </h1>
+        <p className="text-white/60">
+          {selectedUserId === "all" ? 
+            "Aggregated view of all performance metrics, account health, and team insights." :
+            "Track key metrics, account health, and get personalized insights based on performance data."
+          }
+        </p>
+      </div>
+      
+      <div className="mb-4 flex justify-between items-center">
+        <ActionsHeader 
+          onRefresh={handleRefresh}
+          isLoading={isLoading}
+          autoRefreshed={autoRefreshed}
+        />
         
-        <div className="mb-4 flex justify-between items-center">
-          <ActionsHeader 
-            onRefresh={handleRefresh}
-            isLoading={isLoading}
-            autoRefreshed={autoRefreshed}
+        <div className="flex-shrink-0">
+          <PerformanceHeader 
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            hideTitle={true}
           />
-          
-          <div className="flex-shrink-0">
-            <PerformanceHeader 
-              selectedMonth={selectedMonth}
-              setSelectedMonth={setSelectedMonth}
-              hideTitle={true}
-            />
-          </div>
         </div>
+      </div>
 
-        {/* Personal Performance Overview */}
-        <div className="mb-6">
-          <PersonalPerformanceCard
+      {/* Personal Performance Overview */}
+      <div className="mb-6">
+        <PersonalPerformanceCard
+          performanceData={performanceData}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {/* Main content tabs */}
+      <Tabs defaultValue="accounts" className="w-full">
+        <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
+          <TabsTrigger value="accounts" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+            Account Health
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+            Activity Impact
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+            AI Insights
+          </TabsTrigger>
+          <TabsTrigger value="goals" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+            Goal Tracking
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="accounts" className="mt-0">
+          <AccountHealthSection 
+            accountHealthData={accountHealthData}
+            isLoading={isLoading}
+            formatCurrency={formatCurrency}
+            formatPercent={formatPercent}
+          />
+        </TabsContent>
+        
+        <TabsContent value="activity" className="mt-0">
+          <ActivityImpactAnalysis
+            visitData={visitData}
+            accountHealthData={accountHealthData}
+            isLoading={isLoading}
+          />
+        </TabsContent>
+        
+        <TabsContent value="insights" className="mt-0">
+          <PersonalizedInsights
+            accountHealthData={accountHealthData}
+            visitData={visitData}
             performanceData={performanceData}
             isLoading={isLoading}
+            formatCurrency={formatCurrency}
+            formatPercent={formatPercent}
           />
-        </div>
-
-        {/* Main content tabs */}
-        <Tabs defaultValue="accounts" className="w-full">
-          <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
-            <TabsTrigger value="accounts" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-              Account Health
-            </TabsTrigger>
-            <TabsTrigger value="activity" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-              Activity Impact
-            </TabsTrigger>
-            <TabsTrigger value="insights" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-              AI Insights
-            </TabsTrigger>
-            <TabsTrigger value="goals" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-              Goal Tracking
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="accounts" className="mt-0">
-            <AccountHealthSection 
-              accountHealthData={accountHealthData}
-              isLoading={isLoading}
-              formatCurrency={formatCurrency}
-              formatPercent={formatPercent}
-            />
-          </TabsContent>
-          
-          <TabsContent value="activity" className="mt-0">
-            <ActivityImpactAnalysis
-              visitData={visitData}
-              accountHealthData={accountHealthData}
-              isLoading={isLoading}
-            />
-          </TabsContent>
-          
-          <TabsContent value="insights" className="mt-0">
-            <PersonalizedInsights
-              accountHealthData={accountHealthData}
-              visitData={visitData}
-              performanceData={performanceData}
-              isLoading={isLoading}
-              formatCurrency={formatCurrency}
-              formatPercent={formatPercent}
-            />
-          </TabsContent>
-          
-          <TabsContent value="goals" className="mt-0">
-            <GoalTrackingComponent
-              performanceData={performanceData}
-              accountHealthData={accountHealthData}
-              visitData={visitData}
-              isLoading={isLoading}
-              formatCurrency={formatCurrency}
-              formatPercent={formatPercent}
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </AppLayout>
+        </TabsContent>
+        
+        <TabsContent value="goals" className="mt-0">
+          <GoalTrackingComponent
+            performanceData={performanceData}
+            accountHealthData={accountHealthData}
+            visitData={visitData}
+            isLoading={isLoading}
+            formatCurrency={formatCurrency}
+            formatPercent={formatPercent}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
 export default MyPerformance;
-
