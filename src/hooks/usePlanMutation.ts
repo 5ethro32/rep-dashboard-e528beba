@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PlanFormData {
   id?: string;
@@ -13,15 +14,21 @@ interface PlanFormData {
 
 export const useAddPlanMutation = (onSuccess?: () => void) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (planData: PlanFormData) => {
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+      
       const { data, error } = await supabase.from('week_plans').insert([
         {
           planned_date: planData.planned_date,
           customer_ref: planData.customer_ref,
           customer_name: planData.customer_name,
-          notes: planData.notes
+          notes: planData.notes,
+          user_id: user.id
         }
       ]).select().single();
       

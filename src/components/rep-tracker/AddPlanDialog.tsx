@@ -15,6 +15,8 @@ interface AddPlanDialogProps {
   onSuccess?: () => void;
   customers: Array<{ account_name: string; account_ref: string }>;
   initialDate?: string;
+  // Renamed selectedDate to date for backwards compatibility
+  date?: Date;
 }
 
 interface PlanFormData {
@@ -29,11 +31,15 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   onClose,
   onSuccess,
   customers = [],
-  initialDate
+  initialDate,
+  date, // Support both initialDate and date props for backward compatibility
 }) => {
+  // Convert date to initialDate format if provided
+  const formattedDate = date ? date.toISOString().split('T')[0] : initialDate;
+  
   const { register, handleSubmit, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
-      planned_date: initialDate || new Date().toISOString().split('T')[0],
+      planned_date: formattedDate || new Date().toISOString().split('T')[0],
       customer_ref: '',
       customer_name: '',
       notes: ''

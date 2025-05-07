@@ -63,8 +63,8 @@ const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers, 
         c.account_name.toLowerCase().includes(searchInput.toLowerCase()))
     : customers;
 
-  const handleCustomerSelect = (customer: { account_ref: string; account_name: string }) => {
-    setSelectedCustomerId(customer.account_ref);
+  const handleCustomerSelect = (ref: string, name: string) => {
+    setSelectedCustomerId(ref);
   };
 
   return (
@@ -87,7 +87,8 @@ const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers, 
         <div className="md:col-span-7 lg:col-span-8">
           <SimpleCustomerSelect
             customers={filteredCustomers.slice(0, 100)} // Limit for performance
-            onSelectCustomer={handleCustomerSelect}
+            onSelect={handleCustomerSelect}
+            selectedCustomer=""
             showInitialValue={false}
           />
         </div>

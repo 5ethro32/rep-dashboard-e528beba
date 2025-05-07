@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,7 +31,7 @@ interface Visit {
   profit: number;
   notes?: string;
   user_id: string;
-  visit_value: number;
+  visit_value?: number;  // Make this optional since it might not exist in all records
 }
 
 const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
@@ -67,7 +66,8 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         throw error;
       }
       
-      return data as Visit[];
+      // Cast the data with a type assertion to make TypeScript happy
+      return data as unknown as Visit[];
     },
   });
 

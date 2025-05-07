@@ -19,7 +19,6 @@ interface UserSelectorProps {
 
 interface UserProfile {
   id: string;
-  email: string;
   first_name?: string;
   last_name?: string;
 }
@@ -33,7 +32,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({ selectedUserId, onSelectUse
       // We need admin access to get all users so we'll just get public profiles
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, first_name, last_name');
+        .select('id, first_name, last_name');
       
       if (error) throw error;
       
@@ -52,7 +51,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({ selectedUserId, onSelectUse
     } else if (user.first_name) {
       return user.first_name;
     } else {
-      return user.email.split('@')[0];
+      return user.id.substring(0, 8); // Use part of the UUID if no name available
     }
   };
 
