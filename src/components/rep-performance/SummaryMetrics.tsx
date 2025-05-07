@@ -1,33 +1,26 @@
 
-import React from 'react';
-import { 
-  formatCurrency, 
-  formatPercent, 
-  formatNumber, 
-  calculateSummary 
-} from '@/utils/rep-performance-utils';
-import { Card, CardContent } from '@/components/ui/card';
-import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
-import { Skeleton } from '@/components/ui/skeleton';
-import { SummaryData } from '@/types/rep-performance.types';
-import { useIsMobile } from '@/hooks/use-mobile';
+import React, { useEffect, useState } from 'react';
+import MetricCard from '@/components/MetricCard';
+import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 interface SummaryMetricsProps {
-  summary: SummaryData;
+  summary: {
+    totalSpend: number;
+    totalProfit: number;
+    averageMargin: number;
+    totalPacks: number;
+  };
   summaryChanges: {
     totalSpend: number;
     totalProfit: number;
     averageMargin: number;
     totalPacks: number;
-    totalAccounts: number;
-    activeAccounts: number;
   };
-  isLoading: boolean;
+  isLoading?: boolean;
   includeRetail: boolean;
   includeReva: boolean;
   includeWholesale: boolean;
-  selectedMonth: string;
-  selectedUserName?: string;
+  selectedMonth?: string;
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ 
@@ -37,106 +30,101 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   includeRetail,
   includeReva,
   includeWholesale,
-  selectedMonth,
-  selectedUserName = 'All Data'
+  selectedMonth = 'March'
 }) => {
-  const isMobile = useIsMobile();
-  
-  // Get the text prefix based on selected user
-  const getPrefix = () => {
-    if (selectedUserName === 'All Data') {
-      return 'Total';
-    } else if (selectedUserName === 'My Data') {
-      return 'My';
-    } else {
-      return `${selectedUserName}'s`;
-    }
+  // Calculate filtered change indicators based on current toggle state
+  const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
+
+  // Only show change indicators if we're viewing March, April, or May data (compared to previous month)
+  const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April' || selectedMonth === 'May';
+
+  useEffect(() => {
+    // Recalculate changes whenever toggle states change
+    setFilteredChanges(summaryChanges);
+  }, [summaryChanges, includeRetail, includeReva, includeWholesale]);
+
+  // Create a change indicator for the KPI cards
+  const renderChangeIndicator = (changeValue: number) => {
+    if (!showChangeIndicators || Math.abs(changeValue) < 0.1) return undefined; // No significant change or not showing changes
+    
+    return {
+      value: `${Math.abs(changeValue).toFixed(1)}%`,
+      type: changeValue > 0 ? 'increase' as const : 'decrease' as const
+    };
   };
-  
-  const prefix = getPrefix();
-  
-  const metricConfig = [
-    {
-      id: 'profit',
-      title: `${prefix} Profit`,
-      value: summary.totalProfit,
-      change: summaryChanges.totalProfit,
-      formatter: formatCurrency,
-      color: 'from-green-500/20 to-green-500/5'
-    },
-    {
-      id: 'margin',
-      title: 'Average Margin',
-      value: summary.averageMargin,
-      change: summaryChanges.averageMargin,
-      formatter: formatPercent,
-      color: 'from-blue-500/20 to-blue-500/5'
-    },
-    {
-      id: 'spend',
-      title: `${prefix} Spend`,
-      value: summary.totalSpend,
-      change: summaryChanges.totalSpend,
-      formatter: formatCurrency,
-      color: 'from-pink-500/20 to-pink-500/5'
-    },
-    {
-      id: 'packs',
-      title: `${prefix} Packs`,
-      value: summary.totalPacks,
-      change: summaryChanges.totalPacks,
-      formatter: formatNumber,
-      color: 'from-amber-500/20 to-amber-500/5'
-    },
-    {
-      id: 'activeAccounts',
-      title: `${prefix} Active Accounts`,
-      value: summary.activeAccounts,
-      change: summaryChanges.activeAccounts,
-      formatter: formatNumber,
-      color: 'from-violet-500/20 to-violet-500/5'
-    },
-    {
-      id: 'totalAccounts',
-      title: `${prefix} Total Accounts`,
-      value: summary.totalAccounts,
-      change: summaryChanges.totalAccounts,
-      formatter: formatNumber,
-      color: 'from-slate-500/20 to-slate-500/5'
-    }
-  ];
+
+  // Calculate previous value based on current value and percent change
+  const getPreviousValue = (current: number, changePercent: number) => {
+    if (!showChangeIndicators || !changePercent || Math.abs(changePercent) < 0.1) return current;
+    return current / (1 + changePercent / 100);
+  };
+
+  // Calculate comparison month for subtitle
+  const getComparisonMonthText = () => {
+    if (selectedMonth === 'March') return 'February';
+    if (selectedMonth === 'April') return 'March';
+    if (selectedMonth === 'May') return 'April MTD';
+    return '';
+  };
+
+  console.log("Rendering SummaryMetrics with data and filter state:", { 
+    summary, 
+    summaryChanges: filteredChanges,
+    filters: { includeRetail, includeReva, includeWholesale },
+    selectedMonth,
+    showChangeIndicators 
+  });
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      {metricConfig.map((metric) => (
-        <Card 
-          key={metric.id}
-          className={`rounded-xl border-white/10 shadow-lg overflow-hidden bg-gradient-to-b ${metric.color} hover:scale-[1.01] transition-all`}
-        >
-          <CardContent className="p-4">
-            <h3 className="text-sm md:text-base text-white/70 font-medium truncate">
-              {metric.title}
-            </h3>
-            
-            {isLoading ? (
-              <Skeleton className="h-9 w-full mt-2" />
-            ) : (
-              <div className="flex flex-col md:flex-row md:items-end gap-1 md:gap-2 mt-2">
-                <span className="text-2xl md:text-3xl font-bold text-white">
-                  {metric.formatter(metric.value)}
-                </span>
-                
-                <div className={`${isMobile ? 'mt-1' : 'mb-1'}`}>
-                  <RenderChangeIndicator 
-                    changeValue={metric.change} 
-                    size={isMobile ? "small" : "large"} 
-                  />
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">
+      {/* Revenue Card */}
+      <MetricCard
+        title="Revenue"
+        value={formatCurrency(summary.totalSpend || 0, 0)}
+        change={renderChangeIndicator(filteredChanges.totalSpend)}
+        subtitle={showChangeIndicators ? 
+          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalSpend || 0, filteredChanges.totalSpend), 0)}` : 
+          selectedMonth === 'February' ? 'No comparison data available' : undefined
+        }
+        isLoading={isLoading}
+      />
+      
+      {/* Profit Card */}
+      <MetricCard
+        title="Profit"
+        value={formatCurrency(summary.totalProfit || 0, 0)}
+        change={renderChangeIndicator(filteredChanges.totalProfit)}
+        subtitle={showChangeIndicators ? 
+          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalProfit || 0, filteredChanges.totalProfit), 0)}` :
+          selectedMonth === 'February' ? 'No comparison data available' : undefined
+        }
+        valueClassName="font-extrabold text-white"
+        isLoading={isLoading}
+      />
+      
+      {/* Margin Card */}
+      <MetricCard
+        title="Margin"
+        value={formatPercent(summary.averageMargin || 0)}
+        change={renderChangeIndicator(filteredChanges.averageMargin)}
+        subtitle={showChangeIndicators ? 
+          `${getComparisonMonthText()}: ${formatPercent(getPreviousValue(summary.averageMargin || 0, filteredChanges.averageMargin))}` :
+          selectedMonth === 'February' ? 'No comparison data available' : undefined
+        }
+        isLoading={isLoading}
+      />
+      
+      {/* Packs Card */}
+      <MetricCard
+        title="Packs"
+        value={formatNumber(summary.totalPacks || 0)}
+        change={renderChangeIndicator(filteredChanges.totalPacks)}
+        subtitle={showChangeIndicators ? 
+          `${getComparisonMonthText()}: ${formatNumber(getPreviousValue(summary.totalPacks || 0, filteredChanges.totalPacks))}` :
+          selectedMonth === 'February' ? 'No comparison data available' : undefined
+        }
+        isLoading={isLoading}
+      />
     </div>
   );
 };
