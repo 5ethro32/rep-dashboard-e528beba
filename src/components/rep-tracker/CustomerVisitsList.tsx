@@ -335,9 +335,9 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 flex items-center justify-center"
+                            className="h-8 w-8 p-0 flex items-center justify-center text-gray-500 hover:text-white"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4" aria-hidden="true" />
                             <span className="sr-only">View Only</span>
                           </Button>
                         )}
