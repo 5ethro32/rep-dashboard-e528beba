@@ -274,10 +274,14 @@ const AccountPerformance = () => {
     if (selectedUserId === "all") {
       return (
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          All Account Performance
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
+            All
+          </span>{' '}
+          Account Performance
         </h1>
       );
     } else {
+      // If it's "My Data", just use "My", otherwise use the name with apostrophe
       const nameToShow = selectedUserName === 'My Data' ? 'My' : `${selectedUserName}'s`;
       
       return (
