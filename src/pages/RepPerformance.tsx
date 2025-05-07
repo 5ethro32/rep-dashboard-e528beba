@@ -142,10 +142,6 @@ const RepPerformance = () => {
   
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <div className="flex justify-end pt-4">
-        <UserProfileButton />
-      </div>
-      
       <PerformanceHeader 
         selectedMonth={selectedMonth}
         setSelectedMonth={handleMonthSelection}
@@ -157,8 +153,6 @@ const RepPerformance = () => {
           isLoading={isLoading}
           autoRefreshed={autoRefreshed}
         />
-        
-        {/* Navigation links now moved to sidebar */}
       </div>
 
       <PerformanceFilters

@@ -6,6 +6,7 @@ import MobileNavigation from '@/components/mobile/MobileNavigation';
 import ChatInterface from '@/components/chat/ChatInterface';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/layout/AppSidebar';
+import AppHeader from '@/components/layout/AppHeader';
 
 // This component handles collapsing the sidebar on route changes
 const SidebarController = ({ children }: { children: React.ReactNode }) => {
@@ -42,16 +43,18 @@ const AppLayout = ({
 
   return (
     <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900 flex w-full">
-        <AppSidebar />
-        <SidebarController>
-          <div className={`relative flex-1 ${isMobile ? 'pb-16' : ''}`}>
-            {/* Removed the header with Back to Dashboard button */}
-            {children}
-            {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
-            {isMobile && <MobileNavigation />}
-          </div>
-        </SidebarController>
+      <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900 flex w-full flex-col">
+        <AppHeader />
+        <div className="flex flex-1 w-full">
+          <AppSidebar />
+          <SidebarController>
+            <div className={`relative flex-1 ${isMobile ? 'pb-16' : ''}`}>
+              {children}
+              {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
+              {isMobile && <MobileNavigation />}
+            </div>
+          </SidebarController>
+        </div>
       </div>
     </SidebarProvider>
   );
