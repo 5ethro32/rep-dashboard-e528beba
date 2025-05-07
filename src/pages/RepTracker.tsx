@@ -189,7 +189,11 @@ const RepTracker: React.FC = () => {
           
           {!isViewingOwnData && (
             <Badge variant="outline" className="ml-2 bg-finance-red/10 border-finance-red/30 text-finance-red">
-              View Only
+              {isMobile ? (
+                <Eye className="h-3 w-3" />
+              ) : (
+                "View Only"
+              )}
             </Badge>
           )}
         </div>
