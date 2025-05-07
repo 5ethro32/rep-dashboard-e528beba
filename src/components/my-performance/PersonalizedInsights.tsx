@@ -200,7 +200,7 @@ const PersonalizedInsights: React.FC<PersonalizedInsightsProps> = ({
   return (
     <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
       <CardContent className="p-4 md:p-6">
-        <h3 className="text-lg md:text-xl font-semibold text-white mb-4">Personal Performance Insights</h3>
+        <h3 className="text-lg md:text-xl font-semibold text-white mb-4">Performance Insights</h3>
         
         {insights.length > 0 ? (
           <div className="space-y-4">
@@ -240,7 +240,7 @@ const PersonalizedInsights: React.FC<PersonalizedInsightsProps> = ({
             <CheckCircle className="w-10 h-10 text-white/30 mx-auto mb-3" />
             <p className="text-white/70">No specific insights available at this time.</p>
             <p className="text-sm text-white/50 mt-2">
-              Continue recording customer visits and sales data to generate personalized insights.
+              Continue recording customer visits and sales data to generate personalised insights.
             </p>
           </div>
         )}
