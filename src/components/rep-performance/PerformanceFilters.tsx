@@ -19,10 +19,12 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   includeReva,
   setIncludeReva,
   includeWholesale,
-  setIncludeWholesale
+  setIncludeWholesale,
+  selectedMonth,
+  setSelectedMonth
 }) => {
   return (
-    <div className="mb-6 md:mb-8 flex flex-row gap-4">
+    <div className="mb-6 md:mb-8 flex flex-row gap-3">
       <ToggleButton 
         checked={includeRetail} 
         onToggle={setIncludeRetail}
