@@ -23,7 +23,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
 }) => {
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
-    ? 'py-0' // Reduced padding for top and bottom
+    ? 'py-4' // More balanced padding for top and bottom (was py-0)
     : 'py-8 md:py-16'; // Original padding
     
   return (
