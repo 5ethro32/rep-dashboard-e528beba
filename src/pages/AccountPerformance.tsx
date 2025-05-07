@@ -305,14 +305,13 @@ const AccountPerformance = () => {
           </Button>
         </Link>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           <UserSelector 
             selectedUserId={selectedUserId} 
             onSelectUser={handleUserChange}
             className="mr-2"
             showAllDataOption={true}
           />
-          <UserProfileButton />
         </div>
       </div>
       
