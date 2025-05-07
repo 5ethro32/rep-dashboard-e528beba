@@ -8,7 +8,6 @@ import { RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
-import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
@@ -294,63 +293,57 @@ const AccountPerformance = () => {
   };
 
   return (
-    <AppLayout 
-      showChatInterface={!isMobile}
-      selectedUserId={selectedUserId}
-      onSelectUser={handleUserChange}
-    >
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        <div className="mb-8">
-          {renderPageHeading()}
-          <p className="text-white/60">
-            {selectedUserId === "all"
-              ? "Compare all accounts performance between months to identify declining or improving accounts."
-              : selectedUserName && selectedUserName !== 'My Data' 
-                ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
-                : "Compare your accounts performance between months to identify declining or improving accounts."}
-          </p>
-        </div>
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+      <div className="mb-8">
+        {renderPageHeading()}
+        <p className="text-white/60">
+          {selectedUserId === "all"
+            ? "Compare all accounts performance between months to identify declining or improving accounts."
+            : selectedUserName && selectedUserName !== 'My Data' 
+              ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
+              : "Compare your accounts performance between months to identify declining or improving accounts."}
+        </p>
+      </div>
+      
+      <div className="mb-4 flex justify-between items-center">
+        <Button 
+          onClick={fetchComparisonData} 
+          disabled={isLoading}
+          variant="outline"
+          size="sm"
+          className="text-white border-white/20 hover:bg-white/10"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading ? "Refreshing..." : "Refresh Data"}
+        </Button>
         
-        <div className="mb-4 flex justify-between items-center">
-          <Button 
-            onClick={fetchComparisonData} 
-            disabled={isLoading}
-            variant="outline"
-            size="sm"
-            className="text-white border-white/20 hover:bg-white/10"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? "Refreshing..." : "Refresh Data"}
-          </Button>
-          
-          <div className="flex-shrink-0">
-            <PerformanceHeader 
-              selectedMonth={selectedMonth}
-              setSelectedMonth={setSelectedMonth}
-              hideTitle={true}
-            />
-          </div>
-        </div>
-        
-        <AccountSummaryCards
-          currentMonthData={currentMonthRawData}
-          previousMonthData={previousMonthRawData}
-          isLoading={isLoading}
-          selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
-        />
-        
-        <div className="mb-12">
-          <AccountPerformanceComparison 
-            currentMonthData={currentMonthRawData}
-            previousMonthData={previousMonthRawData}
-            isLoading={isLoading}
+        <div className="flex-shrink-0">
+          <PerformanceHeader 
             selectedMonth={selectedMonth}
-            formatCurrency={formatCurrency}
-            selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
+            setSelectedMonth={setSelectedMonth}
+            hideTitle={true}
           />
         </div>
       </div>
-    </AppLayout>
+      
+      <AccountSummaryCards
+        currentMonthData={currentMonthRawData}
+        previousMonthData={previousMonthRawData}
+        isLoading={isLoading}
+        selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
+      />
+      
+      <div className="mb-12">
+        <AccountPerformanceComparison 
+          currentMonthData={currentMonthRawData}
+          previousMonthData={previousMonthRawData}
+          isLoading={isLoading}
+          selectedMonth={selectedMonth}
+          formatCurrency={formatCurrency}
+          selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
+        />
+      </div>
+    </div>
   );
 };
 
