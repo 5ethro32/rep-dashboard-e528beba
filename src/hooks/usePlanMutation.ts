@@ -13,7 +13,7 @@ interface PlanFormData {
 export function usePlanMutation(onSuccess: () => void) {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const createPlanMutation = useMutation({
     mutationFn: async (data: PlanFormData & { user_id: string }) => {
       console.log("Attempting to create new plan with data:", data);
       
@@ -142,6 +142,108 @@ export function usePlanMutation(onSuccess: () => void) {
       },
     },
   });
+  
+  // Add a delete plan mutation
+  const deletePlanMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      console.log("Attempting to delete plan with ID:", planId);
+      
+      // First check if there's a corresponding customer visit and delete it
+      const { data: relatedVisits } = await supabase
+        .from('customer_visits')
+        .select('id')
+        .eq('week_plan_id', planId);
+      
+      if (relatedVisits && relatedVisits.length > 0) {
+        for (const visit of relatedVisits) {
+          const { error: visitDeleteError } = await supabase
+            .from('customer_visits')
+            .delete()
+            .eq('id', visit.id);
+            
+          if (visitDeleteError) {
+            console.error("Supabase delete error for customer visit:", visitDeleteError);
+            // Continue with plan deletion even if visit deletion fails
+          }
+        }
+      }
+      
+      // Then delete the week plan
+      const { error: planDeleteError } = await supabase
+        .from('week_plans')
+        .delete()
+        .eq('id', planId);
+        
+      if (planDeleteError) {
+        console.error("Supabase delete error for week plan:", planDeleteError);
+        throw planDeleteError;
+      }
+      
+      console.log("Plan deleted successfully");
+      return planId;
+    },
+    onSuccess: (deletedPlanId) => {
+      console.log("Delete mutation success callback with ID:", deletedPlanId);
+      
+      // Update the cache immediately for a responsive UI experience
+      const queryCache = queryClient.getQueryCache();
+      
+      // Find queries that might contain this data
+      const weekPlanQueries = queryCache.findAll({
+        predicate: query => {
+          return Array.isArray(query.queryKey) && query.queryKey[0] === 'week-plans';
+        }
+      });
+      
+      // Update each relevant query in the cache
+      weekPlanQueries.forEach(query => {
+        const data = queryClient.getQueryData(query.queryKey);
+        
+        // Check if this is an array and filter out the deleted plan
+        if (Array.isArray(data)) {
+          queryClient.setQueryData(
+            query.queryKey, 
+            data.filter((plan: any) => plan.id !== deletedPlanId)
+          );
+        }
+      });
+      
+      // Also invalidate customer visits queries
+      queryClient.invalidateQueries({ 
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
+      // Then invalidate and refetch all week-plans queries to ensure data consistency
+      queryClient.invalidateQueries({ 
+        queryKey: ['week-plans'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
+      // Show toast notification
+      toast({
+        title: 'Plan Deleted',
+        description: 'Week plan has been deleted successfully.',
+      });
+      
+      // Call the success callback after everything is done
+      onSuccess();
+    },
+    meta: {
+      onError: (error: Error) => {
+        console.error("Error deleting plan:", error);
+        toast({
+          title: 'Error',
+          description: 'Failed to delete plan. Please try again.',
+          variant: 'destructive',
+        });
+      },
+    }
+  });
+
+  return { mutate: createPlanMutation.mutate, isPending: createPlanMutation.isPending, deletePlanMutation };
 }
 
 // Update the update plan mutation function to also update the customer visit
@@ -226,7 +328,7 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
         if (Array.isArray(data)) {
           queryClient.setQueryData(
             query.queryKey, 
-            data.map(plan => plan.id === updatedPlan.id ? updatedPlan : plan)
+            data.map((plan: any) => plan.id === updatedPlan.id ? updatedPlan : plan)
           );
         }
       });
@@ -254,13 +356,15 @@ export function useUpdatePlanMutation(onSuccess: () => void) {
       // Call the success callback after everything is done
       onSuccess();
     },
-    onError: (error: Error) => {
-      console.error("Error updating plan:", error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update plan. Please try again.',
-        variant: 'destructive',
-      });
+    meta: {
+      onError: (error: Error) => {
+        console.error("Error updating plan:", error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update plan. Please try again.',
+          variant: 'destructive',
+        });
+      }
     },
   });
 }

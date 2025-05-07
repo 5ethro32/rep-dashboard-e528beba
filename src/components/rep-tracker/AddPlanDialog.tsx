@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
 import DatePickerField from './DatePickerField';
-import { Form, FormField } from '@/components/ui/form';
 
 interface AddPlanDialogProps {
   isOpen: boolean;
@@ -36,7 +35,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const { user } = useAuth();
   const defaultDate = selectedDate || new Date();
   
-  const form = useForm<PlanFormData>({
+  const { register, handleSubmit, reset, setValue, watch, control } = useForm<PlanFormData>({
     defaultValues: {
       planned_date: defaultDate.toISOString().split('T')[0],
       customer_ref: '',
@@ -48,7 +47,7 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const safeCustomers = Array.isArray(customers) ? customers : [];
 
   const addPlanMutation = usePlanMutation(() => {
-    form.reset({
+    reset({
       planned_date: defaultDate.toISOString().split('T')[0],
       customer_ref: '',
       customer_name: '',
@@ -63,8 +62,8 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   });
 
   const handleCustomerSelect = (ref: string, name: string) => {
-    form.setValue('customer_ref', ref);
-    form.setValue('customer_name', name);
+    setValue('customer_ref', ref);
+    setValue('customer_name', name);
   };
 
   const onSubmit = (data: PlanFormData) => {
@@ -83,48 +82,40 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Add Week Plan</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="planned_date"
-              render={({ field }) => (
-                <DatePickerField
-                  control={form.control}
-                  fieldName="planned_date"
-                  label="Date"
-                />
-              )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <DatePickerField
+            control={control}
+            fieldName="planned_date"
+            label="Date"
+          />
+
+          <div className="space-y-2">
+            <Label htmlFor="customer">Customer</Label>
+            <ImprovedCustomerSelector
+              customers={safeCustomers}
+              selectedCustomer={watch('customer_name') || ''}
+              onSelect={handleCustomerSelect}
             />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="customer">Customer</Label>
-              <ImprovedCustomerSelector
-                customers={safeCustomers}
-                selectedCustomer={form.watch('customer_name') || ''}
-                onSelect={handleCustomerSelect}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              {...register('notes')}
+              placeholder="Optional details about the planned visit"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                {...form.register('notes')}
-                placeholder="Optional details about the planned visit"
-              />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={addPlanMutation.isPending}>
-                {addPlanMutation.isPending ? 'Saving...' : 'Add Plan'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={addPlanMutation.isPending}>
+              {addPlanMutation.isPending ? 'Saving...' : 'Add Plan'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

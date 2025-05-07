@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format, parseISO, addDays } from 'date-fns';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -26,7 +27,7 @@ interface PlanItem {
   customer_name: string;
   customer_ref: string;
   planned_date: string;
-  notes?: string;
+  notes: string; // Changed from optional to required to match EditPlanDialog
   user_id: string;
   created_at: string;
 }
@@ -89,7 +90,13 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
         throw error;
       }
       
-      return data as PlanItem[];
+      // Ensure notes is not null/undefined on any plan items
+      const plansWithSafeNotes = (data as PlanItem[]).map(plan => ({
+        ...plan,
+        notes: plan.notes || ''
+      }));
+      
+      return plansWithSafeNotes;
     },
     meta: {
       onError: (error: Error) => {
@@ -260,7 +267,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
           isOpen={showAddPlan}
           onClose={() => setShowAddPlan(false)}
           onSuccess={handleAddPlanSuccess}
-          date={selectedDate}
+          selectedDate={selectedDate}
           customers={customers}
         />
       )}
