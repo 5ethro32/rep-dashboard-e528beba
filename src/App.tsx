@@ -15,11 +15,17 @@ import AIVera from "./pages/AIVera";
 import MyPerformance from "./pages/MyPerformance";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
+import { useState } from "react";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const isMobile = useIsMobile();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  
+  const handleSelectUser = (userId: string | null, displayName: string) => {
+    setSelectedUserId(userId);
+  };
 
   return (
     <Routes>
@@ -29,7 +35,12 @@ const AppRoutes = () => {
       {/* Main Layout Routes */}
       <Route element={
         <ProtectedRoute>
-          <AppLayout showChatInterface={!isMobile}>
+          <AppLayout 
+            showChatInterface={!isMobile}
+            selectedUserId={selectedUserId}
+            onSelectUser={handleSelectUser}
+            showUserSelector={true}
+          >
             <Outlet />
           </AppLayout>
         </ProtectedRoute>
