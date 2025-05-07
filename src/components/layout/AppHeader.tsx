@@ -1,9 +1,12 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
+import { ChartLine, BarChart3, ClipboardList, UserCircle, Bot } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
@@ -14,6 +17,7 @@ interface AppHeaderProps {
 const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: AppHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
+  const isMobile = useIsMobile();
   
   // Function to get the current page title based on the URL path
   const getCurrentPageTitle = () => {
@@ -40,34 +44,88 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
     }
   };
 
+  const navItems = [
+    {
+      path: '/rep-performance',
+      label: 'Reps',
+      icon: <ChartLine className="h-4 w-4" />
+    },
+    {
+      path: '/account-performance',
+      label: 'Accounts',
+      icon: <BarChart3 className="h-4 w-4" />
+    },
+    {
+      path: '/rep-tracker',
+      label: 'Tracker',
+      icon: <ClipboardList className="h-4 w-4" />
+    },
+    {
+      path: '/my-performance',
+      label: 'My Data',
+      icon: <UserCircle className="h-4 w-4" />
+    },
+    {
+      path: '/ai-vera',
+      label: 'AI Vera',
+      icon: <Bot className="h-4 w-4" />
+    }
+  ];
+
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-gray-950/80 border-b border-white/10">
-      <div className="container max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/rep-performance" className="flex items-center">
-            <span className="text-2xl font-bold">
-              <span className="font-normal italic mr-1 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700">a</span>
-            </span>
-          </Link>
-          <div className="flex items-center text-white/70">
-            <span className="text-finance-red mx-1.5">/</span>
-            <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-              {getCurrentPageTitle()}
-            </span>
+    <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-gray-950/95">
+      <div className="container max-w-7xl mx-auto px-4">
+        {/* Main header with logo and user profile */}
+        <div className="h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/rep-performance" className="flex items-center">
+              <span className="text-2xl font-bold">
+                <span className="font-normal italic mr-1 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700">a</span>
+              </span>
+            </Link>
+            <div className="flex items-center text-white/70">
+              <span className="text-finance-red mx-1.5">/</span>
+              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+                {getCurrentPageTitle()}
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {showUserSelector && (
+              <UserSelector
+                selectedUserId={selectedUserId || "all"}
+                onSelectUser={handleUserSelection}
+                className="mr-2"
+                showAllDataOption={true}
+              />
+            )}
+            <UserProfileDropdown />
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          {showUserSelector && (
-            <UserSelector
-              selectedUserId={selectedUserId || "all"}
-              onSelectUser={handleUserSelection}
-              className="mr-2"
-              showAllDataOption={true}
-            />
-          )}
-          <UserProfileDropdown />
-        </div>
+        {/* Navigation bar - only visible on non-mobile */}
+        {!isMobile && (
+          <div className="border-t border-white/5 py-1">
+            <nav className="flex items-center">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) => cn(
+                    "px-4 py-2 flex items-center gap-2 text-sm font-medium",
+                    isActive 
+                      ? "text-finance-red" 
+                      : "text-white/60 hover:text-white"
+                  )}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

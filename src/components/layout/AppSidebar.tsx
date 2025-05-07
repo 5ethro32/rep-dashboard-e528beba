@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   ChartLine, 
@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 import {
   Sidebar,
   SidebarContent,
-  SidebarProvider,
   useSidebar
 } from '@/components/ui/sidebar';
 
@@ -84,7 +83,7 @@ export const AppSidebar = () => {
 
   return (
     <Sidebar 
-      className="border-r border-white/10" 
+      className="border-r border-white/10 bg-gray-950/95" 
       variant="sidebar" 
       collapsible="icon"
     >

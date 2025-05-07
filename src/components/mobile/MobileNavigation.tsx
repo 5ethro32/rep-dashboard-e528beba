@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BarChart3, ClipboardList, ChartLine, UserCircle } from 'lucide-react';
+import { BarChart3, ClipboardList, ChartLine, UserCircle, Bot } from 'lucide-react';
 
 const MobileNavigation = () => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-950/90 backdrop-blur-md border-t border-white/10 p-2 px-4 z-40">
+    <div className="fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-md border-t border-white/10 p-2 px-4 z-40">
       <div className="flex justify-around items-center">
         <NavLink
           to="/rep-performance"
@@ -45,6 +45,16 @@ const MobileNavigation = () => {
         >
           <UserCircle className="h-5 w-5" />
           <span className="text-2xs mt-1">My Data</span>
+        </NavLink>
+        
+        <NavLink
+          to="/ai-vera"
+          className={({ isActive }) => `p-2 flex flex-col items-center ${
+            isActive ? 'text-finance-red' : 'text-white/70'
+          }`}
+        >
+          <Bot className="h-5 w-5" />
+          <span className="text-2xs mt-1">AI Vera</span>
         </NavLink>
       </div>
     </div>
