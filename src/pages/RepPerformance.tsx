@@ -7,9 +7,6 @@ import { formatCurrency, formatPercent, formatNumber, calculateSummary } from '@
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
-import { Button } from '@/components/ui/button';
-import { BarChart3, ClipboardList } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
@@ -161,32 +158,7 @@ const RepPerformance = () => {
           autoRefreshed={autoRefreshed}
         />
         
-        {/* Only show these buttons on non-mobile devices */}
-        {!isMobile && (
-          <div className="flex space-x-2">
-            <Link to="/account-performance">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Account Analysis
-              </Button>
-            </Link>
-            
-            <Link to="/rep-tracker">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-white/80 hover:text-white hover:bg-white/10 flex items-center"
-              >
-                <ClipboardList className="h-4 w-4 mr-2" />
-                Rep Tracker
-              </Button>
-            </Link>
-          </div>
-        )}
+        {/* Navigation links now moved to sidebar */}
       </div>
 
       <PerformanceFilters
