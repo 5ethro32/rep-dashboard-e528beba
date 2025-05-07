@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LineChart as RechartLine, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -66,15 +65,13 @@ const LineChart: React.FC<LineChartProps> = ({
     trajectoryMaxValue !== -Infinity ? trajectoryMaxValue : maxValue
   ) * 1.05);
   
-  // Custom tooltip formatter to indicate projected values
+  // Custom tooltip formatter to indicate projected values - MODIFIED to change "Trajectory" to "Projected"
   const customTooltipFormatter = (value: any, name: string, props: any) => {
     const isProjected = props.payload?.isProjected;
     const isTrajectory = props.payload?.isTrajectory;
     const formattedValue = yAxisFormatter(value);
     
-    if (isProjected && isTrajectory) {
-      return [`${formattedValue} (Trajectory)`, name];
-    } else if (isProjected) {
+    if (isProjected) {
       return [`${formattedValue} (Projected)`, name];
     }
     

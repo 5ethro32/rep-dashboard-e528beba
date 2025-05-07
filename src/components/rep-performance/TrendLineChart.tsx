@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -284,26 +283,16 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     });
   }, [selectedReps, repDataProp, workingDayPercentage]);
 
-  // Enhanced tooltip for the chart
+  // Enhanced tooltip for the chart - MODIFIED to simplify the tooltip content
   const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       // Check if this is a projected month
       const firstPayload = payload[0]?.payload;
       const isProjected = firstPayload?.isProjected;
-      const isTrajectory = firstPayload?.isTrajectory;
       
       return (
         <div className="bg-gray-800 border border-gray-700 p-3 rounded-md shadow-lg backdrop-blur-sm">
           <p className="font-semibold text-gray-200">{label}</p>
-          
-          {isProjected && (
-            <p className="text-xs text-yellow-300 mb-1">
-              {isTrajectory 
-                ? `Projected end of month based on ${workingDayPercentage.toFixed(1)}% of working days` 
-                : `Current MTD (${workingDayPercentage.toFixed(1)}% of working days)`
-              }
-            </p>
-          )}
           
           {/* Show overall metrics only if no reps are selected */}
           {selectedReps.length === 0 && (
@@ -311,19 +300,19 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               {showProfit && payload.find(p => p.dataKey === 'profit') && (
                 <p className="text-sm text-finance-red flex items-center">
                   Profit: {formatCurrency(payload.find(p => p.dataKey === 'profit')?.value || 0)}
-                  {isTrajectory && <span className="text-xs text-yellow-300 ml-1">(Trajectory)</span>}
+                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
                 </p>
               )}
               {showSpend && payload.find(p => p.dataKey === 'spend') && (
                 <p className="text-sm text-blue-400 flex items-center">
                   Spend: {formatCurrency(payload.find(p => p.dataKey === 'spend')?.value || 0)}
-                  {isTrajectory && <span className="text-xs text-yellow-300 ml-1">(Trajectory)</span>}
+                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
                 </p>
               )}
               {showPacks && payload.find(p => p.dataKey === 'packs') && (
                 <p className="text-sm text-green-400 flex items-center">
                   Packs: {Math.round(payload.find(p => p.dataKey === 'packs')?.value || 0).toLocaleString()}
-                  {isTrajectory && <span className="text-xs text-yellow-300 ml-1">(Trajectory)</span>}
+                  {isProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
                 </p>
               )}
               {showMargin && payload.find(p => p.dataKey === 'margin') && (
@@ -341,7 +330,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
             
             if (repData) {
               const repColor = CHART_COLORS[`rep${index + 1}` as keyof typeof CHART_COLORS];
-              const isRepTrajectory = repData.payload?.isTrajectory;
+              const isRepProjected = repData.payload?.isProjected;
               const metricType = repData.name.split(' - ')[1]; // Extract metric type (Profit, Spend, etc.)
               const value = repData.value;
               
@@ -356,7 +345,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         ? ` ${Math.round(value).toLocaleString()}`
                         : ` ${formatCurrency(value)}`
                     }
-                    {isRepTrajectory && <span className="text-xs text-yellow-300 ml-1">(Trajectory)</span>}
+                    {isRepProjected && <span className="text-xs text-yellow-300 ml-1">(Projected)</span>}
                   </p>
                 </div>
               );
@@ -442,6 +431,21 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     if (includeReva) departments.push('REVA');
     if (includeWholesale) departments.push('Wholesale');
     return departments.join(', ');
+  };
+  
+  // Custom tooltip formatter to indicate projected values - MODIFIED to change "Trajectory" to "Projected"
+  const customTooltipFormatter = (value: any, name: string, props: any) => {
+    const isProjected = props.payload?.isProjected;
+    const isTrajectory = props.payload?.isTrajectory;
+    const formattedValue = yAxisFormatter(value);
+    
+    if (isProjected && isTrajectory) {
+      return [`${formattedValue} (Projected)`, name];
+    } else if (isProjected) {
+      return [`${formattedValue} (Projected)`, name];
+    }
+    
+    return [formattedValue, name];
   };
   
   return (
@@ -814,68 +818,4 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         />
                         {repTrajectoryData.length > 0 && (
                           <Line
-                            yAxisId="right"
-                            type="monotone"
-                            dataKey="packs"
-                            name={`${repData.rep} - Packs`}
-                            stroke={repData.color}
-                            strokeWidth={1.5}
-                            strokeDasharray="5 5"
-                            dot={{ r: 3 }}
-                            activeDot={{ r: 5 }}
-                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
-                            xAxisId="shared"
-                            connectNulls={true}
-                          />
-                        )}
-                      </>
-                    )}
-                    
-                    {/* Display rep margin */}
-                    {showMargin && (
-                      <>
-                        <Line
-                          yAxisId="margin"
-                          type="monotone"
-                          dataKey="margin"
-                          name={`${repData.rep} - Margin %`}
-                          stroke={repData.color}
-                          strokeWidth={1.5}
-                          dot={{ r: 3, fill: CHART_COLORS.margin, stroke: repData.color }}
-                          activeDot={{ r: 5 }}
-                          data={repActualData}
-                          xAxisId="shared"
-                          connectNulls={true}
-                          strokeDasharray="2 2"
-                        />
-                        {repTrajectoryData.length > 0 && (
-                          <Line
-                            yAxisId="margin"
-                            type="monotone"
-                            dataKey="margin"
-                            name={`${repData.rep} - Margin %`}
-                            stroke={repData.color}
-                            strokeWidth={1.5}
-                            strokeDasharray="5 5"
-                            dot={{ r: 3, fill: CHART_COLORS.margin, stroke: repData.color }}
-                            activeDot={{ r: 5 }}
-                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
-                            xAxisId="shared"
-                            connectNulls={true}
-                          />
-                        )}
-                      </>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default TrendLineChart;
-
+                            y
