@@ -91,29 +91,34 @@ const PersonalizedInsights: React.FC<PersonalizedInsightsProps> = ({
     // Insight 3: Visit frequency impact
     if (visitData.length > 0) {
       // Group accounts by visit frequency
-      const accountVisits = visitData.reduce((acc, visit) => {
+      const accountVisits: Record<string, { name: string, visits: number, profit: number }> = {};
+      
+      visitData.forEach(visit => {
         const accountRef = visit.customer_ref;
-        if (!acc[accountRef]) {
-          acc[accountRef] = {
+        if (!accountVisits[accountRef]) {
+          accountVisits[accountRef] = {
             name: visit.customer_name,
             visits: 0,
             profit: 0
           };
         }
-        acc[accountRef].visits += 1;
-        acc[accountRef].profit += visit.profit || 0;
-        return acc;
-      }, {});
+        accountVisits[accountRef].visits += 1;
+        accountVisits[accountRef].profit += Number(visit.profit) || 0;
+      });
       
       // Calculate average profit per visit
       const accountsWithVisits = Object.values(accountVisits);
       if (accountsWithVisits.length > 0) {
-        const avgVisitsPerAccount = accountsWithVisits.reduce((sum: number, account: any) => 
-          sum + account.visits, 0) / accountsWithVisits.length;
+        const totalVisits = accountsWithVisits.reduce(
+          (sum, account) => sum + account.visits, 0
+        );
+        const avgVisitsPerAccount = totalVisits / accountsWithVisits.length;
         
-        const avgProfitPerVisit = accountsWithVisits.reduce((sum: number, account: any) => 
-          sum + account.profit, 0) / accountsWithVisits.reduce((sum: number, account: any) => 
-          sum + account.visits, 0);
+        const totalProfit = accountsWithVisits.reduce(
+          (sum, account) => sum + account.profit, 0
+        );
+        // Make sure to handle potential division by zero
+        const avgProfitPerVisit = totalVisits > 0 ? totalProfit / totalVisits : 0;
         
         insights.push({
           type: 'info',
@@ -136,8 +141,11 @@ const PersonalizedInsights: React.FC<PersonalizedInsightsProps> = ({
     
     // Insight 4: Active accounts ratio
     if (performanceData) {
-      const activeRatio = performanceData.totalAccounts > 0 ? 
-        (performanceData.activeAccounts / performanceData.totalAccounts) * 100 : 0;
+      const totalAccounts = performanceData.totalAccounts || 0;
+      const activeAccounts = performanceData.activeAccounts || 0;
+      
+      const activeRatio = totalAccounts > 0 ? 
+        (activeAccounts / totalAccounts) * 100 : 0;
       
       const insight = {
         type: activeRatio >= 70 ? 'success' : 'warning',
@@ -148,7 +156,7 @@ const PersonalizedInsights: React.FC<PersonalizedInsightsProps> = ({
       };
       
       if (activeRatio < 70) {
-        const inactiveCount = performanceData.totalAccounts - performanceData.activeAccounts;
+        const inactiveCount = totalAccounts - activeAccounts;
         insight.details.push({
           name: 'Inactive accounts',
           metric: inactiveCount.toString()

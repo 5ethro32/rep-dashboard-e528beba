@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,7 +76,7 @@ const MyPerformance = () => {
       console.log('Matching with names:', { userName, fullName });
       
       // Get the appropriate table based on selected month
-      let tableName: string;
+      let tableName;
       switch (selectedMonth) {
         case 'May':
           tableName = 'May_Data';
@@ -102,10 +101,31 @@ const MyPerformance = () => {
       // We use fullName if available, otherwise userName for matching
       const matchName = fullName || userName;
       
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('*')
-        .or(`${repColumn}.ilike.%${matchName}%,${subRepColumn}.ilike.%${matchName}%`);
+      let query;
+      
+      if (tableName === 'May_Data') {
+        query = supabase
+          .from('May_Data')
+          .select('*')
+          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+      } else if (tableName === 'mtd_daily') {
+        query = supabase
+          .from('mtd_daily')
+          .select('*')
+          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+      } else if (tableName === 'sales_data') {
+        query = supabase
+          .from('sales_data')
+          .select('*')
+          .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`);
+      } else {
+        query = supabase
+          .from('sales_data_februrary')
+          .select('*')
+          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -145,16 +165,36 @@ const MyPerformance = () => {
       const matchName = fullName || userName;
       
       // Get current month data
-      const { data: currentData } = await supabase
-        .from(selectedMonth === 'May' ? 'May_Data' : 'mtd_daily')
-        .select('*')
-        .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+      let currentQuery;
+      if (selectedMonth === 'May') {
+        currentQuery = supabase
+          .from('May_Data')
+          .select('*')
+          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+      } else {
+        currentQuery = supabase
+          .from('mtd_daily')
+          .select('*')
+          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+      }
+      
+      const { data: currentData } = await currentQuery;
       
       // Get previous month data
-      const { data: previousData } = await supabase
-        .from(selectedMonth === 'May' ? 'Prior_Month_Rolling' : 'sales_data')
-        .select('*')
-        .or(`${selectedMonth === 'May' ? 'Rep' : 'rep_name'}.ilike.%${matchName}%,${selectedMonth === 'May' ? 'Sub-Rep' : 'sub_rep'}.ilike.%${matchName}%`);
+      let previousQuery;
+      if (selectedMonth === 'May') {
+        previousQuery = supabase
+          .from('Prior_Month_Rolling')
+          .select('*')
+          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+      } else {
+        previousQuery = supabase
+          .from('sales_data')
+          .select('*')
+          .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`);
+      }
+      
+      const { data: previousData } = await previousQuery;
       
       // Calculate account health by comparing current and previous data
       const accountHealth = calculateAccountHealth(currentData || [], previousData || []);
@@ -425,5 +465,161 @@ const MyPerformance = () => {
     </AppLayout>
   );
 };
+
+// Add in the missing methods
+const fetchVisitData = async function() {
+  // Fetch customer visits data to analyze impact
+  try {
+    if (this.user?.id) {
+      const { data, error } = await supabase
+        .from('customer_visits')
+        .select('*')
+        .eq('user_id', this.user.id);
+        
+      if (error) throw error;
+      
+      console.log(`Found ${data?.length || 0} visit records for user`);
+      this.setVisitData(data || []);
+    }
+  } catch (error) {
+    console.error("Error fetching visit data:", error);
+  }
+};
+
+const calculatePerformanceMetrics = function(data, profitColumn, spendColumn) {
+  if (!data || data.length === 0) return {
+    totalProfit: 0,
+    totalSpend: 0,
+    margin: 0,
+    totalAccounts: 0,
+    activeAccounts: 0
+  };
+  
+  const accountSet = new Set();
+  const activeAccountSet = new Set();
+  
+  let totalProfit = 0;
+  let totalSpend = 0;
+  
+  data.forEach(item => {
+    // Handle different column naming conventions
+    const profit = typeof item[profitColumn] === 'number' ? item[profitColumn] : 0;
+    const spend = typeof item[spendColumn] === 'number' ? item[spendColumn] : 0;
+    const accountRef = item['Account Ref'] || item.account_ref;
+    
+    totalProfit += profit;
+    totalSpend += spend;
+    
+    if (accountRef) {
+      accountSet.add(accountRef);
+      if (spend > 0) {
+        activeAccountSet.add(accountRef);
+      }
+    }
+  });
+  
+  return {
+    totalProfit,
+    totalSpend,
+    margin: totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0,
+    totalAccounts: accountSet.size,
+    activeAccounts: activeAccountSet.size
+  };
+};
+
+const calculateAccountHealth = function(currentData, previousData) {
+  // Maps for current and previous month data
+  const currentAccounts = new Map();
+  const previousAccounts = new Map();
+  
+  // Process current month data
+  currentData.forEach(item => {
+    const accountRef = item['Account Ref'] || '';
+    const accountName = item['Account Name'] || '';
+    const profit = typeof item.Profit === 'number' ? item.Profit : 0;
+    const spend = typeof item.Spend === 'number' ? item.Spend : 0;
+    
+    if (accountRef) {
+      currentAccounts.set(accountRef, {
+        name: accountName,
+        profit,
+        spend,
+        margin: spend > 0 ? (profit / spend) * 100 : 0
+      });
+    }
+  });
+  
+  // Process previous month data
+  previousData.forEach(item => {
+    const accountRef = item['Account Ref'] || item.account_ref || '';
+    const profit = typeof item.Profit === 'number' ? item.Profit : 
+                   typeof item.profit === 'number' ? item.profit : 0;
+    const spend = typeof item.Spend === 'number' ? item.Spend : 
+                  typeof item.spend === 'number' ? item.spend : 0;
+    
+    if (accountRef) {
+      previousAccounts.set(accountRef, {
+        profit,
+        spend,
+        margin: spend > 0 ? (profit / spend) * 100 : 0
+      });
+    }
+  });
+  
+  // Analyze each account's health
+  const healthScores = [];
+  
+  currentAccounts.forEach((currentData, accountRef) => {
+    const previousData = previousAccounts.get(accountRef);
+    
+    // Calculate metrics
+    const profitChange = previousData ? currentData.profit - previousData.profit : 0;
+    const profitChangePercent = previousData && previousData.profit !== 0 ? 
+      (profitChange / previousData.profit) * 100 : 0;
+    
+    const spendChange = previousData ? currentData.spend - previousData.spend : 0;
+    const spendChangePercent = previousData && previousData.spend !== 0 ?
+      (spendChange / previousData.spend) * 100 : 0;
+      
+    const marginChange = previousData ? currentData.margin - previousData.margin : 0;
+    
+    // Calculate health score: simplified version for demo
+    // A real implementation would have a more sophisticated algorithm
+    let healthScore = 0;
+    if (profitChangePercent > 10) healthScore += 2;
+    else if (profitChangePercent > 0) healthScore += 1;
+    else if (profitChangePercent < -10) healthScore -= 2;
+    else if (profitChangePercent < 0) healthScore -= 1;
+    
+    if (marginChange > 5) healthScore += 2;
+    else if (marginChange > 0) healthScore += 1;
+    else if (marginChange < -5) healthScore -= 2;
+    else if (marginChange < 0) healthScore -= 1;
+    
+    if (spendChangePercent > 10) healthScore += 1;
+    
+    const status = healthScore > 2 ? 'improving' : 
+                   healthScore < -1 ? 'declining' : 'stable';
+    
+    healthScores.push({
+      accountRef,
+      accountName: currentData.name,
+      profit: currentData.profit,
+      spend: currentData.spend,
+      margin: currentData.margin,
+      profitChange,
+      profitChangePercent,
+      spendChange,
+      spendChangePercent,
+      marginChange,
+      healthScore,
+      status
+    });
+  });
+  
+  return healthScores.sort((a, b) => b.healthScore - a.healthScore);
+};
+
+MyPerformance.prototype.fetchVisitData = fetchVisitData;
 
 export default MyPerformance;
