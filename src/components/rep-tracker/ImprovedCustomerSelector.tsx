@@ -57,19 +57,12 @@ export function ImprovedCustomerSelector({
     };
   }, [open]);
 
-  // Handle customer selection with explicit error handling
+  // Handle customer selection - removed the explicit error handling that was causing unnecessary toasts
   const handleCustomerSelection = (ref: string, name: string) => {
-    try {
-      if (!ref || !name) {
-        console.error('Invalid customer selection:', { ref, name });
-        return;
-      }
-      
+    if (ref && name) {
       // Call the onSelect prop with the selected customer
       onSelect(ref, name);
       setOpen(false);
-    } catch (error) {
-      console.error('Error selecting customer:', error);
     }
   };
   
