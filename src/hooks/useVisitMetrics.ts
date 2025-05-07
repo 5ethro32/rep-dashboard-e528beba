@@ -1,106 +1,77 @@
 
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { startOfWeek, endOfWeek, format, addDays } from 'date-fns';
-import { useAuth } from '@/contexts/AuthContext';
+import { startOfWeek, endOfWeek, differenceInDays } from 'date-fns';
 
-export interface VisitMetrics {
+interface VisitMetrics {
   totalVisits: number;
-  totalOrders: number;
   totalProfit: number;
-  dailyAvgProfit: number;
+  totalOrders: number;
   conversionRate: number;
+  dailyAvgProfit: number;
   topProfitOrder: number;
   avgProfitPerOrder: number;
   plannedVisits: number;
 }
 
-export const useVisitMetrics = (date: Date, userId?: string | null) => {
-  const { user } = useAuth();
-  
-  // The date range for the query is the week starting from the provided date
-  const weekStart = startOfWeek(date, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
-  
+export const useVisitMetrics = (selectedDate: Date) => {
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+
   return useQuery({
-    queryKey: ['visit-metrics', format(weekStart, 'yyyy-MM-dd'), format(weekEnd, 'yyyy-MM-dd'), userId],
-    queryFn: async () => {
-      // Use the provided userId or fall back to the logged-in user's ID
-      const queryUserId = userId !== undefined ? userId : user?.id;
-      
-      let query = supabase
-        .from('customer_visits')
-        .select('*')
-        .gte('date', weekStart.toISOString())
-        .lte('date', weekEnd.toISOString());
-      
-      // Only filter by user_id if we have one (allows for viewing all users)
-      if (queryUserId) {
-        query = query.eq('user_id', queryUserId);
-      }
-      
-      const { data: visits, error } = await query;
-      
-      if (error) throw error;
-      
-      // Query for week plans
-      let plansQuery = supabase
-        .from('week_plans')
-        .select('*')
-        .gte('planned_date', weekStart.toISOString().split('T')[0])
-        .lte('planned_date', weekEnd.toISOString().split('T')[0]);
-        
-      // Only filter by user_id if we have one
-      if (queryUserId) {
-        plansQuery = plansQuery.eq('user_id', queryUserId);
-      }
-        
-      const { data: plans, error: plansError } = await plansQuery;
-      
+    queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString()],
+    queryFn: async (): Promise<VisitMetrics> => {
+      const [{ data: visits, error: visitsError }, { data: plans, error: plansError }] = await Promise.all([
+        supabase
+          .from('customer_visits')
+          .select('*')
+          .gte('date', weekStart.toISOString())
+          .lte('date', weekEnd.toISOString()),
+        supabase
+          .from('week_plans')
+          .select('*')
+          .gte('planned_date', weekStart.toISOString().split('T')[0])
+          .lte('planned_date', weekEnd.toISOString().split('T')[0])
+      ]);
+
+      if (visitsError) throw visitsError;
       if (plansError) throw plansError;
+
+      // Calculate base metrics
+      const totalVisits = visits.length;
+      const totalProfit = visits.reduce((sum, visit) => sum + (visit.profit || 0), 0);
+      const customerVisitProfit = visits
+        .filter(visit => visit.visit_type === 'Customer Visit')
+        .reduce((sum, visit) => sum + (visit.profit || 0), 0);
+      const customerVisitCount = visits.filter(visit => visit.visit_type === 'Customer Visit').length;
       
-      const orderVisits = visits ? visits.filter(visit => visit.has_order) : [];
+      // Only count visits where has_order is true
+      const visitsWithOrders = visits.filter(visit => visit.has_order);
+      const totalOrders = visitsWithOrders.length;
       
-      const totalVisits = visits ? visits.length : 0;
-      const totalOrders = orderVisits.length;
-      const totalProfit = orderVisits.reduce((sum, visit) => sum + (visit.profit || 0), 0);
-      const conversionRate = totalVisits > 0 ? (totalOrders / totalVisits) * 100 : 0;
-      const topProfitOrder = orderVisits.length > 0 ? Math.max(...orderVisits.map(v => v.profit || 0)) : 0;
-      const avgProfitPerOrder = totalOrders > 0 ? totalProfit / totalOrders : 0;
-      const plannedVisits = plans ? plans.length : 0;
+      // Calculate order-specific profit
+      const orderProfit = visitsWithOrders.reduce((sum, visit) => sum + (visit.profit || 0), 0);
       
-      // Calculate average daily profit
-      let dailyProfitTotal = 0;
-      let daysWithProfit = 0;
+      // Find top profit order
+      const topProfitOrder = visits.length > 0 
+        ? Math.max(...visits.map(visit => visit.profit || 0))
+        : 0;
       
-      // Create a map of daily profit totals
-      const dailyProfits = new Map();
+      const plannedVisits = plans.length;
       
-      for (let i = 0; i < 7; i++) {
-        const currentDay = addDays(weekStart, i);
-        const dayFormatted = format(currentDay, 'yyyy-MM-dd');
-        
-        const dayVisits = orderVisits.filter(visit => {
-          const visitDate = new Date(visit.date);
-          return format(visitDate, 'yyyy-MM-dd') === dayFormatted;
-        });
-        
-        const dayProfit = dayVisits.reduce((sum, visit) => sum + (visit.profit || 0), 0);
-        dailyProfits.set(dayFormatted, dayProfit);
-        
-        if (dayProfit > 0) {
-          dailyProfitTotal += dayProfit;
-          daysWithProfit++;
-        }
-      }
+      // Count unique days with visits to calculate daily average profit
+      const uniqueVisitDays = new Set(visits.map(visit => visit.date?.split('T')[0])).size;
+      const daysWithVisits = uniqueVisitDays > 0 ? uniqueVisitDays : 1; // At least 1 day to avoid division by zero
       
-      const dailyAvgProfit = daysWithProfit > 0 ? dailyProfitTotal / daysWithProfit : 0;
-      
+      // Calculate derived metrics
+      const conversionRate = totalVisits ? (totalOrders / totalVisits) * 100 : 0;
+      const dailyAvgProfit = totalProfit / daysWithVisits; // Calculate based on actual days with visits
+      const avgProfitPerOrder = totalOrders ? orderProfit / totalOrders : 0; // Use profit specifically from orders with has_order=true
+
       return {
         totalVisits,
-        totalOrders,
         totalProfit,
+        totalOrders,
         conversionRate,
         dailyAvgProfit,
         topProfitOrder,
@@ -108,10 +79,11 @@ export const useVisitMetrics = (date: Date, userId?: string | null) => {
         plannedVisits
       };
     },
-    meta: {
-      onError: (error: Error) => {
-        console.error('Error fetching visit metrics:', error);
-      }
-    }
+    // Set staleTime to 0 to always re-fetch when a dependency changes
+    staleTime: 0,
+    // Disable any background refresh - only fetch when explicitly asked
+    refetchInterval: 0,
+    // Don't cache result - always re-fetch from server
+    gcTime: 0
   });
 };

@@ -2,226 +2,150 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
+import { Search } from 'lucide-react';
+import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { format, parseISO } from 'date-fns';
+} from "@/components/ui/table";
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { CustomerSelector } from './CustomerSelector';
-import { Check, X } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 
-interface CustomerHistoryTableProps {
-  customers: Array<{
-    account_name: string;
-    account_ref: string;
-  }>;
-  userId?: string | null;
-}
-
-interface VisitHistory {
+interface CustomerVisit {
   id: string;
   date: string;
   customer_name: string;
   customer_ref: string;
   visit_type: string;
   has_order: boolean;
-  profit?: number;
-  comments?: string;
-  contact_name?: string;
+  profit: number;
+  comments: string | null;
+  contact_name: string | null;
 }
 
-const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers, userId }) => {
-  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
-  const { user } = useAuth();
-  
-  const { data: visits, isLoading } = useQuery({
-    queryKey: ['customer-history', selectedCustomer, userId],
-    queryFn: async () => {
-      if (!selectedCustomer) return [];
+interface CustomerHistoryTableProps {
+  customers: Array<{ account_name: string; account_ref: string }>;
+}
+
+const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers }) => {
+  const [selectedCustomerRef, setSelectedCustomerRef] = useState<string>('');
+  const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
+
+  // Query to fetch all visits for a specific customer
+  const { data: customerVisits, isLoading } = useQuery({
+    queryKey: ['customer-history', selectedCustomerRef],
+    queryFn: async (): Promise<CustomerVisit[]> => {
+      if (!selectedCustomerRef) return [];
       
-      let query = supabase
+      const { data, error } = await supabase
         .from('customer_visits')
         .select('*')
-        .eq('customer_ref', selectedCustomer);
+        .eq('customer_ref', selectedCustomerRef)
+        .order('date', { ascending: false });
         
-      // If userId is provided, filter by it
-      if (userId) {
-        query = query.eq('user_id', userId);
-      } else {
-        // Otherwise use the current user's ID
-        query = query.eq('user_id', user?.id);
+      if (error) {
+        throw error;
       }
-        
-      // Order by date descending (most recent first)
-      query = query.order('date', { ascending: false });
       
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      return data as VisitHistory[];
+      return data || [];
     },
-    enabled: !!selectedCustomer,
-    meta: {
-      onError: (error: Error) => {
-        console.error('Error fetching customer visit history:', error);
-      }
-    }
+    enabled: !!selectedCustomerRef
   });
-  
-  const { data: customerTotals } = useQuery({
-    queryKey: ['customer-totals', selectedCustomer, userId],
-    queryFn: async () => {
-      if (!selectedCustomer) return null;
-      
-      let query = supabase
-        .from('customer_visits')
-        .select('*')
-        .eq('customer_ref', selectedCustomer);
-        
-      // If userId is provided, filter by it
-      if (userId) {
-        query = query.eq('user_id', userId);
-      } else {
-        // Otherwise use the current user's ID
-        query = query.eq('user_id', user?.id);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      const totalVisits = data.length;
-      const ordersWithProfit = data.filter(v => v.has_order && v.profit);
-      const totalOrders = ordersWithProfit.length;
-      const totalProfit = ordersWithProfit.reduce((sum, v) => sum + (v.profit || 0), 0);
-      const conversionRate = totalVisits > 0 ? (totalOrders / totalVisits) * 100 : 0;
-      
-      return {
-        totalVisits,
-        totalOrders,
-        totalProfit,
-        conversionRate
-      };
-    },
-    enabled: !!selectedCustomer,
-    meta: {
-      onError: (error: Error) => {
-        console.error('Error calculating customer totals:', error);
-      }
+
+  const handleCustomerSelect = (ref: string, name: string) => {
+    setSelectedCustomerRef(ref);
+    setSelectedCustomerName(name);
+  };
+
+  // Function to format the date for display
+  const formatVisitDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'EEE, MMM d, yyyy');
+    } catch (e) {
+      return 'Invalid date';
     }
-  });
-  
-  const selectedCustomerName = selectedCustomer 
-    ? customers.find(c => c.account_ref === selectedCustomer)?.account_name 
-    : '';
-  
+  };
+
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold mb-4">Customer Visit History</h2>
-        
-        <div className="max-w-sm mb-6">
-          <CustomerSelector 
-            customers={customers} 
-            selectedCustomer={selectedCustomer || ''}
-            onSelect={setSelectedCustomer}
-            placeholder="Select a customer to view history"
-          />
-        </div>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Customer Visit History</h3>
       </div>
       
-      {selectedCustomer && !isLoading && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <div className="bg-black/30 border border-gray-800 p-3 md:p-4 rounded-lg">
-            <div className="text-sm text-gray-400">Total Visits</div>
-            <div className="text-xl font-semibold mt-1">{customerTotals?.totalVisits || 0}</div>
-          </div>
-          
-          <div className="bg-black/30 border border-gray-800 p-3 md:p-4 rounded-lg">
-            <div className="text-sm text-gray-400">Orders</div>
-            <div className="text-xl font-semibold mt-1">{customerTotals?.totalOrders || 0}</div>
-          </div>
-          
-          <div className="bg-black/30 border border-gray-800 p-3 md:p-4 rounded-lg">
-            <div className="text-sm text-gray-400">Profit</div>
-            <div className="text-xl font-semibold mt-1">{formatCurrency(customerTotals?.totalProfit || 0)}</div>
-          </div>
-          
-          <div className="bg-black/30 border border-gray-800 p-3 md:p-4 rounded-lg">
-            <div className="text-sm text-gray-400">Conversion Rate</div>
-            <div className="text-xl font-semibold mt-1">{(customerTotals?.conversionRate || 0).toFixed(1)}%</div>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="w-full sm:w-1/2">
+            <ImprovedCustomerSelector
+              customers={customers}
+              selectedCustomer={selectedCustomerName}
+              onSelect={handleCustomerSelect}
+              placeholder="Select a customer to view their visit history..."
+            />
           </div>
         </div>
-      )}
-      
-      {selectedCustomer ? (
-        <div className="border border-gray-800 rounded-md overflow-hidden">
-          <Table className="w-full">
-            <TableHeader className="bg-black/30">
-              <TableRow className="hover:bg-transparent border-b border-gray-800">
-                <TableHead className="text-white font-medium">Date</TableHead>
-                <TableHead className="text-white font-medium">Visit Type</TableHead>
-                <TableHead className="text-white font-medium">Contact</TableHead>
-                <TableHead className="text-white font-medium">Order</TableHead>
-                <TableHead className="text-white font-medium">Profit</TableHead>
-                <TableHead className="text-white font-medium">Notes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-white/60">
-                    Loading visit history...
-                  </TableCell>
-                </TableRow>
-              ) : visits && visits.length > 0 ? (
-                <ScrollArea className="h-[400px]">
-                  {visits.map((visit) => (
-                    <TableRow 
-                      key={visit.id}
-                      className="hover:bg-black/20 border-b border-gray-800 text-white"
-                    >
-                      <TableCell>{format(parseISO(visit.date), 'dd MMM yyyy')}</TableCell>
+
+        {selectedCustomerRef && (
+          <Card className="p-4 border-gray-800 bg-black/20">
+            {isLoading ? (
+              <div className="flex justify-center p-8">
+                <div className="animate-spin h-8 w-8 border-4 border-finance-red border-t-transparent rounded-full"></div>
+              </div>
+            ) : customerVisits && customerVisits.length > 0 ? (
+              <Table>
+                <TableCaption>
+                  Visit history for {selectedCustomerName} - {customerVisits.length} total visits
+                </TableCaption>
+                <TableHeader>
+                  <TableRow className="bg-gray-900/50 hover:bg-gray-900">
+                    <TableHead>Date</TableHead>
+                    <TableHead>Visit Type</TableHead>
+                    <TableHead>Order</TableHead>
+                    <TableHead>Profit</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Comments</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customerVisits.map((visit) => (
+                    <TableRow key={visit.id} className="border-gray-800 hover:bg-gray-900/50">
+                      <TableCell className="font-medium">{formatVisitDate(visit.date)}</TableCell>
                       <TableCell>{visit.visit_type}</TableCell>
-                      <TableCell>{visit.contact_name || '—'}</TableCell>
                       <TableCell>
                         {visit.has_order ? (
-                          <Check className="h-4 w-4 text-green-500" />
+                          <Badge className="bg-green-600">Yes</Badge>
                         ) : (
-                          <X className="h-4 w-4 text-red-500" />
+                          <Badge variant="outline" className="text-gray-400 border-gray-700">No</Badge>
                         )}
                       </TableCell>
-                      <TableCell>
-                        {visit.has_order && visit.profit ? formatCurrency(visit.profit) : '—'}
+                      <TableCell className={`${visit.profit > 0 ? "text-finance-red" : "text-gray-400"}`}>
+                        {formatCurrency(visit.profit)}
                       </TableCell>
+                      <TableCell>{visit.contact_name || '-'}</TableCell>
                       <TableCell className="max-w-[200px] truncate">
-                        {visit.comments || '—'}
+                        {visit.comments || '-'}
                       </TableCell>
                     </TableRow>
                   ))}
-                </ScrollArea>
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-white/60">
-                    No visits found for this customer.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <div className="bg-black/30 border border-gray-800 rounded-lg p-8 text-center">
-          <p className="text-gray-400">Select a customer to view their visit history.</p>
-        </div>
-      )}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center p-8 text-gray-500">
+                {selectedCustomerRef ? 
+                  "No visits found for this customer." : 
+                  "Select a customer to view their visit history."}
+              </div>
+            )}
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

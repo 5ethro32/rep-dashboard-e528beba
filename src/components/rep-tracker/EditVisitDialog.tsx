@@ -1,261 +1,241 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { z } from 'zod';
+import React from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { CustomerSearch } from './CustomerSearch';
+import { toast } from '@/components/ui/use-toast';
+import { format } from 'date-fns';
+import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
 import DatePickerField from './DatePickerField';
-import { parseISO } from 'date-fns';
+
+interface Visit {
+  id: string;
+  date: string;
+  customer_name: string;
+  customer_ref: string;
+  contact_name?: string;
+  visit_type: string;
+  has_order: boolean;
+  profit?: number;
+  comments?: string;
+  user_id: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 interface EditVisitDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  visit: {
-    id: string;
-    date: string;
-    customer_name: string;
-    customer_ref: string;
-    contact_name?: string;
-    visit_type: string;
-    has_order: boolean;
-    profit?: number;
-    comments?: string;
-    user_id: string;
-    week_plan_id?: string;
-    created_at?: string;
-    updated_at?: string;
-  };
-  customers: Array<{
-    account_name: string;
-    account_ref: string;
-  }>;
-  userId?: string;
-  onSuccess: () => void;
+  visit: Visit;
+  customers?: Array<{ account_name: string; account_ref: string }>;
+  onSuccess?: () => void;
 }
 
-const formSchema = z.object({
-  date: z.date(),
-  customer_ref: z.string().min(1, {
-    message: "Please select a customer.",
-  }),
-  contact_name: z.string().optional(),
-  visit_type: z.string().min(1, {
-    message: "Please select a visit type.",
-  }),
-  has_order: z.boolean().default(false),
-  profit: z.number().optional(),
-  comments: z.string().optional(),
-});
+interface VisitFormData {
+  date: string;
+  customer_ref: string;
+  customer_name: string;
+  contact_name: string;
+  visit_type: string;
+  has_order: boolean;
+  profit: number;
+  comments: string;
+}
 
-const EditVisitDialog: React.FC<EditVisitDialogProps> = ({ isOpen, onClose, visit, customers, userId, onSuccess }) => {
-  const [isOrdered, setIsOrdered] = useState(visit.has_order);
-  const queryClient = useQueryClient();
+const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
+  isOpen,
+  onClose,
+  visit,
+  customers = [],
+  onSuccess,
+}) => {
   const { user } = useAuth();
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const queryClient = useQueryClient();
+  
+  const formattedDate = format(new Date(visit.date), 'yyyy-MM-dd');
+  
+  const { register, handleSubmit, setValue, watch } = useForm<VisitFormData>({
     defaultValues: {
-      date: parseISO(visit.date),
+      date: formattedDate,
       customer_ref: visit.customer_ref,
-      contact_name: visit.contact_name,
+      customer_name: visit.customer_name,
+      contact_name: visit.contact_name || '',
       visit_type: visit.visit_type,
       has_order: visit.has_order,
-      profit: visit.profit,
-      comments: visit.comments,
-    },
+      profit: visit.profit || 0,
+      comments: visit.comments || '',
+    }
   });
 
-  const { mutate: updateVisit, isPending } = useMutation({
-    mutationFn: async (values: z.infer<typeof formSchema>) => {
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+
+  const updateVisitMutation = useMutation({
+    mutationFn: async (data: VisitFormData) => {
+      const formattedDate = new Date(data.date);
+      formattedDate.setHours(12, 0, 0, 0);
+      
       const { error } = await supabase
         .from('customer_visits')
-        .update({
-          date: values.date.toISOString(),
-          customer_ref: values.customer_ref,
-          customer_name: customers.find(c => c.account_ref === values.customer_ref)?.account_name,
-          contact_name: values.contact_name,
-          visit_type: values.visit_type,
-          has_order: values.has_order,
-          profit: values.has_order ? values.profit : null,
-          comments: values.comments,
-          user_id: userId || user?.id,
+        .update({ 
+          ...data, 
+          date: formattedDate.toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('id', visit.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customer-visits'] });
-      toast({
-        title: 'Success',
-        description: 'Visit updated successfully.',
+      queryClient.invalidateQueries({
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
       });
-      onSuccess();
+      
+      toast({
+        title: 'Visit Updated',
+        description: 'Customer visit has been updated successfully.',
+      });
+      
       onClose();
+      
+      if (onSuccess) {
+        onSuccess();
+      }
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
+      console.error("Error updating visit:", error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update visit. Please try again.',
+        description: 'Failed to update visit. Please try again.',
         variant: 'destructive',
       });
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    updateVisit(values);
+  const handleCustomerSelect = (ref: string, name: string) => {
+    setValue('customer_ref', ref);
+    setValue('customer_name', name);
+  };
+
+  const onSubmit = (data: VisitFormData) => {
+    updateVisitMutation.mutate(data);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-gray-900 border border-gray-700 text-white">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Visit</DialogTitle>
+          <DialogTitle>Edit Customer Visit</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <DatePickerField
-                  control={form.control}
-                  label="Date"
-                  fieldName="date"
-                />
-              )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <DatePickerField
+            id="date"
+            label="Date"
+            value={watch('date')}
+            onChange={(date) => setValue('date', date)}
+          />
+
+          <div className="space-y-2">
+            <Label htmlFor="customer">Customer</Label>
+            <ImprovedCustomerSelector 
+              customers={safeCustomers}
+              selectedCustomer={watch('customer_name') || ''}
+              onSelect={handleCustomerSelect}
             />
-            <FormField
-              control={form.control}
-              name="customer_ref"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer</FormLabel>
-                  <FormControl>
-                    <CustomerSearch
-                      customers={customers}
-                      field={field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contact_name">Contact Name</Label>
+            <Input
+              id="contact_name"
+              {...register('contact_name')}
+              placeholder="Optional"
             />
-            <FormField
-              control={form.control}
-              name="contact_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contact Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Contact name" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="visit_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Visit Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select a visit type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                      <SelectItem value="In-Person">In-Person</SelectItem>
-                      <SelectItem value="Phone Call">Phone Call</SelectItem>
-                      <SelectItem value="Email">Email</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="has_order"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-700 p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-sm">Order Placed?</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={isOrdered}
-                      onCheckedChange={(checked) => {
-                        setIsOrdered(checked);
-                        field.onChange(checked);
-                      }}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            {isOrdered && (
-              <FormField
-                control={form.control}
-                name="profit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Profit (£)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Profit from order"
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="visit_type">Visit Type</Label>
+            <Select
+              defaultValue={visit.visit_type}
+              onValueChange={(value) => setValue('visit_type', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Customer Visit">Customer Visit</SelectItem>
+                <SelectItem value="Outbound Call">Outbound Call</SelectItem>
+                <SelectItem value="Office">Office</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="has_order">Order Placed</Label>
+            <Select
+              defaultValue={visit.has_order ? 'true' : 'false'}
+              onValueChange={(value) => setValue('has_order', value === 'true')}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Yes</SelectItem>
+                <SelectItem value="false">No</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {watch('has_order') && (
+            <div className="space-y-2">
+              <Label htmlFor="profit">Profit (£)</Label>
+              <Input
+                id="profit"
+                type="number"
+                step="0.01"
+                {...register('profit', { valueAsNumber: true })}
+                placeholder="0.00"
               />
-            )}
-            <FormField
-              control={form.control}
-              name="comments"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Comments</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Additional comments about the visit"
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? 'Updating...' : 'Update Visit'}
-              </Button>
             </div>
-          </form>
-        </Form>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="comments">Comments</Label>
+            <Textarea
+              id="comments"
+              {...register('comments')}
+              placeholder="Optional"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={updateVisitMutation.isPending}>
+              {updateVisitMutation.isPending ? 'Saving...' : 'Update Visit'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

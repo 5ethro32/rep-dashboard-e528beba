@@ -43,7 +43,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
     return null;
   }
   
-  const { register, handleSubmit, setValue, watch, control } = useForm<PlanFormData>({
+  const { register, handleSubmit, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
       id: plan.id,
       planned_date: plan.planned_date,
@@ -77,9 +77,10 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <DatePickerField
-            control={control}
-            fieldName="planned_date"
+            id="planned_date"
             label="Date"
+            value={watch('planned_date')}
+            onChange={(date) => setValue('planned_date', date)}
           />
 
           <div className="space-y-2">

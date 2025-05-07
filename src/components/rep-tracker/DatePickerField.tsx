@@ -1,125 +1,83 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { FormControl, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Control, Controller } from 'react-hook-form';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface DatePickerFieldProps {
-  control?: Control<any>;
+  id: string;
   label: string;
-  fieldName?: string;
-  id?: string;
-  value?: string;
-  onChange?: (date: string) => void;
+  value: string;
+  onChange: (date: string) => void;
+  className?: string;
 }
 
-const DatePickerField = ({ 
-  control, 
-  label, 
-  fieldName,
+const DatePickerField: React.FC<DatePickerFieldProps> = ({
   id,
+  label,
   value,
-  onChange
-}: DatePickerFieldProps) => {
-  // Component supports both React Hook Form and direct usage modes
-  if (control && fieldName) {
-    // React Hook Form mode
-    return (
-      <FormItem className="flex flex-col">
-        <FormLabel>{label}</FormLabel>
-        <Controller
-          control={control}
-          name={fieldName}
-          render={({ field }) => (
-            <Popover>
-              <PopoverTrigger asChild>
-                <FormControl>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full pl-3 text-left font-normal bg-gray-700 border-gray-600 text-white hover:bg-gray-600",
-                      !field.value && "text-muted-foreground"
-                    )}
-                  >
-                    {field.value ? (
-                      format(field.value, "dd MMMM yyyy")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button>
-                </FormControl>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700 text-white" align="start">
-                <Calendar
-                  mode="single"
-                  selected={field.value ? new Date(field.value) : undefined}
-                  onSelect={field.onChange}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                  classNames={{
-                    day_selected: "bg-finance-red text-white focus:bg-finance-red focus:text-white hover:bg-finance-red hover:text-white",
-                    head_cell: "text-muted-foreground",
-                    caption: "text-white",
-                    day: "text-white hover:bg-gray-700"
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-          )}
-        />
-        <FormMessage />
-      </FormItem>
-    );
-  } else {
-    // Direct usage mode (without React Hook Form)
-    return (
-      <div className="space-y-2">
-        <label htmlFor={id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          {label}
-        </label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              id={id}
-              variant="outline"
-              className={cn(
-                "w-full pl-3 text-left font-normal bg-gray-700 border-gray-600 text-white hover:bg-gray-600",
-                !value && "text-muted-foreground"
-              )}
-            >
-              {value ? (
-                format(new Date(value), "dd MMMM yyyy")
-              ) : (
-                <span>Pick a date</span>
-              )}
-              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700 text-white" align="start">
-            <Calendar
-              mode="single"
-              selected={value ? new Date(value) : undefined}
-              onSelect={(date) => onChange?.(date ? date.toISOString().split('T')[0] : '')}
-              initialFocus
-              className="p-3 pointer-events-auto"
-              classNames={{
-                day_selected: "bg-finance-red text-white focus:bg-finance-red focus:text-white hover:bg-finance-red hover:text-white",
-                head_cell: "text-muted-foreground",
-                caption: "text-white",
-                day: "text-white hover:bg-gray-700"
-              }}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-    );
-  }
+  onChange,
+  className,
+}) => {
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const selectedDate = value ? new Date(value) : new Date();
+  
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      onChange(format(date, 'yyyy-MM-dd'));
+      // Close the popover after date selection
+      popoverRef.current?.click();
+    }
+  };
+  
+  return (
+    <div className={cn("space-y-2", className)}>
+      <Label htmlFor={id}>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            variant="outline"
+            className={cn(
+              "w-full border-gray-300 bg-background justify-start text-left font-normal h-10",
+              !value && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {value ? format(selectedDate, 'PPP') : <span>Pick a date</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent 
+          ref={popoverRef}
+          className="w-auto p-0 bg-background" 
+          align="start"
+        >
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleDateSelect}
+            initialFocus
+            className="pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
+      <Input
+        type="hidden"
+        id={`${id}-input`}
+        name={id}
+        value={value}
+      />
+    </div>
+  );
 };
 
 export default DatePickerField;

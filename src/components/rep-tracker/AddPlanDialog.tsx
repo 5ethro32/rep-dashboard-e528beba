@@ -35,12 +35,9 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   const { user } = useAuth();
   const defaultDate = selectedDate || new Date();
   
-  const { register, handleSubmit, reset, setValue, watch, control } = useForm<PlanFormData>({
+  const { register, handleSubmit, reset, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
       planned_date: defaultDate.toISOString().split('T')[0],
-      customer_ref: '',
-      customer_name: '',
-      notes: '',
     }
   });
 
@@ -84,9 +81,10 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <DatePickerField
-            control={control}
-            fieldName="planned_date"
+            id="planned_date"
             label="Date"
+            value={watch('planned_date')}
+            onChange={(date) => setValue('planned_date', date)}
           />
 
           <div className="space-y-2">

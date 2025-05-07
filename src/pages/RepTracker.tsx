@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Calendar, Users } from 'lucide-react';
+import { ArrowLeft, Calendar } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
@@ -18,23 +18,13 @@ import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { CheckAdminStatus } from '@/components/auth/CheckAdminStatus';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
 
 const RepTracker: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddVisit, setShowAddVisit] = useState(false);
   const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const isMobile = useIsMobile();
   
   const queryClient = useQueryClient();
@@ -49,32 +39,10 @@ const RepTracker: React.FC = () => {
   // Capitalize first letter
   userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
 
-  // Get all users for admin selector (admins only)
-  const { data: allUsers, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['all-users'],
-    queryFn: async () => {
-      if (!isAdmin) return [];
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .order('first_name');
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!isAdmin, // Only run this query if user is admin
-    meta: {
-      onError: (error: Error) => {
-        console.error('Error loading users:', error);
-      }
-    }
-  });
-
-  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate, selectedUser);
+  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate);
   const previousWeekDate = new Date(weekStart);
   previousWeekDate.setDate(previousWeekDate.getDate() - 7);
-  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate, selectedUser);
+  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate);
 
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
@@ -146,42 +114,6 @@ const RepTracker: React.FC = () => {
     setSelectedTab('week-plan-v2');
   };
 
-  const handleUserChange = (userId: string) => {
-    setSelectedUser(userId === 'all' ? null : userId);
-    // Reset the invalidate metrics queries to load the new user's data
-    queryClient.invalidateQueries({
-      queryKey: ['visit-metrics'],
-      exact: false,
-      refetchType: 'all'
-    });
-    
-    queryClient.invalidateQueries({
-      queryKey: ['customer-visits'],
-      exact: false,
-      refetchType: 'all'
-    });
-  };
-
-  // Format user name for display
-  const formatUserName = (firstName?: string, lastName?: string) => {
-    if (!firstName && !lastName) return "Unknown User";
-    return [firstName, lastName].filter(Boolean).join(" ");
-  };
-
-  // Get the current user name to display (for viewing another rep's data)
-  const getCurrentViewName = () => {
-    if (!selectedUser) return userFirstName; // Default to current user
-    
-    if (isLoadingUsers || !allUsers) return "Loading...";
-    
-    const selectedUserData = allUsers.find(u => u.id === selectedUser);
-    return selectedUserData ? 
-      formatUserName(selectedUserData.first_name, selectedUserData.last_name) : 
-      "Selected Rep";
-  };
-
-  const viewingAnotherUser = isAdmin && selectedUser && selectedUser !== user?.id;
-
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
       <div className="flex justify-between items-center mb-6 pt-4">
@@ -195,69 +127,14 @@ const RepTracker: React.FC = () => {
         <UserProfileButton />
       </div>
       
-      {/* Enhanced personalized greeting with admin status check */}
+      {/* Enhanced personalized greeting - now the main heading */}
       <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{userFirstName}</span>
-          </h1>
-          
-          <CheckAdminStatus />
-        </div>
-        
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{userFirstName}</span>
+        </h1>
         <p className="text-white/60">
-          {viewingAnotherUser ? (
-            `Viewing ${getCurrentViewName()}'s customer visits, orders, and performance metrics.`
-          ) : (
-            `Track your customer visits, orders, and performance metrics.`
-          )}
+          Track your customer visits, orders, and performance metrics.
         </p>
-        
-        {isAdmin && (
-          <div className="flex items-center gap-2 mt-2">
-            <Users className="h-4 w-4 text-finance-red" />
-            <span className="text-sm text-white/60">View colleague data:</span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="bg-black/30 border-gray-700 text-white hover:bg-black/50"
-                  size="sm"
-                >
-                  {selectedUser ? getCurrentViewName() : "My Activity"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-gray-900 border border-gray-800 text-white">
-                <DropdownMenuLabel>Select Rep</DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-gray-800" />
-                <div className="max-h-[300px] overflow-y-auto">
-                  <DropdownMenuItem 
-                    className="cursor-pointer" 
-                    onClick={() => handleUserChange('all')}
-                  >
-                    All Reps
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="cursor-pointer" 
-                    onClick={() => handleUserChange(user?.id || '')}
-                  >
-                    My Activity
-                  </DropdownMenuItem>
-                  
-                  {allUsers?.map((u) => (
-                    <DropdownMenuItem
-                      key={u.id}
-                      className="cursor-pointer"
-                      onClick={() => handleUserChange(u.id)}
-                    >
-                      {formatUserName(u.first_name, u.last_name)}
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
       </div>
       
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -340,7 +217,6 @@ const RepTracker: React.FC = () => {
                 weekEndDate={weekEnd}
                 customers={customers || []}
                 onAddPlanSuccess={handleAddPlanSuccess}
-                userId={selectedUser}
               />
             </ScrollArea>
           ) : (
@@ -349,7 +225,6 @@ const RepTracker: React.FC = () => {
               weekEndDate={weekEnd}
               customers={customers || []}
               onAddPlanSuccess={handleAddPlanSuccess}
-              userId={selectedUser}
             />
           )}
         </TabsContent>
@@ -362,16 +237,11 @@ const RepTracker: React.FC = () => {
             isLoadingCustomers={isLoadingCustomers}
             onDataChange={handleDataChange}
             onAddVisit={() => setShowAddVisit(true)}
-            userId={selectedUser}
-            isAdmin={isAdmin}
           />
         </TabsContent>
         
         <TabsContent value="customer-history" className="mt-6">
-          <CustomerHistoryTable 
-            customers={customers || []}
-            userId={selectedUser} 
-          />
+          <CustomerHistoryTable customers={customers || []} />
         </TabsContent>
       </Tabs>
       
@@ -381,7 +251,6 @@ const RepTracker: React.FC = () => {
           onClose={() => setShowAddVisit(false)}
           onSuccess={handleAddVisitSuccess}
           customers={customers || []}
-          userId={selectedUser}
         />
       )}
     </div>

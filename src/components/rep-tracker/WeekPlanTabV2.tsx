@@ -1,289 +1,370 @@
 
 import React, { useState } from 'react';
-import { format, parseISO, addDays } from 'date-fns';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import AddPlanDialog from './AddPlanDialog';
-import { PlusCircle, CalendarDays } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2 } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import AddPlanDialog from './AddPlanDialog';
 import EditPlanDialog from './EditPlanDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
+import { Badge } from '@/components/ui/badge';
+
+interface WeekPlan {
+  id: string;
+  planned_date: string;
+  customer_name: string;
+  customer_ref: string;
+  notes: string | null;
+}
+
+interface CustomerVisit {
+  id: string;
+  week_plan_id: string;
+  has_order: boolean;
+}
 
 interface WeekPlanTabV2Props {
   weekStartDate: Date;
   weekEndDate: Date;
-  customers: Array<{
-    account_name: string;
-    account_ref: string;
-  }>;
+  customers: Array<{ account_name: string; account_ref: string }>;
   onAddPlanSuccess?: () => void;
-  userId?: string | null;
-}
-
-interface PlanItem {
-  id: string;
-  customer_name: string;
-  customer_ref: string;
-  planned_date: string;
-  notes: string; // Changed from optional to required to match EditPlanDialog
-  user_id: string;
-  created_at: string;
 }
 
 const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({ 
   weekStartDate, 
-  weekEndDate,
+  weekEndDate, 
   customers,
-  onAddPlanSuccess,
-  userId
+  onAddPlanSuccess 
 }) => {
-  const [showAddPlan, setShowAddPlan] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [editingPlan, setEditingPlan] = useState<PlanItem | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  
-  const { deletePlanMutation } = usePlanMutation(onSuccess);
-  
-  const weekDays = [];
-  for (let i = 0; i < 7; i++) {
-    weekDays.push(addDays(weekStartDate, i));
-  }
-  
-  function onSuccess() {
-    queryClient.invalidateQueries({
-      queryKey: ['week-plans'],
-      exact: false,
-      refetchType: 'all'
-    });
-    
-    if (onAddPlanSuccess) {
-      onAddPlanSuccess();
-    }
-  }
-  
+  const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
+  const [isEditPlanOpen, setIsEditPlanOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedPlan, setSelectedPlan] = useState<WeekPlan | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState<string | null>(null);
+
+  const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString()];
+
   const { data: weekPlans, isLoading } = useQuery({
-    queryKey: ['week-plans', format(weekStartDate, 'yyyy-MM-dd'), format(weekEndDate, 'yyyy-MM-dd'), userId],
+    queryKey: weekPlansQueryKey,
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('week_plans')
         .select('*')
-        .gte('planned_date', format(weekStartDate, 'yyyy-MM-dd'))
-        .lte('planned_date', format(weekEndDate, 'yyyy-MM-dd'));
-      
-      // Only filter by user_id if there's one specified or if current user is not admin
-      if (userId) {
-        query = query.eq('user_id', userId);
-      } else if (user?.id) {
-        // Default to current user's plans if no user specified
-        query = query.eq('user_id', user.id);
-      }
-        
-      query = query.order('planned_date', { ascending: true });
-      
-      const { data, error } = await query;
+        .gte('planned_date', weekStartDate.toISOString().split('T')[0])
+        .lte('planned_date', weekEndDate.toISOString().split('T')[0])
+        .order('planned_date');
 
-      if (error) {
-        console.error('Error fetching week plans:', error);
-        throw error;
-      }
-      
-      // Ensure notes is not null/undefined on any plan items
-      const plansWithSafeNotes = (data as PlanItem[]).map(plan => ({
-        ...plan,
-        notes: plan.notes || ''
-      }));
-      
-      return plansWithSafeNotes;
+      if (error) throw error;
+      return data as WeekPlan[];
     },
     meta: {
       onError: (error: Error) => {
-        console.error('Error in week plans query:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load week plans. Please try again later.',
+          description: 'Failed to load week plans',
           variant: 'destructive',
         });
-      }
-    }
+      },
+    },
+    staleTime: 0
   });
-  
-  const getPlansByDay = (day: Date) => {
-    if (!weekPlans) return [];
-    
-    const dateString = format(day, 'yyyy-MM-dd');
-    return weekPlans.filter(plan => plan.planned_date === dateString);
-  };
-  
-  const handleOpenPlanDialog = (date: Date) => {
-    // Only allow adding plans if viewing your own data
-    if (userId && userId !== user?.id) {
-      toast({
-        title: "View Only Mode",
-        description: "You can only add plans to your own calendar.",
-        variant: "default"
+
+  // Query to fetch customer visits that are associated with week plans
+  const { data: customerVisits } = useQuery({
+    queryKey: ['customer-visits-for-week-plans', weekStartDate.toISOString(), weekEndDate.toISOString()],
+    queryFn: async () => {
+      if (!weekPlans || weekPlans.length === 0) return [];
+      
+      const planIds = weekPlans.map(plan => plan.id);
+      
+      const { data, error } = await supabase
+        .from('customer_visits')
+        .select('id, week_plan_id, has_order')
+        .in('week_plan_id', planIds);
+      
+      if (error) throw error;
+      return data as CustomerVisit[];
+    },
+    enabled: !!weekPlans && weekPlans.length > 0,
+    staleTime: 0
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      // First check if there are any associated customer visits
+      const { data: relatedVisits } = await supabase
+        .from('customer_visits')
+        .select('id')
+        .eq('week_plan_id', planId);
+      
+      // Delete any associated customer visits first
+      if (relatedVisits && relatedVisits.length > 0) {
+        const visitIds = relatedVisits.map(visit => visit.id);
+        const { error: visitDeleteError } = await supabase
+          .from('customer_visits')
+          .delete()
+          .in('id', visitIds);
+        
+        if (visitDeleteError) {
+          console.error("Error deleting associated customer visits:", visitDeleteError);
+          // Continue with deleting the plan even if visit deletion fails
+        }
+      }
+      
+      // Then delete the plan itself
+      const { error } = await supabase
+        .from('week_plans')
+        .delete()
+        .eq('id', planId);
+
+      if (error) throw error;
+      return planId;
+    },
+    onSuccess: (deletedPlanId) => {
+      // Optimistically update the cache
+      queryClient.setQueryData(
+        weekPlansQueryKey,
+        (old: WeekPlan[] | undefined) => old?.filter(plan => plan.id !== deletedPlanId) || []
+      );
+
+      // Then invalidate to ensure consistency
+      queryClient.invalidateQueries({ 
+        queryKey: ['week-plans'],
+        exact: false,
+        refetchType: 'all'
       });
-      return;
+      
+      // Also invalidate customer visits
+      queryClient.invalidateQueries({ 
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
+
+      toast({
+        title: 'Plan Deleted',
+        description: 'Week plan and associated customer visit have been deleted successfully.',
+      });
+
+      setDeleteConfirmOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete plan',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleDelete = (planId: string) => {
+    setPlanToDelete(planId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (planToDelete) {
+      deletePlanMutation.mutate(planToDelete);
     }
-    
+  };
+
+  const handleAddPlan = (date?: Date) => {
     setSelectedDate(date);
-    setShowAddPlan(true);
+    setIsAddPlanOpen(true);
   };
-  
-  const handleDeletePlan = (planId: string, userId: string) => {
-    // Only admins or plan owners can delete
-    if (userId !== user?.id) {
-      toast({
-        title: "Access Denied",
-        description: "You can only delete your own plans.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    deletePlanMutation.mutate(planId);
+
+  const handleEditPlan = (plan: WeekPlan) => {
+    setSelectedPlan(plan);
+    setIsEditPlanOpen(true);
   };
-  
-  const handleEditPlan = (plan: PlanItem) => {
-    // Only admins or plan owners can edit
-    if (plan.user_id !== user?.id) {
-      toast({
-        title: "Access Denied",
-        description: "You can only edit your own plans.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setEditingPlan(plan);
-  };
-  
+
   const handleAddPlanSuccess = () => {
-    setShowAddPlan(false);
-    onSuccess();
+    setIsAddPlanOpen(false);
+    // Call the parent's success handler if provided
+    if (onAddPlanSuccess) {
+      onAddPlanSuccess();
+    }
+    
+    // Explicitly refresh the data
+    queryClient.invalidateQueries({ 
+      queryKey: weekPlansQueryKey,
+      refetchType: 'all'
+    });
+    
+    // Also refresh customer visits data
+    queryClient.invalidateQueries({ 
+      queryKey: ['customer-visits'],
+      exact: false,
+      refetchType: 'all'
+    });
   };
-  
-  const isViewingOthersData = userId && userId !== user?.id;
-  
+
+  const handleEditPlanSuccess = () => {
+    setIsEditPlanOpen(false);
+    
+    // Explicitly refresh the data
+    queryClient.invalidateQueries({ 
+      queryKey: weekPlansQueryKey, 
+      refetchType: 'all'
+    });
+    
+    // Also refresh customer visits data
+    queryClient.invalidateQueries({ 
+      queryKey: ['customer-visits'],
+      exact: false,
+      refetchType: 'all'
+    });
+  };
+
+  // Helper function to check if a plan has an associated customer visit
+  const hasAssociatedVisit = (planId: string) => {
+    return customerVisits?.some(visit => visit.week_plan_id === planId);
+  };
+
+  // Helper function to check if an associated visit has an order
+  const visitHasOrder = (planId: string) => {
+    return customerVisits?.some(visit => visit.week_plan_id === planId && visit.has_order);
+  };
+
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">Weekly Planning</h2>
-        {!isViewingOthersData && (
-          <Button 
-            variant="outline" 
-            className="bg-finance-red text-white hover:bg-finance-red/90 border-0"
-            onClick={() => handleOpenPlanDialog(new Date())}
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add Plan
-          </Button>
-        )}
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Week Plan</h3>
+        <Button 
+          onClick={() => handleAddPlan()}
+          className="bg-finance-red hover:bg-finance-red/80"
+        >
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Add Plan
+        </Button>
       </div>
-      
-      {isViewingOthersData && (
-        <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-700/30 rounded-md">
-          <p className="text-sm text-yellow-300">
-            <strong>View Only Mode:</strong> You are viewing another user's plans and cannot make changes.
-          </p>
-        </div>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-        {weekDays.map((day, i) => (
-          <div 
-            key={i} 
-            className={`bg-black/30 border border-gray-800 rounded-lg overflow-hidden`}
-          >
-            <div className="bg-black/50 p-3 text-center border-b border-gray-800">
-              <p className="font-medium text-white">
-                {format(day, 'EEEE')}
-              </p>
-              <p className="text-sm text-white/70">
-                {format(day, 'dd MMM')}
-              </p>
-            </div>
-            
-            <div className="p-3 min-h-[120px]">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-20">
-                  <p className="text-sm text-white/70">Loading plans...</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {days.map((day, index) => {
+          const currentDate = new Date(weekStartDate);
+          currentDate.setDate(weekStartDate.getDate() + index);
+          const dayPlans = weekPlans?.filter(
+            plan => new Date(plan.planned_date).toDateString() === currentDate.toDateString()
+          ) || [];
+
+          return (
+            <Card key={day} className="border-gray-800 bg-black/20">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-semibold text-white">
+                    {day} - {format(currentDate, 'dd/MM')}
+                  </h4>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0"
+                    onClick={() => handleAddPlan(currentDate)}
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
                 </div>
-              ) : getPlansByDay(day).length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-20 border border-dashed border-gray-800 rounded-md">
-                  <CalendarDays className="h-5 w-5 text-gray-600 mb-1" />
-                  <p className="text-xs text-gray-500">No plans</p>
-                  {!isViewingOthersData && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="mt-1 text-xs h-7 text-blue-400 hover:text-blue-300 hover:bg-blue-950/30"
-                      onClick={() => handleOpenPlanDialog(day)}
-                    >
-                      <PlusCircle className="h-3 w-3 mr-1" />
-                      Add
-                    </Button>
-                  )}
-                </div>
-              ) : (
                 <div className="space-y-2">
-                  {getPlansByDay(day).map((plan) => (
-                    <div key={plan.id} className="p-2 bg-gray-900/50 border border-gray-800 rounded-md text-sm">
-                      <div className="font-medium">{plan.customer_name}</div>
-                      {plan.notes && <div className="text-xs text-gray-400 mt-1">{plan.notes}</div>}
-                      {!isViewingOthersData && (
-                        <div className="flex space-x-2 mt-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-950/30"
-                            onClick={() => handleEditPlan(plan)}
-                          >
-                            Edit
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/30"
-                            onClick={() => handleDeletePlan(plan.id, plan.user_id)}
-                          >
-                            Delete
-                          </Button>
-                        </div>
+                  {dayPlans.map(plan => (
+                    <div 
+                      key={plan.id} 
+                      className="p-2 rounded bg-black/30 border border-gray-800"
+                    >
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium">{plan.customer_name}</p>
+                        {hasAssociatedVisit(plan.id) && (
+                          <div className="ml-2">
+                            {visitHasOrder(plan.id) ? (
+                              <Badge className="bg-green-600 text-xs">Order</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs border-gray-500">Visit</Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {plan.notes && (
+                        <p className="text-sm text-gray-400 mt-1">{plan.notes}</p>
                       )}
+                      <div className="flex justify-end space-x-2 mt-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleEditPlan(plan)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleDelete(plan.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
+                  {dayPlans.length === 0 && (
+                    <p className="text-sm text-gray-500">No visits planned</p>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
-      
-      {showAddPlan && selectedDate && (
-        <AddPlanDialog 
-          isOpen={showAddPlan}
-          onClose={() => setShowAddPlan(false)}
-          onSuccess={handleAddPlanSuccess}
-          selectedDate={selectedDate}
-          customers={customers}
-        />
-      )}
-      
-      {editingPlan && (
-        <EditPlanDialog
-          isOpen={!!editingPlan}
-          onClose={() => setEditingPlan(null)}
-          onSuccess={() => {
-            onSuccess();
-            setEditingPlan(null);
-          }}
-          plan={editingPlan}
-          customers={customers}
-        />
-      )}
+
+      <AddPlanDialog 
+        isOpen={isAddPlanOpen}
+        onClose={() => setIsAddPlanOpen(false)}
+        customers={customers}
+        selectedDate={selectedDate}
+        onSuccess={handleAddPlanSuccess}
+      />
+
+      <EditPlanDialog
+        isOpen={isEditPlanOpen}
+        onClose={() => setIsEditPlanOpen(false)}
+        plan={selectedPlan}
+        customers={customers}
+        onSuccess={handleEditPlanSuccess}
+      />
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Plan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this plan? This will also delete any associated customer visit record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
