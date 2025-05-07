@@ -46,7 +46,7 @@ const AppLayout = ({
         <div className="flex w-full relative">
           {!isMobile && <AppSidebar />}
           
-          <div className={`flex-1 ${isMobile ? 'pb-16' : ''}`}>
+          <div className={`flex-1 ${isMobile ? 'pb-16' : ''} overflow-x-auto overflow-y-auto`}>
             {children}
             {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
           </div>
