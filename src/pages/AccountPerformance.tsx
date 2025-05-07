@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -339,8 +340,8 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
   const renderPageHeading = () => {
     if (selectedUserId === "all") {
       return (
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-l from-finance-red to-rose-700">
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
             Aver's
           </span>{' '}
           Accounts Performance
@@ -356,8 +357,8 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
       const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
       
       return (
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-l from-finance-red to-rose-700">
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
             {displayName}
           </span>{' '}
           Accounts Performance
@@ -369,7 +370,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
       {/* Header section with heading and month selector aligned */}
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex justify-between items-center pt-8">
         <div>
           {renderPageHeading()}
           <p className="text-white/60">

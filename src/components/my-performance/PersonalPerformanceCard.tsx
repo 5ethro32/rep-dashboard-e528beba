@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
@@ -109,10 +108,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
     <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-4 md:p-6">
       <div className="space-y-6">
         <div>
-          <h2 className="text-lg md:text-xl font-semibold text-white">Your Performance Summary</h2>
-          <p className="text-sm text-white/60">Key metrics for your accounts and performance</p>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {metrics.map((metric, index) => (
               <Card 
                 key={index}
