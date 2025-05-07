@@ -22,10 +22,11 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   setIncludeWholesale
 }) => {
   return (
-    <div className="mb-6 md:mb-8 flex flex-row gap-3">
+    <div className="mb-6 md:mb-8 flex flex-row gap-4">
       <ToggleButton 
         checked={includeRetail} 
         onToggle={setIncludeRetail}
+        className="min-w-[90px]"
       >
         Retail
       </ToggleButton>
@@ -33,6 +34,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
       <ToggleButton 
         checked={includeReva} 
         onToggle={setIncludeReva}
+        className="min-w-[90px]"
       >
         REVA
       </ToggleButton>
@@ -40,6 +42,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
       <ToggleButton 
         checked={includeWholesale} 
         onToggle={setIncludeWholesale}
+        className="min-w-[90px]"
       >
         Wholesale
       </ToggleButton>
