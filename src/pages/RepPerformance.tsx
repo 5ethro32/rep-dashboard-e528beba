@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -14,10 +15,13 @@ import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
+import UserSelector from '@/components/rep-tracker/UserSelector';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>('all');
+  const [selectedUserName, setSelectedUserName] = useState('All Data');
   
   const {
     includeRetail,
@@ -52,6 +56,12 @@ const RepPerformance = () => {
     mayRevaValues,
     mayWholesaleValues,
   } = useRepPerformanceData();
+  
+  // Handle user selection
+  const handleUserSelection = (userId: string | null, displayName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(displayName);
+  };
   
   // Clear auto-refreshed status after a delay
   useEffect(() => {
@@ -145,13 +155,20 @@ const RepPerformance = () => {
   
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-between pt-4 items-center">
+        <UserSelector
+          selectedUserId={selectedUserId}
+          onSelectUser={handleUserSelection}
+          className="text-white"
+          showAllDataOption={true}
+        />
         <UserProfileButton />
       </div>
       
       <PerformanceHeader 
         selectedMonth={selectedMonth}
         setSelectedMonth={handleMonthSelection}
+        hideTitle={!isMobile}
       />
       
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
@@ -208,6 +225,7 @@ const RepPerformance = () => {
         includeReva={includeReva}
         includeWholesale={includeWholesale}
         selectedMonth={selectedMonth}
+        selectedUserName={selectedUserName}
       />
       
       {/* TrendLineChart with enhanced capabilities */}
@@ -222,6 +240,7 @@ const RepPerformance = () => {
           includeRetail={includeRetail}
           includeReva={includeReva}
           includeWholesale={includeWholesale}
+          selectedUserName={selectedUserName}
         />
       </div>
 
@@ -268,6 +287,7 @@ const RepPerformance = () => {
           selectedMonth === 'February' ? febWholesaleValues : 
           selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues
         }
+        selectedUserName={selectedUserName}
       />
     </div>
   );
