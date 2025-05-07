@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,6 +33,7 @@ import {
 import EditVisitDialog from './EditVisitDialog';
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CustomerVisitsListProps {
   weekStartDate: Date;
@@ -87,6 +87,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const userId = selectedUserId || user?.id;
+  const isMobile = useIsMobile();
 
   const { data: visits, isLoading } = useQuery({
     queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder, userId],
@@ -334,10 +335,10 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 px-2 text-xs"
+                            className="h-8 w-8 p-0 flex items-center justify-center"
                           >
-                            <Eye className="h-3 w-3 mr-1" />
-                            View Only
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">View Only</span>
                           </Button>
                         )}
                       </TableCell>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -168,7 +167,7 @@ const RepTracker: React.FC = () => {
         </div>
       </div>
       
-      {/* Enhanced personalized greeting - now the main heading */}
+      {/* Modified personalized greeting - now the main heading */}
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
           {isViewingOwnData ? (
@@ -177,7 +176,7 @@ const RepTracker: React.FC = () => {
             </>
           ) : (
             <>
-              Viewing <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{selectedUserName}'s</span> data
+              Viewing <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{selectedUserName}</span>
             </>
           )}
         </h1>

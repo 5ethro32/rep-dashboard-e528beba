@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { usePlanMutation } from '@/hooks/usePlanMutation';
 import { Badge } from '@/components/ui/badge';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WeekPlan {
   id: string;
@@ -62,6 +62,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
   const [selectedPlan, setSelectedPlan] = useState<WeekPlan | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   const userId = selectedUserId || user?.id;
   const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString(), userId];
@@ -344,10 +345,10 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 px-2 text-xs"
+                            className="h-8 w-8 p-0 flex items-center justify-center"
                           >
-                            <Eye className="h-3 w-3 mr-1" />
-                            View Only
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">View Only</span>
                           </Button>
                         </div>
                       )}
