@@ -65,7 +65,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
 
   const addVisitMutation = useMutation({
     mutationFn: async (data: VisitFormData) => {
-      // Validate customer_ref is present - this still runs during form submission, not during selection
+      // Validate customer_ref is present
       if (!data.customer_ref || !data.customer_name) {
         throw new Error('Please select a customer before saving');
       }
@@ -116,20 +116,16 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
     onError: (error: Error) => {
       console.error("Error adding visit:", error);
       
-      // Show error only when form is actually submitted, not during selection
-      if (error.message.includes('select a customer')) {
-        toast({
-          title: 'Validation Error',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to add visit. Please try again.',
-          variant: 'destructive',
-        });
-      }
+      // Show a more specific error message
+      const errorMessage = error.message.includes('select a customer') 
+        ? error.message 
+        : 'Failed to add visit. Please try again.';
+        
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     },
   });
 
@@ -139,7 +135,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
   };
 
   const onSubmit = (data: VisitFormData) => {
-    // Additional validation before submitting - only show toast on actual form submission
+    // Additional validation before submitting
     if (!data.customer_ref || !data.customer_name) {
       toast({
         title: 'Validation Error',
