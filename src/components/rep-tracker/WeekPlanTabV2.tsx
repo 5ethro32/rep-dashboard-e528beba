@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2, Eye } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AddPlanDialog from './AddPlanDialog';
 import EditPlanDialog from './EditPlanDialog';
@@ -42,13 +42,17 @@ interface WeekPlanTabV2Props {
   weekEndDate: Date;
   customers: Array<{ account_name: string; account_ref: string }>;
   onAddPlanSuccess?: () => void;
+  selectedUserId?: string | null;  // New prop for selected user
+  isViewingOwnData?: boolean;      // New prop to indicate if viewing own data
 }
 
 const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({ 
   weekStartDate, 
   weekEndDate, 
   customers,
-  onAddPlanSuccess 
+  onAddPlanSuccess,
+  selectedUserId,
+  isViewingOwnData = true  // Default to viewing own data
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -59,17 +63,26 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
 
-  const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString()];
+  const userId = selectedUserId || user?.id;
+  const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString(), userId];
 
   const { data: weekPlans, isLoading } = useQuery({
     queryKey: weekPlansQueryKey,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const query = supabase
         .from('week_plans')
         .select('*')
         .gte('planned_date', weekStartDate.toISOString().split('T')[0])
-        .lte('planned_date', weekEndDate.toISOString().split('T')[0])
-        .order('planned_date');
+        .lte('planned_date', weekEndDate.toISOString().split('T')[0]);
+        
+      // Only filter by user_id if we have a selected user
+      if (userId) {
+        query.eq('user_id', userId);
+      }
+      
+      query.order('planned_date');
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as WeekPlan[];
@@ -88,7 +101,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
 
   // Query to fetch customer visits that are associated with week plans
   const { data: customerVisits } = useQuery({
-    queryKey: ['customer-visits-for-week-plans', weekStartDate.toISOString(), weekEndDate.toISOString()],
+    queryKey: ['customer-visits-for-week-plans', weekStartDate.toISOString(), weekEndDate.toISOString(), userId],
     queryFn: async () => {
       if (!weekPlans || weekPlans.length === 0) return [];
       
@@ -249,13 +262,15 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Week Plan</h3>
-        <Button 
-          onClick={() => handleAddPlan()}
-          className="bg-finance-red hover:bg-finance-red/80"
-        >
-          <PlusCircle className="h-4 w-4 mr-2" />
-          Add Plan
-        </Button>
+        {isViewingOwnData && (
+          <Button 
+            onClick={() => handleAddPlan()}
+            className="bg-finance-red hover:bg-finance-red/80"
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Plan
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -273,14 +288,16 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                   <h4 className="font-semibold text-white">
                     {day} - {format(currentDate, 'dd/MM')}
                   </h4>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0"
-                    onClick={() => handleAddPlan(currentDate)}
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                  </Button>
+                  {isViewingOwnData && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleAddPlan(currentDate)}
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
                 <div className="space-y-2">
                   {dayPlans.map(plan => (
@@ -303,24 +320,37 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                       {plan.notes && (
                         <p className="text-sm text-gray-400 mt-1">{plan.notes}</p>
                       )}
-                      <div className="flex justify-end space-x-2 mt-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleEditPlan(plan)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleDelete(plan.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {isViewingOwnData ? (
+                        <div className="flex justify-end space-x-2 mt-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEditPlan(plan)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleDelete(plan.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end mt-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs"
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            View Only
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {dayPlans.length === 0 && (
@@ -333,38 +363,43 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
         })}
       </div>
 
-      <AddPlanDialog 
-        isOpen={isAddPlanOpen}
-        onClose={() => setIsAddPlanOpen(false)}
-        customers={customers}
-        selectedDate={selectedDate}
-        onSuccess={handleAddPlanSuccess}
-      />
+      {/* Only show dialogs when viewing own data */}
+      {isViewingOwnData && (
+        <>
+          <AddPlanDialog 
+            isOpen={isAddPlanOpen}
+            onClose={() => setIsAddPlanOpen(false)}
+            customers={customers}
+            selectedDate={selectedDate}
+            onSuccess={handleAddPlanSuccess}
+          />
 
-      <EditPlanDialog
-        isOpen={isEditPlanOpen}
-        onClose={() => setIsEditPlanOpen(false)}
-        plan={selectedPlan}
-        customers={customers}
-        onSuccess={handleEditPlanSuccess}
-      />
+          <EditPlanDialog
+            isOpen={isEditPlanOpen}
+            onClose={() => setIsEditPlanOpen(false)}
+            plan={selectedPlan}
+            customers={customers}
+            onSuccess={handleEditPlanSuccess}
+          />
 
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Plan</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this plan? This will also delete any associated customer visit record.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Plan</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this plan? This will also delete any associated customer visit record.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
     </div>
   );
 };

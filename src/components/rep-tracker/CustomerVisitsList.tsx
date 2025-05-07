@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar, Eye } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { 
   AlertDialog,
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import EditVisitDialog from './EditVisitDialog';
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerVisitsListProps {
   weekStartDate: Date;
@@ -44,6 +45,8 @@ interface CustomerVisitsListProps {
   isLoadingCustomers: boolean;
   onDataChange?: () => void;
   onAddVisit: () => void;
+  selectedUserId?: string | null;  // New prop for selected user
+  isViewingOwnData?: boolean;      // New prop to indicate if viewing own data
 }
 
 type SortField = 'date' | 'customer_name' | 'profit';
@@ -71,7 +74,9 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   customers,
   isLoadingCustomers,
   onDataChange,
-  onAddVisit
+  onAddVisit,
+  selectedUserId,
+  isViewingOwnData = true  // Default to viewing own data
 }) => {
   const [filter, setFilter] = useState('all'); // 'all', 'ordered', 'no-order', 'planned'
   const [sortField, setSortField] = useState<SortField>('date');
@@ -79,17 +84,27 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
   const [visitToEdit, setVisitToEdit] = useState<Visit | null>(null);
   
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const userId = selectedUserId || user?.id;
 
   const { data: visits, isLoading } = useQuery({
-    queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder],
+    queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder, userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const query = supabase
         .from('customer_visits')
         .select('*')
         .gte('date', weekStartDate.toISOString())
-        .lte('date', weekEndDate.toISOString())
-        .order(sortField, { ascending: sortOrder === 'asc' });
+        .lte('date', weekEndDate.toISOString());
+        
+      // Only filter by user_id if we have a selected user
+      if (userId) {
+        query.eq('user_id', userId);
+      }
+      
+      query.order(sortField, { ascending: sortOrder === 'asc' });
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as Visit[];
@@ -198,13 +213,15 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
             </SelectContent>
           </Select>
           
-          <Button 
-            className="bg-finance-red hover:bg-finance-red/80"
-            onClick={onAddVisit}
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add Visit
-          </Button>
+          {isViewingOwnData && (
+            <Button 
+              className="bg-finance-red hover:bg-finance-red/80"
+              onClick={onAddVisit}
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add Visit
+            </Button>
+          )}
         </div>
       </div>
 
@@ -292,26 +309,37 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                         ) : 'Manual'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 text-blue-400"
-                            onClick={() => setVisitToEdit(visit)}
+                        {isViewingOwnData ? (
+                          <div className="flex justify-end space-x-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 text-blue-400"
+                              onClick={() => setVisitToEdit(visit)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 text-red-400"
+                              onClick={() => setVisitToDelete(visit.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs"
                           >
-                            <Edit2 className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
+                            <Eye className="h-3 w-3 mr-1" />
+                            View Only
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 text-red-400"
-                            onClick={() => setVisitToDelete(visit.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -322,46 +350,50 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         </div>
       </div>
       
-      <AlertDialog open={!!visitToDelete} onOpenChange={() => setVisitToDelete(null)}>
-        <AlertDialogContent className="bg-gray-900 border border-gray-800">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Confirm Delete</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              Are you sure you want to delete this visit record? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-transparent border-gray-700 text-white hover:bg-gray-800">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteConfirm}
-              className="bg-finance-red hover:bg-finance-red/80 text-white"
-            >
-              {deleteVisitMutation.isPending ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {visitToEdit && (
-        <EditVisitDialog
-          isOpen={!!visitToEdit}
-          onClose={() => setVisitToEdit(null)}
-          visit={visitToEdit}
-          customers={customers}
-          onSuccess={() => {
-            queryClient.invalidateQueries({
-              queryKey: ['customer-visits'],
-              exact: false,
-              refetchType: 'all'
-            });
-            
-            if (onDataChange) {
-              onDataChange();
-            }
-          }}
-        />
+      {isViewingOwnData && (
+        <>
+          <AlertDialog open={!!visitToDelete} onOpenChange={() => setVisitToDelete(null)}>
+            <AlertDialogContent className="bg-gray-900 border border-gray-800">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">Confirm Delete</AlertDialogTitle>
+                <AlertDialogDescription className="text-gray-400">
+                  Are you sure you want to delete this visit record? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-transparent border-gray-700 text-white hover:bg-gray-800">
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDeleteConfirm}
+                  className="bg-finance-red hover:bg-finance-red/80 text-white"
+                >
+                  {deleteVisitMutation.isPending ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
+          {visitToEdit && (
+            <EditVisitDialog
+              isOpen={!!visitToEdit}
+              onClose={() => setVisitToEdit(null)}
+              visit={visitToEdit}
+              customers={customers}
+              onSuccess={() => {
+                queryClient.invalidateQueries({
+                  queryKey: ['customer-visits'],
+                  exact: false,
+                  refetchType: 'all'
+                });
+                
+                if (onDataChange) {
+                  onDataChange();
+                }
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );

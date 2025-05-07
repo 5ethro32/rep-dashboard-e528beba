@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar, Users } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
@@ -18,6 +18,8 @@ import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import UserSelector from '@/components/rep-tracker/UserSelector';
+import { Badge } from '@/components/ui/badge';
 
 const RepTracker: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +28,13 @@ const RepTracker: React.FC = () => {
   const [showAddVisit, setShowAddVisit] = useState(false);
   const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
   const isMobile = useIsMobile();
+  
+  // New state for selected user viewing
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(user?.id || null);
+  const [selectedUserName, setSelectedUserName] = useState<string>("My Data");
+  
+  // Flag to indicate if we're viewing our own data or someone else's
+  const isViewingOwnData = selectedUserId === user?.id || !selectedUserId;
   
   const queryClient = useQueryClient();
   
@@ -39,10 +48,11 @@ const RepTracker: React.FC = () => {
   // Capitalize first letter
   userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
 
-  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate);
+  // Updated to pass selectedUserId
+  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate, selectedUserId);
   const previousWeekDate = new Date(weekStart);
   previousWeekDate.setDate(previousWeekDate.getDate() - 7);
-  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate);
+  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate, selectedUserId);
 
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
@@ -113,6 +123,31 @@ const RepTracker: React.FC = () => {
     
     setSelectedTab('week-plan-v2');
   };
+  
+  // Handle user selection
+  const handleUserSelect = (userId: string | null, displayName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(displayName);
+    
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({
+      queryKey: ['visit-metrics'],
+      exact: false,
+      refetchType: 'all'
+    });
+    
+    queryClient.invalidateQueries({
+      queryKey: ['customer-visits'],
+      exact: false,
+      refetchType: 'all'
+    });
+    
+    queryClient.invalidateQueries({
+      queryKey: ['week-plans'],
+      exact: false,
+      refetchType: 'all'
+    });
+  };
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
@@ -124,17 +159,41 @@ const RepTracker: React.FC = () => {
           </Button>
         </Link>
         
-        <UserProfileButton />
+        <div className="flex items-center gap-2">
+          <UserSelector 
+            selectedUserId={selectedUserId} 
+            onSelectUser={handleUserSelect}
+          />
+          <UserProfileButton />
+        </div>
       </div>
       
       {/* Enhanced personalized greeting - now the main heading */}
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{userFirstName}</span>
+          {isViewingOwnData ? (
+            <>
+              Hi, <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{userFirstName}</span>
+            </>
+          ) : (
+            <>
+              Viewing <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text font-bold">{selectedUserName}'s</span> data
+            </>
+          )}
         </h1>
-        <p className="text-white/60">
-          Track your customer visits, orders, and performance metrics.
-        </p>
+        <div className="flex items-center text-white/60">
+          <p>
+            {isViewingOwnData 
+              ? "Track your customer visits, orders, and performance metrics." 
+              : "Viewing customer visits, orders, and performance metrics."}
+          </p>
+          
+          {!isViewingOwnData && (
+            <Badge variant="outline" className="ml-2 bg-finance-red/10 border-finance-red/30 text-finance-red">
+              View Only
+            </Badge>
+          )}
+        </div>
       </div>
       
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -217,6 +276,8 @@ const RepTracker: React.FC = () => {
                 weekEndDate={weekEnd}
                 customers={customers || []}
                 onAddPlanSuccess={handleAddPlanSuccess}
+                selectedUserId={selectedUserId}
+                isViewingOwnData={isViewingOwnData}
               />
             </ScrollArea>
           ) : (
@@ -225,6 +286,8 @@ const RepTracker: React.FC = () => {
               weekEndDate={weekEnd}
               customers={customers || []}
               onAddPlanSuccess={handleAddPlanSuccess}
+              selectedUserId={selectedUserId}
+              isViewingOwnData={isViewingOwnData}
             />
           )}
         </TabsContent>
@@ -237,15 +300,20 @@ const RepTracker: React.FC = () => {
             isLoadingCustomers={isLoadingCustomers}
             onDataChange={handleDataChange}
             onAddVisit={() => setShowAddVisit(true)}
+            selectedUserId={selectedUserId}
+            isViewingOwnData={isViewingOwnData}
           />
         </TabsContent>
         
         <TabsContent value="customer-history" className="mt-6">
-          <CustomerHistoryTable customers={customers || []} />
+          <CustomerHistoryTable 
+            customers={customers || []}
+            selectedUserId={selectedUserId}
+          />
         </TabsContent>
       </Tabs>
       
-      {showAddVisit && (
+      {showAddVisit && isViewingOwnData && (
         <AddVisitDialog
           isOpen={showAddVisit}
           onClose={() => setShowAddVisit(false)}

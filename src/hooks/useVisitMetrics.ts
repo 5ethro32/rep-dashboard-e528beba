@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, endOfWeek, differenceInDays } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface VisitMetrics {
   totalVisits: number;
@@ -14,24 +15,38 @@ interface VisitMetrics {
   plannedVisits: number;
 }
 
-export const useVisitMetrics = (selectedDate: Date) => {
+export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | null) => {
+  const { user } = useAuth();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+  // Use the provided userId or fall back to the current user's id
+  const userId = selectedUserId || user?.id;
 
   return useQuery({
-    queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString()],
+    queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString(), userId],
     queryFn: async (): Promise<VisitMetrics> => {
+      // If we have a specific user ID, filter by that; otherwise use the current user's ID
+      const visitsQuery = supabase
+        .from('customer_visits')
+        .select('*')
+        .gte('date', weekStart.toISOString())
+        .lte('date', weekEnd.toISOString());
+      
+      const plansQuery = supabase
+        .from('week_plans')
+        .select('*')
+        .gte('planned_date', weekStart.toISOString().split('T')[0])
+        .lte('planned_date', weekEnd.toISOString().split('T')[0]);
+        
+      // Apply user filter if a user ID is provided
+      if (userId) {
+        visitsQuery.eq('user_id', userId);
+        plansQuery.eq('user_id', userId);
+      }
+
       const [{ data: visits, error: visitsError }, { data: plans, error: plansError }] = await Promise.all([
-        supabase
-          .from('customer_visits')
-          .select('*')
-          .gte('date', weekStart.toISOString())
-          .lte('date', weekEnd.toISOString()),
-        supabase
-          .from('week_plans')
-          .select('*')
-          .gte('planned_date', weekStart.toISOString().split('T')[0])
-          .lte('planned_date', weekEnd.toISOString().split('T')[0])
+        visitsQuery,
+        plansQuery
       ]);
 
       if (visitsError) throw visitsError;

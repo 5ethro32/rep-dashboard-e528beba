@@ -18,6 +18,7 @@ import { formatCurrency } from '@/utils/rep-performance-utils';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerVisit {
   id: string;
@@ -33,23 +34,39 @@ interface CustomerVisit {
 
 interface CustomerHistoryTableProps {
   customers: Array<{ account_name: string; account_ref: string }>;
+  selectedUserId?: string | null;  // New prop for selected user
 }
 
-const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({ customers }) => {
+const CustomerHistoryTable: React.FC<CustomerHistoryTableProps> = ({
+  customers,
+  selectedUserId
+}) => {
   const [selectedCustomerRef, setSelectedCustomerRef] = useState<string>('');
   const [selectedCustomerName, setSelectedCustomerName] = useState<string>('');
+  const { user } = useAuth();
+  
+  // Use the provided userId or fall back to the current user's id
+  const userId = selectedUserId || user?.id;
 
   // Query to fetch all visits for a specific customer
   const { data: customerVisits, isLoading } = useQuery({
-    queryKey: ['customer-history', selectedCustomerRef],
+    queryKey: ['customer-history', selectedCustomerRef, userId],
     queryFn: async (): Promise<CustomerVisit[]> => {
       if (!selectedCustomerRef) return [];
       
-      const { data, error } = await supabase
+      const query = supabase
         .from('customer_visits')
         .select('*')
-        .eq('customer_ref', selectedCustomerRef)
-        .order('date', { ascending: false });
+        .eq('customer_ref', selectedCustomerRef);
+        
+      // Only filter by user_id if we have a selected user
+      if (userId) {
+        query.eq('user_id', userId);
+      }
+      
+      query.order('date', { ascending: false });
+        
+      const { data, error } = await query;
         
       if (error) {
         throw error;
