@@ -5,8 +5,7 @@ import { GradientAvatar, GradientAvatarFallback } from '@/components/ui/gradient
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, User, Moon, Sun } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 
 const UserProfileDropdown = () => {
   const { user, signOut } = useAuth();
@@ -36,8 +35,7 @@ const UserProfileDropdown = () => {
   
   if (!user) return null;
   
-  // Get user email and initials
-  const email = user.email || 'user@example.com';
+  // Get user initials
   const userInitials = "J";
   
   return (
@@ -59,56 +57,7 @@ const UserProfileDropdown = () => {
         align="end"
       >
         <div className="flex flex-col">
-          <div className="px-4 py-3 border-b border-gray-800">
-            <p className="text-sm font-medium leading-none">{email.split('@')[0]}</p>
-            <p className="text-xs text-gray-400 mt-1 truncate">{email}</p>
-          </div>
-          
           <div className="p-1">
-            <Link to="/account" onClick={() => setOpen(false)}>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
-              >
-                <User className="h-4 w-4 mr-2" />
-                Profile
-              </Button>
-            </Link>
-            
-            <Link to="/settings" onClick={() => setOpen(false)}>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </Link>
-            
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
-              onClick={() => toast({ title: "Theme changing will be available soon" })}
-            >
-              <Moon className="h-4 w-4 mr-2" />
-              Dark Mode
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
-              onClick={() => toast({ title: "Theme changing will be available soon" })}
-            >
-              <Sun className="h-4 w-4 mr-2" />
-              Light Mode
-            </Button>
-          </div>
-          
-          <div className="border-t border-gray-800 p-1">
             <Button 
               onClick={handleSignOut} 
               variant="ghost" 
