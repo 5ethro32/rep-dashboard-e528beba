@@ -41,6 +41,10 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
   const [isLoading, setIsLoading] = useState(false);
   const [activeAccounts, setActiveAccounts] = useState({ current: 0, previous: 0 });
   const [topRep, setTopRep] = useState({ name: '', profit: 0 });
+  const [accountsTrendData, setAccountsTrendData] = useState({
+    increasing: 0,
+    decreasing: 0
+  });
   const isMobile = useIsMobile();
   const { user, isAdmin } = useAuth();
   
@@ -242,6 +246,56 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         previous: previousActiveAccounts
       });
       
+      // Calculate increasing and decreasing spend accounts
+      if (currentData && previousData && currentData.length > 0 && previousData.length > 0) {
+        // Create maps for current and previous data to easily compare accounts
+        const currentAccountMap = new Map();
+        const previousAccountMap = new Map();
+        
+        // Build maps with account ref as key and spend as value
+        currentData.forEach((item: DataItem) => {
+          const accountRef = item["Account Ref"] || item.account_ref || '';
+          const spend = typeof item.Spend === 'number' ? item.Spend : 
+                      (typeof item.spend === 'number' ? item.spend : 0);
+          
+          if (accountRef) {
+            currentAccountMap.set(accountRef, spend);
+          }
+        });
+        
+        previousData.forEach((item: DataItem) => {
+          const accountRef = item["Account Ref"] || item.account_ref || '';
+          const spend = typeof item.Spend === 'number' ? item.Spend : 
+                      (typeof item.spend === 'number' ? item.spend : 0);
+          
+          if (accountRef) {
+            previousAccountMap.set(accountRef, spend);
+          }
+        });
+        
+        let increasingCount = 0;
+        let decreasingCount = 0;
+        
+        // Compare the accounts that exist in both periods
+        currentAccountMap.forEach((currentSpend, accountRef) => {
+          const previousSpend = previousAccountMap.get(accountRef);
+          
+          // Only compare if the account existed in the previous period
+          if (previousSpend !== undefined && previousSpend > 0) {
+            if (currentSpend > previousSpend) {
+              increasingCount++;
+            } else if (currentSpend < previousSpend) {
+              decreasingCount++;
+            }
+          }
+        });
+        
+        setAccountsTrendData({
+          increasing: increasingCount,
+          decreasing: decreasingCount
+        });
+      }
+      
       // Calculate top rep
       if (currentData && currentData.length > 0) {
         const repProfits = new Map();
@@ -286,11 +340,11 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
   const renderPageHeading = () => {
     if (selectedUserId === "all") {
       return (
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
             All
           </span>{' '}
-          Account Performance
+          Accounts
         </h1>
       );
     } else {
@@ -298,11 +352,11 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
       const nameToShow = selectedUserName === 'My Data' ? 'My' : `${selectedUserName}'s`;
       
       return (
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
             {nameToShow}
           </span>{' '}
-          Account Performance
+          Accounts
         </h1>
       );
     }
@@ -310,7 +364,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      <div className="mb-8">
+      <div className="mb-6">
         {renderPageHeading()}
         <p className="text-white/60">
           {selectedUserId === "all"
@@ -321,7 +375,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         </p>
       </div>
       
-      <div className="mb-4 flex justify-between items-center">
+      <div className="mb-2 flex justify-between items-center">
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
@@ -347,6 +401,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         previousMonthData={previousMonthRawData}
         isLoading={isLoading}
         selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
+        accountsTrendData={accountsTrendData}
       />
       
       <div className="mb-12">

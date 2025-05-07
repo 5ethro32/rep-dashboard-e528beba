@@ -1,21 +1,27 @@
+
 import React from 'react';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Award, Star, TrendingUp } from 'lucide-react';
+import { Users, Award, Star, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 interface AccountSummaryCardsProps {
   currentMonthData: any[];
   previousMonthData: any[];
   isLoading: boolean;
-  selectedUser?: string; // Add selected user prop
+  selectedUser?: string;
+  accountsTrendData?: {
+    increasing: number;
+    decreasing: number;
+  };
 }
 
 const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({ 
   currentMonthData, 
   previousMonthData, 
   isLoading,
-  selectedUser
+  selectedUser,
+  accountsTrendData = { increasing: 0, decreasing: 0 }
 }) => {
   // Calculate active accounts (accounts with spend > 0)
   const activeAccounts = currentMonthData.filter(item => {
@@ -142,7 +148,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   const titlePrefix = getTitlePrefix();
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
       {/* Active Accounts Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
@@ -170,7 +176,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
             <Award size={16} className="text-[#ea384c] mr-2" />
             {titlePrefix ? `${titlePrefix} Top Customer` : 'Top Customer (Highest Profit)'}
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1 line-clamp-1" title={topCustomer.name}>
+          <div className="text-xl md:text-2xl font-bold mb-1 line-clamp-1" title={topCustomer.name}>
             {topCustomer.name}
           </div>
           <div className="text-sm text-white/50">
@@ -186,7 +192,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
             <Star size={16} className="text-[#ea384c] mr-2" />
             Top Margin Customer
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1 line-clamp-1" title={topMarginCustomer.name}>
+          <div className="text-xl md:text-2xl font-bold mb-1 line-clamp-1" title={topMarginCustomer.name}>
             {topMarginCustomer.name}
           </div>
           <div className="text-sm text-white/50">
@@ -204,13 +210,55 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
             <TrendingUp size={16} className="text-[#ea384c] mr-2" />
             Most Improved Account
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1 line-clamp-1" title={mostImprovedAccount.name}>
+          <div className="text-xl md:text-2xl font-bold mb-1 line-clamp-1" title={mostImprovedAccount.name}>
             {mostImprovedAccount.name}
           </div>
           <div className="text-sm text-white/50">
             {mostImprovedAccount.percentImprovement > 0 
               ? `+${mostImprovedAccount.percentImprovement.toFixed(1)}% (${formatCurrency(mostImprovedAccount.improvement)})` 
               : 'No improvement data'}
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Increasing Spend Accounts */}
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <ArrowUpRight size={16} className="text-green-500 mr-2" />
+            Increasing Spend Accounts
+          </div>
+          <div className="flex items-center mb-1">
+            <div className="text-2xl md:text-3xl font-bold text-green-500">{formatNumber(accountsTrendData.increasing)}</div>
+            <Badge className="ml-2 text-xs font-medium bg-green-500/20 text-green-500 hover:bg-green-500/20">
+              {previousMonthData.length > 0 
+                ? `${((accountsTrendData.increasing / previousMonthData.length) * 100).toFixed(1)}%` 
+                : '0%'}
+            </Badge>
+          </div>
+          <div className="text-sm text-white/50">
+            Accounts with higher spend vs. last month
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Decreasing Spend Accounts */}
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <ArrowDownRight size={16} className="text-[#ea384c] mr-2" />
+            Decreasing Spend Accounts
+          </div>
+          <div className="flex items-center mb-1">
+            <div className="text-2xl md:text-3xl font-bold text-[#ea384c]">{formatNumber(accountsTrendData.decreasing)}</div>
+            <Badge variant="destructive" className="ml-2 text-xs font-medium bg-[#ea384c]/20 text-[#ea384c] hover:bg-[#ea384c]/20">
+              {previousMonthData.length > 0 
+                ? `${((accountsTrendData.decreasing / previousMonthData.length) * 100).toFixed(1)}%` 
+                : '0%'}
+            </Badge>
+          </div>
+          <div className="text-sm text-white/50">
+            Accounts with lower spend vs. last month
           </div>
         </CardContent>
       </Card>
