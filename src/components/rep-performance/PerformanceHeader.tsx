@@ -23,11 +23,11 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
 }) => {
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
-    ? 'py-4' // More balanced padding for top and bottom (was py-0)
+    ? 'py-4' // More balanced padding for top and bottom
     : 'py-8 md:py-16'; // Original padding
     
   return (
-    <header className={`${paddingClasses} px-4 md:px-6 container max-w-7xl mx-auto animate-fade-in bg-transparent ${hideTitle ? 'flex justify-end' : ''}`}>
+    <header className={`${hideTitle ? '' : paddingClasses} px-4 md:px-6 container max-w-7xl mx-auto animate-fade-in bg-transparent ${hideTitle ? 'flex justify-end' : ''}`}>
       {!hideTitle && (
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
           Rep

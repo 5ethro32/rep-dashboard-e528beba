@@ -368,30 +368,32 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      <div className="mb-6">
-        {renderPageHeading()}
-        <p className="text-white/60">
-          {selectedUserId === "all"
-            ? "Compare Aver's accounts performance between months to identify declining or improving accounts."
-            : selectedUserName && selectedUserName !== 'My Data' 
-              ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.`
-              : "Compare your accounts performance between months to identify declining or improving accounts."}
-        </p>
-      </div>
-      
-      {/* Reduced spacing and swapped order of elements */}
-      <div className="flex justify-between items-center">
-        {/* Month dropdown now on the left */}
+      {/* Header section with heading and month selector aligned */}
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          {renderPageHeading()}
+          <p className="text-white/60">
+            {selectedUserId === "all"
+              ? "Compare Aver's accounts performance between months to identify declining or improving accounts."
+              : selectedUserName && selectedUserName !== 'My Data' 
+                ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.`
+                : "Compare your accounts performance between months to identify declining or improving accounts."}
+          </p>
+        </div>
+        
+        {/* Month dropdown now beside the heading */}
         <div className="flex-shrink-0">
           <PerformanceHeader 
             selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}
             hideTitle={true}
-            reducedPadding={true}  // Pass a prop to reduce padding
+            reducedPadding={true}
           />
         </div>
-        
-        {/* Refresh button now on the right */}
+      </div>
+      
+      {/* Refresh button moved to its own line */}
+      <div className="mb-6 flex justify-end">
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
