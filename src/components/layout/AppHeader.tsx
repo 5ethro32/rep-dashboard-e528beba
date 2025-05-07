@@ -27,9 +27,9 @@ const AppHeader = ({ selectedUserId, onSelectUser }: AppHeaderProps) => {
         </div>
         
         <div className="flex items-center gap-4">
-          {isAccountPerformancePage && selectedUserId && onSelectUser && (
+          {isAccountPerformancePage && onSelectUser && (
             <UserSelector
-              selectedUserId={selectedUserId}
+              selectedUserId={selectedUserId || "all"}
               onSelectUser={onSelectUser}
               className="mr-2"
               showAllDataOption={true}

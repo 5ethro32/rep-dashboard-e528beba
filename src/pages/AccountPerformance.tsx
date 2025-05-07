@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -10,9 +9,8 @@ import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
-import UserSelector from '@/components/rep-tracker/UserSelector';
-import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
+import { useAuth } from '@/contexts/AuthContext';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 
@@ -32,7 +30,7 @@ type DataItem = {
   spend?: number;
 };
 
-const AccountPerformanceContent = () => {
+const AccountPerformance = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
   const [currentMonthRawData, setCurrentMonthRawData] = useState<DataItem[]>([]);
   const [previousMonthRawData, setPreviousMonthRawData] = useState<DataItem[]>([]);
@@ -297,86 +295,70 @@ const AccountPerformanceContent = () => {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <div className="flex justify-between items-center mb-6 pt-4">
-        <Link to="/rep-performance">
-          <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </Link>
-      </div>
-      
-      <PerformanceHeader 
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-        hideTitle={true}
-      />
-      
-      <div className="mb-6">
-        {renderPageHeading()}
-        <p className="text-white/60">
-          {selectedUserId === "all"
-            ? "Compare all accounts performance between months to identify declining or improving accounts."
-            : selectedUserName && selectedUserName !== 'My Data' 
-              ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
-              : "Compare your accounts performance between months to identify declining or improving accounts."}
-        </p>
-      </div>
-      
-      <div className="mb-4 flex justify-between items-center">
-        <Button 
-          onClick={fetchComparisonData} 
-          disabled={isLoading}
-          variant="outline"
-          size="sm"
-          className="text-white border-white/20 hover:bg-white/10"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          {isLoading ? "Refreshing..." : "Refresh Data"}
-        </Button>
-      </div>
-      
-      <AccountSummaryCards
-        currentMonthData={currentMonthRawData}
-        previousMonthData={previousMonthRawData}
-        isLoading={isLoading}
-        selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
-      />
-      
-      <div className="mb-12">
-        <AccountPerformanceComparison 
-          currentMonthData={currentMonthRawData}
-          previousMonthData={previousMonthRawData}
-          isLoading={isLoading}
-          selectedMonth={selectedMonth}
-          formatCurrency={formatCurrency}
-          selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
-        />
-      </div>
-    </div>
-  );
-};
-
-// Wrapper component that manages layout
-const AccountPerformance = () => {
-  const isMobile = useIsMobile();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
-  const [selectedUserName, setSelectedUserName] = useState<string>('All Data');
-  
-  const handleUserChange = (userId: string | null, displayName: string) => {
-    console.log(`User changed to: ${displayName} (${userId})`);
-    setSelectedUserId(userId);
-    setSelectedUserName(displayName);
-  };
-  
-  return (
     <AppLayout 
       showChatInterface={!isMobile}
       selectedUserId={selectedUserId}
       onSelectUser={handleUserChange}
     >
-      <AccountPerformanceContent />
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
+        <div className="flex justify-between items-center mb-6 pt-4">
+          <Link to="/rep-performance">
+            <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+        </div>
+        
+        <PerformanceHeader 
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+          hideTitle={true}
+        />
+        
+        <div className="mb-6">
+          {/* Helper function to generate heading with gradient username */}
+          {renderPageHeading()}
+          <p className="text-white/60">
+            {selectedUserId === "all"
+              ? "Compare all accounts performance between months to identify declining or improving accounts."
+              : selectedUserName && selectedUserName !== 'My Data' 
+                ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
+                : "Compare your accounts performance between months to identify declining or improving accounts."}
+          </p>
+        </div>
+        
+        <div className="mb-4 flex justify-between items-center">
+          <Button 
+            onClick={fetchComparisonData} 
+            disabled={isLoading}
+            variant="outline"
+            size="sm"
+            className="text-white border-white/20 hover:bg-white/10"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? "Refreshing..." : "Refresh Data"}
+          </Button>
+        </div>
+        
+        <AccountSummaryCards
+          currentMonthData={currentMonthRawData}
+          previousMonthData={previousMonthRawData}
+          isLoading={isLoading}
+          selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
+        />
+        
+        <div className="mb-12">
+          <AccountPerformanceComparison 
+            currentMonthData={currentMonthRawData}
+            previousMonthData={previousMonthRawData}
+            isLoading={isLoading}
+            selectedMonth={selectedMonth}
+            formatCurrency={formatCurrency}
+            selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
+          />
+        </div>
+      </div>
     </AppLayout>
   );
 };

@@ -24,7 +24,10 @@ const AppLayout = ({
 
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
-      <AppHeader selectedUserId={selectedUserId} onSelectUser={onSelectUser} />
+      <AppHeader 
+        selectedUserId={selectedUserId} 
+        onSelectUser={onSelectUser} 
+      />
       <div className={`relative ${isMobile ? 'pb-16' : ''}`}>
         {children}
         {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
