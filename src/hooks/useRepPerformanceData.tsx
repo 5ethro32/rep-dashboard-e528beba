@@ -9,7 +9,17 @@ import {
 } from '@/utils/rep-data-processing';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import defaultBaseData from '@/data/rep-performance-default-data';
+import { 
+  defaultBaseData, 
+  defaultRepData,
+  defaultRevaData,
+  defaultWholesaleData,
+  defaultBaseSummary,
+  defaultRevaValues,
+  defaultWholesaleValues,
+  defaultSummaryChanges,
+  defaultRepChanges
+} from '@/data/rep-performance-default-data';
 
 export const useRepPerformanceData = (selectedUserId: string | null = "all") => {
   const [baseRepData, setBaseRepData] = useState<RepData[]>([]);
@@ -24,102 +34,18 @@ export const useRepPerformanceData = (selectedUserId: string | null = "all") => 
   const [mayBaseRepData, setMayBaseRepData] = useState<RepData[]>([]);
   const [mayRevaRepData, setMayRevaRepData] = useState<RepData[]>([]);
   const [mayWholesaleRepData, setMayWholesaleRepData] = useState<RepData[]>([]);
-  const [baseSummary, setBaseSummary] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [revaValues, setRevaValues] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [wholesaleValues, setWholesaleValues] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [febRevaValues, setFebRevaValues] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-   const [aprBaseSummary, setAprBaseSummary] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [aprRevaValues, setAprRevaValues] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [aprWholesaleValues, setAprWholesaleValues] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [mayBaseSummary, setMayBaseSummary] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [mayRevaValues, setMayRevaValues] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
-  const [mayWholesaleValues, setMayWholesaleValues] = useState<SummaryData>({
-    totalSpend: 0,
-    totalProfit: 0,
-    totalPacks: 0,
-    totalAccounts: 0,
-    activeAccounts: 0,
-    averageMargin: 0
-  });
+  const [baseSummary, setBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [revaValues, setRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [wholesaleValues, setWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  const [febBaseSummary, setFebBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [febRevaValues, setFebRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [febWholesaleValues, setFebWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  const [aprBaseSummary, setAprBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [aprRevaValues, setAprRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [aprWholesaleValues, setAprWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  const [mayBaseSummary, setMayBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [mayRevaValues, setMayRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [mayWholesaleValues, setMayWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   const [includeRetail, setIncludeRetail] = useState(true);
   const [includeReva, setIncludeReva] = useState(true);
   const [includeWholesale, setIncludeWholesale] = useState(true);
@@ -139,13 +65,8 @@ export const useRepPerformanceData = (selectedUserId: string | null = "all") => 
   const [mayBaseData, setMayBaseData] = useState<SalesDataItem[]>([]);
   const [mayRevaData, setMayRevaData] = useState<SalesDataItem[]>([]);
   const [mayWholesaleData, setMayWholesaleData] = useState<SalesDataItem[]>([]);
-  const [repChanges, setRepChanges] = useState<Record<string, any>>({});
-  const [summaryChanges, setSummaryChanges] = useState<any>({
-    totalSpend: 0,
-    totalProfit: 0,
-    averageMargin: 0,
-    totalPacks: 0
-  });
+  const [repChanges, setRepChanges] = useState<Record<string, any>>(defaultRepChanges);
+  const [summaryChanges, setSummaryChanges] = useState<any>(defaultSummaryChanges);
   
   const { user } = useAuth();
 
