@@ -19,10 +19,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
+  // Function to check if user has admin role
+  const checkUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error checking user role:', error);
+        setIsAdmin(false);
+        return;
+      }
+      
+      const isUserAdmin = data?.role === 'admin';
+      console.log('AuthContext: User role check result:', data?.role, 'isAdmin:', isUserAdmin);
+      setIsAdmin(isUserAdmin);
+    } catch (err) {
+      console.error('Error checking user role:', err);
+      setIsAdmin(false);
+    }
+  };
+
   useEffect(() => {
     // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        console.log('Auth state changed:', event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
@@ -52,28 +77,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // Function to check if user has admin role
-  const checkUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        console.error('Error checking user role:', error);
-        setIsAdmin(false);
-        return;
-      }
-      
-      setIsAdmin(data?.role === 'admin');
-    } catch (err) {
-      console.error('Error checking user role:', err);
-      setIsAdmin(false);
-    }
-  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
