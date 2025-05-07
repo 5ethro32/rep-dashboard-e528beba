@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -40,6 +41,14 @@ interface TrendData {
   isTrajectory?: boolean;
   [key: string]: any;
 }
+
+// Define a month ordering to ensure proper display sequence
+const MONTH_ORDER = {
+  'Feb': 1,
+  'Mar': 2,
+  'Apr': 3,
+  'May': 4
+};
 
 const CHART_COLORS = {
   profit: '#ef4444',
@@ -94,7 +103,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     setAvailableReps(Array.from(allReps).sort());
   }, [repDataProp]);
 
-  // Create base chart data for February through April (actual data)
+  // Create actual chart data for February through April
   const actualChartData = useMemo(() => {
     return [
       {
@@ -164,7 +173,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 
   // Create the final display data by adding May trajectory point
   const displayData = useMemo(() => {
-    // Create a copy of the actual data and add May projection
+    // Add May projection to the actual data
     return [
       ...actualChartData,
       mayTrajectoryPoint
@@ -381,6 +390,23 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const clearSelectedReps = () => {
     setSelectedReps([]);
   };
+
+  // Split data into regular data and trajectory data
+  const createSplitData = (data: any[]) => {
+    // Sort data to ensure months are in correct order
+    const sortedData = [...data].sort((a, b) => MONTH_ORDER[a.month] - MONTH_ORDER[b.month]);
+    
+    // Create two separate datasets - one for actual data, one for trajectory
+    const actualData = sortedData.filter(item => !item.isTrajectory);
+    const trajectoryData = sortedData.filter(item => item.isTrajectory);
+    
+    return { actualData, trajectoryData };
+  };
+  
+  const { actualData: mainActualData, trajectoryData: mainTrajectoryData } = useMemo(
+    () => createSplitData(displayData),
+    [displayData]
+  );
   
   if (isLoading) {
     return (
@@ -558,150 +584,287 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
               )}
               <Tooltip content={<CustomTooltip />} />
               
-              {/* Display profit metric if selected */}
+              {/* Display profit metric if selected - split into actual and trajectory lines */}
               {selectedReps.length === 0 && showProfit && (
-                <Line 
-                  yAxisId="left"
-                  type="monotone" 
-                  dataKey="profit" 
-                  name="Profit" 
-                  stroke={CHART_COLORS.profit}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                  xAxisId="shared"
-                  connectNulls={true}
-                  // Use the isTrajectory field to determine which segments should be dotted
-                  // This approach ensures a continuous line with proper styling
-                  strokeDasharray={(dataPoint) => dataPoint?.isTrajectory ? "5 5" : "0"}
-                />
+                <>
+                  {/* Actual data line (Feb-Apr) */}
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="profit" 
+                    name="Profit" 
+                    stroke={CHART_COLORS.profit}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    xAxisId="shared"
+                    data={mainActualData}
+                    connectNulls={true}
+                  />
+                  {/* Trajectory line for May (needs to include April for continuity) */}
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="profit" 
+                    name="Profit" 
+                    stroke={CHART_COLORS.profit}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    xAxisId="shared"
+                    data={mainTrajectoryData.length ? [mainActualData[mainActualData.length - 1], ...mainTrajectoryData] : []}
+                    connectNulls={true}
+                  />
+                </>
               )}
               
               {/* Display spend metric if selected */}
               {selectedReps.length === 0 && showSpend && (
-                <Line 
-                  yAxisId="left"
-                  type="monotone" 
-                  dataKey="spend" 
-                  name="Spend" 
-                  stroke={CHART_COLORS.spend}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                  xAxisId="shared"
-                  connectNulls={true}
-                  strokeDasharray={(dataPoint) => dataPoint?.isTrajectory ? "5 5" : "0"}
-                />
+                <>
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="spend" 
+                    name="Spend" 
+                    stroke={CHART_COLORS.spend}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    xAxisId="shared"
+                    data={mainActualData}
+                    connectNulls={true}
+                  />
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="spend" 
+                    name="Spend" 
+                    stroke={CHART_COLORS.spend}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    xAxisId="shared"
+                    data={mainTrajectoryData.length ? [mainActualData[mainActualData.length - 1], ...mainTrajectoryData] : []}
+                    connectNulls={true}
+                  />
+                </>
               )}
               
               {/* Display packs metric if selected */}
               {selectedReps.length === 0 && showPacks && (
-                <Line 
-                  yAxisId="right"
-                  type="monotone" 
-                  dataKey="packs" 
-                  name="Packs" 
-                  stroke={CHART_COLORS.packs}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                  xAxisId="shared"
-                  connectNulls={true}
-                  strokeDasharray={(dataPoint) => dataPoint?.isTrajectory ? "5 5" : "0"}
-                />
+                <>
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="packs" 
+                    name="Packs" 
+                    stroke={CHART_COLORS.packs}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    xAxisId="shared"
+                    data={mainActualData}
+                    connectNulls={true}
+                  />
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="packs" 
+                    name="Packs" 
+                    stroke={CHART_COLORS.packs}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                    xAxisId="shared"
+                    data={mainTrajectoryData.length ? [mainActualData[mainActualData.length - 1], ...mainTrajectoryData] : []}
+                    connectNulls={true}
+                  />
+                </>
               )}
               
               {/* Display margin metric if selected */}
               {selectedReps.length === 0 && showMargin && (
-                <Line 
-                  yAxisId="margin"
-                  type="monotone" 
-                  dataKey="margin" 
-                  name="Margin %" 
-                  stroke={CHART_COLORS.margin}
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: CHART_COLORS.margin }}
-                  activeDot={{ r: 6 }}
-                  xAxisId="shared"
-                  connectNulls={true}
-                  strokeDasharray={(dataPoint) => dataPoint?.isTrajectory ? "5 5" : "0"}
-                />
+                <>
+                  <Line 
+                    yAxisId="margin"
+                    type="monotone" 
+                    dataKey="margin" 
+                    name="Margin %" 
+                    stroke={CHART_COLORS.margin}
+                    strokeWidth={2}
+                    dot={{ r: 4, fill: CHART_COLORS.margin }}
+                    activeDot={{ r: 6 }}
+                    xAxisId="shared"
+                    data={mainActualData}
+                    connectNulls={true}
+                  />
+                  <Line 
+                    yAxisId="margin"
+                    type="monotone" 
+                    dataKey="margin" 
+                    name="Margin %" 
+                    stroke={CHART_COLORS.margin}
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ r: 4, fill: CHART_COLORS.margin }}
+                    activeDot={{ r: 6 }}
+                    xAxisId="shared"
+                    data={mainTrajectoryData.length ? [mainActualData[mainActualData.length - 1], ...mainTrajectoryData] : []}
+                    connectNulls={true}
+                  />
+                </>
               )}
               
               {/* Rep-specific metrics with continuous lines that change to dotted for May */}
               {repChartData.map((repData) => {
+                const { actualData: repActualData, trajectoryData: repTrajectoryData } = createSplitData(repData.data);
+                
                 return (
                   <React.Fragment key={repData.rep}>
                     {/* Display rep profit */}
                     {showProfit && (
-                      <Line
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey="value"
-                        name={`${repData.rep} - Profit`}
-                        stroke={repData.color}
-                        strokeWidth={1.5}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                        data={repData.data}
-                        xAxisId="shared"
-                        connectNulls={true}
-                        strokeDasharray={(dataPoint) => dataPoint?.isTrajectory ? "5 5" : "0"}
-                      />
+                      <>
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="value"
+                          name={`${repData.rep} - Profit`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5 }}
+                          data={repActualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                        />
+                        {repTrajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="left"
+                            type="monotone"
+                            dataKey="value"
+                            name={`${repData.rep} - Profit`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
+                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
                     )}
                     
                     {/* Display rep spend */}
                     {showSpend && (
-                      <Line
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey="spend"
-                        name={`${repData.rep} - Spend`}
-                        stroke={repData.color}
-                        strokeWidth={1.5}
-                        dot={{ r: 3, strokeDasharray: "" }}
-                        activeDot={{ r: 5 }}
-                        data={repData.data}
-                        xAxisId="shared"
-                        connectNulls={true}
-                        strokeDasharray={(dataPoint) => dataPoint?.isTrajectory ? "5 5" : "3 3"}
-                      />
+                      <>
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="spend"
+                          name={`${repData.rep} - Spend`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5 }}
+                          data={repActualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                          strokeDasharray="3 3"
+                        />
+                        {repTrajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="left"
+                            type="monotone"
+                            dataKey="spend"
+                            name={`${repData.rep} - Spend`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
+                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
                     )}
                     
                     {/* Display rep packs */}
                     {showPacks && (
-                      <Line
-                        yAxisId="right"
-                        type="monotone"
-                        dataKey="packs"
-                        name={`${repData.rep} - Packs`}
-                        stroke={repData.color}
-                        strokeWidth={1.5}
-                        dot={{ r: 3, strokeDasharray: "" }}
-                        activeDot={{ r: 5 }}
-                        data={repData.data}
-                        xAxisId="shared"
-                        connectNulls={true}
-                        strokeDasharray={(dataPoint) => dataPoint?.isTrajectory ? "5 5" : "1 1"}
-                      />
+                      <>
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="packs"
+                          name={`${repData.rep} - Packs`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5 }}
+                          data={repActualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                          strokeDasharray="1 1"
+                        />
+                        {repTrajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="right"
+                            type="monotone"
+                            dataKey="packs"
+                            name={`${repData.rep} - Packs`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
+                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
                     )}
                     
                     {/* Display rep margin */}
                     {showMargin && (
-                      <Line
-                        yAxisId="margin"
-                        type="monotone"
-                        dataKey="margin"
-                        name={`${repData.rep} - Margin %`}
-                        stroke={repData.color}
-                        strokeWidth={1.5}
-                        dot={{ r: 3, strokeDasharray: "", fill: CHART_COLORS.margin, stroke: repData.color }}
-                        activeDot={{ r: 5 }}
-                        data={repData.data}
-                        xAxisId="shared"
-                        connectNulls={true}
-                        strokeDasharray={(dataPoint) => dataPoint?.isTrajectory ? "5 5" : "2 2"}
-                      />
+                      <>
+                        <Line
+                          yAxisId="margin"
+                          type="monotone"
+                          dataKey="margin"
+                          name={`${repData.rep} - Margin %`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          dot={{ r: 3, fill: CHART_COLORS.margin, stroke: repData.color }}
+                          activeDot={{ r: 5 }}
+                          data={repActualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                          strokeDasharray="2 2"
+                        />
+                        {repTrajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="margin"
+                            type="monotone"
+                            dataKey="margin"
+                            name={`${repData.rep} - Margin %`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3, fill: CHART_COLORS.margin, stroke: repData.color }}
+                            activeDot={{ r: 5 }}
+                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
                     )}
                   </React.Fragment>
                 );
@@ -715,3 +878,4 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
 };
 
 export default TrendLineChart;
+
