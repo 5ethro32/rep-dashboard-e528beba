@@ -17,8 +17,6 @@ import { SummaryData } from '@/types/rep-performance.types';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
-  const [selectedUserName, setSelectedUserName] = useState("All Data");
   const isMobile = useIsMobile();
   
   const {
@@ -53,13 +51,7 @@ const RepPerformance = () => {
     mayBaseSummary,
     mayRevaValues,
     mayWholesaleValues,
-  } = useRepPerformanceData(selectedUserId);
-
-  // Handle user selection
-  const handleSelectUser = (userId: string | null, displayName: string) => {
-    setSelectedUserId(userId);
-    setSelectedUserName(displayName);
-  };
+  } = useRepPerformanceData();
   
   // Clear auto-refreshed status after a delay
   useEffect(() => {
@@ -87,7 +79,6 @@ const RepPerformance = () => {
     setAutoRefreshed(true);
   };
   
-  // Get active data filtered by the selected user
   const activeData = getActiveData('overall');
   
   // Calculate filtered summary data for each month using the same calculation as metric cards
@@ -161,8 +152,6 @@ const RepPerformance = () => {
       <PerformanceHeader 
         selectedMonth={selectedMonth}
         setSelectedMonth={handleMonthSelection}
-        selectedUserId={selectedUserId}
-        onSelectUser={handleSelectUser}
       />
       
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
@@ -219,7 +208,6 @@ const RepPerformance = () => {
         includeReva={includeReva}
         includeWholesale={includeWholesale}
         selectedMonth={selectedMonth}
-        selectedUserName={selectedUserName}
       />
       
       {/* TrendLineChart with enhanced capabilities */}
@@ -234,7 +222,6 @@ const RepPerformance = () => {
           includeRetail={includeRetail}
           includeReva={includeReva}
           includeWholesale={includeWholesale}
-          selectedUserName={selectedUserName}
         />
       </div>
 
@@ -281,7 +268,6 @@ const RepPerformance = () => {
           selectedMonth === 'February' ? febWholesaleValues : 
           selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues
         }
-        selectedUserName={selectedUserName}
       />
     </div>
   );
