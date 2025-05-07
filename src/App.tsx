@@ -38,9 +38,7 @@ const AppRoutes = () => {
         path="/account-performance" 
         element={
           <ProtectedRoute>
-            <AppLayout showChatInterface={!isMobile}>
-              <AccountPerformance />
-            </AppLayout>
+            <AccountPerformance />
           </ProtectedRoute>
         } 
       />

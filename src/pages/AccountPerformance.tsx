@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -8,10 +9,10 @@ import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
-import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 import UserSelector from '@/components/rep-tracker/UserSelector';
 import { useAuth } from '@/contexts/AuthContext';
+import AppLayout from '@/components/layout/AppLayout';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 
@@ -31,7 +32,7 @@ type DataItem = {
   spend?: number;
 };
 
-const AccountPerformance = () => {
+const AccountPerformanceContent = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
   const [currentMonthRawData, setCurrentMonthRawData] = useState<DataItem[]>([]);
   const [previousMonthRawData, setPreviousMonthRawData] = useState<DataItem[]>([]);
@@ -304,15 +305,6 @@ const AccountPerformance = () => {
             Back to Dashboard
           </Button>
         </Link>
-        
-        <div className="flex items-center">
-          <UserSelector 
-            selectedUserId={selectedUserId} 
-            onSelectUser={handleUserChange}
-            className="mr-2"
-            showAllDataOption={true}
-          />
-        </div>
       </div>
       
       <PerformanceHeader 
@@ -363,6 +355,29 @@ const AccountPerformance = () => {
         />
       </div>
     </div>
+  );
+};
+
+// Wrapper component that manages layout
+const AccountPerformance = () => {
+  const isMobile = useIsMobile();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
+  const [selectedUserName, setSelectedUserName] = useState<string>('All Data');
+  
+  const handleUserChange = (userId: string | null, displayName: string) => {
+    console.log(`User changed to: ${displayName} (${userId})`);
+    setSelectedUserId(userId);
+    setSelectedUserName(displayName);
+  };
+  
+  return (
+    <AppLayout 
+      showChatInterface={!isMobile}
+      selectedUserId={selectedUserId}
+      onSelectUser={handleUserChange}
+    >
+      <AccountPerformanceContent />
+    </AppLayout>
   );
 };
 
