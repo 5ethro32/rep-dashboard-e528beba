@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -270,6 +269,28 @@ const AccountPerformance = () => {
     }
   };
 
+  // Helper function to generate heading with gradient username
+  const renderPageHeading = () => {
+    if (selectedUserId === "all") {
+      return (
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          Account Performance Analysis
+        </h1>
+      );
+    } else {
+      const nameToShow = selectedUserName === 'My Data' ? 'My' : selectedUserName;
+      
+      return (
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
+            {nameToShow}
+          </span>{' '}
+          Account Performance Analysis
+        </h1>
+      );
+    }
+  };
+
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
       <div className="flex justify-between items-center mb-6 pt-4">
@@ -298,13 +319,7 @@ const AccountPerformance = () => {
       />
       
       <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          {selectedUserId === "all"
-            ? "Account Performance Analysis"
-            : selectedUserName && selectedUserName !== 'My Data' 
-              ? `${selectedUserName} - Account Performance Analysis` 
-              : "My Account Performance Analysis"}
-        </h1>
+        {renderPageHeading()}
         <p className="text-white/60">
           {selectedUserId === "all"
             ? "Compare all accounts performance between months to identify declining or improving accounts."
