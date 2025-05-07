@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -436,12 +437,9 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   // Custom tooltip formatter to indicate projected values - MODIFIED to change "Trajectory" to "Projected"
   const customTooltipFormatter = (value: any, name: string, props: any) => {
     const isProjected = props.payload?.isProjected;
-    const isTrajectory = props.payload?.isTrajectory;
-    const formattedValue = yAxisFormatter(value);
+    const formattedValue = value;
     
-    if (isProjected && isTrajectory) {
-      return [`${formattedValue} (Projected)`, name];
-    } else if (isProjected) {
+    if (isProjected) {
       return [`${formattedValue} (Projected)`, name];
     }
     
@@ -818,4 +816,66 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         />
                         {repTrajectoryData.length > 0 && (
                           <Line
-                            y
+                            yAxisId="right"
+                            type="monotone"
+                            dataKey="packs"
+                            name={`${repData.rep} - Packs`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5 }}
+                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Display rep margin */}
+                    {showMargin && (
+                      <>
+                        <Line
+                          yAxisId="margin"
+                          type="monotone"
+                          dataKey="margin"
+                          name={`${repData.rep} - Margin %`}
+                          stroke={repData.color}
+                          strokeWidth={1.5}
+                          dot={{ r: 3, fill: repData.color }}
+                          activeDot={{ r: 5 }}
+                          data={repActualData}
+                          xAxisId="shared"
+                          connectNulls={true}
+                        />
+                        {repTrajectoryData.length > 0 && (
+                          <Line
+                            yAxisId="margin"
+                            type="monotone"
+                            dataKey="margin"
+                            name={`${repData.rep} - Margin %`}
+                            stroke={repData.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="5 5"
+                            dot={{ r: 3, fill: repData.color }}
+                            activeDot={{ r: 5 }}
+                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
+                            xAxisId="shared"
+                            connectNulls={true}
+                          />
+                        )}
+                      </>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default TrendLineChart;
