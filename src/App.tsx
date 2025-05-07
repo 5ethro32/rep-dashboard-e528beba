@@ -12,6 +12,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RepTracker from "./pages/RepTracker";
 import AIVera from "./pages/AIVera"; 
+import MyPerformance from "./pages/MyPerformance"; // Add import for new page
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
 
@@ -47,6 +48,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <RepTracker />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/my-performance" 
+        element={
+          <ProtectedRoute>
+            <MyPerformance />
           </ProtectedRoute>
         } 
       />
