@@ -1,15 +1,17 @@
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Users, Eye } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, Eye } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
 import WeekPlanTabV2 from '@/components/rep-tracker/WeekPlanTabV2';
+import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useVisitMetrics } from '@/hooks/useVisitMetrics';
 import { toast } from '@/components/ui/use-toast';
 import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
@@ -149,11 +151,21 @@ const RepTracker: React.FC = () => {
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
-      <div className="flex justify-end items-center pt-4">
-        <UserSelector 
-          selectedUserId={selectedUserId} 
-          onSelectUser={handleUserSelect}
-        />
+      <div className="flex justify-between items-center mb-6 pt-4">
+        <Link to="/rep-performance">
+          <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </Link>
+        
+        <div className="flex items-center gap-2">
+          <UserSelector 
+            selectedUserId={selectedUserId} 
+            onSelectUser={handleUserSelect}
+          />
+          <UserProfileButton />
+        </div>
       </div>
       
       {/* Modified personalized greeting - now the main heading */}
