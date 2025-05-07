@@ -1,12 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { ChartLine, BarChart3, ClipboardList, UserCircle, Bot } from 'lucide-react';
+import { ChartLine, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
@@ -18,6 +19,7 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const [isNavOpen, setIsNavOpen] = useState(false);
   
   // Function to get the current page title based on the URL path
   const getCurrentPageTitle = () => {
@@ -76,7 +78,11 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
     <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-gray-950/95">
       <div className="container max-w-7xl mx-auto px-4">
         {/* Main header with logo and user profile */}
-        <div className="h-16 flex items-center justify-between">
+        <div 
+          className="h-16 flex items-center justify-between"
+          onMouseEnter={() => !isMobile && setIsNavOpen(true)}
+          onMouseLeave={() => !isMobile && setIsNavOpen(false)}
+        >
           <div className="flex items-center gap-3">
             <Link to="/rep-performance" className="flex items-center">
               <span className="text-2xl font-bold">
@@ -89,6 +95,17 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
                 {getCurrentPageTitle()}
               </span>
             </div>
+            
+            {!isMobile && (
+              <div className="flex items-center ml-2">
+                <ChevronDown 
+                  className={cn(
+                    "h-4 w-4 text-white/70 transition-transform duration-200",
+                    isNavOpen ? "rotate-180" : ""
+                  )} 
+                />
+              </div>
+            )}
           </div>
           
           <div className="flex items-center gap-4">
@@ -104,26 +121,55 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
           </div>
         </div>
         
-        {/* Navigation bar - visible on both mobile (as a footer) and desktop (as a header nav) */}
-        <div className="border-t border-white/5 py-1">
-          <nav className="flex items-center">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => cn(
-                  "px-4 py-2 flex items-center gap-2 text-sm font-medium",
-                  isActive 
-                    ? "text-finance-red" 
-                    : "text-white/60 hover:text-white"
-                )}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-        </div>
+        {/* Navigation bar - desktop: collapsible on hover, mobile: always visible at bottom */}
+        {isMobile ? (
+          <div className="border-t border-white/5 py-1">
+            <nav className="flex items-center overflow-x-auto">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) => cn(
+                    "px-4 py-2 flex items-center gap-2 text-sm font-medium",
+                    isActive 
+                      ? "text-finance-red" 
+                      : "text-white/60 hover:text-white"
+                  )}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+        ) : (
+          <div 
+            className={cn(
+              "border-t border-white/5 overflow-hidden transition-all duration-300",
+              isNavOpen ? "max-h-16 opacity-100" : "max-h-0 opacity-0"
+            )}
+            onMouseEnter={() => setIsNavOpen(true)}
+            onMouseLeave={() => setIsNavOpen(false)}
+          >
+            <nav className="flex items-center py-1">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) => cn(
+                    "px-4 py-2 flex items-center gap-2 text-sm font-medium",
+                    isActive 
+                      ? "text-finance-red" 
+                      : "text-white/60 hover:text-white"
+                  )}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );
