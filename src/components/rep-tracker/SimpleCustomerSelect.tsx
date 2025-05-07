@@ -10,12 +10,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SimpleCustomerSelectProps {
   customers: Array<{ account_name: string; account_ref: string }>;
-  selectedCustomer?: string;
+  selectedCustomer: string;
   onSelect: (ref: string, name: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
-  showInitialValue?: boolean;
 }
 
 export function SimpleCustomerSelect({
@@ -24,8 +23,7 @@ export function SimpleCustomerSelect({
   onSelect,
   placeholder = 'Select a customer...',
   className,
-  disabled = false,
-  showInitialValue = true
+  disabled = false
 }: SimpleCustomerSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');

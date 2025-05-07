@@ -230,7 +230,7 @@ const WeekPlanTab: React.FC<{
         isOpen={isAddPlanOpen}
         onClose={() => setIsAddPlanOpen(false)}
         customers={customers}
-        date={selectedDate}
+        selectedDate={selectedDate}
         onSuccess={handleAddPlanSuccess}
       />
 

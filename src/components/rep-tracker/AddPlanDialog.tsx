@@ -5,18 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useAddPlanMutation } from '@/hooks/usePlanMutation';
+import { useAuth } from '@/contexts/AuthContext';
 import { ImprovedCustomerSelector } from './ImprovedCustomerSelector';
+import { usePlanMutation } from '@/hooks/usePlanMutation';
 import DatePickerField from './DatePickerField';
 
 interface AddPlanDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  customers?: Array<{ account_name: string; account_ref: string }>;
+  selectedDate?: Date;
   onSuccess?: () => void;
-  customers: Array<{ account_name: string; account_ref: string }>;
-  initialDate?: string;
-  // Renamed selectedDate to date for backwards compatibility
-  date?: Date;
 }
 
 interface PlanFormData {
@@ -29,27 +28,33 @@ interface PlanFormData {
 const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   isOpen,
   onClose,
-  onSuccess,
   customers = [],
-  initialDate,
-  date, // Support both initialDate and date props for backward compatibility
+  selectedDate,
+  onSuccess,
 }) => {
-  // Convert date to initialDate format if provided
-  const formattedDate = date ? date.toISOString().split('T')[0] : initialDate;
+  const { user } = useAuth();
+  const defaultDate = selectedDate || new Date();
   
-  const { register, handleSubmit, setValue, watch } = useForm<PlanFormData>({
+  const { register, handleSubmit, reset, setValue, watch } = useForm<PlanFormData>({
     defaultValues: {
-      planned_date: formattedDate || new Date().toISOString().split('T')[0],
-      customer_ref: '',
-      customer_name: '',
-      notes: ''
+      planned_date: defaultDate.toISOString().split('T')[0],
     }
   });
 
-  const addPlanMutation = useAddPlanMutation(() => {
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+
+  const addPlanMutation = usePlanMutation(() => {
+    reset({
+      planned_date: defaultDate.toISOString().split('T')[0],
+      customer_ref: '',
+      customer_name: '',
+      notes: '',
+    });
+    
     if (onSuccess) {
       onSuccess();
     }
+    
     onClose();
   });
 
@@ -59,18 +64,24 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
   };
 
   const onSubmit = (data: PlanFormData) => {
-    addPlanMutation.mutate(data);
+    if (!user?.id) return;
+    const formattedDate = new Date(data.planned_date);
+    addPlanMutation.mutate({ 
+      ...data, 
+      user_id: user.id,
+      planned_date: formattedDate.toISOString().split('T')[0] 
+    });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Plan</DialogTitle>
+          <DialogTitle>Add Week Plan</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <DatePickerField
-            fieldName="planned_date"
+            id="planned_date"
             label="Date"
             value={watch('planned_date')}
             onChange={(date) => setValue('planned_date', date)}
@@ -79,8 +90,8 @@ const AddPlanDialog: React.FC<AddPlanDialogProps> = ({
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
             <ImprovedCustomerSelector
-              customers={customers}
-              selectedCustomer=""
+              customers={safeCustomers}
+              selectedCustomer={watch('customer_name') || ''}
               onSelect={handleCustomerSelect}
             />
           </div>

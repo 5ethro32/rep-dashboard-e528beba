@@ -18,8 +18,6 @@ import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
 import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-import UserSelector from '@/components/rep-tracker/UserSelector';
-import { useSelectedUser } from '@/hooks/useSelectedUser';
 
 const RepTracker: React.FC = () => {
   const navigate = useNavigate();
@@ -28,7 +26,6 @@ const RepTracker: React.FC = () => {
   const [showAddVisit, setShowAddVisit] = useState(false);
   const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
   const isMobile = useIsMobile();
-  const { selectedUserId, setSelectedUserId, isCurrentUser } = useSelectedUser();
   
   const queryClient = useQueryClient();
   
@@ -42,10 +39,10 @@ const RepTracker: React.FC = () => {
   // Capitalize first letter
   userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
 
-  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate, selectedUserId);
+  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate);
   const previousWeekDate = new Date(weekStart);
   previousWeekDate.setDate(previousWeekDate.getDate() - 7);
-  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate, selectedUserId);
+  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate);
 
   const { data: customers, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ['customers'],
@@ -141,19 +138,11 @@ const RepTracker: React.FC = () => {
       </div>
       
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
-            <h2 className="text-base sm:text-lg font-semibold truncate">
-              Week: {weekStartFormatted} - {weekEndFormatted}
-            </h2>
-          </div>
-          
-          {/* User Selector */}
-          <UserSelector 
-            selectedUserId={selectedUserId} 
-            onSelectUser={setSelectedUserId} 
-          />
+        <div className="flex items-center">
+          <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
+          <h2 className="text-base sm:text-lg font-semibold truncate">
+            Week: {weekStartFormatted} - {weekEndFormatted}
+          </h2>
         </div>
         
         <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
@@ -192,15 +181,6 @@ const RepTracker: React.FC = () => {
         </div>
       </div>
       
-      {/* View mode indicator */}
-      {!isCurrentUser && (
-        <div className="bg-amber-900/30 border border-amber-600/30 rounded-md p-3 mb-6 flex items-center">
-          <div className="text-amber-400 text-sm">
-            You are viewing another user's data. Some actions may be restricted.
-          </div>
-        </div>
-      )}
-      
       <WeeklySummary 
         data={currentWeekMetrics || {
           totalVisits: 0,
@@ -237,8 +217,6 @@ const RepTracker: React.FC = () => {
                 weekEndDate={weekEnd}
                 customers={customers || []}
                 onAddPlanSuccess={handleAddPlanSuccess}
-                selectedUserId={selectedUserId}
-                readOnly={!isCurrentUser}
               />
             </ScrollArea>
           ) : (
@@ -247,8 +225,6 @@ const RepTracker: React.FC = () => {
               weekEndDate={weekEnd}
               customers={customers || []}
               onAddPlanSuccess={handleAddPlanSuccess}
-              selectedUserId={selectedUserId}
-              readOnly={!isCurrentUser}
             />
           )}
         </TabsContent>
@@ -261,20 +237,15 @@ const RepTracker: React.FC = () => {
             isLoadingCustomers={isLoadingCustomers}
             onDataChange={handleDataChange}
             onAddVisit={() => setShowAddVisit(true)}
-            selectedUserId={selectedUserId}
-            readOnly={!isCurrentUser}
           />
         </TabsContent>
         
         <TabsContent value="customer-history" className="mt-6">
-          <CustomerHistoryTable 
-            customers={customers || []}
-            selectedUserId={selectedUserId}
-          />
+          <CustomerHistoryTable customers={customers || []} />
         </TabsContent>
       </Tabs>
       
-      {showAddVisit && isCurrentUser && (
+      {showAddVisit && (
         <AddVisitDialog
           isOpen={showAddVisit}
           onClose={() => setShowAddVisit(false)}

@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { startOfWeek, endOfWeek } from 'date-fns';
+import { startOfWeek, endOfWeek, differenceInDays } from 'date-fns';
 
 interface VisitMetrics {
   totalVisits: number;
@@ -14,36 +14,24 @@ interface VisitMetrics {
   plannedVisits: number;
 }
 
-export const useVisitMetrics = (selectedDate: Date, userId?: string) => {
+export const useVisitMetrics = (selectedDate: Date) => {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
   return useQuery({
-    queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString(), userId],
+    queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString()],
     queryFn: async (): Promise<VisitMetrics> => {
-      // Build queries with user filter if provided
-      let visitsQuery = supabase
-        .from('customer_visits')
-        .select('*')
-        .gte('date', weekStart.toISOString())
-        .lte('date', weekEnd.toISOString());
-        
-      let plansQuery = supabase
-        .from('week_plans')
-        .select('*')
-        .gte('planned_date', weekStart.toISOString().split('T')[0])
-        .lte('planned_date', weekEnd.toISOString().split('T')[0]);
-      
-      // Apply user filtering if a userId is provided
-      if (userId) {
-        visitsQuery = visitsQuery.eq('user_id', userId);
-        plansQuery = plansQuery.eq('user_id', userId);
-      }
-      
-      // Execute both queries
       const [{ data: visits, error: visitsError }, { data: plans, error: plansError }] = await Promise.all([
-        visitsQuery,
-        plansQuery
+        supabase
+          .from('customer_visits')
+          .select('*')
+          .gte('date', weekStart.toISOString())
+          .lte('date', weekEnd.toISOString()),
+        supabase
+          .from('week_plans')
+          .select('*')
+          .gte('planned_date', weekStart.toISOString().split('T')[0])
+          .lte('planned_date', weekEnd.toISOString().split('T')[0])
       ]);
 
       if (visitsError) throw visitsError;

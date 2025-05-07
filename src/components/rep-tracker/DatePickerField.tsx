@@ -14,8 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface DatePickerFieldProps {
-  id?: string; // Make id optional
-  fieldName?: string; // Add fieldName as an alternative to id
+  id: string;
   label: string;
   value: string;
   onChange: (date: string) => void;
@@ -24,7 +23,6 @@ interface DatePickerFieldProps {
 
 const DatePickerField: React.FC<DatePickerFieldProps> = ({
   id,
-  fieldName,
   label,
   value,
   onChange,
@@ -32,7 +30,6 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
 }) => {
   const popoverRef = useRef<HTMLDivElement>(null);
   const selectedDate = value ? new Date(value) : new Date();
-  const inputId = id || fieldName || 'date-picker';
   
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -44,11 +41,11 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
   
   return (
     <div className={cn("space-y-2", className)}>
-      <Label htmlFor={inputId}>{label}</Label>
+      <Label htmlFor={id}>{label}</Label>
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            id={inputId}
+            id={id}
             variant="outline"
             className={cn(
               "w-full border-gray-300 bg-background justify-start text-left font-normal h-10",
@@ -75,8 +72,8 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
       </Popover>
       <Input
         type="hidden"
-        id={`${inputId}-input`}
-        name={fieldName || inputId}
+        id={`${id}-input`}
+        name={id}
         value={value}
       />
     </div>
