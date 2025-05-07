@@ -24,6 +24,8 @@ type DataItem = {
   account_ref?: string;
   Rep?: string;
   rep_name?: string;
+  "Sub-Rep"?: string;
+  sub_rep?: string;
   Profit?: number;
   profit?: number;
   Spend?: number;
@@ -42,28 +44,32 @@ const AccountPerformance = () => {
   
   // Add state for user selection
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState<string>('My Data');
+  const [selectedUserName, setSelectedUserName] = useState<string>('');
   
   // Set current user as default on initial load
   useEffect(() => {
     if (user) {
       setSelectedUserId(user.id);
+      setSelectedUserName('My Data');
     }
   }, [user]);
   
   useEffect(() => {
     fetchComparisonData();
-  }, [selectedMonth, selectedUserId]);
+  }, [selectedMonth, selectedUserId, selectedUserName]);
   
   // Handle user selection change
   const handleUserChange = (userId: string | null, displayName: string) => {
+    console.log(`User changed to: ${displayName} (${userId})`);
     setSelectedUserId(userId);
     setSelectedUserName(displayName);
-    // Refresh data after user selection
-    fetchComparisonData();
+    // Data will refresh due to the useEffect dependency
   };
   
-  const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: { column: string, value: string }, userFilter?: string) => {
+  const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: { column: string, value: string }) => {
+    console.log(`Fetching data from ${table} with filter:`, columnFilter);
+    console.log(`Selected user: ${selectedUserName} (${selectedUserId})`);
+    
     const PAGE_SIZE = 1000;
     let allRecords: any[] = [];
     let page = 0;
@@ -76,11 +82,6 @@ const AccountPerformance = () => {
       
       if (columnFilter) {
         query.eq(columnFilter.column, columnFilter.value);
-      }
-      
-      // Add user filter if specified and not an admin
-      if (userFilter && !isAdmin) {
-        query.or(`Rep.eq.${userFilter},Sub-Rep.eq.${userFilter}`);
       }
       
       const { data, error } = await query
@@ -97,16 +98,70 @@ const AccountPerformance = () => {
       }
     }
     
-    // If an admin selects a specific user, filter data on the client side
-    // This allows admins to still see all data initially but filter as needed
-    if (userFilter && isAdmin && selectedUserId && selectedUserId !== user?.id) {
+    // If a specific user is selected (not the current user)
+    if (selectedUserName && selectedUserName !== 'My Data') {
+      console.log(`Filtering for specific user: ${selectedUserName}`);
+      
+      // Filter data for the selected rep (regardless of admin status)
       return allRecords.filter(item => {
         const rep = item.Rep || item.rep_name || '';
         const subRep = item['Sub-Rep'] || item.sub_rep || '';
-        return rep === selectedUserName || subRep === selectedUserName;
+        
+        const isMainRep = rep === selectedUserName;
+        const isSubRep = subRep === selectedUserName;
+        
+        return isMainRep || isSubRep;
       });
+    } else if (!isAdmin && user) {
+      // For non-admin viewing their own data, filter by their profile name
+      // First, try to get their profile name from the profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        return allRecords; // Return unfiltered as fallback
+      }
+      
+      if (profileData) {
+        const fullName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim();
+        console.log(`Filtering for current user using profile name: "${fullName}"`);
+        
+        if (fullName) {
+          return allRecords.filter(item => {
+            const rep = item.Rep || item.rep_name || '';
+            const subRep = item['Sub-Rep'] || item.sub_rep || '';
+            
+            const isMainRep = rep === fullName;
+            const isSubRep = subRep === fullName;
+            
+            return isMainRep || isSubRep;
+          });
+        }
+      }
+      
+      // If we couldn't get a profile name, try using email username as fallback
+      if (user.email) {
+        const username = user.email.split('@')[0];
+        const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1);
+        console.log(`Fallback: Filtering for username: "${capitalizedUsername}"`);
+        
+        return allRecords.filter(item => {
+          const rep = item.Rep || item.rep_name || '';
+          const subRep = item['Sub-Rep'] || item.sub_rep || '';
+          
+          const isMainRep = rep.includes(capitalizedUsername);
+          const isSubRep = subRep.includes(capitalizedUsername);
+          
+          return isMainRep || isSubRep;
+        });
+      }
     }
     
+    // For admins viewing all data, return unfiltered
     return allRecords;
   };
   
@@ -139,25 +194,22 @@ const AccountPerformance = () => {
       }
       
       console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
-      console.log(`User filter: ${selectedUserName} (${selectedUserId})`);
       
       let currentData: DataItem[] = [];
-      currentData = await fetchAllRecordsFromTable(currentTable, undefined, selectedUserName);
+      currentData = await fetchAllRecordsFromTable(currentTable);
       
       console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} from ${currentTable}`);
 
       if (currentData && currentData.length > 0) {
-        // Log a sample record to help with debugging
         console.log(`Sample record from ${currentTable}:`, currentData[0]);
       }
       
       let previousData: DataItem[] = [];
       if (previousTable) {
-        previousData = await fetchAllRecordsFromTable(previousTable, undefined, selectedUserName);
+        previousData = await fetchAllRecordsFromTable(previousTable);
         console.log(`Fetched ${previousData?.length || 0} records for previous month from ${previousTable}`);
 
         if (previousData && previousData.length > 0) {
-          // Log a sample record to help with debugging
           console.log(`Sample record from ${previousTable}:`, previousData[0]);
         }
       }
@@ -249,12 +301,12 @@ const AccountPerformance = () => {
       
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          {selectedUserId && selectedUserId !== user?.id 
+          {selectedUserName && selectedUserName !== 'My Data' 
             ? `${selectedUserName} - Account Performance Analysis` 
             : "Account Performance Analysis"}
         </h1>
         <p className="text-white/60">
-          {selectedUserId && selectedUserId !== user?.id 
+          {selectedUserName && selectedUserName !== 'My Data' 
             ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
             : "Compare all accounts performance between months to identify declining or improving accounts."}
         </p>
@@ -277,7 +329,7 @@ const AccountPerformance = () => {
         currentMonthData={currentMonthRawData}
         previousMonthData={previousMonthRawData}
         isLoading={isLoading}
-        selectedUser={selectedUserId !== user?.id ? selectedUserName : undefined}
+        selectedUser={selectedUserName !== 'My Data' ? selectedUserName : undefined}
       />
       
       <div className="mb-12">
@@ -287,7 +339,7 @@ const AccountPerformance = () => {
           isLoading={isLoading}
           selectedMonth={selectedMonth}
           formatCurrency={formatCurrency}
-          selectedUser={selectedUserId !== user?.id ? selectedUserName : undefined}
+          selectedUser={selectedUserName !== 'My Data' ? selectedUserName : undefined}
         />
       </div>
     </div>
