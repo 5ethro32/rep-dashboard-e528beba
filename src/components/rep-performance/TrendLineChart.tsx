@@ -425,8 +425,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   
   // Determine which axes to show based on selected metrics
   const showLeftAxis = showProfit || showSpend || selectedReps.length > 0;
-  const showRightAxis = showPacks || selectedReps.length > 0;
-  const showMarginAxis = showMargin;
+  const showRightAxis = showPacks || showMargin || selectedReps.length > 0;
   
   // Generate department display text
   const getDepartmentDisplayText = () => {
@@ -437,16 +436,33 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     return departments.join(', ');
   };
   
-  // Custom tooltip formatter to indicate projected values - MODIFIED to change "Trajectory" to "Projected"
-  const customTooltipFormatter = (value: any, name: string, props: any) => {
-    const isProjected = props.payload?.isProjected;
-    const formattedValue = value;
-    
-    if (isProjected) {
-      return [`${formattedValue} (Projected)`, name];
+  // Custom right axis formatter that handles both packs and margin
+  const rightAxisFormatter = (value: number) => {
+    // If margin is selected and the value is likely a percentage (between 0-100)
+    if (showMargin && !showPacks && value <= 100) {
+      return `${value.toFixed(1)}%`;
     }
-    
-    return [formattedValue, name];
+    // If both margin and packs are selected, or just packs
+    // Format numbers appropriately
+    return value > 1000 ? `${(value / 1000)}k` : `${value}`;
+  };
+  
+  // Function to calculate the right domain based on selected metrics
+  const calculateRightDomain = () => {
+    if (showMargin && !showPacks) {
+      // If only margin is selected, use margin domain
+      return marginDomain;
+    } else if (!showMargin && showPacks) {
+      // If only packs is selected, let recharts auto-scale
+      return undefined;
+    } else if (showMargin && showPacks) {
+      // If both are selected, this requires special handling
+      // We'll need to normalize values to work in a single axis
+      // This is complex and might require data transformation
+      // For now, we'll prioritize packs for domain scaling
+      return undefined;
+    }
+    return undefined;
   };
   
   return (
@@ -573,17 +589,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                   yAxisId="right"
                   orientation="right"
                   tick={{ fill: 'rgba(255,255,255,0.6)' }}
-                  tickFormatter={(value) => value > 1000 ? `${(value / 1000)}k` : `${value}`}
-                />
-              )}
-              {showMarginAxis && (
-                <YAxis 
-                  yAxisId="margin"
-                  orientation="right"
-                  tick={{ fill: 'rgba(255,255,255,0.6)' }}
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  domain={marginDomain}
-                  hide={false}
+                  tickFormatter={rightAxisFormatter}
+                  domain={calculateRightDomain()}
                   width={45}
                 />
               )}
@@ -690,11 +697,11 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 </>
               )}
               
-              {/* Display margin metric if selected */}
+              {/* Display margin metric if selected - now using the right axis */}
               {selectedReps.length === 0 && showMargin && (
                 <>
                   <Line 
-                    yAxisId="margin"
+                    yAxisId="right"
                     type="monotone" 
                     dataKey="margin" 
                     name="Margin %" 
@@ -707,7 +714,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                     connectNulls={true}
                   />
                   <Line 
-                    yAxisId="margin"
+                    yAxisId="right"
                     type="monotone" 
                     dataKey="margin" 
                     name="Margin %" 
@@ -807,78 +814,4 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                           yAxisId="right"
                           type="monotone"
                           dataKey="packs"
-                          name={`${repData.rep} - Packs`}
-                          stroke={repData.color}
-                          strokeWidth={1.5}
-                          dot={{ r: 3 }}
-                          activeDot={{ r: 5 }}
-                          data={repActualData}
-                          xAxisId="shared"
-                          connectNulls={true}
-                          strokeDasharray="1 1"
-                        />
-                        {repTrajectoryData.length > 0 && (
-                          <Line
-                            yAxisId="right"
-                            type="monotone"
-                            dataKey="packs"
-                            name={`${repData.rep} - Packs`}
-                            stroke={repData.color}
-                            strokeWidth={1.5}
-                            strokeDasharray="5 5"
-                            dot={{ r: 3 }}
-                            activeDot={{ r: 5 }}
-                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
-                            xAxisId="shared"
-                            connectNulls={true}
-                          />
-                        )}
-                      </>
-                    )}
-                    
-                    {/* Display rep margin */}
-                    {showMargin && (
-                      <>
-                        <Line
-                          yAxisId="margin"
-                          type="monotone"
-                          dataKey="margin"
-                          name={`${repData.rep} - Margin %`}
-                          stroke={repData.color}
-                          strokeWidth={1.5}
-                          dot={{ r: 3, fill: repData.color }}
-                          activeDot={{ r: 5 }}
-                          data={repActualData}
-                          xAxisId="shared"
-                          connectNulls={true}
-                        />
-                        {repTrajectoryData.length > 0 && (
-                          <Line
-                            yAxisId="margin"
-                            type="monotone"
-                            dataKey="margin"
-                            name={`${repData.rep} - Margin %`}
-                            stroke={repData.color}
-                            strokeWidth={1.5}
-                            strokeDasharray="5 5"
-                            dot={{ r: 3, fill: repData.color }}
-                            activeDot={{ r: 5 }}
-                            data={repTrajectoryData.length ? [repActualData[repActualData.length - 1], ...repTrajectoryData] : []}
-                            xAxisId="shared"
-                            connectNulls={true}
-                          />
-                        )}
-                      </>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default TrendLineChart;
+                          name={`${repData.

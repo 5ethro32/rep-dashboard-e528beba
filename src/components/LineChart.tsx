@@ -21,6 +21,8 @@ interface LineChartProps {
   showTrajectory?: boolean;
   // Flag to ensure x-axis only appears once
   shareXAxis?: boolean;
+  // Add support for consolidated right axis
+  useConsolidatedRightAxis?: boolean;
 }
 
 // Format currency values with £ symbol and k/m suffixes
@@ -42,7 +44,8 @@ const LineChart: React.FC<LineChartProps> = ({
   yAxisFormatter = defaultFormatter,
   trajectoryData,
   showTrajectory = false,
-  shareXAxis = true
+  shareXAxis = true,
+  useConsolidatedRightAxis = false
 }) => {
   // Calculate the minimum and maximum values for the Y-axis
   const minValue = Math.min(...data.map(item => item.value));
@@ -66,7 +69,7 @@ const LineChart: React.FC<LineChartProps> = ({
     trajectoryMaxValue !== -Infinity ? trajectoryMaxValue : maxValue
   ) * 1.05);
   
-  // Custom tooltip formatter to indicate projected values - MODIFIED to change "Trajectory" to "Projected"
+  // Custom tooltip formatter to indicate projected values
   const customTooltipFormatter = (value: any, name: string, props: any) => {
     const isProjected = props.payload?.isProjected;
     const isTrajectory = props.payload?.isTrajectory;
