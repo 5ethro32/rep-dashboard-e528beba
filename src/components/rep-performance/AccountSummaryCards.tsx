@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
@@ -128,25 +127,29 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     });
   }
 
-  // If we're filtering for a specific user, adjust what's displayed in the cards
-  const cardTitle = selectedUser ? (
-    <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
-      <Users size={16} className="text-[#ea384c] mr-2" />
-      {selectedUser}'s Active Accounts
-    </div>
-  ) : (
-    <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
-      <Users size={16} className="text-[#ea384c] mr-2" />
-      Active Accounts
-    </div>
-  );
+  // Helper function to determine prefix for card titles
+  const getTitlePrefix = () => {
+    if (!selectedUser) return '';
+    
+    // If it's "My Data", use "My" instead of "My Data's"
+    if (selectedUser === 'My Data') return 'My';
+    
+    // Otherwise use the name with apostrophe
+    return `${selectedUser}'s`;
+  };
+
+  // Get the appropriate prefix for titles
+  const titlePrefix = getTitlePrefix();
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
       {/* Active Accounts Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
-          {cardTitle}
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <Users size={16} className="text-[#ea384c] mr-2" />
+            {titlePrefix ? `${titlePrefix} Active Accounts` : 'Active Accounts'}
+          </div>
           <div className="flex items-center mb-1">
             <div className="text-2xl md:text-3xl font-bold">{formatNumber(activeAccounts)}</div>
             {accountsChange !== 0 && (
@@ -165,7 +168,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <Award size={16} className="text-[#ea384c] mr-2" />
-            {selectedUser ? `${selectedUser}'s Top Customer` : 'Top Customer (Highest Profit)'}
+            {titlePrefix ? `${titlePrefix} Top Customer` : 'Top Customer (Highest Profit)'}
           </div>
           <div className="text-2xl md:text-3xl font-bold mb-1 line-clamp-1" title={topCustomer.name}>
             {topCustomer.name}
