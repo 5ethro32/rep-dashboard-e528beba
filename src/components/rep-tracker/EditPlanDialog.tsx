@@ -77,7 +77,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <DatePickerField
-            id="planned_date"
+            fieldName="planned_date"
             label="Date"
             value={watch('planned_date')}
             onChange={(date) => setValue('planned_date', date)}
