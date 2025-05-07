@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,14 +25,29 @@ const MyPerformance = () => {
   const [accountHealthData, setAccountHealthData] = useState<any[]>([]);
   const [visitData, setVisitData] = useState<any[]>([]);
   const [autoRefreshed, setAutoRefreshed] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
   const isMobile = useIsMobile();
   
-  // Fetch all the data the user needs
+  // Set the initial selectedUserId to the current user's ID when component mounts
   useEffect(() => {
-    if (user) {
+    if (user && !selectedUserId) {
+      setSelectedUserId(user.id);
+    }
+  }, [user]);
+  
+  // Fetch all the data when user changes
+  useEffect(() => {
+    if (user && selectedUserId) {
       fetchAllData();
     }
-  }, [user, selectedMonth]);
+  }, [user, selectedMonth, selectedUserId]);
+  
+  const handleSelectUser = (userId: string | null, displayName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserDisplayName(displayName);
+    setIsLoading(true);
+  };
   
   const fetchAllData = async () => {
     setIsLoading(true);
@@ -53,22 +67,73 @@ const MyPerformance = () => {
   
   const fetchPersonalPerformanceData = async () => {
     try {
-      console.log('Fetching personal performance data for user:', user?.id);
+      console.log('Fetching performance data for user:', selectedUserId);
       
-      // Get the email username to match with rep data
-      let userName = '';
-      if (user?.email) {
-        userName = user.email.split('@')[0];
-        // Capitalize first letter for matching with rep names
-        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+      // If we're viewing "All Data", we need to handle this differently
+      if (selectedUserId === "all") {
+        console.log('Fetching all data for admin view');
+        // Fetch aggregated data for all users instead of specific user data
+        // For demonstration, we'll just get all data and aggregate it
+        
+        // Determine the table name based on selected month
+        let tableName;
+        switch (selectedMonth) {
+          case 'May':
+            tableName = 'May_Data';
+            break;
+          case 'April':
+            tableName = 'mtd_daily';
+            break;
+          case 'March':
+            tableName = 'sales_data';
+            break;
+          default:
+            tableName = 'sales_data_februrary';
+        }
+        
+        // Get all data from the appropriate table
+        const { data: allData, error } = await supabase
+          .from(tableName)
+          .select('*');
+        
+        if (error) throw error;
+        
+        console.log(`Found ${allData?.length || 0} records for all users in ${tableName}`);
+        
+        // Calculate summary metrics for all data
+        const profitColumn = tableName === 'sales_data' ? 'profit' : 'Profit';
+        const spendColumn = tableName === 'sales_data' ? 'spend' : 'Spend';
+        
+        const performance = calculatePerformanceMetrics(allData || [], profitColumn, spendColumn);
+        setPerformanceData(performance);
+        return;
       }
       
-      // We also try to get the profile info for a more accurate match
+      // Get the user's profile information
       const { data: profileData } = await supabase
         .from('profiles')
         .select('first_name, last_name')
-        .eq('id', user?.id)
+        .eq('id', selectedUserId)
         .single();
+      
+      // Get the user's email to help with matching records
+      let userEmail = '';
+      if (selectedUserId === user?.id) {
+        userEmail = user.email || '';
+      } else {
+        // For other users, try to construct a likely email from their profile data
+        // This is just a fallback and may not be accurate
+        const domain = user?.email ? user.email.split('@')[1] : 'avergenerics.co.uk';
+        userEmail = `${selectedUserId.split('-')[0]}@${domain}`;
+      }
+      
+      // Extract username from email
+      let userName = '';
+      if (userEmail) {
+        userName = userEmail.split('@')[0];
+        // Capitalize first letter for matching with rep names
+        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+      }
       
       const fullName = profileData ? 
         `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
@@ -98,8 +163,7 @@ const MyPerformance = () => {
       const profitColumn = tableName === 'sales_data' ? 'profit' : 'Profit';
       const spendColumn = tableName === 'sales_data' ? 'spend' : 'Spend';
       
-      // Query the data where user matches as rep or sub-rep
-      // We use fullName if available, otherwise userName for matching
+      // Use fullName or userName for matching, prioritizing fullName
       const matchName = fullName || userName;
       
       let query;
@@ -146,18 +210,57 @@ const MyPerformance = () => {
       // Get the current and previous month data for comparison
       // This is simplified for now - actual implementation would compare current and previous month
       
-      // Get user name for matching
-      let userName = '';
-      if (user?.email) {
-        userName = user.email.split('@')[0];
-        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+      // If viewing all data
+      if (selectedUserId === "all") {
+        let currentQuery;
+        if (selectedMonth === 'May') {
+          currentQuery = supabase
+            .from('May_Data')
+            .select('*');
+        } else {
+          currentQuery = supabase
+            .from('mtd_daily')
+            .select('*');
+        }
+        
+        const { data: currentData } = await currentQuery;
+        
+        // Get previous month data
+        let previousQuery;
+        if (selectedMonth === 'May') {
+          previousQuery = supabase
+            .from('Prior_Month_Rolling')
+            .select('*');
+        } else {
+          previousQuery = supabase
+            .from('sales_data')
+            .select('*');
+        }
+        
+        const { data: previousData } = await previousQuery;
+        
+        // Calculate account health by comparing current and previous data
+        const accountHealth = calculateAccountHealth(currentData || [], previousData || []);
+        setAccountHealthData(accountHealth);
+        return;
       }
       
+      // Get user name for matching
       const { data: profileData } = await supabase
         .from('profiles')
         .select('first_name, last_name')
-        .eq('id', user?.id)
+        .eq('id', selectedUserId)
         .single();
+      
+      // Extract username from email or ID
+      let userName = '';
+      if (selectedUserId === user?.id && user?.email) {
+        userName = user.email.split('@')[0];
+        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+      } else {
+        userName = selectedUserId.split('-')[0]; // Use part of the ID as fallback
+        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+      }
       
       const fullName = profileData ? 
         `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
@@ -209,11 +312,25 @@ const MyPerformance = () => {
   const fetchVisitData = async () => {
     // Fetch customer visits data to analyze impact
     try {
-      if (user?.id) {
+      // For "all" data, get visits from everyone
+      if (selectedUserId === "all") {
+        const { data, error } = await supabase
+          .from('customer_visits')
+          .select('*');
+          
+        if (error) throw error;
+        
+        console.log(`Found ${data?.length || 0} visit records for all users`);
+        setVisitData(data || []);
+        return;
+      }
+      
+      // Otherwise get visits for the selected user
+      if (selectedUserId) {
         const { data, error } = await supabase
           .from('customer_visits')
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', selectedUserId);
           
         if (error) throw error;
         
@@ -366,19 +483,33 @@ const MyPerformance = () => {
     setTimeout(() => setAutoRefreshed(false), 3000);
   };
   
+  const pageTitle = selectedUserId === user?.id || !selectedUserId ? 
+    "My Performance Dashboard" : 
+    selectedUserId === "all" ? 
+      "All Performance Dashboard" : 
+      `${selectedUserDisplayName}'s Performance Dashboard`;
+  
   // Render the page
   return (
-    <AppLayout showChatInterface={!isMobile}>
+    <AppLayout 
+      showChatInterface={!isMobile}
+      selectedUserId={selectedUserId}
+      onSelectUser={handleSelectUser}
+      showUserSelector={true}
+    >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
-              My
+              {selectedUserId === user?.id || !selectedUserId ? "My" : selectedUserId === "all" ? "All" : selectedUserDisplayName + "'s"}
             </span>{' '}
             Performance Dashboard
           </h1>
           <p className="text-white/60">
-            Track your key metrics, account health, and get personalized insights based on your performance data.
+            {selectedUserId === "all" ? 
+              "Aggregated view of all performance metrics, account health, and team insights." :
+              "Track key metrics, account health, and get personalized insights based on performance data."
+            }
           </p>
         </div>
         

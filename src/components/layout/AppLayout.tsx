@@ -12,6 +12,7 @@ interface AppLayoutProps {
   selectedMonth?: string;
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
+  showUserSelector?: boolean;
 }
 
 const AppLayout = ({ 
@@ -19,19 +20,24 @@ const AppLayout = ({
   showChatInterface = true, 
   selectedMonth = 'March',
   selectedUserId,
-  onSelectUser
+  onSelectUser,
+  showUserSelector = false
 }: AppLayoutProps) => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const isAccountPerformancePage = location.pathname === '/account-performance';
   const isRepTrackerPage = location.pathname === '/rep-tracker';
+  const isMyPerformancePage = location.pathname === '/my-performance';
+
+  // Determine if we should show the user selector based on props or page
+  const shouldShowUserSelector = showUserSelector || isAccountPerformancePage || isRepTrackerPage;
 
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
       <AppHeader 
         selectedUserId={selectedUserId} 
         onSelectUser={onSelectUser} 
-        showUserSelector={isAccountPerformancePage || isRepTrackerPage}
+        showUserSelector={shouldShowUserSelector}
       />
       <div className={`relative ${isMobile ? 'pb-16' : ''}`}>
         {children}
