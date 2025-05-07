@@ -379,7 +379,8 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         </p>
       </div>
       
-      <div className="mb-1 flex justify-between items-center">
+      {/* Reduced spacing here from mb-1 to mb-0 */}
+      <div className="mb-0 flex justify-between items-center">
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
@@ -408,6 +409,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         accountsTrendData={accountsTrendData}
       />
       
+      {/* Increased spacing here by adding mb-12 */}
       <div className="mb-12">
         <AccountPerformanceComparison 
           currentMonthData={currentMonthRawData}
