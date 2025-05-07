@@ -575,23 +575,32 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 xAxisId="shared"
                 allowDuplicatedCategory={false}
               />
-              {showLeftAxis && (
-                <YAxis 
-                  yAxisId="left"
-                  orientation="left"
-                  tick={{ fill: 'rgba(255,255,255,0.6)' }}
-                  tickFormatter={(value) => `£${(value / 1000)}k`}
-                  width={60}
-                />
-              )}
-              {showRightAxis && (
+              <YAxis 
+                yAxisId="left"
+                orientation="left"
+                tick={{ fill: 'rgba(255,255,255,0.6)' }}
+                tickFormatter={(value) => `£${(value / 1000)}k`}
+                width={60}
+              />
+              {showPacks && (
                 <YAxis 
                   yAxisId="right"
                   orientation="right"
                   tick={{ fill: 'rgba(255,255,255,0.6)' }}
-                  tickFormatter={rightAxisFormatter}
-                  domain={calculateRightDomain()}
+                  tickFormatter={(value) => value > 1000 ? `${(value / 1000)}k` : `${value}`}
                   width={45}
+                />
+              )}
+              {showMargin && (
+                <YAxis 
+                  yAxisId="percentage"
+                  orientation="right"
+                  tick={{ fill: 'rgba(255,255,255,0.6)' }}
+                  tickFormatter={(value) => `${value}%`}
+                  domain={[0, 100]}
+                  width={45}
+                  // Only show this axis when packs is not visible
+                  hide={showPacks}
                 />
               )}
               <Tooltip content={<CustomTooltip />} />
@@ -697,11 +706,11 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 </>
               )}
               
-              {/* Display margin metric if selected - now using the right axis */}
+              {/* Display margin metric if selected - using the percentage axis */}
               {selectedReps.length === 0 && showMargin && (
                 <>
                   <Line 
-                    yAxisId="right"
+                    yAxisId="percentage"
                     type="monotone" 
                     dataKey="margin" 
                     name="Margin %" 
@@ -714,7 +723,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                     connectNulls={true}
                   />
                   <Line 
-                    yAxisId="right"
+                    yAxisId="percentage"
                     type="monotone" 
                     dataKey="margin" 
                     name="Margin %" 
@@ -846,7 +855,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                     {showMargin && (
                       <>
                         <Line
-                          yAxisId="right"
+                          yAxisId="percentage"
                           type="monotone"
                           dataKey="margin"
                           name={`${repData.rep} - Margin %`}
@@ -861,7 +870,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                         />
                         {repTrajectoryData.length > 0 && (
                           <Line
-                            yAxisId="right"
+                            yAxisId="percentage"
                             type="monotone"
                             dataKey="margin"
                             name={`${repData.rep} - Margin %`}

@@ -21,8 +21,10 @@ interface LineChartProps {
   showTrajectory?: boolean;
   // Flag to ensure x-axis only appears once
   shareXAxis?: boolean;
-  // Add support for consolidated right axis
-  useConsolidatedRightAxis?: boolean;
+  // Support for right axis customization
+  useRightAxis?: boolean;
+  // New prop for percentage-based metrics (like margin)
+  hasPercentageMetric?: boolean;
 }
 
 // Format currency values with £ symbol and k/m suffixes
@@ -45,7 +47,8 @@ const LineChart: React.FC<LineChartProps> = ({
   trajectoryData,
   showTrajectory = false,
   shareXAxis = true,
-  useConsolidatedRightAxis = false
+  useRightAxis = false,
+  hasPercentageMetric = false
 }) => {
   // Calculate the minimum and maximum values for the Y-axis
   const minValue = Math.min(...data.map(item => item.value));
@@ -69,6 +72,9 @@ const LineChart: React.FC<LineChartProps> = ({
     trajectoryMaxValue !== -Infinity ? trajectoryMaxValue : maxValue
   ) * 1.05);
   
+  // For percentage-based metrics, use a fixed domain from 0-100
+  const percentageDomain = hasPercentageMetric ? [0, 100] : [yAxisMin, yAxisMax];
+  
   // Custom tooltip formatter to indicate projected values
   const customTooltipFormatter = (value: any, name: string, props: any) => {
     const isProjected = props.payload?.isProjected;
@@ -80,6 +86,11 @@ const LineChart: React.FC<LineChartProps> = ({
     }
     
     return [formattedValue, name];
+  };
+  
+  // Custom right axis formatter for percentage values
+  const percentageFormatter = (value: number): string => {
+    return `${value}%`;
   };
   
   return (
@@ -99,14 +110,43 @@ const LineChart: React.FC<LineChartProps> = ({
           allowDuplicatedCategory={false}
         />
         <YAxis 
-          domain={[yAxisMin, yAxisMax]}
+          domain={useRightAxis ? undefined : [yAxisMin, yAxisMax]}
           tickLine={false} 
           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
           tick={{ fill: '#8E9196', fontSize: 12 }}
           tickFormatter={yAxisFormatter}
           allowDecimals={false}
           width={60}
+          yAxisId="left"
         />
+        
+        {/* Add a dedicated percentage axis when needed */}
+        {hasPercentageMetric && (
+          <YAxis 
+            domain={percentageDomain}
+            tickLine={false} 
+            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            tick={{ fill: '#8E9196', fontSize: 12 }}
+            tickFormatter={percentageFormatter}
+            orientation="right"
+            yAxisId="percentage"
+            width={40}
+          />
+        )}
+        
+        {/* Optional right axis */}
+        {useRightAxis && !hasPercentageMetric && (
+          <YAxis 
+            orientation="right"
+            tickLine={false} 
+            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            tick={{ fill: '#8E9196', fontSize: 12 }}
+            allowDecimals={false}
+            width={45}
+            yAxisId="right"
+          />
+        )}
+        
         <Tooltip 
           contentStyle={{ 
             backgroundColor: '#1A1F2C', 
@@ -132,6 +172,7 @@ const LineChart: React.FC<LineChartProps> = ({
           animationDuration={1500}
           xAxisId="shared"
           connectNulls={true}
+          yAxisId={hasPercentageMetric ? "percentage" : (useRightAxis ? "right" : "left")}
         />
         
         {/* Trajectory line when enabled */}
@@ -148,6 +189,7 @@ const LineChart: React.FC<LineChartProps> = ({
             data={trajectoryData}
             xAxisId="shared"
             connectNulls={true}
+            yAxisId={hasPercentageMetric ? "percentage" : (useRightAxis ? "right" : "left")}
           />
         )}
         
@@ -163,6 +205,7 @@ const LineChart: React.FC<LineChartProps> = ({
             activeDot={{ r: 3, stroke: avgColor }}
             animationDuration={1500}
             xAxisId="shared"
+            yAxisId={hasPercentageMetric ? "percentage" : (useRightAxis ? "right" : "left")}
           />
         )}
       </RechartLine>
