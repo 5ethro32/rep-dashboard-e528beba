@@ -29,9 +29,8 @@ export const isDateInRange = (date: Date, startDate: Date, endDate: Date): boole
   return timestamp >= startDate.getTime() && timestamp <= endDate.getTime();
 };
 
-// Added functions for the TrendLineChart component
+// Calculate the percentage of working days completed in the month
 export const getWorkingDayPercentage = (currentDate: Date): number => {
-  // Calculate the percentage of working days completed in the month
   const now = new Date(currentDate);
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -64,10 +63,63 @@ export const getWorkingDayPercentage = (currentDate: Date): number => {
   return (completedWorkingDays / totalWorkingDays) * 100;
 };
 
+// Project monthly value based on percentage completion
 export const projectMonthlyValue = (currentValue: number, percentageComplete: number): number => {
   // Prevent division by zero
   if (percentageComplete <= 0) return currentValue;
   
   // Project the full month value based on current value and percentage complete
   return currentValue * (100 / percentageComplete);
+};
+
+// Get the first day of the month
+export const getFirstDayOfMonth = (date: Date): Date => {
+  const result = new Date(date);
+  result.setDate(1);
+  return result;
+};
+
+// Get the last day of the month
+export const getLastDayOfMonth = (date: Date): Date => {
+  const result = new Date(date);
+  result.setMonth(result.getMonth() + 1);
+  result.setDate(0);
+  return result;
+};
+
+// Format date as Month Year
+export const formatMonthYear = (date: Date): string => {
+  return date.toLocaleDateString('en-GB', {
+    month: 'long',
+    year: 'numeric'
+  });
+};
+
+// Format date as Day Month
+export const formatDayMonth = (date: Date): string => {
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short'
+  });
+};
+
+// Get day of week as text
+export const getDayOfWeek = (date: Date): string => {
+  return date.toLocaleDateString('en-GB', { weekday: 'long' });
+};
+
+// Check if two dates are the same day
+export const isSameDay = (date1: Date, date2: Date): boolean => {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+};
+
+// Add days to a date
+export const addDays = (date: Date, days: number): Date => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
 };

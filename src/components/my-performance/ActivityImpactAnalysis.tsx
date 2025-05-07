@@ -9,7 +9,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+  Cell,
+  ComposedChart,
+  Line
 } from 'recharts';
 import { formatDate } from '@/utils/date-utils';
 
@@ -96,6 +101,7 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
           visits: 0,
           orders: 0,
           profit: 0,
+          weekStartDate: weekStart, // Store date object for sorting
         };
       }
       
@@ -108,8 +114,73 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
       return acc;
     }, {});
     
-    return Object.values(weeklyData);
+    // Convert to array and sort by date
+    return Object.values(weeklyData)
+      .sort((a: any, b: any) => a.weekStartDate - b.weekStartDate);
   }, [visitData]);
+
+  // Colors for the charts
+  const visitColor = '#8B5CF6'; // Vibrant purple
+  const orderColor = '#10B981'; // Emerald green
+  const barOpacity = 0.85;
+  const areaOpacity = 0.25;
+
+  // Custom tooltip for weekly chart
+  const CustomWeeklyTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-3 rounded-lg shadow-xl">
+          <p className="text-white font-medium mb-1">{label}</p>
+          <div className="space-y-1">
+            <p className="text-sm flex items-center">
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: visitColor }}></span>
+              <span className="text-white/80">Visits:</span> 
+              <span className="ml-1 font-semibold text-white">{payload[0].value}</span>
+            </p>
+            <p className="text-sm flex items-center">
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: orderColor }}></span>
+              <span className="text-white/80">Orders:</span> 
+              <span className="ml-1 font-semibold text-white">{payload[1].value}</span>
+            </p>
+            {payload[2] && (
+              <p className="text-sm flex items-center">
+                <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ background: 'linear-gradient(to right, #8B5CF6, #10B981)' }}></span>
+                <span className="text-white/80">Profit:</span> 
+                <span className="ml-1 font-semibold text-white">£{payload[2].value.toFixed(0)}</span>
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+  
+    return null;
+  };
+
+  // Custom tooltip for account chart
+  const CustomAccountTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-900/95 backdrop-blur-md border border-white/20 p-3 rounded-lg shadow-xl">
+          <p className="text-white font-medium mb-1">{label}</p>
+          <div className="space-y-1">
+            <p className="text-sm flex items-center">
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: visitColor }}></span>
+              <span className="text-white/80">Visits:</span> 
+              <span className="ml-1 font-semibold text-white">{payload[0].value}</span>
+            </p>
+            <p className="text-sm flex items-center">
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: orderColor }}></span>
+              <span className="text-white/80">Profit:</span> 
+              <span className="ml-1 font-semibold text-white">£{payload[1].value.toFixed(0)}</span>
+            </p>
+          </div>
+        </div>
+      );
+    }
+  
+    return null;
+  };
 
   if (isLoading) {
     return (
@@ -142,35 +213,78 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
           </div>
         ) : (
           <>
-            {/* Weekly Visit Trends */}
+            {/* Weekly Visit Trends - Enhanced Styled Chart */}
             <div className="mb-6">
               <h4 className="text-md font-medium text-white/80 mb-4">Weekly Visit Activity</h4>
-              <div className="h-80 bg-gray-900/60 border border-white/10 rounded-lg p-4">
+              <div className="h-80 bg-gray-900/60 border border-white/10 rounded-lg p-4 overflow-hidden">
                 {weeklyVisitData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
+                    <ComposedChart
                       data={weeklyVisitData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      margin={{ top: 20, right: 20, left: 5, bottom: 60 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <defs>
+                        <linearGradient id="visitGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={visitColor} stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor={visitColor} stopOpacity={0.2}/>
+                        </linearGradient>
+                        <linearGradient id="orderGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={orderColor} stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor={orderColor} stopOpacity={0.2}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                       <XAxis 
                         dataKey="week" 
                         angle={-45}
                         textAnchor="end"
                         height={60}
                         tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
+                        axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                        tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                       />
-                      <YAxis tick={{ fill: 'rgba(255,255,255,0.7)' }} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'rgba(22,22,22,0.9)', 
-                          borderColor: 'rgba(255,255,255,0.1)',
-                          color: 'white'
-                        }}
+                      <YAxis 
+                        yAxisId="left"
+                        tick={{ fill: 'rgba(255,255,255,0.7)' }}
+                        axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                        tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                       />
-                      <Bar dataKey="visits" name="Total Visits" fill="#ef4444" />
-                      <Bar dataKey="orders" name="Orders Placed" fill="#22c55e" />
-                    </BarChart>
+                      <YAxis 
+                        yAxisId="right" 
+                        orientation="right"
+                        tick={{ fill: 'rgba(255,255,255,0.5)' }}
+                        axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                        tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                      />
+                      <Tooltip content={<CustomWeeklyTooltip />} />
+                      <Area 
+                        yAxisId="left"
+                        type="monotone" 
+                        dataKey="visits" 
+                        fill="url(#visitGradient)" 
+                        stroke={visitColor}
+                        fillOpacity={areaOpacity}
+                        strokeWidth={2}
+                      />
+                      <Area 
+                        yAxisId="left"
+                        type="monotone" 
+                        dataKey="orders" 
+                        fill="url(#orderGradient)" 
+                        stroke={orderColor}
+                        fillOpacity={areaOpacity}
+                        strokeWidth={2}
+                      />
+                      <Line 
+                        yAxisId="right"
+                        type="monotone" 
+                        dataKey="profit" 
+                        stroke="#FFFFFF" 
+                        strokeWidth={2}
+                        dot={{ r: 4, strokeWidth: 2, fill: '#1F2937' }}
+                        activeDot={{ r: 6, strokeWidth: 2 }}
+                      />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full text-white/50">
@@ -180,35 +294,87 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
               </div>
             </div>
             
-            {/* Visit Impact Analysis */}
+            {/* Visit Impact Analysis - Enhanced Styled Chart */}
             {hasEnoughDataForAnalysis ? (
               <div className="mb-6">
                 <h4 className="text-md font-medium text-white/80 mb-4">Visit Impact by Account</h4>
-                <div className="h-80 bg-gray-900/60 border border-white/10 rounded-lg p-4">
+                <div className="h-80 bg-gray-900/60 border border-white/10 rounded-lg p-4 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={processedData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      margin={{ top: 20, right: 20, left: 5, bottom: 60 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <defs>
+                        <linearGradient id="visitBarGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={visitColor} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={visitColor} stopOpacity={0.6}/>
+                        </linearGradient>
+                        <linearGradient id="profitBarGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={orderColor} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={orderColor} stopOpacity={0.6}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                       <XAxis 
                         dataKey="accountName" 
                         angle={-45}
                         textAnchor="end"
                         height={60}
+                        interval={0}
                         tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
+                        axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                        tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                       />
-                      <YAxis yAxisId="visits" tick={{ fill: 'rgba(255,255,255,0.7)' }} />
-                      <YAxis yAxisId="profit" orientation="right" tick={{ fill: 'rgba(255,255,255,0.7)' }} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'rgba(22,22,22,0.9)', 
-                          borderColor: 'rgba(255,255,255,0.1)',
-                          color: 'white'
-                        }}
+                      <YAxis 
+                        yAxisId="visits" 
+                        orientation="left"
+                        tick={{ fill: 'rgba(255,255,255,0.7)' }}
+                        axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                        tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                       />
-                      <Bar dataKey="visitCount" name="Visits" fill="#ef4444" yAxisId="visits" />
-                      <Bar dataKey="visitProfit" name="Visit Profit" fill="#22c55e" yAxisId="profit" />
+                      <YAxis 
+                        yAxisId="profit" 
+                        orientation="right"
+                        tick={{ fill: 'rgba(255,255,255,0.7)' }}
+                        axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                        tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                      />
+                      <Tooltip content={<CustomAccountTooltip />} />
+                      <Bar 
+                        dataKey="visitCount" 
+                        name="Visits" 
+                        yAxisId="visits" 
+                        barSize={30}
+                        shape={<CustomVisitBar />}
+                        isAnimationActive={true}
+                        animationDuration={1000}
+                        animationEasing="ease-in-out"
+                      >
+                        {processedData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={`url(#visitBarGradient)`} 
+                          />
+                        ))}
+                      </Bar>
+                      <Bar 
+                        dataKey="visitProfit" 
+                        name="Visit Profit" 
+                        yAxisId="profit"
+                        barSize={30} 
+                        shape={<CustomProfitBar />}
+                        isAnimationActive={true}
+                        animationDuration={1000}
+                        animationEasing="ease-in-out"
+                        radius={[4, 4, 0, 0]}
+                      >
+                        {processedData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={`url(#profitBarGradient)`} 
+                          />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -225,6 +391,51 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
         )}
       </CardContent>
     </Card>
+  );
+};
+
+// Custom Bar shapes for stylized visualization
+const CustomVisitBar = (props: any) => {
+  const { x, y, width, height, fill } = props;
+  
+  return (
+    <g>
+      <rect 
+        x={x} 
+        y={y} 
+        width={width} 
+        height={height} 
+        fill={fill} 
+        rx={4}
+        ry={4}
+        filter="url(#glow)" 
+      />
+    </g>
+  );
+};
+
+const CustomProfitBar = (props: any) => {
+  const { x, y, width, height, fill } = props;
+  
+  return (
+    <g>
+      <defs>
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+      <rect 
+        x={x} 
+        y={y} 
+        width={width} 
+        height={height} 
+        fill={fill} 
+        rx={4}
+        ry={4}
+        filter="url(#glow)"
+      />
+    </g>
   );
 };
 

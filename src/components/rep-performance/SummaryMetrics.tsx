@@ -63,17 +63,9 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   const getComparisonMonthText = () => {
     if (selectedMonth === 'March') return 'February';
     if (selectedMonth === 'April') return 'March';
-    if (selectedMonth === 'May') return 'April MTD';
+    if (selectedMonth === 'May') return 'April';
     return '';
   };
-
-  console.log("Rendering SummaryMetrics with data and filter state:", { 
-    summary, 
-    summaryChanges: filteredChanges,
-    filters: { includeRetail, includeReva, includeWholesale },
-    selectedMonth,
-    showChangeIndicators 
-  });
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 animate-slide-in-up">

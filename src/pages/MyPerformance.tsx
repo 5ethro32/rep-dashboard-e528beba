@@ -1,16 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/layout/AppLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, RefreshCw, TrendingDown, TrendingUp, Users, Award, Star } from 'lucide-react';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
-import { Skeleton } from '@/components/ui/skeleton';
 import PersonalPerformanceCard from '@/components/my-performance/PersonalPerformanceCard';
 import AccountHealthSection from '@/components/my-performance/AccountHealthSection';
 import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAnalysis';
@@ -72,40 +69,59 @@ const MyPerformance = () => {
       // If we're viewing "All Data", we need to handle this differently
       if (selectedUserId === "all") {
         console.log('Fetching all data for admin view');
-        // Fetch aggregated data for all users instead of specific user data
-        // For demonstration, we'll just get all data and aggregate it
         
-        // Determine the table name based on selected month
-        let tableName;
+        // Determine the table names based on selected month and previous month
+        let currentTable;
+        let previousTable;
         switch (selectedMonth) {
           case 'May':
-            tableName = 'May_Data';
+            currentTable = 'May_Data';
+            previousTable = 'mtd_daily'; // April data
             break;
           case 'April':
-            tableName = 'mtd_daily';
+            currentTable = 'mtd_daily';
+            previousTable = 'sales_data'; // March data
             break;
           case 'March':
-            tableName = 'sales_data';
+            currentTable = 'sales_data';
+            previousTable = 'sales_data_februrary'; // February data
             break;
           default:
-            tableName = 'sales_data_februrary';
+            currentTable = 'sales_data_februrary';
+            previousTable = null; // No previous data for February
         }
         
-        // Get all data from the appropriate table
-        const { data: allData, error } = await supabase
-          .from(tableName)
+        // Get current month data
+        const { data: currentData, error: currentError } = await supabase
+          .from(currentTable)
           .select('*');
         
-        if (error) throw error;
+        if (currentError) throw currentError;
         
-        console.log(`Found ${allData?.length || 0} records for all users in ${tableName}`);
+        // Calculate current month metrics
+        const profitColumn = currentTable === 'sales_data' ? 'profit' : 'Profit';
+        const spendColumn = currentTable === 'sales_data' ? 'spend' : 'Spend';
+        const currentPerformance = calculatePerformanceMetrics(currentData || [], profitColumn, spendColumn);
         
-        // Calculate summary metrics for all data
-        const profitColumn = tableName === 'sales_data' ? 'profit' : 'Profit';
-        const spendColumn = tableName === 'sales_data' ? 'spend' : 'Spend';
+        // Get previous month data if available
+        let previousPerformance = null;
+        if (previousTable) {
+          const { data: previousData, error: previousError } = await supabase
+            .from(previousTable)
+            .select('*');
+            
+          if (!previousError && previousData) {
+            const prevProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
+            const prevSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
+            previousPerformance = calculatePerformanceMetrics(previousData, prevProfitColumn, prevSpendColumn);
+          }
+        }
         
-        const performance = calculatePerformanceMetrics(allData || [], profitColumn, spendColumn);
-        setPerformanceData(performance);
+        // Set performance data with previous month comparison
+        setPerformanceData({
+          ...currentPerformance,
+          previousMonthData: previousPerformance
+        });
         return;
       }
       
@@ -141,64 +157,99 @@ const MyPerformance = () => {
       
       console.log('Matching with names:', { userName, fullName });
       
-      // Get the appropriate table based on selected month
-      let tableName;
+      // Determine table names based on selected month and previous month
+      let currentTable;
+      let previousTable;
       switch (selectedMonth) {
         case 'May':
-          tableName = 'May_Data';
+          currentTable = 'May_Data';
+          previousTable = 'mtd_daily'; // April data
           break;
         case 'April':
-          tableName = 'mtd_daily';
+          currentTable = 'mtd_daily';
+          previousTable = 'sales_data'; // March data
           break;
         case 'March':
-          tableName = 'sales_data';
+          currentTable = 'sales_data';
+          previousTable = 'sales_data_februrary'; // February data
           break;
         default:
-          tableName = 'sales_data_februrary';
+          currentTable = 'sales_data_februrary';
+          previousTable = null; // No previous data for February
       }
       
       // Determine column names based on table structure
-      const repColumn = tableName === 'sales_data' ? 'rep_name' : 'Rep';
-      const subRepColumn = tableName === 'sales_data' ? 'sub_rep' : 'Sub-Rep';
-      const profitColumn = tableName === 'sales_data' ? 'profit' : 'Profit';
-      const spendColumn = tableName === 'sales_data' ? 'spend' : 'Spend';
+      const currentRepColumn = currentTable === 'sales_data' ? 'rep_name' : 'Rep';
+      const currentSubRepColumn = currentTable === 'sales_data' ? 'sub_rep' : 'Sub-Rep';
+      const currentProfitColumn = currentTable === 'sales_data' ? 'profit' : 'Profit';
+      const currentSpendColumn = currentTable === 'sales_data' ? 'spend' : 'Spend';
       
       // Use fullName or userName for matching, prioritizing fullName
       const matchName = fullName || userName;
       
-      let query;
-      
-      if (tableName === 'May_Data') {
-        query = supabase
-          .from('May_Data')
+      // Get current month data
+      let currentQuery;
+      if (currentTable === 'May_Data' || currentTable === 'mtd_daily' || currentTable === 'sales_data_februrary') {
+        currentQuery = supabase
+          .from(currentTable)
           .select('*')
           .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      } else if (tableName === 'mtd_daily') {
-        query = supabase
-          .from('mtd_daily')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      } else if (tableName === 'sales_data') {
-        query = supabase
-          .from('sales_data')
+      } else {
+        currentQuery = supabase
+          .from(currentTable)
           .select('*')
           .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`);
-      } else {
-        query = supabase
-          .from('sales_data_februrary')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
       }
       
-      const { data, error } = await query;
+      const { data: currentData, error: currentError } = await currentQuery;
       
-      if (error) throw error;
+      if (currentError) throw currentError;
       
-      console.log(`Found ${data?.length || 0} records for ${matchName} in ${tableName}`);
+      // Calculate current month metrics
+      const currentPerformance = calculatePerformanceMetrics(
+        currentData || [], 
+        currentProfitColumn, 
+        currentSpendColumn
+      );
       
-      // Calculate summary metrics for the user
-      const performance = calculatePerformanceMetrics(data || [], profitColumn, spendColumn);
-      setPerformanceData(performance);
+      // Get previous month data if available
+      let previousPerformance = null;
+      if (previousTable) {
+        const previousRepColumn = previousTable === 'sales_data' ? 'rep_name' : 'Rep';
+        const previousSubRepColumn = previousTable === 'sales_data' ? 'sub_rep' : 'Sub-Rep';
+        const previousProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
+        const previousSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
+        
+        let previousQuery;
+        if (previousTable === 'May_Data' || previousTable === 'mtd_daily' || previousTable === 'sales_data_februrary') {
+          previousQuery = supabase
+            .from(previousTable)
+            .select('*')
+            .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+        } else {
+          previousQuery = supabase
+            .from(previousTable)
+            .select('*')
+            .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`);
+        }
+        
+        const { data: previousData, error: previousError } = await previousQuery;
+        
+        if (!previousError && previousData && previousData.length > 0) {
+          previousPerformance = calculatePerformanceMetrics(
+            previousData, 
+            previousProfitColumn, 
+            previousSpendColumn
+          );
+        }
+      }
+      
+      // Set performance data with previous month comparison
+      setPerformanceData({
+        ...currentPerformance,
+        previousMonthData: previousPerformance
+      });
+      
     } catch (error) {
       console.error("Error fetching personal performance data:", error);
     }

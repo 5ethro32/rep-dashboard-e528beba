@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
-import { TrendingUp, Users, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, Users, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PersonalPerformanceCardProps {
@@ -12,6 +12,14 @@ interface PersonalPerformanceCardProps {
     margin: number;
     totalAccounts: number;
     activeAccounts: number;
+    // Add comparison data
+    previousMonthData?: {
+      totalProfit: number;
+      totalSpend: number;
+      margin: number;
+      totalAccounts: number;
+      activeAccounts: number;
+    };
   } | null;
   isLoading: boolean;
 }
@@ -38,28 +46,62 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
     );
   }
 
+  // Calculate percent changes if previous month data exists
+  const calculatePercentChange = (current: number, previous: number): number => {
+    if (!previous) return 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  const hasComparisonData = performanceData?.previousMonthData !== undefined;
+
   const metrics = [
     {
       title: "Total Profit",
       value: formatCurrency(performanceData?.totalProfit || 0),
-      icon: <TrendingUp className="h-5 w-5 text-finance-red" />
+      icon: <TrendingUp className="h-5 w-5 text-finance-red" />,
+      percentChange: hasComparisonData ? 
+        calculatePercentChange(
+          performanceData?.totalProfit || 0, 
+          performanceData?.previousMonthData?.totalProfit || 0
+        ) : null,
+      previousValue: hasComparisonData ? 
+        formatCurrency(performanceData?.previousMonthData?.totalProfit || 0) : null
     },
     {
       title: "Total Spend",
       value: formatCurrency(performanceData?.totalSpend || 0),
-      icon: <TrendingUp className="h-5 w-5 text-finance-red" />
+      icon: <TrendingUp className="h-5 w-5 text-finance-red" />,
+      percentChange: hasComparisonData ?
+        calculatePercentChange(
+          performanceData?.totalSpend || 0, 
+          performanceData?.previousMonthData?.totalSpend || 0
+        ) : null,
+      previousValue: hasComparisonData ?
+        formatCurrency(performanceData?.previousMonthData?.totalSpend || 0) : null
     },
     {
       title: "Margin",
       value: formatPercent(performanceData?.margin || 0),
-      icon: <TrendingUp className="h-5 w-5 text-finance-red" />
+      icon: <TrendingUp className="h-5 w-5 text-finance-red" />,
+      percentChange: hasComparisonData ?
+        performanceData?.margin - (performanceData?.previousMonthData?.margin || 0) : null,
+      previousValue: hasComparisonData ?
+        formatPercent(performanceData?.previousMonthData?.margin || 0) : null,
+      isPercentagePoint: true // Margin change is in percentage points, not percent
     },
     {
       title: "Active Accounts",
       value: `${formatNumber(performanceData?.activeAccounts || 0)}/${formatNumber(performanceData?.totalAccounts || 0)}`,
       icon: <Users className="h-5 w-5 text-finance-red" />,
       activeRatio: performanceData?.totalAccounts ? 
-        (performanceData.activeAccounts / performanceData.totalAccounts) * 100 : 0
+        (performanceData.activeAccounts / performanceData.totalAccounts) * 100 : 0,
+      previousValue: hasComparisonData ? 
+        `${formatNumber(performanceData?.previousMonthData?.activeAccounts || 0)}/${formatNumber(performanceData?.previousMonthData?.totalAccounts || 0)}` : null,
+      percentChange: hasComparisonData ?
+        calculatePercentChange(
+          performanceData?.activeAccounts || 0, 
+          performanceData?.previousMonthData?.activeAccounts || 0
+        ) : null
     }
   ];
 
@@ -82,6 +124,36 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                     {metric.icon}
                   </div>
                   <div className="text-xl md:text-2xl font-bold text-white">{metric.value}</div>
+                  
+                  {/* Percent change indicator */}
+                  {metric.percentChange !== null && (
+                    <div className="flex items-center mt-2">
+                      {metric.percentChange > 0 ? (
+                        <ChevronUp className="h-4 w-4 text-emerald-500" />
+                      ) : metric.percentChange < 0 ? (
+                        <ChevronDown className="h-4 w-4 text-finance-red" />
+                      ) : (
+                        <span className="h-4 w-4 flex items-center justify-center text-white/40">—</span>
+                      )}
+                      
+                      <span className={`text-xs ml-1 ${
+                        metric.percentChange > 0 ? 'text-emerald-500' : 
+                        metric.percentChange < 0 ? 'text-finance-red' : 'text-white/40'
+                      }`}>
+                        {Math.abs(metric.percentChange).toFixed(1)}
+                        {metric.isPercentagePoint ? 'pp' : '%'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Previous month data */}
+                  {metric.previousValue && (
+                    <div className="flex items-center mt-1">
+                      <span className="text-xs text-white/50">
+                        Last month: {metric.previousValue}
+                      </span>
+                    </div>
+                  )}
                   
                   {metric.activeRatio !== undefined && (
                     <div className="flex items-center mt-1">
