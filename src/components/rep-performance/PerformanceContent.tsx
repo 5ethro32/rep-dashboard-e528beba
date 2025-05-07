@@ -105,7 +105,18 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
     }
   };
 
+  // Show change indicators for all months except February
   const showChangeIndicators = selectedMonth !== 'February';
+
+  // Get the comparison month name based on the selected month
+  const getComparisonMonthName = () => {
+    switch (selectedMonth) {
+      case 'March': return 'February';
+      case 'April': return 'March';
+      case 'May': return 'April (Prior_Month_Rolling)';
+      default: return '';
+    }
+  };
 
   return (
     <div className="mb-8 animate-slide-in-up">
@@ -133,6 +144,9 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   {getTabDescription(tabValue)}
                   {selectedMonth === 'February' && (
                     <span className="ml-1 text-finance-gray italic">No comparison data available for January.</span>
+                  )}
+                  {selectedMonth === 'May' && showChangeIndicators && (
+                    <span className="ml-1 text-finance-gray italic">Compared to {getComparisonMonthName()}.</span>
                   )}
                 </p>
                 <PerformanceTable 

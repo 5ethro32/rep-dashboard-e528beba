@@ -76,7 +76,7 @@ const MyPerformance = () => {
         switch (selectedMonth) {
           case 'May':
             currentTable = 'May_Data';
-            previousTable = 'mtd_daily'; // April data
+            previousTable = 'Prior_Month_Rolling'; // Updated: Using Prior_Month_Rolling for April data
             break;
           case 'April':
             currentTable = 'mtd_daily';
@@ -163,7 +163,7 @@ const MyPerformance = () => {
       switch (selectedMonth) {
         case 'May':
           currentTable = 'May_Data';
-          previousTable = 'mtd_daily'; // April data
+          previousTable = 'Prior_Month_Rolling'; // Updated: Using Prior_Month_Rolling for April data
           break;
         case 'April':
           currentTable = 'mtd_daily';
@@ -221,7 +221,7 @@ const MyPerformance = () => {
         const previousSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
         
         let previousQuery;
-        if (previousTable === 'May_Data' || previousTable === 'mtd_daily' || previousTable === 'sales_data_februrary') {
+        if (previousTable === 'May_Data' || previousTable === 'mtd_daily' || previousTable === 'sales_data_februrary' || previousTable === 'Prior_Month_Rolling') {
           previousQuery = supabase
             .from(previousTable)
             .select('*')
@@ -650,3 +650,4 @@ const MyPerformance = () => {
 };
 
 export default MyPerformance;
+
