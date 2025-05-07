@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
@@ -47,6 +48,7 @@ interface AccountPerformanceComparisonProps {
   isLoading: boolean;
   selectedMonth: string;
   formatCurrency: (value: number, decimals?: number) => string;
+  selectedUser?: string; // Add selected user prop
 }
 
 const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> = ({
@@ -54,7 +56,8 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   previousMonthData,
   isLoading,
   selectedMonth,
-  formatCurrency
+  formatCurrency,
+  selectedUser
 }) => {
   const [selectedRep, setSelectedRep] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -64,6 +67,13 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   const [activeTab, setActiveTab] = useState<string>('profit');
   const [sortColumn, setSortColumn] = useState<string>('difference');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Set selected rep to the user if provided
+  useEffect(() => {
+    if (selectedUser) {
+      setSelectedRep(selectedUser);
+    }
+  }, [selectedUser]);
   
   const repOptions = useMemo(() => {
     if (!currentMonthData || currentMonthData.length === 0) return [];
@@ -445,6 +455,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       case 'April': return 'March';
       case 'March': return 'February';
       case 'February': return 'January';
+      case 'May': return 'April';
       default: return 'Previous Month';
     }
   };
@@ -507,30 +518,39 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     <Card className="bg-gray-900/40 border-white/10 backdrop-blur-sm shadow-lg">
       <CardHeader>
         <CardTitle className="text-lg md:text-xl text-white/90">
-          Account Performance Comparison
+          {selectedUser ? `${selectedUser}'s Account Performance` : 'Account Performance Comparison'}
         </CardTitle>
         <CardDescription className="text-white/60">
-          Compare all account performance between {selectedMonth} and {previousMonth}. 
+          Compare {selectedUser ? `${selectedUser}'s` : 'all'} account performance between {selectedMonth} and {previousMonth}. 
           Use filters to identify declining or improving accounts.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="md:w-1/3">
-              <Select value={selectedRep} onValueChange={setSelectedRep}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                  <SelectValue placeholder="Select a rep" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                  {repOptions.map(rep => (
-                    <SelectItem key={rep} value={rep}>
-                      {rep}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Only show rep selector dropdown if no user is selected */}
+            {!selectedUser ? (
+              <div className="md:w-1/3">
+                <Select value={selectedRep} onValueChange={setSelectedRep}>
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                    <SelectValue placeholder="Select a rep" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                    {repOptions.map(rep => (
+                      <SelectItem key={rep} value={rep}>
+                        {rep}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="md:w-1/3">
+                <div className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded-md flex items-center gap-2">
+                  <span className="truncate">Selected Rep: {selectedUser}</span>
+                </div>
+              </div>
+            )}
             <div className="md:w-1/3 relative">
               <div className="relative">
                 <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
@@ -569,7 +589,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
             </div>
           </div>
 
-          {selectedRep && (
+          {(selectedRep || selectedUser) && (
             <>
               <Tabs defaultValue="profit" value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid grid-cols-4 mb-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg">
@@ -717,8 +737,8 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
                     {searchTerm ? 
                       "No accounts found matching your search criteria." : 
                       filterType !== 'all' ? 
-                        `No ${filterType === 'declining' ? 'declining' : 'improving'} ${getColumnLabel()} accounts found for ${selectedRep}.` :
-                        `No accounts found for ${selectedRep}.`
+                        `No ${filterType === 'declining' ? 'declining' : 'improving'} ${getColumnLabel()} accounts found for ${selectedRep || selectedUser}.` :
+                        `No accounts found for ${selectedRep || selectedUser}.`
                     }
                   </div>
                 )}
@@ -726,7 +746,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
             </>
           )}
 
-          {!selectedRep && (
+          {!selectedRep && !selectedUser && (
             <div className="text-center py-8 text-white/60">
               Select a rep to view all account performance comparisons
             </div>

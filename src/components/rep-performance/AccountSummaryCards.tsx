@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { formatCurrency, formatNumber } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,12 +9,14 @@ interface AccountSummaryCardsProps {
   currentMonthData: any[];
   previousMonthData: any[];
   isLoading: boolean;
+  selectedUser?: string; // Add selected user prop
 }
 
 const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({ 
   currentMonthData, 
   previousMonthData, 
-  isLoading 
+  isLoading,
+  selectedUser
 }) => {
   // Calculate active accounts (accounts with spend > 0)
   const activeAccounts = currentMonthData.filter(item => {
@@ -159,14 +162,24 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     });
   }
 
+  // If we're filtering for a specific user, adjust what's displayed in the cards
+  const cardTitle = selectedUser ? (
+    <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+      <Users size={16} className="text-[#ea384c] mr-2" />
+      {selectedUser}'s Active Accounts
+    </div>
+  ) : (
+    <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+      <Users size={16} className="text-[#ea384c] mr-2" />
+      Active Accounts
+    </div>
+  );
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
-          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
-            <Users size={16} className="text-[#ea384c] mr-2" />
-            Active Accounts
-          </div>
+          {cardTitle}
           <div className="flex items-center mb-1">
             <div className="text-2xl md:text-3xl font-bold">{formatNumber(activeAccounts)}</div>
             {accountsChange !== 0 && (
@@ -180,28 +193,50 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         </CardContent>
       </Card>
       
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
-        <CardContent className="p-4 md:p-6">
-          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
-            <Award size={16} className="text-[#ea384c] mr-2" />
-            Top Rep (by Combined Profit)
-          </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1">{topRep.name}</div>
-          <div className="text-sm text-white/50">
-            Total profit: {formatCurrency(topRep.profit)}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Only show the top rep card if not filtering by user or if the card title would be different from the selected user */}
+      {!selectedUser || (topRep.name !== selectedUser && topRep.name !== 'No data') ? (
+        <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+              <Award size={16} className="text-[#ea384c] mr-2" />
+              {selectedUser ? `${selectedUser}'s Top Account` : 'Top Rep (by Combined Profit)'}
+            </div>
+            <div className="text-2xl md:text-3xl font-bold mb-1">{topRep.name}</div>
+            <div className="text-sm text-white/50">
+              Total profit: {formatCurrency(topRep.profit)}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+              <Package size={16} className="text-[#ea384c] mr-2" />
+              Total Packs
+            </div>
+            <div className="text-2xl md:text-3xl font-bold mb-1">
+              {formatNumber(topPacksRep.packs)}
+            </div>
+            <div className="text-sm text-white/50">
+              {selectedUser ? `${selectedUser}'s total packs` : 'Total packs across all accounts'}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <Package size={16} className="text-[#ea384c] mr-2" />
-            Top Rep (by Packs)
+            {selectedUser ? `${selectedUser}'s Packs` : 'Top Rep (by Packs)'}
           </div>
-          <div className="text-2xl md:text-3xl font-bold mb-1">{topPacksRep.name}</div>
+          <div className="text-2xl md:text-3xl font-bold mb-1">
+            {selectedUser ? formatNumber(topPacksRep.packs) : topPacksRep.name}
+          </div>
           <div className="text-sm text-white/50">
-            Total packs: {formatNumber(topPacksRep.packs)}
+            {selectedUser 
+              ? 'Total packs by account' 
+              : `Total packs: ${formatNumber(topPacksRep.packs)}`}
           </div>
         </CardContent>
       </Card>
@@ -210,7 +245,9 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <TrendingUp size={16} className="text-[#ea384c] mr-2" />
-            Most Improved Rep (By Profit)
+            {selectedUser 
+              ? `${selectedUser}'s Most Improved Account` 
+              : 'Most Improved Rep (By Profit)'}
           </div>
           <div className="text-2xl md:text-3xl font-bold mb-1">{mostImprovedRep.name}</div>
           <div className="text-sm text-white/50">

@@ -11,6 +11,8 @@ import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import UserProfileButton from '@/components/auth/UserProfileButton';
 import { useIsMobile } from '@/hooks/use-mobile';
+import UserSelector from '@/components/rep-tracker/UserSelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 
@@ -29,19 +31,39 @@ type DataItem = {
 };
 
 const AccountPerformance = () => {
-  const [selectedMonth, setSelectedMonth] = useState<string>('May'); // Changed default from 'April' to 'May'
+  const [selectedMonth, setSelectedMonth] = useState<string>('May');
   const [currentMonthRawData, setCurrentMonthRawData] = useState<DataItem[]>([]);
   const [previousMonthRawData, setPreviousMonthRawData] = useState<DataItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeAccounts, setActiveAccounts] = useState({ current: 0, previous: 0 });
   const [topRep, setTopRep] = useState({ name: '', profit: 0 });
   const isMobile = useIsMobile();
+  const { user, isAdmin } = useAuth();
+  
+  // Add state for user selection
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string>('My Data');
+  
+  // Set current user as default on initial load
+  useEffect(() => {
+    if (user) {
+      setSelectedUserId(user.id);
+    }
+  }, [user]);
   
   useEffect(() => {
     fetchComparisonData();
-  }, [selectedMonth]);
+  }, [selectedMonth, selectedUserId]);
   
-  const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: { column: string, value: string }) => {
+  // Handle user selection change
+  const handleUserChange = (userId: string | null, displayName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(displayName);
+    // Refresh data after user selection
+    fetchComparisonData();
+  };
+  
+  const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: { column: string, value: string }, userFilter?: string) => {
     const PAGE_SIZE = 1000;
     let allRecords: any[] = [];
     let page = 0;
@@ -56,6 +78,11 @@ const AccountPerformance = () => {
         query.eq(columnFilter.column, columnFilter.value);
       }
       
+      // Add user filter if specified and not an admin
+      if (userFilter && !isAdmin) {
+        query.or(`Rep.eq.${userFilter},Sub-Rep.eq.${userFilter}`);
+      }
+      
       const { data, error } = await query
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
       
@@ -68,6 +95,16 @@ const AccountPerformance = () => {
       } else {
         hasMoreData = false;
       }
+    }
+    
+    // If an admin selects a specific user, filter data on the client side
+    // This allows admins to still see all data initially but filter as needed
+    if (userFilter && isAdmin && selectedUserId && selectedUserId !== user?.id) {
+      return allRecords.filter(item => {
+        const rep = item.Rep || item.rep_name || '';
+        const subRep = item['Sub-Rep'] || item.sub_rep || '';
+        return rep === selectedUserName || subRep === selectedUserName;
+      });
     }
     
     return allRecords;
@@ -86,7 +123,7 @@ const AccountPerformance = () => {
           break;
         case 'April':
           currentTable = "mtd_daily";
-          previousTable = "sales_data"; // UPDATED: Now comparing April (mtd_daily) to full March (sales_data)
+          previousTable = "sales_data";
           break;
         case 'March':
           currentTable = "sales_data";
@@ -102,9 +139,10 @@ const AccountPerformance = () => {
       }
       
       console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
+      console.log(`User filter: ${selectedUserName} (${selectedUserId})`);
       
       let currentData: DataItem[] = [];
-      currentData = await fetchAllRecordsFromTable(currentTable);
+      currentData = await fetchAllRecordsFromTable(currentTable, undefined, selectedUserName);
       
       console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} from ${currentTable}`);
 
@@ -115,7 +153,7 @@ const AccountPerformance = () => {
       
       let previousData: DataItem[] = [];
       if (previousTable) {
-        previousData = await fetchAllRecordsFromTable(previousTable);
+        previousData = await fetchAllRecordsFromTable(previousTable, undefined, selectedUserName);
         console.log(`Fetched ${previousData?.length || 0} records for previous month from ${previousTable}`);
 
         if (previousData && previousData.length > 0) {
@@ -192,7 +230,15 @@ const AccountPerformance = () => {
           </Button>
         </Link>
         
-        <UserProfileButton />
+        <div className="flex items-center gap-3">
+          {/* Add UserSelector component */}
+          <UserSelector 
+            selectedUserId={selectedUserId} 
+            onSelectUser={handleUserChange}
+            className="mr-2"
+          />
+          <UserProfileButton />
+        </div>
       </div>
       
       <PerformanceHeader 
@@ -202,9 +248,15 @@ const AccountPerformance = () => {
       />
       
       <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Account Performance Analysis</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          {selectedUserId && selectedUserId !== user?.id 
+            ? `${selectedUserName} - Account Performance Analysis` 
+            : "Account Performance Analysis"}
+        </h1>
         <p className="text-white/60">
-          Compare all accounts performance between months to identify declining or improving accounts.
+          {selectedUserId && selectedUserId !== user?.id 
+            ? `Compare ${selectedUserName}'s accounts performance between months to identify declining or improving accounts.`
+            : "Compare all accounts performance between months to identify declining or improving accounts."}
         </p>
       </div>
       
@@ -225,6 +277,7 @@ const AccountPerformance = () => {
         currentMonthData={currentMonthRawData}
         previousMonthData={previousMonthRawData}
         isLoading={isLoading}
+        selectedUser={selectedUserId !== user?.id ? selectedUserName : undefined}
       />
       
       <div className="mb-12">
@@ -234,6 +287,7 @@ const AccountPerformance = () => {
           isLoading={isLoading}
           selectedMonth={selectedMonth}
           formatCurrency={formatCurrency}
+          selectedUser={selectedUserId !== user?.id ? selectedUserName : undefined}
         />
       </div>
     </div>
