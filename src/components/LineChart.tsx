@@ -6,8 +6,8 @@ interface DataPoint {
   name: string;
   value: number;
   avg?: number;
-  isProjected?: boolean; // New field to indicate projected data points
-  isTrajectory?: boolean; // New field to indicate trajectory line segments
+  isProjected?: boolean; // Field to indicate projected data points
+  isTrajectory?: boolean; // Field to indicate trajectory line segments
 }
 
 interface LineChartProps {
@@ -94,8 +94,8 @@ const LineChart: React.FC<LineChartProps> = ({
           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
           tick={{ fill: '#8E9196', fontSize: 12 }}
           // Ensure XAxis only shows once when multiple lines are displayed
-          xAxisId={shareXAxis ? "shared" : undefined}
-          allowDuplicatedCategory={!shareXAxis}
+          xAxisId="shared"
+          allowDuplicatedCategory={false}
         />
         <YAxis 
           domain={[yAxisMin, yAxisMax]}
@@ -129,7 +129,8 @@ const LineChart: React.FC<LineChartProps> = ({
           dot={{ fill: color, r: 2, strokeWidth: 0 }}
           activeDot={{ r: 4, stroke: color }}
           animationDuration={1500}
-          xAxisId={shareXAxis ? "shared" : undefined}
+          xAxisId="shared"
+          connectNulls={true}
         />
         
         {/* Trajectory line when enabled */}
@@ -144,7 +145,8 @@ const LineChart: React.FC<LineChartProps> = ({
             activeDot={{ r: 4, stroke: color }}
             animationDuration={1500}
             data={trajectoryData}
-            xAxisId={shareXAxis ? "shared" : undefined}
+            xAxisId="shared"
+            connectNulls={true}
           />
         )}
         
@@ -159,7 +161,7 @@ const LineChart: React.FC<LineChartProps> = ({
             dot={{ fill: avgColor, r: 1.5, strokeWidth: 0 }}
             activeDot={{ r: 3, stroke: avgColor }}
             animationDuration={1500}
-            xAxisId={shareXAxis ? "shared" : undefined}
+            xAxisId="shared"
           />
         )}
       </RechartLine>
