@@ -17,6 +17,8 @@ import { SummaryData } from '@/types/rep-performance.types';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
+  const [selectedUserName, setSelectedUserName] = useState("All Data");
   const isMobile = useIsMobile();
   
   const {
@@ -52,6 +54,12 @@ const RepPerformance = () => {
     mayRevaValues,
     mayWholesaleValues,
   } = useRepPerformanceData();
+
+  // Handle user selection
+  const handleSelectUser = (userId: string | null, displayName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(displayName);
+  };
   
   // Clear auto-refreshed status after a delay
   useEffect(() => {
@@ -152,6 +160,8 @@ const RepPerformance = () => {
       <PerformanceHeader 
         selectedMonth={selectedMonth}
         setSelectedMonth={handleMonthSelection}
+        selectedUserId={selectedUserId}
+        onSelectUser={handleSelectUser}
       />
       
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
