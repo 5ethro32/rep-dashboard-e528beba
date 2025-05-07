@@ -13,7 +13,7 @@ const AppHeader: React.FC = () => {
   userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-800/40 backdrop-blur-sm bg-black/30 flex items-center h-14">
+    <header className="fixed top-0 z-50 w-full border-b border-gray-800/40 backdrop-blur-sm bg-black/30 flex items-center h-14">
       <div className="container max-w-full px-4 md:px-6 flex items-center justify-between">
         {/* Logo and username */}
         <div className="flex items-center space-x-3">

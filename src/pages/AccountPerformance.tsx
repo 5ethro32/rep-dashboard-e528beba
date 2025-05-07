@@ -1,123 +1,101 @@
-import React, { useState } from 'react';
-import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
-import { formatCurrency } from '@/utils/rep-performance-utils';
-import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
-import { RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
-import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
-import UserSelector from '@/components/rep-tracker/UserSelector';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
+import AppLayout from '@/components/layout/AppLayout';
+import AccountSummaryCards from '@/components/account-performance/AccountSummaryCards';
+import AccountPerformanceComparison from '@/components/account-performance/AccountPerformanceComparison';
 
-const sampleData = [
-  {
-    accountName: 'Account A',
-    currentMonth: {
-      profit: 50000,
-      orders: 120,
-      visits: 30,
-    },
-    previousMonth: {
-      profit: 45000,
-      orders: 110,
-      visits: 28,
-    },
-  },
-  {
-    accountName: 'Account B',
-    currentMonth: {
-      profit: 60000,
-      orders: 150,
-      visits: 35,
-    },
-    previousMonth: {
-      profit: 55000,
-      orders: 140,
-      visits: 33,
-    },
-  },
-  {
-    accountName: 'Account C',
-    currentMonth: {
-      profit: 40000,
-      orders: 100,
-      visits: 25,
-    },
-    previousMonth: {
-      profit: 38000,
-      orders: 95,
-      visits: 23,
-    },
-  },
-];
+interface AccountSummaryData {
+  totalRevenue: number;
+  averageOrderValue: number;
+  totalAccounts: number;
+}
 
-const mockDataGenerator = (count: number) => {
-  const data = [];
-  for (let i = 1; i <= count; i++) {
-    data.push({
-      accountName: `Account ${i}`,
-      currentMonth: {
-        profit: Math.floor(Math.random() * 100000),
-        orders: Math.floor(Math.random() * 200),
-        visits: Math.floor(Math.random() * 50),
-      },
-      previousMonth: {
-        profit: Math.floor(Math.random() * 90000),
-        orders: Math.floor(Math.random() * 180),
-        visits: Math.floor(Math.random() * 45),
-      },
-    });
-  }
-  return data;
-};
+interface AccountComparisonData {
+  [key: string]: { // Key is the account name (string)
+    currentMonthRevenue: number;
+    previousMonthRevenue: number;
+    revenueChange: number;
+  };
+}
 
 const AccountPerformance = () => {
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState<string>("All Accounts");
-  const [accountData, setAccountData] = useState(mockDataGenerator(5));
-  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [summaryData, setSummaryData] = useState<AccountSummaryData>({
+    totalRevenue: 0,
+    averageOrderValue: 0,
+    totalAccounts: 0,
+  });
+  const [comparisonData, setComparisonData] = useState<AccountComparisonData>({});
 
-  const handleUserSelect = (userId: string | null, displayName: string) => {
-    setSelectedUserId(userId);
-    setSelectedUserName(displayName);
-    
-    // Mock implementation: Filter data based on user selection
-    if (userId) {
-      // In a real scenario, you would fetch data from the server
-      // Here, we simulate filtering by creating new data
-      setAccountData(mockDataGenerator(5));
-    } else {
-      // Reset to all accounts
-      setAccountData(mockDataGenerator(5));
-    }
+  useEffect(() => {
+    // Simulate fetching data from an API
+    setTimeout(() => {
+      const mockSummaryData: AccountSummaryData = {
+        totalRevenue: 567890,
+        averageOrderValue: 123,
+        totalAccounts: 456,
+      };
+
+      const mockComparisonData: AccountComparisonData = {
+        "Account A": { currentMonthRevenue: 123456, previousMonthRevenue: 110000, revenueChange: 13456 },
+        "Account B": { currentMonthRevenue: 98765, previousMonthRevenue: 105000, revenueChange: -6235 },
+        "Account C": { currentMonthRevenue: 54321, previousMonthRevenue: 48000, revenueChange: 6321 },
+      };
+
+      setSummaryData(mockSummaryData);
+      setComparisonData(mockComparisonData);
+      setIsLoading(false);
+    }, 1500);
+  }, []);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    }).format(amount);
   };
-  
+
   return (
-    <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <div className="flex justify-end items-center pt-4">
-        <div className="flex items-center gap-3">
-          <UserSelector 
-            selectedUserId={selectedUserId} 
-            onSelectUser={handleUserSelect}
-          />
+    <AppLayout>
+      <div className="container px-4 md:px-6 max-w-full">
+        <div className="mb-8 pt-4">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+            <span className="bg-gradient-to-r from-finance-red to-finance-red/80 text-transparent bg-clip-text">Account Performance</span>
+          </h1>
+          <p className="text-white/60 text-sm md:text-base">
+            Track account performance metrics over time, analyze trends, and identify growth opportunities.
+          </p>
         </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="metric-box animate-pulse">
+                <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
+                <div className="h-10 bg-gray-700 rounded w-1/2 mb-2"></div>
+                <div className="h-4 bg-gray-700 rounded w-1/4"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <AccountSummaryCards
+              // Pass correct props according to the component's interface
+              totalRevenue={summaryData.totalRevenue}
+              averageOrderValue={summaryData.averageOrderValue}
+              totalAccounts={summaryData.totalAccounts}
+              formatCurrency={formatCurrency}
+            />
+
+            <AccountPerformanceComparison
+              // Pass correct props according to the component's interface
+              comparisonData={comparisonData}
+              formatCurrency={formatCurrency}
+            />
+          </>
+        )}
       </div>
-      
-      <PerformanceHeader 
-        selectedMonth="March"
-        setSelectedMonth={() => {}}
-      />
-      
-      <AccountSummaryCards 
-        accountData={accountData}
-        formatCurrency={formatCurrency}
-      />
-      
-      <AccountPerformanceComparison 
-        accountData={accountData}
-        formatCurrency={formatCurrency}
-      />
-    </div>
+    </AppLayout>
   );
 };
 
