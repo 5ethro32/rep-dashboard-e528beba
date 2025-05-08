@@ -369,7 +369,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Month dropdown and Refresh button in same div, now on the left side */}
+      {/* Month dropdown and Refresh button in same div, left-aligned */}
       <div className="mb-6 flex justify-start items-center space-x-4 pt-8">
         {/* Date picker comes first */}
         <PerformanceHeader 
@@ -396,7 +396,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-6">
         <CardHeader className="pb-2">
           {renderPageHeading()}
-          <CardDescription className="text-white/60">
+          <CardDescription className="text-white/60 mb-4">
             {selectedUserId === "all"
               ? "Compare Aver's accounts performance between months to identify declining or improving accounts."
               : selectedUserName && selectedUserName !== 'My Data' 
