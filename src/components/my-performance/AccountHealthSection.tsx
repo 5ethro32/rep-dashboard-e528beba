@@ -10,8 +10,7 @@ import {
   Search,
   Star,
   StarOff,
-  Shield,
-  ShieldStar
+  Shield
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -218,7 +217,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                           <div className="flex gap-1">
                             {isAdminStarred(account.accountRef) && (
                               <div className="text-yellow-500" title="Key Account">
-                                <ShieldStar className="h-4 w-4" />
+                                <Shield className="h-4 w-4" />
                               </div>
                             )}
                             {isUserStarred(account.accountRef) && (
@@ -267,7 +266,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                           <div className="flex gap-1">
                             {isAdminStarred(account.accountRef) && (
                               <div className="text-yellow-500" title="Key Account">
-                                <ShieldStar className="h-4 w-4" />
+                                <Shield className="h-4 w-4" />
                               </div>
                             )}
                             {isUserStarred(account.accountRef) && (
@@ -315,7 +314,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setFilterType('admin-starred')} className="cursor-pointer">
                 Key Accounts
-                <ShieldStar className="h-4 w-4 ml-2 text-yellow-500" />
+                <Shield className="h-4 w-4 ml-2 text-yellow-500" />
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setFilterType('user-starred')} className="cursor-pointer">
                 My Bookmarks
@@ -385,7 +384,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                             title={isAdminStarred(account.accountRef) ? "Remove from key accounts" : "Mark as key account"}
                           >
                             {isAdminStarred(account.accountRef) ? (
-                              <ShieldStar className="h-4 w-4 text-yellow-500" />
+                              <Shield className="h-4 w-4 text-yellow-500" />
                             ) : (
                               <Shield className="h-4 w-4" />
                             )}
