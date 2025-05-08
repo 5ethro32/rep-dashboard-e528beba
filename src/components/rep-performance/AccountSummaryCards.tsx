@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import MetricCard from '@/components/MetricCard';
 import { Users, Award, Star, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 interface AccountSummaryCardsProps {
   currentMonthData: any[];
@@ -23,6 +24,9 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   selectedUser,
   accountsTrendData = { increasing: 0, decreasing: 0 }
 }) => {
+  const location = useLocation();
+  const isAccountPerformancePage = location.pathname === '/account-performance';
+
   // Calculate active accounts (accounts with spend > 0)
   const activeAccounts = currentMonthData.filter(item => {
     const spend = typeof item.Spend === 'number' ? item.Spend : 
@@ -174,6 +178,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         icon={<Award />}
         isLoading={isLoading}
         iconPosition="right"
+        isAccountName={isAccountPerformancePage} // Only set to true on account performance page
       />
 
       {/* Top Margin Customer Card */}
@@ -188,6 +193,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         icon={<Star />}
         isLoading={isLoading}
         iconPosition="right"
+        isAccountName={isAccountPerformancePage} // Only set to true on account performance page
       />
 
       {/* Most Improved Account Card */}
@@ -202,6 +208,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         icon={<TrendingUp />}
         isLoading={isLoading}
         iconPosition="right"
+        isAccountName={isAccountPerformancePage} // Only set to true on account performance page
       />
       
       {/* Increasing Spend Accounts */}

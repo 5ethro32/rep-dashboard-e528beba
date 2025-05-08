@@ -773,18 +773,19 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             setIncludeWholesale={setIncludeWholesale}
             selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}
+            showMonthSelector={true}
           />
         </div>
         
-        {/* Month selector */}
-        <div className="flex-shrink-0">
+        {/* Remove the redundant header with month selector since we already have it in the filters */}
+        {/* <div className="flex-shrink-0">
           <PerformanceHeader 
             selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}
             onRefresh={handleRefresh}
             hideTitle={true}
           />
-        </div>
+        </div> */}
       </div>
 
       {/* Personal Performance Overview */}
