@@ -41,9 +41,9 @@ const AppHeader = ({
       case '/account-performance':
         return isMobile ? 'Accounts' : 'Account Performance';
       case '/rep-tracker':
-        return 'Rep Tracker';
+        return isMobile ? 'Planner' : 'Rep Planner';
       case '/my-performance':
-        return isMobile ? 'My Data' : 'My Performance';
+        return isMobile ? 'My Data' : 'My Dashboard';
       case '/ai-vera':
         return isMobile ? 'Vera' : 'AI Vera';
       default:
@@ -99,7 +99,7 @@ const AppHeader = ({
     },
     {
       path: '/rep-tracker',
-      label: 'Tracker',
+      label: 'Planner',
       icon: <ClipboardList className="h-4 w-4" />
     },
     {

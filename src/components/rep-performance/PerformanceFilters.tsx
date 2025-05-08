@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { ToggleButton } from "@/components/ui/toggle-button";
-import { Store, Factory, Pill } from 'lucide-react';
 
 interface PerformanceFiltersProps {
   includeRetail: boolean;
@@ -25,29 +24,29 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   setSelectedMonth
 }) => {
   return (
-    <div className="mb-6 md:mb-8 flex flex-row gap-3">
+    <div className="mb-6 md:mb-8 flex flex-row gap-2">
       <ToggleButton 
         checked={includeRetail} 
         onToggle={setIncludeRetail}
-        className="min-w-[100px]"
+        className="min-w-[80px] px-3"
       >
-        <Store className="h-4 w-4 mr-2" /> Retail
+        Retail
       </ToggleButton>
       
       <ToggleButton 
         checked={includeReva} 
         onToggle={setIncludeReva}
-        className="min-w-[100px]"
+        className="min-w-[80px] px-3"
       >
-        <Pill className="h-4 w-4 mr-2" /> REVA
+        REVA
       </ToggleButton>
       
       <ToggleButton 
         checked={includeWholesale} 
         onToggle={setIncludeWholesale}
-        className="min-w-[100px]"
+        className="min-w-[80px] px-3"
       >
-        <Factory className="h-4 w-4 mr-2" /> Wholesale
+        Wholesale
       </ToggleButton>
     </div>
   );

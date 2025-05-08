@@ -67,7 +67,7 @@ export const AppSidebar = () => {
     {
       to: "/rep-tracker",
       icon: <ClipboardList className="h-5 w-5 transition-colors duration-200" />,
-      label: "Tracker"
+      label: "Planner"
     },
     {
       to: "/my-performance",

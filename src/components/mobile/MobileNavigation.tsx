@@ -34,7 +34,7 @@ const MobileNavigation = () => {
           }`}
         >
           <ClipboardList className="h-5 w-5" />
-          <span className="text-2xs mt-1">Tracker</span>
+          <span className="text-2xs mt-1">Planner</span>
         </NavLink>
         
         <NavLink

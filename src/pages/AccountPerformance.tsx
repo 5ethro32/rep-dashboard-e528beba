@@ -309,15 +309,12 @@ const AccountPerformance = ({
     }
   };
 
-  // Helper function to generate heading with gradient username
+  // Helper function to generate heading with white text username
   const renderPageHeading = () => {
     if (selectedUserId === "all") {
       return (
         <>
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
-            Aver's
-          </span>{' '}
-          Accounts Performance
+          Aver's Accounts
         </>
       );
     } else {
@@ -328,10 +325,7 @@ const AccountPerformance = ({
       const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
       return (
         <>
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
-            {displayName}
-          </span>{' '}
-          Accounts Performance
+          {displayName} Accounts
         </>
       );
     }
