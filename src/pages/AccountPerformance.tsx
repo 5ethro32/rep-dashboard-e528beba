@@ -420,7 +420,7 @@ const AccountPerformance = ({
       
       {/* Filters and Month selector in the same row */}
       <div className="flex flex-wrap items-center justify-between mb-6 gap-3">
-        {/* Performance Filters */}
+        {/* Performance Filters - hide the month selector since we have it separately */}
         <div className="flex-grow">
           <PerformanceFilters 
             includeRetail={includeRetail}
@@ -431,6 +431,7 @@ const AccountPerformance = ({
             setIncludeWholesale={setIncludeWholesale}
             selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}
+            showMonthSelector={false}
           />
         </div>
         

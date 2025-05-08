@@ -25,6 +25,7 @@ interface PerformanceFiltersProps {
   setIncludeWholesale: (value: boolean) => void;
   selectedMonth: string;
   setSelectedMonth: (value: string) => void;
+  showMonthSelector?: boolean;
 }
 
 const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
@@ -35,7 +36,8 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   includeWholesale,
   setIncludeWholesale,
   selectedMonth,
-  setSelectedMonth
+  setSelectedMonth,
+  showMonthSelector = true
 }) => {
   const months = ['February', 'March', 'April', 'May'];
   
@@ -73,48 +75,50 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         </ToggleButton>
       </div>
       
-      <div className="flex items-center gap-2 ml-auto">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button 
-              variant="outline" 
-              className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              <span>Month: {selectedMonth}</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-48 p-0 bg-gray-900/90 backdrop-blur-sm border-white/10">
-            <Command className="bg-transparent">
-              <CommandInput placeholder="Select month..." className="text-white" />
-              <CommandEmpty>No month found.</CommandEmpty>
-              <CommandGroup>
-                {months.map((month) => (
-                  <CommandItem
-                    key={month}
-                    value={month}
-                    onSelect={(value) => {
-                      setSelectedMonth(value);
-                    }}
-                    className="text-white hover:bg-white/10"
-                  >
-                    {month}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleRefresh}
-          className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-      </div>
+      {showMonthSelector && (
+        <div className="flex items-center gap-2 ml-auto">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Month: {selectedMonth}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-0 bg-gray-900/90 backdrop-blur-sm border-white/10">
+              <Command className="bg-transparent">
+                <CommandInput placeholder="Select month..." className="text-white" />
+                <CommandEmpty>No month found.</CommandEmpty>
+                <CommandGroup>
+                  {months.map((month) => (
+                    <CommandItem
+                      key={month}
+                      value={month}
+                      onSelect={(value) => {
+                        setSelectedMonth(value);
+                      }}
+                      className="text-white hover:bg-white/10"
+                    >
+                      {month}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
