@@ -38,6 +38,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
     ? 'py-4' // More balanced padding for top and bottom
     : 'py-8 md:py-16'; // Original padding
   
+  // Ensure months is always a valid array
   const months = ['February', 'March', 'April', 'May'];
   const isMobile = useIsMobile();
   
@@ -76,24 +77,28 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-0 bg-gray-900/95 backdrop-blur-sm border-white/10" align="end">
-              <Command className="bg-transparent">
-                <CommandInput placeholder="Select month..." className="text-white" />
-                <CommandEmpty>No month found.</CommandEmpty>
-                <CommandGroup className="overflow-hidden">
-                  {months && months.length > 0 ? months.map((month) => (
-                    <CommandItem
-                      key={month}
-                      value={month}
-                      onSelect={(value) => {
-                        setSelectedMonth(value);
-                      }}
-                      className="text-white hover:bg-white/10"
-                    >
-                      {month}
-                    </CommandItem>
-                  )) : <CommandEmpty>No months available</CommandEmpty>}
-                </CommandGroup>
-              </Command>
+              {months && months.length > 0 ? (
+                <Command className="bg-transparent">
+                  <CommandInput placeholder="Select month..." className="text-white" />
+                  <CommandEmpty>No month found.</CommandEmpty>
+                  <CommandGroup className="overflow-hidden">
+                    {months.map((month) => (
+                      <CommandItem
+                        key={month}
+                        value={month}
+                        onSelect={(value) => {
+                          setSelectedMonth(value);
+                        }}
+                        className="text-white hover:bg-white/10"
+                      >
+                        {month}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              ) : (
+                <div className="p-2 text-white">Loading months...</div>
+              )}
             </PopoverContent>
           </Popover>
           

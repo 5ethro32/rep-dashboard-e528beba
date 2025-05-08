@@ -61,13 +61,15 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
           className="w-auto p-0 bg-gray-900/95 border-gray-700" 
           align="start"
         >
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleDateSelect}
-            initialFocus
-            className="bg-gray-900"
-          />
+          <div className="bg-gray-900">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateSelect}
+              initialFocus
+              className="bg-gray-900"
+            />
+          </div>
         </PopoverContent>
       </Popover>
       <Input
