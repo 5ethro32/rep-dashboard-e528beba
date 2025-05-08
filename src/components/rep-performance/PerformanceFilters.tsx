@@ -96,7 +96,8 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-0 bg-gray-900/95 backdrop-blur-sm border-white/10" align="end">
-              {months && months.length > 0 ? (
+              {/* Ensure months array is valid before rendering Command component */}
+              {Array.isArray(months) && months.length > 0 ? (
                 <Command className="bg-transparent">
                   <CommandInput placeholder="Select month..." className="text-white" />
                   <CommandEmpty>No month found.</CommandEmpty>

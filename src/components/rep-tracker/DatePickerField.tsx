@@ -30,7 +30,10 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
 }) => {
   // Add state to control the open/closed state of the popover
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const selectedDate = value ? new Date(value) : new Date();
+  // Safely handle date conversion - use current date as fallback
+  const selectedDate = value && !isNaN(new Date(value).getTime()) 
+    ? new Date(value) 
+    : new Date();
   
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -67,7 +70,7 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
               selected={selectedDate}
               onSelect={handleDateSelect}
               initialFocus
-              className="bg-gray-900"
+              className="bg-gray-900 pointer-events-auto"
             />
           </div>
         </PopoverContent>

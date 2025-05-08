@@ -18,11 +18,11 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceHeaderProps {
   hideTitle?: boolean;
-  reducedPadding?: boolean; // For reduced padding
+  reducedPadding?: boolean;
   selectedMonth?: string;
   setSelectedMonth?: (value: string) => void;
   onRefresh?: () => void;
-  showMonthSelector?: boolean; // Added to match PerformanceFilters prop
+  showMonthSelector?: boolean;
 }
 
 const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ 
@@ -31,12 +31,12 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
   selectedMonth,
   setSelectedMonth,
   onRefresh,
-  showMonthSelector = true // Default to true to maintain backward compatibility
+  showMonthSelector = true
 }) => {
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
-    ? 'py-4' // More balanced padding for top and bottom
-    : 'py-8 md:py-16'; // Original padding
+    ? 'py-4' 
+    : 'py-8 md:py-16';
   
   // Ensure months is always a valid array
   const months = ['February', 'March', 'April', 'May'];
@@ -77,7 +77,8 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-0 bg-gray-900/95 backdrop-blur-sm border-white/10" align="end">
-              {months && months.length > 0 ? (
+              {/* Ensure months array is valid before rendering Command component */}
+              {Array.isArray(months) && months.length > 0 ? (
                 <Command className="bg-transparent">
                   <CommandInput placeholder="Select month..." className="text-white" />
                   <CommandEmpty>No month found.</CommandEmpty>
