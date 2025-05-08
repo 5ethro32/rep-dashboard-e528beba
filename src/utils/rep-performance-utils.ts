@@ -201,31 +201,44 @@ export const calculateGoals = async (matchName: string, isAllData: boolean) => {
     
     console.log(`Current month: ${currentMonth}, using ${previousMonthTable} for previous month data`);
     
-    let query;
+    let data;
+    let error;
     
+    // FIX: Use type assertion to tell TypeScript that the table name is valid
     // For all data, get overall metrics
     if (isAllData) {
       console.log("Fetching previous month data for all reps");
-      query = supabase.from(previousMonthTable).select('*');
+      // Use type assertion to tell TypeScript we know this table exists
+      const { data: resultData, error: resultError } = await supabase
+        .from(previousMonthTable as any)
+        .select('*');
+      
+      data = resultData;
+      error = resultError;
     } else {
       // For a specific rep, get their data
       console.log(`Fetching previous month data for rep: ${matchName}`);
       
       // Different column names based on table structure
       if (previousMonthTable === 'sales_data') {
-        query = supabase
-          .from(previousMonthTable)
+        const { data: resultData, error: resultError } = await supabase
+          .from('sales_data')
           .select('*')
           .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`);
+        
+        data = resultData;
+        error = resultError;
       } else {
-        query = supabase
-          .from(previousMonthTable)
+        // FIX: Use type assertion for the dynamic table name
+        const { data: resultData, error: resultError } = await supabase
+          .from(previousMonthTable as any)
           .select('*')
           .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+        
+        data = resultData;
+        error = resultError;
       }
     }
-    
-    const { data, error } = await query;
     
     if (error) {
       console.error("Error fetching previous month data:", error);
