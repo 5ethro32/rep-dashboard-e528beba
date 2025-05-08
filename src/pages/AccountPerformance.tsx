@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -369,8 +368,8 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Header section with heading and month selector aligned */}
-      <div className="mb-6 flex justify-between items-center pt-8">
+      {/* Header section with only heading */}
+      <div className="mb-6 pt-8">
         <div>
           {renderPageHeading()}
           <p className="text-white/60">
@@ -381,20 +380,19 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
                 : "Compare your accounts performance between months to identify declining or improving accounts."}
           </p>
         </div>
-        
-        {/* Month dropdown now beside the heading */}
-        <div className="flex-shrink-0">
-          <PerformanceHeader 
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            hideTitle={true}
-            reducedPadding={true}
-          />
-        </div>
       </div>
       
-      {/* Refresh button moved to its own line */}
-      <div className="mb-6 flex justify-end">
+      {/* Month dropdown and Refresh button in same div, with flipped positions */}
+      <div className="mb-6 flex justify-end items-center space-x-4">
+        {/* Date picker comes first now (left) */}
+        <PerformanceHeader 
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+          hideTitle={true}
+          reducedPadding={true}
+        />
+        
+        {/* Refresh button comes second (right) */}
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
