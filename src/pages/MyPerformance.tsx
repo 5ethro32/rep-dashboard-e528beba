@@ -739,7 +739,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     if (selectedUserId === user?.id || !selectedUserId) {
       return "My";
     } else if (selectedUserId === "all") {
-      return "All";
+      return "Aver";
     } else {
       return userFirstName ? `${userFirstName}'s` : `${selectedUserDisplayName}'s`;
     }
@@ -750,10 +750,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
-            {getTitleName()}
-          </span>{' '}
-          Performance Dashboard
+          {getTitleName()} Dashboard
         </h1>
         <p className="text-white/60">
           {getSubtitle()}
