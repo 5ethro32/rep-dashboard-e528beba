@@ -19,7 +19,7 @@ interface AppLayoutProps {
 
 const AppLayout = ({ 
   children, 
-  showChatInterface = true, 
+  showChatInterface = true,
   selectedMonth = 'March',
   selectedUserId,
   onSelectUser,
@@ -51,7 +51,7 @@ const AppLayout = ({
       <div className="flex w-full relative">
         <div className={`flex-1 ${isMobile ? 'pb-16' : ''} overflow-x-auto overflow-y-auto`}>
           {children}
-          {showChatInterface && !isMobile && <ChatInterface selectedMonth={selectedMonth} />}
+          {showChatInterface && isMobile && <ChatInterface selectedMonth={selectedMonth} />}
         </div>
         
         {isMobile && <MobileNavigation />}

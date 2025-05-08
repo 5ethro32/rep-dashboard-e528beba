@@ -4,12 +4,13 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Triangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import VeraAssistant from '@/components/chat/VeraAssistant';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
@@ -30,6 +31,7 @@ const AppHeader = ({
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isVeraOpen, setIsVeraOpen] = useState(false);
   
   // Function to get the current page title based on the URL path
   const getCurrentPageTitle = () => {
@@ -149,7 +151,7 @@ const AppHeader = ({
             )}
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {showRefresh && (
               <Button 
                 variant="ghost" 
@@ -164,6 +166,17 @@ const AppHeader = ({
               </Button>
             )}
             
+            {/* Vera Assistant Button */}
+            <Button
+              variant="ghost"
+              className="flex items-center justify-center bg-gray-800/50 hover:bg-gray-800/80 p-1.5 relative"
+              onClick={() => setIsVeraOpen(!isVeraOpen)}
+            >
+              <div className="flex items-center justify-center h-6 w-6 bg-gradient-to-r from-finance-red to-rose-700 text-white rounded-none transform rotate-45">
+                <span className="transform -rotate-45 font-bold text-sm">V</span>
+              </div>
+            </Button>
+            
             {showUserSelector && (
               <UserSelector
                 selectedUserId={selectedUserId || "all"}
@@ -174,6 +187,13 @@ const AppHeader = ({
             <UserProfileDropdown />
           </div>
         </div>
+        
+        {/* Vera Assistant Dropdown - Only shown when isVeraOpen is true */}
+        {!isMobile && isVeraOpen && (
+          <div className="absolute right-4 top-16 z-50 w-96 overflow-hidden">
+            <VeraAssistant onClose={() => setIsVeraOpen(false)} />
+          </div>
+        )}
         
         {/* Navigation bar - Only collapsible on desktop, not shown on mobile at all as mobile has bottom navbar */}
         {!isMobile && (
