@@ -19,6 +19,7 @@ interface MetricCardProps {
   isLoading?: boolean;
   iconPosition?: 'left' | 'right';
   iconClassName?: string;
+  isAccountName?: boolean;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
@@ -31,7 +32,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
   icon,
   isLoading = false,
   iconPosition = 'right',
-  iconClassName = ''
+  iconClassName = '',
+  isAccountName = false
 }) => {
   return (
     <Card 
@@ -76,7 +78,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
               )}
               
               <div className={cn(
-                "text-2xl md:text-3xl font-bold line-clamp-1", 
+                isAccountName 
+                  ? "text-xl md:text-xl font-bold line-clamp-1" // Smaller size for account names
+                  : "text-2xl md:text-3xl font-bold line-clamp-1", 
                 valueClassName
               )}>
                 {value}
