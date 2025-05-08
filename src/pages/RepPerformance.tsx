@@ -108,6 +108,7 @@ const RepPerformance = () => {
       may: repData.may.find(r => r.rep === sampleRep)?.profit
     });
   }
+  
   return (
     <AppLayout
       onRefreshData={handleRefresh}

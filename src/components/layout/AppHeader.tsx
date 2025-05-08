@@ -115,20 +115,6 @@ const AppHeader = ({
                 />
               </div>
             )}
-
-            {/* Refresh Button */}
-            {onRefreshData && (
-              <Button 
-                onClick={onRefreshData}
-                variant="outline" 
-                size="sm"
-                className="text-white border-white/20 hover:bg-white/10 ml-4"
-                disabled={isRefreshing}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
-              </Button>
-            )}
           </div>
           
           <div className="flex items-center gap-4">
@@ -140,6 +126,26 @@ const AppHeader = ({
                 showAllDataOption={true}
               />
             )}
+            
+            {/* Refresh Icon Button */}
+            {onRefreshData && (
+              <Button
+                onClick={onRefreshData}
+                size="icon"
+                variant="ghost"
+                className={cn(
+                  "rounded-full",
+                  isRefreshing 
+                    ? "text-finance-red" 
+                    : "text-white/70 hover:text-white hover:bg-white/10"
+                )}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span className="sr-only">Refresh Data</span>
+              </Button>
+            )}
+            
             <UserProfileDropdown />
           </div>
         </div>
