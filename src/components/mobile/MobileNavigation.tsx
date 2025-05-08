@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // MobileNavigation component for bottom navigation on mobile devices
@@ -9,22 +10,27 @@ const MobileNavigation = () => {
     {
       path: '/rep-performance',
       label: 'Home',
+      icon: Home,
     },
     {
       path: '/account-performance',
       label: 'Accounts',
+      icon: BarChart3,
     },
     {
       path: '/rep-tracker',
       label: 'Planner',
+      icon: ClipboardList,
     },
     {
       path: '/my-performance',
       label: 'My Dashboard',
+      icon: UserCircle,
     },
     {
       path: '/ai-vera',
       label: 'Vera',
+      icon: Bot,
     },
   ];
 
@@ -46,12 +52,8 @@ const MobileNavigation = () => {
           >
             {({ isActive }) => (
               <>
-                <div className="flex items-center justify-center">
-                  <span className={cn('text-sm', isActive ? 'text-finance-red' : 'text-white/60')}>
-                    {isActive ? '/' : ''}
-                  </span>
-                  <span className="text-[10px] mt-0.5">{item.label}</span>
-                </div>
+                <item.icon className={cn('w-5 h-5')} />
+                <span className="text-[10px] mt-0.5">{item.label}</span>
                 {isActive && (
                   <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
                 )}

@@ -3,9 +3,10 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { ChevronDown, RefreshCw } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Triangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import VeraAssistant from '@/components/chat/VeraAssistant';
@@ -88,22 +89,27 @@ const AppHeader = ({
     {
       path: '/rep-performance',
       label: 'Home',
+      icon: <Home className="h-4 w-4" />
     },
     {
       path: '/account-performance',
       label: 'Accounts',
+      icon: <BarChart3 className="h-4 w-4" />
     },
     {
       path: '/rep-tracker',
       label: 'Planner',
+      icon: <ClipboardList className="h-4 w-4" />
     },
     {
       path: '/my-performance',
       label: 'My Dashboard',
+      icon: <UserCircle className="h-4 w-4" />
     },
     {
       path: '/ai-vera',
       label: 'AI Vera',
+      icon: <Bot className="h-4 w-4" />
     }
   ];
 
@@ -218,12 +224,7 @@ const AppHeader = ({
                       {isActive && (
                         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
                       )}
-                      
-                      {/* Add the slash before the label */}
-                      <div className="flex items-center">
-                        <span className={isActive ? "text-finance-red mr-1.5" : "text-white/40 mr-1.5"}>/</span>
-                        <span>{item.label}</span>
-                      </div>
+                      <span>{item.label}</span>
                     </>
                   )}
                 </NavLink>
