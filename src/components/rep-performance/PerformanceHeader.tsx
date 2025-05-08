@@ -40,7 +40,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">Dashboard</span>
         </h1>
       )}
-      <div className={`${hideTitle ? '' : 'mt-4 md:mt-8 text-right'} flex items-center justify-end gap-2`}>
+      <div className={`${hideTitle ? '' : 'mt-4 md:mt-8 text-right'} flex items-center justify-end gap-2 z-40`}>
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center text-lg md:text-xl lg:text-2xl text-white/80 hover:text-white transition-colors focus:outline-none">
             {selectedMonth} 2025

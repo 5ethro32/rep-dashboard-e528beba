@@ -117,7 +117,7 @@ const AppHeader = ({
   const showRefresh = onRefresh !== undefined || (location.pathname === '/rep-performance' && window.repPerformanceRefresh !== undefined);
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-gray-950/95">
+    <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-gray-950/95">
       <div className="container max-w-7xl mx-auto px-4">
         {/* Main header with logo and user profile */}
         <div 

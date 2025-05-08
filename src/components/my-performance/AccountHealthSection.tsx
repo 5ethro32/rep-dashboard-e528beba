@@ -497,51 +497,53 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
           />
         </div>
         
-        <div className="rounded-md border border-white/10 overflow-hidden">
-          <ScrollArea className="h-[400px]" orientation="vertical">
+        {/* Modified table container to enable horizontal scrolling on mobile */}
+        <div className="overflow-x-auto rounded-md border border-white/10">
+          {/* Set a fixed height for the scrollable area but make sure it supports both horizontal and vertical scrolling */}
+          <div className="w-full overflow-auto" style={{ maxHeight: '400px' }}>
             <Table>
               <TableHeader className="bg-gray-900/60 sticky top-0 z-10">
                 <TableRow>
-                  <TableHead className="text-white/70 w-10"></TableHead>
-                  <TableHead className="text-white/70 w-10"></TableHead>
+                  <TableHead className="text-white/70 w-10 sticky left-0 bg-gray-900/60 z-20"></TableHead>
+                  <TableHead className="text-white/70 w-10 sticky left-10 bg-gray-900/60 z-20"></TableHead>
                   <TableHead 
-                    className="text-white/70 cursor-pointer" 
+                    className="text-white/70 cursor-pointer min-w-[180px] sticky left-20 bg-gray-900/60 z-20" 
                     onClick={() => handleSort('accountName')}
                   >
                     Account {getSortIndicator('accountName')}
                   </TableHead>
                   <TableHead 
-                    className="text-white/70 cursor-pointer"
+                    className="text-white/70 cursor-pointer min-w-[100px]"
                     onClick={() => handleSort('repName')}
                   >
                     Rep {getSortIndicator('repName')}
                   </TableHead>
                   <TableHead 
-                    className="text-white/70 cursor-pointer" 
+                    className="text-white/70 cursor-pointer min-w-[120px]" 
                     onClick={() => handleSort('spend')}
                   >
                     Spend {getSortIndicator('spend')}
                   </TableHead>
                   <TableHead 
-                    className="text-white/70 cursor-pointer" 
+                    className="text-white/70 cursor-pointer min-w-[120px]" 
                     onClick={() => handleSort('profit')}
                   >
                     Profit {getSortIndicator('profit')}
                   </TableHead>
                   <TableHead 
-                    className="text-white/70 cursor-pointer" 
+                    className="text-white/70 cursor-pointer min-w-[120px]" 
                     onClick={() => handleSort('margin')}
                   >
                     Margin {getSortIndicator('margin')}
                   </TableHead>
-                  <TableHead className="text-white/70">Status</TableHead>
+                  <TableHead className="text-white/70 min-w-[80px]">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAccounts.length > 0 ? (
                   filteredAccounts.map((account, index) => (
                     <TableRow key={index} className="border-t border-white/10">
-                      <TableCell className="p-2 w-10">
+                      <TableCell className="p-2 w-10 sticky left-0 bg-gray-900/95 z-20">
                         {isAdmin && (
                           <button
                             onClick={() => toggleAdminStar(
@@ -560,7 +562,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                           </button>
                         )}
                       </TableCell>
-                      <TableCell className="p-2 w-10">
+                      <TableCell className="p-2 w-10 sticky left-10 bg-gray-900/95 z-20">
                         <button
                           onClick={() => toggleUserStar(
                             account.accountRef,
@@ -577,7 +579,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                           )}
                         </button>
                       </TableCell>
-                      <TableCell className="font-medium text-white">
+                      <TableCell className="font-medium text-white sticky left-20 bg-gray-900/95 z-20">
                         {account.accountName}
                       </TableCell>
                       <TableCell className="text-white/70">
@@ -611,8 +613,9 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
               {filteredAccounts.length > 0 && (
                 <TableFooter className="bg-gray-900/80 border-t border-white/10 sticky bottom-0">
                   <TableRow>
-                    <TableCell colSpan={2} className="p-2"></TableCell>
-                    <TableCell className="font-medium text-white">
+                    <TableCell className="p-2 sticky left-0 bg-gray-900/95 z-20"></TableCell>
+                    <TableCell className="p-2 sticky left-10 bg-gray-900/95 z-20"></TableCell>
+                    <TableCell className="font-medium text-white sticky left-20 bg-gray-900/95 z-20">
                       Total ({tableTotals.count} accounts)
                     </TableCell>
                     <TableCell></TableCell>
@@ -650,7 +653,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                 </TableFooter>
               )}
             </Table>
-          </ScrollArea>
+          </div>
         </div>
       </CardContent>
     </Card>
