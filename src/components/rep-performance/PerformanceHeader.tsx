@@ -14,6 +14,7 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceHeaderProps {
   hideTitle?: boolean;
@@ -38,6 +39,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
     : 'py-8 md:py-16'; // Original padding
   
   const months = ['February', 'March', 'April', 'May'];
+  const isMobile = useIsMobile();
   
   const handleRefresh = () => {
     if (onRefresh) {
@@ -67,10 +69,10 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
             <PopoverTrigger asChild>
               <Button 
                 variant="outline" 
-                className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
+                className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'px-2 py-1 h-8 text-xs' : ''}`}
               >
-                <Calendar className="mr-2 h-4 w-4" />
-                <span>Month: {selectedMonth}</span>
+                <Calendar className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
+                <span>{isMobile ? selectedMonth : `Month: ${selectedMonth}`}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-0 bg-gray-900/90 backdrop-blur-sm border-white/10">
@@ -97,11 +99,11 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
           
           <Button
             variant="outline"
-            size="icon"
+            size={isMobile ? "sm" : "icon"}
             onClick={handleRefresh}
-            className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
+            className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'w-8 h-8 p-1' : ''}`}
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
           </Button>
         </div>
       )}
