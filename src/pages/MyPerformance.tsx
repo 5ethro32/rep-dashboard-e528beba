@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,11 @@ import AccountHealthSection from '@/components/my-performance/AccountHealthSecti
 import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAnalysis';
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
 import GoalTrackingComponent from '@/components/my-performance/GoalTrackingComponent';
+
+// Define the allowed table names for type safety
+type TableName = 'May_Data' | 'Prior_Month_Rolling' | 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 
+                'admin_starred_accounts' | 'customer_visits' | 'week_plans' | 'Prior Month Rolling Old' | 
+                'profiles' | 'unified_sales_data' | 'user_starred_accounts';
 
 interface MyPerformanceProps {
   selectedUserId?: string | null;
@@ -126,8 +132,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         console.log('Fetching all data for admin view');
         
         // Determine the table names based on selected month and previous month
-        let currentTable;
-        let previousTable;
+        let currentTable: TableName;
+        let previousTable: TableName | null;
         switch (selectedMonth) {
           case 'May':
             currentTable = 'May_Data';
@@ -207,8 +213,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       console.log('Matching with names:', { userName, fullName });
       
       // Determine table names based on selected month and previous month
-      let currentTable;
-      let previousTable;
+      let currentTable: TableName;
+      let previousTable: TableName | null;
       switch (selectedMonth) {
         case 'May':
           currentTable = 'May_Data';
@@ -285,7 +291,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       console.log(`Fetching account health data for month: ${accountHealthMonth}, compare with: ${compareMonth}`);
       
       // Determine current month data source
-      let currentMonthTableName: string;
+      let currentMonthTableName: TableName;
       switch (accountHealthMonth) {
         case 'May':
           currentMonthTableName = 'May_Data';
@@ -304,7 +310,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       }
       
       // Determine comparison data source based on compareMonth selection
-      let compareMonthTableName: string;
+      let compareMonthTableName: TableName;
       switch (compareMonth) {
         case 'May':
           compareMonthTableName = 'May_Data';
@@ -382,7 +388,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   };
   
   // New function to fetch all records with pagination from a table
-  const fetchAllRecordsFromTable = async (tableName: string): Promise<any[]> => {
+  const fetchAllRecordsFromTable = async (tableName: TableName): Promise<any[]> => {
     try {
       const PAGE_SIZE = 1000; // Supabase's max page size
       let page = 0;
@@ -425,7 +431,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   };
   
   // New function to fetch all user-specific records with pagination
-  const fetchAllUserRecordsFromTable = async (tableName: string, matchName: string): Promise<any[]> => {
+  const fetchAllUserRecordsFromTable = async (tableName: TableName, matchName: string): Promise<any[]> => {
     try {
       const PAGE_SIZE = 1000; // Supabase's max page size
       let page = 0;
@@ -442,6 +448,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           case 'mtd_daily':
           case 'sales_data_februrary':
           case 'Prior_Month_Rolling':
+          case 'Prior Month Rolling Old':
             query = supabase
               .from(tableName)
               .select('*')
