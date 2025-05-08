@@ -21,6 +21,7 @@ interface PerformanceHeaderProps {
   selectedMonth?: string;
   setSelectedMonth?: (value: string) => void;
   onRefresh?: () => void;
+  showMonthSelector?: boolean; // Added to match PerformanceFilters prop
 }
 
 const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ 
@@ -28,7 +29,8 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
   reducedPadding = false,
   selectedMonth,
   setSelectedMonth,
-  onRefresh
+  onRefresh,
+  showMonthSelector = true // Default to true to maintain backward compatibility
 }) => {
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
@@ -59,7 +61,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
       )}
       
       {/* Month selector and refresh button */}
-      {selectedMonth && setSelectedMonth && (
+      {selectedMonth && setSelectedMonth && showMonthSelector && (
         <div className="flex items-center gap-2 ml-auto">
           <Popover>
             <PopoverTrigger asChild>
