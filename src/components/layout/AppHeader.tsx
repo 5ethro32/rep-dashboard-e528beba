@@ -55,6 +55,13 @@ const AppHeader = ({
     }
   };
 
+  const handleRefreshClick = () => {
+    console.log('Refresh button clicked in AppHeader');
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
   const navItems = [
     {
       path: '/rep-performance',
@@ -122,7 +129,7 @@ const AppHeader = ({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={onRefresh} 
+                onClick={handleRefreshClick} 
                 disabled={isLoading}
                 className="text-white/70 hover:text-white hover:bg-white/10 h-9 w-9"
               >
