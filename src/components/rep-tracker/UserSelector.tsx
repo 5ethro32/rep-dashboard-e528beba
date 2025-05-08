@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -12,7 +13,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
-import { User, Users } from 'lucide-react';
+import { User, Users, CircleSlash } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 
@@ -40,7 +41,11 @@ export default function UserSelector({
   const { user, isAdmin } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const location = useLocation();
   const ALL_DATA_ID = "all";
+  
+  // Check if we're on the Rep Performance page
+  const isRepPerformancePage = location.pathname === '/rep-performance';
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -131,7 +136,26 @@ export default function UserSelector({
 
   // Format user display name - MODIFIED to use full name (first name + last name)
   const getUserDisplayName = (userId: string) => {
-    if (userId === user?.id) return 'My Data';
+    if (userId === user?.id) {
+      // Find user profile to get name
+      const userProfile = users.find(u => u.id === userId);
+      
+      // If we have first and last name, use them
+      if (userProfile?.first_name && userProfile?.last_name) {
+        return `${userProfile.first_name} ${userProfile.last_name}`;
+      } else if (userProfile?.first_name) {
+        return userProfile.first_name;
+      } else if (user?.email) {
+        // Extract username from email as fallback
+        const username = user.email.split('@')[0];
+        // Capitalize first letter for better presentation
+        return username.charAt(0).toUpperCase() + username.slice(1);
+      }
+      
+      // Fallback if no other data is available
+      return 'My Data';
+    }
+    
     if (userId === ALL_DATA_ID) return 'All Data';
     
     const userProfile = users.find(u => u.id === userId);
@@ -168,10 +192,12 @@ export default function UserSelector({
         </>
       );
     } else if (selectedUserId === user?.id) {
+      const displayName = getUserDisplayName(user.id);
+      
       return (
         <>
           <User className="h-4 w-4" />
-          <span className="hidden md:inline">My Data</span>
+          <span className="hidden md:inline">{displayName}</span>
         </>
       );
     } else {
@@ -220,15 +246,19 @@ export default function UserSelector({
             </>
           )}
           
-          {/* Always show "My Data" option */}
+          {/* Always show current user option with their actual name */}
           <DropdownMenuItem 
-            onClick={() => onSelectUser(user?.id || null, 'My Data')}
-            className="cursor-pointer"
+            onClick={() => onSelectUser(user?.id || null, getUserDisplayName(user?.id || ''))}
+            className={`cursor-pointer ${isRepPerformancePage ? 'opacity-50 pointer-events-none' : ''}`}
+            disabled={isRepPerformancePage}
           >
             <User className="mr-2 h-4 w-4" />
-            <span>My Data</span>
+            <span>{getUserDisplayName(user?.id || '')}</span>
             {(selectedUserId === user?.id && selectedUserId !== ALL_DATA_ID) && (
               <Badge variant="outline" className="ml-auto">Current</Badge>
+            )}
+            {isRepPerformancePage && (
+              <CircleSlash className="ml-auto h-4 w-4 text-muted-foreground" />
             )}
           </DropdownMenuItem>
           
@@ -256,12 +286,16 @@ export default function UserSelector({
                     otherUser.id, 
                     getUserDisplayName(otherUser.id)
                   )}
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${isRepPerformancePage ? 'opacity-50 pointer-events-none' : ''}`}
+                  disabled={isRepPerformancePage}
                 >
                   <Users className="mr-2 h-4 w-4" />
                   <span>{getUserDisplayName(otherUser.id)}</span>
                   {selectedUserId === otherUser.id && (
                     <Badge variant="outline" className="ml-auto">Selected</Badge>
+                  )}
+                  {isRepPerformancePage && (
+                    <CircleSlash className="ml-auto h-4 w-4 text-muted-foreground" />
                   )}
                 </DropdownMenuItem>
               ))
