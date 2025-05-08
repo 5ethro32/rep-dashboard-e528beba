@@ -361,9 +361,9 @@ const AccountPerformance = ({
         <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
       </div>
       
-      {/* Large card containing account summary */}
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-6">
-        <CardContent>
+      {/* Update Card - remove the p-0 and fix the padding in CardContent */}
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
+        <CardContent className="p-0"> {/* Remove padding from CardContent */}
           <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
         </CardContent>
       </Card>
