@@ -41,11 +41,12 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
   const [metricType, setMetricType] = useState<string>('profit');
   const [goals, setGoals] = useState({
     profit: 100000,
-    margin: 30,
+    margin: 15,
     activeRatio: 75,
-    accounts: 20
+    packs: 5000
   });
   const [isLoadingGoals, setIsLoadingGoals] = useState(false);
+  const [trendData, setTrendData] = useState<any[]>([]);
   
   // Fetch goals based on previous month data
   useEffect(() => {
@@ -59,6 +60,9 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
         const calculatedGoals = await calculateGoals(matchName, isAllData);
         setGoals(calculatedGoals);
         console.log("Set goals to:", calculatedGoals);
+        
+        // Generate historical trend data
+        await generateTrendData();
       } catch (error) {
         console.error("Error fetching goals:", error);
       } finally {
@@ -69,21 +73,50 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
     fetchGoals();
   }, [selectedUserId, selectedUserDisplayName]);
   
-  // Generate trend data for visualization (sample data for demonstration)
-  // In a production app, this would use historical data
-  const trendData = [
-    { month: 'Jan', profit: 80000, margin: 28, activeRatio: 65, accounts: 17 },
-    { month: 'Feb', profit: 85000, margin: 28.5, activeRatio: 68, accounts: 18 },
-    { month: 'Mar', profit: 90000, margin: 29, activeRatio: 70, accounts: 19 },
-    { month: 'Apr', profit: 95000, margin: 29.5, activeRatio: 72, accounts: 19 },
-    { month: 'May', profit: performanceData?.totalProfit || 98000, margin: performanceData?.margin || 30, 
-      activeRatio: performanceData?.totalAccounts ? (performanceData.activeAccounts / performanceData.totalAccounts) * 100 : 75, 
-      accounts: performanceData?.totalAccounts || 20 }
-  ];
+  // Generate trend data for visualization using realistic data patterns
+  const generateTrendData = async () => {
+    // Base the trend on the current performance data
+    if (!performanceData) {
+      setTrendData([]);
+      return;
+    }
+    
+    const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+    
+    // Ensure current month is included
+    if (!months.includes(currentMonth)) {
+      months[months.length - 1] = currentMonth;
+    }
+    
+    // Generate historical data with realistic trends
+    // (In a real app, this would fetch from the database)
+    const baseProfit = performanceData.totalProfit || 100000;
+    const baseMargin = performanceData.margin || 15;
+    const baseRatio = performanceData.totalAccounts ? 
+      (performanceData.activeAccounts / performanceData.totalAccounts) * 100 : 70;
+    const basePacks = performanceData.totalPacks || 5000;
+    
+    // Create historical data that shows a trend leading up to current values
+    const data = months.map((month, index) => {
+      const factor = 0.8 + (index * 0.05); // Gradually increase to simulate growth
+      const isCurrentMonth = index === months.length - 1;
+      
+      return {
+        month,
+        profit: isCurrentMonth ? baseProfit : Math.round(baseProfit * factor),
+        margin: isCurrentMonth ? baseMargin : Math.round((baseMargin * factor) * 10) / 10,
+        activeRatio: isCurrentMonth ? baseRatio : Math.round((baseRatio * factor) * 10) / 10,
+        packs: isCurrentMonth ? basePacks : Math.round(basePacks * factor)
+      };
+    });
+    
+    setTrendData(data);
+  };
   
   // Calculate goal progress
   const calculateProgress = () => {
-    if (!performanceData) return { profit: 0, margin: 0, activeRatio: 0, accounts: 0 };
+    if (!performanceData) return { profit: 0, margin: 0, activeRatio: 0, packs: 0 };
     
     const activeRatio = performanceData.totalAccounts > 0 ? 
       (performanceData.activeAccounts / performanceData.totalAccounts) * 100 : 0;
@@ -92,7 +125,7 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
       profit: (performanceData.totalProfit / goals.profit) * 100,
       margin: (performanceData.margin / goals.margin) * 100,
       activeRatio: (activeRatio / goals.activeRatio) * 100,
-      accounts: (performanceData.totalAccounts / goals.accounts) * 100
+      packs: (performanceData.totalPacks / goals.packs) * 100
     };
   };
   
@@ -100,7 +133,7 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
   
   // Calculate month-over-month change
   const calculateChange = () => {
-    if (!trendData || trendData.length < 2) return { profit: 0, margin: 0, activeRatio: 0, accounts: 0 };
+    if (!trendData || trendData.length < 2) return { profit: 0, margin: 0, activeRatio: 0, packs: 0 };
     
     const current = trendData[trendData.length - 1];
     const previous = trendData[trendData.length - 2];
@@ -109,7 +142,7 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
       profit: ((current.profit - previous.profit) / previous.profit) * 100,
       margin: current.margin - previous.margin,
       activeRatio: current.activeRatio - previous.activeRatio,
-      accounts: current.accounts - previous.accounts
+      packs: ((current.packs - previous.packs) / previous.packs) * 100
     };
   };
   
@@ -138,12 +171,12 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
       goal: `${goals.activeRatio.toFixed(1)}%`,
       changeFormat: (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
     },
-    accounts: {
-      title: "Total Accounts Goal",
-      yAxisLabel: "Accounts",
-      format: (value: number) => Math.round(value).toString(),
-      goal: goals.accounts.toString(),
-      changeFormat: (value: number) => `${value > 0 ? '+' : ''}${value}`
+    packs: {
+      title: "Packs Goal",
+      yAxisLabel: "Packs",
+      format: (value: number) => formatNumber(value),
+      goal: formatNumber(goals.packs),
+      changeFormat: (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
     }
   };
 
@@ -181,8 +214,8 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
                 <TabsTrigger value="activeRatio" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
                   Active Ratio
                 </TabsTrigger>
-                <TabsTrigger value="accounts" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-                  Accounts
+                <TabsTrigger value="packs" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+                  Packs
                 </TabsTrigger>
               </TabsList>
               
@@ -203,7 +236,7 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
                 <div className="flex justify-between items-center mt-3">
                   <div className="flex items-center gap-1">
                     <span className="text-sm font-medium text-white">
-                      {metricInfo[metricType as keyof typeof metricInfo]?.format(trendData[trendData.length - 1][metricType as keyof typeof trendData[0]])}
+                      {metricInfo[metricType as keyof typeof metricInfo]?.format(trendData[trendData.length - 1]?.[metricType as keyof typeof trendData[0]] || 0)}
                     </span>
                     <span className="text-xs text-white/60">
                       current
