@@ -102,14 +102,11 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     }
   });
 
-  // Helper function to generate heading with gradient username
+  // Helper function to generate heading with white text
   const renderPageHeading = () => {
     if (selectedUserId === "all") {
       return <h1 className="text-3xl font-bold text-white mb-2 md:text-3xl">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
-            Aver's
-          </span>{' '}
-          Tracker
+          Aver's Planner
         </h1>;
     } else {
       // Extract first name
@@ -118,10 +115,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
       // Add apostrophe only if it's not "My"
       const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
       return <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
-            {displayName}
-          </span>{' '}
-          Tracker
+          {displayName} Planner
         </h1>;
     }
   };
