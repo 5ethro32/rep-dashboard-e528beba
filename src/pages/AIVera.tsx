@@ -1,15 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import UserProfileButton from '@/components/auth/UserProfileButton';
+import { Sparkles } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import ChatMessage from '@/components/chat/ChatMessage';
 import LoadingIndicator from '@/components/chat/LoadingIndicator';
 import ChatInput from '@/components/chat/ChatInput';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { reformulateQuery, generateFollowUpQuestions } from '@/utils/aiAssistantUtils';
+import { reformulateQuery } from '@/utils/aiAssistantUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
 
@@ -234,18 +232,7 @@ const AIVera = () => {
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-20">
-        <div className="flex justify-between items-center mb-6 pt-4">
-          <Link to="/rep-performance">
-            <Button variant="ghost" className="text-white hover:bg-white/10 ml-0 pl-0">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
-          
-          <UserProfileButton />
-        </div>
-        
-        <div className="mb-4">
+        <div className="mb-4 pt-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
