@@ -147,9 +147,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         }
         
         // Get current month data
-        const { data: currentData, error: currentError } = await fetchDataFromTable(currentTable);
-        
-        if (currentError) throw currentError;
+        const currentData = await fetchAllRecordsFromTable(currentTable);
         
         // Calculate current month metrics
         const profitColumn = currentTable === 'sales_data' ? 'profit' : 'Profit';
@@ -159,9 +157,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         // Get previous month data if available
         let previousPerformance = null;
         if (previousTable) {
-          const { data: previousData, error: previousError } = await fetchDataFromTable(previousTable);
+          const previousData = await fetchAllRecordsFromTable(previousTable);
             
-          if (!previousError && previousData) {
+          if (previousData && previousData.length > 0) {
             const prevProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
             const prevSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
             previousPerformance = calculatePerformanceMetrics(previousData, prevProfitColumn, prevSpendColumn);
@@ -239,9 +237,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       const matchName = fullName || userName;
       
       // Get current month data
-      const { data: currentData, error: currentError } = await fetchUserDataFromTable(currentTable, matchName);
+      const currentData = await fetchAllUserRecordsFromTable(currentTable, matchName);
       
-      if (currentError) throw currentError;
+      if (!currentData) throw new Error("Failed to fetch current month data");
       
       // Calculate current month metrics
       const currentPerformance = calculatePerformanceMetrics(
@@ -258,9 +256,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         const previousProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
         const previousSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
         
-        const { data: previousData, error: previousError } = await fetchUserDataFromTable(previousTable, matchName);
+        const previousData = await fetchAllUserRecordsFromTable(previousTable, matchName);
         
-        if (!previousError && previousData && previousData.length > 0) {
+        if (previousData && previousData.length > 0) {
           previousPerformance = calculatePerformanceMetrics(
             previousData, 
             previousProfitColumn, 
@@ -327,15 +325,15 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       // If viewing all data
       if (selectedUserId === "all") {
         // Fetch current month data
-        const { data: currentData, error: currentError } = await fetchDataFromTable(currentMonthTableName);
-        if (currentError) throw currentError;
+        const currentData = await fetchAllRecordsFromTable(currentMonthTableName);
+        if (!currentData) throw new Error("Failed to fetch current month data");
         
         // Fetch comparison month data
-        const { data: compareData, error: compareError } = await fetchDataFromTable(compareMonthTableName);
-        if (compareError) throw compareError;
+        const compareData = await fetchAllRecordsFromTable(compareMonthTableName);
+        if (!compareData) throw new Error("Failed to fetch comparison month data");
         
         // Calculate account health by comparing current and comparison data
-        const accountHealth = calculateAccountHealth(currentData || [], compareData || []);
+        const accountHealth = calculateAccountHealth(currentData, compareData);
         setAccountHealthData(accountHealth);
         setIsLoading(false);
         return;
@@ -365,15 +363,15 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       const matchName = fullName || userName;
       
       // Get current month data
-      const { data: currentData, error: currentError } = await fetchUserDataFromTable(currentMonthTableName, matchName);
-      if (currentError) throw currentError;
+      const currentData = await fetchAllUserRecordsFromTable(currentMonthTableName, matchName);
+      if (!currentData) throw new Error("Failed to fetch current month user data");
       
       // Get comparison month data
-      const { data: compareData, error: compareError } = await fetchUserDataFromTable(compareMonthTableName, matchName);
-      if (compareError) throw compareError;
+      const compareData = await fetchAllUserRecordsFromTable(compareMonthTableName, matchName);
+      if (!compareData) throw new Error("Failed to fetch comparison month user data");
       
       // Calculate account health by comparing current and comparison data
-      const accountHealth = calculateAccountHealth(currentData || [], compareData || []);
+      const accountHealth = calculateAccountHealth(currentData, compareData);
       setAccountHealthData(accountHealth);
       
     } catch (error) {
@@ -383,54 +381,108 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   };
   
-  // Helper function to fetch data from a specific table
-  const fetchDataFromTable = async (tableName: string) => {
-    switch (tableName) {
-      case 'May_Data':
-        return await supabase.from('May_Data').select('*');
-      case 'mtd_daily':
-        return await supabase.from('mtd_daily').select('*');
-      case 'sales_data':
-        return await supabase.from('sales_data').select('*');
-      case 'sales_data_februrary':
-        return await supabase.from('sales_data_februrary').select('*');
-      case 'Prior_Month_Rolling':
-        return await supabase.from('Prior_Month_Rolling').select('*');
-      default:
-        throw new Error(`Unknown table: ${tableName}`);
+  // New function to fetch all records with pagination from a table
+  const fetchAllRecordsFromTable = async (tableName: string): Promise<any[]> => {
+    try {
+      const PAGE_SIZE = 1000; // Supabase's max page size
+      let page = 0;
+      let allData: any[] = [];
+      let hasMore = true;
+      
+      console.log(`Starting paginated fetch from ${tableName}`);
+      
+      while (hasMore) {
+        const query = supabase
+          .from(tableName)
+          .select('*')
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+          
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error(`Error fetching page ${page} from ${tableName}:`, error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          console.log(`Fetched page ${page} from ${tableName}: ${data.length} records (total: ${allData.length})`);
+          page++;
+          
+          // Check if we've reached the end
+          hasMore = data.length === PAGE_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`Completed fetch from ${tableName}: ${allData.length} total records`);
+      return allData;
+    } catch (error) {
+      console.error(`Error in fetchAllRecordsFromTable for ${tableName}:`, error);
+      throw error;
     }
   };
   
-  // Helper function to fetch user-specific data from a specific table
-  const fetchUserDataFromTable = async (tableName: string, matchName: string) => {
-    switch (tableName) {
-      case 'May_Data':
-        return await supabase
-          .from('May_Data')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      case 'mtd_daily':
-        return await supabase
-          .from('mtd_daily')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      case 'sales_data':
-        return await supabase
-          .from('sales_data')
-          .select('*')
-          .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`);
-      case 'sales_data_februrary':
-        return await supabase
-          .from('sales_data_februrary')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      case 'Prior_Month_Rolling':
-        return await supabase
-          .from('Prior_Month_Rolling')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      default:
-        throw new Error(`Unknown table: ${tableName}`);
+  // New function to fetch all user-specific records with pagination
+  const fetchAllUserRecordsFromTable = async (tableName: string, matchName: string): Promise<any[]> => {
+    try {
+      const PAGE_SIZE = 1000; // Supabase's max page size
+      let page = 0;
+      let allData: any[] = [];
+      let hasMore = true;
+      
+      console.log(`Starting paginated fetch for user ${matchName} from ${tableName}`);
+      
+      while (hasMore) {
+        let query;
+        
+        switch (tableName) {
+          case 'May_Data':
+          case 'mtd_daily':
+          case 'sales_data_februrary':
+          case 'Prior_Month_Rolling':
+            query = supabase
+              .from(tableName)
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'sales_data':
+            query = supabase
+              .from(tableName)
+              .select('*')
+              .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          default:
+            throw new Error(`Unknown table: ${tableName}`);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error(`Error fetching page ${page} for user ${matchName} from ${tableName}:`, error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          console.log(`Fetched page ${page} for user ${matchName} from ${tableName}: ${data.length} records (total: ${allData.length})`);
+          page++;
+          
+          // Check if we've reached the end
+          hasMore = data.length === PAGE_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`Completed fetch for user ${matchName} from ${tableName}: ${allData.length} total records`);
+      return allData;
+    } catch (error) {
+      console.error(`Error in fetchAllUserRecordsFromTable for ${tableName} and user ${matchName}:`, error);
+      throw error;
     }
   };
   
