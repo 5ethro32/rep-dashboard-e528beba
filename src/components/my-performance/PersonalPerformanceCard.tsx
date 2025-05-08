@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import { Wallet, LineChart, Percent, Users, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+
 interface PersonalPerformanceCardProps {
   performanceData: {
     totalProfit: number;
@@ -20,16 +22,24 @@ interface PersonalPerformanceCardProps {
     };
   } | null;
   isLoading: boolean;
+  title?: string;
+  subtitle?: string;
 }
+
 const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
   performanceData,
-  isLoading
+  isLoading,
+  title,
+  subtitle
 }) => {
   if (isLoading) {
     return <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-4 md:p-6">
         <div className="space-y-6">
+          {title && <div className="flex flex-col space-y-2">
+            <Skeleton className="h-7 w-2/3 bg-white/10" />
+            <Skeleton className="h-4 w-1/2 bg-white/10" />
+          </div>}
           <div className="flex flex-col space-y-2">
-            <Skeleton className="h-5 w-1/3 bg-white/10" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Skeleton className="h-32 bg-white/5" />
               <Skeleton className="h-32 bg-white/5" />
@@ -74,8 +84,23 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
     previousValue: hasComparisonData ? `${formatNumber(performanceData?.previousMonthData?.activeAccounts || 0)}/${formatNumber(performanceData?.previousMonthData?.totalAccounts || 0)}` : null,
     percentChange: hasComparisonData ? calculatePercentChange(performanceData?.activeAccounts || 0, performanceData?.previousMonthData?.activeAccounts || 0) : null
   }];
-  return <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-4 md:p-6">
+  
+  return (
+    <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-4 md:p-6">
       <div className="space-y-6">
+        {/* Title and Subtitle Section */}
+        {title && (
+          <div className="mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
+                {title}
+              </span>
+              <span className="text-white"> Performance Dashboard</span>
+            </h2>
+            {subtitle && <p className="text-white/60 mt-1">{subtitle}</p>}
+          </div>
+        )}
+
         <div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {metrics.map((metric, index) => <Card key={index} className="bg-gray-900/60 border-white/10 transition-all duration-300 hover:bg-gray-900/80">
@@ -109,6 +134,8 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
           </div>
         </div>
       </div>
-    </Card>;
+    </Card>
+  );
 };
+
 export default PersonalPerformanceCard;

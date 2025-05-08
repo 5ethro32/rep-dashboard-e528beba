@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +31,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
+  const [userFirstName, setUserFirstName] = useState<string>('');
   const isMobile = useIsMobile();
   
   // Initialize with props if provided, otherwise use the current user
@@ -37,8 +39,29 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     if (propSelectedUserId) {
       setSelectedUserId(propSelectedUserId);
       setSelectedUserDisplayName(propSelectedUserName || "My Data");
+      
+      // Extract first name if we have a full name
+      if (propSelectedUserName) {
+        const firstName = propSelectedUserName.split(' ')[0];
+        setUserFirstName(firstName);
+      }
     } else if (user && !selectedUserId) {
       setSelectedUserId(user.id);
+      
+      // Try to get user's name from profile
+      const fetchUserProfile = async () => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('first_name')
+          .eq('id', user.id)
+          .single();
+          
+        if (data?.first_name) {
+          setUserFirstName(data.first_name);
+        }
+      };
+      
+      fetchUserProfile();
     }
   }, [user, propSelectedUserId, propSelectedUserName]);
   
@@ -52,6 +75,11 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const handleSelectUser = (userId: string | null, displayName: string) => {
     setSelectedUserId(userId);
     setSelectedUserDisplayName(displayName);
+    
+    // Extract first name from display name
+    const firstName = displayName.split(' ')[0];
+    setUserFirstName(firstName);
+    
     setIsLoading(true);
   };
   
@@ -543,27 +571,38 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     setTimeout(() => setAutoRefreshed(false), 3000);
   };
   
-  const pageTitle = selectedUserId === user?.id || !selectedUserId ? 
-    "My Performance Dashboard" : 
-    selectedUserId === "all" ? 
-      "All Performance Dashboard" : 
-      `${selectedUserDisplayName}'s Performance Dashboard`;
+  // Get the subtitle description based on user type
+  const getSubtitle = () => {
+    if (selectedUserId === "all") {
+      return "Aggregated view of all performance metrics, account health, and team insights.";
+    } else {
+      return "Track key metrics, account health, and get personalized insights based on performance data.";
+    }
+  };
+  
+  // Get the title display name
+  const getTitleName = () => {
+    if (selectedUserId === user?.id || !selectedUserId) {
+      return "My";
+    } else if (selectedUserId === "all") {
+      return "All";
+    } else {
+      return userFirstName ? `${userFirstName}'s` : `${selectedUserDisplayName}'s`;
+    }
+  };
   
   // Render the page directly without the redundant AppLayout wrapper
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      <div className="mb-6">
+      <div className="mb-6 hidden">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
-            {selectedUserId === user?.id || !selectedUserId ? "My" : selectedUserId === "all" ? "All" : selectedUserDisplayName + "'s"}
+            {getTitleName()}
           </span>{' '}
           Performance Dashboard
         </h1>
         <p className="text-white/60">
-          {selectedUserId === "all" ? 
-            "Aggregated view of all performance metrics, account health, and team insights." :
-            "Track key metrics, account health, and get personalized insights based on performance data."
-          }
+          {getSubtitle()}
         </p>
       </div>
       
@@ -588,6 +627,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         <PersonalPerformanceCard
           performanceData={performanceData}
           isLoading={isLoading}
+          title={getTitleName()}
+          subtitle={getSubtitle()}
         />
       </div>
 
