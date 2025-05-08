@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
@@ -7,15 +6,14 @@ import PerformanceContent from '@/components/rep-performance/PerformanceContent'
 import { formatCurrency, formatPercent, formatNumber, calculateSummary } from '@/utils/rep-performance-utils';
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
-import { Button } from '@/components/ui/button';
-import { BarChart3, ClipboardList, UserCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
 import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
@@ -147,36 +145,10 @@ const RepPerformance = () => {
   return <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
       <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} />
       
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
-        {!isMobile && <div className="flex space-x-2">
-            <Link to="/account-performance">
-              <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 flex items-center">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Account Analysis
-              </Button>
-            </Link>
-            
-            <Link to="/rep-tracker">
-              <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 flex items-center">
-                <ClipboardList className="h-4 w-4 mr-2" />
-                Rep Tracker
-              </Button>
-            </Link>
-            
-            <Link to="/my-performance">
-              <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 flex items-center">
-                <UserCircle className="h-4 w-4 mr-2" />
-                My Performance
-              </Button>
-            </Link>
-          </div>}
-      </div>
-
       <PerformanceFilters includeRetail={includeRetail} setIncludeRetail={setIncludeRetail} includeReva={includeReva} setIncludeReva={setIncludeReva} includeWholesale={includeWholesale} setIncludeWholesale={setIncludeWholesale} selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} />
 
       {/* Wrap the SummaryMetrics in a Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-8">
-        
         <CardContent className="pt-4 py-[19px]">
           <SummaryMetrics summary={summary} summaryChanges={summaryChanges} isLoading={isLoading} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} selectedMonth={selectedMonth} />
         </CardContent>
