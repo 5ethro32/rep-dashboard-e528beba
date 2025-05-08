@@ -143,7 +143,7 @@ const RepPerformance = () => {
     });
   }
   return <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} hideTitle={false} />
+      <PerformanceHeader hideTitle={false} />
       
       <PerformanceFilters 
         includeRetail={includeRetail} 
