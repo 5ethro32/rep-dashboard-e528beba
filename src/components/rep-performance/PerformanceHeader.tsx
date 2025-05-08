@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { RefreshCw, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,8 +38,8 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
     ? 'py-4' 
     : 'py-8 md:py-16';
   
-  // Ensure months is always a valid array
-  const months = ['February', 'March', 'April', 'May'];
+  // Ensure months is always a valid array with at least one item
+  const months = useMemo(() => ['February', 'March', 'April', 'May'], []);
   const isMobile = useIsMobile();
   
   const handleRefresh = () => {
@@ -50,6 +50,8 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
       if (window.accountPerformanceRefresh) window.accountPerformanceRefresh();
     }
   };
+
+  const showSelector = showMonthSelector && selectedMonth && setSelectedMonth && months.length > 0;
     
   return (
     <header className={`${hideTitle ? '' : paddingClasses} px-4 md:px-6 container max-w-7xl mx-auto animate-fade-in bg-transparent ${hideTitle ? 'flex justify-between items-center' : ''}`}>
@@ -64,7 +66,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
       )}
       
       {/* Month selector and refresh button */}
-      {selectedMonth && setSelectedMonth && showMonthSelector && (
+      {showSelector && (
         <div className="flex items-center gap-2 ml-auto">
           <Popover>
             <PopoverTrigger asChild>
@@ -81,7 +83,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
                 <CommandGroup className="overflow-hidden">
-                  {Array.isArray(months) && months.map((month) => (
+                  {months.map((month) => (
                     <CommandItem
                       key={month}
                       value={month}

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ToggleButton } from "@/components/ui/toggle-button";
 import { RefreshCw, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   showMonthSelector = true
 }) => {
   // Ensure months is always a valid array
-  const months = ['February', 'March', 'April', 'May'];
+  const months = useMemo(() => ['February', 'March', 'April', 'May'], []);
   const isMobile = useIsMobile();
   
   const handleRefresh = () => {
@@ -100,7 +100,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
                 <CommandGroup className="overflow-hidden">
-                  {Array.isArray(months) && months.map((month) => (
+                  {months.map((month) => (
                     <CommandItem
                       key={month}
                       value={month}
