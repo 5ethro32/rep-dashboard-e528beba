@@ -507,7 +507,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                   <TableHead className="text-white/70 w-10 sticky left-0 bg-gray-900/60 z-20"></TableHead>
                   <TableHead className="text-white/70 w-10 sticky left-10 bg-gray-900/60 z-20"></TableHead>
                   <TableHead 
-                    className="text-white/70 cursor-pointer min-w-[180px] sticky left-20 bg-gray-900/60 z-20" 
+                    className="text-white/70 cursor-pointer min-w-[180px]" 
                     onClick={() => handleSort('accountName')}
                   >
                     Account {getSortIndicator('accountName')}
@@ -579,7 +579,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                           )}
                         </button>
                       </TableCell>
-                      <TableCell className="font-medium text-white sticky left-20 bg-gray-900/95 z-20">
+                      <TableCell className="font-medium text-white">
                         {account.accountName}
                       </TableCell>
                       <TableCell className="text-white/70">
@@ -615,7 +615,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                   <TableRow>
                     <TableCell className="p-2 sticky left-0 bg-gray-900/95 z-20"></TableCell>
                     <TableCell className="p-2 sticky left-10 bg-gray-900/95 z-20"></TableCell>
-                    <TableCell className="font-medium text-white sticky left-20 bg-gray-900/95 z-20">
+                    <TableCell className="font-medium text-white">
                       Total ({tableTotals.count} accounts)
                     </TableCell>
                     <TableCell></TableCell>
