@@ -4,31 +4,22 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Button } from '@/components/ui/button';
-import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
   showUserSelector?: boolean;
-  onRefresh?: () => Promise<void>;
 }
 
-const AppHeader = ({ 
-  selectedUserId, 
-  onSelectUser, 
-  showUserSelector = false,
-  onRefresh
-}: AppHeaderProps) => {
+const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: AppHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Function to get the current page title based on the URL path
   const getCurrentPageTitle = () => {
@@ -52,14 +43,6 @@ const AppHeader = ({
     console.log(`AppHeader: User selection changed to ${displayName} (${userId})`);
     if (onSelectUser) {
       onSelectUser(userId, displayName);
-    }
-  };
-
-  const handleRefresh = async () => {
-    if (onRefresh && !isRefreshing) {
-      setIsRefreshing(true);
-      await onRefresh();
-      setIsRefreshing(false);
     }
   };
 
@@ -134,23 +117,6 @@ const AppHeader = ({
                 showAllDataOption={true}
               />
             )}
-            
-            {onRefresh && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-8 w-8 text-white/70 hover:text-white transition-all",
-                  isRefreshing ? "animate-spin text-finance-red" : ""
-                )}
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                title="Refresh data"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            )}
-            
             <UserProfileDropdown />
           </div>
         </div>
