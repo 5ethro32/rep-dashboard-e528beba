@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { startOfWeek, endOfWeek } from 'date-fns';
+import { startOfWeek, endOfWeek, differenceInDays } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface VisitMetrics {
@@ -25,10 +25,6 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
   return useQuery({
     queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString(), userId],
     queryFn: async (): Promise<VisitMetrics> => {
-      // Get dates in ISO format without time component for proper database comparison
-      const startDateStr = weekStart.toISOString().split('T')[0];
-      const endDateStr = weekEnd.toISOString().split('T')[0];
-
       // If we have a specific user ID, filter by that; otherwise use the current user's ID
       const visitsQuery = supabase
         .from('customer_visits')
@@ -37,10 +33,10 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
         .lte('date', weekEnd.toISOString());
       
       const plansQuery = supabase
-        .from('week_plans') // Fixed table name: 'week_plans'
+        .from('week_plans')
         .select('*')
-        .gte('planned_date', startDateStr)
-        .lte('planned_date', endDateStr);
+        .gte('planned_date', weekStart.toISOString().split('T')[0])
+        .lte('planned_date', weekEnd.toISOString().split('T')[0]);
         
       // Apply user filter if a user ID is provided and it's not "all"
       if (userId && userId !== "all") {
@@ -56,37 +52,30 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
       if (visitsError) throw visitsError;
       if (plansError) throw plansError;
 
-      // Default to empty arrays if data is null
-      const safeVisits = visits || [];
-      const safePlans = plans || [];
-
       // Calculate base metrics
-      const totalVisits = safeVisits.length;
-      const totalProfit = safeVisits.reduce((sum, visit) => sum + (visit.profit || 0), 0);
-      const customerVisitProfit = safeVisits
+      const totalVisits = visits.length;
+      const totalProfit = visits.reduce((sum, visit) => sum + (visit.profit || 0), 0);
+      const customerVisitProfit = visits
         .filter(visit => visit.visit_type === 'Customer Visit')
         .reduce((sum, visit) => sum + (visit.profit || 0), 0);
-      const customerVisitCount = safeVisits.filter(visit => visit.visit_type === 'Customer Visit').length;
+      const customerVisitCount = visits.filter(visit => visit.visit_type === 'Customer Visit').length;
       
       // Only count visits where has_order is true
-      const visitsWithOrders = safeVisits.filter(visit => visit.has_order);
+      const visitsWithOrders = visits.filter(visit => visit.has_order);
       const totalOrders = visitsWithOrders.length;
       
       // Calculate order-specific profit
       const orderProfit = visitsWithOrders.reduce((sum, visit) => sum + (visit.profit || 0), 0);
       
       // Find top profit order
-      const topProfitOrder = safeVisits.length > 0 
-        ? Math.max(...safeVisits.map(visit => visit.profit || 0))
+      const topProfitOrder = visits.length > 0 
+        ? Math.max(...visits.map(visit => visit.profit || 0))
         : 0;
       
-      const plannedVisits = safePlans.length;
+      const plannedVisits = plans.length;
       
       // Count unique days with visits to calculate daily average profit
-      const uniqueVisitDays = new Set(safeVisits.map(visit => 
-        visit.date ? visit.date.toString().split('T')[0] : ''
-      )).size;
-      
+      const uniqueVisitDays = new Set(visits.map(visit => visit.date?.split('T')[0])).size;
       const daysWithVisits = uniqueVisitDays > 0 ? uniqueVisitDays : 1; // At least 1 day to avoid division by zero
       
       // Calculate derived metrics
@@ -105,8 +94,11 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
         plannedVisits
       };
     },
+    // Set staleTime to 0 to always re-fetch when a dependency changes
     staleTime: 0,
+    // Disable any background refresh - only fetch when explicitly asked
     refetchInterval: 0,
+    // Don't cache result - always re-fetch from server
     gcTime: 0
   });
 };

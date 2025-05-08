@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -368,25 +369,32 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
-            {selectedUserId === "all" ? "Aver's" : 
-              selectedUserName === 'My Data' ? "My" : 
-              `${selectedUserName.split(' ')[0]}'s`}
-          </span>{' '}
-          Accounts Performance
-        </h1>
-        <p className="text-white/60">
-          {selectedUserId === "all"
-            ? "Compare Aver's accounts performance between months to identify declining or improving accounts."
-            : selectedUserName && selectedUserName !== 'My Data' 
-              ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.`
-              : "Compare your accounts performance between months to identify declining or improving accounts."}
-        </p>
+      {/* Header section with heading and month selector aligned */}
+      <div className="mb-6 flex justify-between items-center pt-8">
+        <div>
+          {renderPageHeading()}
+          <p className="text-white/60">
+            {selectedUserId === "all"
+              ? "Compare Aver's accounts performance between months to identify declining or improving accounts."
+              : selectedUserName && selectedUserName !== 'My Data' 
+                ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.`
+                : "Compare your accounts performance between months to identify declining or improving accounts."}
+          </p>
+        </div>
+        
+        {/* Month dropdown now beside the heading */}
+        <div className="flex-shrink-0">
+          <PerformanceHeader 
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            hideTitle={true}
+            reducedPadding={true}
+          />
+        </div>
       </div>
       
-      <div className="mb-4 flex justify-between items-center">
+      {/* Refresh button moved to its own line */}
+      <div className="mb-6 flex justify-end">
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
@@ -397,15 +405,6 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           {isLoading ? "Refreshing..." : "Refresh Data"}
         </Button>
-        
-        <div className="flex-shrink-0">
-          <PerformanceHeader 
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            hideTitle={true}
-            reducedPadding={true}
-          />
-        </div>
       </div>
       
       <AccountSummaryCards
