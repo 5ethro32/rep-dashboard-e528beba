@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
@@ -73,6 +72,7 @@ const RepPerformance = () => {
   // Add specific handling for refresh from header
   const handleRefresh = async () => {
     console.log('RepPerformance: Refresh triggered from header');
+    // Keep the current selected month - don't reset it
     await loadDataFromSupabase();
     setAutoRefreshed(true);
   };
@@ -112,7 +112,7 @@ const RepPerformance = () => {
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} />
+      <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} onRefresh={handleRefresh} />
       
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
         {!isMobile && <div className="flex space-x-2">

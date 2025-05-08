@@ -6,20 +6,23 @@ import {
   DropdownMenuContent,
   DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PerformanceHeaderProps {
   selectedMonth: string;
   setSelectedMonth: (value: string) => void;
   hideTitle?: boolean;
   reducedPadding?: boolean; // New prop for reduced padding
+  onRefresh?: () => void;  // New prop for refresh functionality
 }
 
 const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ 
   selectedMonth, 
   setSelectedMonth,
   hideTitle = false,
-  reducedPadding = false // Default to false for backward compatibility
+  reducedPadding = false, // Default to false for backward compatibility
+  onRefresh
 }) => {
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
@@ -37,7 +40,18 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">Dashboard</span>
         </h1>
       )}
-      <div className={`${hideTitle ? '' : 'mt-4 md:mt-8 text-right'}`}>
+      <div className={`${hideTitle ? '' : 'mt-4 md:mt-8 text-right'} flex items-center justify-end gap-2`}>
+        {onRefresh && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onRefresh}
+            className="text-white/70 hover:text-white hover:bg-white/10 h-9 w-9"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        )}
+        
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center text-lg md:text-xl lg:text-2xl text-white/80 hover:text-white transition-colors focus:outline-none">
             {selectedMonth} 2025
