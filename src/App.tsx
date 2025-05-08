@@ -1,4 +1,5 @@
 
+import React, { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,12 +16,12 @@ import AIVera from "./pages/AIVera";
 import MyPerformance from "./pages/MyPerformance";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
-import React, { useState, useCallback } from "react";
 
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   const isMobile = useIsMobile();
+  const location = useLocation();
   const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
   const [selectedUserName, setSelectedUserName] = useState<string>("All Data");
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +88,10 @@ const AppRoutes = () => {
       />
     );
   };
+  
+  // Determine if we should disable the global refresh for certain routes
+  // where page-specific refresh is preferred
+  const disableGlobalRefresh = location.pathname === '/rep-performance';
 
   return (
     <Routes>
@@ -101,7 +106,7 @@ const AppRoutes = () => {
             selectedUserId={selectedUserId}
             onSelectUser={handleSelectUser}
             showUserSelector={true}
-            onRefresh={handleGlobalRefresh}
+            onRefresh={disableGlobalRefresh ? undefined : handleGlobalRefresh}
             isLoading={isLoading}
           >
             <Outlet />

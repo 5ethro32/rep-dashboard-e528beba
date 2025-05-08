@@ -12,10 +12,13 @@ import { BarChart3, ClipboardList, UserCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
+import { useEffect as useLayoutEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
+  const location = useLocation();
   const {
     includeRetail,
     setIncludeRetail,
@@ -76,6 +79,22 @@ const RepPerformance = () => {
     await loadDataFromSupabase();
     setAutoRefreshed(true);
   };
+
+  // Connect to the global app layout - make the header refresh button use our local refresh handler
+  useLayoutEffect(() => {
+    // Expose refresh handler to window for the AppHeader to access
+    // This is a simple way to connect components without prop drilling through the entire app
+    if (location.pathname === '/rep-performance') {
+      window.repPerformanceRefresh = handleRefresh;
+    }
+    
+    return () => {
+      // Cleanup when component unmounts
+      if (window.repPerformanceRefresh) {
+        delete window.repPerformanceRefresh;
+      }
+    };
+  }, [location.pathname]);
   
   const activeData = getActiveData('overall');
 
@@ -155,5 +174,12 @@ const RepPerformance = () => {
     </div>
   );
 };
+
+// Add the global window type declaration
+declare global {
+  interface Window {
+    repPerformanceRefresh?: () => Promise<void>;
+  }
+}
 
 export default RepPerformance;

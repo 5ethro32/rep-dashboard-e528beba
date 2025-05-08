@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,6 +56,14 @@ const AppHeader = ({
 
   const handleRefreshClick = () => {
     console.log('Refresh button clicked in AppHeader');
+    
+    // Check if we're on the rep performance page and have a specific refresh handler
+    if (location.pathname === '/rep-performance' && window.repPerformanceRefresh) {
+      window.repPerformanceRefresh();
+      return;
+    }
+    
+    // Otherwise use the global refresh handler
     if (onRefresh) {
       onRefresh();
     }
@@ -89,6 +96,9 @@ const AppHeader = ({
       icon: <Bot className="h-4 w-4" />
     }
   ];
+
+  // Check if refresh functionality should be shown
+  const showRefresh = onRefresh !== undefined || (location.pathname === '/rep-performance' && window.repPerformanceRefresh !== undefined);
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-sm bg-gray-950/95">
@@ -125,7 +135,7 @@ const AppHeader = ({
           </div>
           
           <div className="flex items-center gap-2">
-            {onRefresh && (
+            {showRefresh && (
               <Button 
                 variant="ghost" 
                 size="icon" 
