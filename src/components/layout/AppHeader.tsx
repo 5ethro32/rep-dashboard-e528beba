@@ -4,18 +4,27 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
   showUserSelector?: boolean;
+  onRefreshData?: () => void;
+  isRefreshing?: boolean;
 }
 
-const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: AppHeaderProps) => {
+const AppHeader = ({ 
+  selectedUserId, 
+  onSelectUser, 
+  showUserSelector = false,
+  onRefreshData,
+  isRefreshing = false
+}: AppHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -105,6 +114,20 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
                   )} 
                 />
               </div>
+            )}
+
+            {/* Refresh Button */}
+            {onRefreshData && (
+              <Button 
+                onClick={onRefreshData}
+                variant="outline" 
+                size="sm"
+                className="text-white border-white/20 hover:bg-white/10 ml-4"
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+              </Button>
             )}
           </div>
           

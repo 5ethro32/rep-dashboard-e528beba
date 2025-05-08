@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileNavigation from '@/components/mobile/MobileNavigation';
 import ChatInterface from '@/components/chat/ChatInterface';
@@ -13,6 +13,8 @@ interface AppLayoutProps {
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
   showUserSelector?: boolean;
+  onRefreshData?: () => void;
+  isRefreshing?: boolean;
 }
 
 const AppLayout = ({ 
@@ -21,7 +23,9 @@ const AppLayout = ({
   selectedMonth = 'March',
   selectedUserId,
   onSelectUser,
-  showUserSelector = false
+  showUserSelector = false,
+  onRefreshData,
+  isRefreshing = false
 }: AppLayoutProps) => {
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -39,6 +43,8 @@ const AppLayout = ({
         selectedUserId={selectedUserId} 
         onSelectUser={onSelectUser} 
         showUserSelector={shouldShowUserSelector}
+        onRefreshData={onRefreshData}
+        isRefreshing={isRefreshing}
       />
       
       {/* Main content section */}

@@ -3,14 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
-import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import ActionsHeader from '@/components/rep-performance/ActionsHeader';
+import AppLayout from '@/components/layout/AppLayout';
+
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 type DataItem = {
   [key: string]: any;
@@ -333,33 +333,57 @@ const AccountPerformance = ({
         </CardTitle>;
     }
   };
-  return <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Month dropdown and Refresh button in same div, now properly left-aligned */}
-      <div className="mb-6 flex items-center space-x-4 pt-8 py-0">
-        <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
+  return (
+    <AppLayout 
+      selectedUserId={selectedUserId}
+      onSelectUser={handleUserChange}
+      showUserSelector={true}
+      onRefreshData={fetchComparisonData}
+      isRefreshing={isLoading}
+    >
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+        {/* Month dropdown and Refresh button in same div, now properly left-aligned */}
+        <div className="mb-6 pt-8 py-0">
+          <PerformanceHeader 
+            selectedMonth={selectedMonth} 
+            setSelectedMonth={setSelectedMonth} 
+            hideTitle={true} 
+            reducedPadding={true} 
+          />
+        </div>
         
-        <Button onClick={fetchComparisonData} disabled={isLoading} variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10">
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          {isLoading ? "Refreshing..." : "Refresh Data"}
-        </Button>
+        {/* Large card containing everything */}
+        <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-6">
+          <CardHeader className="pb-2">
+            {renderPageHeading()}
+            <CardDescription className="text-white/60 mb-8 py-0">
+              {selectedUserId === "all" ? "Compare Aver's accounts performance between months to identify declining or improving accounts." : selectedUserName && selectedUserName !== 'My Data' ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.` : "Compare your accounts performance between months to identify declining or improving accounts."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AccountSummaryCards 
+              currentMonthData={currentMonthRawData} 
+              previousMonthData={previousMonthRawData} 
+              isLoading={isLoading} 
+              selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} 
+              accountsTrendData={accountsTrendData} 
+            />
+          </CardContent>
+        </Card>
+        
+        <div className="mb-12">
+          <AccountPerformanceComparison 
+            currentMonthData={currentMonthRawData} 
+            previousMonthData={previousMonthRawData} 
+            isLoading={isLoading} 
+            selectedMonth={selectedMonth} 
+            formatCurrency={formatCurrency} 
+            selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} 
+          />
+        </div>
       </div>
-      
-      {/* Large card containing everything */}
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-6">
-        <CardHeader className="pb-2">
-          {renderPageHeading()}
-          <CardDescription className="text-white/60 mb-8 py-0">
-            {selectedUserId === "all" ? "Compare Aver's accounts performance between months to identify declining or improving accounts." : selectedUserName && selectedUserName !== 'My Data' ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.` : "Compare your accounts performance between months to identify declining or improving accounts."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
-        </CardContent>
-      </Card>
-      
-      <div className="mb-12">
-        <AccountPerformanceComparison currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedMonth={selectedMonth} formatCurrency={formatCurrency} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} />
-      </div>
-    </div>;
+    </AppLayout>
+  );
 };
+
 export default AccountPerformance;
