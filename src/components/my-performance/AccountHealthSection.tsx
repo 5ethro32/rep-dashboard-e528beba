@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -402,7 +401,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                           {isUserStarred(account.accountRef) ? (
                             <Star className="h-4 w-4 text-yellow-500" />
                           ) : (
-                            <StarOff className="h-4 w-4" />
+                            <Star className="h-4 w-4" />
                           )}
                         </button>
                       </div>
