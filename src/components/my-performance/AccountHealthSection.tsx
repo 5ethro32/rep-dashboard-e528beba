@@ -50,6 +50,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
   const [filterType, setFilterType] = useState<'all' | 'admin-starred' | 'user-starred'>('all');
   const [sortBy, setSortBy] = useState<string>('healthScore');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [compareMonth, setCompareMonth] = useState<string>('April');
 
   const {
     isAdminStarred,
@@ -360,27 +361,48 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-6 mb-3">
           <h4 className="text-md font-medium text-white/80">All Accounts Performance</h4>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 bg-gray-900/50 border-white/10 text-white/80">
-                {filterType === 'all' ? 'All Accounts' : 
-                 filterType === 'admin-starred' ? 'Key Accounts' : 'My Bookmarks'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
-              <DropdownMenuItem onClick={() => setFilterType('all')} className="cursor-pointer">
-                All Accounts
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterType('admin-starred')} className="cursor-pointer">
-                Key Accounts
-                <Shield className="h-4 w-4 ml-2 text-yellow-500" />
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterType('user-starred')} className="cursor-pointer">
-                My Bookmarks
-                <Star className="h-4 w-4 ml-2 text-yellow-500" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 bg-gray-900/50 border-white/10 text-white/80">
+                  Compare: {compareMonth}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
+                <DropdownMenuItem onClick={() => setCompareMonth('April')} className="cursor-pointer">
+                  April
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCompareMonth('March')} className="cursor-pointer">
+                  March
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setCompareMonth('February')} className="cursor-pointer">
+                  February
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 bg-gray-900/50 border-white/10 text-white/80">
+                  {filterType === 'all' ? 'All Accounts' : 
+                   filterType === 'admin-starred' ? 'Key Accounts' : 'My Bookmarks'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
+                <DropdownMenuItem onClick={() => setFilterType('all')} className="cursor-pointer">
+                  All Accounts
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterType('admin-starred')} className="cursor-pointer">
+                  Key Accounts
+                  <Shield className="h-4 w-4 ml-2 text-yellow-500" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterType('user-starred')} className="cursor-pointer">
+                  My Bookmarks
+                  <Star className="h-4 w-4 ml-2 text-yellow-500" />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
         <div className="relative mb-4">
@@ -406,6 +428,12 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                     onClick={() => handleSort('accountName')}
                   >
                     Account {getSortIndicator('accountName')}
+                  </TableHead>
+                  <TableHead 
+                    className="text-white/70 cursor-pointer"
+                    onClick={() => handleSort('repName')}
+                  >
+                    Rep {getSortIndicator('repName')}
                   </TableHead>
                   <TableHead 
                     className="text-white/70 cursor-pointer" 
@@ -470,11 +498,9 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                       </TableCell>
                       <TableCell className="font-medium text-white">
                         {account.accountName}
-                        {account.repName && (
-                          <span className="text-xs text-gray-400 ml-2">
-                            ({getFirstName(account.repName)})
-                          </span>
-                        )}
+                      </TableCell>
+                      <TableCell className="text-white/70">
+                        {account.repName ? getFirstName(account.repName) : ''}
                       </TableCell>
                       <TableCell>{formatCurrency(account.profit)}</TableCell>
                       <TableCell>{getChangeIndicator(account.profitChangePercent)}</TableCell>
@@ -484,7 +510,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={8} className="text-center py-4 text-white/60">
                       No accounts found matching your search
                     </TableCell>
                   </TableRow>
@@ -497,6 +523,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                     <TableCell className="font-medium text-white">
                       Total ({tableTotals.count} accounts)
                     </TableCell>
+                    <TableCell></TableCell>
                     <TableCell className="font-bold text-white">
                       {formatCurrency(tableTotals.totalProfit)}
                     </TableCell>
