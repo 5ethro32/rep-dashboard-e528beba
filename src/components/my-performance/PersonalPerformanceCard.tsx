@@ -86,22 +86,22 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
   }];
   
   return (
-    <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-4 md:p-6">
-      <div className="space-y-6">
+    <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0">
+      <div className="space-y-4">
         {/* Title and Subtitle Section */}
         {title && (
-          <div className="mb-4">
-            <h2 className="text-2xl md:text-3xl font-bold">
+          <div className="px-4 md:px-6 pt-4 pb-0">
+            <h2 className="text-xl md:text-2xl font-bold">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
                 {title}
               </span>
               <span className="text-white"> Performance Dashboard</span>
             </h2>
-            {subtitle && <p className="text-white/60 mt-1">{subtitle}</p>}
+            {subtitle && <p className="text-white/60 text-sm mt-1">{subtitle}</p>}
           </div>
         )}
 
-        <div>
+        <CardContent className="pt-2">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {metrics.map((metric, index) => <Card key={index} className="bg-gray-900/60 border-white/10 transition-all duration-300 hover:bg-gray-900/80">
                 <CardContent className="p-4">
@@ -132,7 +132,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                 </CardContent>
               </Card>)}
           </div>
-        </div>
+        </CardContent>
       </div>
     </Card>
   );
