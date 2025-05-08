@@ -87,6 +87,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const userId = selectedUserId || user?.id;
+  const isAllData = userId === "all";
   const isMobile = useIsMobile();
 
   const { data: visits, isLoading } = useQuery({
@@ -94,12 +95,12 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     queryFn: async () => {
       const query = supabase
         .from('customer_visits')
-        .select('*')
+        .select('*, profiles(first_name, last_name)')
         .gte('date', weekStartDate.toISOString())
         .lte('date', weekEndDate.toISOString());
         
-      // Only filter by user_id if we have a selected user
-      if (userId) {
+      // Only filter by user_id if we have a selected user and it's not "all"
+      if (userId && userId !== "all") {
         query.eq('user_id', userId);
       }
       
@@ -108,7 +109,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as Visit[];
+      return data as (Visit & { profiles?: { first_name?: string; last_name?: string } })[];
     },
     meta: {
       onError: (error: Error) => {
@@ -197,6 +198,18 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     }
   };
 
+  // Helper function to format user name for All Data display
+  const formatUserName = (visit: Visit & { profiles?: { first_name?: string; last_name?: string } }) => {
+    if (!visit.profiles) return 'Unknown';
+    
+    const firstName = visit.profiles.first_name || '';
+    const lastName = visit.profiles.last_name || '';
+    
+    if (firstName && lastName) return `${firstName} ${lastName}`;
+    if (firstName) return firstName;
+    return 'Unknown';
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row justify-between mb-4">
@@ -214,7 +227,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
             </SelectContent>
           </Select>
           
-          {isViewingOwnData && (
+          {isViewingOwnData && !isAllData && (
             <Button 
               className="bg-finance-red hover:bg-finance-red/80"
               onClick={onAddVisit}
@@ -266,6 +279,9 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
+                  {isAllData && (
+                    <TableHead className="text-white font-medium">User</TableHead>
+                  )}
                   <TableHead className="text-white font-medium">Comments</TableHead>
                   <TableHead className="text-white font-medium">Source</TableHead>
                   <TableHead className="text-white font-medium text-right">Actions</TableHead>
@@ -274,13 +290,13 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={isAllData ? 10 : 9} className="text-center py-4 text-white/60">
                       Loading visits...
                     </TableCell>
                   </TableRow>
                 ) : filteredVisits?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={isAllData ? 10 : 9} className="text-center py-4 text-white/60">
                       No visits found for this week.
                     </TableCell>
                   </TableRow>
@@ -298,6 +314,14 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                       <TableCell>
                         {visit.has_order ? formatCurrency(visit.profit) : 'N/A'}
                       </TableCell>
+                      {isAllData && (
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3 text-finance-gray" />
+                            <span>{formatUserName(visit)}</span>
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell className="max-w-[200px] truncate">
                         {visit.comments}
                       </TableCell>
@@ -310,7 +334,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                         ) : 'Manual'}
                       </TableCell>
                       <TableCell className="text-right">
-                        {isViewingOwnData ? (
+                        {isViewingOwnData && !isAllData && visit.user_id === user?.id ? (
                           <div className="flex justify-end space-x-2">
                             <Button 
                               variant="ghost" 

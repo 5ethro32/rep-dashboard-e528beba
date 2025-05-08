@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2, Eye } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2, Eye, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AddPlanDialog from './AddPlanDialog';
 import EditPlanDialog from './EditPlanDialog';
@@ -29,6 +29,7 @@ interface WeekPlan {
   customer_name: string;
   customer_ref: string;
   notes: string | null;
+  user_id?: string;
 }
 
 interface CustomerVisit {
@@ -65,19 +66,21 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
   const isMobile = useIsMobile();
 
   const userId = selectedUserId || user?.id;
+  const isAllData = userId === "all";
   const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString(), userId];
 
+  // Query to fetch all week plans in the selected date range
   const { data: weekPlans, isLoading } = useQuery({
     queryKey: weekPlansQueryKey,
     queryFn: async () => {
       const query = supabase
         .from('week_plans')
-        .select('*')
+        .select('*, profiles(first_name, last_name)')
         .gte('planned_date', weekStartDate.toISOString().split('T')[0])
         .lte('planned_date', weekEndDate.toISOString().split('T')[0]);
         
-      // Only filter by user_id if we have a selected user
-      if (userId) {
+      // Only filter by user_id if we have a selected user and it's not "all"
+      if (userId && userId !== "all") {
         query.eq('user_id', userId);
       }
       
@@ -86,7 +89,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as WeekPlan[];
+      return data as (WeekPlan & { profiles?: { first_name?: string; last_name?: string } })[];
     },
     meta: {
       onError: (error: Error) => {
@@ -257,13 +260,25 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
     return customerVisits?.some(visit => visit.week_plan_id === planId && visit.has_order);
   };
 
+  // Helper function to get a user's name from the plan
+  const getUserName = (plan: WeekPlan & { profiles?: { first_name?: string; last_name?: string } }) => {
+    if (!isAllData || !plan.profiles) return null;
+
+    const firstName = plan.profiles.first_name || '';
+    const lastName = plan.profiles.last_name || '';
+    
+    if (firstName && lastName) return `${firstName} ${lastName}`;
+    if (firstName) return firstName;
+    return 'User';
+  };
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Week Plan</h3>
-        {isViewingOwnData && (
+        {isViewingOwnData && !isAllData && (
           <Button 
             onClick={() => handleAddPlan()}
             className="bg-finance-red hover:bg-finance-red/80"
@@ -289,7 +304,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                   <h4 className="font-semibold text-white">
                     {day} - {format(currentDate, 'dd/MM')}
                   </h4>
-                  {isViewingOwnData && (
+                  {isViewingOwnData && !isAllData && (
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -318,10 +333,21 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                           </div>
                         )}
                       </div>
+                      
+                      {/* Show user name if viewing All Data */}
+                      {isAllData && (
+                        <div className="flex items-center space-x-1 mt-1 text-xs text-finance-gray">
+                          <User className="h-3 w-3" />
+                          <span>{getUserName(plan)}</span>
+                        </div>
+                      )}
+                      
                       {plan.notes && (
                         <p className="text-sm text-gray-400 mt-1">{plan.notes}</p>
                       )}
-                      {isViewingOwnData ? (
+                      
+                      {/* Only show edit/delete buttons if viewing own data and not all data */}
+                      {isViewingOwnData && !isAllData ? (
                         <div className="flex justify-end space-x-2 mt-2">
                           <Button 
                             variant="ghost" 
@@ -364,8 +390,8 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
         })}
       </div>
 
-      {/* Only show dialogs when viewing own data */}
-      {isViewingOwnData && (
+      {/* Only show dialogs when viewing own data and not all data */}
+      {isViewingOwnData && !isAllData && (
         <>
           <AddPlanDialog 
             isOpen={isAddPlanOpen}
