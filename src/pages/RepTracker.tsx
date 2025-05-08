@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useVisitMetrics } from '@/hooks/useVisitMetrics';
+import { startOfWeek, endOfWeek } from 'date-fns';
 
 interface RepTrackerProps {
   selectedUserId?: string | null;
@@ -26,7 +28,18 @@ const RepTracker: React.FC<RepTrackerProps> = ({
   const [weekPlan, setWeekPlan] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const isMobile = useIsMobile();
-  const { totalPlannedVisits, totalCompletedVisits } = useVisitMetrics(weekPlan);
+  
+  // Use current date for querying metrics
+  const currentDate = new Date();
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+  
+  // Get visit metrics using the proper date parameter
+  const visitMetricsQuery = useVisitMetrics(currentDate, selectedUserId);
+  
+  // Extract metrics or use defaults if not available
+  const totalPlannedVisits = visitMetricsQuery.data?.plannedVisits || 0;
+  const totalCompletedVisits = visitMetricsQuery.data?.totalVisits || 0;
   
   useEffect(() => {
     if (propSelectedUserId) {
@@ -68,7 +81,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('week_plan')
+        .from('week_plans') // Corrected table name from 'week_plan' to 'week_plans'
         .select('*')
         .eq('user_id', selectedUserId);
       
@@ -85,6 +98,8 @@ const RepTracker: React.FC<RepTrackerProps> = ({
   const handleRefresh = async () => {
     await fetchCustomerHistory();
     await fetchWeekPlan();
+    // Also refresh visit metrics
+    await visitMetricsQuery.refetch();
   };
   
   const handleSelectUser = (userId: string | null, displayName: string) => {
@@ -97,7 +112,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent">
       <div className="mb-6 pt-8">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
             {selectedUserId === user?.id ? "My" : selectedUserId === "all" ? "Team" : displayName}
           </span>{' '}
           Tracker
@@ -123,7 +138,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
         
         <TabsContent value="history" className="mt-0">
           <CustomerHistoryTable 
-            customerHistory={customerHistory} 
+            data={customerHistory}
             isLoading={isLoading} 
             onRefresh={handleRefresh} 
           />
@@ -131,13 +146,28 @@ const RepTracker: React.FC<RepTrackerProps> = ({
         
         <TabsContent value="weekplan" className="mt-0">
           <WeekPlanTabV2 
-            weekPlan={weekPlan} 
+            weekStartDate={weekStart}
+            weekEndDate={weekEnd}
+            customers={[]}
             isLoading={isLoading} 
-            onRefresh={handleRefresh} 
+            onAddPlanSuccess={handleRefresh}
+            selectedUserId={selectedUserId}
+            isViewingOwnData={selectedUserId === user?.id}
           />
           <WeeklySummary 
-            totalPlannedVisits={totalPlannedVisits}
-            totalCompletedVisits={totalCompletedVisits}
+            data={{
+              totalVisits: totalCompletedVisits,
+              totalProfit: visitMetricsQuery.data?.totalProfit || 0,
+              totalOrders: visitMetricsQuery.data?.totalOrders || 0,
+              conversionRate: visitMetricsQuery.data?.conversionRate || 0,
+              dailyAvgProfit: visitMetricsQuery.data?.dailyAvgProfit || 0,
+              topProfitOrder: visitMetricsQuery.data?.topProfitOrder || 0,
+              avgProfitPerOrder: visitMetricsQuery.data?.avgProfitPerOrder || 0,
+              plannedVisits: totalPlannedVisits
+            }}
+            weekStartDate={weekStart}
+            weekEndDate={weekEnd}
+            isLoading={visitMetricsQuery.isLoading}
           />
         </TabsContent>
       </Tabs>
