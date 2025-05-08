@@ -1,63 +1,68 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, BarChart3, ClipboardList, UserCircle, MessageCircle } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
+// MobileNavigation component for bottom navigation on mobile devices
 const MobileNavigation = () => {
+  const navItems = [
+    {
+      path: '/rep-performance',
+      label: 'Home',
+      icon: Home,
+    },
+    {
+      path: '/account-performance',
+      label: 'Accounts',
+      icon: BarChart3,
+    },
+    {
+      path: '/rep-tracker',
+      label: 'Planner',
+      icon: ClipboardList,
+    },
+    {
+      path: '/my-performance',
+      label: 'My Dashboard',
+      icon: UserCircle,
+    },
+    {
+      path: '/ai-vera',
+      label: 'Vera',
+      icon: Bot,
+    },
+  ];
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-md border-t border-white/10 p-2 px-4 z-40">
-      <div className="flex justify-around items-center">
-        <NavLink
-          to="/rep-performance"
-          className={({ isActive }) => `p-2 flex flex-col items-center ${
-            isActive ? 'text-finance-red' : 'text-white/70'
-          }`}
-        >
-          <Home className="h-5 w-5" />
-          <span className="text-2xs mt-1">Home</span>
-        </NavLink>
-        
-        <NavLink
-          to="/account-performance"
-          className={({ isActive }) => `p-2 flex flex-col items-center ${
-            isActive ? 'text-finance-red' : 'text-white/70'
-          }`}
-        >
-          <BarChart3 className="h-5 w-5" />
-          <span className="text-2xs mt-1">Accounts</span>
-        </NavLink>
-        
-        <NavLink
-          to="/rep-tracker"
-          className={({ isActive }) => `p-2 flex flex-col items-center ${
-            isActive ? 'text-finance-red' : 'text-white/70'
-          }`}
-        >
-          <ClipboardList className="h-5 w-5" />
-          <span className="text-2xs mt-1">Planner</span>
-        </NavLink>
-        
-        <NavLink
-          to="/my-performance"
-          className={({ isActive }) => `p-2 flex flex-col items-center ${
-            isActive ? 'text-finance-red' : 'text-white/70'
-          }`}
-        >
-          <UserCircle className="h-5 w-5" />
-          <span className="text-2xs mt-1">My Data</span>
-        </NavLink>
-        
-        <NavLink
-          to="/ai-vera"
-          className={({ isActive }) => `p-2 flex flex-col items-center ${
-            isActive ? 'text-finance-red' : 'text-white/70'
-          }`}
-        >
-          <MessageCircle className="h-5 w-5" />
-          <span className="text-2xs mt-1">Vera</span>
-        </NavLink>
+    <nav className="fixed bottom-0 left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-t border-white/5 py-2 z-50">
+      <div className="flex justify-around">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              cn(
+                'flex flex-col items-center justify-center px-2 py-1 rounded-md transition-colors',
+                isActive
+                  ? 'text-finance-red'
+                  : 'text-white/60 hover:text-white/80'
+              )
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <item.icon className={cn('w-5 h-5')} />
+                <span className="text-[10px] mt-0.5">{item.label}</span>
+                {isActive && (
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                )}
+              </>
+            )}
+          </NavLink>
+        ))}
       </div>
-    </div>
+    </nav>
   );
 };
 

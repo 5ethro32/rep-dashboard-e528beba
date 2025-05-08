@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,7 +42,7 @@ const AppHeader = ({
       case '/rep-tracker':
         return isMobile ? 'Planner' : 'Rep Planner';
       case '/my-performance':
-        return isMobile ? 'My Data' : 'My Dashboard';
+        return isMobile ? 'My Dashboard' : 'My Dashboard';
       case '/ai-vera':
         return isMobile ? 'Vera' : 'AI Vera';
       default:
@@ -104,7 +103,7 @@ const AppHeader = ({
     },
     {
       path: '/my-performance',
-      label: 'My Data',
+      label: 'My Dashboard',
       icon: <UserCircle className="h-4 w-4" />
     },
     {
@@ -213,14 +212,21 @@ const AppHeader = ({
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) => cn(
-                    "px-4 py-2 flex items-center gap-2 text-sm font-medium",
+                    "px-4 py-2 flex items-center gap-2 text-sm font-medium relative",
                     isActive 
                       ? "text-finance-red" 
                       : "text-white/60 hover:text-white"
                   )}
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
+                  {({ isActive }) => (
+                    <>
+                      {/* Replace icon with gradient line for active items */}
+                      {isActive && (
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                      )}
+                      <span>{item.label}</span>
+                    </>
+                  )}
                 </NavLink>
               ))}
             </nav>
