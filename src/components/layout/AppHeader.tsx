@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
@@ -59,12 +61,25 @@ const AppHeader = ({
     
     // Check if we're on the rep performance page and have a specific refresh handler
     if (location.pathname === '/rep-performance' && window.repPerformanceRefresh) {
-      window.repPerformanceRefresh();
+      console.log('Using RepPerformance refresh handler');
+      try {
+        window.repPerformanceRefresh();
+        
+        // No need to show toast here as the component will handle it
+      } catch (error) {
+        console.error('Error calling RepPerformance refresh:', error);
+        toast({
+          title: "Refresh failed",
+          description: "Could not refresh the dashboard data",
+          variant: "destructive"
+        });
+      }
       return;
     }
     
     // Otherwise use the global refresh handler
     if (onRefresh) {
+      console.log('Using global refresh handler');
       onRefresh();
     }
   };

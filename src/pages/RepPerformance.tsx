@@ -12,8 +12,9 @@ import { BarChart3, ClipboardList, UserCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
-import { useEffect as useLayoutEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { toast } from '@/components/ui/use-toast';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
@@ -75,26 +76,42 @@ const RepPerformance = () => {
   // Add specific handling for refresh from header
   const handleRefresh = async () => {
     console.log('RepPerformance: Refresh triggered from header');
-    // Keep the current selected month - don't reset it
-    await loadDataFromSupabase();
-    setAutoRefreshed(true);
+    try {
+      // Force a complete data reload but preserve the current month
+      await loadDataFromSupabase();
+      toast({
+        title: "Data refreshed",
+        description: `Refreshed data for ${selectedMonth}`,
+        duration: 3000
+      });
+      setAutoRefreshed(true);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast({
+        title: "Refresh failed",
+        description: "There was a problem refreshing the data",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
   };
 
   // Connect to the global app layout - make the header refresh button use our local refresh handler
   useLayoutEffect(() => {
     // Expose refresh handler to window for the AppHeader to access
-    // This is a simple way to connect components without prop drilling through the entire app
     if (location.pathname === '/rep-performance') {
+      console.log('Setting up global refresh handler for RepPerformance');
       window.repPerformanceRefresh = handleRefresh;
     }
     
     return () => {
       // Cleanup when component unmounts
       if (window.repPerformanceRefresh) {
+        console.log('Cleaning up global refresh handler');
         delete window.repPerformanceRefresh;
       }
     };
-  }, [location.pathname]);
+  }, [location.pathname, selectedMonth]); // Add selectedMonth as dependency
   
   const activeData = getActiveData('overall');
 
@@ -158,19 +175,67 @@ const RepPerformance = () => {
           </div>}
       </div>
 
-      <PerformanceFilters includeRetail={includeRetail} setIncludeRetail={setIncludeRetail} includeReva={includeReva} setIncludeReva={setIncludeReva} includeWholesale={includeWholesale} setIncludeWholesale={setIncludeWholesale} selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} />
+      <PerformanceFilters 
+        includeRetail={includeRetail} 
+        setIncludeRetail={setIncludeRetail} 
+        includeReva={includeReva} 
+        setIncludeReva={setIncludeReva} 
+        includeWholesale={includeWholesale} 
+        setIncludeWholesale={setIncludeWholesale} 
+        selectedMonth={selectedMonth} 
+        setSelectedMonth={setSelectedMonth} 
+      />
 
-      <SummaryMetrics summary={summary} summaryChanges={summaryChanges} isLoading={isLoading} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} selectedMonth={selectedMonth} />
+      <SummaryMetrics 
+        summary={summary} 
+        summaryChanges={summaryChanges} 
+        isLoading={isLoading} 
+        includeRetail={includeRetail} 
+        includeReva={includeReva} 
+        includeWholesale={includeWholesale} 
+        selectedMonth={selectedMonth} 
+      />
       
-      {/* TrendLineChart with enhanced capabilities */}
       <div className="mb-6">
-        <TrendLineChart febSummary={filteredFebSummary} marchSummary={filteredMarSummary} aprilSummary={filteredAprSummary} maySummary={filteredMaySummary} isLoading={isLoading} repDataProp={repData} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} />
+        <TrendLineChart 
+          febSummary={filteredFebSummary} 
+          marchSummary={filteredMarSummary} 
+          aprilSummary={filteredAprSummary} 
+          maySummary={filteredMaySummary} 
+          isLoading={isLoading} 
+          repDataProp={repData}
+          includeRetail={includeRetail}
+          includeReva={includeReva}
+          includeWholesale={includeWholesale}
+        />
       </div>
 
-      <PerformanceContent tabValues={['overall', 'rep', 'reva', 'wholesale']} getActiveData={getActiveData} sortData={sortData} sortBy={sortBy} sortOrder={sortOrder} handleSort={handleSort} repChanges={repChanges} formatCurrency={formatCurrency} formatPercent={formatPercent} formatNumber={formatNumber} renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
-      const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
-      return <RenderChangeIndicator changeValue={changeValue} size={size === "small" ? "small" : "large"} previousValue={previousValue} />;
-    }} isLoading={isLoading} getFebValue={getFebValue} selectedMonth={selectedMonth} summary={summary} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary} revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues} wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues} />
+      <PerformanceContent 
+        tabValues={['overall', 'rep', 'reva', 'wholesale']} 
+        getActiveData={getActiveData} 
+        sortData={sortData} 
+        sortBy={sortBy} 
+        sortOrder={sortOrder} 
+        handleSort={handleSort} 
+        repChanges={repChanges} 
+        formatCurrency={formatCurrency} 
+        formatPercent={formatPercent} 
+        formatNumber={formatNumber} 
+        renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
+          const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
+          return <RenderChangeIndicator changeValue={changeValue} size={size === "small" ? "small" : "large"} previousValue={previousValue} />;
+        }} 
+        isLoading={isLoading} 
+        getFebValue={getFebValue} 
+        selectedMonth={selectedMonth}
+        summary={summary}
+        includeRetail={includeRetail}
+        includeReva={includeReva}
+        includeWholesale={includeWholesale}
+        baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary}
+        revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues}
+        wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues}
+      />
     </div>
   );
 };

@@ -17,7 +17,14 @@ import MyPerformance from "./pages/MyPerformance";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 const AppRoutes = () => {
   const isMobile = useIsMobile();
@@ -52,8 +59,6 @@ const AppRoutes = () => {
 
   // Create wrapper components that handle refreshing for each page
   const RepPerformanceWithRefresh = () => {
-    const ref = React.useRef<HTMLDivElement>(null);
-    
     return (
       <RepPerformance />
     );
