@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,13 +36,13 @@ const AppHeader = ({
   const getCurrentPageTitle = () => {
     switch (location.pathname) {
       case '/rep-performance':
-        return 'Performance Dashboard';
+        return isMobile ? 'Dashboard' : 'Performance Dashboard';
       case '/account-performance':
-        return 'Account Performance';
+        return isMobile ? 'Accounts' : 'Account Performance';
       case '/rep-tracker':
         return 'Rep Tracker';
       case '/my-performance':
-        return 'My Performance';
+        return isMobile ? 'My Data' : 'My Performance';
       case '/ai-vera':
         return 'AI Vera';
       default:
