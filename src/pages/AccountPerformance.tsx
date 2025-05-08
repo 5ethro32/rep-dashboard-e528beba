@@ -346,7 +346,7 @@ const AccountPerformance = ({
       
       {/* Large card containing everything */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-6">
-        <CardHeader className="pb-2 py-0">
+        <CardHeader className="pb-2">
           {renderPageHeading()}
           <CardDescription className="text-white/60 mb-8 py-0">
             {selectedUserId === "all" ? "Compare Aver's accounts performance between months to identify declining or improving accounts." : selectedUserName && selectedUserName !== 'My Data' ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.` : "Compare your accounts performance between months to identify declining or improving accounts."}
