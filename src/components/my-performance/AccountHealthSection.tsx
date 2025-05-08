@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   TrendingUp, 
@@ -28,7 +28,8 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
+  TableFooter
 } from '@/components/ui/table';
 import { useStarredAccounts } from '@/hooks/useStarredAccounts';
 
@@ -107,6 +108,37 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
     }
   });
 
+  // Calculate totals for the table footer
+  const tableTotals = useMemo(() => {
+    if (!filteredAccounts.length) return { 
+      count: 0,
+      totalProfit: 0,
+      avgProfitChange: 0,
+      avgMargin: 0,
+      statusCounts: { improving: 0, stable: 0, declining: 0 }
+    };
+
+    const totalProfit = filteredAccounts.reduce((sum, account) => sum + (account.profit || 0), 0);
+    const totalProfitChange = filteredAccounts.reduce((sum, account) => sum + (account.profitChangePercent || 0), 0);
+    const avgProfitChange = totalProfitChange / filteredAccounts.length;
+    
+    const totalMargin = filteredAccounts.reduce((sum, account) => sum + (account.margin || 0), 0);
+    const avgMargin = totalMargin / filteredAccounts.length;
+    
+    const statusCounts = filteredAccounts.reduce((counts, account) => {
+      counts[account.status] = (counts[account.status] || 0) + 1;
+      return counts;
+    }, { improving: 0, stable: 0, declining: 0 });
+
+    return {
+      count: filteredAccounts.length,
+      totalProfit,
+      avgProfitChange,
+      avgMargin,
+      statusCounts
+    };
+  }, [filteredAccounts]);
+
   // Get top improving and declining accounts
   const improvingAccounts = [...accountHealthData]
     .filter(a => a.status === 'improving')
@@ -118,28 +150,25 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
     .sort((a, b) => a.healthScore - b.healthScore)
     .slice(0, 3);
 
-  // Get account health status badge
+  // Get account health status badge - now with icons only
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'improving':
         return (
           <Badge className="bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 border-none">
-            <TrendingUp className="h-3 w-3 mr-1" />
-            Improving
+            <TrendingUp className="h-4 w-4" />
           </Badge>
         );
       case 'declining':
         return (
           <Badge className="bg-finance-red/20 text-finance-red hover:bg-finance-red/30 border-none">
-            <TrendingDown className="h-3 w-3 mr-1" />
-            Declining
+            <TrendingDown className="h-4 w-4" />
           </Badge>
         );
       default:
         return (
           <Badge className="bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border-none">
-            <Minus className="h-3 w-3 mr-1" />
-            Stable
+            <Minus className="h-4 w-4" />
           </Badge>
         );
     }
@@ -173,6 +202,22 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
         <ChevronDown className="h-4 w-4 inline ml-1" />;
     }
     return null;
+  };
+  
+  // Get predominant status for totals row
+  const getPredominantStatus = () => {
+    const { statusCounts } = tableTotals;
+    const max = Math.max(statusCounts.improving, statusCounts.stable, statusCounts.declining);
+    
+    if (statusCounts.improving === max) return 'improving';
+    if (statusCounts.declining === max) return 'declining';
+    return 'stable';
+  };
+
+  // Extract first name from rep name
+  const getFirstName = (fullName: string) => {
+    if (!fullName) return '';
+    return fullName.split(' ')[0];
   };
 
   if (isLoading) {
@@ -211,7 +256,14 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                   {improvingAccounts.map((account, index) => (
                     <div key={index} className="bg-gray-900/40 p-2 rounded-md">
                       <div className="flex justify-between items-center">
-                        <span className="font-medium text-white">{account.accountName}</span>
+                        <div>
+                          <span className="font-medium text-white">{account.accountName}</span>
+                          {account.repName && (
+                            <span className="text-xs text-gray-400 ml-2">
+                              ({getFirstName(account.repName)})
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(account.status)}
                           <div className="flex gap-1">
@@ -260,7 +312,14 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                   {decliningAccounts.map((account, index) => (
                     <div key={index} className="bg-gray-900/40 p-2 rounded-md">
                       <div className="flex justify-between items-center">
-                        <span className="font-medium text-white">{account.accountName}</span>
+                        <div>
+                          <span className="font-medium text-white">{account.accountName}</span>
+                          {account.repName && (
+                            <span className="text-xs text-gray-400 ml-2">
+                              ({getFirstName(account.repName)})
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(account.status)}
                           <div className="flex gap-1">
@@ -341,6 +400,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
               <TableHeader className="bg-gray-900/60 sticky top-0 z-10">
                 <TableRow>
                   <TableHead className="text-white/70 w-10"></TableHead>
+                  <TableHead className="text-white/70 w-10"></TableHead>
                   <TableHead 
                     className="text-white/70 cursor-pointer" 
                     onClick={() => handleSort('accountName')}
@@ -372,43 +432,50 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                 {filteredAccounts.length > 0 ? (
                   filteredAccounts.map((account, index) => (
                     <TableRow key={index} className="border-t border-white/10">
-                      <TableCell className="p-2 w-12">
-                        <div className="flex gap-1">
-                          {isAdmin && (
-                            <button
-                              onClick={() => toggleAdminStar(
-                                account.accountRef,
-                                account.accountName,
-                                isAdminStarred(account.accountRef)
-                              )}
-                              className="text-white/40 hover:text-yellow-500 transition-colors"
-                              title={isAdminStarred(account.accountRef) ? "Remove from key accounts" : "Mark as key account"}
-                            >
-                              {isAdminStarred(account.accountRef) ? (
-                                <Shield className="h-4 w-4 text-yellow-500" />
-                              ) : (
-                                <Shield className="h-4 w-4" />
-                              )}
-                            </button>
-                          )}
+                      <TableCell className="p-2 w-10">
+                        {isAdmin && (
                           <button
-                            onClick={() => toggleUserStar(
+                            onClick={() => toggleAdminStar(
                               account.accountRef,
                               account.accountName,
-                              isUserStarred(account.accountRef)
+                              isAdminStarred(account.accountRef)
                             )}
                             className="text-white/40 hover:text-yellow-500 transition-colors"
-                            title={isUserStarred(account.accountRef) ? "Remove bookmark" : "Bookmark account"}
+                            title={isAdminStarred(account.accountRef) ? "Remove from key accounts" : "Mark as key account"}
                           >
-                            {isUserStarred(account.accountRef) ? (
-                              <Star className="h-4 w-4 text-yellow-500" />
+                            {isAdminStarred(account.accountRef) ? (
+                              <Shield className="h-4 w-4 text-yellow-500" />
                             ) : (
-                              <Star className="h-4 w-4" />
+                              <Shield className="h-4 w-4" />
                             )}
                           </button>
-                        </div>
+                        )}
                       </TableCell>
-                      <TableCell className="font-medium text-white">{account.accountName}</TableCell>
+                      <TableCell className="p-2 w-10">
+                        <button
+                          onClick={() => toggleUserStar(
+                            account.accountRef,
+                            account.accountName,
+                            isUserStarred(account.accountRef)
+                          )}
+                          className="text-white/40 hover:text-yellow-500 transition-colors"
+                          title={isUserStarred(account.accountRef) ? "Remove bookmark" : "Bookmark account"}
+                        >
+                          {isUserStarred(account.accountRef) ? (
+                            <Star className="h-4 w-4 text-yellow-500" />
+                          ) : (
+                            <Star className="h-4 w-4" />
+                          )}
+                        </button>
+                      </TableCell>
+                      <TableCell className="font-medium text-white">
+                        {account.accountName}
+                        {account.repName && (
+                          <span className="text-xs text-gray-400 ml-2">
+                            ({getFirstName(account.repName)})
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>{formatCurrency(account.profit)}</TableCell>
                       <TableCell>{getChangeIndicator(account.profitChangePercent)}</TableCell>
                       <TableCell>{formatPercent(account.margin)}</TableCell>
@@ -417,12 +484,34 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={7} className="text-center py-4 text-white/60">
                       No accounts found matching your search
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
+              {filteredAccounts.length > 0 && (
+                <TableFooter className="bg-gray-900/80 border-t border-white/10 sticky bottom-0">
+                  <TableRow>
+                    <TableCell colSpan={2} className="p-2"></TableCell>
+                    <TableCell className="font-medium text-white">
+                      Total ({tableTotals.count} accounts)
+                    </TableCell>
+                    <TableCell className="font-bold text-white">
+                      {formatCurrency(tableTotals.totalProfit)}
+                    </TableCell>
+                    <TableCell>
+                      {getChangeIndicator(tableTotals.avgProfitChange)}
+                    </TableCell>
+                    <TableCell className="font-medium text-white">
+                      {formatPercent(tableTotals.avgMargin)}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(getPredominantStatus())}
+                    </TableCell>
+                  </TableRow>
+                </TableFooter>
+              )}
             </Table>
           </ScrollArea>
         </div>
