@@ -43,7 +43,7 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
     profit: 100000,
     margin: 30,
     activeRatio: 75,
-    accounts: 20
+    activeAccounts: 20  // Changed from accounts to activeAccounts
   });
   const [isLoadingGoals, setIsLoadingGoals] = useState(false);
   
@@ -72,18 +72,18 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
   // Generate trend data for visualization (sample data for demonstration)
   // In a production app, this would use historical data
   const trendData = [
-    { month: 'Jan', profit: 80000, margin: 28, activeRatio: 65, accounts: 17 },
-    { month: 'Feb', profit: 85000, margin: 28.5, activeRatio: 68, accounts: 18 },
-    { month: 'Mar', profit: 90000, margin: 29, activeRatio: 70, accounts: 19 },
-    { month: 'Apr', profit: 95000, margin: 29.5, activeRatio: 72, accounts: 19 },
+    { month: 'Jan', profit: 80000, margin: 28, activeRatio: 65, activeAccounts: 17 }, // Changed from accounts to activeAccounts
+    { month: 'Feb', profit: 85000, margin: 28.5, activeRatio: 68, activeAccounts: 18 }, // Changed from accounts to activeAccounts
+    { month: 'Mar', profit: 90000, margin: 29, activeRatio: 70, activeAccounts: 19 }, // Changed from accounts to activeAccounts
+    { month: 'Apr', profit: 95000, margin: 29.5, activeRatio: 72, activeAccounts: 19 }, // Changed from accounts to activeAccounts
     { month: 'May', profit: performanceData?.totalProfit || 98000, margin: performanceData?.margin || 30, 
       activeRatio: performanceData?.totalAccounts ? (performanceData.activeAccounts / performanceData.totalAccounts) * 100 : 75, 
-      accounts: performanceData?.totalAccounts || 20 }
+      activeAccounts: performanceData?.activeAccounts || 20 } // Changed from accounts to activeAccounts
   ];
   
   // Calculate goal progress
   const calculateProgress = () => {
-    if (!performanceData) return { profit: 0, margin: 0, activeRatio: 0, accounts: 0 };
+    if (!performanceData) return { profit: 0, margin: 0, activeRatio: 0, activeAccounts: 0 }; // Changed from accounts to activeAccounts
     
     const activeRatio = performanceData.totalAccounts > 0 ? 
       (performanceData.activeAccounts / performanceData.totalAccounts) * 100 : 0;
@@ -92,7 +92,7 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
       profit: (performanceData.totalProfit / goals.profit) * 100,
       margin: (performanceData.margin / goals.margin) * 100,
       activeRatio: (activeRatio / goals.activeRatio) * 100,
-      accounts: (performanceData.totalAccounts / goals.accounts) * 100
+      activeAccounts: (performanceData.activeAccounts / goals.activeAccounts) * 100 // Changed from accounts/totalAccounts to activeAccounts
     };
   };
   
@@ -100,7 +100,7 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
   
   // Calculate month-over-month change
   const calculateChange = () => {
-    if (!trendData || trendData.length < 2) return { profit: 0, margin: 0, activeRatio: 0, accounts: 0 };
+    if (!trendData || trendData.length < 2) return { profit: 0, margin: 0, activeRatio: 0, activeAccounts: 0 }; // Changed from accounts to activeAccounts
     
     const current = trendData[trendData.length - 1];
     const previous = trendData[trendData.length - 2];
@@ -109,7 +109,7 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
       profit: ((current.profit - previous.profit) / previous.profit) * 100,
       margin: current.margin - previous.margin,
       activeRatio: current.activeRatio - previous.activeRatio,
-      accounts: current.accounts - previous.accounts
+      activeAccounts: current.activeAccounts - previous.activeAccounts // Changed from accounts to activeAccounts
     };
   };
   
@@ -138,11 +138,11 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
       goal: `${goals.activeRatio.toFixed(1)}%`,
       changeFormat: (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
     },
-    accounts: {
-      title: "Total Accounts Goal",
-      yAxisLabel: "Accounts",
+    activeAccounts: { // Changed from accounts to activeAccounts
+      title: "Active Accounts Goal", // Changed from "Total Accounts Goal"
+      yAxisLabel: "Active Accounts", // Changed from "Accounts"
       format: (value: number) => Math.round(value).toString(),
-      goal: goals.accounts.toString(),
+      goal: goals.activeAccounts.toString(), // Changed from accounts to activeAccounts
       changeFormat: (value: number) => `${value > 0 ? '+' : ''}${value}`
     }
   };
@@ -181,8 +181,8 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
                 <TabsTrigger value="activeRatio" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
                   Active Ratio
                 </TabsTrigger>
-                <TabsTrigger value="accounts" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-                  Accounts
+                <TabsTrigger value="activeAccounts" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+                  Active Accounts
                 </TabsTrigger>
               </TabsList>
               
