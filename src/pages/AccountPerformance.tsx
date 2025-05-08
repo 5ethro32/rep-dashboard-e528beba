@@ -10,6 +10,7 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 
@@ -369,9 +370,8 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Month dropdown and Refresh button in same div, left-aligned */}
-      <div className="mb-6 flex justify-start items-center space-x-4 pt-8">
-        {/* Date picker comes first */}
+      {/* Month dropdown and Refresh button in same div, now properly left-aligned */}
+      <div className="mb-6 flex items-center space-x-4 pt-8">
         <PerformanceHeader 
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
@@ -379,7 +379,6 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
           reducedPadding={true}
         />
         
-        {/* Refresh button comes second */}
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
@@ -396,7 +395,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-6">
         <CardHeader className="pb-2">
           {renderPageHeading()}
-          <CardDescription className="text-white/60 mb-4">
+          <CardDescription className="text-white/60 mb-8">
             {selectedUserId === "all"
               ? "Compare Aver's accounts performance between months to identify declining or improving accounts."
               : selectedUserName && selectedUserName !== 'My Data' 
