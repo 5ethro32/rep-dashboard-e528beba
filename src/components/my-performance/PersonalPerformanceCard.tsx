@@ -35,10 +35,6 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
   if (isLoading) {
     return <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-4 md:p-6">
         <div className="space-y-6">
-          {title && <div className="flex flex-col space-y-2">
-            <Skeleton className="h-7 w-2/3 bg-white/10" />
-            <Skeleton className="h-4 w-1/2 bg-white/10" />
-          </div>}
           <div className="flex flex-col space-y-2">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Skeleton className="h-32 bg-white/5" />
@@ -87,53 +83,38 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
   
   return (
     <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0">
-      <div className="space-y-4">
-        {/* Title and Subtitle Section */}
-        {title && (
-          <div className="px-4 md:px-6 pt-4 pb-0">
-            <h2 className="text-xl md:text-2xl font-bold">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
-                {title}
-              </span>
-              <span className="text-white"> Performance Dashboard</span>
-            </h2>
-            {subtitle && <p className="text-white/60 text-sm mt-1">{subtitle}</p>}
-          </div>
-        )}
-
-        <CardContent className="pt-2">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {metrics.map((metric, index) => <Card key={index} className="bg-gray-900/60 border-white/10 transition-all duration-300 hover:bg-gray-900/80">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-white/60 uppercase tracking-wider">{metric.title}</span>
-                    {metric.icon}
-                  </div>
-                  <div className="text-xl md:text-2xl font-bold text-white">{metric.value}</div>
-                  
-                  {/* Percent change indicator */}
-                  {metric.percentChange !== null && <div className="flex items-center mt-2">
-                      {metric.percentChange > 0 ? <ChevronUp className="h-4 w-4 text-emerald-500" /> : metric.percentChange < 0 ? <ChevronDown className="h-4 w-4 text-finance-red" /> : <span className="h-4 w-4 flex items-center justify-center text-white/40">—</span>}
-                      
-                      <span className={`text-xs ml-1 ${metric.percentChange > 0 ? 'text-emerald-500' : metric.percentChange < 0 ? 'text-finance-red' : 'text-white/40'}`}>
-                        {Math.abs(metric.percentChange).toFixed(1)}
-                        {metric.isPercentagePoint ? 'pp' : '%'}
-                      </span>
-                    </div>}
-                  
-                  {/* Previous month data */}
-                  {metric.previousValue && <div className="flex items-center mt-1">
-                      <span className="text-xs text-white/50">
-                        Last month: {metric.previousValue}
-                      </span>
-                    </div>}
-                  
-                  {metric.activeRatio !== undefined}
-                </CardContent>
-              </Card>)}
-          </div>
-        </CardContent>
-      </div>
+      <CardContent className="p-4 md:p-6 pt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {metrics.map((metric, index) => <Card key={index} className="bg-gray-900/60 border-white/10 transition-all duration-300 hover:bg-gray-900/80">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-white/60 uppercase tracking-wider">{metric.title}</span>
+                  {metric.icon}
+                </div>
+                <div className="text-xl md:text-2xl font-bold text-white">{metric.value}</div>
+                
+                {/* Percent change indicator */}
+                {metric.percentChange !== null && <div className="flex items-center mt-2">
+                    {metric.percentChange > 0 ? <ChevronUp className="h-4 w-4 text-emerald-500" /> : metric.percentChange < 0 ? <ChevronDown className="h-4 w-4 text-finance-red" /> : <span className="h-4 w-4 flex items-center justify-center text-white/40">—</span>}
+                    
+                    <span className={`text-xs ml-1 ${metric.percentChange > 0 ? 'text-emerald-500' : metric.percentChange < 0 ? 'text-finance-red' : 'text-white/40'}`}>
+                      {Math.abs(metric.percentChange).toFixed(1)}
+                      {metric.isPercentagePoint ? 'pp' : '%'}
+                    </span>
+                  </div>}
+                
+                {/* Previous month data */}
+                {metric.previousValue && <div className="flex items-center mt-1">
+                    <span className="text-xs text-white/50">
+                      Last month: {metric.previousValue}
+                    </span>
+                  </div>}
+                
+                {metric.activeRatio !== undefined}
+              </CardContent>
+            </Card>)}
+        </div>
+      </CardContent>
     </Card>
   );
 };

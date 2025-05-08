@@ -7,8 +7,9 @@ import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
+
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 type DataItem = {
   [key: string]: any;
@@ -311,40 +312,57 @@ const AccountPerformance = ({
   // Helper function to generate heading with gradient username
   const renderPageHeading = () => {
     if (selectedUserId === "all") {
-      return <CardTitle className="text-xl md:text-2xl font-bold">
+      return (
+        <>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
             Aver's
           </span>{' '}
           Accounts Performance
-        </CardTitle>;
+        </>
+      );
     } else {
       // Extract first name
       const firstName = selectedUserName === 'My Data' ? 'My' : selectedUserName.split(' ')[0];
 
       // Add apostrophe only if it's not "My"
       const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
-      return <CardTitle className="text-xl md:text-2xl font-bold">
+      return (
+        <>
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
             {displayName}
           </span>{' '}
           Accounts Performance
-        </CardTitle>;
+        </>
+      );
     }
   };
+  
+  const getPageDescription = () => {
+    return selectedUserId === "all" 
+      ? "Compare Aver's accounts performance between months to identify declining or improving accounts." 
+      : selectedUserName && selectedUserName !== 'My Data' 
+        ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.` 
+        : "Compare your accounts performance between months to identify declining or improving accounts.";
+  };
+  
   return <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+      {/* Title and Description */}
+      <div className="mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          {renderPageHeading()}
+        </h1>
+        <p className="text-white/60">
+          {getPageDescription()}
+        </p>
+      </div>
+      
       {/* Month dropdown, now without the refresh button */}
-      <div className="mb-6 flex items-center space-x-4 pt-8 py-0">
+      <div className="mb-6 flex items-center space-x-4">
         <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
       </div>
       
-      {/* Large card containing everything */}
+      {/* Large card containing account summary */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-6">
-        <CardHeader className="pb-2 py-[10px]">
-          {renderPageHeading()}
-          <CardDescription className="text-white/60 mb-8 py-0">
-            {selectedUserId === "all" ? "Compare Aver's accounts performance between months to identify declining or improving accounts." : selectedUserName && selectedUserName !== 'My Data' ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.` : "Compare your accounts performance between months to identify declining or improving accounts."}
-          </CardDescription>
-        </CardHeader>
         <CardContent>
           <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
         </CardContent>

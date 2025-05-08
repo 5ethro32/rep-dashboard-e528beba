@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -594,7 +593,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   // Render the page directly without the redundant AppLayout wrapper
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      <div className="mb-6 hidden">
+      <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
             {getTitleName()}
@@ -627,8 +626,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         <PersonalPerformanceCard
           performanceData={performanceData}
           isLoading={isLoading}
-          title={getTitleName()}
-          subtitle={getSubtitle()}
         />
       </div>
 
