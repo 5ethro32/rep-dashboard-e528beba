@@ -6,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PerformanceHeaderProps {
@@ -42,9 +42,14 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
       )}
       <div className={`${hideTitle ? '' : 'mt-4 md:mt-8 text-right'} flex items-center justify-end gap-2`}>
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center text-lg md:text-xl lg:text-2xl text-white/80 hover:text-white transition-colors focus:outline-none">
-            {selectedMonth} 2025
-            <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="bg-gray-900/70 border border-gray-700 hover:bg-gray-800 text-white py-2 px-4 rounded-md flex items-center"
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Month: {selectedMonth}
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="bg-gray-800 border-gray-700 z-50">
             <DropdownMenuItem 
