@@ -15,7 +15,6 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceFiltersProps {
   includeRetail: boolean;
@@ -41,8 +40,6 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   showMonthSelector = true
 }) => {
   const months = ['February', 'March', 'April', 'May'];
-  const isMobile = useIsMobile();
-  const [isMonthSelectorOpen, setIsMonthSelectorOpen] = React.useState(false);
   
   const handleRefresh = () => {
     if (typeof window !== 'undefined' && window.repPerformanceRefresh) {
@@ -50,21 +47,13 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
     }
   };
   
-  const handleSelectMonth = (value: string) => {
-    setSelectedMonth(value);
-    // Close the popover with a slight delay to prevent event conflicts
-    setTimeout(() => {
-      setIsMonthSelectorOpen(false);
-    }, 100);
-  };
-  
   return (
     <div className="flex flex-wrap items-center justify-between w-full gap-3 mb-8">
-      <div className="flex flex-wrap gap-2 md:gap-3">
+      <div className="flex flex-wrap gap-3">
         <ToggleButton 
           checked={includeRetail} 
           onToggle={setIncludeRetail}
-          className={`${isMobile ? 'min-w-[80px] px-2 py-1 text-xs' : 'min-w-[100px]'}`}
+          className="min-w-[100px]"
         >
           Retail
         </ToggleButton>
@@ -72,7 +61,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         <ToggleButton 
           checked={includeReva} 
           onToggle={setIncludeReva}
-          className={`${isMobile ? 'min-w-[80px] px-2 py-1 text-xs' : 'min-w-[100px]'}`}
+          className="min-w-[100px]"
         >
           REVA
         </ToggleButton>
@@ -80,7 +69,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         <ToggleButton 
           checked={includeWholesale} 
           onToggle={setIncludeWholesale}
-          className={`${isMobile ? 'min-w-[80px] px-2 py-1 text-xs' : 'min-w-[100px]'}`}
+          className="min-w-[100px]"
         >
           Wholesale
         </ToggleButton>
@@ -88,27 +77,17 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
       
       {showMonthSelector && (
         <div className="flex items-center gap-2 ml-auto">
-          <Popover 
-            open={isMonthSelectorOpen}
-            onOpenChange={setIsMonthSelectorOpen}
-          >
+          <Popover>
             <PopoverTrigger asChild>
               <Button 
                 variant="outline" 
-                className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'px-2 py-1 h-8 text-xs' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsMonthSelectorOpen(true);
-                }}
+                className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
               >
-                <Calendar className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
-                <span>{isMobile ? selectedMonth : `Month: ${selectedMonth}`}</span>
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Month: {selectedMonth}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent 
-              className="w-48 p-0 bg-gray-800/95 backdrop-blur-sm border-white/10 z-50"
-              onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling up
-            >
+            <PopoverContent className="w-48 p-0 bg-gray-900/90 backdrop-blur-sm border-white/10">
               <Command className="bg-transparent">
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
@@ -117,7 +96,9 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
                     <CommandItem
                       key={month}
                       value={month}
-                      onSelect={handleSelectMonth}
+                      onSelect={(value) => {
+                        setSelectedMonth(value);
+                      }}
                       className="text-white hover:bg-white/10"
                     >
                       {month}
@@ -130,11 +111,11 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
           
           <Button
             variant="outline"
-            size={isMobile ? "sm" : "icon"}
+            size="icon"
             onClick={handleRefresh}
-            className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'w-8 h-8 p-1' : ''}`}
+            className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
           >
-            <RefreshCw className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       )}

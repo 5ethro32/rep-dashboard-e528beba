@@ -46,10 +46,8 @@ export function CustomerCommand({
   }, []);
   
   const handleSelect = (e: React.MouseEvent, customer: { account_ref: string; account_name: string }) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    e.preventDefault();
+    e.stopPropagation();
     
     if (customer && customer.account_ref && customer.account_name) {
       onSelect(customer.account_ref, customer.account_name);
@@ -80,7 +78,7 @@ export function CustomerCommand({
   return (
     <div 
       className={cn(
-        "rounded-lg border shadow-md bg-popover fixed inset-x-2 sm:relative sm:inset-auto z-50 pointer-events-auto", 
+        "rounded-lg border shadow-md bg-popover fixed inset-x-2 sm:relative sm:inset-auto", 
         className
       )}
       style={{ 
@@ -88,7 +86,6 @@ export function CustomerCommand({
         maxWidth: isMobile ? 'calc(100vw - 16px)' : 'none',
         width: isMobile ? 'calc(100vw - 16px)' : 'auto'
       }}
-      onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling up
     >
       <div className="flex items-center border-b px-3">
         <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />

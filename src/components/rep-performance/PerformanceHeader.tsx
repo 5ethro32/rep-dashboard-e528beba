@@ -14,7 +14,6 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceHeaderProps {
   hideTitle?: boolean;
@@ -22,7 +21,6 @@ interface PerformanceHeaderProps {
   selectedMonth?: string;
   setSelectedMonth?: (value: string) => void;
   onRefresh?: () => void;
-  showMonthSelector?: boolean; // Added to match PerformanceFilters prop
 }
 
 const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ 
@@ -30,8 +28,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
   reducedPadding = false,
   selectedMonth,
   setSelectedMonth,
-  onRefresh,
-  showMonthSelector = true // Default to true to maintain backward compatibility
+  onRefresh
 }) => {
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
@@ -39,7 +36,6 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
     : 'py-8 md:py-16'; // Original padding
   
   const months = ['February', 'March', 'April', 'May'];
-  const isMobile = useIsMobile();
   
   const handleRefresh = () => {
     if (onRefresh) {
@@ -63,19 +59,19 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
       )}
       
       {/* Month selector and refresh button */}
-      {selectedMonth && setSelectedMonth && showMonthSelector && (
+      {selectedMonth && setSelectedMonth && (
         <div className="flex items-center gap-2 ml-auto">
           <Popover>
             <PopoverTrigger asChild>
               <Button 
                 variant="outline" 
-                className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'px-2 py-1 h-8 text-xs' : ''}`}
+                className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
               >
-                <Calendar className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
-                <span>{isMobile ? selectedMonth : `Month: ${selectedMonth}`}</span>
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Month: {selectedMonth}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-0 bg-gray-800/95 backdrop-blur-sm border-white/10">
+            <PopoverContent className="w-48 p-0 bg-gray-900/90 backdrop-blur-sm border-white/10">
               <Command className="bg-transparent">
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
@@ -99,11 +95,11 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
           
           <Button
             variant="outline"
-            size={isMobile ? "sm" : "icon"}
+            size="icon"
             onClick={handleRefresh}
-            className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'w-8 h-8 p-1' : ''}`}
+            className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
           >
-            <RefreshCw className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       )}
