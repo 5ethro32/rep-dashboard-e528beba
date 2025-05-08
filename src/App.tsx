@@ -23,11 +23,29 @@ const AppRoutes = () => {
   const isMobile = useIsMobile();
   const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
   const [selectedUserName, setSelectedUserName] = useState<string>("All Data");
+  const [isLoading, setIsLoading] = useState(false);
   
   const handleSelectUser = (userId: string | null, displayName: string) => {
     console.log(`App.tsx: User selected: ${displayName} (${userId})`);
     setSelectedUserId(userId);
     setSelectedUserName(displayName);
+  };
+
+  const handleRefresh = async () => {
+    console.log("Global refresh triggered");
+    setIsLoading(true);
+    
+    try {
+      // Invalidate all queries to trigger a refetch
+      await queryClient.invalidateQueries();
+      console.log("All queries invalidated");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1000); // Ensure loading indicator shows for at least 1 second
+    }
   };
 
   // Create a wrapper component that will pass props to AccountPerformance
@@ -73,6 +91,8 @@ const AppRoutes = () => {
             selectedUserId={selectedUserId}
             onSelectUser={handleSelectUser}
             showUserSelector={true}
+            onRefresh={handleRefresh}
+            isLoading={isLoading}
           >
             <Outlet />
           </AppLayout>

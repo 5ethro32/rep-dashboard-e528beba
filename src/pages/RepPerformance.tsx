@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
@@ -6,13 +7,13 @@ import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
 import PerformanceContent from '@/components/rep-performance/PerformanceContent';
 import { formatCurrency, formatPercent, formatNumber, calculateSummary } from '@/utils/rep-performance-utils';
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
-import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import { Button } from '@/components/ui/button';
 import { BarChart3, ClipboardList, UserCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
+
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
@@ -60,12 +61,6 @@ const RepPerformance = () => {
     }
   }, [autoRefreshed]);
 
-  // Custom refresh handler to track if it's an auto refresh
-  const handleRefresh = async () => {
-    await loadDataFromSupabase();
-    setAutoRefreshed(true);
-  };
-
   // Handle month selection with proper data refresh
   const handleMonthSelection = async (month: string) => {
     // Set month first to avoid UI flicker
@@ -74,6 +69,7 @@ const RepPerformance = () => {
     await loadDataFromSupabase();
     setAutoRefreshed(true);
   };
+  
   const activeData = getActiveData('overall');
 
   // Calculate filtered summary data for each month using the same calculation as metric cards
@@ -106,13 +102,13 @@ const RepPerformance = () => {
       may: repData.may.find(r => r.rep === sampleRep)?.profit
     });
   }
-  return <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      
 
+  return (
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
       <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} />
       
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
-        <ActionsHeader onRefresh={handleRefresh} isLoading={isLoading} autoRefreshed={autoRefreshed} />
+        {/* Remove the ActionsHeader with refresh button since we now have it in the AppHeader */}
         
         {/* Only show these buttons on non-mobile devices */}
         {!isMobile && <div className="flex space-x-2">
@@ -152,6 +148,8 @@ const RepPerformance = () => {
       const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
       return <RenderChangeIndicator changeValue={changeValue} size={size === "small" ? "small" : "large"} previousValue={previousValue} />;
     }} isLoading={isLoading} getFebValue={getFebValue} selectedMonth={selectedMonth} summary={summary} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary} revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues} wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues} />
-    </div>;
+    </div>
+  );
 };
+
 export default RepPerformance;

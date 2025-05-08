@@ -13,6 +13,8 @@ interface AppLayoutProps {
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
   showUserSelector?: boolean;
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
 const AppLayout = ({ 
@@ -21,7 +23,9 @@ const AppLayout = ({
   selectedMonth = 'March',
   selectedUserId,
   onSelectUser,
-  showUserSelector = false
+  showUserSelector = false,
+  onRefresh,
+  isLoading = false
 }: AppLayoutProps) => {
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -39,6 +43,8 @@ const AppLayout = ({
         selectedUserId={selectedUserId} 
         onSelectUser={onSelectUser} 
         showUserSelector={shouldShowUserSelector}
+        onRefresh={onRefresh}
+        isLoading={isLoading}
       />
       
       {/* Main content section */}

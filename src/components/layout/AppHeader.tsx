@@ -4,18 +4,27 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
   showUserSelector?: boolean;
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
-const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: AppHeaderProps) => {
+const AppHeader = ({ 
+  selectedUserId, 
+  onSelectUser, 
+  showUserSelector = false,
+  onRefresh,
+  isLoading = false
+}: AppHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -108,12 +117,25 @@ const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: A
             )}
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {onRefresh && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onRefresh} 
+                disabled={isLoading}
+                className="text-white/70 hover:text-white hover:bg-white/10 h-9 w-9"
+              >
+                <RefreshCw 
+                  className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} 
+                />
+              </Button>
+            )}
+            
             {showUserSelector && (
               <UserSelector
                 selectedUserId={selectedUserId || "all"}
                 onSelectUser={handleUserSelection}
-                className="mr-2"
                 showAllDataOption={true}
               />
             )}
