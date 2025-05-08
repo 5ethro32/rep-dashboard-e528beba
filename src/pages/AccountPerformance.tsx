@@ -9,6 +9,7 @@ import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 
@@ -339,12 +340,12 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
   const renderPageHeading = () => {
     if (selectedUserId === "all") {
       return (
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+        <CardTitle className="text-xl md:text-2xl font-bold">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
             Aver's
           </span>{' '}
           Accounts Performance
-        </h1>
+        </CardTitle>
       );
     } else {
       // Extract first name
@@ -356,35 +357,21 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
       const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
       
       return (
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+        <CardTitle className="text-xl md:text-2xl font-bold">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
             {displayName}
           </span>{' '}
           Accounts Performance
-        </h1>
+        </CardTitle>
       );
     }
   };
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Header section with only heading */}
-      <div className="mb-6 pt-8">
-        <div>
-          {renderPageHeading()}
-          <p className="text-white/60">
-            {selectedUserId === "all"
-              ? "Compare Aver's accounts performance between months to identify declining or improving accounts."
-              : selectedUserName && selectedUserName !== 'My Data' 
-                ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.`
-                : "Compare your accounts performance between months to identify declining or improving accounts."}
-          </p>
-        </div>
-      </div>
-      
-      {/* Month dropdown and Refresh button in same div, with flipped positions */}
-      <div className="mb-6 flex justify-end items-center space-x-4">
-        {/* Date picker comes first now (left) */}
+      {/* Month dropdown and Refresh button in same div, now on the left side */}
+      <div className="mb-6 flex justify-start items-center space-x-4 pt-8">
+        {/* Date picker comes first */}
         <PerformanceHeader 
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
@@ -392,7 +379,7 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
           reducedPadding={true}
         />
         
-        {/* Refresh button comes second (right) */}
+        {/* Refresh button comes second */}
         <Button 
           onClick={fetchComparisonData} 
           disabled={isLoading}
@@ -405,13 +392,28 @@ const AccountPerformance = ({ selectedUserId: propSelectedUserId = "all", select
         </Button>
       </div>
       
-      <AccountSummaryCards
-        currentMonthData={currentMonthRawData}
-        previousMonthData={previousMonthRawData}
-        isLoading={isLoading}
-        selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
-        accountsTrendData={accountsTrendData}
-      />
+      {/* Large card containing everything */}
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-6">
+        <CardHeader className="pb-2">
+          {renderPageHeading()}
+          <CardDescription className="text-white/60">
+            {selectedUserId === "all"
+              ? "Compare Aver's accounts performance between months to identify declining or improving accounts."
+              : selectedUserName && selectedUserName !== 'My Data' 
+                ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.`
+                : "Compare your accounts performance between months to identify declining or improving accounts."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AccountSummaryCards
+            currentMonthData={currentMonthRawData}
+            previousMonthData={previousMonthRawData}
+            isLoading={isLoading}
+            selectedUser={selectedUserId !== "all" ? selectedUserName : undefined}
+            accountsTrendData={accountsTrendData}
+          />
+        </CardContent>
+      </Card>
       
       <div className="mb-12">
         <AccountPerformanceComparison 
