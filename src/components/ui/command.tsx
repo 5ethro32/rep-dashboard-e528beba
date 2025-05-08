@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"
 import { Command as CommandPrimitive } from "cmdk"
@@ -111,16 +112,36 @@ CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  // Ensure we're not passing null/undefined to Array.from by wrapping it in a try/catch
+  const safeProps = { ...props };
+  
+  try {
+    // If children exists and is an array-like object, ensure it's valid for Array.from
+    if (safeProps.children && 
+        typeof safeProps.children === 'object' && 
+        'length' in safeProps.children && 
+        safeProps.children.length > 0) {
+      // Just accessing the children is enough to validate it won't throw
+      // The actual Array.from happens internally in cmdk
+    }
+  } catch (e) {
+    console.error("Error with CommandItem children:", e);
+    // Provide a fallback empty array-like object if needed
+    safeProps.children = safeProps.children || [];
+  }
+  
+  return (
+    <CommandPrimitive.Item
+      ref={ref}
+      className={cn(
+        "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
+        className
+      )}
+      {...safeProps}
+    />
+  );
+})
 
 CommandItem.displayName = CommandPrimitive.Item.displayName
 

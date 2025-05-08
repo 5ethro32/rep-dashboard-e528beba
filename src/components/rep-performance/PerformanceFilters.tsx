@@ -42,11 +42,20 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
 }) => {
   const months = ['February', 'March', 'April', 'May'];
   const isMobile = useIsMobile();
+  const [isMonthSelectorOpen, setIsMonthSelectorOpen] = React.useState(false);
   
   const handleRefresh = () => {
     if (typeof window !== 'undefined' && window.repPerformanceRefresh) {
       window.repPerformanceRefresh();
     }
+  };
+  
+  const handleSelectMonth = (value: string) => {
+    setSelectedMonth(value);
+    // Close the popover with a slight delay to prevent event conflicts
+    setTimeout(() => {
+      setIsMonthSelectorOpen(false);
+    }, 100);
   };
   
   return (
@@ -79,17 +88,27 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
       
       {showMonthSelector && (
         <div className="flex items-center gap-2 ml-auto">
-          <Popover>
+          <Popover 
+            open={isMonthSelectorOpen}
+            onOpenChange={setIsMonthSelectorOpen}
+          >
             <PopoverTrigger asChild>
               <Button 
                 variant="outline" 
                 className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'px-2 py-1 h-8 text-xs' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMonthSelectorOpen(true);
+                }}
               >
                 <Calendar className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
                 <span>{isMobile ? selectedMonth : `Month: ${selectedMonth}`}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-0 bg-gray-800/95 backdrop-blur-sm border-white/10">
+            <PopoverContent 
+              className="w-48 p-0 bg-gray-800/95 backdrop-blur-sm border-white/10 z-50"
+              onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling up
+            >
               <Command className="bg-transparent">
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
@@ -98,9 +117,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
                     <CommandItem
                       key={month}
                       value={month}
-                      onSelect={(value) => {
-                        setSelectedMonth(value);
-                      }}
+                      onSelect={handleSelectMonth}
                       className="text-white hover:bg-white/10"
                     >
                       {month}
