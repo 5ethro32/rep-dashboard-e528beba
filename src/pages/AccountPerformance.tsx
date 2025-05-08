@@ -3,8 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
-import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -334,14 +332,9 @@ const AccountPerformance = ({
     }
   };
   return <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Month dropdown and Refresh button in same div, now properly left-aligned */}
+      {/* Month dropdown, now without the refresh button */}
       <div className="mb-6 flex items-center space-x-4 pt-8 py-0">
         <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
-        
-        <Button onClick={fetchComparisonData} disabled={isLoading} variant="outline" size="sm" className="text-white border-white/20 hover:bg-white/10">
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          {isLoading ? "Refreshing..." : "Refresh Data"}
-        </Button>
       </div>
       
       {/* Large card containing everything */}

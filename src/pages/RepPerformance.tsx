@@ -15,6 +15,7 @@ import { SummaryData } from '@/types/rep-performance.types';
 import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
@@ -148,7 +149,7 @@ const RepPerformance = () => {
 
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} onRefresh={handleRefresh} />
+      <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} />
       
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
         {!isMobile && <div className="flex space-x-2">
@@ -186,15 +187,30 @@ const RepPerformance = () => {
         setSelectedMonth={setSelectedMonth} 
       />
 
-      <SummaryMetrics 
-        summary={summary} 
-        summaryChanges={summaryChanges} 
-        isLoading={isLoading} 
-        includeRetail={includeRetail} 
-        includeReva={includeReva} 
-        includeWholesale={includeWholesale} 
-        selectedMonth={selectedMonth} 
-      />
+      {/* Wrap the SummaryMetrics in a Card */}
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-8">
+        <CardHeader className="pb-0">
+          <CardTitle className="text-xl font-bold">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
+              Performance Summary
+            </span>
+          </CardTitle>
+          <CardDescription className="text-white/60">
+            Key metrics for {selectedMonth} 2025
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <SummaryMetrics 
+            summary={summary} 
+            summaryChanges={summaryChanges} 
+            isLoading={isLoading} 
+            includeRetail={includeRetail} 
+            includeReva={includeReva} 
+            includeWholesale={includeWholesale} 
+            selectedMonth={selectedMonth} 
+          />
+        </CardContent>
+      </Card>
       
       <div className="mb-6">
         <TrendLineChart 
