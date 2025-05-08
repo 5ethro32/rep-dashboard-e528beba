@@ -70,6 +70,13 @@ const RepPerformance = () => {
     setAutoRefreshed(true);
   };
   
+  // Add specific handling for refresh from header
+  const handleRefresh = async () => {
+    console.log('RepPerformance: Refresh triggered from header');
+    await loadDataFromSupabase();
+    setAutoRefreshed(true);
+  };
+  
   const activeData = getActiveData('overall');
 
   // Calculate filtered summary data for each month using the same calculation as metric cards
@@ -108,9 +115,6 @@ const RepPerformance = () => {
       <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} />
       
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
-        {/* Remove the ActionsHeader with refresh button since we now have it in the AppHeader */}
-        
-        {/* Only show these buttons on non-mobile devices */}
         {!isMobile && <div className="flex space-x-2">
             <Link to="/account-performance">
               <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 flex items-center">

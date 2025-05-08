@@ -15,7 +15,7 @@ import AIVera from "./pages/AIVera";
 import MyPerformance from "./pages/MyPerformance";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 const queryClient = new QueryClient();
 
@@ -31,8 +31,9 @@ const AppRoutes = () => {
     setSelectedUserName(displayName);
   };
 
-  const handleRefresh = async () => {
-    console.log("Global refresh triggered");
+  // Global refresh handler that can be used by all components
+  const handleGlobalRefresh = useCallback(async () => {
+    console.log("Global refresh triggered in App.tsx");
     setIsLoading(true);
     
     try {
@@ -46,8 +47,17 @@ const AppRoutes = () => {
         setIsLoading(false);
       }, 1000); // Ensure loading indicator shows for at least 1 second
     }
-  };
+  }, [queryClient]);
 
+  // Create wrapper components that handle refreshing for each page
+  const RepPerformanceWithRefresh = () => {
+    const ref = React.useRef<HTMLDivElement>(null);
+    
+    return (
+      <RepPerformance />
+    );
+  };
+  
   // Create a wrapper component that will pass props to AccountPerformance
   const AccountPerformanceWithProps = () => {
     return (
@@ -91,14 +101,14 @@ const AppRoutes = () => {
             selectedUserId={selectedUserId}
             onSelectUser={handleSelectUser}
             showUserSelector={true}
-            onRefresh={handleRefresh}
+            onRefresh={handleGlobalRefresh}
             isLoading={isLoading}
           >
             <Outlet />
           </AppLayout>
         </ProtectedRoute>
       }>
-        <Route path="/rep-performance" element={<RepPerformance />} />
+        <Route path="/rep-performance" element={<RepPerformanceWithRefresh />} />
         <Route 
           path="/account-performance" 
           element={<AccountPerformanceWithProps />} 
