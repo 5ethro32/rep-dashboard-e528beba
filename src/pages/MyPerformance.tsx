@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
+import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import PersonalPerformanceCard from '@/components/my-performance/PersonalPerformanceCard';
 import AccountHealthSection from '@/components/my-performance/AccountHealthSection';
 import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAnalysis';
@@ -39,6 +39,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [userFirstName, setUserFirstName] = useState<string>('');
   const [compareMonth, setCompareMonth] = useState<string>('April');
   const [accountHealthMonth, setAccountHealthMonth] = useState<string>('May');
+  // Add department filter states
+  const [includeRetail, setIncludeRetail] = useState(true);
+  const [includeReva, setIncludeReva] = useState(true);
+  const [includeWholesale, setIncludeWholesale] = useState(true);
   const isMobile = useIsMobile();
   
   // Initialize with props if provided, otherwise use the current user
@@ -77,7 +81,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     if (user && selectedUserId) {
       fetchAllData();
     }
-  }, [user, selectedMonth, selectedUserId]);
+  }, [user, selectedMonth, selectedUserId, includeRetail, includeReva, includeWholesale]);
   
   // Fetch account health data when account health month or compare month changes
   useEffect(() => {
@@ -155,20 +159,26 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         // Get current month data
         const currentData = await fetchAllRecordsFromTable(currentTable);
         
+        // Filter data by department before calculating metrics
+        const filteredCurrentData = filterDataByDepartment(currentData || []);
+        
         // Calculate current month metrics
         const profitColumn = currentTable === 'sales_data' ? 'profit' : 'Profit';
         const spendColumn = currentTable === 'sales_data' ? 'spend' : 'Spend';
-        const currentPerformance = calculatePerformanceMetrics(currentData || [], profitColumn, spendColumn);
+        const currentPerformance = calculatePerformanceMetrics(filteredCurrentData || [], profitColumn, spendColumn);
         
         // Get previous month data if available
         let previousPerformance = null;
         if (previousTable) {
           const previousData = await fetchAllRecordsFromTable(previousTable);
+          
+          // Filter previous data by department as well
+          const filteredPreviousData = filterDataByDepartment(previousData || []);
             
-          if (previousData && previousData.length > 0) {
+          if (filteredPreviousData && filteredPreviousData.length > 0) {
             const prevProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
             const prevSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
-            previousPerformance = calculatePerformanceMetrics(previousData, prevProfitColumn, prevSpendColumn);
+            previousPerformance = calculatePerformanceMetrics(filteredPreviousData, prevProfitColumn, prevSpendColumn);
           }
         }
         
@@ -247,9 +257,12 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       
       if (!currentData) throw new Error("Failed to fetch current month data");
       
+      // Filter data by department before calculating metrics
+      const filteredCurrentData = filterDataByDepartment(currentData || []);
+      
       // Calculate current month metrics
       const currentPerformance = calculatePerformanceMetrics(
-        currentData || [], 
+        filteredCurrentData || [], 
         currentProfitColumn, 
         currentSpendColumn
       );
@@ -334,12 +347,18 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         const currentData = await fetchAllRecordsFromTable(currentMonthTableName);
         if (!currentData) throw new Error("Failed to fetch current month data");
         
+        // Filter current data by department
+        const filteredCurrentData = filterDataByDepartment(currentData || []);
+        
         // Fetch comparison month data
         const compareData = await fetchAllRecordsFromTable(compareMonthTableName);
         if (!compareData) throw new Error("Failed to fetch comparison month data");
         
+        // Filter comparison data by department
+        const filteredCompareData = filterDataByDepartment(compareData || []);
+        
         // Calculate account health by comparing current and comparison data
-        const accountHealth = calculateAccountHealth(currentData, compareData);
+        const accountHealth = calculateAccountHealth(filteredCurrentData, filteredCompareData);
         setAccountHealthData(accountHealth);
         setIsLoading(false);
         return;
@@ -368,16 +387,18 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       
       const matchName = fullName || userName;
       
-      // Get current month data
+      // Get current month data and filter by department
       const currentData = await fetchAllUserRecordsFromTable(currentMonthTableName, matchName);
       if (!currentData) throw new Error("Failed to fetch current month user data");
+      const filteredCurrentData = filterDataByDepartment(currentData || []);
       
-      // Get comparison month data
+      // Get comparison month data and filter by department
       const compareData = await fetchAllUserRecordsFromTable(compareMonthTableName, matchName);
       if (!compareData) throw new Error("Failed to fetch comparison month user data");
+      const filteredCompareData = filterDataByDepartment(compareData || []);
       
       // Calculate account health by comparing current and comparison data
-      const accountHealth = calculateAccountHealth(currentData, compareData);
+      const accountHealth = calculateAccountHealth(filteredCurrentData, filteredCompareData);
       setAccountHealthData(accountHealth);
       
     } catch (error) {
@@ -715,17 +736,28 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         </p>
       </div>
       
-      <div className="mb-4 flex justify-between items-center">
-        <ActionsHeader 
-          onRefresh={handleRefresh}
-          isLoading={isLoading}
-          autoRefreshed={autoRefreshed}
-        />
+      {/* Filters and month selector in the same row */}
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-3">
+        {/* Performance filters */}
+        <div className="flex-grow">
+          <PerformanceFilters 
+            includeRetail={includeRetail}
+            setIncludeRetail={setIncludeRetail}
+            includeReva={includeReva}
+            setIncludeReva={setIncludeReva}
+            includeWholesale={includeWholesale}
+            setIncludeWholesale={setIncludeWholesale}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+          />
+        </div>
         
+        {/* Month selector */}
         <div className="flex-shrink-0">
           <PerformanceHeader 
             selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}
+            onRefresh={handleRefresh}
             hideTitle={true}
           />
         </div>
