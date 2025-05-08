@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,17 +6,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
-import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import PersonalPerformanceCard from '@/components/my-performance/PersonalPerformanceCard';
 import AccountHealthSection from '@/components/my-performance/AccountHealthSection';
 import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAnalysis';
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
 import GoalTrackingComponent from '@/components/my-performance/GoalTrackingComponent';
-
-// Define the allowed table names for type safety
-type TableName = 'May_Data' | 'Prior_Month_Rolling' | 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 
-                'admin_starred_accounts' | 'customer_visits' | 'week_plans' | 'Prior Month Rolling Old' | 
-                'profiles' | 'unified_sales_data' | 'user_starred_accounts';
+import { toast } from '@/components/ui/use-toast';
 
 interface MyPerformanceProps {
   selectedUserId?: string | null;
@@ -30,6 +24,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
 }) => {
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
+  const [compareMonth, setCompareMonth] = useState<string>('April');
   const [isLoading, setIsLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState<any>(null);
   const [accountHealthData, setAccountHealthData] = useState<any[]>([]);
@@ -38,36 +33,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
   const [userFirstName, setUserFirstName] = useState<string>('');
-  const [compareMonth, setCompareMonth] = useState<string>('April');
-  const [accountHealthMonth, setAccountHealthMonth] = useState<string>('May');
-  // Add department filter states
-  const [includeRetail, setIncludeRetail] = useState(true);
-  const [includeReva, setIncludeReva] = useState(true);
-  const [includeWholesale, setIncludeWholesale] = useState(true);
   const isMobile = useIsMobile();
-  
-  // Add the filterDataByDepartment function
-  const filterDataByDepartment = (data: any[]): any[] => {
-    if (includeRetail && includeReva && includeWholesale) {
-      return data; // Return all data if all filters are on
-    }
-    
-    return data.filter(item => {
-      const department = item.Department || item.department || '';
-      
-      if (!includeRetail && department.toUpperCase() === 'RETAIL') {
-        return false;
-      }
-      if (!includeReva && department.toUpperCase() === 'REVA') {
-        return false;
-      }
-      if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department === 'Wholesale')) {
-        return false;
-      }
-      
-      return true;
-    });
-  };
   
   // Initialize with props if provided, otherwise use the current user
   useEffect(() => {
@@ -100,19 +66,14 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   }, [user, propSelectedUserId, propSelectedUserName]);
   
-  // Fetch all the data when user changes
+  // Handle changes in selectedMonth or compareMonth
   useEffect(() => {
     if (user && selectedUserId) {
       fetchAllData();
     }
-  }, [user, selectedMonth, selectedUserId, includeRetail, includeReva, includeWholesale]);
+  }, [user, selectedMonth, compareMonth, selectedUserId]);
   
-  // Fetch account health data when account health month or compare month changes
-  useEffect(() => {
-    if (user && selectedUserId) {
-      fetchAccountHealthData();
-    }
-  }, [accountHealthMonth, compareMonth]);
+  // No need to sync accountHealthMonth since we're using selectedMonth directly
   
   const handleSelectUser = (userId: string | null, displayName: string) => {
     setSelectedUserId(userId);
@@ -125,14 +86,36 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     setIsLoading(true);
   };
   
-  const handleAccountHealthMonthChange = (month: string) => {
-    setAccountHealthMonth(month);
+  // Update both the account health month and the main selected month
+  const handleMonthChange = (month: string) => {
+    setSelectedMonth(month);
     setIsLoading(true);
+    
+    // Automatically adjust compare month if needed
+    if (month === compareMonth) {
+      // If the new selected month is the same as the compare month,
+      // set compare month to the previous month or Prior MTD for May
+      if (month === 'May') {
+        setCompareMonth('Prior MTD');
+      } else if (month === 'April') {
+        setCompareMonth('March');
+      } else if (month === 'March') {
+        setCompareMonth('February');
+      } else {
+        setCompareMonth('March'); // Default fallback if February is selected
+      }
+    }
   };
   
+  // Update the comparison month
   const handleCompareMonthChange = (month: string) => {
     setCompareMonth(month);
     setIsLoading(true);
+  };
+  
+  // Make sure account health section uses the main month/compare settings
+  const handleAccountHealthMonthChange = (month: string) => {
+    handleMonthChange(month);
   };
   
   const fetchAllData = async () => {
@@ -146,6 +129,11 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       ]);
     } catch (error) {
       console.error("Error fetching performance data:", error);
+      toast({
+        title: "Error loading data",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -153,56 +141,47 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   
   const fetchPersonalPerformanceData = async () => {
     try {
-      console.log('Fetching performance data for user:', selectedUserId);
+      console.log('Fetching performance data for user:', selectedUserId, 'Month:', selectedMonth, 'Compare with:', compareMonth);
       
-      // If we're viewing "All Data", we need to handle this differently
+      // Get the current month table name and column structure
+      const { currentTable, currentColumns } = getTableInfoForMonth(selectedMonth);
+      
+      // Get the comparison month table name and column structure
+      const { currentTable: compareTable, currentColumns: compareColumns } = getTableInfoForMonth(compareMonth);
+      
+      console.log(`Using tables: ${currentTable} vs ${compareTable}`);
+      
+      // If we're viewing "All Data", fetch aggregate data
       if (selectedUserId === "all") {
         console.log('Fetching all data for admin view');
         
-        // Determine the table names based on selected month and previous month
-        let currentTable: TableName;
-        let previousTable: TableName | null;
-        switch (selectedMonth) {
-          case 'May':
-            currentTable = 'May_Data';
-            previousTable = 'Prior_Month_Rolling'; // Updated: Using Prior_Month_Rolling for April data
-            break;
-          case 'April':
-            currentTable = 'mtd_daily';
-            previousTable = 'sales_data'; // March data
-            break;
-          case 'March':
-            currentTable = 'sales_data';
-            previousTable = 'sales_data_februrary'; // February data
-            break;
-          default:
-            currentTable = 'sales_data_februrary';
-            previousTable = null; // No previous data for February
-        }
+        // Get current month data - use type assertion for table name
+        const { data: currentData, error: currentError } = await supabase
+          .from(currentTable as any)
+          .select('*');
         
-        // Get current month data
-        const currentData = await fetchAllRecordsFromTable(currentTable);
-        
-        // Filter data by department before calculating metrics
-        const filteredCurrentData = filterDataByDepartment(currentData || []);
+        if (currentError) throw currentError;
         
         // Calculate current month metrics
-        const profitColumn = currentTable === 'sales_data' ? 'profit' : 'Profit';
-        const spendColumn = currentTable === 'sales_data' ? 'spend' : 'Spend';
-        const currentPerformance = calculatePerformanceMetrics(filteredCurrentData || [], profitColumn, spendColumn);
+        const currentPerformance = calculatePerformanceMetrics(
+          currentData || [], 
+          currentColumns.profit, 
+          currentColumns.spend
+        );
         
         // Get previous month data if available
         let previousPerformance = null;
-        if (previousTable) {
-          const previousData = await fetchAllRecordsFromTable(previousTable);
-          
-          // Filter previous data by department as well
-          const filteredPreviousData = filterDataByDepartment(previousData || []);
+        if (compareTable) {
+          const { data: previousData, error: previousError } = await supabase
+            .from(compareTable as any)
+            .select('*');
             
-          if (filteredPreviousData && filteredPreviousData.length > 0) {
-            const prevProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
-            const prevSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
-            previousPerformance = calculatePerformanceMetrics(filteredPreviousData, prevProfitColumn, prevSpendColumn);
+          if (!previousError && previousData) {
+            previousPerformance = calculatePerformanceMetrics(
+              previousData, 
+              compareColumns.profit, 
+              compareColumns.spend
+            );
           }
         }
         
@@ -214,98 +193,42 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         return;
       }
       
-      // Get the user's profile information
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', selectedUserId)
-        .single();
+      // For specific users, fetch their data
+      // Get the user's profile information and potential match criteria
+      const matchName = await getUserMatchName(selectedUserId);
       
-      // Get the user's email to help with matching records
-      let userEmail = '';
-      if (selectedUserId === user?.id) {
-        userEmail = user.email || '';
-      } else {
-        // For other users, try to construct a likely email from their profile data
-        // This is just a fallback and may not be accurate
-        const domain = user?.email ? user.email.split('@')[1] : 'avergenerics.co.uk';
-        userEmail = `${selectedUserId.split('-')[0]}@${domain}`;
-      }
+      // Get current month data for this user
+      const { data: currentData, error: currentError } = await fetchUserDataFromTable(
+        currentTable, 
+        matchName,
+        currentColumns.repName,
+        currentColumns.subRep
+      );
       
-      // Extract username from email
-      let userName = '';
-      if (userEmail) {
-        userName = userEmail.split('@')[0];
-        // Capitalize first letter for matching with rep names
-        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
-      }
-      
-      const fullName = profileData ? 
-        `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
-        '';
-      
-      console.log('Matching with names:', { userName, fullName });
-      
-      // Determine table names based on selected month and previous month
-      let currentTable: TableName;
-      let previousTable: TableName | null;
-      switch (selectedMonth) {
-        case 'May':
-          currentTable = 'May_Data';
-          previousTable = 'Prior_Month_Rolling'; // Updated: Using Prior_Month_Rolling for April data
-          break;
-        case 'April':
-          currentTable = 'mtd_daily';
-          previousTable = 'sales_data'; // March data
-          break;
-        case 'March':
-          currentTable = 'sales_data';
-          previousTable = 'sales_data_februrary'; // February data
-          break;
-        default:
-          currentTable = 'sales_data_februrary';
-          previousTable = null; // No previous data for February
-      }
-      
-      // Determine column names based on table structure
-      const currentRepColumn = currentTable === 'sales_data' ? 'rep_name' : 'Rep';
-      const currentSubRepColumn = currentTable === 'sales_data' ? 'sub_rep' : 'Sub-Rep';
-      const currentProfitColumn = currentTable === 'sales_data' ? 'profit' : 'Profit';
-      const currentSpendColumn = currentTable === 'sales_data' ? 'spend' : 'Spend';
-      
-      // Use fullName or userName for matching, prioritizing fullName
-      const matchName = fullName || userName;
-      
-      // Get current month data
-      const currentData = await fetchAllUserRecordsFromTable(currentTable, matchName);
-      
-      if (!currentData) throw new Error("Failed to fetch current month data");
-      
-      // Filter data by department before calculating metrics
-      const filteredCurrentData = filterDataByDepartment(currentData || []);
+      if (currentError) throw currentError;
       
       // Calculate current month metrics
       const currentPerformance = calculatePerformanceMetrics(
-        filteredCurrentData || [], 
-        currentProfitColumn, 
-        currentSpendColumn
+        currentData || [], 
+        currentColumns.profit, 
+        currentColumns.spend
       );
       
       // Get previous month data if available
       let previousPerformance = null;
-      if (previousTable) {
-        const previousRepColumn = previousTable === 'sales_data' ? 'rep_name' : 'Rep';
-        const previousSubRepColumn = previousTable === 'sales_data' ? 'sub_rep' : 'Sub-Rep';
-        const previousProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
-        const previousSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
+      if (compareTable) {
+        const { data: previousData, error: previousError } = await fetchUserDataFromTable(
+          compareTable, 
+          matchName,
+          compareColumns.repName,
+          compareColumns.subRep
+        );
         
-        const previousData = await fetchAllUserRecordsFromTable(previousTable, matchName);
-        
-        if (previousData && previousData.length > 0) {
+        if (!previousError && previousData && previousData.length > 0) {
           previousPerformance = calculatePerformanceMetrics(
             previousData, 
-            previousProfitColumn, 
-            previousSpendColumn
+            compareColumns.profit, 
+            compareColumns.spend
           );
         }
       }
@@ -318,222 +241,243 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       
     } catch (error) {
       console.error("Error fetching personal performance data:", error);
+      throw error;
     }
   };
   
   const fetchAccountHealthData = async () => {
-    // Similar to personal performance data but focused on account trends
     try {
       setIsLoading(true);
-      console.log(`Fetching account health data for month: ${accountHealthMonth}, compare with: ${compareMonth}`);
+      console.log(`Fetching account health data for month: ${selectedMonth}, compare with: ${compareMonth}`);
       
-      // Determine current month data source
-      let currentMonthTableName: TableName;
-      switch (accountHealthMonth) {
-        case 'May':
-          currentMonthTableName = 'May_Data';
-          break;
-        case 'April':
-          currentMonthTableName = 'mtd_daily';
-          break;
-        case 'March':
-          currentMonthTableName = 'sales_data';
-          break;
-        case 'February':
-          currentMonthTableName = 'sales_data_februrary';
-          break;
-        default:
-          currentMonthTableName = 'May_Data';
-      }
-      
-      // Determine comparison data source based on compareMonth selection
-      let compareMonthTableName: TableName;
-      switch (compareMonth) {
-        case 'May':
-          compareMonthTableName = 'May_Data';
-          break;
-        case 'April':
-          compareMonthTableName = compareMonth === accountHealthMonth ? 'Prior_Month_Rolling' : 'mtd_daily';
-          break;
-        case 'March':
-          compareMonthTableName = 'sales_data';
-          break;
-        case 'February':
-          compareMonthTableName = 'sales_data_februrary';
-          break;
-        default:
-          compareMonthTableName = 'Prior_Month_Rolling';
-      }
+      // Get the current month and comparison month table info
+      const { currentTable, currentColumns } = getTableInfoForMonth(selectedMonth);
+      const { currentTable: compareTable, currentColumns: compareColumns } = getTableInfoForMonth(compareMonth);
       
       // If viewing all data
       if (selectedUserId === "all") {
-        // Fetch current month data
-        const currentData = await fetchAllRecordsFromTable(currentMonthTableName);
-        if (!currentData) throw new Error("Failed to fetch current month data");
+        // Fetch current month data - use type assertion for table name
+        const { data: currentData, error: currentError } = await supabase
+          .from(currentTable as any)
+          .select('*');
+        if (currentError) throw currentError;
         
-        // Filter current data by department
-        const filteredCurrentData = filterDataByDepartment(currentData || []);
-        
-        // Fetch comparison month data
-        const compareData = await fetchAllRecordsFromTable(compareMonthTableName);
-        if (!compareData) throw new Error("Failed to fetch comparison month data");
-        
-        // Filter comparison data by department
-        const filteredCompareData = filterDataByDepartment(compareData || []);
+        // Fetch comparison month data - use type assertion for table name
+        const { data: compareData, error: compareError } = await supabase
+          .from(compareTable as any)
+          .select('*');
+        if (compareError) throw compareError;
         
         // Calculate account health by comparing current and comparison data
-        const accountHealth = calculateAccountHealth(filteredCurrentData, filteredCompareData);
+        const accountHealth = calculateAccountHealth(
+          currentData || [], 
+          compareData || [],
+          currentColumns,
+          compareColumns
+        );
         setAccountHealthData(accountHealth);
-        setIsLoading(false);
         return;
       }
       
-      // Get user name for matching
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', selectedUserId)
-        .single();
+      // For specific users, fetch their data
+      const matchName = await getUserMatchName(selectedUserId);
       
-      // Extract username from email or ID
-      let userName = '';
-      if (selectedUserId === user?.id && user?.email) {
-        userName = user.email.split('@')[0];
-        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
-      } else {
-        userName = selectedUserId.split('-')[0]; // Use part of the ID as fallback
-        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
-      }
+      // Get current month data
+      const { data: currentData, error: currentError } = await fetchUserDataFromTable(
+        currentTable, 
+        matchName,
+        currentColumns.repName,
+        currentColumns.subRep
+      );
+      if (currentError) throw currentError;
       
-      const fullName = profileData ? 
-        `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
-        '';
-      
-      const matchName = fullName || userName;
-      
-      // Get current month data and filter by department
-      const currentData = await fetchAllUserRecordsFromTable(currentMonthTableName, matchName);
-      if (!currentData) throw new Error("Failed to fetch current month user data");
-      const filteredCurrentData = filterDataByDepartment(currentData || []);
-      
-      // Get comparison month data and filter by department
-      const compareData = await fetchAllUserRecordsFromTable(compareMonthTableName, matchName);
-      if (!compareData) throw new Error("Failed to fetch comparison month user data");
-      const filteredCompareData = filterDataByDepartment(compareData || []);
+      // Get comparison month data
+      const { data: compareData, error: compareError } = await fetchUserDataFromTable(
+        compareTable, 
+        matchName,
+        compareColumns.repName,
+        compareColumns.subRep
+      );
+      if (compareError) throw compareError;
       
       // Calculate account health by comparing current and comparison data
-      const accountHealth = calculateAccountHealth(filteredCurrentData, filteredCompareData);
+      const accountHealth = calculateAccountHealth(
+        currentData || [], 
+        compareData || [],
+        currentColumns,
+        compareColumns
+      );
       setAccountHealthData(accountHealth);
       
     } catch (error) {
       console.error("Error fetching account health data:", error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
   
-  // New function to fetch all records with pagination from a table
-  const fetchAllRecordsFromTable = async (tableName: TableName): Promise<any[]> => {
-    try {
-      const PAGE_SIZE = 1000; // Supabase's max page size
-      let page = 0;
-      let allData: any[] = [];
-      let hasMore = true;
-      
-      console.log(`Starting paginated fetch from ${tableName}`);
-      
-      while (hasMore) {
-        const query = supabase
-          .from(tableName)
-          .select('*')
-          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-          
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error(`Error fetching page ${page} from ${tableName}:`, error);
-          throw error;
-        }
-        
-        if (data && data.length > 0) {
-          allData = [...allData, ...data];
-          console.log(`Fetched page ${page} from ${tableName}: ${data.length} records (total: ${allData.length})`);
-          page++;
-          
-          // Check if we've reached the end
-          hasMore = data.length === PAGE_SIZE;
-        } else {
-          hasMore = false;
-        }
-      }
-      
-      console.log(`Completed fetch from ${tableName}: ${allData.length} total records`);
-      return allData;
-    } catch (error) {
-      console.error(`Error in fetchAllRecordsFromTable for ${tableName}:`, error);
-      throw error;
+  // Helper function to get table info for a given month
+  const getTableInfoForMonth = (month: string) => {
+    let currentTable: string;
+    let currentColumns = {
+      repName: '',
+      subRep: '',
+      profit: '',
+      spend: '',
+      accountRef: '',
+      accountName: '',
+      dept: ''
+    };
+    
+    switch (month) {
+      case 'May':
+        currentTable = 'May_Data';
+        currentColumns = {
+          repName: 'Rep',
+          subRep: 'Sub-Rep',
+          profit: 'Profit',
+          spend: 'Spend',
+          accountRef: 'Account Ref',
+          accountName: 'Account Name',
+          dept: 'Department'
+        };
+        break;
+      case 'Prior MTD':
+        currentTable = 'Prior_Month_Rolling';
+        currentColumns = {
+          repName: 'Rep',
+          subRep: 'Sub-Rep',
+          profit: 'Profit',
+          spend: 'Spend',
+          accountRef: 'Account Ref',
+          accountName: 'Account Name',
+          dept: 'Department'
+        };
+        break;
+      case 'April':
+        currentTable = 'mtd_daily';
+        currentColumns = {
+          repName: 'Rep',
+          subRep: 'Sub-Rep',
+          profit: 'Profit',
+          spend: 'Spend',
+          accountRef: 'Account Ref',
+          accountName: 'Account Name',
+          dept: 'Department'
+        };
+        break;
+      case 'March':
+        currentTable = 'sales_data';
+        currentColumns = {
+          repName: 'rep_name',
+          subRep: 'sub_rep',
+          profit: 'profit',
+          spend: 'spend',
+          accountRef: 'account_ref',
+          accountName: 'account_name',
+          dept: 'rep_type'
+        };
+        break;
+      default: // February
+        currentTable = 'sales_data_februrary';
+        currentColumns = {
+          repName: 'Rep',
+          subRep: 'Sub-Rep',
+          profit: 'Profit',
+          spend: 'Spend',
+          accountRef: 'Account Ref',
+          accountName: 'Account Name',
+          dept: 'Department'
+        };
     }
+    
+    return { currentTable, currentColumns };
   };
   
-  // New function to fetch all user-specific records with pagination
-  const fetchAllUserRecordsFromTable = async (tableName: TableName, matchName: string): Promise<any[]> => {
+  // Helper function to get user match name
+  const getUserMatchName = async (userId: string | null): Promise<string> => {
+    if (!userId || userId === "all") {
+      return '';
+    }
+    
+    // Get user's profile information
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', userId)
+      .single();
+    
+    // Get the user's email to help with matching records
+    let userEmail = '';
+    if (userId === user?.id) {
+      userEmail = user.email || '';
+    } else {
+      // For other users, try to construct a likely email from their profile data
+      const domain = user?.email ? user.email.split('@')[1] : 'avergenerics.co.uk';
+      userEmail = `${userId.split('-')[0]}@${domain}`;
+    }
+    
+    // Extract username from email
+    let userName = '';
+    if (userEmail) {
+      userName = userEmail.split('@')[0];
+      // Capitalize first letter for matching with rep names
+      userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+    }
+    
+    const fullName = profileData ? 
+      `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
+      '';
+    
+    // Use fullName or userName for matching, prioritizing fullName
+    return fullName || userName;
+  };
+  
+  // Helper function to fetch user-specific data from a table
+  const fetchUserDataFromTable = async (tableName: string, matchName: string, repNameColumn: string, subRepColumn: string) => {
     try {
-      const PAGE_SIZE = 1000; // Supabase's max page size
-      let page = 0;
-      let allData: any[] = [];
-      let hasMore = true;
+      // We need to handle table names in a type-safe way for Supabase
+      // This approach uses type assertions since we know the table names are valid
       
-      console.log(`Starting paginated fetch for user ${matchName} from ${tableName}`);
-      
-      while (hasMore) {
-        let query;
-        
-        switch (tableName) {
-          case 'May_Data':
-          case 'mtd_daily':
-          case 'sales_data_februrary':
-          case 'Prior_Month_Rolling':
-          case 'Prior Month Rolling Old':
-            query = supabase
-              .from(tableName)
-              .select('*')
-              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
-              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-            break;
-          case 'sales_data':
-            query = supabase
-              .from(tableName)
-              .select('*')
-              .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`)
-              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-            break;
-          default:
-            throw new Error(`Unknown table: ${tableName}`);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error(`Error fetching page ${page} for user ${matchName} from ${tableName}:`, error);
-          throw error;
-        }
-        
-        if (data && data.length > 0) {
-          allData = [...allData, ...data];
-          console.log(`Fetched page ${page} for user ${matchName} from ${tableName}: ${data.length} records (total: ${allData.length})`);
-          page++;
-          
-          // Check if we've reached the end
-          hasMore = data.length === PAGE_SIZE;
-        } else {
-          hasMore = false;
-        }
+      // For tables using snake_case column naming
+      if (tableName === 'sales_data') {
+        return await supabase
+          .from('sales_data')
+          .select('*')
+          .or(`${repNameColumn}.ilike.%${matchName}%,${subRepColumn}.ilike.%${matchName}%`);
+      } 
+      // For other tables with specific names
+      else if (tableName === 'May_Data') {
+        return await supabase
+          .from('May_Data')
+          .select('*')
+          .or(`"${repNameColumn}".ilike.%${matchName}%,"${subRepColumn}".ilike.%${matchName}%`);
       }
-      
-      console.log(`Completed fetch for user ${matchName} from ${tableName}: ${allData.length} total records`);
-      return allData;
+      else if (tableName === 'mtd_daily') {
+        return await supabase
+          .from('mtd_daily')
+          .select('*')
+          .or(`"${repNameColumn}".ilike.%${matchName}%,"${subRepColumn}".ilike.%${matchName}%`);
+      }
+      else if (tableName === 'Prior_Month_Rolling') {
+        return await supabase
+          .from('Prior_Month_Rolling')
+          .select('*')
+          .or(`"${repNameColumn}".ilike.%${matchName}%,"${subRepColumn}".ilike.%${matchName}%`);
+      }
+      else if (tableName === 'sales_data_februrary') {
+        return await supabase
+          .from('sales_data_februrary')
+          .select('*')
+          .or(`"${repNameColumn}".ilike.%${matchName}%,"${subRepColumn}".ilike.%${matchName}%`);
+      }
+      // Fallback that should not be reached - we'll throw an error
+      else {
+        throw new Error(`Unsupported table name: ${tableName}`);
+      }
     } catch (error) {
-      console.error(`Error in fetchAllUserRecordsFromTable for ${tableName} and user ${matchName}:`, error);
+      console.error(`Error fetching user data from ${tableName}:`, error);
       throw error;
     }
   };
@@ -548,8 +492,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           .select('*');
           
         if (error) throw error;
-        
-        console.log(`Found ${data?.length || 0} visit records for all users`);
         setVisitData(data || []);
         return;
       }
@@ -562,12 +504,11 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           .eq('user_id', selectedUserId);
           
         if (error) throw error;
-        
-        console.log(`Found ${data?.length || 0} visit records for user`);
         setVisitData(data || []);
       }
     } catch (error) {
       console.error("Error fetching visit data:", error);
+      throw error;
     }
   };
   
@@ -589,8 +530,13 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     
     data.forEach(item => {
       // Handle different column naming conventions
-      const profit = typeof item[profitColumn] === 'number' ? item[profitColumn] : 0;
-      const spend = typeof item[spendColumn] === 'number' ? item[spendColumn] : 0;
+      const profit = typeof item[profitColumn] === 'number' ? item[profitColumn] : 
+                     typeof item[profitColumn] === 'string' ? parseFloat(item[profitColumn]) : 0;
+      
+      const spend = typeof item[spendColumn] === 'number' ? item[spendColumn] : 
+                    typeof item[spendColumn] === 'string' ? parseFloat(item[spendColumn]) : 0;
+                    
+      // Handle different account reference column names
       const accountRef = item['Account Ref'] || item.account_ref;
       
       totalProfit += profit;
@@ -613,19 +559,29 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     };
   };
   
-  const calculateAccountHealth = (currentData: any[], previousData: any[]) => {
+  const calculateAccountHealth = (
+    currentData: any[], 
+    previousData: any[],
+    currentColumns: any,
+    previousColumns: any
+  ) => {
     // Maps for current and previous month data
     const currentAccounts = new Map();
     const previousAccounts = new Map();
     
     // Process current month data
     currentData.forEach(item => {
-      const accountRef = item['Account Ref'] || '';
-      const accountName = item['Account Name'] || '';
-      const profit = typeof item.Profit === 'number' ? item.Profit : 0;
-      const spend = typeof item.Spend === 'number' ? item.Spend : 0;
-      // Get the rep name - either from Rep or rep_name field depending on the table structure
-      const repName = item.Rep || item.rep_name || '';
+      const accountRef = item[currentColumns.accountRef] || '';
+      const accountName = item[currentColumns.accountName] || '';
+      
+      const profit = typeof item[currentColumns.profit] === 'number' ? item[currentColumns.profit] : 
+                     typeof item[currentColumns.profit] === 'string' ? parseFloat(item[currentColumns.profit]) : 0;
+                     
+      const spend = typeof item[currentColumns.spend] === 'number' ? item[currentColumns.spend] : 
+                    typeof item[currentColumns.spend] === 'string' ? parseFloat(item[currentColumns.spend]) : 0;
+                    
+      // Get the rep name 
+      const repName = item[currentColumns.repName] || '';
       
       if (accountRef) {
         currentAccounts.set(accountRef, {
@@ -640,13 +596,16 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     
     // Process previous month data
     previousData.forEach(item => {
-      const accountRef = item['Account Ref'] || item.account_ref || '';
-      const profit = typeof item.Profit === 'number' ? item.Profit : 
-                     typeof item.profit === 'number' ? item.profit : 0;
-      const spend = typeof item.Spend === 'number' ? item.Spend : 
-                    typeof item.spend === 'number' ? item.spend : 0;
-      // Get the rep name from previous data if available
-      const prevRepName = item.Rep || item.rep_name || '';
+      const accountRef = item[previousColumns.accountRef] || '';
+      
+      const profit = typeof item[previousColumns.profit] === 'number' ? item[previousColumns.profit] : 
+                     typeof item[previousColumns.profit] === 'string' ? parseFloat(item[previousColumns.profit]) : 0;
+                     
+      const spend = typeof item[previousColumns.spend] === 'number' ? item[previousColumns.spend] : 
+                    typeof item[previousColumns.spend] === 'string' ? parseFloat(item[previousColumns.spend]) : 0;
+                    
+      // Get the rep name from previous data
+      const prevRepName = item[previousColumns.repName] || '';
       
       if (accountRef) {
         previousAccounts.set(accountRef, {
@@ -676,7 +635,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       const marginChange = previousData ? currentData.margin - previousData.margin : 0;
       
       // Calculate health score: simplified version for demo
-      // A real implementation would have a more sophisticated algorithm
       let healthScore = 0;
       if (profitChangePercent > 10) healthScore += 2;
       else if (profitChangePercent > 0) healthScore += 1;
@@ -745,6 +703,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   };
   
+  const getCompareMonthDisplay = () => {
+    return compareMonth === 'Prior MTD' ? 'Prior MTD' : `${compareMonth} 2025`;
+  };
+  
   // Render the page directly without the redundant AppLayout wrapper
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
@@ -760,32 +722,24 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         </p>
       </div>
       
-      {/* Filters and month selector in the same row */}
-      <div className="flex flex-wrap items-center justify-between mb-6 gap-3">
-        {/* Performance filters */}
-        <div className="flex-grow">
-          <PerformanceFilters 
-            includeRetail={includeRetail}
-            setIncludeRetail={setIncludeRetail}
-            includeReva={includeReva}
-            setIncludeReva={setIncludeReva}
-            includeWholesale={includeWholesale}
-            setIncludeWholesale={setIncludeWholesale}
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            showMonthSelector={true}
-          />
-        </div>
+      <div className="mb-4 flex justify-between items-center">
+        <ActionsHeader 
+          onRefresh={handleRefresh}
+          isLoading={isLoading}
+          autoRefreshed={autoRefreshed}
+        />
         
-        {/* Remove the redundant header with month selector since we already have it in the filters */}
-        {/* <div className="flex-shrink-0">
+        <div className="flex-shrink-0">
           <PerformanceHeader 
             selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            onRefresh={handleRefresh}
+            setSelectedMonth={handleMonthChange}
+            compareMonth={compareMonth}
+            setCompareMonth={handleCompareMonthChange}
+            showCompareSelector={true}
             hideTitle={true}
+            onRefresh={handleRefresh}
           />
-        </div> */}
+        </div>
       </div>
 
       {/* Personal Performance Overview */}
@@ -819,9 +773,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             isLoading={isLoading}
             formatCurrency={formatCurrency}
             formatPercent={formatPercent}
-            onMonthChange={handleAccountHealthMonthChange}
+            onMonthChange={handleMonthChange}
             onCompareMonthChange={handleCompareMonthChange}
-            selectedMonth={accountHealthMonth}
+            selectedMonth={selectedMonth}
             compareMonth={compareMonth}
           />
         </TabsContent>

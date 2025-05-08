@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +18,10 @@ interface AppHeaderProps {
   showUserSelector?: boolean;
   onRefresh?: () => void;
   isLoading?: boolean;
+  selectedMonth?: string;
+  compareMonth?: string;
+  onMonthChange?: (month: string) => void;
+  onCompareMonthChange?: (month: string) => void;
 }
 
 const AppHeader = ({ 
@@ -24,7 +29,11 @@ const AppHeader = ({
   onSelectUser, 
   showUserSelector = false,
   onRefresh,
-  isLoading = false
+  isLoading = false,
+  selectedMonth,
+  compareMonth,
+  onMonthChange,
+  onCompareMonthChange
 }: AppHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();

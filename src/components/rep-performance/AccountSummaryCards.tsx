@@ -2,7 +2,6 @@ import React from 'react';
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/rep-performance-utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import MetricCard from '@/components/MetricCard';
 import { Users, Award, Star, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 interface AccountSummaryCardsProps {
@@ -25,12 +24,14 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
 }) => {
   // Calculate active accounts (accounts with spend > 0)
   const activeAccounts = currentMonthData.filter(item => {
+    // Check both upper and lowercase spend fields to handle different data formats
     const spend = typeof item.Spend === 'number' ? item.Spend : 
                  typeof item.spend === 'number' ? item.spend : 0;
     return spend > 0;
   }).length;
   
   const previousActiveAccounts = previousMonthData.filter(item => {
+    // Check both upper and lowercase spend fields to handle different data formats
     const spend = typeof item.Spend === 'number' ? item.Spend : 
                  typeof item.spend === 'number' ? item.spend : 0;
     return spend > 0;
@@ -38,8 +39,8 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   
   const accountsChange = activeAccounts - previousActiveAccounts;
   const accountsChangePercent = previousActiveAccounts > 0 
-    ? ((accountsChange / previousActiveAccounts) * 100)
-    : 0;
+    ? ((accountsChange / previousActiveAccounts) * 100).toFixed(1)
+    : 'N/A';
   
   // Find top customer (highest profit account)
   let topCustomer = { name: 'No data', profit: 0 };
@@ -149,84 +150,118 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 md:p-6">
       {/* Active Accounts Card */}
-      <MetricCard
-        title={`${titlePrefix ? `${titlePrefix} ACTIVE ACCOUNTS` : 'ACTIVE ACCOUNTS'}`}
-        value={formatNumber(activeAccounts)}
-        change={
-          accountsChange !== 0 
-            ? { 
-                value: `${Math.abs(accountsChangePercent).toFixed(1)}%`, 
-                type: accountsChange > 0 ? 'increase' : 'decrease' 
-              }
-            : undefined
-        }
-        subtitle={`vs ${previousActiveAccounts} last month`}
-        icon={<Users />}
-        isLoading={isLoading}
-        iconPosition="right"
-      />
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <Users size={16} className="text-[#ea384c] mr-2" />
+            {titlePrefix ? `${titlePrefix} Active Accounts` : 'Active Accounts'}
+          </div>
+          <div className="flex items-center mb-1">
+            <div className="text-2xl md:text-3xl font-bold">{formatNumber(activeAccounts)}</div>
+            {accountsChange !== 0 && (
+              <Badge variant={accountsChange > 0 ? "default" : "destructive"} 
+                className={`ml-2 text-xs font-medium ${accountsChange > 0 ? 'bg-green-500/20 text-green-500 hover:bg-green-500/20' : 'bg-[#ea384c]/20 text-[#ea384c] hover:bg-[#ea384c]/20'}`}>
+                {accountsChange > 0 ? '+' : ''}{accountsChange}
+              </Badge>
+            )}
+          </div>
+          <div className="text-xs text-white/50">vs {previousActiveAccounts} last month</div>
+        </CardContent>
+      </Card>
       
       {/* Top Customer Card */}
-      <MetricCard
-        title={`${titlePrefix ? `${titlePrefix} TOP CUSTOMER` : 'TOP CUSTOMER (HIGHEST PROFIT)'}`}
-        value={topCustomer.name}
-        subtitle={`Profit: ${formatCurrency(topCustomer.profit)}`}
-        icon={<Award />}
-        isLoading={isLoading}
-        iconPosition="right"
-      />
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <Award size={16} className="text-[#ea384c] mr-2" />
+            {titlePrefix ? `${titlePrefix} Top Customer` : 'Top Customer (Highest Profit)'}
+          </div>
+          <div className="text-xl md:text-2xl font-bold mb-1 line-clamp-1" title={topCustomer.name}>
+            {topCustomer.name}
+          </div>
+          <div className="text-sm text-white/50">
+            Profit: {formatCurrency(topCustomer.profit)}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Top Margin Customer Card */}
-      <MetricCard
-        title="TOP MARGIN CUSTOMER"
-        value={topMarginCustomer.name}
-        subtitle={
-          topMarginCustomer.margin > 0 
-            ? `${topMarginCustomer.margin.toFixed(1)}% on ${formatCurrency(topMarginCustomer.spend)}` 
-            : 'No margin data'
-        }
-        icon={<Star />}
-        isLoading={isLoading}
-        iconPosition="right"
-      />
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <Star size={16} className="text-[#ea384c] mr-2" />
+            Top Margin Customer
+          </div>
+          <div className="text-xl md:text-2xl font-bold mb-1 line-clamp-1" title={topMarginCustomer.name}>
+            {topMarginCustomer.name}
+          </div>
+          <div className="text-sm text-white/50">
+            {topMarginCustomer.margin > 0 
+              ? `${topMarginCustomer.margin.toFixed(1)}% on ${formatCurrency(topMarginCustomer.spend)}` 
+              : 'No margin data'}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Most Improved Account Card */}
-      <MetricCard
-        title="MOST IMPROVED ACCOUNT"
-        value={mostImprovedAccount.name}
-        subtitle={
-          mostImprovedAccount.percentImprovement > 0 
-            ? `+${mostImprovedAccount.percentImprovement.toFixed(1)}% (${formatCurrency(mostImprovedAccount.improvement)})` 
-            : 'No improvement data'
-        }
-        icon={<TrendingUp />}
-        isLoading={isLoading}
-        iconPosition="right"
-      />
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <TrendingUp size={16} className="text-[#ea384c] mr-2" />
+            Most Improved Account
+          </div>
+          <div className="text-xl md:text-2xl font-bold mb-1 line-clamp-1" title={mostImprovedAccount.name}>
+            {mostImprovedAccount.name}
+          </div>
+          <div className="text-sm text-white/50">
+            {mostImprovedAccount.percentImprovement > 0 
+              ? `+${mostImprovedAccount.percentImprovement.toFixed(1)}% (${formatCurrency(mostImprovedAccount.improvement)})` 
+              : 'No improvement data'}
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Increasing Spend Accounts */}
-      <MetricCard
-        title="INCREASING SPEND ACCOUNTS"
-        value={formatNumber(accountsTrendData.increasing)}
-        subtitle="Accounts with higher spend vs. last month"
-        icon={<ArrowUpRight />}
-        iconClassName="text-green-500"
-        valueClassName="text-green-500"
-        isLoading={isLoading}
-        iconPosition="right"
-      />
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <ArrowUpRight size={16} className="text-green-500 mr-2" />
+            Increasing Spend Accounts
+          </div>
+          <div className="flex items-center mb-1">
+            <div className="text-2xl md:text-3xl font-bold text-green-500">{formatNumber(accountsTrendData.increasing)}</div>
+            <Badge className="ml-2 text-xs font-medium bg-green-500/20 text-green-500 hover:bg-green-500/20">
+              {previousMonthData.length > 0 
+                ? `${((accountsTrendData.increasing / previousMonthData.length) * 100).toFixed(1)}%` 
+                : '0%'}
+            </Badge>
+          </div>
+          <div className="text-sm text-white/50">
+            Accounts with higher spend vs. last month
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Decreasing Spend Accounts */}
-      <MetricCard
-        title="DECREASING SPEND ACCOUNTS"
-        value={formatNumber(accountsTrendData.decreasing)}
-        subtitle="Accounts with lower spend vs. last month"
-        icon={<ArrowDownRight />}
-        iconClassName="text-[#ea384c]"
-        valueClassName="text-[#ea384c]"
-        isLoading={isLoading}
-        iconPosition="right"
-      />
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
+            <ArrowDownRight size={16} className="text-[#ea384c] mr-2" />
+            Decreasing Spend Accounts
+          </div>
+          <div className="flex items-center mb-1">
+            <div className="text-2xl md:text-3xl font-bold text-[#ea384c]">{formatNumber(accountsTrendData.decreasing)}</div>
+            <Badge variant="destructive" className="ml-2 text-xs font-medium bg-[#ea384c]/20 text-[#ea384c] hover:bg-[#ea384c]/20">
+              {previousMonthData.length > 0 
+                ? `${((accountsTrendData.decreasing / previousMonthData.length) * 100).toFixed(1)}%` 
+                : '0%'}
+            </Badge>
+          </div>
+          <div className="text-sm text-white/50">
+            Accounts with lower spend vs. last month
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
