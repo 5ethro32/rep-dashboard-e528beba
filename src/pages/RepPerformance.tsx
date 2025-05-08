@@ -176,13 +176,8 @@ const RepPerformance = () => {
 
       {/* Wrap the SummaryMetrics in a Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-8">
-        <CardHeader className="pb-0">
-          <CardTitle className="text-xl font-bold">
-            
-          </CardTitle>
-          
-        </CardHeader>
-        <CardContent className="pt-4">
+        
+        <CardContent className="pt-4 py-[19px]">
           <SummaryMetrics summary={summary} summaryChanges={summaryChanges} isLoading={isLoading} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} selectedMonth={selectedMonth} />
         </CardContent>
       </Card>
