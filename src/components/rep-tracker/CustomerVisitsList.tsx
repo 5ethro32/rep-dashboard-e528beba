@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar, Eye } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar, Eye, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { 
   AlertDialog,
