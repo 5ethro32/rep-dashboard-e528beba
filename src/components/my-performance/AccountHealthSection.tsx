@@ -8,8 +8,7 @@ import {
   ChevronDown,
   Search,
   Star,
-  Shield,
-  Calendar
+  Shield
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +76,11 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
     }
   };
   
+  // Format the comparison month display
+  const getCompareMonthDisplay = () => {
+    return compareMonth === 'Prior MTD' ? 'Prior MTD' : `${compareMonth} 2025`;
+  };
+
   // Handle month selection change
   const handleMonthChange = (month: string) => {
     if (onMonthChange) {
@@ -300,7 +304,12 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
   return (
     <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
       <CardContent className="p-4 md:p-6">
-        <h3 className="text-lg md:text-xl font-semibold text-white mb-4">Account Health Analysis</h3>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+          <h3 className="text-lg md:text-xl font-semibold text-white">Account Health Analysis</h3>
+          <div className="text-sm text-white/60">
+            Comparing {selectedMonth} 2025 with {getCompareMonthDisplay()}
+          </div>
+        </div>
         
         {/* Account Health Insights Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -418,50 +427,6 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
           <h4 className="text-md font-medium text-white/80">All Accounts Performance</h4>
           
           <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 bg-gray-900/50 border-white/10 text-white/80">
-                  <Calendar className="h-4 w-4 mr-2" /> Month: {selectedMonth}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
-                <DropdownMenuItem onClick={() => handleMonthChange('May')} className="cursor-pointer">
-                  May
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleMonthChange('April')} className="cursor-pointer">
-                  April
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleMonthChange('March')} className="cursor-pointer">
-                  March
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleMonthChange('February')} className="cursor-pointer">
-                  February
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 bg-gray-900/50 border-white/10 text-white/80">
-                  Compare: {compareMonth}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
-                <DropdownMenuItem onClick={() => handleCompareMonthChange('May')} className="cursor-pointer">
-                  May
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCompareMonthChange('April')} className="cursor-pointer">
-                  April
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCompareMonthChange('March')} className="cursor-pointer">
-                  March
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCompareMonthChange('February')} className="cursor-pointer">
-                  February
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 bg-gray-900/50 border-white/10 text-white/80">

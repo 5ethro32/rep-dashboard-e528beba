@@ -19,7 +19,6 @@ interface MetricCardProps {
   isLoading?: boolean;
   iconPosition?: 'left' | 'right';
   iconClassName?: string;
-  isAccountName?: boolean;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
@@ -28,12 +27,11 @@ const MetricCard: React.FC<MetricCardProps> = ({
   change, 
   subtitle,
   className,
-  valueClassName = '',
+  valueClassName,
   icon,
   isLoading = false,
   iconPosition = 'right',
-  iconClassName = '',
-  isAccountName = false
+  iconClassName
 }) => {
   return (
     <Card 
@@ -54,7 +52,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           
           {icon && iconPosition === 'right' && (
             <div className={cn(
-              "flex-shrink-0 text-gray-500",
+              "flex-shrink-0 text-finance-gray",
               iconClassName
             )}>
               {React.cloneElement(icon as React.ReactElement, { size: 16 })}
@@ -77,12 +75,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
                 </div>
               )}
               
-              <div className={cn(
-                isAccountName 
-                  ? "text-xl md:text-xl font-bold line-clamp-1" // Smaller size for account names
-                  : "text-2xl md:text-3xl font-bold line-clamp-1", 
-                valueClassName
-              )}>
+              <div className={cn("text-2xl md:text-3xl font-bold", valueClassName)}>
                 {value}
               </div>
               
