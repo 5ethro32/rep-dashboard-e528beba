@@ -75,12 +75,12 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
                 <span>{isMobile ? selectedMonth : `Month: ${selectedMonth}`}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-0 bg-gray-800/95 backdrop-blur-sm border-white/10">
+            <PopoverContent className="w-48 p-0 bg-gray-900/95 backdrop-blur-sm border-white/10" align="end">
               <Command className="bg-transparent">
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
-                <CommandGroup>
-                  {months.map((month) => (
+                <CommandGroup className="overflow-hidden">
+                  {months && months.length > 0 ? months.map((month) => (
                     <CommandItem
                       key={month}
                       value={month}
@@ -91,7 +91,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
                     >
                       {month}
                     </CommandItem>
-                  ))}
+                  )) : <CommandEmpty>No months available</CommandEmpty>}
                 </CommandGroup>
               </Command>
             </PopoverContent>

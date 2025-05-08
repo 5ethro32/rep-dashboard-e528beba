@@ -51,12 +51,12 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   
   // Determine button sizes based on screen size
   const toggleClassName = isMobile 
-    ? 'min-w-[60px] px-2 py-1 text-xs'
-    : 'min-w-[80px] px-3';
+    ? 'min-w-[55px] px-2 py-1 text-xs'
+    : 'min-w-[70px] px-3';
   
   return (
     <div className="flex items-center justify-between w-full gap-2 mb-6">
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-grow">
         <ToggleButton 
           checked={includeRetail} 
           onToggle={setIncludeRetail}
@@ -83,7 +83,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
       </div>
       
       {showMonthSelector && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button 
@@ -94,7 +94,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
                 <span>{selectedMonth}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-0 bg-gray-800/95 backdrop-blur-sm border-white/10">
+            <PopoverContent className="w-48 p-0 bg-gray-900/95 backdrop-blur-sm border-white/10" align="end">
               <Command className="bg-transparent">
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
