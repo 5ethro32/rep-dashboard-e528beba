@@ -584,26 +584,66 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                         {account.repName ? getFirstName(account.repName) : ''}
                       </TableCell>
                       <TableCell>
-                        {formatCurrency(account.spend)}
-                        {getChangeIndicator(account.spend, account.previousSpend)}
+                        <div className="flex items-center">
+                          <div className="flex gap-1 mr-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <Shield className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          {formatCurrency(account.spend)}
+                          {getChangeIndicator(account.spend, account.previousSpend)}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        {formatCurrency(account.profit)}
-                        {getChangeIndicator(account.profit, account.previousProfit)}
+                        <div className="flex items-center">
+                          <div className="flex gap-1 mr-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <Shield className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          {formatCurrency(account.profit)}
+                          {getChangeIndicator(account.profit, account.previousProfit)}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        {formatPercent(account.margin)}
-                        {getMarginChangeIndicator(account.margin, account.previousMargin)}
+                        <div className="flex items-center">
+                          <div className="flex gap-1 mr-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <Shield className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          {formatPercent(account.margin)}
+                          {getMarginChangeIndicator(account.margin, account.previousMargin)}
+                        </div>
                       </TableCell>
-                      <TableCell>
-                        {getStatusBadge(account.status)}
-                      </TableCell>
+                      <TableCell>{getStatusBadge(account.status)}</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-white/60">
-                      No accounts found matching your search criteria
+                    <TableCell colSpan={8} className="text-center py-4 text-white/60">
+                      No accounts found matching your search
                     </TableCell>
                   </TableRow>
                 )}
