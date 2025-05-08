@@ -15,7 +15,7 @@ import AIVera from "./pages/AIVera";
 import MyPerformance from "./pages/MyPerformance";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +26,7 @@ const AppRoutes = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   const handleSelectUser = (userId: string | null, displayName: string) => {
-    console.log(`App.tsx: User selected: ${displayName} (${userId})`);
+    console.log(`App.tsx: User selection changed to ${displayName} (${userId})`);
     setSelectedUserId(userId);
     setSelectedUserName(displayName);
   };
