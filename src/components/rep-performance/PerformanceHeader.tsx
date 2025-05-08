@@ -31,6 +31,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
   onRefresh
 }) => {
   // Determine if the selected month is the current month (May in this case)
+  // In a production app, we'd use the actual current month logic
   const isCurrentMonth = selectedMonth === 'May';
   
   // Determine padding classes based on the reducedPadding prop
@@ -143,16 +144,6 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
-        
-        {onRefresh && (
-          <Button 
-            onClick={onRefresh} 
-            variant="ghost" 
-            className="text-white/70 hover:text-white"
-          >
-            Refresh
-          </Button>
         )}
       </div>
     </header>
