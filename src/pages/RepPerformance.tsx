@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import SummaryMetrics from '@/components/rep-performance/SummaryMetrics';
 import PerformanceContent from '@/components/rep-performance/PerformanceContent';
@@ -114,6 +114,11 @@ const RepPerformance = () => {
       isRefreshing={isLoading}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
+        <PerformanceHeader 
+          selectedMonth={selectedMonth} 
+          setSelectedMonth={handleMonthSelection} 
+        />
+        
         <div className="flex flex-col md:flex-row md:justify-end md:items-center gap-3 mb-4">
           {/* Only show these buttons on non-mobile devices */}
           {!isMobile && <div className="flex space-x-2">

@@ -115,31 +115,31 @@ const AppHeader = ({
                 />
               </div>
             )}
+
+            {/* Refresh Button */}
+            {onRefreshData && (
+              <Button 
+                onClick={onRefreshData}
+                variant="outline" 
+                size="sm"
+                className="text-white border-white/20 hover:bg-white/10 ml-4"
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+              </Button>
+            )}
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             {showUserSelector && (
               <UserSelector
                 selectedUserId={selectedUserId || "all"}
                 onSelectUser={handleUserSelection}
+                className="mr-2"
                 showAllDataOption={true}
               />
             )}
-            
-            {/* Refresh button as an icon only */}
-            {onRefreshData && (
-              <Button 
-                onClick={onRefreshData}
-                variant="ghost" 
-                size="icon"
-                className="text-white hover:text-white hover:bg-white/10"
-                disabled={isRefreshing}
-                aria-label="Refresh Data"
-              >
-                <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
-            )}
-            
             <UserProfileDropdown />
           </div>
         </div>
