@@ -113,23 +113,44 @@ const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
 >(({ className, ...props }, ref) => {
-  // Ensure we're not passing null/undefined to Array.from by wrapping it in a try/catch
+  // Create a safer version of props with more thorough validation
   const safeProps = { ...props };
-  
+
   try {
-    // If children exists and is an array-like object, ensure it's valid for Array.from
-    if (safeProps.children && 
-        typeof safeProps.children === 'object' && 
-        'length' in safeProps.children &&
-        typeof safeProps.children.length === 'number' && // Explicitly check that length is a number
-        safeProps.children.length > 0) {
-      // Just accessing the children is enough to validate it won't throw
-      // The actual Array.from happens internally in cmdk
+    // Enhanced safety checks for children property
+    if (safeProps.children !== undefined && safeProps.children !== null) {
+      // If children is a string or number, wrap it in an array to make it iterable
+      if (typeof safeProps.children === 'string' || typeof safeProps.children === 'number') {
+        safeProps.children = [safeProps.children];
+      } 
+      // If children is an object with a length property
+      else if (typeof safeProps.children === 'object') {
+        // Ensure it's array-like before Array.from tries to use it
+        if (!('length' in safeProps.children) || typeof safeProps.children.length !== 'number') {
+          // If it's not array-like, convert it to an array with the object as the only element
+          safeProps.children = [safeProps.children];
+        } 
+        // Final safety check - if children is still problematic, create a safe default
+        else if (safeProps.children.length === 0 || !Array.isArray(safeProps.children)) {
+          // Empty arrays are fine for cmdk, but objects with length 0 might not be
+          // Create a safe empty array to prevent iteration issues
+          if (!Array.isArray(safeProps.children)) {
+            safeProps.children = Array.from(safeProps.children as ArrayLike<unknown>);
+          }
+        }
+      } 
+      // For any other non-iterable type, wrap in array
+      else if (!(Symbol.iterator in Object(safeProps.children))) {
+        safeProps.children = [safeProps.children];
+      }
+    } else {
+      // If children is null or undefined, provide an empty array
+      safeProps.children = [];
     }
   } catch (e) {
-    console.error("Error with CommandItem children:", e);
-    // Provide a fallback empty array-like object if needed
-    safeProps.children = safeProps.children || [];
+    console.error("Error processing CommandItem children:", e);
+    // Fallback to empty children array if any error occurs
+    safeProps.children = [];
   }
   
   return (

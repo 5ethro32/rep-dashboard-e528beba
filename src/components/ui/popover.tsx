@@ -22,11 +22,20 @@ const PopoverContent = React.forwardRef<
         className
       )}
       onPointerDownOutside={(e) => {
-        // Only close if clicking outside the popover content area
-        // This prevents accidental closing when clicking on calendar elements
-        const target = e.target as HTMLElement;
-        if (target.closest('.rdp') || target.closest('[data-radix-popper-content-wrapper]')) {
-          e.preventDefault();
+        try {
+          // Only close if clicking outside the popover content area
+          // This prevents accidental closing when clicking on calendar elements
+          const target = e.target as HTMLElement;
+          if (target && (
+              target.closest('.rdp') || 
+              target.closest('[data-radix-popper-content-wrapper]') || 
+              target.closest('.cmdk-item') ||
+              target.closest('.cmdk-input')
+            )) {
+            e.preventDefault();
+          }
+        } catch (error) {
+          console.error("Error in PopoverContent onPointerDownOutside handler:", error);
         }
       }}
       {...props}
