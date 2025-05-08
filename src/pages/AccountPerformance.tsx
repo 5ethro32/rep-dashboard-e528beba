@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -419,24 +418,31 @@ const AccountPerformance = ({
         </p>
       </div>
       
-      <div className="flex flex-col md:flex-row justify-between mb-6">
+      {/* Filters and Month selector in the same row */}
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-3">
         {/* Performance Filters */}
-        <PerformanceFilters 
-          includeRetail={includeRetail}
-          setIncludeRetail={setIncludeRetail}
-          includeReva={includeReva}
-          setIncludeReva={setIncludeReva}
-          includeWholesale={includeWholesale}
-          setIncludeWholesale={setIncludeWholesale}
-        />
+        <div className="flex-grow">
+          <PerformanceFilters 
+            includeRetail={includeRetail}
+            setIncludeRetail={setIncludeRetail}
+            includeReva={includeReva}
+            setIncludeReva={setIncludeReva}
+            includeWholesale={includeWholesale}
+            setIncludeWholesale={setIncludeWholesale}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+          />
+        </div>
         
         {/* Month selector and refresh button */}
-        <PerformanceHeader 
-          hideTitle={true}
-          selectedMonth={selectedMonth}
-          setSelectedMonth={setSelectedMonth}
-          onRefresh={handleRefresh}
-        />
+        <div className="flex-shrink-0">
+          <PerformanceHeader 
+            hideTitle={true}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            onRefresh={handleRefresh}
+          />
+        </div>
       </div>
       
       {/* Update Card - remove the p-0 and fix the padding in CardContent */}
