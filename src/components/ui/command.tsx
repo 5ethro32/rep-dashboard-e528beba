@@ -120,7 +120,8 @@ const CommandItem = React.forwardRef<
     // If children exists and is an array-like object, ensure it's valid for Array.from
     if (safeProps.children && 
         typeof safeProps.children === 'object' && 
-        'length' in safeProps.children && 
+        'length' in safeProps.children &&
+        typeof safeProps.children.length === 'number' && // Explicitly check that length is a number
         safeProps.children.length > 0) {
       // Just accessing the children is enough to validate it won't throw
       // The actual Array.from happens internally in cmdk
