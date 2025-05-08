@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,7 +45,7 @@ const AppHeader = ({
       case '/my-performance':
         return isMobile ? 'My Data' : 'My Performance';
       case '/ai-vera':
-        return 'AI Vera';
+        return isMobile ? 'Vera' : 'AI Vera';
       default:
         return '';
     }
@@ -165,16 +166,18 @@ const AppHeader = ({
               </Button>
             )}
             
-            {/* Vera Assistant Button - Updated without outer gray box */}
-            <button
-              className="flex items-center justify-center h-7 w-7 transition-transform duration-200 hover:scale-110 hover:shadow-lg shadow-md"
-              onClick={() => setIsVeraOpen(!isVeraOpen)}
-              aria-label="Open Vera Assistant"
-            >
-              <div className="flex items-center justify-center h-6 w-6 bg-gradient-to-r from-finance-red to-rose-700 text-white rounded-none transform rotate-45 shadow-md">
-                <span className="transform -rotate-45 font-bold text-sm">V</span>
-              </div>
-            </button>
+            {/* Only show Vera Assistant Button on desktop */}
+            {!isMobile && (
+              <button
+                className="flex items-center justify-center h-7 w-7 transition-transform duration-200 hover:scale-110 hover:shadow-lg shadow-md"
+                onClick={() => setIsVeraOpen(!isVeraOpen)}
+                aria-label="Open Vera Assistant"
+              >
+                <div className="flex items-center justify-center h-6 w-6 bg-gradient-to-r from-finance-red to-rose-700 text-white rounded-none transform rotate-45 shadow-md">
+                  <span className="transform -rotate-45 font-bold text-sm">V</span>
+                </div>
+              </button>
+            )}
             
             {showUserSelector && (
               <UserSelector

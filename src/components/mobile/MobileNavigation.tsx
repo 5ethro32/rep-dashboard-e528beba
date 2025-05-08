@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, MessageCircle } from 'lucide-react';
 
 const MobileNavigation = () => {
   return (
@@ -53,8 +53,8 @@ const MobileNavigation = () => {
             isActive ? 'text-finance-red' : 'text-white/70'
           }`}
         >
-          <Bot className="h-5 w-5" />
-          <span className="text-2xs mt-1">AI Vera</span>
+          <MessageCircle className="h-5 w-5" />
+          <span className="text-2xs mt-1">Vera</span>
         </NavLink>
       </div>
     </div>
