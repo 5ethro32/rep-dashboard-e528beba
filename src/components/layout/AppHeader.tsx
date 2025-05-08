@@ -166,16 +166,16 @@ const AppHeader = ({
               </Button>
             )}
             
-            {/* Vera Assistant Button */}
-            <Button
-              variant="ghost"
-              className="flex items-center justify-center bg-gray-800/50 hover:bg-gray-800/80 p-1.5 relative"
+            {/* Vera Assistant Button - Updated without outer gray box */}
+            <button
+              className="flex items-center justify-center h-7 w-7 transition-transform duration-200 hover:scale-110 hover:shadow-lg shadow-md"
               onClick={() => setIsVeraOpen(!isVeraOpen)}
+              aria-label="Open Vera Assistant"
             >
-              <div className="flex items-center justify-center h-6 w-6 bg-gradient-to-r from-finance-red to-rose-700 text-white rounded-none transform rotate-45">
+              <div className="flex items-center justify-center h-6 w-6 bg-gradient-to-r from-finance-red to-rose-700 text-white rounded-none transform rotate-45 shadow-md">
                 <span className="transform -rotate-45 font-bold text-sm">V</span>
               </div>
-            </Button>
+            </button>
             
             {showUserSelector && (
               <UserSelector
