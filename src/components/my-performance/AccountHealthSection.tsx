@@ -42,6 +42,7 @@ interface AccountHealthSectionProps {
   onMonthChange?: (month: string) => void;
   onCompareMonthChange?: (month: string) => void;
   selectedMonth?: string;
+  compareMonth?: string;
 }
 
 const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
@@ -51,13 +52,13 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
   formatPercent,
   onMonthChange,
   onCompareMonthChange,
-  selectedMonth = 'May'
+  selectedMonth = 'May',
+  compareMonth = 'April'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'admin-starred' | 'user-starred'>('all');
   const [sortBy, setSortBy] = useState<string>('healthScore');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [compareMonth, setCompareMonth] = useState<string>('Prior Month');
 
   const {
     isAdminStarred,
@@ -86,7 +87,6 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
   
   // Handle compare month change
   const handleCompareMonthChange = (month: string) => {
-    setCompareMonth(month);
     if (onCompareMonthChange) {
       onCompareMonthChange(month);
     }
@@ -137,17 +137,24 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
     if (!filteredAccounts.length) return { 
       count: 0,
       totalProfit: 0,
-      avgProfitChange: 0,
+      totalPreviousProfit: 0,
+      totalSpend: 0,
+      totalPreviousSpend: 0,
       avgMargin: 0,
+      avgPreviousMargin: 0,
       statusCounts: { improving: 0, stable: 0, declining: 0 }
     };
 
     const totalProfit = filteredAccounts.reduce((sum, account) => sum + (account.profit || 0), 0);
-    const totalProfitChange = filteredAccounts.reduce((sum, account) => sum + (account.profitChangePercent || 0), 0);
-    const avgProfitChange = totalProfitChange / filteredAccounts.length;
+    const totalPreviousProfit = filteredAccounts.reduce((sum, account) => sum + (account.previousProfit || 0), 0);
+    const totalSpend = filteredAccounts.reduce((sum, account) => sum + (account.spend || 0), 0);
+    const totalPreviousSpend = filteredAccounts.reduce((sum, account) => sum + (account.previousSpend || 0), 0);
     
     const totalMargin = filteredAccounts.reduce((sum, account) => sum + (account.margin || 0), 0);
     const avgMargin = totalMargin / filteredAccounts.length;
+    
+    const totalPreviousMargin = filteredAccounts.reduce((sum, account) => sum + (account.previousMargin || 0), 0);
+    const avgPreviousMargin = totalPreviousMargin / filteredAccounts.length;
     
     const statusCounts = filteredAccounts.reduce((counts, account) => {
       counts[account.status] = (counts[account.status] || 0) + 1;
@@ -157,8 +164,11 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
     return {
       count: filteredAccounts.length,
       totalProfit,
-      avgProfitChange,
+      totalPreviousProfit,
+      totalSpend,
+      totalPreviousSpend,
       avgMargin,
+      avgPreviousMargin,
       statusCounts
     };
   }, [filteredAccounts]);
@@ -198,24 +208,52 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
     }
   };
 
-  // Get change indicator for profit/spend changes
-  const getChangeIndicator = (changePercent: number) => {
+  // Get change indicator for profit/spend/margin changes
+  const getChangeIndicator = (current: number, previous: number) => {
+    if (!previous) return null;
+    
+    const changePercent = previous !== 0 ? ((current - previous) / Math.abs(previous)) * 100 : 0;
+    
     if (changePercent > 0) {
       return (
-        <span className="inline-flex items-center text-emerald-500">
-          <ChevronUp className="h-4 w-4" /> 
-          {changePercent.toFixed(1)}%
+        <span className="inline-flex items-center text-emerald-500 text-xs ml-2">
+          <ChevronUp className="h-3 w-3" /> 
+          <span className="text-white/60">{formatCurrency(previous)}</span>
         </span>
       );
     } else if (changePercent < 0) {
       return (
-        <span className="inline-flex items-center text-finance-red">
-          <ChevronDown className="h-4 w-4" /> 
-          {Math.abs(changePercent).toFixed(1)}%
+        <span className="inline-flex items-center text-finance-red text-xs ml-2">
+          <ChevronDown className="h-3 w-3" /> 
+          <span className="text-white/60">{formatCurrency(previous)}</span>
         </span>
       );
     }
-    return <span className="text-gray-400">0%</span>;
+    return <span className="text-gray-400 text-xs ml-2">{formatCurrency(previous)}</span>;
+  };
+  
+  // Get margin change indicator
+  const getMarginChangeIndicator = (current: number, previous: number) => {
+    if (!previous) return null;
+    
+    const change = current - previous;
+    
+    if (change > 0) {
+      return (
+        <span className="inline-flex items-center text-emerald-500 text-xs ml-2">
+          <ChevronUp className="h-3 w-3" /> 
+          <span className="text-white/60">{formatPercent(previous)}</span>
+        </span>
+      );
+    } else if (change < 0) {
+      return (
+        <span className="inline-flex items-center text-finance-red text-xs ml-2">
+          <ChevronDown className="h-3 w-3" /> 
+          <span className="text-white/60">{formatPercent(previous)}</span>
+        </span>
+      );
+    }
+    return <span className="text-gray-400 text-xs ml-2">{formatPercent(previous)}</span>;
   };
 
   // Get sort indicator arrow
@@ -307,9 +345,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                       <div className="mt-1 text-sm flex justify-between">
                         <span className="text-white/70">
                           Profit: {formatCurrency(account.profit)}
-                        </span>
-                        <span className="text-emerald-500">
-                          {getChangeIndicator(account.profitChangePercent)}
+                          {getChangeIndicator(account.profit, account.previousProfit)}
                         </span>
                       </div>
                     </div>
@@ -363,9 +399,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                       <div className="mt-1 text-sm flex justify-between">
                         <span className="text-white/70">
                           Profit: {formatCurrency(account.profit)}
-                        </span>
-                        <span className="text-finance-red">
-                          {getChangeIndicator(account.profitChangePercent)}
+                          {getChangeIndicator(account.profit, account.previousProfit)}
                         </span>
                       </div>
                     </div>
@@ -414,14 +448,17 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
-                <DropdownMenuItem onClick={() => handleCompareMonthChange('Prior Month')} className="cursor-pointer">
-                  Prior Month
+                <DropdownMenuItem onClick={() => handleCompareMonthChange('May')} className="cursor-pointer">
+                  May
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCompareMonthChange('Year Ago')} className="cursor-pointer">
-                  Year Ago
+                <DropdownMenuItem onClick={() => handleCompareMonthChange('April')} className="cursor-pointer">
+                  April
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCompareMonthChange('All Average')} className="cursor-pointer">
-                  All Average
+                <DropdownMenuItem onClick={() => handleCompareMonthChange('March')} className="cursor-pointer">
+                  March
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCompareMonthChange('February')} className="cursor-pointer">
+                  February
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -482,15 +519,15 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                   </TableHead>
                   <TableHead 
                     className="text-white/70 cursor-pointer" 
-                    onClick={() => handleSort('profit')}
+                    onClick={() => handleSort('spend')}
                   >
-                    Profit {getSortIndicator('profit')}
+                    Spend {getSortIndicator('spend')}
                   </TableHead>
                   <TableHead 
                     className="text-white/70 cursor-pointer" 
-                    onClick={() => handleSort('profitChangePercent')}
+                    onClick={() => handleSort('profit')}
                   >
-                    Change {getSortIndicator('profitChangePercent')}
+                    Profit {getSortIndicator('profit')}
                   </TableHead>
                   <TableHead 
                     className="text-white/70 cursor-pointer" 
@@ -547,9 +584,18 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                       <TableCell className="text-white/70">
                         {account.repName ? getFirstName(account.repName) : ''}
                       </TableCell>
-                      <TableCell>{formatCurrency(account.profit)}</TableCell>
-                      <TableCell>{getChangeIndicator(account.profitChangePercent)}</TableCell>
-                      <TableCell>{formatPercent(account.margin)}</TableCell>
+                      <TableCell>
+                        {formatCurrency(account.spend)}
+                        {getChangeIndicator(account.spend, account.previousSpend)}
+                      </TableCell>
+                      <TableCell>
+                        {formatCurrency(account.profit)}
+                        {getChangeIndicator(account.profit, account.previousProfit)}
+                      </TableCell>
+                      <TableCell>
+                        {formatPercent(account.margin)}
+                        {getMarginChangeIndicator(account.margin, account.previousMargin)}
+                      </TableCell>
                       <TableCell>{getStatusBadge(account.status)}</TableCell>
                     </TableRow>
                   ))
@@ -569,14 +615,17 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                       Total ({tableTotals.count} accounts)
                     </TableCell>
                     <TableCell></TableCell>
+                    <TableCell className="font-medium text-white">
+                      {formatCurrency(tableTotals.totalSpend)}
+                      {getChangeIndicator(tableTotals.totalSpend, tableTotals.totalPreviousSpend)}
+                    </TableCell>
                     <TableCell className="font-bold text-white">
                       {formatCurrency(tableTotals.totalProfit)}
-                    </TableCell>
-                    <TableCell>
-                      {getChangeIndicator(tableTotals.avgProfitChange)}
+                      {getChangeIndicator(tableTotals.totalProfit, tableTotals.totalPreviousProfit)}
                     </TableCell>
                     <TableCell className="font-medium text-white">
                       {formatPercent(tableTotals.avgMargin)}
+                      {getMarginChangeIndicator(tableTotals.avgMargin, tableTotals.avgPreviousMargin)}
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(getPredominantStatus())}
