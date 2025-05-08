@@ -383,55 +383,159 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   };
   
-  // Helper function to fetch data from a specific table
+  // Helper function to fetch data from a specific table with pagination
   const fetchDataFromTable = async (tableName: string) => {
-    switch (tableName) {
-      case 'May_Data':
-        return await supabase.from('May_Data').select('*');
-      case 'mtd_daily':
-        return await supabase.from('mtd_daily').select('*');
-      case 'sales_data':
-        return await supabase.from('sales_data').select('*');
-      case 'sales_data_februrary':
-        return await supabase.from('sales_data_februrary').select('*');
-      case 'Prior_Month_Rolling':
-        return await supabase.from('Prior_Month_Rolling').select('*');
-      default:
-        throw new Error(`Unknown table: ${tableName}`);
+    console.log(`Fetching data from table: ${tableName} with pagination`);
+    const PAGE_SIZE = 1000;
+    let allData: any[] = [];
+    let page = 0;
+    let hasMoreData = true;
+    
+    while (hasMoreData) {
+      try {
+        let query;
+        
+        switch (tableName) {
+          case 'May_Data':
+            query = supabase
+              .from('May_Data')
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'mtd_daily':
+            query = supabase
+              .from('mtd_daily')
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'sales_data':
+            query = supabase
+              .from('sales_data')
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'sales_data_februrary':
+            query = supabase
+              .from('sales_data_februrary')
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'Prior_Month_Rolling':
+            query = supabase
+              .from('Prior_Month_Rolling')
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          default:
+            throw new Error(`Unknown table: ${tableName}`);
+        }
+        
+        const { data, error, count } = await query;
+        
+        if (error) {
+          console.error(`Error fetching page ${page} from ${tableName}:`, error);
+          return { data: allData, error };
+        }
+        
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          page++;
+          
+          // Check if we've fetched all available data
+          hasMoreData = data.length === PAGE_SIZE;
+          console.log(`Fetched ${data.length} records from ${tableName}, page ${page}. Total so far: ${allData.length}`);
+        } else {
+          hasMoreData = false;
+        }
+      } catch (error) {
+        console.error(`Error in pagination loop for ${tableName}:`, error);
+        hasMoreData = false;
+        return { data: allData, error };
+      }
     }
+    
+    console.log(`Completed fetching from ${tableName}. Total records: ${allData.length}`);
+    return { data: allData, error: null };
   };
   
-  // Helper function to fetch user-specific data from a specific table
+  // Helper function to fetch user-specific data from a specific table with pagination
   const fetchUserDataFromTable = async (tableName: string, matchName: string) => {
-    switch (tableName) {
-      case 'May_Data':
-        return await supabase
-          .from('May_Data')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      case 'mtd_daily':
-        return await supabase
-          .from('mtd_daily')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      case 'sales_data':
-        return await supabase
-          .from('sales_data')
-          .select('*')
-          .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`);
-      case 'sales_data_februrary':
-        return await supabase
-          .from('sales_data_februrary')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      case 'Prior_Month_Rolling':
-        return await supabase
-          .from('Prior_Month_Rolling')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      default:
-        throw new Error(`Unknown table: ${tableName}`);
+    console.log(`Fetching user data for "${matchName}" from table: ${tableName} with pagination`);
+    const PAGE_SIZE = 1000;
+    let allData: any[] = [];
+    let page = 0;
+    let hasMoreData = true;
+    
+    while (hasMoreData) {
+      try {
+        let query;
+        
+        switch (tableName) {
+          case 'May_Data':
+            query = supabase
+              .from('May_Data')
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'mtd_daily':
+            query = supabase
+              .from('mtd_daily')
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'sales_data':
+            query = supabase
+              .from('sales_data')
+              .select('*')
+              .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'sales_data_februrary':
+            query = supabase
+              .from('sales_data_februrary')
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'Prior_Month_Rolling':
+            query = supabase
+              .from('Prior_Month_Rolling')
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          default:
+            throw new Error(`Unknown table: ${tableName}`);
+        }
+        
+        const { data, error, count } = await query;
+        
+        if (error) {
+          console.error(`Error fetching user data page ${page} from ${tableName}:`, error);
+          return { data: allData, error };
+        }
+        
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          page++;
+          
+          // Check if we've fetched all available data
+          hasMoreData = data.length === PAGE_SIZE;
+          console.log(`Fetched ${data.length} user records from ${tableName}, page ${page}. Total so far: ${allData.length}`);
+        } else {
+          hasMoreData = false;
+        }
+      } catch (error) {
+        console.error(`Error in user data pagination loop for ${tableName}:`, error);
+        hasMoreData = false;
+        return { data: allData, error };
+      }
     }
+    
+    console.log(`Completed fetching user data from ${tableName}. Total records: ${allData.length}`);
+    return { data: allData, error: null };
   };
   
   const fetchVisitData = async () => {
