@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +45,29 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [includeReva, setIncludeReva] = useState(true);
   const [includeWholesale, setIncludeWholesale] = useState(true);
   const isMobile = useIsMobile();
+  
+  // Add the filterDataByDepartment function
+  const filterDataByDepartment = (data: any[]): any[] => {
+    if (includeRetail && includeReva && includeWholesale) {
+      return data; // Return all data if all filters are on
+    }
+    
+    return data.filter(item => {
+      const department = item.Department || item.department || '';
+      
+      if (!includeRetail && department.toUpperCase() === 'RETAIL') {
+        return false;
+      }
+      if (!includeReva && department.toUpperCase() === 'REVA') {
+        return false;
+      }
+      if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department === 'Wholesale')) {
+        return false;
+      }
+      
+      return true;
+    });
+  };
   
   // Initialize with props if provided, otherwise use the current user
   useEffect(() => {
