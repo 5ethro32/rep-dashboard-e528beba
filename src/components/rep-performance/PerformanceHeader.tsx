@@ -75,7 +75,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
                 <span>{isMobile ? selectedMonth : `Month: ${selectedMonth}`}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-0 bg-gray-900/90 backdrop-blur-sm border-white/10">
+            <PopoverContent className="w-48 p-0 bg-gray-800/95 backdrop-blur-sm border-white/10">
               <Command className="bg-transparent">
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>

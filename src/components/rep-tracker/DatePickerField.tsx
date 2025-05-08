@@ -58,7 +58,7 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-auto p-0 bg-gray-800 border-gray-700" 
+          className="w-auto p-0 bg-gray-800/95 border-gray-700" 
           align="start"
         >
           <Calendar
