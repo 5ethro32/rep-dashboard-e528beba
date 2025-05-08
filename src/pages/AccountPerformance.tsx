@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
+import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -25,11 +26,15 @@ type DataItem = {
   profit?: number;
   Spend?: number;
   spend?: number;
+  Department?: string;
+  department?: string;
 };
+
 interface AccountPerformanceProps {
   selectedUserId?: string | null;
   selectedUserName?: string;
 }
+
 const AccountPerformance = ({
   selectedUserId: propSelectedUserId = "all",
   selectedUserName: propSelectedUserName = "All Data"
@@ -60,6 +65,14 @@ const AccountPerformance = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId);
   const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName);
 
+  // Add state for tracking auto-refreshed status
+  const [autoRefreshed, setAutoRefreshed] = useState(false);
+  
+  // Add filter states
+  const [includeRetail, setIncludeRetail] = useState(true);
+  const [includeReva, setIncludeReva] = useState(true);
+  const [includeWholesale, setIncludeWholesale] = useState(true);
+
   // Update local state when props change
   useEffect(() => {
     if (propSelectedUserId) {
@@ -69,9 +82,10 @@ const AccountPerformance = ({
       setSelectedUserName(propSelectedUserName);
     }
   }, [propSelectedUserId, propSelectedUserName]);
+  
   useEffect(() => {
     fetchComparisonData();
-  }, [selectedMonth, selectedUserId, selectedUserName]);
+  }, [selectedMonth, selectedUserId, selectedUserName, includeRetail, includeReva, includeWholesale]);
 
   // Handle user selection change
   const handleUserChange = (userId: string | null, displayName: string) => {
@@ -80,6 +94,47 @@ const AccountPerformance = ({
     setSelectedUserName(displayName);
     // Data will refresh due to the useEffect dependency
   };
+
+  // Add refresh handler
+  const handleRefresh = () => {
+    console.log("Manual refresh triggered");
+    fetchComparisonData();
+  };
+
+  // Make global refresh handler available
+  useEffect(() => {
+    // @ts-ignore - Add global refresh function
+    window.accountPerformanceRefresh = handleRefresh;
+
+    return () => {
+      // @ts-ignore - Clean up global refresh function
+      window.accountPerformanceRefresh = undefined;
+    };
+  }, []);
+
+  // Filter data based on department toggles
+  const filterDataByDepartment = (data: DataItem[]): DataItem[] => {
+    if (includeRetail && includeReva && includeWholesale) {
+      return data; // Return all data if all filters are on
+    }
+    
+    return data.filter(item => {
+      const department = item.Department || item.department || '';
+      
+      if (!includeRetail && department.toUpperCase() === 'RETAIL') {
+        return false;
+      }
+      if (!includeReva && department.toUpperCase() === 'REVA') {
+        return false;
+      }
+      if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department === 'Wholesale')) {
+        return false;
+      }
+      
+      return true;
+    });
+  };
+
   const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: {
     column: string;
     value: string;
@@ -172,8 +227,10 @@ const AccountPerformance = ({
     // But just in case, return all records
     return allRecords;
   };
+  
   const fetchComparisonData = async () => {
     setIsLoading(true);
+    setAutoRefreshed(false);
     try {
       let currentTable: AllowedTable;
       let previousTable: AllowedTable | null;
@@ -214,15 +271,19 @@ const AccountPerformance = ({
         }
       }
 
-      // Set state with fetched data
-      setCurrentMonthRawData(currentData || []);
-      setPreviousMonthRawData(previousData);
+      // Apply department filters
+      const filteredCurrentData = filterDataByDepartment(currentData || []);
+      const filteredPreviousData = filterDataByDepartment(previousData || []);
+
+      // Set state with filtered data
+      setCurrentMonthRawData(filteredCurrentData);
+      setPreviousMonthRawData(filteredPreviousData);
 
       // Calculate active accounts
-      const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
+      const currentActiveAccounts = new Set(filteredCurrentData?.map((item: DataItem) => {
         return item["Account Name"] || item.account_name;
       }).filter(Boolean)).size || 0;
-      const previousActiveAccounts = new Set(previousData?.map((item: DataItem) => {
+      const previousActiveAccounts = new Set(filteredPreviousData?.map((item: DataItem) => {
         return item["Account Name"] || item.account_name;
       }).filter(Boolean)).size || 0;
       setActiveAccounts({
@@ -231,20 +292,20 @@ const AccountPerformance = ({
       });
 
       // Calculate increasing and decreasing spend accounts
-      if (currentData && previousData && currentData.length > 0 && previousData.length > 0) {
+      if (filteredCurrentData && filteredPreviousData && filteredCurrentData.length > 0 && filteredPreviousData.length > 0) {
         // Create maps for current and previous data to easily compare accounts
         const currentAccountMap = new Map();
         const previousAccountMap = new Map();
 
         // Build maps with account ref as key and spend as value
-        currentData.forEach((item: DataItem) => {
+        filteredCurrentData.forEach((item: DataItem) => {
           const accountRef = item["Account Ref"] || item.account_ref || '';
           const spend = typeof item.Spend === 'number' ? item.Spend : typeof item.spend === 'number' ? item.spend : 0;
           if (accountRef) {
             currentAccountMap.set(accountRef, spend);
           }
         });
-        previousData.forEach((item: DataItem) => {
+        filteredPreviousData.forEach((item: DataItem) => {
           const accountRef = item["Account Ref"] || item.account_ref || '';
           const spend = typeof item.Spend === 'number' ? item.Spend : typeof item.spend === 'number' ? item.spend : 0;
           if (accountRef) {
@@ -274,9 +335,9 @@ const AccountPerformance = ({
       }
 
       // Calculate top rep
-      if (currentData && currentData.length > 0) {
+      if (filteredCurrentData && filteredCurrentData.length > 0) {
         const repProfits = new Map();
-        currentData.forEach((item: DataItem) => {
+        filteredCurrentData.forEach((item: DataItem) => {
           const repName = item.Rep || item.rep_name || '';
           const profit = typeof item.Profit === 'number' ? item.Profit : typeof item.profit === 'number' ? item.profit : 0;
           if (repName) {
@@ -345,7 +406,8 @@ const AccountPerformance = ({
         : "Compare your accounts performance between months to identify declining or improving accounts.";
   };
   
-  return <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+  return (
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
       {/* Title and Description */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
@@ -356,21 +418,59 @@ const AccountPerformance = ({
         </p>
       </div>
       
-      {/* Month dropdown, now without the refresh button */}
-      <div className="mb-6 flex items-center space-x-4">
-        <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
+      {/* Filters and Month selector in the same row */}
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-3">
+        {/* Performance Filters - hide the month selector since we have it separately */}
+        <div className="flex-grow">
+          <PerformanceFilters 
+            includeRetail={includeRetail}
+            setIncludeRetail={setIncludeRetail}
+            includeReva={includeReva}
+            setIncludeReva={setIncludeReva}
+            includeWholesale={includeWholesale}
+            setIncludeWholesale={setIncludeWholesale}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            showMonthSelector={false}
+          />
+        </div>
+        
+        {/* Month selector and refresh button */}
+        <div className="flex-shrink-0">
+          <PerformanceHeader 
+            hideTitle={true}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            onRefresh={handleRefresh}
+          />
+        </div>
       </div>
       
       {/* Update Card - remove the p-0 and fix the padding in CardContent */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
-        <CardContent className="p-0"> {/* Remove padding from CardContent */}
-          <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
+        <CardContent className="p-0">
+          <AccountSummaryCards 
+            currentMonthData={currentMonthRawData} 
+            previousMonthData={previousMonthRawData} 
+            isLoading={isLoading} 
+            selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} 
+            accountsTrendData={accountsTrendData} 
+          />
         </CardContent>
       </Card>
       
       <div className="mb-12">
-        <AccountPerformanceComparison currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedMonth={selectedMonth} formatCurrency={formatCurrency} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} />
+        <AccountPerformanceComparison 
+          currentMonthData={currentMonthRawData} 
+          previousMonthData={previousMonthRawData} 
+          isLoading={isLoading} 
+          selectedMonth={selectedMonth} 
+          formatCurrency={formatCurrency} 
+          selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} 
+        />
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default AccountPerformance;

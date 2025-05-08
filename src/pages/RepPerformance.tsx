@@ -143,9 +143,18 @@ const RepPerformance = () => {
     });
   }
   return <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} />
+      <PerformanceHeader hideTitle={false} />
       
-      <PerformanceFilters includeRetail={includeRetail} setIncludeRetail={setIncludeRetail} includeReva={includeReva} setIncludeReva={setIncludeReva} includeWholesale={includeWholesale} setIncludeWholesale={setIncludeWholesale} selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} />
+      <PerformanceFilters 
+        includeRetail={includeRetail} 
+        setIncludeRetail={setIncludeRetail} 
+        includeReva={includeReva} 
+        setIncludeReva={setIncludeReva} 
+        includeWholesale={includeWholesale} 
+        setIncludeWholesale={setIncludeWholesale} 
+        selectedMonth={selectedMonth} 
+        setSelectedMonth={handleMonthSelection} 
+      />
 
       {/* Wrap the SummaryMetrics in a Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-8">
