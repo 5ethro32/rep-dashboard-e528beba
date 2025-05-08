@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import { RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
@@ -333,6 +332,13 @@ const AccountPerformance = ({
         </CardTitle>;
     }
   };
+
+  // Handle month selection change
+  const handleMonthChange = (month: string) => {
+    setSelectedMonth(month);
+    // Fetch data will trigger due to the useEffect dependency
+  };
+
   return (
     <AppLayout 
       selectedUserId={selectedUserId}
@@ -340,17 +346,11 @@ const AccountPerformance = ({
       showUserSelector={true}
       onRefreshData={fetchComparisonData}
       isRefreshing={isLoading}
+      selectedMonth={selectedMonth}
+      setSelectedMonth={handleMonthChange}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        {/* Month dropdown and Refresh button in same div, now properly left-aligned */}
-        <div className="mb-6 pt-8 py-0">
-          <PerformanceHeader 
-            selectedMonth={selectedMonth} 
-            setSelectedMonth={setSelectedMonth} 
-            hideTitle={true} 
-            reducedPadding={true} 
-          />
-        </div>
+        {/* Removed PerformanceHeader from here to avoid duplication */}
         
         {/* Large card containing everything */}
         <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-6">

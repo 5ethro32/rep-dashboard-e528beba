@@ -10,6 +10,7 @@ interface AppLayoutProps {
   children: React.ReactNode;
   showChatInterface?: boolean;
   selectedMonth?: string;
+  setSelectedMonth?: (month: string) => void;
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
   showUserSelector?: boolean;
@@ -21,6 +22,7 @@ const AppLayout = ({
   children, 
   showChatInterface = true, 
   selectedMonth = 'March',
+  setSelectedMonth,
   selectedUserId,
   onSelectUser,
   showUserSelector = false,
@@ -45,6 +47,8 @@ const AppLayout = ({
         showUserSelector={shouldShowUserSelector}
         onRefreshData={onRefreshData}
         isRefreshing={isRefreshing}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
       />
       
       {/* Main content section */}

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
@@ -16,6 +17,8 @@ interface AppHeaderProps {
   showUserSelector?: boolean;
   onRefreshData?: () => void;
   isRefreshing?: boolean;
+  selectedMonth?: string;
+  setSelectedMonth?: (month: string) => void;
 }
 
 const AppHeader = ({ 
@@ -23,7 +26,9 @@ const AppHeader = ({
   onSelectUser, 
   showUserSelector = false,
   onRefreshData,
-  isRefreshing = false
+  isRefreshing = false,
+  selectedMonth = 'March',
+  setSelectedMonth
 }: AppHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
@@ -52,6 +57,12 @@ const AppHeader = ({
     console.log(`AppHeader: User selection changed to ${displayName} (${userId})`);
     if (onSelectUser) {
       onSelectUser(userId, displayName);
+    }
+  };
+
+  const handleMonthChange = (value: string) => {
+    if (setSelectedMonth) {
+      setSelectedMonth(value);
     }
   };
 
@@ -113,6 +124,26 @@ const AppHeader = ({
                     isNavOpen ? "rotate-180" : ""
                   )} 
                 />
+              </div>
+            )}
+            
+            {/* Month selector */}
+            {setSelectedMonth && (
+              <div className="ml-4">
+                <Select 
+                  value={selectedMonth} 
+                  onValueChange={handleMonthChange}
+                >
+                  <SelectTrigger className="w-[180px] bg-gray-900/40 border-white/10 text-white">
+                    <SelectValue placeholder="Select Month" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-900 border-white/10 text-white">
+                    <SelectItem value="February">February</SelectItem>
+                    <SelectItem value="March">March</SelectItem>
+                    <SelectItem value="April">April</SelectItem>
+                    <SelectItem value="May">May</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
