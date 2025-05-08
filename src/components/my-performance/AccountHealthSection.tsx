@@ -9,7 +9,8 @@ import {
   ChevronDown,
   Search,
   Star,
-  Shield
+  Shield,
+  Calendar
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -38,19 +39,25 @@ interface AccountHealthSectionProps {
   isLoading: boolean;
   formatCurrency: (value: number, decimals?: number) => string;
   formatPercent: (value: number) => string;
+  onMonthChange?: (month: string) => void;
+  onCompareMonthChange?: (month: string) => void;
+  selectedMonth?: string;
 }
 
 const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
   accountHealthData,
   isLoading,
   formatCurrency,
-  formatPercent
+  formatPercent,
+  onMonthChange,
+  onCompareMonthChange,
+  selectedMonth = 'May'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'admin-starred' | 'user-starred'>('all');
   const [sortBy, setSortBy] = useState<string>('healthScore');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [compareMonth, setCompareMonth] = useState<string>('April');
+  const [compareMonth, setCompareMonth] = useState<string>('Prior Month');
 
   const {
     isAdminStarred,
@@ -69,12 +76,28 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
       setSortDirection('desc');
     }
   };
+  
+  // Handle month selection change
+  const handleMonthChange = (month: string) => {
+    if (onMonthChange) {
+      onMonthChange(month);
+    }
+  };
+  
+  // Handle compare month change
+  const handleCompareMonthChange = (month: string) => {
+    setCompareMonth(month);
+    if (onCompareMonthChange) {
+      onCompareMonthChange(month);
+    }
+  };
 
   // Filter accounts based on search and star filters
   const filteredAccounts = accountHealthData.filter(account => {
     // Text search filter
     const matchesSearch = account.accountName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         account.accountRef?.toLowerCase().includes(searchTerm.toLowerCase());
+                         account.accountRef?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (account.repName && account.repName.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Star filters
     const accountRef = account.accountRef || '';
@@ -365,18 +388,40 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 bg-gray-900/50 border-white/10 text-white/80">
+                  <Calendar className="h-4 w-4 mr-2" /> Month: {selectedMonth}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
+                <DropdownMenuItem onClick={() => handleMonthChange('May')} className="cursor-pointer">
+                  May
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleMonthChange('April')} className="cursor-pointer">
+                  April
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleMonthChange('March')} className="cursor-pointer">
+                  March
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleMonthChange('February')} className="cursor-pointer">
+                  February
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 bg-gray-900/50 border-white/10 text-white/80">
                   Compare: {compareMonth}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
-                <DropdownMenuItem onClick={() => setCompareMonth('April')} className="cursor-pointer">
-                  April
+                <DropdownMenuItem onClick={() => handleCompareMonthChange('Prior Month')} className="cursor-pointer">
+                  Prior Month
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCompareMonth('March')} className="cursor-pointer">
-                  March
+                <DropdownMenuItem onClick={() => handleCompareMonthChange('Year Ago')} className="cursor-pointer">
+                  Year Ago
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setCompareMonth('February')} className="cursor-pointer">
-                  February
+                <DropdownMenuItem onClick={() => handleCompareMonthChange('All Average')} className="cursor-pointer">
+                  All Average
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

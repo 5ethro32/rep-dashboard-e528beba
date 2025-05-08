@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +32,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
   const [userFirstName, setUserFirstName] = useState<string>('');
+  const [compareMonth, setCompareMonth] = useState<string>('Prior Month');
+  const [accountHealthMonth, setAccountHealthMonth] = useState<string>('May');
   const isMobile = useIsMobile();
   
   // Initialize with props if provided, otherwise use the current user
@@ -71,6 +74,13 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   }, [user, selectedMonth, selectedUserId]);
   
+  // Fetch account health data when account health month or compare month changes
+  useEffect(() => {
+    if (user && selectedUserId) {
+      fetchAccountHealthData();
+    }
+  }, [accountHealthMonth, compareMonth]);
+  
   const handleSelectUser = (userId: string | null, displayName: string) => {
     setSelectedUserId(userId);
     setSelectedUserDisplayName(displayName);
@@ -79,6 +89,16 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     const firstName = displayName.split(' ')[0];
     setUserFirstName(firstName);
     
+    setIsLoading(true);
+  };
+  
+  const handleAccountHealthMonthChange = (month: string) => {
+    setAccountHealthMonth(month);
+    setIsLoading(true);
+  };
+  
+  const handleCompareMonthChange = (month: string) => {
+    setCompareMonth(month);
     setIsLoading(true);
   };
   
@@ -294,41 +314,70 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const fetchAccountHealthData = async () => {
     // Similar to personal performance data but focused on account trends
     try {
-      // Get the current and previous month data for comparison
-      // This is simplified for now - actual implementation would compare current and previous month
+      setIsLoading(true);
+      console.log(`Fetching account health data for month: ${accountHealthMonth}, compare with: ${compareMonth}`);
+      
+      // Determine current month data source
+      let currentMonthTable: string;
+      switch (accountHealthMonth) {
+        case 'May':
+          currentMonthTable = 'May_Data';
+          break;
+        case 'April':
+          currentMonthTable = 'mtd_daily';
+          break;
+        case 'March':
+          currentMonthTable = 'sales_data';
+          break;
+        case 'February':
+          currentMonthTable = 'sales_data_februrary';
+          break;
+        default:
+          currentMonthTable = 'May_Data';
+      }
+      
+      // Determine comparison data source based on compareMonth selection
+      let compareMonthTable: string;
+      if (compareMonth === 'Prior Month') {
+        // Select the month before the current selection
+        switch (accountHealthMonth) {
+          case 'May':
+            compareMonthTable = 'Prior_Month_Rolling'; // April data
+            break;
+          case 'April':
+            compareMonthTable = 'sales_data'; // March data
+            break;
+          case 'March':
+            compareMonthTable = 'sales_data_februrary'; // February data
+            break;
+          case 'February':
+          default:
+            compareMonthTable = 'sales_data_februrary'; // Default to February
+            break;
+        }
+      } else if (compareMonth === 'Year Ago') {
+        // For demo purposes, we'll just use February data as "year ago"
+        compareMonthTable = 'sales_data_februrary';
+      } else {
+        // All Average - we'll use the most complete dataset 
+        // (in a real app, this would be an average across multiple periods)
+        compareMonthTable = 'mtd_daily';
+      }
       
       // If viewing all data
       if (selectedUserId === "all") {
-        let currentQuery;
-        if (selectedMonth === 'May') {
-          currentQuery = supabase
-            .from('May_Data')
-            .select('*');
-        } else {
-          currentQuery = supabase
-            .from('mtd_daily')
-            .select('*');
-        }
-        
+        // Fetch current month data
+        let currentQuery = supabase.from(currentMonthTable).select('*');
         const { data: currentData } = await currentQuery;
         
-        // Get previous month data
-        let previousQuery;
-        if (selectedMonth === 'May') {
-          previousQuery = supabase
-            .from('Prior_Month_Rolling')
-            .select('*');
-        } else {
-          previousQuery = supabase
-            .from('sales_data')
-            .select('*');
-        }
+        // Fetch comparison month data
+        let compareQuery = supabase.from(compareMonthTable).select('*');
+        const { data: compareData } = await compareQuery;
         
-        const { data: previousData } = await previousQuery;
-        
-        // Calculate account health by comparing current and previous data
-        const accountHealth = calculateAccountHealth(currentData || [], previousData || []);
+        // Calculate account health by comparing current and comparison data
+        const accountHealth = calculateAccountHealth(currentData || [], compareData || []);
         setAccountHealthData(accountHealth);
+        setIsLoading(false);
         return;
       }
       
@@ -357,42 +406,47 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       
       // Get current month data
       let currentQuery;
-      if (selectedMonth === 'May') {
+      
+      if (currentMonthTable === 'May_Data' || currentMonthTable === 'mtd_daily' || currentMonthTable === 'sales_data_februrary') {
         currentQuery = supabase
-          .from('May_Data')
+          .from(currentMonthTable)
           .select('*')
           .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
       } else {
         currentQuery = supabase
-          .from('mtd_daily')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      }
-      
-      const { data: currentData } = await currentQuery;
-      
-      // Get previous month data
-      let previousQuery;
-      if (selectedMonth === 'May') {
-        previousQuery = supabase
-          .from('Prior_Month_Rolling')
-          .select('*')
-          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
-      } else {
-        previousQuery = supabase
-          .from('sales_data')
+          .from(currentMonthTable)
           .select('*')
           .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`);
       }
       
-      const { data: previousData } = await previousQuery;
+      const { data: currentData } = await currentQuery;
       
-      // Calculate account health by comparing current and previous data
-      const accountHealth = calculateAccountHealth(currentData || [], previousData || []);
+      // Get comparison month data
+      let compareQuery;
+      
+      if (compareMonthTable === 'May_Data' || compareMonthTable === 'mtd_daily' || 
+          compareMonthTable === 'sales_data_februrary' || compareMonthTable === 'Prior_Month_Rolling') {
+        compareQuery = supabase
+          .from(compareMonthTable)
+          .select('*')
+          .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+      } else {
+        compareQuery = supabase
+          .from(compareMonthTable)
+          .select('*')
+          .or(`rep_name.ilike.%${matchName}%,sub_rep.ilike.%${matchName}%`);
+      }
+      
+      const { data: compareData } = await compareQuery;
+      
+      // Calculate account health by comparing current and comparison data
+      const accountHealth = calculateAccountHealth(currentData || [], compareData || []);
       setAccountHealthData(accountHealth);
       
     } catch (error) {
       console.error("Error fetching account health data:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -482,12 +536,15 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       const accountName = item['Account Name'] || '';
       const profit = typeof item.Profit === 'number' ? item.Profit : 0;
       const spend = typeof item.Spend === 'number' ? item.Spend : 0;
+      // Get the rep name - either from Rep or rep_name field depending on the table structure
+      const repName = item.Rep || item.rep_name || '';
       
       if (accountRef) {
         currentAccounts.set(accountRef, {
           name: accountName,
           profit,
           spend,
+          repName,
           margin: spend > 0 ? (profit / spend) * 100 : 0
         });
       }
@@ -500,11 +557,14 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
                      typeof item.profit === 'number' ? item.profit : 0;
       const spend = typeof item.Spend === 'number' ? item.Spend : 
                     typeof item.spend === 'number' ? item.spend : 0;
+      // Get the rep name from previous data if available
+      const prevRepName = item.Rep || item.rep_name || '';
       
       if (accountRef) {
         previousAccounts.set(accountRef, {
           profit,
           spend,
+          repName: prevRepName,
           margin: spend > 0 ? (profit / spend) * 100 : 0
         });
       }
@@ -545,9 +605,13 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       const status = healthScore > 2 ? 'improving' : 
                      healthScore < -1 ? 'declining' : 'stable';
       
+      // Use rep name from current data, fallback to previous data if needed
+      const repName = currentData.repName || (previousData ? previousData.repName : '');
+      
       healthScores.push({
         accountRef,
         accountName: currentData.name,
+        repName,
         profit: currentData.profit,
         spend: currentData.spend,
         margin: currentData.margin,
@@ -652,6 +716,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             isLoading={isLoading}
             formatCurrency={formatCurrency}
             formatPercent={formatPercent}
+            onMonthChange={handleAccountHealthMonthChange}
+            onCompareMonthChange={handleCompareMonthChange}
+            selectedMonth={accountHealthMonth}
           />
         </TabsContent>
         
