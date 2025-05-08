@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -504,8 +505,8 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
             <Table>
               <TableHeader className="bg-gray-900/60 sticky top-0 z-10">
                 <TableRow>
-                  <TableHead className="text-white/70 w-10 sticky left-0 bg-gray-900/60 z-20"></TableHead>
-                  <TableHead className="text-white/70 w-10 sticky left-10 bg-gray-900/60 z-20"></TableHead>
+                  <TableHead className="text-white/70 w-10"></TableHead>
+                  <TableHead className="text-white/70 w-10"></TableHead>
                   <TableHead 
                     className="text-white/70 cursor-pointer min-w-[180px]" 
                     onClick={() => handleSort('accountName')}
@@ -543,7 +544,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                 {filteredAccounts.length > 0 ? (
                   filteredAccounts.map((account, index) => (
                     <TableRow key={index} className="border-t border-white/10">
-                      <TableCell className="p-2 w-10 sticky left-0 bg-gray-900/95 z-20">
+                      <TableCell className="p-2 w-10">
                         {isAdmin && (
                           <button
                             onClick={() => toggleAdminStar(
@@ -562,7 +563,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                           </button>
                         )}
                       </TableCell>
-                      <TableCell className="p-2 w-10 sticky left-10 bg-gray-900/95 z-20">
+                      <TableCell className="p-2 w-10">
                         <button
                           onClick={() => toggleUserStar(
                             account.accountRef,
@@ -613,8 +614,8 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
               {filteredAccounts.length > 0 && (
                 <TableFooter className="bg-gray-900/80 border-t border-white/10 sticky bottom-0">
                   <TableRow>
-                    <TableCell className="p-2 sticky left-0 bg-gray-900/95 z-20"></TableCell>
-                    <TableCell className="p-2 sticky left-10 bg-gray-900/95 z-20"></TableCell>
+                    <TableCell className="p-2"></TableCell>
+                    <TableCell className="p-2"></TableCell>
                     <TableCell className="font-medium text-white">
                       Total ({tableTotals.count} accounts)
                     </TableCell>
