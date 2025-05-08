@@ -23,6 +23,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
 }) => {
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
+  const [compareMonth, setCompareMonth] = useState<string>('April');
   const [isLoading, setIsLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState<any>(null);
   const [accountHealthData, setAccountHealthData] = useState<any[]>([]);
@@ -31,7 +32,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
   const [userFirstName, setUserFirstName] = useState<string>('');
-  const [compareMonth, setCompareMonth] = useState<string>('April');
   const [accountHealthMonth, setAccountHealthMonth] = useState<string>('May');
   const isMobile = useIsMobile();
   
@@ -66,19 +66,17 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   }, [user, propSelectedUserId, propSelectedUserName]);
   
-  // Fetch all the data when user changes
+  // Handle changes in selectedMonth or compareMonth
   useEffect(() => {
     if (user && selectedUserId) {
       fetchAllData();
     }
-  }, [user, selectedMonth, selectedUserId]);
+  }, [user, selectedMonth, compareMonth, selectedUserId]);
   
-  // Fetch account health data when account health month or compare month changes
+  // Sync accountHealthMonth with the main selectedMonth
   useEffect(() => {
-    if (user && selectedUserId) {
-      fetchAccountHealthData();
-    }
-  }, [accountHealthMonth, compareMonth]);
+    setAccountHealthMonth(selectedMonth);
+  }, [selectedMonth]);
   
   const handleSelectUser = (userId: string | null, displayName: string) => {
     setSelectedUserId(userId);
@@ -91,14 +89,37 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     setIsLoading(true);
   };
   
-  const handleAccountHealthMonthChange = (month: string) => {
+  // Update both the account health month and the main selected month
+  const handleMonthChange = (month: string) => {
+    setSelectedMonth(month);
     setAccountHealthMonth(month);
     setIsLoading(true);
+    
+    // Automatically adjust compare month if needed
+    if (month === compareMonth) {
+      // If the new selected month is the same as the compare month,
+      // set compare month to the previous month or Prior MTD for May
+      if (month === 'May') {
+        setCompareMonth('Prior MTD');
+      } else if (month === 'April') {
+        setCompareMonth('March');
+      } else if (month === 'March') {
+        setCompareMonth('February');
+      } else {
+        setCompareMonth('March'); // Default fallback if February is selected
+      }
+    }
   };
   
+  // Update the comparison month
   const handleCompareMonthChange = (month: string) => {
     setCompareMonth(month);
     setIsLoading(true);
+  };
+  
+  // Make sure account health section uses the main month/compare settings
+  const handleAccountHealthMonthChange = (month: string) => {
+    handleMonthChange(month);
   };
   
   const fetchAllData = async () => {
@@ -119,7 +140,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   
   const fetchPersonalPerformanceData = async () => {
     try {
-      console.log('Fetching performance data for user:', selectedUserId);
+      console.log('Fetching performance data for user:', selectedUserId, 'Month:', selectedMonth, 'Compare with:', compareMonth);
       
       // If we're viewing "All Data", we need to handle this differently
       if (selectedUserId === "all") {
@@ -128,22 +149,39 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         // Determine the table names based on selected month and previous month
         let currentTable;
         let previousTable;
+        
+        // Set current table based on selected month
         switch (selectedMonth) {
           case 'May':
             currentTable = 'May_Data';
-            previousTable = 'Prior_Month_Rolling'; // Updated: Using Prior_Month_Rolling for April data
             break;
           case 'April':
             currentTable = 'mtd_daily';
-            previousTable = 'sales_data'; // March data
             break;
           case 'March':
             currentTable = 'sales_data';
-            previousTable = 'sales_data_februrary'; // February data
             break;
-          default:
+          default: // February
             currentTable = 'sales_data_februrary';
-            previousTable = null; // No previous data for February
+        }
+        
+        // Set previous table based on compare month selection
+        if (compareMonth === 'Prior MTD') {
+          previousTable = 'Prior_Month_Rolling';
+        } else {
+          switch (compareMonth) {
+            case 'May':
+              previousTable = 'May_Data';
+              break;
+            case 'April':
+              previousTable = 'mtd_daily';
+              break;
+            case 'March':
+              previousTable = 'sales_data';
+              break;
+            default: // February
+              previousTable = 'sales_data_februrary';
+          }
         }
         
         // Get current month data
@@ -189,7 +227,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         userEmail = user.email || '';
       } else {
         // For other users, try to construct a likely email from their profile data
-        // This is just a fallback and may not be accurate
         const domain = user?.email ? user.email.split('@')[1] : 'avergenerics.co.uk';
         userEmail = `${selectedUserId.split('-')[0]}@${domain}`;
       }
@@ -208,25 +245,40 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       
       console.log('Matching with names:', { userName, fullName });
       
-      // Determine table names based on selected month and previous month
+      // Determine current table based on selected month
       let currentTable;
-      let previousTable;
       switch (selectedMonth) {
         case 'May':
           currentTable = 'May_Data';
-          previousTable = 'Prior_Month_Rolling'; // Updated: Using Prior_Month_Rolling for April data
           break;
         case 'April':
           currentTable = 'mtd_daily';
-          previousTable = 'sales_data'; // March data
           break;
         case 'March':
           currentTable = 'sales_data';
-          previousTable = 'sales_data_februrary'; // February data
           break;
-        default:
+        default: // February
           currentTable = 'sales_data_februrary';
-          previousTable = null; // No previous data for February
+      }
+      
+      // Set previous table based on compare month selection
+      let previousTable;
+      if (compareMonth === 'Prior MTD') {
+        previousTable = 'Prior_Month_Rolling';
+      } else {
+        switch (compareMonth) {
+          case 'May':
+            previousTable = 'May_Data';
+            break;
+          case 'April':
+            previousTable = 'mtd_daily';
+            break;
+          case 'March':
+            previousTable = 'sales_data';
+            break;
+          default: // February
+            previousTable = 'sales_data_februrary';
+        }
       }
       
       // Determine column names based on table structure
@@ -284,11 +336,11 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     // Similar to personal performance data but focused on account trends
     try {
       setIsLoading(true);
-      console.log(`Fetching account health data for month: ${accountHealthMonth}, compare with: ${compareMonth}`);
+      console.log(`Fetching account health data for month: ${selectedMonth}, compare with: ${compareMonth}`);
       
       // Determine current month data source
       let currentMonthTableName: string;
-      switch (accountHealthMonth) {
+      switch (selectedMonth) {
         case 'May':
           currentMonthTableName = 'May_Data';
           break;
@@ -298,30 +350,28 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         case 'March':
           currentMonthTableName = 'sales_data';
           break;
-        case 'February':
+        default: // February
           currentMonthTableName = 'sales_data_februrary';
-          break;
-        default:
-          currentMonthTableName = 'May_Data';
       }
       
       // Determine comparison data source based on compareMonth selection
       let compareMonthTableName: string;
-      switch (compareMonth) {
-        case 'May':
-          compareMonthTableName = 'May_Data';
-          break;
-        case 'April':
-          compareMonthTableName = compareMonth === accountHealthMonth ? 'Prior_Month_Rolling' : 'mtd_daily';
-          break;
-        case 'March':
-          compareMonthTableName = 'sales_data';
-          break;
-        case 'February':
-          compareMonthTableName = 'sales_data_februrary';
-          break;
-        default:
-          compareMonthTableName = 'Prior_Month_Rolling';
+      if (compareMonth === 'Prior MTD') {
+        compareMonthTableName = 'Prior_Month_Rolling';
+      } else {
+        switch (compareMonth) {
+          case 'May':
+            compareMonthTableName = 'May_Data';
+            break;
+          case 'April':
+            compareMonthTableName = 'mtd_daily';
+            break;
+          case 'March':
+            compareMonthTableName = 'sales_data';
+            break;
+          default: // February
+            compareMonthTableName = 'sales_data_februrary';
+        }
       }
       
       // If viewing all data
@@ -641,6 +691,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   };
   
+  const getCompareMonthDisplay = () => {
+    return compareMonth === 'Prior MTD' ? 'Prior MTD' : `${compareMonth} 2025`;
+  };
+  
   // Render the page directly without the redundant AppLayout wrapper
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
@@ -666,7 +720,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         <div className="flex-shrink-0">
           <PerformanceHeader 
             selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
+            setSelectedMonth={handleMonthChange}
+            compareMonth={compareMonth}
+            setCompareMonth={handleCompareMonthChange}
+            showCompareSelector={true}
             hideTitle={true}
           />
         </div>
@@ -705,7 +762,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             formatPercent={formatPercent}
             onMonthChange={handleAccountHealthMonthChange}
             onCompareMonthChange={handleCompareMonthChange}
-            selectedMonth={accountHealthMonth}
+            selectedMonth={selectedMonth}
             compareMonth={compareMonth}
           />
         </TabsContent>
