@@ -16,7 +16,6 @@ import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
@@ -73,7 +72,7 @@ const RepPerformance = () => {
     await loadDataFromSupabase();
     setAutoRefreshed(true);
   };
-  
+
   // Add specific handling for refresh from header
   const handleRefresh = async () => {
     console.log('RepPerformance: Refresh triggered from header');
@@ -104,7 +103,6 @@ const RepPerformance = () => {
       console.log('Setting up global refresh handler for RepPerformance');
       window.repPerformanceRefresh = handleRefresh;
     }
-    
     return () => {
       // Cleanup when component unmounts
       if (window.repPerformanceRefresh) {
@@ -113,7 +111,7 @@ const RepPerformance = () => {
       }
     };
   }, [location.pathname, selectedMonth]); // Add selectedMonth as dependency
-  
+
   const activeData = getActiveData('overall');
 
   // Calculate filtered summary data for each month using the same calculation as metric cards
@@ -146,9 +144,7 @@ const RepPerformance = () => {
       may: repData.may.find(r => r.rep === sampleRep)?.profit
     });
   }
-
-  return (
-    <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
+  return <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
       <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} />
       
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
@@ -176,84 +172,30 @@ const RepPerformance = () => {
           </div>}
       </div>
 
-      <PerformanceFilters 
-        includeRetail={includeRetail} 
-        setIncludeRetail={setIncludeRetail} 
-        includeReva={includeReva} 
-        setIncludeReva={setIncludeReva} 
-        includeWholesale={includeWholesale} 
-        setIncludeWholesale={setIncludeWholesale} 
-        selectedMonth={selectedMonth} 
-        setSelectedMonth={setSelectedMonth} 
-      />
+      <PerformanceFilters includeRetail={includeRetail} setIncludeRetail={setIncludeRetail} includeReva={includeReva} setIncludeReva={setIncludeReva} includeWholesale={includeWholesale} setIncludeWholesale={setIncludeWholesale} selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} />
 
       {/* Wrap the SummaryMetrics in a Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-8">
         <CardHeader className="pb-0">
           <CardTitle className="text-xl font-bold">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
-              Performance Summary
-            </span>
+            
           </CardTitle>
-          <CardDescription className="text-white/60">
-            Key metrics for {selectedMonth} 2025
-          </CardDescription>
+          
         </CardHeader>
         <CardContent className="pt-4">
-          <SummaryMetrics 
-            summary={summary} 
-            summaryChanges={summaryChanges} 
-            isLoading={isLoading} 
-            includeRetail={includeRetail} 
-            includeReva={includeReva} 
-            includeWholesale={includeWholesale} 
-            selectedMonth={selectedMonth} 
-          />
+          <SummaryMetrics summary={summary} summaryChanges={summaryChanges} isLoading={isLoading} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} selectedMonth={selectedMonth} />
         </CardContent>
       </Card>
       
       <div className="mb-6">
-        <TrendLineChart 
-          febSummary={filteredFebSummary} 
-          marchSummary={filteredMarSummary} 
-          aprilSummary={filteredAprSummary} 
-          maySummary={filteredMaySummary} 
-          isLoading={isLoading} 
-          repDataProp={repData}
-          includeRetail={includeRetail}
-          includeReva={includeReva}
-          includeWholesale={includeWholesale}
-        />
+        <TrendLineChart febSummary={filteredFebSummary} marchSummary={filteredMarSummary} aprilSummary={filteredAprSummary} maySummary={filteredMaySummary} isLoading={isLoading} repDataProp={repData} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} />
       </div>
 
-      <PerformanceContent 
-        tabValues={['overall', 'rep', 'reva', 'wholesale']} 
-        getActiveData={getActiveData} 
-        sortData={sortData} 
-        sortBy={sortBy} 
-        sortOrder={sortOrder} 
-        handleSort={handleSort} 
-        repChanges={repChanges} 
-        formatCurrency={formatCurrency} 
-        formatPercent={formatPercent} 
-        formatNumber={formatNumber} 
-        renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
-          const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
-          return <RenderChangeIndicator changeValue={changeValue} size={size === "small" ? "small" : "large"} previousValue={previousValue} />;
-        }} 
-        isLoading={isLoading} 
-        getFebValue={getFebValue} 
-        selectedMonth={selectedMonth}
-        summary={summary}
-        includeRetail={includeRetail}
-        includeReva={includeReva}
-        includeWholesale={includeWholesale}
-        baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary}
-        revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues}
-        wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues}
-      />
-    </div>
-  );
+      <PerformanceContent tabValues={['overall', 'rep', 'reva', 'wholesale']} getActiveData={getActiveData} sortData={sortData} sortBy={sortBy} sortOrder={sortOrder} handleSort={handleSort} repChanges={repChanges} formatCurrency={formatCurrency} formatPercent={formatPercent} formatNumber={formatNumber} renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
+      const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
+      return <RenderChangeIndicator changeValue={changeValue} size={size === "small" ? "small" : "large"} previousValue={previousValue} />;
+    }} isLoading={isLoading} getFebValue={getFebValue} selectedMonth={selectedMonth} summary={summary} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary} revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues} wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues} />
+    </div>;
 };
 
 // Add the global window type declaration
@@ -262,5 +204,4 @@ declare global {
     repPerformanceRefresh?: () => Promise<void>;
   }
 }
-
 export default RepPerformance;
