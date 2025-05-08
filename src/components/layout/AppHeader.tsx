@@ -4,32 +4,18 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
   showUserSelector?: boolean;
-  onRefreshData?: () => void;
-  isRefreshing?: boolean;
-  selectedMonth?: string;
-  setSelectedMonth?: (month: string) => void;
 }
 
-const AppHeader = ({ 
-  selectedUserId, 
-  onSelectUser, 
-  showUserSelector = false,
-  onRefreshData,
-  isRefreshing = false,
-  selectedMonth = 'March',
-  setSelectedMonth
-}: AppHeaderProps) => {
+const AppHeader = ({ selectedUserId, onSelectUser, showUserSelector = false }: AppHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -57,12 +43,6 @@ const AppHeader = ({
     console.log(`AppHeader: User selection changed to ${displayName} (${userId})`);
     if (onSelectUser) {
       onSelectUser(userId, displayName);
-    }
-  };
-
-  const handleMonthChange = (value: string) => {
-    if (setSelectedMonth) {
-      setSelectedMonth(value);
     }
   };
 
@@ -126,26 +106,6 @@ const AppHeader = ({
                 />
               </div>
             )}
-            
-            {/* Month selector */}
-            {setSelectedMonth && (
-              <div className="ml-4">
-                <Select 
-                  value={selectedMonth} 
-                  onValueChange={handleMonthChange}
-                >
-                  <SelectTrigger className="w-[180px] bg-gray-900/40 border-white/10 text-white">
-                    <SelectValue placeholder="Select Month" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-900 border-white/10 text-white">
-                    <SelectItem value="February">February</SelectItem>
-                    <SelectItem value="March">March</SelectItem>
-                    <SelectItem value="April">April</SelectItem>
-                    <SelectItem value="May">May</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
           
           <div className="flex items-center gap-4">
@@ -157,26 +117,6 @@ const AppHeader = ({
                 showAllDataOption={true}
               />
             )}
-            
-            {/* Refresh Icon Button */}
-            {onRefreshData && (
-              <Button
-                onClick={onRefreshData}
-                size="icon"
-                variant="ghost"
-                className={cn(
-                  "rounded-full",
-                  isRefreshing 
-                    ? "text-finance-red" 
-                    : "text-white/70 hover:text-white hover:bg-white/10"
-                )}
-                disabled={isRefreshing}
-              >
-                <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                <span className="sr-only">Refresh Data</span>
-              </Button>
-            )}
-            
             <UserProfileDropdown />
           </div>
         </div>
