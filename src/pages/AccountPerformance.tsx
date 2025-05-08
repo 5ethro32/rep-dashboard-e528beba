@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -26,7 +27,10 @@ type DataItem = {
   profit?: number;
   Spend?: number;
   spend?: number;
+  Department?: string;
+  department?: string;
 };
+
 interface AccountPerformanceProps {
   selectedUserId?: string | null;
   selectedUserName?: string;
@@ -64,6 +68,11 @@ const AccountPerformance = ({
 
   // Add state for tracking auto-refreshed status
   const [autoRefreshed, setAutoRefreshed] = useState(false);
+  
+  // Add filter states
+  const [includeRetail, setIncludeRetail] = useState(true);
+  const [includeReva, setIncludeReva] = useState(true);
+  const [includeWholesale, setIncludeWholesale] = useState(true);
 
   // Update local state when props change
   useEffect(() => {
@@ -74,9 +83,10 @@ const AccountPerformance = ({
       setSelectedUserName(propSelectedUserName);
     }
   }, [propSelectedUserId, propSelectedUserName]);
+  
   useEffect(() => {
     fetchComparisonData();
-  }, [selectedMonth, selectedUserId, selectedUserName]);
+  }, [selectedMonth, selectedUserId, selectedUserName, includeRetail, includeReva, includeWholesale]);
 
   // Handle user selection change
   const handleUserChange = (userId: string | null, displayName: string) => {
@@ -102,6 +112,29 @@ const AccountPerformance = ({
       window.accountPerformanceRefresh = undefined;
     };
   }, []);
+
+  // Filter data based on department toggles
+  const filterDataByDepartment = (data: DataItem[]): DataItem[] => {
+    if (includeRetail && includeReva && includeWholesale) {
+      return data; // Return all data if all filters are on
+    }
+    
+    return data.filter(item => {
+      const department = item.Department || item.department || '';
+      
+      if (!includeRetail && department.toUpperCase() === 'RETAIL') {
+        return false;
+      }
+      if (!includeReva && department.toUpperCase() === 'REVA') {
+        return false;
+      }
+      if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department === 'Wholesale')) {
+        return false;
+      }
+      
+      return true;
+    });
+  };
 
   const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: {
     column: string;
@@ -195,6 +228,7 @@ const AccountPerformance = ({
     // But just in case, return all records
     return allRecords;
   };
+  
   const fetchComparisonData = async () => {
     setIsLoading(true);
     setAutoRefreshed(false);
@@ -238,15 +272,19 @@ const AccountPerformance = ({
         }
       }
 
-      // Set state with fetched data
-      setCurrentMonthRawData(currentData || []);
-      setPreviousMonthRawData(previousData);
+      // Apply department filters
+      const filteredCurrentData = filterDataByDepartment(currentData || []);
+      const filteredPreviousData = filterDataByDepartment(previousData || []);
+
+      // Set state with filtered data
+      setCurrentMonthRawData(filteredCurrentData);
+      setPreviousMonthRawData(filteredPreviousData);
 
       // Calculate active accounts
-      const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
+      const currentActiveAccounts = new Set(filteredCurrentData?.map((item: DataItem) => {
         return item["Account Name"] || item.account_name;
       }).filter(Boolean)).size || 0;
-      const previousActiveAccounts = new Set(previousData?.map((item: DataItem) => {
+      const previousActiveAccounts = new Set(filteredPreviousData?.map((item: DataItem) => {
         return item["Account Name"] || item.account_name;
       }).filter(Boolean)).size || 0;
       setActiveAccounts({
@@ -255,20 +293,20 @@ const AccountPerformance = ({
       });
 
       // Calculate increasing and decreasing spend accounts
-      if (currentData && previousData && currentData.length > 0 && previousData.length > 0) {
+      if (filteredCurrentData && filteredPreviousData && filteredCurrentData.length > 0 && filteredPreviousData.length > 0) {
         // Create maps for current and previous data to easily compare accounts
         const currentAccountMap = new Map();
         const previousAccountMap = new Map();
 
         // Build maps with account ref as key and spend as value
-        currentData.forEach((item: DataItem) => {
+        filteredCurrentData.forEach((item: DataItem) => {
           const accountRef = item["Account Ref"] || item.account_ref || '';
           const spend = typeof item.Spend === 'number' ? item.Spend : typeof item.spend === 'number' ? item.spend : 0;
           if (accountRef) {
             currentAccountMap.set(accountRef, spend);
           }
         });
-        previousData.forEach((item: DataItem) => {
+        filteredPreviousData.forEach((item: DataItem) => {
           const accountRef = item["Account Ref"] || item.account_ref || '';
           const spend = typeof item.Spend === 'number' ? item.Spend : typeof item.spend === 'number' ? item.spend : 0;
           if (accountRef) {
@@ -298,9 +336,9 @@ const AccountPerformance = ({
       }
 
       // Calculate top rep
-      if (currentData && currentData.length > 0) {
+      if (filteredCurrentData && filteredCurrentData.length > 0) {
         const repProfits = new Map();
-        currentData.forEach((item: DataItem) => {
+        filteredCurrentData.forEach((item: DataItem) => {
           const repName = item.Rep || item.rep_name || '';
           const profit = typeof item.Profit === 'number' ? item.Profit : typeof item.profit === 'number' ? item.profit : 0;
           if (repName) {
@@ -383,12 +421,12 @@ const AccountPerformance = ({
       
       {/* Performance Filters */}
       <PerformanceFilters 
-        includeRetail={true}
-        setIncludeRetail={() => {}}
-        includeReva={true}
-        setIncludeReva={() => {}}
-        includeWholesale={true}
-        setIncludeWholesale={() => {}}
+        includeRetail={includeRetail}
+        setIncludeRetail={setIncludeRetail}
+        includeReva={includeReva}
+        setIncludeReva={setIncludeReva}
+        includeWholesale={includeWholesale}
+        setIncludeWholesale={setIncludeWholesale}
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}
       />
