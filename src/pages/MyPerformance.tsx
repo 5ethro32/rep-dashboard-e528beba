@@ -73,10 +73,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   }, [user, selectedMonth, compareMonth, selectedUserId]);
   
-  // Sync accountHealthMonth with the main selectedMonth
-  useEffect(() => {
-    setAccountHealthMonth(selectedMonth);
-  }, [selectedMonth]);
+  // No need to sync accountHealthMonth since we're using selectedMonth directly
   
   const handleSelectUser = (userId: string | null, displayName: string) => {
     setSelectedUserId(userId);
@@ -158,8 +155,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       if (selectedUserId === "all") {
         console.log('Fetching all data for admin view');
         
-        // Get current month data
-        const { data: currentData, error: currentError } = await fetchDataFromTable(currentTable);
+        // Get current month data - use type assertion for table name
+        const { data: currentData, error: currentError } = await supabase
+          .from(currentTable as any)
+          .select('*');
         
         if (currentError) throw currentError;
         
@@ -173,7 +172,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         // Get previous month data if available
         let previousPerformance = null;
         if (compareTable) {
-          const { data: previousData, error: previousError } = await fetchDataFromTable(compareTable);
+          const { data: previousData, error: previousError } = await supabase
+            .from(compareTable as any)
+            .select('*');
             
           if (!previousError && previousData) {
             previousPerformance = calculatePerformanceMetrics(
@@ -255,12 +256,16 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       
       // If viewing all data
       if (selectedUserId === "all") {
-        // Fetch current month data
-        const { data: currentData, error: currentError } = await fetchDataFromTable(currentTable);
+        // Fetch current month data - use type assertion for table name
+        const { data: currentData, error: currentError } = await supabase
+          .from(currentTable as any)
+          .select('*');
         if (currentError) throw currentError;
         
-        // Fetch comparison month data
-        const { data: compareData, error: compareError } = await fetchDataFromTable(compareTable);
+        // Fetch comparison month data - use type assertion for table name
+        const { data: compareData, error: compareError } = await supabase
+          .from(compareTable as any)
+          .select('*');
         if (compareError) throw compareError;
         
         // Calculate account health by comparing current and comparison data
@@ -309,16 +314,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       throw error;
     } finally {
       setIsLoading(false);
-    }
-  };
-  
-  // Helper function to fetch data from a specific table
-  const fetchDataFromTable = async (tableName: string) => {
-    try {
-      return await supabase.from(tableName).select('*');
-    } catch (error) {
-      console.error(`Error fetching data from ${tableName}:`, error);
-      throw error;
     }
   };
   
@@ -442,19 +437,44 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   // Helper function to fetch user-specific data from a table
   const fetchUserDataFromTable = async (tableName: string, matchName: string, repNameColumn: string, subRepColumn: string) => {
     try {
+      // We need to handle table names in a type-safe way for Supabase
+      // This approach uses type assertions since we know the table names are valid
+      
       // For tables using snake_case column naming
       if (tableName === 'sales_data') {
         return await supabase
-          .from(tableName)
+          .from('sales_data')
           .select('*')
           .or(`${repNameColumn}.ilike.%${matchName}%,${subRepColumn}.ilike.%${matchName}%`);
       } 
-      // For tables using PascalCase column naming
-      else {
+      // For other tables with specific names
+      else if (tableName === 'May_Data') {
         return await supabase
-          .from(tableName)
+          .from('May_Data')
           .select('*')
           .or(`"${repNameColumn}".ilike.%${matchName}%,"${subRepColumn}".ilike.%${matchName}%`);
+      }
+      else if (tableName === 'mtd_daily') {
+        return await supabase
+          .from('mtd_daily')
+          .select('*')
+          .or(`"${repNameColumn}".ilike.%${matchName}%,"${subRepColumn}".ilike.%${matchName}%`);
+      }
+      else if (tableName === 'Prior_Month_Rolling') {
+        return await supabase
+          .from('Prior_Month_Rolling')
+          .select('*')
+          .or(`"${repNameColumn}".ilike.%${matchName}%,"${subRepColumn}".ilike.%${matchName}%`);
+      }
+      else if (tableName === 'sales_data_februrary') {
+        return await supabase
+          .from('sales_data_februrary')
+          .select('*')
+          .or(`"${repNameColumn}".ilike.%${matchName}%,"${subRepColumn}".ilike.%${matchName}%`);
+      }
+      // Fallback that should not be reached - we'll throw an error
+      else {
+        throw new Error(`Unsupported table name: ${tableName}`);
       }
     } catch (error) {
       console.error(`Error fetching user data from ${tableName}:`, error);
