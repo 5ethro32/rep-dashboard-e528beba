@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -8,13 +9,13 @@ import {
   ChevronDown,
   Search,
   Star,
-  StarOff,
   Shield
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -334,94 +335,96 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
           />
         </div>
         
-        <div className="rounded-md border border-white/10 overflow-hidden overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-gray-900/60">
-              <TableRow>
-                <TableHead className="text-white/70 w-10"></TableHead>
-                <TableHead 
-                  className="text-white/70 cursor-pointer" 
-                  onClick={() => handleSort('accountName')}
-                >
-                  Account {getSortIndicator('accountName')}
-                </TableHead>
-                <TableHead 
-                  className="text-white/70 cursor-pointer" 
-                  onClick={() => handleSort('profit')}
-                >
-                  Profit {getSortIndicator('profit')}
-                </TableHead>
-                <TableHead 
-                  className="text-white/70 cursor-pointer" 
-                  onClick={() => handleSort('profitChangePercent')}
-                >
-                  Change {getSortIndicator('profitChangePercent')}
-                </TableHead>
-                <TableHead 
-                  className="text-white/70 cursor-pointer" 
-                  onClick={() => handleSort('margin')}
-                >
-                  Margin {getSortIndicator('margin')}
-                </TableHead>
-                <TableHead className="text-white/70">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAccounts.length > 0 ? (
-                filteredAccounts.map((account, index) => (
-                  <TableRow key={index} className="border-t border-white/10">
-                    <TableCell className="p-2 w-12">
-                      <div className="flex gap-1">
-                        {isAdmin && (
+        <div className="rounded-md border border-white/10 overflow-hidden">
+          <ScrollArea className="h-[400px]" orientation="vertical">
+            <Table>
+              <TableHeader className="bg-gray-900/60 sticky top-0 z-10">
+                <TableRow>
+                  <TableHead className="text-white/70 w-10"></TableHead>
+                  <TableHead 
+                    className="text-white/70 cursor-pointer" 
+                    onClick={() => handleSort('accountName')}
+                  >
+                    Account {getSortIndicator('accountName')}
+                  </TableHead>
+                  <TableHead 
+                    className="text-white/70 cursor-pointer" 
+                    onClick={() => handleSort('profit')}
+                  >
+                    Profit {getSortIndicator('profit')}
+                  </TableHead>
+                  <TableHead 
+                    className="text-white/70 cursor-pointer" 
+                    onClick={() => handleSort('profitChangePercent')}
+                  >
+                    Change {getSortIndicator('profitChangePercent')}
+                  </TableHead>
+                  <TableHead 
+                    className="text-white/70 cursor-pointer" 
+                    onClick={() => handleSort('margin')}
+                  >
+                    Margin {getSortIndicator('margin')}
+                  </TableHead>
+                  <TableHead className="text-white/70">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAccounts.length > 0 ? (
+                  filteredAccounts.map((account, index) => (
+                    <TableRow key={index} className="border-t border-white/10">
+                      <TableCell className="p-2 w-12">
+                        <div className="flex gap-1">
+                          {isAdmin && (
+                            <button
+                              onClick={() => toggleAdminStar(
+                                account.accountRef,
+                                account.accountName,
+                                isAdminStarred(account.accountRef)
+                              )}
+                              className="text-white/40 hover:text-yellow-500 transition-colors"
+                              title={isAdminStarred(account.accountRef) ? "Remove from key accounts" : "Mark as key account"}
+                            >
+                              {isAdminStarred(account.accountRef) ? (
+                                <Shield className="h-4 w-4 text-yellow-500" />
+                              ) : (
+                                <Shield className="h-4 w-4" />
+                              )}
+                            </button>
+                          )}
                           <button
-                            onClick={() => toggleAdminStar(
+                            onClick={() => toggleUserStar(
                               account.accountRef,
                               account.accountName,
-                              isAdminStarred(account.accountRef)
+                              isUserStarred(account.accountRef)
                             )}
                             className="text-white/40 hover:text-yellow-500 transition-colors"
-                            title={isAdminStarred(account.accountRef) ? "Remove from key accounts" : "Mark as key account"}
+                            title={isUserStarred(account.accountRef) ? "Remove bookmark" : "Bookmark account"}
                           >
-                            {isAdminStarred(account.accountRef) ? (
-                              <Shield className="h-4 w-4 text-yellow-500" />
+                            {isUserStarred(account.accountRef) ? (
+                              <Star className="h-4 w-4 text-yellow-500" />
                             ) : (
-                              <Shield className="h-4 w-4" />
+                              <Star className="h-4 w-4" />
                             )}
                           </button>
-                        )}
-                        <button
-                          onClick={() => toggleUserStar(
-                            account.accountRef,
-                            account.accountName,
-                            isUserStarred(account.accountRef)
-                          )}
-                          className="text-white/40 hover:text-yellow-500 transition-colors"
-                          title={isUserStarred(account.accountRef) ? "Remove bookmark" : "Bookmark account"}
-                        >
-                          {isUserStarred(account.accountRef) ? (
-                            <Star className="h-4 w-4 text-yellow-500" />
-                          ) : (
-                            <Star className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium text-white">{account.accountName}</TableCell>
+                      <TableCell>{formatCurrency(account.profit)}</TableCell>
+                      <TableCell>{getChangeIndicator(account.profitChangePercent)}</TableCell>
+                      <TableCell>{formatPercent(account.margin)}</TableCell>
+                      <TableCell>{getStatusBadge(account.status)}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-4 text-white/60">
+                      No accounts found matching your search
                     </TableCell>
-                    <TableCell className="font-medium text-white">{account.accountName}</TableCell>
-                    <TableCell>{formatCurrency(account.profit)}</TableCell>
-                    <TableCell>{getChangeIndicator(account.profitChangePercent)}</TableCell>
-                    <TableCell>{formatPercent(account.margin)}</TableCell>
-                    <TableCell>{getStatusBadge(account.status)}</TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-white/60">
-                    No accounts found matching your search
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </div>
       </CardContent>
     </Card>
