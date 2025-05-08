@@ -1,4 +1,3 @@
-
 export const calculateSummary = (
   baseSummary: {
     totalSpend: number;
@@ -162,7 +161,7 @@ export const calculateGoals = async (matchName: string, isAllData: boolean) => {
       profit: 100000,
       margin: 30,
       activeRatio: 75,
-      activeAccounts: 20  // Changed from accounts to activeAccounts
+      accounts: 20
     };
     
     // Growth factor - 10% increase over previous month
@@ -235,14 +234,14 @@ export const calculateGoals = async (matchName: string, isAllData: boolean) => {
       profit: Math.round(totalProfit * growthFactor),
       margin: Math.round(margin * growthFactor * 10) / 10,
       activeRatio: Math.round(activeRatio * growthFactor * 10) / 10,
-      activeAccounts: Math.round(activeAccountSet.size * growthFactor)  // Changed from accounts to activeAccounts
+      accounts: Math.round(accountSet.size * growthFactor)
     };
     
     console.log("Previous month metrics:", {
       profit: totalProfit,
       margin: margin,
       activeRatio: activeRatio,
-      activeAccounts: activeAccountSet.size  // Changed from accounts to activeAccounts
+      accounts: accountSet.size
     });
     console.log("Calculated goals with growth factor:", calculatedGoals);
     
@@ -251,7 +250,7 @@ export const calculateGoals = async (matchName: string, isAllData: boolean) => {
       profit: calculatedGoals.profit > 5000 ? calculatedGoals.profit : defaultGoals.profit,
       margin: calculatedGoals.margin > 5 ? calculatedGoals.margin : defaultGoals.margin,
       activeRatio: calculatedGoals.activeRatio > 10 ? calculatedGoals.activeRatio : defaultGoals.activeRatio,
-      activeAccounts: calculatedGoals.activeAccounts > 5 ? calculatedGoals.activeAccounts : defaultGoals.activeAccounts  // Changed from accounts to activeAccounts
+      accounts: calculatedGoals.accounts > 5 ? calculatedGoals.accounts : defaultGoals.accounts
     };
   } catch (error) {
     console.error("Error calculating goals:", error);
@@ -259,7 +258,7 @@ export const calculateGoals = async (matchName: string, isAllData: boolean) => {
       profit: 100000,
       margin: 30,
       activeRatio: 75,
-      activeAccounts: 20  // Changed from accounts to activeAccounts
+      accounts: 20
     };
   }
 };
