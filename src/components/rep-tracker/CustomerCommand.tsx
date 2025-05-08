@@ -107,7 +107,7 @@ export function CustomerCommand({
         className="max-h-[200px] overflow-y-auto"
         orientation="vertical"
       >
-        {filteredCustomers.length === 0 ? (
+        {!filteredCustomers || filteredCustomers.length === 0 ? (
           <div className="py-6 text-center text-sm">No customer found.</div>
         ) : (
           <div className="p-1">

@@ -49,13 +49,18 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
     }
   };
   
+  // Determine button sizes based on screen size
+  const toggleClassName = isMobile 
+    ? 'min-w-[60px] px-2 py-1 text-xs'
+    : 'min-w-[80px] px-3';
+  
   return (
-    <div className="flex flex-wrap items-center justify-between w-full gap-3 mb-8">
-      <div className="flex flex-wrap gap-2 md:gap-3">
+    <div className="flex items-center justify-between w-full gap-2 mb-6">
+      <div className="flex gap-2">
         <ToggleButton 
           checked={includeRetail} 
           onToggle={setIncludeRetail}
-          className={`${isMobile ? 'min-w-[80px] px-2 py-1 text-xs' : 'min-w-[100px]'}`}
+          className={toggleClassName}
         >
           Retail
         </ToggleButton>
@@ -63,7 +68,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         <ToggleButton 
           checked={includeReva} 
           onToggle={setIncludeReva}
-          className={`${isMobile ? 'min-w-[80px] px-2 py-1 text-xs' : 'min-w-[100px]'}`}
+          className={toggleClassName}
         >
           REVA
         </ToggleButton>
@@ -71,14 +76,14 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         <ToggleButton 
           checked={includeWholesale} 
           onToggle={setIncludeWholesale}
-          className={`${isMobile ? 'min-w-[80px] px-2 py-1 text-xs' : 'min-w-[100px]'}`}
+          className={toggleClassName}
         >
           Wholesale
         </ToggleButton>
       </div>
       
       {showMonthSelector && (
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button 
@@ -86,15 +91,15 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
                 className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'px-2 py-1 h-8 text-xs' : ''}`}
               >
                 <Calendar className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
-                <span>{isMobile ? selectedMonth : `Month: ${selectedMonth}`}</span>
+                <span>{selectedMonth}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-0 bg-gray-800/95 backdrop-blur-sm border-white/10">
               <Command className="bg-transparent">
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
-                <CommandGroup>
-                  {months.map((month) => (
+                <CommandGroup className="overflow-hidden">
+                  {months && months.length > 0 ? months.map((month) => (
                     <CommandItem
                       key={month}
                       value={month}
@@ -105,7 +110,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
                     >
                       {month}
                     </CommandItem>
-                  ))}
+                  )) : <CommandEmpty>No months available</CommandEmpty>}
                 </CommandGroup>
               </Command>
             </PopoverContent>
