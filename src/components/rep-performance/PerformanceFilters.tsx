@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ToggleButton } from "@/components/ui/toggle-button";
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -59,7 +59,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         </ToggleButton>
       </div>
       
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -97,6 +97,21 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        
+        <Button
+          variant="outline"
+          size="icon"
+          className="bg-gray-900/70 border border-gray-700 hover:bg-gray-800 text-white rounded-full w-10 h-10"
+          onClick={() => {
+            // Call the global refresh handler if available
+            if (window.repPerformanceRefresh) {
+              window.repPerformanceRefresh();
+            }
+          }}
+          aria-label="Refresh data"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
