@@ -419,17 +419,25 @@ const AccountPerformance = ({
         </p>
       </div>
       
-      {/* Performance Filters */}
-      <PerformanceFilters 
-        includeRetail={includeRetail}
-        setIncludeRetail={setIncludeRetail}
-        includeReva={includeReva}
-        setIncludeReva={setIncludeReva}
-        includeWholesale={includeWholesale}
-        setIncludeWholesale={setIncludeWholesale}
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-      />
+      <div className="flex flex-col md:flex-row justify-between mb-6">
+        {/* Performance Filters */}
+        <PerformanceFilters 
+          includeRetail={includeRetail}
+          setIncludeRetail={setIncludeRetail}
+          includeReva={includeReva}
+          setIncludeReva={setIncludeReva}
+          includeWholesale={includeWholesale}
+          setIncludeWholesale={setIncludeWholesale}
+        />
+        
+        {/* Month selector and refresh button */}
+        <PerformanceHeader 
+          hideTitle={true}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+          onRefresh={handleRefresh}
+        />
+      </div>
       
       {/* Update Card - remove the p-0 and fix the padding in CardContent */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
