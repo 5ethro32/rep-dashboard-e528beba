@@ -7,12 +7,23 @@ import {
   Minus,
   ChevronUp,
   ChevronDown,
-  Search
+  Search,
+  Star,
+  StarOff,
+  Shield,
+  ShieldStar
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Table,
   TableBody,
   TableCell,
@@ -20,6 +31,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { useStarredAccounts } from '@/hooks/useStarredAccounts';
 
 interface AccountHealthSectionProps {
   accountHealthData: any[];
@@ -35,12 +47,66 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
   formatPercent
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'admin-starred' | 'user-starred'>('all');
+  const [sortBy, setSortBy] = useState<string>('healthScore');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  // Filter accounts based on search
-  const filteredAccounts = accountHealthData.filter(account => 
-    account.accountName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    account.accountRef?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const {
+    isAdminStarred,
+    isUserStarred,
+    toggleAdminStar,
+    toggleUserStar,
+    isAdmin
+  } = useStarredAccounts();
+
+  // Handle sorting
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('desc');
+    }
+  };
+
+  // Filter accounts based on search and star filters
+  const filteredAccounts = accountHealthData.filter(account => {
+    // Text search filter
+    const matchesSearch = account.accountName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         account.accountRef?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Star filters
+    const accountRef = account.accountRef || '';
+    
+    if (filterType === 'admin-starred') {
+      return matchesSearch && isAdminStarred(accountRef);
+    } else if (filterType === 'user-starred') {
+      return matchesSearch && isUserStarred(accountRef);
+    }
+    
+    return matchesSearch;
+  }).sort((a, b) => {
+    // Handle sorting
+    const column = sortBy;
+    let valueA = a[column];
+    let valueB = b[column];
+    
+    // Ensure we have numbers for numeric comparisons
+    if (column === 'profit' || column === 'profitChangePercent' || column === 'margin' || column === 'healthScore') {
+      valueA = Number(valueA || 0);
+      valueB = Number(valueB || 0);
+    } else {
+      // String comparison for text fields
+      valueA = String(valueA || '').toLowerCase();
+      valueB = String(valueB || '').toLowerCase();
+    }
+    
+    if (sortDirection === 'asc') {
+      return valueA > valueB ? 1 : -1;
+    } else {
+      return valueA < valueB ? 1 : -1;
+    }
+  });
 
   // Get top improving and declining accounts
   const improvingAccounts = [...accountHealthData]
@@ -100,6 +166,16 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
     return <span className="text-gray-400">0%</span>;
   };
 
+  // Get sort indicator arrow
+  const getSortIndicator = (column: string) => {
+    if (sortBy === column) {
+      return sortDirection === 'asc' ? 
+        <ChevronUp className="h-4 w-4 inline ml-1" /> : 
+        <ChevronDown className="h-4 w-4 inline ml-1" />;
+    }
+    return null;
+  };
+
   if (isLoading) {
     return (
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
@@ -137,7 +213,21 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                     <div key={index} className="bg-gray-900/40 p-2 rounded-md">
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-white">{account.accountName}</span>
-                        {getStatusBadge(account.status)}
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(account.status)}
+                          <div className="flex gap-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <ShieldStar className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <div className="mt-1 text-sm flex justify-between">
                         <span className="text-white/70">
@@ -172,7 +262,21 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                     <div key={index} className="bg-gray-900/40 p-2 rounded-md">
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-white">{account.accountName}</span>
-                        {getStatusBadge(account.status)}
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(account.status)}
+                          <div className="flex gap-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <ShieldStar className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <div className="mt-1 text-sm flex justify-between">
                         <span className="text-white/70">
@@ -195,7 +299,31 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
         </div>
         
         {/* Full Account Health Table */}
-        <h4 className="text-md font-medium text-white/80 mt-6 mb-3">All Accounts Performance</h4>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-6 mb-3">
+          <h4 className="text-md font-medium text-white/80">All Accounts Performance</h4>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 bg-gray-900/50 border-white/10 text-white/80">
+                {filterType === 'all' ? 'All Accounts' : 
+                 filterType === 'admin-starred' ? 'Key Accounts' : 'My Bookmarks'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
+              <DropdownMenuItem onClick={() => setFilterType('all')} className="cursor-pointer">
+                All Accounts
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilterType('admin-starred')} className="cursor-pointer">
+                Key Accounts
+                <ShieldStar className="h-4 w-4 ml-2 text-yellow-500" />
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFilterType('user-starred')} className="cursor-pointer">
+                My Bookmarks
+                <Star className="h-4 w-4 ml-2 text-yellow-500" />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         
         <div className="relative mb-4">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/50" />
@@ -208,14 +336,35 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
           />
         </div>
         
-        <div className="rounded-md border border-white/10 overflow-hidden">
+        <div className="rounded-md border border-white/10 overflow-hidden overflow-x-auto">
           <Table>
             <TableHeader className="bg-gray-900/60">
               <TableRow>
-                <TableHead className="text-white/70">Account</TableHead>
-                <TableHead className="text-white/70">Profit</TableHead>
-                <TableHead className="text-white/70">Change</TableHead>
-                <TableHead className="text-white/70">Margin</TableHead>
+                <TableHead className="text-white/70 w-10"></TableHead>
+                <TableHead 
+                  className="text-white/70 cursor-pointer" 
+                  onClick={() => handleSort('accountName')}
+                >
+                  Account {getSortIndicator('accountName')}
+                </TableHead>
+                <TableHead 
+                  className="text-white/70 cursor-pointer" 
+                  onClick={() => handleSort('profit')}
+                >
+                  Profit {getSortIndicator('profit')}
+                </TableHead>
+                <TableHead 
+                  className="text-white/70 cursor-pointer" 
+                  onClick={() => handleSort('profitChangePercent')}
+                >
+                  Change {getSortIndicator('profitChangePercent')}
+                </TableHead>
+                <TableHead 
+                  className="text-white/70 cursor-pointer" 
+                  onClick={() => handleSort('margin')}
+                >
+                  Margin {getSortIndicator('margin')}
+                </TableHead>
                 <TableHead className="text-white/70">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -223,6 +372,42 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
               {filteredAccounts.length > 0 ? (
                 filteredAccounts.map((account, index) => (
                   <TableRow key={index} className="border-t border-white/10">
+                    <TableCell className="p-2 w-12">
+                      <div className="flex gap-1">
+                        {isAdmin && (
+                          <button
+                            onClick={() => toggleAdminStar(
+                              account.accountRef,
+                              account.accountName,
+                              isAdminStarred(account.accountRef)
+                            )}
+                            className="text-white/40 hover:text-yellow-500 transition-colors"
+                            title={isAdminStarred(account.accountRef) ? "Remove from key accounts" : "Mark as key account"}
+                          >
+                            {isAdminStarred(account.accountRef) ? (
+                              <ShieldStar className="h-4 w-4 text-yellow-500" />
+                            ) : (
+                              <Shield className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => toggleUserStar(
+                            account.accountRef,
+                            account.accountName,
+                            isUserStarred(account.accountRef)
+                          )}
+                          className="text-white/40 hover:text-yellow-500 transition-colors"
+                          title={isUserStarred(account.accountRef) ? "Remove bookmark" : "Bookmark account"}
+                        >
+                          {isUserStarred(account.accountRef) ? (
+                            <Star className="h-4 w-4 text-yellow-500" />
+                          ) : (
+                            <StarOff className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </TableCell>
                     <TableCell className="font-medium text-white">{account.accountName}</TableCell>
                     <TableCell>{formatCurrency(account.profit)}</TableCell>
                     <TableCell>{getChangeIndicator(account.profitChangePercent)}</TableCell>
@@ -232,7 +417,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4 text-white/60">
+                  <TableCell colSpan={6} className="text-center py-4 text-white/60">
                     No accounts found matching your search
                   </TableCell>
                 </TableRow>

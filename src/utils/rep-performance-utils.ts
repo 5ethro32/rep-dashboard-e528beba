@@ -262,3 +262,47 @@ export const calculateGoals = async (matchName: string, isAllData: boolean) => {
     };
   }
 };
+
+/**
+ * Checks if an account is flagged as important by admin
+ * @param accountRef The account reference to check
+ * @returns Promise resolving to boolean indicating if account is admin-starred
+ */
+export const isAdminStarredAccount = async (accountRef: string): Promise<boolean> => {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data } = await supabase
+      .from('admin_starred_accounts')
+      .select('id')
+      .eq('account_ref', accountRef)
+      .single();
+      
+    return !!data;
+  } catch (error) {
+    console.error("Error checking admin starred account:", error);
+    return false;
+  }
+};
+
+/**
+ * Checks if an account is flagged as important by the current user
+ * @param accountRef The account reference to check
+ * @param userId The user ID to check for
+ * @returns Promise resolving to boolean indicating if account is user-starred
+ */
+export const isUserStarredAccount = async (accountRef: string, userId: string): Promise<boolean> => {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data } = await supabase
+      .from('user_starred_accounts')
+      .select('id')
+      .eq('account_ref', accountRef)
+      .eq('user_id', userId)
+      .single();
+      
+    return !!data;
+  } catch (error) {
+    console.error("Error checking user starred account:", error);
+    return false;
+  }
+};

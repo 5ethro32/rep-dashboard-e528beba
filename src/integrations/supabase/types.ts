@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_starred_accounts: {
+        Row: {
+          account_name: string
+          account_ref: string
+          created_at: string | null
+          id: string
+          starred_by: string
+        }
+        Insert: {
+          account_name: string
+          account_ref: string
+          created_at?: string | null
+          id?: string
+          starred_by: string
+        }
+        Update: {
+          account_name?: string
+          account_ref?: string
+          created_at?: string | null
+          id?: string
+          starred_by?: string
+        }
+        Relationships: []
+      }
       customer_visits: {
         Row: {
           comments: string | null
@@ -437,6 +461,30 @@ export type Database = {
           source_table?: string | null
           spend?: number | null
           sub_rep?: string | null
+        }
+        Relationships: []
+      }
+      user_starred_accounts: {
+        Row: {
+          account_name: string
+          account_ref: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_ref: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_ref?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
