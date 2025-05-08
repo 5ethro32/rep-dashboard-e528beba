@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -567,7 +568,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         </p>
       </div>
       
-      <div className="mb-4 flex justify-between items-center">
+      <div className="mb-3 flex justify-between items-center">
         <ActionsHeader 
           onRefresh={handleRefresh}
           isLoading={isLoading}

@@ -1,22 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Users, Eye } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { format, startOfWeek, endOfWeek } from 'date-fns';
-import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
-import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
-import WeekPlanTabV2 from '@/components/rep-tracker/WeekPlanTabV2';
-import { useVisitMetrics } from '@/hooks/useVisitMetrics';
-import { toast } from '@/components/ui/use-toast';
-import AddVisitDialog from '@/components/rep-tracker/AddVisitDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import WeekPlanTabV2 from '@/components/rep-tracker/WeekPlanTabV2';
+import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
+import { useVisitMetrics } from '@/hooks/useVisitMetrics';
 
 interface RepTrackerProps {
   selectedUserId?: string | null;
@@ -24,283 +16,131 @@ interface RepTrackerProps {
 }
 
 const RepTracker: React.FC<RepTrackerProps> = ({ 
-  selectedUserId: propSelectedUserId,
+  selectedUserId: propSelectedUserId, 
   selectedUserName: propSelectedUserName 
 }) => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showAddVisit, setShowAddVisit] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string>('My Data');
+  const [customerHistory, setCustomerHistory] = useState<any[]>([]);
+  const [weekPlan, setWeekPlan] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const isMobile = useIsMobile();
+  const { totalPlannedVisits, totalCompletedVisits } = useVisitMetrics(weekPlan);
   
-  // Initialize with props if provided, otherwise use the current user
-  const selectedUserId = propSelectedUserId || user?.id;
+  useEffect(() => {
+    if (propSelectedUserId) {
+      setSelectedUserId(propSelectedUserId);
+      setDisplayName(propSelectedUserName || "My Data");
+    } else if (user && !selectedUserId) {
+      setSelectedUserId(user.id);
+      setDisplayName("My Data");
+    }
+  }, [user, propSelectedUserId, propSelectedUserName]);
   
-  // Determine if user is viewing their own data
-  const isViewingOwnData = selectedUserId === user?.id || selectedUserId === "all";
+  useEffect(() => {
+    if (selectedUserId) {
+      fetchCustomerHistory();
+      fetchWeekPlan();
+    }
+  }, [selectedUserId]);
   
-  // Get the user's display name
-  const selectedUserName = propSelectedUserName || "My Data";
-  
-  const queryClient = useQueryClient();
-  
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekStartFormatted = format(weekStart, 'EEE do MMM yy');
-  const weekEndFormatted = format(weekEnd, 'EEE do MMM yy');
-
-  // Determine the user's first name for the greeting
-  let userFirstName = user?.email?.split('@')[0] || 'User';
-  // Capitalize first letter
-  userFirstName = userFirstName.charAt(0).toUpperCase() + userFirstName.slice(1);
-
-  // Updated to pass selectedUserId
-  const { data: currentWeekMetrics, isLoading: isLoadingCurrentMetrics } = useVisitMetrics(selectedDate, selectedUserId);
-  const previousWeekDate = new Date(weekStart);
-  previousWeekDate.setDate(previousWeekDate.getDate() - 7);
-  const { data: previousWeekMetrics } = useVisitMetrics(previousWeekDate, selectedUserId);
-
-  const { data: customers, isLoading: isLoadingCustomers } = useQuery({
-    queryKey: ['customers'],
-    queryFn: async () => {
-      const { data: salesData, error } = await supabase
-        .from('sales_data')
-        .select('account_name, account_ref')
-        .order('account_name')
-        .limit(1000);
+  const fetchCustomerHistory = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('customer_visits')
+        .select('*')
+        .eq('user_id', selectedUserId)
+        .order('date', { ascending: false });
       
       if (error) {
-        throw error;
+        console.error("Error fetching customer history:", error);
+      } else {
+        setCustomerHistory(data || []);
       }
-      
-      const uniqueCustomers = salesData.reduce((acc: any[], current) => {
-        const x = acc.find(item => item.account_ref === current.account_ref);
-        if (!x) {
-          return acc.concat([current]);
-        } else {
-          return acc;
-        }
-      }, []);
-      
-      return uniqueCustomers;
-    },
-    meta: {
-      onError: (error: Error) => {
-        console.error('Failed to fetch customers:', error);
-        toast({
-          title: 'Failed to load customers',
-          description: 'Please try again later',
-          variant: 'destructive'
-        });
-      }
-    }
-  });
-
-  // Helper function to generate heading with gradient username
-  const renderPageHeading = () => {
-    if (selectedUserId === "all") {
-      return (
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
-            Aver's
-          </span>{' '}
-          Tracker
-        </h1>
-      );
-    } else {
-      // Extract first name
-      const firstName = selectedUserName === 'My Data' 
-        ? 'My' 
-        : selectedUserName.split(' ')[0];
-      
-      // Add apostrophe only if it's not "My"
-      const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
-      
-      return (
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">
-            {displayName}
-          </span>{' '}
-          Tracker
-        </h1>
-      );
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const handleAddVisitSuccess = () => {
-    queryClient.invalidateQueries({
-      queryKey: ['visit-metrics'],
-      exact: false,
-      refetchType: 'all'
-    });
-    
-    queryClient.invalidateQueries({
-      queryKey: ['customer-visits'],
-      exact: false,
-      refetchType: 'all'
-    });
-    
-    setShowAddVisit(false);
+  
+  const fetchWeekPlan = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('week_plan')
+        .select('*')
+        .eq('user_id', selectedUserId);
+      
+      if (error) {
+        console.error("Error fetching week plan:", error);
+      } else {
+        setWeekPlan(data || []);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  const handleDataChange = () => {
-    queryClient.invalidateQueries({
-      queryKey: ['visit-metrics'],
-      exact: false,
-      refetchType: 'all'
-    });
+  
+  const handleRefresh = async () => {
+    await fetchCustomerHistory();
+    await fetchWeekPlan();
   };
-
-  const handleAddPlanSuccess = () => {
-    queryClient.invalidateQueries({
-      queryKey: ['visit-metrics'],
-      exact: false,
-      refetchType: 'all'
-    });
-    
-    setSelectedTab('week-plan-v2');
+  
+  const handleSelectUser = (userId: string | null, displayName: string) => {
+    setSelectedUserId(userId);
+    setDisplayName(displayName);
+    setIsLoading(true);
   };
-
+  
   return (
-    <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent">
       <div className="mb-6 pt-8">
-        {renderPageHeading()}
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-finance-red">
+            {selectedUserId === user?.id ? "My" : selectedUserId === "all" ? "Team" : displayName}
+          </span>{' '}
+          Tracker
+        </h1>
         <p className="text-white/60">
-          {selectedUserId === "all"
-            ? "Track Aver's visits and plan customer interactions across the team."
-            : selectedUserName && selectedUserName !== 'My Data' 
-              ? `Track ${selectedUserName.split(' ')[0]}'s visits and plan customer interactions.`
-              : "Track your visits and plan your customer interactions."}
+          {selectedUserId === user?.id 
+            ? "Track your customer visits and schedule future appointments" 
+            : selectedUserId === "all" 
+              ? "Track team customer visits and scheduled appointments" 
+              : `Track ${displayName}'s customer visits and scheduled appointments`}
         </p>
       </div>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div className="flex items-center">
-          <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
-          <h2 className="text-base sm:text-lg font-semibold truncate">
-            {selectedUserId !== "all" && selectedUserId !== user?.id ? `${selectedUserName.split(' ')[0]}'s ` : ""} 
-            Week: {weekStartFormatted} - {weekEndFormatted}
-          </h2>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="w-full sm:w-auto text-xs sm:text-sm"
-            onClick={() => {
-              setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
-            }}
-          >
-            Previous
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="w-full sm:w-auto text-xs sm:text-sm"
-            onClick={() => {
-              setSelectedDate(new Date());
-            }}
-          >
-            Current
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="w-full sm:w-auto text-xs sm:text-sm"
-            onClick={() => {
-              setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
-            }}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
       
-      <WeeklySummary 
-        data={currentWeekMetrics || {
-          totalVisits: 0,
-          totalProfit: 0,
-          totalOrders: 0,
-          conversionRate: 0,
-          dailyAvgProfit: 0,
-          topProfitOrder: 0,
-          avgProfitPerOrder: 0,
-          plannedVisits: 0
-        }}
-        previousData={previousWeekMetrics}
-        weekStartDate={weekStart} 
-        weekEndDate={weekEnd}
-        isLoading={isLoadingCurrentMetrics}
-      />
-      
-      <Tabs 
-        value={selectedTab} 
-        onValueChange={setSelectedTab} 
-        className="space-y-6"
-      >
-        <TabsList className="bg-black/20 border-gray-800">
-          <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
-          <TabsTrigger value="visits">Customer Visits</TabsTrigger>
-          <TabsTrigger value="customer-history">Customer History</TabsTrigger>
+      <Tabs defaultValue="history" className="w-full">
+        <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-2'} mb-4 md:mb-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
+          <TabsTrigger value="history" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+            Customer History
+          </TabsTrigger>
+          <TabsTrigger value="weekplan" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+            Week Plan
+          </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="week-plan-v2" className="mt-6">
-          {isMobile ? (
-            <ScrollArea className="h-[calc(100vh-380px)]">
-              <WeekPlanTabV2 
-                weekStartDate={weekStart}
-                weekEndDate={weekEnd}
-                customers={customers || []}
-                onAddPlanSuccess={handleAddPlanSuccess}
-                selectedUserId={selectedUserId}
-                isViewingOwnData={isViewingOwnData}
-              />
-            </ScrollArea>
-          ) : (
-            <WeekPlanTabV2 
-              weekStartDate={weekStart}
-              weekEndDate={weekEnd}
-              customers={customers || []}
-              onAddPlanSuccess={handleAddPlanSuccess}
-              selectedUserId={selectedUserId}
-              isViewingOwnData={isViewingOwnData}
-            />
-          )}
-        </TabsContent>
-        
-        <TabsContent value="visits" className="mt-6">
-          <CustomerVisitsList 
-            weekStartDate={weekStart} 
-            weekEndDate={weekEnd}
-            customers={customers || []} 
-            isLoadingCustomers={isLoadingCustomers}
-            onDataChange={handleDataChange}
-            onAddVisit={() => setShowAddVisit(true)}
-            selectedUserId={selectedUserId}
-            isViewingOwnData={isViewingOwnData}
+        <TabsContent value="history" className="mt-0">
+          <CustomerHistoryTable 
+            customerHistory={customerHistory} 
+            isLoading={isLoading} 
+            onRefresh={handleRefresh} 
           />
         </TabsContent>
         
-        <TabsContent value="customer-history" className="mt-6">
-          <CustomerHistoryTable 
-            customers={customers || []}
-            selectedUserId={selectedUserId}
+        <TabsContent value="weekplan" className="mt-0">
+          <WeekPlanTabV2 
+            weekPlan={weekPlan} 
+            isLoading={isLoading} 
+            onRefresh={handleRefresh} 
+          />
+          <WeeklySummary 
+            totalPlannedVisits={totalPlannedVisits}
+            totalCompletedVisits={totalCompletedVisits}
           />
         </TabsContent>
       </Tabs>
-      
-      {showAddVisit && isViewingOwnData && (
-        <AddVisitDialog
-          isOpen={showAddVisit}
-          onClose={() => setShowAddVisit(false)}
-          onSuccess={handleAddVisitSuccess}
-          customers={customers || []}
-        />
-      )}
     </div>
   );
 };
