@@ -15,7 +15,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { ChevronUp, ChevronDown, Flag } from 'lucide-react';
-import { calculateGoals } from '@/utils/rep-performance-utils';
+import { calculateGoals, formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 interface GoalTrackingComponentProps {
   performanceData: any;
