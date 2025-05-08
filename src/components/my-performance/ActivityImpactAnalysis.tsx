@@ -17,6 +17,7 @@ import {
   Line
 } from 'recharts';
 import { formatDate } from '@/utils/date-utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ActivityImpactAnalysisProps {
   visitData: any[];
@@ -29,6 +30,8 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
   accountHealthData,
   isLoading
 }) => {
+  const isMobile = useIsMobile();
+
   // Process visit data to show correlation with account health
   const processedData = useMemo(() => {
     // Guard for empty data
@@ -119,11 +122,18 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
       .sort((a: any, b: any) => a.weekStartDate - b.weekStartDate);
   }, [visitData]);
 
-  // Colors for the charts
-  const visitColor = '#8B5CF6'; // Vibrant purple
-  const orderColor = '#10B981'; // Emerald green
+  // Brand colors for the charts (using finance app colors)
+  const visitColor = "#9b87f5"; // Primary Purple from brand colors
+  const orderColor = "#10B981"; // Emerald green
+  const profitColor = "#ea384c";  // Finance Red
   const barOpacity = 0.85;
   const areaOpacity = 0.25;
+
+  // Limit the number of accounts to display based on device
+  const limitedAccountsData = useMemo(() => {
+    const limit = isMobile ? 8 : 15; // Show fewer on mobile
+    return processedData.slice(0, limit);
+  }, [processedData, isMobile]);
 
   // Custom tooltip for weekly chart
   const CustomWeeklyTooltip = ({ active, payload, label }: any) => {
@@ -144,7 +154,7 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
             </p>
             {payload[2] && (
               <p className="text-sm flex items-center">
-                <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ background: 'linear-gradient(to right, #8B5CF6, #10B981)' }}></span>
+                <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ background: 'linear-gradient(to right, #9b87f5, #ea384c)' }}></span>
                 <span className="text-white/80">Profit:</span> 
                 <span className="ml-1 font-semibold text-white">£{payload[2].value.toFixed(0)}</span>
               </p>
@@ -170,7 +180,7 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
               <span className="ml-1 font-semibold text-white">{payload[0].value}</span>
             </p>
             <p className="text-sm flex items-center">
-              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: orderColor }}></span>
+              <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: profitColor }}></span>
               <span className="text-white/80">Profit:</span> 
               <span className="ml-1 font-semibold text-white">£{payload[1].value.toFixed(0)}</span>
             </p>
@@ -197,7 +207,7 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
 
   // Determine if we have enough data
   const hasVisitData = visitData?.length > 0;
-  const hasEnoughDataForAnalysis = processedData.length > 0;
+  const hasEnoughDataForAnalysis = limitedAccountsData.length > 0;
 
   return (
     <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
@@ -279,7 +289,7 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
                         yAxisId="right"
                         type="monotone" 
                         dataKey="profit" 
-                        stroke="#FFFFFF" 
+                        stroke={profitColor} 
                         strokeWidth={2}
                         dot={{ r: 4, strokeWidth: 2, fill: '#1F2937' }}
                         activeDot={{ r: 6, strokeWidth: 2 }}
@@ -294,14 +304,21 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
               </div>
             </div>
             
-            {/* Visit Impact Analysis - Enhanced Styled Chart */}
+            {/* Visit Impact by Account - Enhanced Styled Chart with LIMITED data */}
             {hasEnoughDataForAnalysis ? (
               <div className="mb-6">
-                <h4 className="text-md font-medium text-white/80 mb-4">Visit Impact by Account</h4>
+                <h4 className="text-md font-medium text-white/80 mb-4">
+                  Visit Impact by Account 
+                  {processedData.length > limitedAccountsData.length && 
+                    <span className="text-xs text-white/50 ml-2">
+                      (Showing top {limitedAccountsData.length} of {processedData.length})
+                    </span>
+                  }
+                </h4>
                 <div className="h-80 bg-gray-900/60 border border-white/10 rounded-lg p-4 overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={processedData}
+                      data={limitedAccountsData}
                       margin={{ top: 20, right: 20, left: 5, bottom: 60 }}
                     >
                       <defs>
@@ -310,8 +327,8 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
                           <stop offset="100%" stopColor={visitColor} stopOpacity={0.6}/>
                         </linearGradient>
                         <linearGradient id="profitBarGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={orderColor} stopOpacity={1}/>
-                          <stop offset="100%" stopColor={orderColor} stopOpacity={0.6}/>
+                          <stop offset="0%" stopColor={profitColor} stopOpacity={1}/>
+                          <stop offset="100%" stopColor={profitColor} stopOpacity={0.6}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -350,7 +367,7 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
                         animationDuration={1000}
                         animationEasing="ease-in-out"
                       >
-                        {processedData.map((entry, index) => (
+                        {limitedAccountsData.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
                             fill={`url(#visitBarGradient)`} 
@@ -368,7 +385,7 @@ const ActivityImpactAnalysis: React.FC<ActivityImpactAnalysisProps> = ({
                         animationEasing="ease-in-out"
                         radius={[4, 4, 0, 0]}
                       >
-                        {processedData.map((entry, index) => (
+                        {limitedAccountsData.map((entry, index) => (
                           <Cell 
                             key={`cell-${index}`} 
                             fill={`url(#profitBarGradient)`} 
