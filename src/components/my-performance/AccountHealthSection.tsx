@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -303,119 +302,8 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
       <CardContent className="p-4 md:p-6">
         <h3 className="text-lg md:text-xl font-semibold text-white mb-4">Account Health Analysis</h3>
         
-        {/* Account Health Insights Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Improving Accounts */}
-          <Card className="bg-gray-900/60 border-white/10">
-            <CardContent className="p-4">
-              <h4 className="text-sm font-medium text-white/80 flex items-center mb-3">
-                <TrendingUp className="h-4 w-4 mr-2 text-emerald-500" />
-                Top Improving Accounts
-              </h4>
-              
-              {improvingAccounts.length > 0 ? (
-                <div className="space-y-2">
-                  {improvingAccounts.map((account, index) => (
-                    <div key={index} className="bg-gray-900/40 p-2 rounded-md">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="font-medium text-white">{account.accountName}</span>
-                          {account.repName && (
-                            <span className="text-xs text-gray-400 ml-2">
-                              ({getFirstName(account.repName)})
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            {isAdminStarred(account.accountRef) && (
-                              <div className="text-yellow-500" title="Key Account">
-                                <Shield className="h-4 w-4" />
-                              </div>
-                            )}
-                            {isUserStarred(account.accountRef) && (
-                              <div className="text-yellow-500" title="Bookmarked">
-                                <Star className="h-4 w-4" />
-                              </div>
-                            )}
-                          </div>
-                          {getStatusBadge(account.status)}
-                        </div>
-                      </div>
-                      <div className="mt-1 text-sm flex justify-between">
-                        <span className="text-white/70">
-                          Profit: {formatCurrency(account.profit)}
-                          {getChangeIndicator(account.profit, account.previousProfit)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-white/60">
-                  No improving accounts found
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          {/* Declining Accounts */}
-          <Card className="bg-gray-900/60 border-white/10">
-            <CardContent className="p-4">
-              <h4 className="text-sm font-medium text-white/80 flex items-center mb-3">
-                <TrendingDown className="h-4 w-4 mr-2 text-finance-red" />
-                Accounts Needing Attention
-              </h4>
-              
-              {decliningAccounts.length > 0 ? (
-                <div className="space-y-2">
-                  {decliningAccounts.map((account, index) => (
-                    <div key={index} className="bg-gray-900/40 p-2 rounded-md">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="font-medium text-white">{account.accountName}</span>
-                          {account.repName && (
-                            <span className="text-xs text-gray-400 ml-2">
-                              ({getFirstName(account.repName)})
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            {isAdminStarred(account.accountRef) && (
-                              <div className="text-yellow-500" title="Key Account">
-                                <Shield className="h-4 w-4" />
-                              </div>
-                            )}
-                            {isUserStarred(account.accountRef) && (
-                              <div className="text-yellow-500" title="Bookmarked">
-                                <Star className="h-4 w-4" />
-                              </div>
-                            )}
-                          </div>
-                          {getStatusBadge(account.status)}
-                        </div>
-                      </div>
-                      <div className="mt-1 text-sm flex justify-between">
-                        <span className="text-white/70">
-                          Profit: {formatCurrency(account.profit)}
-                          {getChangeIndicator(account.profit, account.previousProfit)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-white/60">
-                  No declining accounts found
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Full Account Health Table */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-6 mb-3">
+        {/* Full Account Health Table - Now displayed at the top */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
           <h4 className="text-md font-medium text-white/80">All Accounts Performance</h4>
           
           <div className="flex gap-2">
@@ -499,7 +387,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
         </div>
         
         {/* Modified table container to enable horizontal scrolling on mobile */}
-        <div className="overflow-x-auto rounded-md border border-white/10">
+        <div className="overflow-x-auto rounded-md border border-white/10 mb-6">
           {/* Set a fixed height for the scrollable area but make sure it supports both horizontal and vertical scrolling */}
           <div className="w-full overflow-auto" style={{ maxHeight: '400px' }}>
             <Table>
@@ -655,6 +543,117 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
               )}
             </Table>
           </div>
+        </div>
+        
+        {/* Account Health Insights Cards - Now moved below the table */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Improving Accounts */}
+          <Card className="bg-gray-900/60 border-white/10">
+            <CardContent className="p-4">
+              <h4 className="text-sm font-medium text-white/80 flex items-center mb-3">
+                <TrendingUp className="h-4 w-4 mr-2 text-emerald-500" />
+                Top Improving Accounts
+              </h4>
+              
+              {improvingAccounts.length > 0 ? (
+                <div className="space-y-2">
+                  {improvingAccounts.map((account, index) => (
+                    <div key={index} className="bg-gray-900/40 p-2 rounded-md">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="font-medium text-white">{account.accountName}</span>
+                          {account.repName && (
+                            <span className="text-xs text-gray-400 ml-2">
+                              ({getFirstName(account.repName)})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <Shield className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          {getStatusBadge(account.status)}
+                        </div>
+                      </div>
+                      <div className="mt-1 text-sm flex justify-between">
+                        <span className="text-white/70">
+                          Profit: {formatCurrency(account.profit)}
+                          {getChangeIndicator(account.profit, account.previousProfit)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-white/60">
+                  No improving accounts found
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Declining Accounts */}
+          <Card className="bg-gray-900/60 border-white/10">
+            <CardContent className="p-4">
+              <h4 className="text-sm font-medium text-white/80 flex items-center mb-3">
+                <TrendingDown className="h-4 w-4 mr-2 text-finance-red" />
+                Accounts Needing Attention
+              </h4>
+              
+              {decliningAccounts.length > 0 ? (
+                <div className="space-y-2">
+                  {decliningAccounts.map((account, index) => (
+                    <div key={index} className="bg-gray-900/40 p-2 rounded-md">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="font-medium text-white">{account.accountName}</span>
+                          {account.repName && (
+                            <span className="text-xs text-gray-400 ml-2">
+                              ({getFirstName(account.repName)})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <Shield className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          {getStatusBadge(account.status)}
+                        </div>
+                      </div>
+                      <div className="mt-1 text-sm flex justify-between">
+                        <span className="text-white/70">
+                          Profit: {formatCurrency(account.profit)}
+                          {getChangeIndicator(account.profit, account.previousProfit)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-white/60">
+                  No declining accounts found
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </CardContent>
     </Card>
