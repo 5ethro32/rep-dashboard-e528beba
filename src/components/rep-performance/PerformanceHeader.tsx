@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { RefreshCw, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,15 +14,14 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceHeaderProps {
   hideTitle?: boolean;
-  reducedPadding?: boolean;
+  reducedPadding?: boolean; // For reduced padding
   selectedMonth?: string;
   setSelectedMonth?: (value: string) => void;
   onRefresh?: () => void;
-  showMonthSelector?: boolean;
+  showMonthSelector?: boolean; // Added to match PerformanceFilters prop
 }
 
 const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ 
@@ -31,16 +30,14 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
   selectedMonth,
   setSelectedMonth,
   onRefresh,
-  showMonthSelector = true
+  showMonthSelector = true // Default to true to maintain backward compatibility
 }) => {
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
-    ? 'py-4' 
-    : 'py-8 md:py-16';
+    ? 'py-4' // More balanced padding for top and bottom
+    : 'py-8 md:py-16'; // Original padding
   
-  // Ensure months is always a valid array with at least one item
-  const months = useMemo(() => ['February', 'March', 'April', 'May'], []);
-  const isMobile = useIsMobile();
+  const months = ['February', 'March', 'April', 'May'];
   
   const handleRefresh = () => {
     if (onRefresh) {
@@ -50,8 +47,6 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
       if (window.accountPerformanceRefresh) window.accountPerformanceRefresh();
     }
   };
-
-  const showSelector = showMonthSelector && selectedMonth && setSelectedMonth && months.length > 0;
     
   return (
     <header className={`${hideTitle ? '' : paddingClasses} px-4 md:px-6 container max-w-7xl mx-auto animate-fade-in bg-transparent ${hideTitle ? 'flex justify-between items-center' : ''}`}>
@@ -66,23 +61,23 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
       )}
       
       {/* Month selector and refresh button */}
-      {showSelector && (
+      {selectedMonth && setSelectedMonth && showMonthSelector && (
         <div className="flex items-center gap-2 ml-auto">
           <Popover>
             <PopoverTrigger asChild>
               <Button 
                 variant="outline" 
-                className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'px-2 py-1 h-8 text-xs' : ''}`}
+                className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
               >
-                <Calendar className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
-                <span>{isMobile ? selectedMonth : `Month: ${selectedMonth}`}</span>
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Month: {selectedMonth}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-0 bg-gray-900/95 backdrop-blur-sm border-white/10" align="end">
+            <PopoverContent className="w-48 p-0 bg-gray-900/90 backdrop-blur-sm border-white/10">
               <Command className="bg-transparent">
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
-                <CommandGroup className="overflow-hidden">
+                <CommandGroup>
                   {months.map((month) => (
                     <CommandItem
                       key={month}
@@ -102,11 +97,11 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
           
           <Button
             variant="outline"
-            size={isMobile ? "sm" : "icon"}
+            size="icon"
             onClick={handleRefresh}
-            className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'w-8 h-8 p-1' : ''}`}
+            className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
           >
-            <RefreshCw className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       )}

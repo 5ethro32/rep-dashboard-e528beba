@@ -278,7 +278,7 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
   };
 
   const filteredAccounts = useMemo(() => {
-    let filtered = accountComparisons || [];
+    let filtered = accountComparisons;
     
     if (searchTerm) {
       const search = searchTerm.toLowerCase();

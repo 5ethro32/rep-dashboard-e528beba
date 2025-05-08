@@ -78,7 +78,7 @@ export function CustomerCommand({
   return (
     <div 
       className={cn(
-        "rounded-lg border shadow-md bg-gray-900/95 fixed inset-x-2 sm:relative sm:inset-auto", 
+        "rounded-lg border shadow-md bg-popover fixed inset-x-2 sm:relative sm:inset-auto", 
         className
       )}
       style={{ 
@@ -87,11 +87,11 @@ export function CustomerCommand({
         width: isMobile ? 'calc(100vw - 16px)' : 'auto'
       }}
     >
-      <div className="flex items-center border-b px-3 border-white/10">
+      <div className="flex items-center border-b px-3">
         <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
         <Input 
           placeholder="Search customer..." 
-          className="border-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+          className="border-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -107,8 +107,8 @@ export function CustomerCommand({
         className="max-h-[200px] overflow-y-auto"
         orientation="vertical"
       >
-        {!filteredCustomers || filteredCustomers.length === 0 ? (
-          <div className="py-6 text-center text-sm text-white/70">No customer found.</div>
+        {filteredCustomers.length === 0 ? (
+          <div className="py-6 text-center text-sm">No customer found.</div>
         ) : (
           <div className="p-1">
             {filteredCustomers.map((customer) => (
@@ -120,9 +120,9 @@ export function CustomerCommand({
                   onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                   className={cn(
                     "flex w-full items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm text-left",
-                    "hover:bg-white/10 hover:text-white",
-                    "break-all whitespace-normal text-white/80",
-                    selectedCustomer === customer.account_name && "bg-white/10 text-white"
+                    "hover:bg-accent hover:text-accent-foreground",
+                    "break-all whitespace-normal",
+                    selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
                   )}
                 >
                   <Check

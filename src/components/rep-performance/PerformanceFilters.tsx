@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ToggleButton } from "@/components/ui/toggle-button";
 import { RefreshCw, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,6 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command";
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceFiltersProps {
   includeRetail: boolean;
@@ -40,9 +39,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   setSelectedMonth,
   showMonthSelector = true
 }) => {
-  // Ensure months is always a valid array
-  const months = useMemo(() => ['February', 'March', 'April', 'May'], []);
-  const isMobile = useIsMobile();
+  const months = ['February', 'March', 'April', 'May'];
   
   const handleRefresh = () => {
     if (typeof window !== 'undefined' && window.repPerformanceRefresh) {
@@ -50,18 +47,13 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
     }
   };
   
-  // Determine button sizes based on screen size
-  const toggleClassName = isMobile 
-    ? 'min-w-[55px] px-2 py-1 text-xs'
-    : 'min-w-[70px] px-3';
-  
   return (
-    <div className="flex items-center justify-between w-full gap-2 mb-6">
-      <div className="flex gap-2 flex-grow">
+    <div className="flex flex-wrap items-center justify-between w-full gap-3 mb-8">
+      <div className="flex flex-wrap gap-3">
         <ToggleButton 
           checked={includeRetail} 
           onToggle={setIncludeRetail}
-          className={toggleClassName}
+          className="min-w-[100px]"
         >
           Retail
         </ToggleButton>
@@ -69,7 +61,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         <ToggleButton 
           checked={includeReva} 
           onToggle={setIncludeReva}
-          className={toggleClassName}
+          className="min-w-[100px]"
         >
           REVA
         </ToggleButton>
@@ -77,29 +69,29 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         <ToggleButton 
           checked={includeWholesale} 
           onToggle={setIncludeWholesale}
-          className={toggleClassName}
+          className="min-w-[100px]"
         >
           Wholesale
         </ToggleButton>
       </div>
       
       {showMonthSelector && (
-        <div className="flex items-center gap-2 ml-2">
+        <div className="flex items-center gap-2 ml-auto">
           <Popover>
             <PopoverTrigger asChild>
               <Button 
                 variant="outline" 
-                className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'px-2 py-1 h-8 text-xs' : ''}`}
+                className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
               >
-                <Calendar className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
-                <span>{selectedMonth}</span>
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Month: {selectedMonth}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-48 p-0 bg-gray-900/95 backdrop-blur-sm border-white/10" align="end">
+            <PopoverContent className="w-48 p-0 bg-gray-900/90 backdrop-blur-sm border-white/10">
               <Command className="bg-transparent">
                 <CommandInput placeholder="Select month..." className="text-white" />
                 <CommandEmpty>No month found.</CommandEmpty>
-                <CommandGroup className="overflow-hidden">
+                <CommandGroup>
                   {months.map((month) => (
                     <CommandItem
                       key={month}
@@ -119,11 +111,11 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
           
           <Button
             variant="outline"
-            size={isMobile ? "sm" : "icon"}
+            size="icon"
             onClick={handleRefresh}
-            className={`bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40 ${isMobile ? 'w-8 h-8 p-1' : ''}`}
+            className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white hover:bg-gray-800/40"
           >
-            <RefreshCw className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       )}

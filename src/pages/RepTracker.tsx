@@ -191,22 +191,16 @@ const RepTracker: React.FC<RepTrackerProps> = ({
         </div>
       </div>
       
-      <WeeklySummary 
-        data={currentWeekMetrics || {
-          totalVisits: 0,
-          totalProfit: 0,
-          totalOrders: 0,
-          conversionRate: 0,
-          dailyAvgProfit: 0,
-          topProfitOrder: 0,
-          avgProfitPerOrder: 0,
-          plannedVisits: 0
-        }} 
-        previousData={previousWeekMetrics} 
-        weekStartDate={weekStart} 
-        weekEndDate={weekEnd} 
-        isLoading={isLoadingCurrentMetrics} 
-      />
+      <WeeklySummary data={currentWeekMetrics || {
+      totalVisits: 0,
+      totalProfit: 0,
+      totalOrders: 0,
+      conversionRate: 0,
+      dailyAvgProfit: 0,
+      topProfitOrder: 0,
+      avgProfitPerOrder: 0,
+      plannedVisits: 0
+    }} previousData={previousWeekMetrics} weekStartDate={weekStart} weekEndDate={weekEnd} isLoading={isLoadingCurrentMetrics} />
       
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
         <TabsList className="bg-black/20 border-gray-800">
@@ -217,53 +211,20 @@ const RepTracker: React.FC<RepTrackerProps> = ({
         
         <TabsContent value="week-plan-v2" className="mt-6">
           {isMobile ? <ScrollArea className="h-[calc(100vh-380px)]">
-              <WeekPlanTabV2 
-                weekStartDate={weekStart} 
-                weekEndDate={weekEnd} 
-                customers={customers || []} 
-                onAddPlanSuccess={handleAddPlanSuccess} 
-                selectedUserId={selectedUserId} 
-                isViewingOwnData={isViewingOwnData} 
-              />
-            </ScrollArea> : <WeekPlanTabV2 
-            weekStartDate={weekStart} 
-            weekEndDate={weekEnd} 
-            customers={customers || []} 
-            onAddPlanSuccess={handleAddPlanSuccess} 
-            selectedUserId={selectedUserId} 
-            isViewingOwnData={isViewingOwnData} 
-          />}
+              <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
+            </ScrollArea> : <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />}
         </TabsContent>
         
         <TabsContent value="visits" className="mt-6">
-          <CustomerVisitsList 
-            weekStartDate={weekStart} 
-            weekEndDate={weekEnd} 
-            customers={customers || []} 
-            isLoadingCustomers={isLoadingCustomers} 
-            onDataChange={handleDataChange} 
-            onAddVisit={() => setShowAddVisit(true)} 
-            selectedUserId={selectedUserId} 
-            isViewingOwnData={isViewingOwnData} 
-          />
+          <CustomerVisitsList weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} isLoadingCustomers={isLoadingCustomers} onDataChange={handleDataChange} onAddVisit={() => setShowAddVisit(true)} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
         </TabsContent>
         
         <TabsContent value="customer-history" className="mt-6">
-          <CustomerHistoryTable 
-            customers={customers || []} 
-            selectedUserId={selectedUserId} 
-          />
+          <CustomerHistoryTable customers={customers || []} selectedUserId={selectedUserId} />
         </TabsContent>
       </Tabs>
       
-      {showAddVisit && isViewingOwnData && selectedUserId !== "all" && (
-        <AddVisitDialog 
-          isOpen={showAddVisit} 
-          onClose={() => setShowAddVisit(false)} 
-          onSuccess={handleAddVisitSuccess} 
-          customers={customers || []} 
-        />
-      )}
+      {showAddVisit && isViewingOwnData && <AddVisitDialog isOpen={showAddVisit} onClose={() => setShowAddVisit(false)} onSuccess={handleAddVisitSuccess} customers={customers || []} />}
     </div>;
 };
 export default RepTracker;

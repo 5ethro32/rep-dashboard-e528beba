@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"
 import { Command as CommandPrimitive } from "cmdk"
@@ -10,42 +9,26 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive>
->(({ className, children, ...props }, ref) => {
-  // Ensure children is always defined and safe to use with Array.from
-  const safeChildren = React.useMemo(() => {
-    if (children === null || children === undefined) {
-      return <></>;
-    }
-    return children;
-  }, [children]);
-
-  return (
-    <CommandPrimitive
-      ref={ref}
-      className={cn(
-        "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
-        className
-      )}
-      {...props}
-    >
-      {safeChildren}
-    </CommandPrimitive>
-  );
-});
-Command.displayName = CommandPrimitive.displayName;
+>(({ className, ...props }, ref) => (
+  <CommandPrimitive
+    ref={ref}
+    className={cn(
+      "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
+      className
+    )}
+    {...props}
+  />
+))
+Command.displayName = CommandPrimitive.displayName
 
 interface CommandDialogProps extends DialogProps {}
 
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
-  const safeChildren = React.useMemo(() => {
-    return children || <></>;
-  }, [children]);
-  
   return (
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0 shadow-lg">
         <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
-          {safeChildren}
+          {children}
         </Command>
       </DialogContent>
     </Dialog>
@@ -100,25 +83,16 @@ CommandEmpty.displayName = CommandPrimitive.Empty.displayName
 const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
->(({ className, children, ...props }, ref) => {
-  // Make sure children is always defined and safe
-  const safeChildren = React.useMemo(() => {
-    return children || <></>;
-  }, [children]);
-  
-  return (
-    <CommandPrimitive.Group
-      ref={ref}
-      className={cn(
-        "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
-        className
-      )}
-      {...props}
-    >
-      {safeChildren}
-    </CommandPrimitive.Group>
-  )
-})
+>(({ className, ...props }, ref) => (
+  <CommandPrimitive.Group
+    ref={ref}
+    className={cn(
+      "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
+      className
+    )}
+    {...props}
+  />
+))
 
 CommandGroup.displayName = CommandPrimitive.Group.displayName
 
