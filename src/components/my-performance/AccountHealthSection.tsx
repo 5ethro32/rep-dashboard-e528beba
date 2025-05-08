@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -327,7 +326,6 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {getStatusBadge(account.status)}
                           <div className="flex gap-1">
                             {isAdminStarred(account.accountRef) && (
                               <div className="text-yellow-500" title="Key Account">
@@ -340,6 +338,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                               </div>
                             )}
                           </div>
+                          {getStatusBadge(account.status)}
                         </div>
                       </div>
                       <div className="mt-1 text-sm flex justify-between">
@@ -381,7 +380,6 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {getStatusBadge(account.status)}
                           <div className="flex gap-1">
                             {isAdminStarred(account.accountRef) && (
                               <div className="text-yellow-500" title="Key Account">
@@ -394,6 +392,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                               </div>
                             )}
                           </div>
+                          {getStatusBadge(account.status)}
                         </div>
                       </div>
                       <div className="mt-1 text-sm flex justify-between">
@@ -585,16 +584,58 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                         {account.repName ? getFirstName(account.repName) : ''}
                       </TableCell>
                       <TableCell>
-                        {formatCurrency(account.spend)}
-                        {getChangeIndicator(account.spend, account.previousSpend)}
+                        <div className="flex items-center">
+                          <div className="flex gap-1 mr-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <Shield className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          {formatCurrency(account.spend)}
+                          {getChangeIndicator(account.spend, account.previousSpend)}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        {formatCurrency(account.profit)}
-                        {getChangeIndicator(account.profit, account.previousProfit)}
+                        <div className="flex items-center">
+                          <div className="flex gap-1 mr-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <Shield className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          {formatCurrency(account.profit)}
+                          {getChangeIndicator(account.profit, account.previousProfit)}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        {formatPercent(account.margin)}
-                        {getMarginChangeIndicator(account.margin, account.previousMargin)}
+                        <div className="flex items-center">
+                          <div className="flex gap-1 mr-1">
+                            {isAdminStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Key Account">
+                                <Shield className="h-4 w-4" />
+                              </div>
+                            )}
+                            {isUserStarred(account.accountRef) && (
+                              <div className="text-yellow-500" title="Bookmarked">
+                                <Star className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          {formatPercent(account.margin)}
+                          {getMarginChangeIndicator(account.margin, account.previousMargin)}
+                        </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(account.status)}</TableCell>
                     </TableRow>
@@ -616,16 +657,31 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                     </TableCell>
                     <TableCell></TableCell>
                     <TableCell className="font-medium text-white">
-                      {formatCurrency(tableTotals.totalSpend)}
-                      {getChangeIndicator(tableTotals.totalSpend, tableTotals.totalPreviousSpend)}
+                      <div className="flex items-center">
+                        <div className="flex gap-1 mr-1">
+                          {/* Status indicator for totals */}
+                        </div>
+                        {formatCurrency(tableTotals.totalSpend)}
+                        {getChangeIndicator(tableTotals.totalSpend, tableTotals.totalPreviousSpend)}
+                      </div>
                     </TableCell>
                     <TableCell className="font-bold text-white">
-                      {formatCurrency(tableTotals.totalProfit)}
-                      {getChangeIndicator(tableTotals.totalProfit, tableTotals.totalPreviousProfit)}
+                      <div className="flex items-center">
+                        <div className="flex gap-1 mr-1">
+                          {/* Status indicator for totals */}
+                        </div>
+                        {formatCurrency(tableTotals.totalProfit)}
+                        {getChangeIndicator(tableTotals.totalProfit, tableTotals.totalPreviousProfit)}
+                      </div>
                     </TableCell>
                     <TableCell className="font-medium text-white">
-                      {formatPercent(tableTotals.avgMargin)}
-                      {getMarginChangeIndicator(tableTotals.avgMargin, tableTotals.avgPreviousMargin)}
+                      <div className="flex items-center">
+                        <div className="flex gap-1 mr-1">
+                          {/* Status indicator for totals */}
+                        </div>
+                        {formatPercent(tableTotals.avgMargin)}
+                        {getMarginChangeIndicator(tableTotals.avgMargin, tableTotals.avgPreviousMargin)}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(getPredominantStatus())}
