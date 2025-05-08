@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
+import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -30,6 +31,7 @@ interface AccountPerformanceProps {
   selectedUserId?: string | null;
   selectedUserName?: string;
 }
+
 const AccountPerformance = ({
   selectedUserId: propSelectedUserId = "all",
   selectedUserName: propSelectedUserName = "All Data"
@@ -60,6 +62,9 @@ const AccountPerformance = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId);
   const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName);
 
+  // Add state for tracking auto-refreshed status
+  const [autoRefreshed, setAutoRefreshed] = useState(false);
+
   // Update local state when props change
   useEffect(() => {
     if (propSelectedUserId) {
@@ -80,6 +85,24 @@ const AccountPerformance = ({
     setSelectedUserName(displayName);
     // Data will refresh due to the useEffect dependency
   };
+
+  // Add refresh handler
+  const handleRefresh = () => {
+    console.log("Manual refresh triggered");
+    fetchComparisonData();
+  };
+
+  // Make global refresh handler available
+  useEffect(() => {
+    // @ts-ignore - Add global refresh function
+    window.accountPerformanceRefresh = handleRefresh;
+
+    return () => {
+      // @ts-ignore - Clean up global refresh function
+      window.accountPerformanceRefresh = undefined;
+    };
+  }, []);
+
   const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: {
     column: string;
     value: string;
@@ -174,6 +197,7 @@ const AccountPerformance = ({
   };
   const fetchComparisonData = async () => {
     setIsLoading(true);
+    setAutoRefreshed(false);
     try {
       let currentTable: AllowedTable;
       let previousTable: AllowedTable | null;
@@ -345,7 +369,8 @@ const AccountPerformance = ({
         : "Compare your accounts performance between months to identify declining or improving accounts.";
   };
   
-  return <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+  return (
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
       {/* Title and Description */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
@@ -356,21 +381,43 @@ const AccountPerformance = ({
         </p>
       </div>
       
-      {/* Month dropdown, now without the refresh button */}
-      <div className="mb-6 flex items-center space-x-4">
-        <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
-      </div>
+      {/* Performance Filters */}
+      <PerformanceFilters 
+        includeRetail={true}
+        setIncludeRetail={() => {}}
+        includeReva={true}
+        setIncludeReva={() => {}}
+        includeWholesale={true}
+        setIncludeWholesale={() => {}}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+      />
       
       {/* Update Card - remove the p-0 and fix the padding in CardContent */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
-        <CardContent className="p-0"> {/* Remove padding from CardContent */}
-          <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
+        <CardContent className="p-0">
+          <AccountSummaryCards 
+            currentMonthData={currentMonthRawData} 
+            previousMonthData={previousMonthRawData} 
+            isLoading={isLoading} 
+            selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} 
+            accountsTrendData={accountsTrendData} 
+          />
         </CardContent>
       </Card>
       
       <div className="mb-12">
-        <AccountPerformanceComparison currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedMonth={selectedMonth} formatCurrency={formatCurrency} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} />
+        <AccountPerformanceComparison 
+          currentMonthData={currentMonthRawData} 
+          previousMonthData={previousMonthRawData} 
+          isLoading={isLoading} 
+          selectedMonth={selectedMonth} 
+          formatCurrency={formatCurrency} 
+          selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} 
+        />
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default AccountPerformance;

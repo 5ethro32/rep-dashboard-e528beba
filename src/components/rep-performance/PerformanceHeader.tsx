@@ -4,11 +4,15 @@ import React from 'react';
 interface PerformanceHeaderProps {
   hideTitle?: boolean;
   reducedPadding?: boolean; // For reduced padding
+  selectedMonth?: string;
+  setSelectedMonth?: (value: string) => void;
 }
 
 const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ 
   hideTitle = false,
-  reducedPadding = false
+  reducedPadding = false,
+  selectedMonth,
+  setSelectedMonth
 }) => {
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
