@@ -40,45 +40,6 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">Dashboard</span>
         </h1>
       )}
-      <div className={`${hideTitle ? '' : 'mt-4 md:mt-8 text-right'} flex items-center justify-end gap-2`}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="outline" 
-              className="bg-gray-900/70 border border-gray-700 hover:bg-gray-800 text-white py-2 px-4 rounded-md flex items-center"
-            >
-              <CalendarIcon className="h-4 w-4 mr-2" />
-              Month: {selectedMonth}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-gray-800 border-gray-700 z-50">
-            <DropdownMenuItem 
-              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
-              onClick={() => setSelectedMonth('May')}
-            >
-              May 2025
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
-              onClick={() => setSelectedMonth('April')}
-            >
-              April 2025
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
-              onClick={() => setSelectedMonth('March')}
-            >
-              March 2025
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
-              onClick={() => setSelectedMonth('February')}
-            >
-              February 2025
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
     </header>
   );
 };

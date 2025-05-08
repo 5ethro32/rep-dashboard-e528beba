@@ -1,7 +1,14 @@
 
 import React from 'react';
 import { ToggleButton } from "@/components/ui/toggle-button";
-import { Store, Factory, Pill } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
 
 interface PerformanceFiltersProps {
   includeRetail: boolean;
@@ -25,30 +32,72 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   setSelectedMonth
 }) => {
   return (
-    <div className="mb-6 md:mb-8 flex flex-row gap-3">
-      <ToggleButton 
-        checked={includeRetail} 
-        onToggle={setIncludeRetail}
-        className="min-w-[100px]"
-      >
-        <Store className="h-4 w-4 mr-2" /> Retail
-      </ToggleButton>
+    <div className="mb-6 md:mb-8 flex flex-row flex-wrap justify-between items-center gap-3">
+      <div className="flex flex-wrap gap-3">
+        <ToggleButton 
+          checked={includeRetail} 
+          onToggle={setIncludeRetail}
+          className="min-w-[100px]"
+        >
+          Retail
+        </ToggleButton>
+        
+        <ToggleButton 
+          checked={includeReva} 
+          onToggle={setIncludeReva}
+          className="min-w-[100px]"
+        >
+          REVA
+        </ToggleButton>
+        
+        <ToggleButton 
+          checked={includeWholesale} 
+          onToggle={setIncludeWholesale}
+          className="min-w-[100px]"
+        >
+          Wholesale
+        </ToggleButton>
+      </div>
       
-      <ToggleButton 
-        checked={includeReva} 
-        onToggle={setIncludeReva}
-        className="min-w-[100px]"
-      >
-        <Pill className="h-4 w-4 mr-2" /> REVA
-      </ToggleButton>
-      
-      <ToggleButton 
-        checked={includeWholesale} 
-        onToggle={setIncludeWholesale}
-        className="min-w-[100px]"
-      >
-        <Factory className="h-4 w-4 mr-2" /> Wholesale
-      </ToggleButton>
+      <div className="ml-auto">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="bg-gray-900/70 border border-gray-700 hover:bg-gray-800 text-white py-2 px-4 rounded-md flex items-center"
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Month: {selectedMonth}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-gray-800 border-gray-700 z-50">
+            <DropdownMenuItem 
+              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
+              onClick={() => setSelectedMonth('May')}
+            >
+              May 2025
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
+              onClick={() => setSelectedMonth('April')}
+            >
+              April 2025
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
+              onClick={() => setSelectedMonth('March')}
+            >
+              March 2025
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="text-white hover:bg-gray-700 focus:bg-gray-700 cursor-pointer" 
+              onClick={() => setSelectedMonth('February')}
+            >
+              February 2025
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 };
