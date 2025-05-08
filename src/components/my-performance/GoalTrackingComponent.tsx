@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { ChevronUp, ChevronDown, Flag } from 'lucide-react';
+import { calculateGoals } from '@/utils/rep-performance-utils';
 
 interface GoalTrackingComponentProps {
   performanceData: any;
@@ -23,6 +24,8 @@ interface GoalTrackingComponentProps {
   isLoading: boolean;
   formatCurrency: (value: number, decimals?: number) => string;
   formatPercent: (value: number) => string;
+  selectedUserId?: string | null;
+  selectedUserDisplayName?: string;
 }
 
 const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
@@ -31,17 +34,40 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
   visitData,
   isLoading,
   formatCurrency,
-  formatPercent
+  formatPercent,
+  selectedUserId,
+  selectedUserDisplayName
 }) => {
   const [metricType, setMetricType] = useState<string>('profit');
-  
-  // Define goals (in a production app, these would come from user settings or database)
-  const goals = {
+  const [goals, setGoals] = useState({
     profit: 100000,
     margin: 30,
     activeRatio: 75,
     accounts: 20
-  };
+  });
+  const [isLoadingGoals, setIsLoadingGoals] = useState(false);
+  
+  // Fetch goals based on previous month data
+  useEffect(() => {
+    const fetchGoals = async () => {
+      setIsLoadingGoals(true);
+      try {
+        // Determine if we are looking at all data or specific user
+        const isAllData = selectedUserId === "all";
+        const matchName = isAllData ? "all" : (selectedUserDisplayName || "");
+        
+        const calculatedGoals = await calculateGoals(matchName, isAllData);
+        setGoals(calculatedGoals);
+        console.log("Set goals to:", calculatedGoals);
+      } catch (error) {
+        console.error("Error fetching goals:", error);
+      } finally {
+        setIsLoadingGoals(false);
+      }
+    };
+    
+    fetchGoals();
+  }, [selectedUserId, selectedUserDisplayName]);
   
   // Generate trend data for visualization (sample data for demonstration)
   // In a production app, this would use historical data
@@ -102,14 +128,14 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
       title: "Margin Goal Tracking",
       yAxisLabel: "Margin (%)",
       format: (value: number) => `${value.toFixed(1)}%`,
-      goal: `${goals.margin}%`,
+      goal: `${goals.margin.toFixed(1)}%`,
       changeFormat: (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
     },
     activeRatio: {
       title: "Active Accounts Ratio Goal",
       yAxisLabel: "Active Ratio (%)",
       format: (value: number) => `${value.toFixed(1)}%`,
-      goal: `${goals.activeRatio}%`,
+      goal: `${goals.activeRatio.toFixed(1)}%`,
       changeFormat: (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
     },
     accounts: {
@@ -121,7 +147,7 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingGoals) {
     return (
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
         <CardContent className="p-4 md:p-6">

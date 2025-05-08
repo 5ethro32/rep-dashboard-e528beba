@@ -1,4 +1,3 @@
-
 export const calculateSummary = (
   baseSummary: {
     totalSpend: number;
@@ -147,4 +146,119 @@ export const formatPercent = (value: number) => {
 
 export const formatNumber = (value: number) => {
   return new Intl.NumberFormat('en-GB').format(value);
+};
+
+/**
+ * Calculate goals based on previous month performance with a growth factor
+ * @param matchName Name to match in the data (rep name or 'all' for all data)
+ * @param isAllData Whether this is for all data or a specific rep
+ * @returns Object with calculated goals
+ */
+export const calculateGoals = async (matchName: string, isAllData: boolean) => {
+  try {
+    // Default goals in case we can't fetch previous month data
+    const defaultGoals = {
+      profit: 100000,
+      margin: 30,
+      activeRatio: 75,
+      accounts: 20
+    };
+    
+    // Growth factor - 10% increase over previous month
+    const growthFactor = 1.1;
+    
+    if (!matchName) {
+      console.log("No match name provided, using default goals");
+      return defaultGoals;
+    }
+    
+    // Import supabase client directly here to prevent circular dependencies
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    let query;
+    
+    // For all data, get overall metrics
+    if (isAllData) {
+      console.log("Fetching previous month data for all reps");
+      query = supabase.from('mtd_daily').select('*');
+    } else {
+      // For a specific rep, get their data
+      console.log(`Fetching previous month data for rep: ${matchName}`);
+      query = supabase
+        .from('mtd_daily')
+        .select('*')
+        .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error("Error fetching previous month data:", error);
+      return defaultGoals;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log("No previous month data found, using default goals");
+      return defaultGoals;
+    }
+    
+    console.log(`Found ${data.length} records for previous month`);
+    
+    // Calculate metrics from previous month data
+    let totalProfit = 0;
+    let totalSpend = 0;
+    let accountSet = new Set();
+    let activeAccountSet = new Set();
+    
+    data.forEach(item => {
+      const profit = typeof item.Profit === 'number' ? item.Profit : 0;
+      const spend = typeof item.Spend === 'number' ? item.Spend : 0;
+      const accountRef = item['Account Ref'] || '';
+      
+      totalProfit += profit;
+      totalSpend += spend;
+      
+      if (accountRef) {
+        accountSet.add(accountRef);
+        if (spend > 0) {
+          activeAccountSet.add(accountRef);
+        }
+      }
+    });
+    
+    const margin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+    const activeRatio = accountSet.size > 0 ? (activeAccountSet.size / accountSet.size) * 100 : 0;
+    
+    // Calculate goals with growth factor
+    const calculatedGoals = {
+      profit: Math.round(totalProfit * growthFactor),
+      margin: Math.round(margin * growthFactor * 10) / 10,
+      activeRatio: Math.round(activeRatio * growthFactor * 10) / 10,
+      accounts: Math.round(accountSet.size * growthFactor)
+    };
+    
+    console.log("Previous month metrics:", {
+      profit: totalProfit,
+      margin: margin,
+      activeRatio: activeRatio,
+      accounts: accountSet.size
+    });
+    console.log("Calculated goals with growth factor:", calculatedGoals);
+    
+    // If any values are too small or zero, use default values
+    return {
+      profit: calculatedGoals.profit > 5000 ? calculatedGoals.profit : defaultGoals.profit,
+      margin: calculatedGoals.margin > 5 ? calculatedGoals.margin : defaultGoals.margin,
+      activeRatio: calculatedGoals.activeRatio > 10 ? calculatedGoals.activeRatio : defaultGoals.activeRatio,
+      accounts: calculatedGoals.accounts > 5 ? calculatedGoals.accounts : defaultGoals.accounts
+    };
+  } catch (error) {
+    console.error("Error calculating goals:", error);
+    return {
+      profit: 100000,
+      margin: 30,
+      activeRatio: 75,
+      accounts: 20
+    };
+  }
 };

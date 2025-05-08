@@ -682,6 +682,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             isLoading={isLoading}
             formatCurrency={formatCurrency}
             formatPercent={formatPercent}
+            selectedUserId={selectedUserId}
+            selectedUserDisplayName={selectedUserDisplayName}
           />
         </TabsContent>
       </Tabs>
