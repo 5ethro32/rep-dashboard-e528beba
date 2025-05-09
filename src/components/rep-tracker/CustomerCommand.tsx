@@ -82,16 +82,16 @@ export function CustomerCommand({
         className
       )}
       style={{ 
-        zIndex: 999,
+        zIndex: 1000,
         maxWidth: isMobile ? 'calc(100vw - 16px)' : 'none',
         width: isMobile ? 'calc(100vw - 16px)' : 'auto'
       }}
     >
-      <div className="flex items-center border-b px-3">
-        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+      <div className="flex items-center border-b px-3 bg-muted/30">
+        <Search className="mr-2 h-4 w-4 shrink-0 text-primary" />
         <Input 
           placeholder="Search customer..." 
-          className="border-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="border-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 py-4"
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -103,8 +103,12 @@ export function CustomerCommand({
         />
       </div>
       
+      <div className="text-xs text-muted-foreground px-3 py-1">
+        {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'}
+      </div>
+      
       <ScrollArea 
-        className="max-h-[300px] overflow-y-auto"
+        className="max-h-[500px] overflow-y-auto"
         orientation="vertical"
       >
         {filteredCustomers.length === 0 ? (
