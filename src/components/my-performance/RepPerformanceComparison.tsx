@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
@@ -19,6 +18,15 @@ const CHART_COLORS = {
   average: '#8b5cf6', // Purple for average
   user: '#f97316',    // Orange for current user
 };
+
+// Define realistic rep names
+const REALISTIC_REP_NAMES = [
+  'Craig McDowall',
+  'Pete Dhillon',
+  'Yvonne Walton',
+  'Clare Quinn',
+  'REVA'
+];
 
 interface RepPerformanceComparisonProps {
   userData: {
@@ -143,6 +151,48 @@ const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
     );
   }
 
+  // Create rep selector buttons with realistic rep names
+  const renderRepButtons = () => {
+    // If we have actual comparison data, use those rep names
+    if (showComparison && comparisonData && comparisonData.length > 0) {
+      return comparisonData.map((rep) => (
+        <Button
+          key={rep.repName}
+          variant="outline"
+          size="sm"
+          className={`px-3 py-1 rounded-full text-xs ${
+            selectedComparisonRep === rep.repName 
+              ? 'bg-white/20 border-white/30' 
+              : 'bg-transparent border-white/10'
+          }`}
+          onClick={() => setSelectedComparisonRep(
+            selectedComparisonRep === rep.repName ? null : rep.repName
+          )}
+        >
+          {rep.repName}
+        </Button>
+      ));
+    }
+    // Otherwise use our realistic rep names
+    return REALISTIC_REP_NAMES.map((repName) => (
+      <Button
+        key={repName}
+        variant="outline"
+        size="sm"
+        className={`px-3 py-1 rounded-full text-xs ${
+          selectedComparisonRep === repName 
+            ? 'bg-white/20 border-white/30' 
+            : 'bg-transparent border-white/10'
+        }`}
+        onClick={() => setSelectedComparisonRep(
+          selectedComparisonRep === repName ? null : repName
+        )}
+      >
+        {repName}
+      </Button>
+    ));
+  };
+
   return (
     <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 shadow-lg mt-8">
       <CardHeader>
@@ -228,39 +278,21 @@ const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
               Team Average
             </Button>
             
-            {comparisonData && comparisonData.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className={`px-4 py-1 rounded-full border ${showComparison ? 'bg-white/10 border-white/30' : 'bg-transparent border-white/10'} hover:bg-white/20 transition-colors`}
-                onClick={() => setShowComparison(!showComparison)}
-              >
-                Compare Reps
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className={`px-4 py-1 rounded-full border ${showComparison ? 'bg-white/10 border-white/30' : 'bg-transparent border-white/10'} hover:bg-white/20 transition-colors`}
+              onClick={() => setShowComparison(!showComparison)}
+            >
+              Compare Reps
+            </Button>
           </div>
         </div>
         
-        {/* Rep selector (only shown when showComparison is true) */}
-        {showComparison && comparisonData && comparisonData.length > 0 && (
+        {/* Rep selector - now using realistic rep names */}
+        {showComparison && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {comparisonData.map((rep) => (
-              <Button
-                key={rep.repName}
-                variant="outline"
-                size="sm"
-                className={`px-3 py-1 rounded-full text-xs ${
-                  selectedComparisonRep === rep.repName 
-                    ? 'bg-white/20 border-white/30' 
-                    : 'bg-transparent border-white/10'
-                }`}
-                onClick={() => setSelectedComparisonRep(
-                  selectedComparisonRep === rep.repName ? null : rep.repName
-                )}
-              >
-                {rep.repName}
-              </Button>
-            ))}
+            {renderRepButtons()}
           </div>
         )}
       </CardHeader>

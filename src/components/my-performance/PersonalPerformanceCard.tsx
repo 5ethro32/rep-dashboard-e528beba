@@ -119,12 +119,17 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                 
                 {/* Metric Value and Change Indicator */}
                 <div className="mt-3">
-                  <div className="flex items-center">
-                    {/* Percent change indicator */}
+                  <div className="flex items-baseline">
+                    {/* Main value with larger text */}
+                    <div className="text-xl md:text-2xl font-bold text-white mr-2">
+                      {metric.value}
+                    </div>
+                    
+                    {/* Percent change indicator (now moved to the right of the value) */}
                     {metric.percentChange !== null && (
                       <div 
                         className={cn(
-                          "mr-2 text-xs flex items-center",
+                          "text-xs flex items-center",
                           metric.percentChange > 0 ? "text-emerald-500" : 
                           metric.percentChange < 0 ? "text-finance-red" : "text-white/40"
                         )}
@@ -140,11 +145,6 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                         </span>
                       </div>
                     )}
-                    
-                    {/* Main value */}
-                    <div className="text-xl md:text-2xl font-bold text-white">
-                      {metric.value}
-                    </div>
                   </div>
                   
                   {/* Previous month data */}
@@ -155,7 +155,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                   )}
                 </div>
                 
-                {/* Ranking badge */}
+                {/* Ranking badge - simplified without hashtag */}
                 {metric.rank && (
                   <div className="absolute bottom-2 right-2 rounded-full bg-gray-800 border border-white/10 w-6 h-6 flex items-center justify-center">
                     <span className={cn(
@@ -164,7 +164,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                       metric.rank <= 3 ? "text-yellow-400" : 
                       "text-white/60" 
                     )}>
-                      #{metric.rank}
+                      {metric.rank}
                     </span>
                   </div>
                 )}

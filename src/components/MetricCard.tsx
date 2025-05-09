@@ -19,6 +19,7 @@ interface MetricCardProps {
   isLoading?: boolean;
   iconPosition?: 'left' | 'right';
   iconClassName?: string;
+  ranking?: number;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
@@ -31,7 +32,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
   icon,
   isLoading = false,
   iconPosition = 'right',
-  iconClassName
+  iconClassName,
+  ranking
 }) => {
   return (
     <Card 
@@ -39,7 +41,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
         "border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg",
         "transition-all duration-300 ease-in-out",
         "hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02]",
-        "will-change-transform",
+        "will-change-transform relative",
         className
       )}
     >
@@ -87,6 +89,20 @@ const MetricCard: React.FC<MetricCardProps> = ({
         {/* Bottom section with subtitle */}
         {subtitle && !isLoading && (
           <div className="text-xs text-finance-gray/80 mt-1">{subtitle}</div>
+        )}
+        
+        {/* Ranking badge if provided */}
+        {ranking !== undefined && !isLoading && (
+          <div className="absolute bottom-2 right-2 rounded-full bg-gray-800 border border-white/10 w-6 h-6 flex items-center justify-center">
+            <span className={cn(
+              "text-xs font-bold",
+              ranking === 1 ? "text-finance-red" : 
+              ranking <= 3 ? "text-yellow-400" : 
+              "text-white/60" 
+            )}>
+              {ranking}
+            </span>
+          </div>
         )}
       </CardContent>
     </Card>
