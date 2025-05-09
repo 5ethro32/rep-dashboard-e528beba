@@ -34,6 +34,12 @@ interface WeeklySummaryProps {
   weekStartDate: Date;
   weekEndDate: Date;
   isLoading?: boolean;
+  rankings?: {
+    visitsRank?: number;
+    profitRank?: number;
+    ordersRank?: number;
+    conversionRank?: number;
+  };
 }
 
 const WeeklySummary: React.FC<WeeklySummaryProps> = ({ 
@@ -41,7 +47,8 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
   previousData, 
   weekStartDate, 
   weekEndDate,
-  isLoading = false
+  isLoading = false,
+  rankings
 }) => {
   const calculateChange = (current: number, previous: number) => {
     if (!previous) return { value: '0%', type: 'neutral' as const };
@@ -82,6 +89,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           isLoading={isLoading}
           className="h-full"
           icon={<Users className="h-5 w-5" />}
+          ranking={rankings?.visitsRank}
         />
         
         <MetricCard
@@ -95,6 +103,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           isLoading={isLoading}
           className="h-full"
           icon={<ShoppingBag className="h-5 w-5" />}
+          ranking={rankings?.ordersRank}
         />
         
         <MetricCard
@@ -109,6 +118,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           isLoading={isLoading}
           className="h-full"
           icon={<Wallet className="h-5 w-5" />}
+          ranking={rankings?.profitRank}
         />
 
         <MetricCard

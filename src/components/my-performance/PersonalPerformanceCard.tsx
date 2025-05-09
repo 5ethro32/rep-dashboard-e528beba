@@ -103,6 +103,18 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
     }
   ];
   
+  // Helper function to get ranking badge styles
+  const getRankingBadgeStyles = (rank?: number) => {
+    if (!rank || rank > 3) return null;
+    
+    switch(rank) {
+      case 1: return "bg-amber-500 text-black"; // Gold
+      case 2: return "bg-gray-300 text-black";  // Silver
+      case 3: return "bg-amber-700 text-white"; // Bronze
+      default: return "bg-gray-800 text-white/60";
+    }
+  };
+  
   return (
     <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0">
       <CardContent className="p-4 md:p-6 pt-4">
@@ -117,7 +129,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                   </div>
                 </div>
                 
-                {/* Metric Value and Change Indicator - Now moved change indicator to the right of value */}
+                {/* Metric Value and Change Indicator */}
                 <div className="mt-3">
                   <div className="flex items-baseline">
                     {/* Main value with larger text */}
@@ -125,7 +137,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                       {metric.value}
                     </div>
                     
-                    {/* Percent change indicator (now to the right of the value) */}
+                    {/* Percent change indicator (to the right of the value) */}
                     {metric.percentChange !== null && (
                       <div 
                         className={cn(
@@ -155,17 +167,14 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                   )}
                 </div>
                 
-                {/* Ranking badge - simplified without hashtag */}
-                {metric.rank && (
-                  <div className="absolute bottom-2 right-2 rounded-full bg-gray-800 border border-white/10 w-6 h-6 flex items-center justify-center">
-                    <span className={cn(
-                      "text-xs font-bold",
-                      metric.rank === 1 ? "text-finance-red" : 
-                      metric.rank <= 3 ? "text-yellow-400" : 
-                      "text-white/60" 
-                    )}>
-                      {metric.rank}
-                    </span>
+                {/* Ranking badge - styled according to position with better padding */}
+                {metric.rank && metric.rank <= 3 && (
+                  <div className={cn(
+                    "absolute bottom-2 right-2 rounded-full w-7 h-7 flex items-center justify-center",
+                    "shadow-md border border-white/20",
+                    getRankingBadgeStyles(metric.rank)
+                  )}>
+                    <span className="text-xs font-bold">{metric.rank}</span>
                   </div>
                 )}
               </CardContent>

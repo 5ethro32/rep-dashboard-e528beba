@@ -35,6 +35,18 @@ const MetricCard: React.FC<MetricCardProps> = ({
   iconClassName,
   ranking
 }) => {
+  // Helper function to get ranking badge styles
+  const getRankingBadgeStyles = (rank?: number) => {
+    if (!rank || rank > 3) return null;
+    
+    switch(rank) {
+      case 1: return "bg-amber-500 text-black"; // Gold
+      case 2: return "bg-gray-300 text-black";  // Silver
+      case 3: return "bg-amber-700 text-white"; // Bronze
+      default: return "bg-gray-800 text-white/60";
+    }
+  };
+  
   return (
     <Card 
       className={cn(
@@ -91,17 +103,14 @@ const MetricCard: React.FC<MetricCardProps> = ({
           <div className="text-xs text-finance-gray/80 mt-1">{subtitle}</div>
         )}
         
-        {/* Ranking badge if provided - simplified without hashtag */}
-        {ranking !== undefined && !isLoading && (
-          <div className="absolute bottom-2 right-2 rounded-full bg-gray-800 border border-white/10 w-6 h-6 flex items-center justify-center">
-            <span className={cn(
-              "text-xs font-bold",
-              ranking === 1 ? "text-finance-red" : 
-              ranking <= 3 ? "text-yellow-400" : 
-              "text-white/60" 
-            )}>
-              {ranking}
-            </span>
+        {/* Ranking badge - only show for ranks 1-3 with gold/silver/bronze styling */}
+        {ranking !== undefined && ranking <= 3 && !isLoading && (
+          <div className={cn(
+            "absolute bottom-2 right-2 rounded-full w-7 h-7 flex items-center justify-center",
+            "shadow-md border border-white/20",
+            getRankingBadgeStyles(ranking)
+          )}>
+            <span className="text-xs font-bold">{ranking}</span>
           </div>
         )}
       </CardContent>
