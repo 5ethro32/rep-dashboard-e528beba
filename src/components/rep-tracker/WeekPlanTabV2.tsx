@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,6 +38,12 @@ interface CustomerVisit {
   has_order: boolean;
 }
 
+interface UserProfile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+}
+
 interface WeekPlanTabV2Props {
   weekStartDate: Date;
   weekEndDate: Date;
@@ -68,6 +74,25 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
   const userId = selectedUserId || user?.id;
   const isAllDataView = selectedUserId === "all"; // Check if this is the "All Data" view
   const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString(), userId];
+
+  // Query to fetch user profiles for the "All Data" view
+  const { data: userProfiles } = useQuery({
+    queryKey: ['user-profiles'],
+    queryFn: async () => {
+      if (!isAllDataView) return []; // Only fetch profiles for "All Data" view
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name');
+        
+      if (error) {
+        console.error('Error fetching user profiles:', error);
+        throw error;
+      }
+      return data as UserProfile[];
+    },
+    enabled: isAllDataView,
+  });
 
   const { data: weekPlans, isLoading } = useQuery({
     queryKey: weekPlansQueryKey,
@@ -127,6 +152,25 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
     if (!isViewingOwnData) return false;
     if (isAllDataView) return user?.id === plan.user_id;
     return true;
+  };
+
+  // Helper function to get a user's display name from their ID
+  const getUserDisplayName = (userId: string): string => {
+    if (userId === user?.id) return "My Plans";
+    
+    if (userProfiles) {
+      const profile = userProfiles.find(p => p.id === userId);
+      if (profile) {
+        if (profile.first_name && profile.last_name) {
+          return `${profile.first_name} ${profile.last_name}'s Plans`;
+        } else if (profile.first_name) {
+          return `${profile.first_name}'s Plans`;
+        }
+      }
+    }
+    
+    // Fallback - use a shorter version of the UUID if no name is available
+    return `${userId.split('-')[0]}'s Plans`;
   };
 
   const deletePlanMutation = useMutation({
@@ -298,14 +342,10 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
         ) : (
           <div className="space-y-8">
             {Object.entries(plansByUser).map(([userId, userPlans]) => {
-              // Get the first plan to extract the user information
-              const firstPlan = userPlans[0];
-              const isCurrentUser = userId === user?.id;
-              
               return (
                 <div key={userId} className="space-y-4">
                   <h4 className="font-medium text-base border-b border-gray-800 pb-2">
-                    {isCurrentUser ? "My Plans" : `${userId}'s Plans`}
+                    {getUserDisplayName(userId)}
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
