@@ -11,6 +11,7 @@ import AccountHealthSection from '@/components/my-performance/AccountHealthSecti
 import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAnalysis';
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
 import GoalTrackingComponent from '@/components/my-performance/GoalTrackingComponent';
+import RepPerformanceComparison from '@/components/my-performance/RepPerformanceComparison';
 
 interface MyPerformanceProps {
   selectedUserId?: string | null;
@@ -33,6 +34,19 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [userFirstName, setUserFirstName] = useState<string>('');
   const [compareMonth, setCompareMonth] = useState<string>('April');
   const [accountHealthMonth, setAccountHealthMonth] = useState<string>('May');
+  const [repComparisonData, setRepComparisonData] = useState<any[]>([]);
+  const [teamAverageData, setTeamAverageData] = useState<any>({
+    profit: [],
+    spend: [],
+    packs: [],
+    margin: []
+  });
+  const [userTrendsData, setUserTrendsData] = useState<any>({
+    profit: [],
+    spend: [],
+    packs: [],
+    margin: []
+  });
   const isMobile = useIsMobile();
   
   // Initialize with props if provided, otherwise use the current user
@@ -108,7 +122,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       await Promise.all([
         fetchPersonalPerformanceData(),
         fetchAccountHealthData(),
-        fetchVisitData()
+        fetchVisitData(),
+        fetchRepComparisonData() // New function to fetch comparison data
       ]);
     } catch (error) {
       console.error("Error fetching performance data:", error);
@@ -168,10 +183,16 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           }
         }
         
-        // Set performance data with previous month comparison
+        // Set performance data with previous month comparison and rankings
         setPerformanceData({
           ...currentPerformance,
-          previousMonthData: previousPerformance
+          previousMonthData: previousPerformance,
+          rankings: {
+            profitRank: 1,
+            spendRank: 1,
+            marginRank: 1,
+            accountsRank: 1
+          }
         });
         return;
       }
@@ -269,14 +290,234 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         }
       }
       
-      // Set performance data with previous month comparison
+      // Set performance data with previous month comparison and rankings
       setPerformanceData({
         ...currentPerformance,
-        previousMonthData: previousPerformance
+        previousMonthData: previousPerformance,
+        rankings: {
+          profitRank: 1,
+          spendRank: 1,
+          marginRank: 1,
+          accountsRank: 1
+        }
       });
       
     } catch (error) {
       console.error("Error fetching personal performance data:", error);
+    }
+  };
+  
+  const fetchUserPerformanceDataForAllReps = async () => {
+    // Determine current data table based on selected month
+    let tableName;
+    switch (selectedMonth) {
+      case 'May':
+        tableName = 'May_Data';
+        break;
+      case 'April':
+        tableName = 'mtd_daily';
+        break;
+      case 'March':
+        tableName = 'sales_data';
+        break;
+      default:
+        tableName = 'sales_data_februrary';
+    }
+    
+    // Get all data from the table
+    const { data, error } = await fetchDataFromTable(tableName);
+    
+    if (error) {
+      console.error("Error fetching all reps data:", error);
+      return { data: [] };
+    }
+    
+    // Process data to get rep-specific metrics
+    const repData = processRepData(data || []);
+    return { data: repData };
+  };
+  
+  const processRepData = (data: any[]) => {
+    const repMap = new Map();
+    
+    data.forEach(item => {
+      const repName = item.Rep || item.rep_name || '';
+      if (!repName) return;
+      
+      const profit = typeof item.Profit === 'number' ? item.Profit : 
+                    typeof item.profit === 'number' ? item.profit : 0;
+      const spend = typeof item.Spend === 'number' ? item.Spend : 
+                   typeof item.spend === 'number' ? item.spend : 0;
+      const accountRef = item['Account Ref'] || item.account_ref || '';
+      
+      if (!repMap.has(repName)) {
+        repMap.set(repName, {
+          repName,
+          profit: 0,
+          spend: 0,
+          accounts: new Set(),
+          activeAccounts: new Set()
+        });
+      }
+      
+      const repData = repMap.get(repName);
+      repData.profit += profit;
+      repData.spend += spend;
+      
+      if (accountRef) {
+        repData.accounts.add(accountRef);
+        if (spend > 0) {
+          repData.activeAccounts.add(accountRef);
+        }
+      }
+    });
+    
+    // Convert map to array and calculate derivatives
+    return Array.from(repMap.values()).map(rep => ({
+      repName: rep.repName,
+      profit: rep.profit,
+      spend: rep.spend,
+      margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
+      totalAccounts: rep.accounts.size,
+      activeAccounts: rep.activeAccounts.size
+    }));
+  };
+  
+  const fetchRepComparisonData = async () => {
+    try {
+      // Fetch monthly data for all reps
+      const months = ['February', 'March', 'April', 'May'];
+      const monthlyTables = [
+        'sales_data_februrary',
+        'sales_data',
+        'mtd_daily',
+        'May_Data'
+      ];
+      
+      // Get data for each month
+      const monthlyData = await Promise.all(
+        monthlyTables.map(table => fetchDataFromTable(table))
+      );
+      
+      // Process data to get monthly metrics by rep
+      const processedMonthlyData = monthlyData.map((result, index) => {
+        const repData = processRepData(result.data || []);
+        return {
+          month: months[index],
+          data: repData
+        };
+      });
+      
+      // Transform data for chart format
+      const repNames = new Set<string>();
+      const userRepName = selectedUserDisplayName !== "My Data" ? selectedUserDisplayName : (userFirstName || "");
+      
+      // Collect all rep names
+      processedMonthlyData.forEach(monthData => {
+        monthData.data.forEach(rep => {
+          // Skip the current user's data as we'll handle it separately
+          if (!rep.repName.includes(userRepName)) {
+            repNames.add(rep.repName);
+          }
+        });
+      });
+      
+      // Extract user's data across months
+      const userData = {
+        profit: [] as { month: string; value: number }[],
+        spend: [] as { month: string; value: number }[],
+        packs: [] as { month: string; value: number }[],
+        margin: [] as { month: string; value: number }[]
+      };
+      
+      // Calculate team averages
+      const averageData = {
+        profit: [] as { month: string; value: number }[],
+        spend: [] as { month: string; value: number }[],
+        packs: [] as { month: string; value: number }[],
+        margin: [] as { month: string; value: number }[]
+      };
+      
+      processedMonthlyData.forEach(monthData => {
+        // Calculate averages
+        let totalProfit = 0;
+        let totalSpend = 0;
+        let totalPacks = 0;
+        let totalMargin = 0;
+        let repCount = 0;
+        
+        monthData.data.forEach(rep => {
+          totalProfit += rep.profit;
+          totalSpend += rep.spend;
+          totalPacks += rep.totalAccounts || 0;
+          totalMargin += rep.margin;
+          repCount++;
+          
+          // Extract user's data if match found
+          if (rep.repName.includes(userRepName)) {
+            userData.profit.push({ month: monthData.month.substring(0, 3), value: rep.profit });
+            userData.spend.push({ month: monthData.month.substring(0, 3), value: rep.spend });
+            userData.packs.push({ month: monthData.month.substring(0, 3), value: rep.totalAccounts || 0 });
+            userData.margin.push({ month: monthData.month.substring(0, 3), value: rep.margin });
+          }
+        });
+        
+        // Add average for the month
+        if (repCount > 0) {
+          averageData.profit.push({ 
+            month: monthData.month.substring(0, 3), 
+            value: totalProfit / repCount 
+          });
+          averageData.spend.push({ 
+            month: monthData.month.substring(0, 3), 
+            value: totalSpend / repCount 
+          });
+          averageData.packs.push({ 
+            month: monthData.month.substring(0, 3), 
+            value: totalPacks / repCount 
+          });
+          averageData.margin.push({ 
+            month: monthData.month.substring(0, 3), 
+            value: totalMargin / repCount 
+          });
+        }
+      });
+      
+      // Prepare comparison data for each rep
+      const comparisonData = Array.from(repNames).map(repName => {
+        const repData = {
+          repName,
+          profit: [] as { month: string; value: number }[],
+          spend: [] as { month: string; value: number }[],
+          packs: [] as { month: string; value: number }[],
+          margin: [] as { month: string; value: number }[]
+        };
+        
+        processedMonthlyData.forEach(monthData => {
+          const rep = monthData.data.find(r => r.repName === repName);
+          if (rep) {
+            repData.profit.push({ month: monthData.month.substring(0, 3), value: rep.profit });
+            repData.spend.push({ month: monthData.month.substring(0, 3), value: rep.spend });
+            repData.packs.push({ month: monthData.month.substring(0, 3), value: rep.totalAccounts || 0 });
+            repData.margin.push({ month: monthData.month.substring(0, 3), value: rep.margin });
+          }
+        });
+        
+        return repData;
+      });
+      
+      // Only include reps with at least some data
+      const filteredComparisonData = comparisonData.filter(
+        rep => rep.profit.length > 0
+      );
+      
+      // Set the state with the processed data
+      setUserTrendsData(userData);
+      setTeamAverageData(averageData);
+      setRepComparisonData(filteredComparisonData.slice(0, 5)); // Limit to 5 reps for comparison
+      
+    } catch (error) {
+      console.error("Error fetching rep comparison data:", error);
     }
   };
   
@@ -778,6 +1019,17 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         <PersonalPerformanceCard
           performanceData={performanceData}
           isLoading={isLoading}
+        />
+      </div>
+      
+      {/* Performance Comparison Chart */}
+      <div className="mb-6">
+        <RepPerformanceComparison
+          userData={userTrendsData}
+          averageData={teamAverageData}
+          comparisonData={repComparisonData}
+          isLoading={isLoading}
+          userName={selectedUserDisplayName !== "My Data" ? selectedUserDisplayName : "You"}
         />
       </div>
 
