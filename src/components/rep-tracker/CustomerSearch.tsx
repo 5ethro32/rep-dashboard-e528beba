@@ -34,8 +34,8 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
         if (!customer || typeof customer !== 'object') return false;
         if (!customer.account_name || typeof customer.account_name !== 'string') return false;
         return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
-      })
-      .slice(0, 100); // Limit results for performance
+      });
+  // Removed the .slice(0, 100) limitation to show all matching customers
 
   // Handle keyboard navigation
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {

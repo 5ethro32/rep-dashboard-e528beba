@@ -27,7 +27,7 @@ export function CustomerCommand({
   // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  // Filter customers based on search query with null checks
+  // Filter customers based on search query with null checks - no slice limitation
   const filteredCustomers = safeCustomers.filter(customer => {
     if (!customer || typeof customer.account_name !== 'string') return false;
     return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -104,7 +104,7 @@ export function CustomerCommand({
       </div>
       
       <ScrollArea 
-        className="max-h-[200px] overflow-y-auto"
+        className="max-h-[300px] overflow-y-auto"
         orientation="vertical"
       >
         {filteredCustomers.length === 0 ? (

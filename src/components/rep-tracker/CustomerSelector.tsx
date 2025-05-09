@@ -49,7 +49,7 @@ export function CustomerSelector({
   // Ensure customers is always an array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  // Filter customers based on search query
+  // Filter customers based on search query - no slice limitation
   const filteredCustomers = !searchQuery 
     ? safeCustomers 
     : safeCustomers.filter(customer => {
@@ -123,7 +123,7 @@ export function CustomerSelector({
             >
               {filteredCustomers.length > 0 ? (
                 <div className="py-1">
-                  {filteredCustomers.slice(0, 100).map((customer) => {
+                  {filteredCustomers.map((customer) => {
                     if (!customer || !customer.account_ref || !customer.account_name) return null;
                     
                     const isSelected = selectedCustomer === customer.account_name;
