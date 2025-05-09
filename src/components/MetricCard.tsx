@@ -91,7 +91,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           <div className="text-xs text-finance-gray/80 mt-1">{subtitle}</div>
         )}
         
-        {/* Ranking badge if provided */}
+        {/* Ranking badge if provided - simplified without hashtag */}
         {ranking !== undefined && !isLoading && (
           <div className="absolute bottom-2 right-2 rounded-full bg-gray-800 border border-white/10 w-6 h-6 flex items-center justify-center">
             <span className={cn(

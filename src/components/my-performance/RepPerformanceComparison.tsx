@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,6 +8,7 @@ import { Info } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define chart colors
 const CHART_COLORS = {
@@ -17,16 +18,8 @@ const CHART_COLORS = {
   margin: '#fef08a',  // Yellow
   average: '#8b5cf6', // Purple for average
   user: '#f97316',    // Orange for current user
+  comparison: ['#ef4444', '#14b8a6', '#ec4899', '#a855f7', '#64748b'], // Colors for comparison reps
 };
-
-// Define realistic rep names
-const REALISTIC_REP_NAMES = [
-  'Craig McDowall',
-  'Pete Dhillon',
-  'Yvonne Walton',
-  'Clare Quinn',
-  'REVA'
-];
 
 interface RepPerformanceComparisonProps {
   userData: {
@@ -53,6 +46,12 @@ interface RepPerformanceComparisonProps {
   userName: string;
 }
 
+interface Profile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+}
+
 const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
   userData,
   averageData,
@@ -67,8 +66,12 @@ const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
   const [showAverage, setShowAverage] = useState(true);
   const [showComparison, setShowComparison] = useState(false);
   
-  // Get selected comparison rep (if any)
-  const [selectedComparisonRep, setSelectedComparisonRep] = useState<string | null>(null);
+  // Get selected comparison reps (now can be multiple)
+  const [selectedComparisonReps, setSelectedComparisonReps] = useState<string[]>([]);
+  
+  // State for profiles data
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState(false);
   
   const isMobile = useIsMobile();
 
@@ -76,12 +79,31 @@ const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
   const activeUserData = useMemo(() => userData[activeMetric] || [], [userData, activeMetric]);
   const activeAverageData = useMemo(() => averageData[activeMetric] || [], [averageData, activeMetric]);
   
-  // Get data for selected comparison rep (if any)
-  const activeComparisonData = useMemo(() => {
-    if (!selectedComparisonRep || !comparisonData) return null;
-    const repData = comparisonData.find(rep => rep.repName === selectedComparisonRep);
-    return repData ? repData[activeMetric] : null;
-  }, [comparisonData, selectedComparisonRep, activeMetric]);
+  // Fetch profiles when component mounts
+  useEffect(() => {
+    async function fetchProfiles() {
+      setIsLoadingProfiles(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .order('first_name');
+      
+      if (error) {
+        console.error('Error fetching profiles:', error);
+      } else if (data) {
+        setProfiles(data);
+      }
+      
+      setIsLoadingProfiles(false);
+    }
+    
+    fetchProfiles();
+  }, []);
+  
+  // Format name function
+  const formatRepName = (profile: Profile) => {
+    return profile.first_name || profile.id.substring(0, 6);
+  };
 
   // Chart label based on selected metric
   const chartLabel = useMemo(() => {
@@ -106,6 +128,15 @@ const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
       default:
         return value.toString();
     }
+  };
+
+  // Toggle a rep selection
+  const toggleRepSelection = (repName: string) => {
+    setSelectedComparisonReps(prev => 
+      prev.includes(repName)
+        ? prev.filter(name => name !== repName)
+        : [...prev, repName]
+    );
   };
 
   // Custom tooltip component for the chart
@@ -137,7 +168,7 @@ const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
   };
 
   // Render skeleton during loading
-  if (isLoading) {
+  if (isLoading || isLoadingProfiles) {
     return (
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 shadow-lg mt-8">
         <CardHeader className="pb-2">
@@ -151,46 +182,48 @@ const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
     );
   }
 
-  // Create rep selector buttons with realistic rep names
+  // Create rep selector buttons with actual rep names
   const renderRepButtons = () => {
-    // If we have actual comparison data, use those rep names
-    if (showComparison && comparisonData && comparisonData.length > 0) {
-      return comparisonData.map((rep) => (
+    if (!showComparison) return null;
+    
+    // If we have actual comparison data with real rep names, use that
+    if (comparisonData && comparisonData.length > 0) {
+      return comparisonData.map((rep, index) => (
         <Button
           key={rep.repName}
           variant="outline"
           size="sm"
           className={`px-3 py-1 rounded-full text-xs ${
-            selectedComparisonRep === rep.repName 
+            selectedComparisonReps.includes(rep.repName) 
               ? 'bg-white/20 border-white/30' 
               : 'bg-transparent border-white/10'
           }`}
-          onClick={() => setSelectedComparisonRep(
-            selectedComparisonRep === rep.repName ? null : rep.repName
-          )}
+          onClick={() => toggleRepSelection(rep.repName)}
         >
           {rep.repName}
         </Button>
       ));
     }
-    // Otherwise use our realistic rep names
-    return REALISTIC_REP_NAMES.map((repName) => (
-      <Button
-        key={repName}
-        variant="outline"
-        size="sm"
-        className={`px-3 py-1 rounded-full text-xs ${
-          selectedComparisonRep === repName 
-            ? 'bg-white/20 border-white/30' 
-            : 'bg-transparent border-white/10'
-        }`}
-        onClick={() => setSelectedComparisonRep(
-          selectedComparisonRep === repName ? null : repName
-        )}
-      >
-        {repName}
-      </Button>
-    ));
+    
+    // Otherwise use profiles data
+    return profiles.map((profile) => {
+      const displayName = formatRepName(profile);
+      return (
+        <Button
+          key={profile.id}
+          variant="outline"
+          size="sm"
+          className={`px-3 py-1 rounded-full text-xs ${
+            selectedComparisonReps.includes(displayName) 
+              ? 'bg-white/20 border-white/30' 
+              : 'bg-transparent border-white/10'
+          }`}
+          onClick={() => toggleRepSelection(displayName)}
+        >
+          {displayName}
+        </Button>
+      );
+    });
   };
 
   return (
@@ -289,12 +322,10 @@ const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
           </div>
         </div>
         
-        {/* Rep selector - now using realistic rep names */}
-        {showComparison && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {renderRepButtons()}
-          </div>
-        )}
+        {/* Rep selector - now showing actual rep names and allowing multiple selections */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {renderRepButtons()}
+        </div>
       </CardHeader>
       
       <CardContent className="h-64 pt-3 pb-8">
@@ -352,20 +383,29 @@ const RepPerformanceComparison: React.FC<RepPerformanceComparisonProps> = ({
               />
             )}
             
-            {/* Selected comparison rep line (if any) */}
-            {showComparison && selectedComparisonRep && activeComparisonData && (
-              <Line 
-                data={activeComparisonData}
-                type="monotone"
-                dataKey="value"
-                name={selectedComparisonRep}
-                stroke={CHART_COLORS.profit} // Using profit color for comparison
-                strokeWidth={1.5}
-                dot={{ r: 3, fill: CHART_COLORS.profit }}
-                activeDot={{ r: 5 }}
-                connectNulls={true}
-              />
-            )}
+            {/* Multiple selected comparison rep lines */}
+            {showComparison && selectedComparisonReps.length > 0 && comparisonData && 
+              selectedComparisonReps.map((repName, index) => {
+                const repData = comparisonData.find(data => data.repName === repName);
+                if (!repData) return null;
+                
+                const colorIndex = index % CHART_COLORS.comparison.length;
+                return (
+                  <Line 
+                    key={repName}
+                    data={repData[activeMetric]}
+                    type="monotone"
+                    dataKey="value"
+                    name={repName}
+                    stroke={CHART_COLORS.comparison[colorIndex]}
+                    strokeWidth={1.5}
+                    dot={{ r: 3, fill: CHART_COLORS.comparison[colorIndex] }}
+                    activeDot={{ r: 5 }}
+                    connectNulls={true}
+                  />
+                );
+              })
+            }
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

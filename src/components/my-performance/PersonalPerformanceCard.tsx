@@ -117,19 +117,19 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                   </div>
                 </div>
                 
-                {/* Metric Value and Change Indicator */}
+                {/* Metric Value and Change Indicator - Now moved change indicator to the right of value */}
                 <div className="mt-3">
                   <div className="flex items-baseline">
                     {/* Main value with larger text */}
-                    <div className="text-xl md:text-2xl font-bold text-white mr-2">
+                    <div className="text-xl md:text-2xl font-bold text-white">
                       {metric.value}
                     </div>
                     
-                    {/* Percent change indicator (now moved to the right of the value) */}
+                    {/* Percent change indicator (now to the right of the value) */}
                     {metric.percentChange !== null && (
                       <div 
                         className={cn(
-                          "text-xs flex items-center",
+                          "text-xs flex items-center ml-2",
                           metric.percentChange > 0 ? "text-emerald-500" : 
                           metric.percentChange < 0 ? "text-finance-red" : "text-white/40"
                         )}
