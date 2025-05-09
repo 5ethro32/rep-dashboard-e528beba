@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
+import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import PersonalPerformanceCard from '@/components/my-performance/PersonalPerformanceCard';
 import AccountHealthSection from '@/components/my-performance/AccountHealthSection';
 import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAnalysis';
@@ -47,6 +49,12 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     packs: [],
     margin: []
   });
+  
+  // Add state for department toggles
+  const [includeRetail, setIncludeRetail] = useState<boolean>(true);
+  const [includeReva, setIncludeReva] = useState<boolean>(true);
+  const [includeWholesale, setIncludeWholesale] = useState<boolean>(true);
+  
   const isMobile = useIsMobile();
   
   // Initialize with props if provided, otherwise use the current user
@@ -85,14 +93,14 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     if (user && selectedUserId) {
       fetchAllData();
     }
-  }, [user, selectedMonth, selectedUserId]);
+  }, [user, selectedMonth, selectedUserId, includeRetail, includeReva, includeWholesale]);
   
   // Fetch account health data when account health month or compare month changes
   useEffect(() => {
     if (user && selectedUserId) {
       fetchAccountHealthData();
     }
-  }, [accountHealthMonth, compareMonth]);
+  }, [accountHealthMonth, compareMonth, includeRetail, includeReva, includeWholesale]);
   
   const handleSelectUser = (userId: string | null, displayName: string) => {
     setSelectedUserId(userId);
@@ -166,10 +174,22 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         
         if (currentError) throw currentError;
         
+        // Filter data based on department toggles
+        let filteredData = currentData || [];
+        if (!includeRetail || !includeReva || !includeWholesale) {
+          filteredData = filteredData.filter((item: any) => {
+            const department = item.Department || item.department || '';
+            if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+            if (!includeReva && department.toUpperCase() === 'REVA') return false;
+            if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+            return true;
+          });
+        }
+        
         // Calculate current month metrics
         const profitColumn = currentTable === 'sales_data' ? 'profit' : 'Profit';
         const spendColumn = currentTable === 'sales_data' ? 'spend' : 'Spend';
-        const currentPerformance = calculatePerformanceMetrics(currentData || [], profitColumn, spendColumn);
+        const currentPerformance = calculatePerformanceMetrics(filteredData, profitColumn, spendColumn);
         
         // Get previous month data if available
         let previousPerformance = null;
@@ -177,9 +197,20 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           const { data: previousData, error: previousError } = await fetchDataFromTable(previousTable);
             
           if (!previousError && previousData) {
+            let filteredPreviousData = previousData;
+            if (!includeRetail || !includeReva || !includeWholesale) {
+              filteredPreviousData = filteredPreviousData.filter((item: any) => {
+                const department = item.Department || item.department || '';
+                if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+                if (!includeReva && department.toUpperCase() === 'REVA') return false;
+                if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+                return true;
+              });
+            }
+            
             const prevProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
             const prevSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
-            previousPerformance = calculatePerformanceMetrics(previousData, prevProfitColumn, prevSpendColumn);
+            previousPerformance = calculatePerformanceMetrics(filteredPreviousData, prevProfitColumn, prevSpendColumn);
           }
         }
         
@@ -264,9 +295,21 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       
       if (currentError) throw currentError;
       
+      // Filter data based on department toggles
+      let filteredData = currentData || [];
+      if (!includeRetail || !includeReva || !includeWholesale) {
+        filteredData = filteredData.filter((item: any) => {
+          const department = item.Department || item.department || '';
+          if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+          if (!includeReva && department.toUpperCase() === 'REVA') return false;
+          if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+          return true;
+        });
+      }
+      
       // Calculate current month metrics
       const currentPerformance = calculatePerformanceMetrics(
-        currentData || [], 
+        filteredData, 
         currentProfitColumn, 
         currentSpendColumn
       );
@@ -282,8 +325,19 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         const { data: previousData, error: previousError } = await fetchUserDataFromTable(previousTable, matchName);
         
         if (!previousError && previousData && previousData.length > 0) {
+          let filteredPreviousData = previousData;
+          if (!includeRetail || !includeReva || !includeWholesale) {
+            filteredPreviousData = filteredPreviousData.filter((item: any) => {
+              const department = item.Department || item.department || '';
+              if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+              if (!includeReva && department.toUpperCase() === 'REVA') return false;
+              if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+              return true;
+            });
+          }
+          
           previousPerformance = calculatePerformanceMetrics(
-            previousData, 
+            filteredPreviousData, 
             previousProfitColumn, 
             previousSpendColumn
           );
@@ -575,8 +629,30 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         const { data: compareData, error: compareError } = await fetchDataFromTable(compareMonthTableName);
         if (compareError) throw compareError;
         
+        // Filter data based on department toggles
+        let filteredCurrentData = currentData || [];
+        let filteredCompareData = compareData || [];
+        
+        if (!includeRetail || !includeReva || !includeWholesale) {
+          filteredCurrentData = filteredCurrentData.filter((item: any) => {
+            const department = item.Department || item.department || '';
+            if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+            if (!includeReva && department.toUpperCase() === 'REVA') return false;
+            if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+            return true;
+          });
+          
+          filteredCompareData = filteredCompareData.filter((item: any) => {
+            const department = item.Department || item.department || '';
+            if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+            if (!includeReva && department.toUpperCase() === 'REVA') return false;
+            if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+            return true;
+          });
+        }
+        
         // Calculate account health by comparing current and comparison data
-        const accountHealth = calculateAccountHealth(currentData || [], compareData || []);
+        const accountHealth = calculateAccountHealth(filteredCurrentData, filteredCompareData);
         setAccountHealthData(accountHealth);
         setIsLoading(false);
         return;
@@ -613,8 +689,30 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       const { data: compareData, error: compareError } = await fetchUserDataFromTable(compareMonthTableName, matchName);
       if (compareError) throw compareError;
       
+      // Filter data based on department toggles
+      let filteredCurrentData = currentData || [];
+      let filteredCompareData = compareData || [];
+      
+      if (!includeRetail || !includeReva || !includeWholesale) {
+        filteredCurrentData = filteredCurrentData.filter((item: any) => {
+          const department = item.Department || item.department || '';
+          if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+          if (!includeReva && department.toUpperCase() === 'REVA') return false;
+          if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+          return true;
+        });
+        
+        filteredCompareData = filteredCompareData.filter((item: any) => {
+          const department = item.Department || item.department || '';
+          if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+          if (!includeReva && department.toUpperCase() === 'REVA') return false;
+          if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+          return true;
+        });
+      }
+      
       // Calculate account health by comparing current and comparison data
-      const accountHealth = calculateAccountHealth(currentData || [], compareData || []);
+      const accountHealth = calculateAccountHealth(filteredCurrentData, filteredCompareData);
       setAccountHealthData(accountHealth);
       
     } catch (error) {
@@ -1013,6 +1111,18 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           />
         </div>
       </div>
+      
+      {/* Add PerformanceFilters component */}
+      <PerformanceFilters
+        includeRetail={includeRetail}
+        setIncludeRetail={setIncludeRetail}
+        includeReva={includeReva}
+        setIncludeReva={setIncludeReva}
+        includeWholesale={includeWholesale}
+        setIncludeWholesale={setIncludeWholesale}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+      />
 
       {/* Personal Performance Overview */}
       <div className="mb-6">

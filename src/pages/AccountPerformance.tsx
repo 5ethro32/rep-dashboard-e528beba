@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
+import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -25,6 +27,8 @@ type DataItem = {
   profit?: number;
   Spend?: number;
   spend?: number;
+  Department?: string;
+  department?: string;
 };
 interface AccountPerformanceProps {
   selectedUserId?: string | null;
@@ -50,6 +54,12 @@ const AccountPerformance = ({
     increasing: 0,
     decreasing: 0
   });
+  
+  // Add state for department toggles
+  const [includeRetail, setIncludeRetail] = useState<boolean>(true);
+  const [includeReva, setIncludeReva] = useState<boolean>(true);
+  const [includeWholesale, setIncludeWholesale] = useState<boolean>(true);
+  
   const isMobile = useIsMobile();
   const {
     user,
@@ -69,9 +79,10 @@ const AccountPerformance = ({
       setSelectedUserName(propSelectedUserName);
     }
   }, [propSelectedUserId, propSelectedUserName]);
+  
   useEffect(() => {
     fetchComparisonData();
-  }, [selectedMonth, selectedUserId, selectedUserName]);
+  }, [selectedMonth, selectedUserId, selectedUserName, includeRetail, includeReva, includeWholesale]);
 
   // Handle user selection change
   const handleUserChange = (userId: string | null, displayName: string) => {
@@ -80,6 +91,7 @@ const AccountPerformance = ({
     setSelectedUserName(displayName);
     // Data will refresh due to the useEffect dependency
   };
+  
   const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: {
     column: string;
     value: string;
@@ -107,6 +119,17 @@ const AccountPerformance = ({
       } else {
         hasMoreData = false;
       }
+    }
+
+    // Filter by selected departments
+    if (!includeRetail || !includeReva || !includeWholesale) {
+      allRecords = allRecords.filter(item => {
+        const department = item.Department || item.department || '';
+        if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+        if (!includeReva && department.toUpperCase() === 'REVA') return false;
+        if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+        return true;
+      });
     }
 
     // If "All Data" is selected, return all records (no filtering)
@@ -172,6 +195,7 @@ const AccountPerformance = ({
     // But just in case, return all records
     return allRecords;
   };
+  
   const fetchComparisonData = async () => {
     setIsLoading(true);
     try {
@@ -354,6 +378,18 @@ const AccountPerformance = ({
       <div className="mb-6 flex items-center space-x-4">
         <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
       </div>
+      
+      {/* Add PerformanceFilters component */}
+      <PerformanceFilters
+        includeRetail={includeRetail}
+        setIncludeRetail={setIncludeRetail}
+        includeReva={includeReva}
+        setIncludeReva={setIncludeReva}
+        includeWholesale={includeWholesale}
+        setIncludeWholesale={setIncludeWholesale}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+      />
       
       {/* Update Card - remove the p-0 and fix the padding in CardContent */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
