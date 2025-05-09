@@ -1022,7 +1022,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         />
       </div>
       
-      {/* Performance Comparison Chart */}
+      {/* Performance Comparison Chart - now with isMyDashboard flag set to true */}
       <div className="mb-6">
         <RepPerformanceComparison
           userData={userTrendsData}
@@ -1030,6 +1030,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           comparisonData={repComparisonData}
           isLoading={isLoading}
           userName={selectedUserDisplayName !== "My Data" ? selectedUserDisplayName : "You"}
+          isMyDashboard={true}
         />
       </div>
 
