@@ -37,6 +37,19 @@ export function CustomerSelector({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Log the customers received to help debug
+  useEffect(() => {
+    console.log(`CustomerSelector received ${customers.length} customers`);
+    // Log some details about customers that start with later letters
+    if (customers.length > 0) {
+      const vCustomers = customers.filter(c => c.account_name.toLowerCase().startsWith('v')).length;
+      const wCustomers = customers.filter(c => c.account_name.toLowerCase().startsWith('w')).length;
+      const yCustomers = customers.filter(c => c.account_name.toLowerCase().startsWith('y')).length;
+      const zCustomers = customers.filter(c => c.account_name.toLowerCase().startsWith('z')).length;
+      console.log(`CustomerSelector - Customer counts by letter: V: ${vCustomers}, W: ${wCustomers}, Y: ${yCustomers}, Z: ${zCustomers}`);
+    }
+  }, [customers]);
+
   // Focus the input when popover opens
   useEffect(() => {
     if (open && inputRef.current) {
@@ -61,6 +74,13 @@ export function CustomerSelector({
           ref.toLowerCase().includes(searchQuery.toLowerCase())
         );
       });
+
+  // Log filtered results when search changes
+  useEffect(() => {
+    if (open && searchQuery) {
+      console.log(`CustomerSelector search "${searchQuery}" returned ${filteredCustomers.length} results`);
+    }
+  }, [searchQuery, filteredCustomers.length, open]);
 
   // Handle customer selection with explicit event handling
   const handleCustomerSelect = (e: React.MouseEvent, customer: Customer) => {
@@ -101,8 +121,8 @@ export function CustomerSelector({
           <div className="py-6 text-center text-sm">Loading customers...</div>
         ) : (
           <div className="w-full">
-            <div className="flex items-center border-b px-3">
-              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <div className="flex items-center border-b px-3 bg-muted/30">
+              <Search className="mr-2 h-4 w-4 shrink-0 text-primary" />
               <Input
                 ref={inputRef}
                 placeholder="Search customer..."
@@ -113,9 +133,13 @@ export function CustomerSelector({
               />
             </div>
             
+            <div className="text-xs text-muted-foreground px-3 py-1">
+              {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {safeCustomers.length})
+            </div>
+            
             <div 
               ref={listRef}
-              className="max-h-72 overflow-y-auto"
+              className="max-h-[400px] overflow-y-auto"
               style={{ 
                 overflowY: 'auto',
                 WebkitOverflowScrolling: 'touch'

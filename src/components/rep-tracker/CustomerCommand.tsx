@@ -24,14 +24,31 @@ export function CustomerCommand({
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   
-  // Ensure customers is always a valid array
+  // Ensure customers is always a valid array and log its state
   const safeCustomers = Array.isArray(customers) ? customers : [];
+  
+  useEffect(() => {
+    console.log(`CustomerCommand received ${safeCustomers.length} customers`);
+    // Log some details about customers that start with later letters
+    const vCustomers = safeCustomers.filter(c => c.account_name.toLowerCase().startsWith('v')).length;
+    const wCustomers = safeCustomers.filter(c => c.account_name.toLowerCase().startsWith('w')).length;
+    const yCustomers = safeCustomers.filter(c => c.account_name.toLowerCase().startsWith('y')).length;
+    const zCustomers = safeCustomers.filter(c => c.account_name.toLowerCase().startsWith('z')).length;
+    console.log(`Customer counts by letter: V: ${vCustomers}, W: ${wCustomers}, Y: ${yCustomers}, Z: ${zCustomers}`);
+  }, [safeCustomers]);
   
   // Filter customers based on search query with null checks - no slice limitation
   const filteredCustomers = safeCustomers.filter(customer => {
     if (!customer || typeof customer.account_name !== 'string') return false;
     return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
   });
+  
+  // Log filtered results when search changes
+  useEffect(() => {
+    if (searchQuery) {
+      console.log(`Search query "${searchQuery}" returned ${filteredCustomers.length} results`);
+    }
+  }, [searchQuery, filteredCustomers.length]);
   
   // Focus input on mount
   useEffect(() => {
@@ -104,7 +121,7 @@ export function CustomerCommand({
       </div>
       
       <div className="text-xs text-muted-foreground px-3 py-1">
-        {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'}
+        {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {safeCustomers.length})
       </div>
       
       <ScrollArea 

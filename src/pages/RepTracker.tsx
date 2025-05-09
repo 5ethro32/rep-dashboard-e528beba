@@ -68,20 +68,29 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     data: previousWeekMetrics
   } = useVisitMetrics(previousWeekDate, selectedUserId);
 
-  // The query to fetch customers now doesn't have a limit
+  // The query to fetch customers now doesn't have a limit and properly sorts by account_name
   const {
     data: customers,
     isLoading: isLoadingCustomers
   } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
+      console.log('Fetching customers from Supabase...');
+      
       const {
         data: salesData,
         error
-      } = await supabase.from('sales_data').select('account_name, account_ref').order('account_name');
+      } = await supabase
+        .from('sales_data')
+        .select('account_name, account_ref')
+        .order('account_name');
+        
       if (error) {
+        console.error('Error fetching customers:', error);
         throw error;
       }
+      
+      // Make sure we get unique customers by account_ref to avoid duplicates
       const uniqueCustomers = salesData.reduce((acc: any[], current) => {
         const x = acc.find(item => item.account_ref === current.account_ref);
         if (!x) {
@@ -90,6 +99,31 @@ const RepTracker: React.FC<RepTrackerProps> = ({
           return acc;
         }
       }, []);
+      
+      console.log(`Fetched ${salesData.length} customer records, filtered to ${uniqueCustomers.length} unique customers`);
+      
+      // Sort the unique customers alphabetically to ensure consistent ordering
+      uniqueCustomers.sort((a, b) => {
+        return a.account_name.localeCompare(b.account_name);
+      });
+      
+      // Log some debug information to verify we have customers at different points in the alphabet
+      const firstCustomers = uniqueCustomers.slice(0, 3);
+      const lastCustomers = uniqueCustomers.slice(-3);
+      console.log('First few customers:', firstCustomers);
+      console.log('Last few customers:', lastCustomers);
+      
+      // Log a few customers from later in the alphabet to verify they exist
+      const vCustomers = uniqueCustomers.filter(c => c.account_name.startsWith('V')).slice(0, 3);
+      const wCustomers = uniqueCustomers.filter(c => c.account_name.startsWith('W')).slice(0, 3);
+      const yCustomers = uniqueCustomers.filter(c => c.account_name.startsWith('Y')).slice(0, 3);
+      const zCustomers = uniqueCustomers.filter(c => c.account_name.startsWith('Z')).slice(0, 3);
+      
+      console.log('Sample V customers:', vCustomers);
+      console.log('Sample W customers:', wCustomers);
+      console.log('Sample Y customers:', yCustomers);
+      console.log('Sample Z customers:', zCustomers);
+      
       return uniqueCustomers;
     },
     meta: {
