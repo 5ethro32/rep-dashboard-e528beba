@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar, Eye } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar, Eye, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { 
   AlertDialog,
@@ -88,6 +88,9 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   const queryClient = useQueryClient();
   const userId = selectedUserId || user?.id;
   const isMobile = useIsMobile();
+  
+  // Check if this is the "All Data" view (Aver's Planner)
+  const isAllDataView = selectedUserId === "all";
 
   const { data: visits, isLoading } = useQuery({
     queryKey: ['customer-visits', weekStartDate, weekEndDate, sortField, sortOrder, userId],
@@ -99,7 +102,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
         .lte('date', weekEndDate.toISOString());
         
       // Only filter by user_id if we have a selected user
-      if (userId) {
+      if (userId && userId !== "all") {
         query.eq('user_id', userId);
       }
       
@@ -180,6 +183,13 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     }
   };
 
+  // Helper to determine if user can edit a particular visit (only their own visits)
+  const canEditVisit = (visit: Visit) => {
+    if (!isViewingOwnData) return false;
+    if (isAllDataView) return user?.id === visit.user_id;
+    return true;
+  };
+
   const filteredVisits = visits?.filter(visit => {
     if (filter === 'all') return true;
     if (filter === 'ordered') return visit.has_order;
@@ -214,7 +224,7 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
             </SelectContent>
           </Select>
           
-          {isViewingOwnData && (
+          {isViewingOwnData && !isAllDataView && (
             <Button 
               className="bg-finance-red hover:bg-finance-red/80"
               onClick={onAddVisit}
@@ -268,19 +278,22 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                   </TableHead>
                   <TableHead className="text-white font-medium">Comments</TableHead>
                   <TableHead className="text-white font-medium">Source</TableHead>
+                  {isAllDataView && (
+                    <TableHead className="text-white font-medium">Rep</TableHead>
+                  )}
                   <TableHead className="text-white font-medium text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={isAllDataView ? 10 : 9} className="text-center py-4 text-white/60">
                       Loading visits...
                     </TableCell>
                   </TableRow>
                 ) : filteredVisits?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4 text-white/60">
+                    <TableCell colSpan={isAllDataView ? 10 : 9} className="text-center py-4 text-white/60">
                       No visits found for this week.
                     </TableCell>
                   </TableRow>
@@ -309,8 +322,16 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                           </Badge>
                         ) : 'Manual'}
                       </TableCell>
+                      {isAllDataView && (
+                        <TableCell>
+                          <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                            <User className="h-3 w-3" /> 
+                            {visit.user_id === user?.id ? 'You' : ''}
+                          </Badge>
+                        </TableCell>
+                      )}
                       <TableCell className="text-right">
-                        {isViewingOwnData ? (
+                        {canEditVisit(visit) ? (
                           <div className="flex justify-end space-x-2">
                             <Button 
                               variant="ghost" 

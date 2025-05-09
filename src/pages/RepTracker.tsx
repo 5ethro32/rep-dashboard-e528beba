@@ -76,7 +76,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
       const {
         data: salesData,
         error
-      } = await supabase.from('sales_data').select('account_name, account_ref').order('account_name').limit(1000);
+      } = await supabase.from('sales_data').select('account_name, account_ref').order('account_name');
       if (error) {
         throw error;
       }
