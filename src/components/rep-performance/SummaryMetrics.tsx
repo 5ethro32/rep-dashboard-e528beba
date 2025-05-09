@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
@@ -21,6 +22,7 @@ interface SummaryMetricsProps {
   includeReva: boolean;
   includeWholesale: boolean;
   selectedMonth?: string;
+  hideRankings?: boolean;
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ 
@@ -30,7 +32,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   includeRetail,
   includeReva,
   includeWholesale,
-  selectedMonth = 'March'
+  selectedMonth = 'March',
+  hideRankings = false
 }) => {
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
@@ -80,6 +83,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         }
         icon={<ChartBar />}
         isLoading={isLoading}
+        hideRanking={hideRankings}
       />
       
       {/* Profit Card */}
@@ -94,6 +98,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         valueClassName="font-extrabold text-white"
         icon={<Wallet />}
         isLoading={isLoading}
+        hideRanking={hideRankings}
       />
       
       {/* Margin Card */}
@@ -107,6 +112,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         }
         icon={<Gauge />}
         isLoading={isLoading}
+        hideRanking={hideRankings}
       />
       
       {/* Packs Card */}
@@ -120,6 +126,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         }
         icon={<Package />}
         isLoading={isLoading}
+        hideRanking={hideRankings}
       />
     </div>
   );

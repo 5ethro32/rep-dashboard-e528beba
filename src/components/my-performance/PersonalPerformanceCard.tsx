@@ -103,18 +103,6 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
     }
   ];
   
-  // Helper function to get ranking badge styles
-  const getRankingBadgeStyles = (rank?: number) => {
-    if (!rank || rank > 3) return null;
-    
-    switch(rank) {
-      case 1: return "bg-amber-500 text-black"; // Gold
-      case 2: return "bg-gray-300 text-black";  // Silver
-      case 3: return "bg-amber-700 text-white"; // Bronze
-      default: return "bg-gray-800 text-white/60";
-    }
-  };
-  
   return (
     <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0">
       <CardContent className="p-4 md:p-6 pt-4">
@@ -167,16 +155,7 @@ const PersonalPerformanceCard: React.FC<PersonalPerformanceCardProps> = ({
                   )}
                 </div>
                 
-                {/* Ranking badge - styled according to position with better padding */}
-                {metric.rank && metric.rank <= 3 && (
-                  <div className={cn(
-                    "absolute bottom-2 right-2 rounded-full w-7 h-7 flex items-center justify-center",
-                    "shadow-md border border-white/20",
-                    getRankingBadgeStyles(metric.rank)
-                  )}>
-                    <span className="text-xs font-bold">{metric.rank}</span>
-                  </div>
-                )}
+                {/* No ranking badges in Personal Performance Card for My Dashboard */}
               </CardContent>
             </Card>
           ))}

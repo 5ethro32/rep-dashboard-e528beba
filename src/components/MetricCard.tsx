@@ -20,6 +20,7 @@ interface MetricCardProps {
   iconPosition?: 'left' | 'right';
   iconClassName?: string;
   ranking?: number;
+  hideRanking?: boolean;
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
@@ -33,7 +34,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
   isLoading = false,
   iconPosition = 'right',
   iconClassName,
-  ranking
+  ranking,
+  hideRanking = false
 }) => {
   // Helper function to get ranking badge styles
   const getRankingBadgeStyles = (rank?: number) => {
@@ -104,7 +106,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
         )}
         
         {/* Ranking badge - only show for ranks 1-3 with gold/silver/bronze styling */}
-        {ranking !== undefined && ranking <= 3 && !isLoading && (
+        {ranking !== undefined && ranking <= 3 && !isLoading && !hideRanking && (
           <div className={cn(
             "absolute bottom-2 right-2 rounded-full w-7 h-7 flex items-center justify-center",
             "shadow-md border border-white/20",

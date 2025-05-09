@@ -40,6 +40,7 @@ interface WeeklySummaryProps {
     ordersRank?: number;
     conversionRank?: number;
   };
+  hideRankings?: boolean;
 }
 
 const WeeklySummary: React.FC<WeeklySummaryProps> = ({ 
@@ -48,7 +49,8 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
   weekStartDate, 
   weekEndDate,
   isLoading = false,
-  rankings
+  rankings,
+  hideRankings = false
 }) => {
   const calculateChange = (current: number, previous: number) => {
     if (!previous) return { value: '0%', type: 'neutral' as const };
@@ -90,6 +92,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           className="h-full"
           icon={<Users className="h-5 w-5" />}
           ranking={rankings?.visitsRank}
+          hideRanking={hideRankings}
         />
         
         <MetricCard
@@ -104,6 +107,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           className="h-full"
           icon={<ShoppingBag className="h-5 w-5" />}
           ranking={rankings?.ordersRank}
+          hideRanking={hideRankings}
         />
         
         <MetricCard
@@ -119,6 +123,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           className="h-full"
           icon={<Wallet className="h-5 w-5" />}
           ranking={rankings?.profitRank}
+          hideRanking={hideRankings}
         />
 
         <MetricCard
@@ -132,6 +137,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           isLoading={isLoading}
           className="h-full"
           icon={<Calendar className="h-5 w-5" />}
+          hideRanking={hideRankings}
         />
         
         <MetricCard
@@ -145,6 +151,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           isLoading={isLoading}
           className="h-full"
           icon={<TrendingUp className="h-5 w-5" />}
+          hideRanking={hideRankings}
         />
         
         <MetricCard
@@ -159,6 +166,7 @@ const WeeklySummary: React.FC<WeeklySummaryProps> = ({
           className="h-full"
           icon={<Award className="h-5 w-5 text-yellow-400" />}
           iconClassName="text-yellow-400"
+          hideRanking={hideRankings}
         />
       </div>
     </div>
