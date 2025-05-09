@@ -67,6 +67,8 @@ const RepTracker: React.FC<RepTrackerProps> = ({
   const {
     data: previousWeekMetrics
   } = useVisitMetrics(previousWeekDate, selectedUserId);
+
+  // The query to fetch customers now doesn't have a limit
   const {
     data: customers,
     isLoading: isLoadingCustomers

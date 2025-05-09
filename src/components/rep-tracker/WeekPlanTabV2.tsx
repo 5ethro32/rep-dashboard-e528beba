@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2, Eye } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2, Eye, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AddPlanDialog from './AddPlanDialog';
 import EditPlanDialog from './EditPlanDialog';
@@ -29,6 +29,7 @@ interface WeekPlan {
   customer_name: string;
   customer_ref: string;
   notes: string | null;
+  user_id: string; // Include user_id in the interface
 }
 
 interface CustomerVisit {
@@ -65,6 +66,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
   const isMobile = useIsMobile();
 
   const userId = selectedUserId || user?.id;
+  const isAllDataView = selectedUserId === "all"; // Check if this is the "All Data" view
   const weekPlansQueryKey = ['week-plans', weekStartDate.toISOString(), weekEndDate.toISOString(), userId];
 
   const { data: weekPlans, isLoading } = useQuery({
@@ -76,8 +78,8 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
         .gte('planned_date', weekStartDate.toISOString().split('T')[0])
         .lte('planned_date', weekEndDate.toISOString().split('T')[0]);
         
-      // Only filter by user_id if we have a selected user
-      if (userId) {
+      // Only filter by user_id if we have a selected user and it's not "all"
+      if (userId && userId !== "all") {
         query.eq('user_id', userId);
       }
       
@@ -119,6 +121,13 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
     enabled: !!weekPlans && weekPlans.length > 0,
     staleTime: 0
   });
+
+  // Helper function to determine if a user can edit a particular plan
+  const canEditPlan = (plan: WeekPlan) => {
+    if (!isViewingOwnData) return false;
+    if (isAllDataView) return user?.id === plan.user_id;
+    return true;
+  };
 
   const deletePlanMutation = useMutation({
     mutationFn: async (planId: string) => {
@@ -259,6 +268,114 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
+  // Group plans by user for the All Data view
+  const plansByUser = React.useMemo(() => {
+    if (!isAllDataView || !weekPlans) return {};
+    
+    return weekPlans.reduce((acc: Record<string, WeekPlan[]>, plan) => {
+      if (!acc[plan.user_id]) {
+        acc[plan.user_id] = [];
+      }
+      acc[plan.user_id].push(plan);
+      return acc;
+    }, {});
+  }, [isAllDataView, weekPlans]);
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-white/60">Loading week plans...</div>;
+  }
+
+  if (isAllDataView) {
+    // All data view (Aver's Planner)
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Week Plan - All Reps</h3>
+        </div>
+
+        {Object.keys(plansByUser).length === 0 ? (
+          <div className="text-center py-8 text-white/60">No plans found for this week.</div>
+        ) : (
+          <div className="space-y-8">
+            {Object.entries(plansByUser).map(([userId, userPlans]) => {
+              // Get the first plan to extract the user information
+              const firstPlan = userPlans[0];
+              const isCurrentUser = userId === user?.id;
+              
+              return (
+                <div key={userId} className="space-y-4">
+                  <h4 className="font-medium text-base border-b border-gray-800 pb-2">
+                    {isCurrentUser ? "My Plans" : `${userId}'s Plans`}
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {days.map((day, index) => {
+                      const currentDate = new Date(weekStartDate);
+                      currentDate.setDate(weekStartDate.getDate() + index);
+                      const dayPlans = userPlans.filter(
+                        plan => new Date(plan.planned_date).toDateString() === currentDate.toDateString()
+                      );
+
+                      return (
+                        <Card key={`${userId}-${day}`} className="border-gray-800 bg-black/20">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <h4 className="font-semibold text-white">
+                                {day} - {format(currentDate, 'dd/MM')}
+                              </h4>
+                            </div>
+                            <div className="space-y-2">
+                              {dayPlans.map(plan => (
+                                <div 
+                                  key={plan.id} 
+                                  className="p-2 rounded bg-black/30 border border-gray-800"
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <p className="font-medium">{plan.customer_name}</p>
+                                    {hasAssociatedVisit(plan.id) && (
+                                      <div className="ml-2">
+                                        {visitHasOrder(plan.id) ? (
+                                          <Badge className="bg-green-600 text-xs">Order</Badge>
+                                        ) : (
+                                          <Badge variant="outline" className="text-xs border-gray-500">Visit</Badge>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {plan.notes && (
+                                    <p className="text-sm text-gray-400 mt-1">{plan.notes}</p>
+                                  )}
+                                  <div className="flex justify-end mt-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 flex items-center justify-center text-gray-500 hover:text-white"
+                                    >
+                                      <Eye className="h-4 w-4" aria-hidden="true" />
+                                      <span className="sr-only">View Only</span>
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                              {dayPlans.length === 0 && (
+                                <p className="text-sm text-gray-500">No visits planned</p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Regular view (Single user)
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -321,7 +438,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                       {plan.notes && (
                         <p className="text-sm text-gray-400 mt-1">{plan.notes}</p>
                       )}
-                      {isViewingOwnData ? (
+                      {canEditPlan(plan) ? (
                         <div className="flex justify-end space-x-2 mt-2">
                           <Button 
                             variant="ghost" 
