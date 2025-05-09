@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { ToggleButton } from "@/components/ui/toggle-button";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceFiltersProps {
   includeRetail: boolean;
@@ -23,12 +24,19 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
   selectedMonth,
   setSelectedMonth
 }) => {
+  const isMobile = useIsMobile();
+  
+  // Set smaller width on mobile
+  const buttonClasses = isMobile 
+    ? "min-w-[65px] px-2" 
+    : "min-w-[80px] px-3";
+  
   return (
     <div className="mb-6 md:mb-8 flex flex-row gap-2">
       <ToggleButton 
         checked={includeRetail} 
         onToggle={setIncludeRetail}
-        className="min-w-[80px] px-3"
+        className={buttonClasses}
       >
         Retail
       </ToggleButton>
@@ -36,7 +44,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
       <ToggleButton 
         checked={includeReva} 
         onToggle={setIncludeReva}
-        className="min-w-[80px] px-3"
+        className={buttonClasses}
       >
         REVA
       </ToggleButton>
@@ -44,7 +52,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
       <ToggleButton 
         checked={includeWholesale} 
         onToggle={setIncludeWholesale}
-        className="min-w-[80px] px-3"
+        className={buttonClasses}
       >
         Wholesale
       </ToggleButton>

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CalendarIcon, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceHeaderProps {
   selectedMonth: string;
@@ -24,6 +25,8 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
   reducedPadding = false,
   onRefresh
 }) => {
+  const isMobile = useIsMobile();
+  
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
     ? 'py-4' // More balanced padding for top and bottom
@@ -44,7 +47,11 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none">
             <CalendarIcon className="h-4 w-4 opacity-70" />
-            <span>Month: {selectedMonth}</span>
+            {isMobile ? (
+              <span>{selectedMonth}</span>
+            ) : (
+              <span>Month: {selectedMonth}</span>
+            )}
           </DropdownMenuTrigger>
           <DropdownMenuContent className="bg-gray-800 border-gray-700 z-50">
             <DropdownMenuItem 
