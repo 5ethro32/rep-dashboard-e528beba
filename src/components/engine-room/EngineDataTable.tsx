@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -176,14 +175,29 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
       if (fieldA === undefined || fieldA === null) fieldA = sortField.includes('Price') ? 0 : '';
       if (fieldB === undefined || fieldB === null) fieldB = sortField.includes('Price') ? 0 : '';
       
-      if (typeof fieldA === 'string') {
+      // Fix: Type-check before using string methods
+      if (typeof fieldA === 'string' && typeof fieldB === 'string') {
         return sortDirection === 'asc' 
           ? fieldA.localeCompare(fieldB)
           : fieldB.localeCompare(fieldA);
       } else {
+        // Convert to strings if comparing mixed types
+        if (typeof fieldA !== typeof fieldB) {
+          if (typeof fieldA === 'string') {
+            return sortDirection === 'asc'
+              ? fieldA.localeCompare(String(fieldB))
+              : String(fieldB).localeCompare(fieldA);
+          } else if (typeof fieldB === 'string') {
+            return sortDirection === 'asc'
+              ? String(fieldA).localeCompare(fieldB)
+              : fieldB.localeCompare(String(fieldA));
+          }
+        }
+        
+        // Use numeric comparison for numbers or convert to string
         return sortDirection === 'asc'
-          ? fieldA - fieldB
-          : fieldB - fieldA;
+          ? (Number(fieldA) || 0) - (Number(fieldB) || 0)
+          : (Number(fieldB) || 0) - (Number(fieldA) || 0);
       }
     });
   }, [filteredData, sortField, sortDirection, calculatePriceChangePercentage]);
