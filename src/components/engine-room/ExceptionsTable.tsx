@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown, Flag } from 'lucide-react';
 import PriceEditor from './PriceEditor';
 
 interface ExceptionsTableProps {
@@ -13,6 +13,30 @@ interface ExceptionsTableProps {
 }
 
 const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDetails, onPriceChange }) => {
+  // Instead of just rule1Flags and rule2Flags, let's organize by all flag types
+  const highPriceItems = data.filter(item => item.flag1);
+  const lowMarginItems = data.filter(item => item.flag2);
+  
+  // Extract other flags from the flags array
+  const otherFlags = new Set<string>();
+  const flaggedItemsByType: Record<string, any[]> = {};
+  
+  data.forEach(item => {
+    if (item.flags && Array.isArray(item.flags)) {
+      item.flags.forEach((flag: string) => {
+        if (flag !== 'HIGH_PRICE' && flag !== 'LOW_MARGIN') {
+          otherFlags.add(flag);
+          if (!flaggedItemsByType[flag]) {
+            flaggedItemsByType[flag] = [];
+          }
+          flaggedItemsByType[flag].push(item);
+        }
+      });
+    }
+  });
+  
+  const uniqueOtherFlags = Array.from(otherFlags);
+  
   const rule1Flags = data.filter(item => item.flag1);
   const rule2Flags = data.filter(item => item.flag2);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -141,12 +165,17 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
       : <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
-  const renderExceptionTable = (items: any[]) => {
+  const renderExceptionTable = (items: any[], flagDescription: string = '') => {
     const filteredItems = filterData(items);
     const sortedItems = sortData(filteredItems);
 
     return (
       <div className="rounded-md border overflow-hidden">
+        {flagDescription && (
+          <p className="text-sm text-muted-foreground mb-4 px-4 pt-3">
+            {flagDescription}
+          </p>
+        )}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -414,39 +443,60 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
         </div>
       )}
 
-      <Tabs defaultValue="rule1" className="w-full">
+      <Tabs defaultValue="high-price" className="w-full">
         <TabsList className="inline-flex">
-          <TabsTrigger value="rule1" className="flex-1">Rule 1 Flags ({rule1Flags.length})</TabsTrigger>
-          <TabsTrigger value="rule2" className="flex-1">Rule 2 Flags ({rule2Flags.length})</TabsTrigger>
+          <TabsTrigger value="high-price" className="flex-1">High Price ({highPriceItems.length})</TabsTrigger>
+          <TabsTrigger value="low-margin" className="flex-1">Low Margin ({lowMarginItems.length})</TabsTrigger>
+          
+          {/* Add tabs for other flag types */}
+          {uniqueOtherFlags.map(flag => (
+            <TabsTrigger key={flag} value={flag} className="flex-1">
+              {flag} ({flaggedItemsByType[flag]?.length || 0})
+            </TabsTrigger>
+          ))}
         </TabsList>
-        <TabsContent value="rule1" className="pt-4">
-          {rule1Flags.length > 0 ? (
-            <>
-              <p className="text-sm text-muted-foreground mb-4">
-                These items are flagged because the proposed price is ≥ 10% above the True Market Low
-              </p>
-              {renderRankGroups(rule1ByRank)}
-            </>
+        
+        <TabsContent value="high-price" className="pt-4">
+          {highPriceItems.length > 0 ? (
+            renderExceptionTable(
+              highPriceItems, 
+              "These items are flagged because the proposed price is ≥ 10% above the True Market Low"
+            )
           ) : (
             <div className="text-center py-10 text-muted-foreground">
-              No Rule 1 exceptions found
+              No high price exceptions found
             </div>
           )}
         </TabsContent>
-        <TabsContent value="rule2" className="pt-4">
-          {rule2Flags.length > 0 ? (
-            <>
-              <p className="text-sm text-muted-foreground mb-4">
-                These items are flagged because the proposed margin is below 3%
-              </p>
-              {renderRankGroups(rule2ByRank)}
-            </>
+        
+        <TabsContent value="low-margin" className="pt-4">
+          {lowMarginItems.length > 0 ? (
+            renderExceptionTable(
+              lowMarginItems, 
+              "These items are flagged because the proposed margin is below 3%"
+            )
           ) : (
             <div className="text-center py-10 text-muted-foreground">
-              No Rule 2 exceptions found
+              No low margin exceptions found
             </div>
           )}
         </TabsContent>
+        
+        {/* Add tab content for other flag types */}
+        {uniqueOtherFlags.map(flag => (
+          <TabsContent key={flag} value={flag} className="pt-4">
+            {flaggedItemsByType[flag]?.length > 0 ? (
+              renderExceptionTable(
+                flaggedItemsByType[flag], 
+                `Items flagged with: ${flag}`
+              )
+            ) : (
+              <div className="text-center py-10 text-muted-foreground">
+                No items with flag: {flag}
+              </div>
+            )}
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   );

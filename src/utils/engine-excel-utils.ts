@@ -10,7 +10,7 @@ interface RevaItem {
   keepRemove?: string;
   revaUsage: number;
   usageRank: number;
-  flag?: string;
+  flag?: string; // Used for SHORT flag and other flags
   avgCost: number;
   avgCostLessThanML?: string;
   nextCost: number;
@@ -27,8 +27,8 @@ interface RevaItem {
   appliedRule?: string;
   proposedPrice?: number;
   proposedMargin?: number;
-  flag1?: boolean;
-  flag2?: boolean;
+  flag1?: boolean; // Price ≥10% above TRUE MARKET LOW
+  flag2?: boolean; // Margin < 3%
   // New properties for price editing and workflow
   calculatedPrice?: number;
   priceModified?: boolean;
@@ -39,6 +39,8 @@ interface RevaItem {
   reviewDate?: string;
   reviewComments?: string;
   id?: string; // Added for item identification
+  // New flags property to store all flags that apply to this item
+  flags?: string[];
 }
 
 interface ProcessedEngineData {
@@ -270,13 +272,21 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
       // Set default trend based on cost comparison
       item.trend = item.nextCost <= item.avgCost ? 'TrendDown' : 'TrendFlatUp';
     }
+    
+    // Initialize flags array for each item
+    item.flags = [];
+    
+    // Add any existing flag from FLAG column
+    if (item.flag && item.flag.trim() !== '') {
+      item.flags.push(item.flag.trim());
+    }
   });
   
   // Apply pricing rules and calculate derived values
   const processedItems = applyPricingRules(transformedData, defaultRuleConfig);
   
   // Filter items with flags
-  const flaggedItems = processedItems.filter(item => item.flag1 || item.flag2);
+  const flaggedItems = processedItems.filter(item => item.flag1 || item.flag2 || (item.flags && item.flags.length > 0));
   
   // Calculate summary metrics
   const totalItems = processedItems.length;
@@ -349,7 +359,7 @@ const defaultRuleConfig: RuleConfig = {
   }
 };
 
-// Apply pricing rules to the data
+// Apply pricing rules to the data - Updated with new rule logic
 function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[] {
   return items.map(item => {
     // Make a copy of the item to avoid modifying the original
@@ -383,97 +393,76 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.marketLow = processedItem.trueMarketLow || processedItem.avgCost;
     }
     
-    // Determine trend
-    processedItem.trend = processedItem.nextCost <= processedItem.avgCost ? 'TrendDown' : 'TrendFlatUp';
+    // RULE ONE - New Implementation
+    // IF AVGCO ≤ MARKET LOW
+    if (processedItem.avgCost <= processedItem.marketLow) {
+      // Check market trend (a) Market Trending DOWN
+      if (processedItem.nextCost <= processedItem.avgCost) {
+        // THEN PRICE = MARKET LOW
+        processedItem.proposedPrice = processedItem.marketLow;
+        processedItem.appliedRule = "Rule 1a - Market Low (Trending DOWN)";
+      } 
+      // (b) Market Trending UP
+      else {
+        // THEN PRICE = MARKET LOW + 3%
+        processedItem.proposedPrice = processedItem.marketLow * 1.03;
+        processedItem.appliedRule = "Rule 1b - Market Low + 3% (Trending UP)";
+      }
+    }
+    // Exceptions
+    else {
+      // IF MARKET LOW is unavailable BUT TRUE MARKET LOW is available
+      if ((processedItem.marketLow === undefined || processedItem.marketLow === processedItem.avgCost) && 
+          processedItem.trueMarketLow !== undefined && 
+          processedItem.trueMarketLow !== processedItem.avgCost) {
+        // THEN PRICE = TRUE MARKET LOW + 3%
+        processedItem.proposedPrice = processedItem.trueMarketLow * 1.03;
+        processedItem.appliedRule = "Rule 1 Exception - True Market Low + 3%";
+      }
+      // IF Competitor pricing (including TRUE MARKET LOW) is unavailable
+      else {
+        // THEN PRICE = AVGCO + 12%, increasing by an additional 1% for every two usage groups higher
+        const rankAdjustment = Math.floor((processedItem.usageRank - 1) / 2) * 0.01;
+        const baseMargin = 0.12 + rankAdjustment;
+        processedItem.proposedPrice = processedItem.avgCost * (1 + baseMargin);
+        processedItem.appliedRule = `Rule 1 Exception - AvgCost + ${Math.round(baseMargin * 100)}% (Rank ${processedItem.usageRank})`;
+      }
+    }
     
-    // Determine which rule to apply
-    if (processedItem.avgCost < processedItem.marketLow) {
-      // Rule 1
-      applyRule1(processedItem, ruleConfig);
+    // Ensure we never go below current price
+    processedItem.proposedPrice = Math.max(processedItem.proposedPrice || 0, processedItem.currentREVAPrice || 0);
+    
+    // Store the calculated price for reference
+    processedItem.calculatedPrice = processedItem.proposedPrice;
+    
+    // Calculate proposed margin
+    if (processedItem.proposedPrice > 0) {
+      processedItem.proposedMargin = (processedItem.proposedPrice - processedItem.avgCost) / processedItem.proposedPrice;
     } else {
-      // Rule 2
-      applyRule2(processedItem, ruleConfig);
+      processedItem.proposedMargin = 0;
+    }
+    
+    // Apply flag logic - IMPORTANT CHECK: Any computed price that is ≥10% above TRUE MARKET LOW requires a manual review
+    if (processedItem.trueMarketLow && processedItem.proposedPrice && 
+        processedItem.proposedPrice >= processedItem.trueMarketLow * 1.10) {
+      processedItem.flag1 = true;
+      if (!processedItem.flags) processedItem.flags = [];
+      if (!processedItem.flags.includes('HIGH_PRICE')) {
+        processedItem.flags.push('HIGH_PRICE');
+      }
+    } else {
+      processedItem.flag1 = false;
+    }
+    
+    // Keep the margin check
+    processedItem.flag2 = processedItem.proposedMargin < 0.03;
+    if (processedItem.flag2 && (!processedItem.flags || !processedItem.flags.includes('LOW_MARGIN'))) {
+      if (!processedItem.flags) processedItem.flags = [];
+      processedItem.flags.push('LOW_MARGIN');
     }
     
     return processedItem;
   });
-}
-
-// Apply Rule 1 pricing logic
-function applyRule1(item: RevaItem, config: RuleConfig): void {
-  // Get appropriate multipliers based on usage rank and trend
-  let multiplier: number;
-  let ruleLabel: string;
-  
-  if (item.usageRank <= 2) {
-    multiplier = item.trend === 'TrendDown' 
-      ? config.rule1.group1_2.trend_down 
-      : config.rule1.group1_2.trend_flat_up;
-    ruleLabel = `1${item.trend === 'TrendDown' ? 'a' : 'b'} (Grp 1-2)`;
-  } 
-  else if (item.usageRank <= 4) {
-    multiplier = item.trend === 'TrendDown' 
-      ? config.rule1.group3_4.trend_down 
-      : config.rule1.group3_4.trend_flat_up;
-    ruleLabel = `1${item.trend === 'TrendDown' ? 'a' : 'b'} (Grp 3-4)`;
-  }
-  else {
-    multiplier = item.trend === 'TrendDown' 
-      ? config.rule1.group5_6.trend_down 
-      : config.rule1.group5_6.trend_flat_up;
-    ruleLabel = `1${item.trend === 'TrendDown' ? 'a' : 'b'} (Grp 5-6)`;
-  }
-  
-  // Calculate proposed price
-  item.appliedRule = ruleLabel;
-  item.proposedPrice = Math.max(item.avgCost * multiplier, item.currentREVAPrice);
-  
-  // Calculate proposed margin
-  item.proposedMargin = (item.proposedPrice - item.avgCost) / item.proposedPrice;
-  
-  // Apply flag logic for Rule 1
-  item.flag1 = item.proposedPrice >= (item.trueMarketLow || 0) * 1.10;
-  item.flag2 = false; // Not applicable for Rule 1
-}
-
-// Apply Rule 2 pricing logic
-function applyRule2(item: RevaItem, config: RuleConfig): void {
-  // Get appropriate multipliers based on usage rank and trend
-  let multiplier: number;
-  let ruleLabel: string;
-  
-  if (item.usageRank <= 2) {
-    multiplier = item.trend === 'TrendDown' 
-      ? config.rule2.group1_2.trend_down 
-      : config.rule2.group1_2.trend_flat_up;
-    ruleLabel = `2${item.trend === 'TrendDown' ? 'a' : 'b'} (Grp 1-2)`;
-  } 
-  else if (item.usageRank <= 4) {
-    multiplier = item.trend === 'TrendDown' 
-      ? config.rule2.group3_4.trend_down 
-      : config.rule2.group3_4.trend_flat_up;
-    ruleLabel = `2${item.trend === 'TrendDown' ? 'a' : 'b'} (Grp 3-4)`;
-  }
-  else {
-    multiplier = item.trend === 'TrendDown' 
-      ? config.rule2.group5_6.trend_down 
-      : config.rule2.group5_6.trend_flat_up;
-    ruleLabel = `2${item.trend === 'TrendDown' ? 'a' : 'b'} (Grp 5-6)`;
-  }
-  
-  // Calculate proposed price, capping at market low if specified
-  const calculatedPrice = Math.max(item.avgCost * multiplier, item.currentREVAPrice);
-  item.proposedPrice = Math.min(calculatedPrice, item.marketLow || Infinity);
-  
-  // Calculate proposed margin
-  item.proposedMargin = (item.proposedPrice - item.avgCost) / item.proposedPrice;
-  
-  // Set rule applied
-  item.appliedRule = ruleLabel;
-  
-  // Apply flag logic for Rule 2
-  item.flag1 = false; // Not applicable for Rule 2
-  item.flag2 = item.proposedMargin < 0.03; // Flag if margin less than 3%
 }
 
 // Generate chart data for visualization

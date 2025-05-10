@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ArrowUp, ArrowDown, Edit2, CheckCircle, X } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Edit2, CheckCircle, X, Flag } from 'lucide-react';
 import PriceEditor from './PriceEditor';
 
 interface EngineDataTableProps {
@@ -31,6 +31,17 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
 
   // Get unique usage ranks for filter dropdown
   const usageRanks = Array.from(new Set(data.map(item => item.usageRank))).sort((a, b) => a - b);
+  
+  // Get unique flags for filter dropdown
+  const allFlags = new Set<string>();
+  data.forEach(item => {
+    if (item.flags && Array.isArray(item.flags)) {
+      item.flags.forEach((flag: string) => allFlags.add(flag));
+    }
+    if (item.flag1) allFlags.add('HIGH_PRICE');
+    if (item.flag2) allFlags.add('LOW_MARGIN');
+  });
+  const uniqueFlags = Array.from(allFlags);
 
   // Sort the data
   const sortedData = [...filteredData].sort((a, b) => {
@@ -196,13 +207,14 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
                 </div>
               </TableHead>
             ))}
+            <TableHead className="bg-gray-900/70">Flags</TableHead>
             <TableHead className="bg-gray-900/70">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={columns.length + 1} className="text-center py-10">
+              <TableCell colSpan={columns.length + 2} className="text-center py-10">
                 No items found matching your search criteria
               </TableCell>
             </TableRow>
@@ -215,7 +227,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
             return (
               <TableRow 
                 key={index} 
-                className={`${(item.flag1 || item.flag2) ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
+                className={`${(item.flag1 || item.flag2 || (item.flags && item.flags.length > 0)) ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
               >
                 <TableCell>{item.description}</TableCell>
                 <TableCell>{item.inStock}</TableCell>
@@ -291,6 +303,12 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
                 
                 <TableCell>{formatPercentage(item.proposedMargin)}</TableCell>
                 <TableCell>{item.appliedRule}</TableCell>
+                
+                {/* Flags cell */}
+                <TableCell>
+                  {renderFlags(item)}
+                </TableCell>
+                
                 <TableCell>
                   <Button 
                     variant="ghost" 
@@ -348,6 +366,36 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
     );
   };
 
+  // Render flags for an item
+  const renderFlags = (item: any) => {
+    if (!item.flags || item.flags.length === 0) {
+      if (!item.flag1 && !item.flag2) return null;
+    }
+    
+    return (
+      <div className="flex items-center gap-1">
+        {item.flag1 && (
+          <span className="bg-red-900/30 text-xs px-1 py-0.5 rounded" title="Price ≥10% above TRUE MARKET LOW">
+            HIGH_PRICE
+          </span>
+        )}
+        {item.flag2 && (
+          <span className="bg-orange-900/30 text-xs px-1 py-0.5 rounded" title="Margin < 3%">
+            LOW_MARGIN
+          </span>
+        )}
+        {item.flags && item.flags.map((flag: string, i: number) => {
+          if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN') return null; // Skip duplicates
+          return (
+            <span key={i} className="bg-blue-900/30 text-xs px-1 py-0.5 rounded" title={flag}>
+              {flag}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -371,7 +419,26 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
               <option key={rank} value={rank}>Rank {rank}</option>
             ))}
           </select>
+          
+          {/* New Flag Filter */}
+          {uniqueFlags.length > 0 && (
+            <select 
+              className="bg-gray-800 border border-gray-700 rounded-md px-2 py-2 text-sm w-40"
+              value=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  setSearchQuery(e.target.value);
+                }
+              }}
+            >
+              <option value="">Filter by Flag</option>
+              {uniqueFlags.map(flag => (
+                <option key={flag} value={flag}>{flag}</option>
+              ))}
+            </select>
+          )}
         </div>
+        
         {onPriceChange && (
           <Button 
             variant={bulkEditMode ? "default" : "outline"} 
@@ -393,13 +460,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
         )}
       </div>
       
-      {bulkEditMode && (
-        <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
-          <p className="text-sm">
-            <strong>Bulk Edit Mode:</strong> You can now edit multiple prices at once. Click "Save" on each item to apply changes.
-          </p>
-        </div>
-      )}
+      {/* ... keep existing code (bulk edit mode notice) */}
       
       {filterByRank ? (
         <div className="rounded-md border overflow-hidden">
