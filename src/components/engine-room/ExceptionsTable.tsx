@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +15,7 @@ interface ExceptionsTableProps {
 const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDetails, onPriceChange }) => {
   const rule1Flags = data.filter(item => item.flag1);
   const rule2Flags = data.filter(item => item.flag2);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<Record<string, number>>({});
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -89,6 +89,15 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
   // Group Rule 2 exceptions by usage rank
   const rule2ByRank = groupBy(rule2Flags, 'usageRank');
 
+  // Handle starting price edit for a specific item
+  const handleStartEdit = (item: any) => {
+    setEditingItemId(item.id);
+    setEditingValues({
+      ...editingValues,
+      [item.id]: item.proposedPrice || 0
+    });
+  };
+
   // Handle price input change
   const handlePriceInputChange = (item: any, value: string) => {
     const numValue = parseFloat(value);
@@ -103,9 +112,16 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
       onPriceChange(item, editingValues[item.id]);
     }
     // Reset editing state for this item
+    setEditingItemId(null);
     const newEditingValues = { ...editingValues };
     delete newEditingValues[item.id];
     setEditingValues(newEditingValues);
+  };
+
+  // Handle cancel price edit
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    // Keep editingValues intact, just stop editing
   };
 
   // Toggle bulk edit mode
@@ -113,6 +129,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
     setBulkEditMode(!bulkEditMode);
     // Clear all edits when toggling bulk mode
     setEditingValues({});
+    setEditingItemId(null);
   };
 
   // Render sort indicator
@@ -239,6 +256,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                   const priceChangePercentage = calculatePriceChangePercentage(item);
                   // Add the percentage to the item for sorting
                   item.priceChangePercentage = priceChangePercentage;
+                  const isEditing = editingItemId === item.id;
                   
                   return (
                     <TableRow key={index} className={item.priceModified ? 'bg-blue-900/20' : ''}>
@@ -258,60 +276,47 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                             onCancel={() => {}}
                             compact={true}
                           />
+                        ) : isEditing ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={editingValues[item.id]}
+                              onChange={(e) => handlePriceInputChange(item, e.target.value)}
+                              className="w-24 h-8 py-1 px-2"
+                              autoFocus
+                            />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0" 
+                              onClick={() => handleSavePriceEdit(item)}
+                            >
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0"
+                              onClick={handleCancelEdit}
+                            >
+                              <X className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            {editingValues[item.id] !== undefined ? (
-                              <>
-                                <Input
-                                  type="number"
-                                  value={editingValues[item.id]}
-                                  onChange={(e) => handlePriceInputChange(item, e.target.value)}
-                                  className="w-24 h-8 py-1 px-2"
-                                  autoFocus
-                                />
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-6 w-6 p-0" 
-                                  onClick={() => handleSavePriceEdit(item)}
-                                >
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => {
-                                    const newEditingValues = { ...editingValues };
-                                    delete newEditingValues[item.id];
-                                    setEditingValues(newEditingValues);
-                                  }}
-                                >
-                                  <X className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                £{(item.proposedPrice || 0).toFixed(2)}
-                                {item.priceModified && (
-                                  <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
-                                )}
-                                {onPriceChange && !bulkEditMode && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    className="ml-2 h-6 w-6 p-0"
-                                    onClick={() => {
-                                      setEditingValues({ 
-                                        ...editingValues, 
-                                        [item.id]: item.proposedPrice || 0 
-                                      });
-                                    }}
-                                  >
-                                    <Edit2 className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </>
+                            £{(item.proposedPrice || 0).toFixed(2)}
+                            {item.priceModified && (
+                              <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
+                            )}
+                            {onPriceChange && !bulkEditMode && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="ml-2 h-6 w-6 p-0"
+                                onClick={() => handleStartEdit(item)}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
                             )}
                           </div>
                         )}
@@ -410,7 +415,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
       )}
 
       <Tabs defaultValue="rule1" className="w-full">
-        <TabsList className="grid grid-cols-2 w-full">
+        <TabsList className="inline-flex">
           <TabsTrigger value="rule1" className="flex-1">Rule 1 Flags ({rule1Flags.length})</TabsTrigger>
           <TabsTrigger value="rule2" className="flex-1">Rule 2 Flags ({rule2Flags.length})</TabsTrigger>
         </TabsList>

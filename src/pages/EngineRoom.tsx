@@ -435,7 +435,7 @@ const EngineRoom: React.FC = () => {
     }
 
     return (
-      <TabsList className="grid grid-cols-5 mb-6">
+      <TabsList className="inline-flex w-full">
         {baseTabItems}
       </TabsList>
     );

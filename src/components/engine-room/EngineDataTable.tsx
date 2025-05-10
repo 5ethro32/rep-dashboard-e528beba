@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -110,6 +109,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
       : <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
+  // Handle starting price edit for a specific item
+  const handleStartEdit = (item: any) => {
+    setEditingItemId(item.id);
+    setEditingValues({
+      ...editingValues,
+      [item.id]: item.proposedPrice || 0
+    });
+  };
+
   // Handle price change input
   const handlePriceInputChange = (item: any, value: string) => {
     const numValue = parseFloat(value);
@@ -124,9 +132,16 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
       onPriceChange(item, editingValues[item.id]);
     }
     // Reset editing state for this item
+    setEditingItemId(null);
     const newEditingValues = { ...editingValues };
     delete newEditingValues[item.id];
     setEditingValues(newEditingValues);
+  };
+
+  // Handle cancel price edit
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    // Keep the editingValues intact, just stop editing
   };
 
   // Toggle bulk edit mode
@@ -134,6 +149,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
     setBulkEditMode(!bulkEditMode);
     // Clear all edits when toggling bulk mode
     setEditingValues({});
+    setEditingItemId(null);
   };
 
   // Group data by usage rank
@@ -194,6 +210,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
           {items.map((item, index) => {
             // Calculate price change percentage for each item
             const priceChangePercentage = calculatePriceChangePercentage(item);
+            const isEditing = editingItemId === item.id;
             
             return (
               <TableRow 
@@ -221,60 +238,47 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
                       onCancel={() => {}}
                       compact={true}
                     />
+                  ) : isEditing ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={editingValues[item.id]}
+                        onChange={(e) => handlePriceInputChange(item, e.target.value)}
+                        className="w-24 h-8 py-1 px-2"
+                        autoFocus
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0" 
+                        onClick={() => handleSavePriceEdit(item)}
+                      >
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0"
+                        onClick={handleCancelEdit}
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      {editingValues[item.id] !== undefined ? (
-                        <>
-                          <Input
-                            type="number"
-                            value={editingValues[item.id]}
-                            onChange={(e) => handlePriceInputChange(item, e.target.value)}
-                            className="w-24 h-8 py-1 px-2"
-                            autoFocus
-                          />
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0" 
-                            onClick={() => handleSavePriceEdit(item)}
-                          >
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0"
-                            onClick={() => {
-                              const newEditingValues = { ...editingValues };
-                              delete newEditingValues[item.id];
-                              setEditingValues(newEditingValues);
-                            }}
-                          >
-                            <X className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          {formatCurrency(item.proposedPrice)}
-                          {item.priceModified && (
-                            <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
-                          )}
-                          {onPriceChange && !bulkEditMode && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="ml-2 h-6 w-6 p-0"
-                              onClick={() => {
-                                setEditingValues({ 
-                                  ...editingValues, 
-                                  [item.id]: item.proposedPrice || 0 
-                                });
-                              }}
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </>
+                      {formatCurrency(item.proposedPrice)}
+                      {item.priceModified && (
+                        <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
+                      )}
+                      {onPriceChange && !bulkEditMode && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="ml-2 h-6 w-6 p-0"
+                          onClick={() => handleStartEdit(item)}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
                       )}
                     </div>
                   )}
