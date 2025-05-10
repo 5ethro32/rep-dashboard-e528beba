@@ -58,36 +58,49 @@ interface RuleConfig {
   };
 }
 
-// Maps the expected columns to the actual columns in the file
-const columnMapping = {
-  description: "Description",
-  inStock: "InStock",
-  onOrder: "OnOrder",
-  revaUsage: "RevaUsage",
-  usageRank: "UsageRank",
-  avgCost: "AvgCost",
-  nextCost: "NextCost",
-  currentREVAPrice: "CurrentREVAPrice",
-  currentREVAMargin: "CurrentREVAMargin",
-  eth_net: "ETH_NET",
-  eth: "ETH",
-  nupharm: "Nupharm",
-  lexon: "LEXON",
-  aah: "AAH"
+// Flexible column mapping - will match case-insensitive and allow variations
+const findColumnMatch = (headers: string[], possibleNames: string[]): string | null => {
+  for (const header of headers) {
+    for (const name of possibleNames) {
+      if (header.toLowerCase().includes(name.toLowerCase())) {
+        return header;
+      }
+    }
+  }
+  return null;
 };
 
-// Default rule configuration
-const defaultRuleConfig: RuleConfig = {
-  rule1: {
-    group1_2: { trend_down: 1.03, trend_flat_up: 1.05 },
-    group3_4: { trend_down: 1.04, trend_flat_up: 1.06 },
-    group5_6: { trend_down: 1.05, trend_flat_up: 1.07 }
-  },
-  rule2: {
-    group1_2: { trend_down: 1.12, trend_flat_up: 1.15 },
-    group3_4: { trend_down: 1.13, trend_flat_up: 1.18 },
-    group5_6: { trend_down: 1.15, trend_flat_up: 1.20 }
+// Generate a dynamic column mapping based on the actual headers in the file
+const generateColumnMapping = (headers: string[]) => {
+  const mapping: Record<string, string> = {};
+  
+  // Define possible variations for each required field
+  const columnVariations = {
+    description: ['description', 'desc', 'product', 'item'],
+    inStock: ['instock', 'in stock', 'stock', 'quantity', 'qty'],
+    onOrder: ['onorder', 'on order', 'order', 'ordered'],
+    revaUsage: ['revausage', 'usage', 'monthly usage', 'sales', 'units sold'],
+    usageRank: ['usagerank', 'usage rank', 'rank', 'priority', 'group'],
+    avgCost: ['avgcost', 'avg cost', 'average cost', 'cost', 'unit cost'],
+    nextCost: ['nextcost', 'next cost', 'future cost', 'new cost'],
+    currentREVAPrice: ['currentrevaprice', 'price', 'selling price', 'current price', 'reva price'],
+    currentREVAMargin: ['currentrevamargin', 'margin', 'current margin', 'reva margin'],
+    eth_net: ['eth_net', 'eth net', 'ethnet', 'market low'],
+    eth: ['eth', 'eth price'],
+    nupharm: ['nupharm', 'nu pharm', 'nupharm price'],
+    lexon: ['lexon', 'lexon price'],
+    aah: ['aah', 'aah price']
+  };
+  
+  // Find matches for each field
+  for (const [field, variations] of Object.entries(columnVariations)) {
+    const match = findColumnMatch(headers, variations);
+    if (match) {
+      mapping[field] = match;
+    }
   }
+  
+  return mapping;
 };
 
 export const processEngineExcelFile = async (file: File): Promise<ProcessedEngineData> => {
@@ -106,11 +119,39 @@ export const processEngineExcelFile = async (file: File): Promise<ProcessedEngin
         }
 
         // Extract raw data from the first sheet
-        const rawData = extractSheetData(workbook, sheetNames[0]);
+        const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
+        if (rawData.length === 0) {
+          throw new Error('Excel sheet is empty. Please upload a file with data.');
+        }
+        
         console.log('Processing REVA file:', file.name);
         
+        // Extract headers from first row
+        const headers = Object.keys(rawData[0] as object);
+        const columnMapping = generateColumnMapping(headers);
+        
+        // Check for minimum required columns
+        const requiredFields = [
+          'description', 'revaUsage', 'usageRank', 'avgCost', 
+          'nextCost', 'currentREVAPrice'
+        ];
+        
+        const missingFields = requiredFields.filter(field => !columnMapping[field]);
+        
+        if (missingFields.length > 0) {
+          const missingFieldsMessage = missingFields.map(field => {
+            const variants = columnVariations[field as keyof typeof columnVariations].join(', ');
+            return `${field} (looking for columns like: ${variants})`;
+          }).join(', ');
+          
+          throw new Error(`Missing required columns: ${missingFieldsMessage}. Please ensure your file includes these fields or rename columns accordingly.`);
+        }
+        
+        // Process the data using the dynamic column mapping
+        const transformedData = rawData.map((row: any) => transformRowWithMapping(row, columnMapping));
+        
         // Process the data into required structure for the engine room
-        const processedData = processRawData(rawData, file.name);
+        const processedData = processRawData(transformedData, file.name);
         
         // Store the data in localStorage for persistence
         localStorage.setItem('engineRoomData', JSON.stringify(processedData));
@@ -118,7 +159,7 @@ export const processEngineExcelFile = async (file: File): Promise<ProcessedEngin
         resolve(processedData);
       } catch (error) {
         console.error('Excel processing error:', error);
-        reject(new Error('Invalid Excel file format. Please ensure your file follows the required structure.'));
+        reject(new Error(error instanceof Error ? error.message : 'Invalid Excel file format. Please ensure your file follows the required structure.'));
       }
     };
     
@@ -130,63 +171,50 @@ export const processEngineExcelFile = async (file: File): Promise<ProcessedEngin
   });
 };
 
-// Extract data from the spreadsheet
-const extractSheetData = (workbook: XLSX.WorkBook, sheetName: string): any[] => {
-  if (!workbook.Sheets[sheetName]) {
-    throw new Error(`Sheet "${sheetName}" not found in the Excel file`);
-  }
-  
-  const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-  
-  // Validate that required columns exist
-  if (jsonData.length > 0) {
-    const firstRow = jsonData[0] as any;
-    
-    // Check for minimum required columns
-    const requiredColumns = [
-      "Description", "InStock", "OnOrder", "RevaUsage", 
-      "UsageRank", "AvgCost", "NextCost", "CurrentREVAPrice"
-    ];
-    
-    const missingColumns = requiredColumns.filter(col => firstRow[col] === undefined);
-    
-    if (missingColumns.length > 0) {
-      throw new Error(`Missing required columns: ${missingColumns.join(", ")}`);
-    }
-  }
-  
-  return jsonData;
+// Column variations for matching
+const columnVariations = {
+  description: ['description', 'desc', 'product', 'item'],
+  inStock: ['instock', 'in stock', 'stock', 'quantity', 'qty'],
+  onOrder: ['onorder', 'on order', 'order', 'ordered'],
+  revaUsage: ['revausage', 'usage', 'monthly usage', 'sales', 'units sold'],
+  usageRank: ['usagerank', 'usage rank', 'rank', 'priority', 'group'],
+  avgCost: ['avgcost', 'avg cost', 'average cost', 'cost', 'unit cost'],
+  nextCost: ['nextcost', 'next cost', 'future cost', 'new cost'],
+  currentREVAPrice: ['currentrevaprice', 'price', 'selling price', 'current price', 'reva price'],
+  currentREVAMargin: ['currentrevamargin', 'margin', 'current margin', 'reva margin'],
+  eth_net: ['eth_net', 'eth net', 'ethnet', 'market low'],
+  eth: ['eth', 'eth price'],
+  nupharm: ['nupharm', 'nu pharm', 'nupharm price'],
+  lexon: ['lexon', 'lexon price'],
+  aah: ['aah', 'aah price']
 };
 
-// Transform the row data from the actual column names to our expected format
-function transformRowData(row: any): RevaItem {
+// Transform the row data using the dynamic column mapping
+function transformRowWithMapping(row: any, mapping: Record<string, string>): RevaItem {
   const transformed: RevaItem = {
-    description: String(row[columnMapping.description] || ''),
-    inStock: Number(row[columnMapping.inStock] || 0),
-    onOrder: Number(row[columnMapping.onOrder] || 0),
-    revaUsage: Number(row[columnMapping.revaUsage] || 0),
-    usageRank: Number(row[columnMapping.usageRank] || 6),
-    avgCost: Number(row[columnMapping.avgCost] || 0),
-    nextCost: Number(row[columnMapping.nextCost] || 0),
-    currentREVAPrice: Number(row[columnMapping.currentREVAPrice] || 0),
-    currentREVAMargin: Number(row[columnMapping.currentREVAMargin] || 0),
+    description: String(row[mapping.description] || ''),
+    inStock: Number(row[mapping.inStock] || 0),
+    onOrder: Number(row[mapping.onOrder] || 0),
+    revaUsage: Number(row[mapping.revaUsage] || 0),
+    usageRank: Number(row[mapping.usageRank] || 6),
+    avgCost: Number(row[mapping.avgCost] || 0),
+    nextCost: Number(row[mapping.nextCost] || 0),
+    currentREVAPrice: Number(row[mapping.currentREVAPrice] || 0),
+    currentREVAMargin: Number(row[mapping.currentREVAMargin] || 0),
   };
   
   // Add optional competitor pricing fields
-  if (row[columnMapping.eth_net] !== undefined) transformed.eth_net = Number(row[columnMapping.eth_net]);
-  if (row[columnMapping.eth] !== undefined) transformed.eth = Number(row[columnMapping.eth]);
-  if (row[columnMapping.nupharm] !== undefined) transformed.nupharm = Number(row[columnMapping.nupharm]);
-  if (row[columnMapping.lexon] !== undefined) transformed.lexon = Number(row[columnMapping.lexon]);
-  if (row[columnMapping.aah] !== undefined) transformed.aah = Number(row[columnMapping.aah]);
+  if (mapping.eth_net && row[mapping.eth_net] !== undefined) transformed.eth_net = Number(row[mapping.eth_net]);
+  if (mapping.eth && row[mapping.eth] !== undefined) transformed.eth = Number(row[mapping.eth]);
+  if (mapping.nupharm && row[mapping.nupharm] !== undefined) transformed.nupharm = Number(row[mapping.nupharm]);
+  if (mapping.lexon && row[mapping.lexon] !== undefined) transformed.lexon = Number(row[mapping.lexon]);
+  if (mapping.aah && row[mapping.aah] !== undefined) transformed.aah = Number(row[mapping.aah]);
   
   return transformed;
 }
 
 // Process raw data into the structure needed for the engine room
-const processRawData = (rawData: any[], fileName: string): ProcessedEngineData => {
-  // Transform raw data into our format
-  const transformedData = rawData.map(transformRowData);
-  
+const processRawData = (transformedData: RevaItem[], fileName: string): ProcessedEngineData => {
   // Apply pricing rules and calculate derived values
   const processedItems = applyPricingRules(transformedData, defaultRuleConfig);
   
@@ -250,6 +278,20 @@ const processRawData = (rawData: any[], fileName: string): ProcessedEngineData =
   };
 };
 
+// Default rule configuration
+const defaultRuleConfig: RuleConfig = {
+  rule1: {
+    group1_2: { trend_down: 1.03, trend_flat_up: 1.05 },
+    group3_4: { trend_down: 1.04, trend_flat_up: 1.06 },
+    group5_6: { trend_down: 1.05, trend_flat_up: 1.07 }
+  },
+  rule2: {
+    group1_2: { trend_down: 1.12, trend_flat_up: 1.15 },
+    group3_4: { trend_down: 1.13, trend_flat_up: 1.18 },
+    group5_6: { trend_down: 1.15, trend_flat_up: 1.20 }
+  }
+};
+
 // Apply pricing rules to the data
 function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[] {
   return items.map(item => {
@@ -273,6 +315,16 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.lexon || Infinity, 
       processedItem.aah || Infinity
     );
+    
+    // If true market low is Infinity (no competitor prices given), use the market low or avg cost as fallback
+    if (processedItem.trueMarketLow === Infinity) {
+      processedItem.trueMarketLow = processedItem.marketLow || processedItem.avgCost;
+    }
+    
+    // If market low is Infinity, use the true market low or the avg cost
+    if (processedItem.marketLow === Infinity) {
+      processedItem.marketLow = processedItem.trueMarketLow || processedItem.avgCost;
+    }
     
     // Determine trend
     processedItem.trend = processedItem.nextCost <= processedItem.avgCost ? 'TrendDown' : 'TrendFlatUp';

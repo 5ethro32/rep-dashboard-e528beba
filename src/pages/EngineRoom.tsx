@@ -1,12 +1,13 @@
 
 import React, { useState, useCallback } from 'react';
-import { UploadCloud, FileText, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { UploadCloud, FileText, Download, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import MetricCard from '@/components/MetricCard';
 import { processEngineExcelFile } from '@/utils/engine-excel-utils';
 import EngineDataTable from '@/components/engine-room/EngineDataTable';
@@ -23,6 +24,7 @@ const EngineRoom: React.FC = () => {
   const [selectedRuleConfig, setSelectedRuleConfig] = useState<string | null>(null);
   const [showPricingExplainer, setShowPricingExplainer] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Get cached data if available
   const { data: engineData, isLoading, error } = useQuery({
@@ -51,6 +53,7 @@ const EngineRoom: React.FC = () => {
       return;
     }
 
+    setErrorMessage(null);
     try {
       setIsUploading(true);
       
@@ -74,7 +77,7 @@ const EngineRoom: React.FC = () => {
       
       toast({
         title: "File processed successfully",
-        description: `Processed ${processedData.totalItems} items with ${processedData.flaggedItems} exceptions.`
+        description: `Processed ${processedData.totalItems} items with ${processedData.flaggedItems.length} exceptions.`
       });
 
       setTimeout(() => {
@@ -84,9 +87,14 @@ const EngineRoom: React.FC = () => {
       
     } catch (error) {
       console.error('Error processing file:', error);
+      
+      // Get the error message and set it
+      const errorMsg = error instanceof Error ? error.message : "Unknown error occurred";
+      setErrorMessage(errorMsg);
+      
       toast({
         title: "Error processing file",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description: errorMsg,
         variant: "destructive"
       });
       setIsUploading(false);
@@ -159,37 +167,62 @@ const EngineRoom: React.FC = () => {
 
       {/* File upload area */}
       {!engineData && (
-        <div 
-          {...getRootProps()} 
-          className={cn(
-            "border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all",
-            isDragActive ? "border-primary bg-primary/5" : "border-gray-700 hover:border-primary/50",
-            isUploading ? "pointer-events-none" : ""
-          )}
-        >
-          <input {...getInputProps()} />
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <UploadCloud className="h-12 w-12 text-gray-400" />
-            <div className="space-y-1">
-              <h3 className="text-lg font-medium">Upload REVA Pricing Sheet</h3>
-              <p className="text-sm text-muted-foreground">
-                Drag and drop your Excel or CSV file, or click to browse
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Required columns: Description, InStock, OnOrder, RevaUsage, UsageRank, AvgCost, NextCost, CurrentREVAPrice, CurrentREVAMargin
-              </p>
+        <>
+          <div 
+            {...getRootProps()} 
+            className={cn(
+              "border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all",
+              isDragActive ? "border-primary bg-primary/5" : "border-gray-700 hover:border-primary/50",
+              isUploading ? "pointer-events-none" : ""
+            )}
+          >
+            <input {...getInputProps()} />
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <UploadCloud className="h-12 w-12 text-gray-400" />
+              <div className="space-y-1">
+                <h3 className="text-lg font-medium">Upload REVA Pricing Sheet</h3>
+                <p className="text-sm text-muted-foreground">
+                  Drag and drop your Excel or CSV file, or click to browse
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Required columns: Description, InStock, OnOrder, Usage/Sales, Rank, AvgCost, NextCost, Price, Margin
+                </p>
+              </div>
             </div>
-          </div>
 
-          {isUploading && (
-            <div className="mt-6 w-full max-w-md mx-auto">
-              <Progress value={uploadProgress} className="h-2" />
-              <p className="text-sm mt-2 text-muted-foreground">
-                Processing file... {Math.round(uploadProgress)}%
-              </p>
-            </div>
+            {isUploading && (
+              <div className="mt-6 w-full max-w-md mx-auto">
+                <Progress value={uploadProgress} className="h-2" />
+                <p className="text-sm mt-2 text-muted-foreground">
+                  Processing file... {Math.round(uploadProgress)}%
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {errorMessage && (
+            <Alert variant="destructive" className="mt-4">
+              <div className="flex items-start">
+                <Info className="h-4 w-4 mr-2 mt-0.5" />
+                <div>
+                  <AlertTitle>Error processing file</AlertTitle>
+                  <AlertDescription className="mt-1">{errorMessage}</AlertDescription>
+                  <AlertDescription className="mt-2">
+                    <p className="font-medium">Accepted column names:</p>
+                    <ul className="list-disc pl-5 mt-1 text-sm">
+                      <li>Description: "Description", "Desc", "Product", "Item"</li>
+                      <li>Usage: "RevaUsage", "Usage", "Monthly Usage", "Sales", "Units Sold"</li>
+                      <li>Usage Rank: "UsageRank", "Usage Rank", "Rank", "Priority", "Group"</li>
+                      <li>Average Cost: "AvgCost", "Avg Cost", "Average Cost", "Cost", "Unit Cost"</li>
+                      <li>Next Cost: "NextCost", "Next Cost", "Future Cost", "New Cost"</li>
+                      <li>Current Price: "CurrentREVAPrice", "Price", "Selling Price", "Current Price", "REVA Price"</li>
+                    </ul>
+                  </AlertDescription>
+                </div>
+              </div>
+            </Alert>
           )}
-        </div>
+        </>
       )}
 
       {/* Dashboard content - shown after file upload */}
@@ -207,7 +240,10 @@ const EngineRoom: React.FC = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => onDrop([])}
+                onClick={() => {
+                  localStorage.removeItem('engineRoomData');
+                  queryClient.invalidateQueries({ queryKey: ['engineRoomData'] });
+                }}
                 className="flex items-center space-x-1"
               >
                 <UploadCloud className="h-4 w-4 mr-1" />
