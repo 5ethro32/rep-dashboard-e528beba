@@ -3,8 +3,9 @@ import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Check, X, ChevronDown, ChevronUp, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, Check, X, ChevronDown, ChevronUp, CheckCircle, AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface ApprovalsTabProps {
   data: any[];
@@ -61,6 +62,45 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
+
+  // Calculate usage-weighted impact
+  const usageWeightedImpact = useMemo(() => {
+    if (!submittedItems || submittedItems.length === 0) return {
+      currentProfit: 0,
+      proposedProfit: 0,
+      profitChange: 0,
+      currentMargin: 0,
+      proposedMargin: 0,
+      marginChange: 0
+    };
+
+    let currentRevenue = 0;
+    let currentProfit = 0;
+    let proposedRevenue = 0;
+    let proposedProfit = 0;
+
+    submittedItems.forEach(item => {
+      currentRevenue += item.currentREVAPrice * item.revaUsage;
+      currentProfit += (item.currentREVAPrice - item.avgCost) * item.revaUsage;
+      
+      const proposedPrice = item.proposedPrice || item.currentREVAPrice;
+      proposedRevenue += proposedPrice * item.revaUsage;
+      proposedProfit += (proposedPrice - item.avgCost) * item.revaUsage;
+    });
+
+    const currentMargin = currentRevenue > 0 ? (currentProfit / currentRevenue) * 100 : 0;
+    const proposedMargin = proposedRevenue > 0 ? (proposedProfit / proposedRevenue) * 100 : 0;
+
+    return {
+      currentProfit,
+      proposedProfit,
+      profitChange: proposedProfit - currentProfit,
+      profitChangePercent: currentProfit > 0 ? ((proposedProfit - currentProfit) / currentProfit) * 100 : 0,
+      currentMargin,
+      proposedMargin,
+      marginChange: proposedMargin - currentMargin
+    };
+  }, [submittedItems]);
 
   // Handle sort click
   const handleSort = (field: string) => {
@@ -142,6 +182,23 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
       </div>
     );
   };
+  
+  // Determine trend icon
+  const renderTrendIcon = (item: any) => {
+    if (!item) return null;
+    
+    const isTrendDown = item.nextCost <= item.avgCost;
+    
+    return isTrendDown ? (
+      <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900 gap-1">
+        <TrendingDown className="h-3 w-3" /> DOWN
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="bg-pink-900/20 text-pink-400 border-pink-900 gap-1">
+        <TrendingUp className="h-3 w-3" /> UP
+      </Badge>
+    );
+  };
 
   if (!submittedItems || submittedItems.length === 0) {
     return (
@@ -174,6 +231,45 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
             </p>
           </div>
         </div>
+      </div>
+      
+      {/* New Impact Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-medium mb-2">Usage-Weighted Profit Impact</h3>
+            <div className="text-xl font-bold mb-1">
+              {usageWeightedImpact.profitChange >= 0 ? '+' : ''}£{usageWeightedImpact.profitChange.toLocaleString()}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {usageWeightedImpact.profitChangePercent >= 0 ? '+' : ''}{usageWeightedImpact.profitChangePercent.toFixed(2)}% change from current
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-medium mb-2">Usage-Weighted Margin Impact</h3>
+            <div className="text-xl font-bold mb-1">
+              {usageWeightedImpact.proposedMargin.toFixed(2)}%
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {usageWeightedImpact.marginChange >= 0 ? '+' : ''}{usageWeightedImpact.marginChange.toFixed(2)}% points change from current
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-medium mb-2">Selected Items</h3>
+            <div className="text-xl font-bold mb-1">
+              {selectedItems.size} / {submittedItems.length}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {((selectedItems.size / submittedItems.length) * 100 || 0).toFixed(1)}% of pending items selected
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-2">
@@ -250,6 +346,7 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
                 <TableHead>Change</TableHead>
                 <TableHead>Margin</TableHead>
                 <TableHead>Usage Rank</TableHead>
+                <TableHead>Trend</TableHead>
                 <TableHead>Submitted By</TableHead>
                 <TableHead>Submission Date</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
@@ -272,12 +369,12 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
                       <div className="flex gap-1 mt-1">
                         {item.flag1 && (
                           <Badge variant="outline" className="text-xs bg-red-900/20 text-red-400 border-red-900">
-                            Rule 1
+                            HIGH PRICE
                           </Badge>
                         )}
                         {item.flag2 && (
                           <Badge variant="outline" className="text-xs bg-amber-900/20 text-amber-400 border-amber-900">
-                            Rule 2
+                            LOW MARGIN
                           </Badge>
                         )}
                       </div>
@@ -288,6 +385,7 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
                   <TableCell>{formatPriceChange(item)}</TableCell>
                   <TableCell>{formatPercentage(item.proposedMargin || 0)}</TableCell>
                   <TableCell>{item.usageRank}</TableCell>
+                  <TableCell>{renderTrendIcon(item)}</TableCell>
                   <TableCell>{item.submittedBy || 'System'}</TableCell>
                   <TableCell>{item.submissionDate ? new Date(item.submissionDate).toLocaleDateString() : '-'}</TableCell>
                   <TableCell>

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { UploadCloud, FileText, Download, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
@@ -17,6 +18,9 @@ import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActions from '@/components/engine-room/PricingActions';
 import ApprovalsTab from '@/components/engine-room/ApprovalsTab';
 import ApprovalHistoryTab from '@/components/engine-room/ApprovalHistoryTab';
+import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
+import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
+import ProfitDistributionChart from '@/components/engine-room/ProfitDistributionChart';
 import { exportPricingData } from '@/utils/pricing-export-utils';
 
 // Define workflow status type
@@ -605,11 +609,24 @@ const EngineRoom: React.FC = () => {
             />
           </div>
 
+          {/* New Usage-Weighted Metrics Component */}
+          <UsageWeightedMetrics data={engineData.items || []} />
+
+          {/* New Market Trend Analysis */}
+          <MarketTrendAnalysis data={engineData.items || []} />
+
           {/* Chart */}
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
             <div className="border border-white/10 bg-gray-900/40 backdrop-blur-sm rounded-lg p-4">
               <RevaMetricsChart data={engineData.chartData || []} />
+            </div>
+          </div>
+
+          {/* New Profit Distribution Chart */}
+          <div className="mt-8">
+            <div className="border border-white/10 bg-gray-900/40 backdrop-blur-sm rounded-lg p-4">
+              <ProfitDistributionChart data={engineData.items || []} />
             </div>
           </div>
 

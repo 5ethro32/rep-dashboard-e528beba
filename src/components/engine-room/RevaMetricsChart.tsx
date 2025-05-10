@@ -10,9 +10,11 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend,
-  Cell
+  Cell,
+  Area
 } from 'recharts';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface RevaMetricsChartProps {
   data: any[];
@@ -20,6 +22,7 @@ interface RevaMetricsChartProps {
 
 const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
   const [activeMetric, setActiveMetric] = useState<'margin' | 'profit'>('margin');
+  const [chartType, setChartType] = useState<'bars' | 'area'>('bars');
   
   // Color configuration
   const colors = {
@@ -27,7 +30,8 @@ const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
     proposedMargin: '#ec4899',
     currentProfit: '#3b82f6',
     proposedProfit: '#8b5cf6',
-    barFill: '#1e293b',  // Lighter blue-gray shade for better visibility
+    barFill: '#1e293b',
+    areaFill: 'rgba(30, 41, 59, 0.4)',
   };
   
   // Format large numbers with k for thousands, etc.
@@ -83,30 +87,71 @@ const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
       </div>
     );
   };
+
+  // Calculate average line data
+  const calculateAverages = () => {
+    if (!data || data.length === 0) return { avgMargin: 0, avgProfit: 0 };
+    
+    let totalCurrentMargin = 0;
+    let totalCurrentProfit = 0;
+    let totalProposedMargin = 0;
+    let totalProposedProfit = 0;
+    let totalItems = 0;
+    
+    data.forEach(item => {
+      if (item.currentMargin !== undefined) totalCurrentMargin += item.currentMargin;
+      if (item.currentProfit !== undefined) totalCurrentProfit += item.currentProfit;
+      if (item.proposedMargin !== undefined) totalProposedMargin += item.proposedMargin;
+      if (item.proposedProfit !== undefined) totalProposedProfit += item.proposedProfit;
+      totalItems += item.itemCount || 0;
+    });
+    
+    return {
+      avgCurrentMargin: data.length > 0 ? totalCurrentMargin / data.length : 0,
+      avgProposedMargin: data.length > 0 ? totalProposedMargin / data.length : 0,
+      avgCurrentProfit: totalItems > 0 ? totalCurrentProfit / totalItems : 0,
+      avgProposedProfit: totalItems > 0 ? totalProposedProfit / totalItems : 0
+    };
+  };
+  
+  const averages = calculateAverages();
   
   return (
-    <div className="w-full h-80">
+    <div className="w-full h-96">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">
           {activeMetric === 'margin' 
             ? 'Margin Analysis by Usage Rank' 
             : 'Profit Analysis by Usage Rank'}
         </h3>
-        <div className="flex space-x-2">
-          <Button 
-            variant={activeMetric === 'margin' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveMetric('margin')}
-          >
-            Margin
-          </Button>
-          <Button
-            variant={activeMetric === 'profit' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveMetric('profit')}
-          >
-            Profit
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Tabs defaultValue="bars" className="w-full">
+            <TabsList className="grid grid-cols-2 w-48">
+              <TabsTrigger value="bars" onClick={() => setChartType('bars')}>
+                Bars
+              </TabsTrigger>
+              <TabsTrigger value="area" onClick={() => setChartType('area')}>
+                Area
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          <div className="flex space-x-2">
+            <Button 
+              variant={activeMetric === 'margin' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveMetric('margin')}
+            >
+              Margin
+            </Button>
+            <Button
+              variant={activeMetric === 'profit' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveMetric('profit')}
+            >
+              Profit
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -133,50 +178,100 @@ const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
             tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
           />
           <Tooltip content={renderTooltip} />
-          {/* Removed Legend component */}
+          <Legend />
           
           {activeMetric === 'margin' ? (
-            <>
-              <Line
-                type="monotone"
-                dataKey="proposedMargin"
-                name="Proposed Margin"
-                stroke={colors.proposedMargin}
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                yAxisId="left"
-              />
-              <Line
-                type="monotone"
-                dataKey="currentMargin"
-                name="Current Margin"
-                stroke={colors.currentMargin}
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                yAxisId="left"
-              />
-            </>
+            chartType === 'area' ? (
+              <>
+                <Area
+                  type="monotone"
+                  dataKey="proposedMargin"
+                  name="Proposed Margin"
+                  fill={colors.proposedMargin}
+                  stroke={colors.proposedMargin}
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                  yAxisId="left"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="currentMargin"
+                  name="Current Margin"
+                  fill={colors.currentMargin}
+                  stroke={colors.currentMargin}
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                  yAxisId="left"
+                />
+              </>
+            ) : (
+              <>
+                <Line
+                  type="monotone"
+                  dataKey="proposedMargin"
+                  name="Proposed Margin"
+                  stroke={colors.proposedMargin}
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  yAxisId="left"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="currentMargin"
+                  name="Current Margin"
+                  stroke={colors.currentMargin}
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  yAxisId="left"
+                />
+              </>
+            )
           ) : (
-            <>
-              <Line
-                type="monotone"
-                dataKey="proposedProfit"
-                name="Proposed Profit"
-                stroke={colors.proposedProfit}
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                yAxisId="left"
-              />
-              <Line
-                type="monotone"
-                dataKey="currentProfit"
-                name="Current Profit"
-                stroke={colors.currentProfit}
-                strokeWidth={2}
-                dot={{ r: 4 }}
-                yAxisId="left"
-              />
-            </>
+            chartType === 'area' ? (
+              <>
+                <Area
+                  type="monotone"
+                  dataKey="proposedProfit"
+                  name="Proposed Profit"
+                  fill={colors.proposedProfit}
+                  stroke={colors.proposedProfit}
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                  yAxisId="left"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="currentProfit"
+                  name="Current Profit"
+                  fill={colors.currentProfit}
+                  stroke={colors.currentProfit}
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                  yAxisId="left"
+                />
+              </>
+            ) : (
+              <>
+                <Line
+                  type="monotone"
+                  dataKey="proposedProfit"
+                  name="Proposed Profit"
+                  stroke={colors.proposedProfit}
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  yAxisId="left"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="currentProfit"
+                  name="Current Profit"
+                  stroke={colors.currentProfit}
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  yAxisId="left"
+                />
+              </>
+            )
           )}
           
           <Bar 
