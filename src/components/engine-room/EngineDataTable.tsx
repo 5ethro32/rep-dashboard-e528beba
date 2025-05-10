@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ArrowUp, ArrowDown, Edit2, CheckCircle, X, Flag, Filter } from 'lucide-react';
 import PriceEditor from './PriceEditor';
+import CellDetailsPopover from './CellDetailsPopover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   DropdownMenu, 
   DropdownMenuTrigger, 
@@ -323,57 +325,59 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
   // Render the column header with sort and filter
   const renderColumnHeader = (column: any) => {
     return (
-      <div className="flex items-center justify-between">
-        <div 
-          className="flex items-center cursor-pointer"
-          onClick={() => handleSort(column.field)}
-        >
-          {column.label}
-          {renderSortIndicator(column.field)}
-        </div>
-        
-        {column.filterable && uniqueValues[column.field]?.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Filter className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
-              <div className="p-2">
-                <p className="text-sm font-medium">Filter by {column.label}</p>
-                <Input
-                  placeholder="Search..."
-                  className="h-8 mt-2"
-                  onChange={(e) => {
-                    // Filter dropdown options, not implemented fully
-                  }}
-                />
-              </div>
-              <DropdownMenuSeparator />
-              {uniqueValues[column.field]?.map((value, i) => (
-                <DropdownMenuCheckboxItem
-                  key={i}
-                  checked={columnFilters[column.field]?.includes(value)}
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    handleFilterChange(column.field, value);
-                  }}
+      <CellDetailsPopover field={column.field} item={{}}>
+        <div className="flex items-center justify-between">
+          <div 
+            className="flex items-center cursor-pointer"
+            onClick={() => handleSort(column.field)}
+          >
+            {column.label}
+            {renderSortIndicator(column.field)}
+          </div>
+          
+          {column.filterable && uniqueValues[column.field]?.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {value !== null && value !== undefined ? 
-                    (typeof value === 'number' ? value.toString() : value) : 
-                    '(Empty)'}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+                  <Filter className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
+                <div className="p-2">
+                  <p className="text-sm font-medium">Filter by {column.label}</p>
+                  <Input
+                    placeholder="Search..."
+                    className="h-8 mt-2"
+                    onChange={(e) => {
+                      // Filter dropdown options, not implemented fully
+                    }}
+                  />
+                </div>
+                <DropdownMenuSeparator />
+                {uniqueValues[column.field]?.map((value, i) => (
+                  <DropdownMenuCheckboxItem
+                    key={i}
+                    checked={columnFilters[column.field]?.includes(value)}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      handleFilterChange(column.field, value);
+                    }}
+                  >
+                    {value !== null && value !== undefined ? 
+                      (typeof value === 'number' ? value.toString() : value) : 
+                      '(Empty)'}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </CellDetailsPopover>
     );
   };
 
@@ -500,135 +504,174 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
   // Render the data table with rows
   const renderDataTable = (items: any[]) => {
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {columns.map((column) => (
-              <TableHead 
-                key={column.field}
-                className="cursor-pointer bg-gray-900/70 hover:bg-gray-900"
-              >
-                {renderColumnHeader(column)}
-              </TableHead>
-            ))}
-            <TableHead className="bg-gray-900/70">
-              {renderFlagsColumnHeader()}
-            </TableHead>
-            <TableHead className="bg-gray-900/70">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={columns.length + 2} className="text-center py-10">
-                No items found matching your search criteria
-              </TableCell>
-            </TableRow>
-          )}
-          {items.map((item, index) => {
-            // Calculate price change percentage for each item
-            const priceChangePercentage = calculatePriceChangePercentage(item);
-            const isEditing = editingItemId === item.id;
-            
-            return (
-              <TableRow 
-                key={index} 
-                className={`${(item.flag1 || item.flag2 || (item.flags && item.flags.length > 0)) ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
-              >
-                <TableCell>{item.description}</TableCell>
-                <TableCell>{item.inStock}</TableCell>
-                <TableCell>{item.revaUsage}</TableCell>
-                <TableCell>{item.usageRank}</TableCell>
-                <TableCell>{formatCurrency(item.avgCost)}</TableCell>
-                <TableCell>{formatCurrency(item.marketLow)}</TableCell>
-                <TableCell>{formatCurrency(item.currentREVAPrice)}</TableCell>
-                <TableCell>{formatPercentage(item.currentREVAMargin)}</TableCell>
-                
-                {/* Proposed price cell with inline editing */}
-                <TableCell>
-                  {bulkEditMode && !item.priceModified ? (
-                    <PriceEditor
-                      initialPrice={item.proposedPrice || 0}
-                      currentPrice={item.currentREVAPrice || 0}
-                      calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
-                      cost={item.avgCost || 0}
-                      onSave={(newPrice) => onPriceChange && onPriceChange(item, newPrice)}
-                      onCancel={() => {}}
-                      compact={true}
-                    />
-                  ) : isEditing ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={editingValues[item.id]}
-                        onChange={(e) => handlePriceInputChange(item, e.target.value)}
-                        className="w-24 h-8 py-1 px-2"
-                        autoFocus
-                      />
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 w-6 p-0" 
-                        onClick={() => handleSavePriceEdit(item)}
-                      >
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 w-6 p-0"
-                        onClick={handleCancelEdit}
-                      >
-                        <X className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      {formatCurrency(item.proposedPrice)}
-                      {item.priceModified && (
-                        <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
-                      )}
-                      {onPriceChange && !bulkEditMode && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="ml-2 h-6 w-6 p-0"
-                          onClick={() => handleStartEdit(item)}
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </TableCell>
-                
-                {/* Price change percentage */}
-                <TableCell className={priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}>
-                  {priceChangePercentage.toFixed(2)}%
-                </TableCell>
-                
-                <TableCell>{formatPercentage(item.proposedMargin)}</TableCell>
-                <TableCell>{item.appliedRule}</TableCell>
-                
-                {/* Flags cell */}
-                <TableCell>
-                  {renderFlags(item)}
-                </TableCell>
-                
-                <TableCell>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => onShowPriceDetails(item)}
+      <div className="rounded-md border overflow-hidden">
+        <ScrollArea className="h-[600px]">
+          <Table>
+            <TableHeader className="sticky top-0 z-10">
+              <TableRow>
+                {columns.map((column) => (
+                  <TableHead 
+                    key={column.field}
+                    className="cursor-pointer bg-gray-900/70 hover:bg-gray-900"
                   >
-                    Details
-                  </Button>
-                </TableCell>
+                    {renderColumnHeader(column)}
+                  </TableHead>
+                ))}
+                <TableHead className="bg-gray-900/70 sticky top-0">
+                  {renderFlagsColumnHeader()}
+                </TableHead>
+                <TableHead className="bg-gray-900/70 sticky top-0">Actions</TableHead>
               </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+            </TableHeader>
+            <TableBody>
+              {items.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={columns.length + 2} className="text-center py-10">
+                    No items found matching your search criteria
+                  </TableCell>
+                </TableRow>
+              )}
+              {items.map((item, index) => {
+                // Calculate price change percentage for each item
+                const priceChangePercentage = calculatePriceChangePercentage(item);
+                const isEditing = editingItemId === item.id;
+                
+                return (
+                  <TableRow 
+                    key={index} 
+                    className={`${(item.flag1 || item.flag2 || (item.flags && item.flags.length > 0)) ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
+                  >
+                    <TableCell>{item.description}</TableCell>
+                    <TableCell>{item.inStock}</TableCell>
+                    <TableCell>{item.revaUsage}</TableCell>
+                    <TableCell>{item.usageRank}</TableCell>
+                    
+                    {/* Avg Cost cell with popover */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="avgCost">
+                        {formatCurrency(item.avgCost)}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Market Low cell with popover */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="marketLow">
+                        {formatCurrency(item.marketLow)}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Current Price cell with popover */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="currentREVAPrice">
+                        {formatCurrency(item.currentREVAPrice)}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Current Margin cell with popover */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="currentREVAMargin">
+                        {formatPercentage(item.currentREVAMargin)}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Proposed price cell with inline editing */}
+                    <TableCell>
+                      {bulkEditMode && !item.priceModified ? (
+                        <PriceEditor
+                          initialPrice={item.proposedPrice || 0}
+                          currentPrice={item.currentREVAPrice || 0}
+                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
+                          cost={item.avgCost || 0}
+                          onSave={(newPrice) => onPriceChange && onPriceChange(item, newPrice)}
+                          onCancel={() => {}}
+                          compact={true}
+                        />
+                      ) : isEditing ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={editingValues[item.id]}
+                            onChange={(e) => handlePriceInputChange(item, e.target.value)}
+                            className="w-24 h-8 py-1 px-2"
+                            autoFocus
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0" 
+                            onClick={() => handleSavePriceEdit(item)}
+                          >
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0"
+                            onClick={handleCancelEdit}
+                          >
+                            <X className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <CellDetailsPopover item={item} field="proposedPrice">
+                          <div className="flex items-center gap-2">
+                            {formatCurrency(item.proposedPrice)}
+                            {item.priceModified && (
+                              <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
+                            )}
+                            {onPriceChange && !bulkEditMode && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="ml-2 h-6 w-6 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartEdit(item);
+                                }}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </CellDetailsPopover>
+                      )}
+                    </TableCell>
+                    
+                    {/* Price change percentage */}
+                    <TableCell className={priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}>
+                      {priceChangePercentage.toFixed(2)}%
+                    </TableCell>
+                    
+                    {/* Proposed Margin with popover */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="proposedMargin">
+                        {formatPercentage(item.proposedMargin)}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    <TableCell>{item.appliedRule}</TableCell>
+                    
+                    {/* Flags cell */}
+                    <TableCell>
+                      {renderFlags(item)}
+                    </TableCell>
+                    
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => onShowPriceDetails(item)}
+                      >
+                        Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </div>
     );
   };
 
@@ -731,11 +774,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
       )}
       
       {filterByRank ? (
-        <div className="rounded-md border overflow-hidden">
-          <div className="overflow-x-auto">
-            {renderDataTable(paginatedData)}
-          </div>
-        </div>
+        renderDataTable(paginatedData)
       ) : (
         renderGroupedItems()
       )}
