@@ -29,6 +29,16 @@ interface RevaItem {
   proposedMargin?: number;
   flag1?: boolean;
   flag2?: boolean;
+  // New properties for price editing and workflow
+  calculatedPrice?: number;
+  priceModified?: boolean;
+  workflowStatus?: 'draft' | 'submitted' | 'approved' | 'rejected';
+  submittedBy?: string;
+  submissionDate?: string;
+  reviewer?: string;
+  reviewDate?: string;
+  reviewComments?: string;
+  id?: string; // Added for item identification
 }
 
 interface ProcessedEngineData {

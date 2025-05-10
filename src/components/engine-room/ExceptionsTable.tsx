@@ -3,16 +3,19 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Edit2, CheckCircle } from 'lucide-react';
+import PriceEditor from './PriceEditor';
 
 interface ExceptionsTableProps {
   data: any[];
   onShowPriceDetails: (item: any) => void;
+  onPriceChange?: (item: any, newPrice: number) => void;
 }
 
-const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDetails }) => {
+const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDetails, onPriceChange }) => {
   const rule1Flags = data.filter(item => item.flag1);
   const rule2Flags = data.filter(item => item.flag2);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   // Group the exceptions by rule and usage rank
   const groupBy = (items: any[], key: string) => {
@@ -29,6 +32,19 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
   
   // Group Rule 2 exceptions by usage rank
   const rule2ByRank = groupBy(rule2Flags, 'usageRank');
+
+  // Handle price edit
+  const handleEditPrice = (item: any) => {
+    setEditingItemId(item.id);
+  };
+
+  // Handle save price
+  const handleSavePrice = (item: any, newPrice: number) => {
+    if (onPriceChange) {
+      onPriceChange(item, newPrice);
+    }
+    setEditingItemId(null);
+  };
 
   const renderExceptionTable = (items: any[]) => {
     return (
@@ -58,11 +74,45 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                 </TableRow>
               ) : (
                 items.map((item, index) => (
-                  <TableRow key={index}>
+                  <TableRow key={index} className={item.priceModified ? 'bg-blue-900/20' : ''}>
                     <TableCell>{item.description}</TableCell>
                     <TableCell>{item.usageRank}</TableCell>
                     <TableCell>£{item.currentREVAPrice.toFixed(2)}</TableCell>
-                    <TableCell>£{(item.proposedPrice || 0).toFixed(2)}</TableCell>
+                    
+                    {/* Proposed price cell with edit capability */}
+                    <TableCell>
+                      {editingItemId === item.id ? (
+                        <PriceEditor
+                          initialPrice={item.proposedPrice || 0}
+                          currentPrice={item.currentREVAPrice || 0}
+                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
+                          cost={item.avgCost || 0}
+                          onSave={(newPrice) => handleSavePrice(item, newPrice)}
+                          onCancel={() => setEditingItemId(null)}
+                        />
+                      ) : (
+                        <div className="flex items-center">
+                          £{(item.proposedPrice || 0).toFixed(2)}
+                          {item.priceModified && (
+                            <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
+                          )}
+                          {onPriceChange && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="ml-2 h-6 w-6 p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditPrice(item);
+                              }}
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                    
                     <TableCell>£{(item.marketLow || 0).toFixed(2)}</TableCell>
                     <TableCell>£{(item.trueMarketLow || 0).toFixed(2)}</TableCell>
                     <TableCell>{item.appliedRule}</TableCell>

@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { UploadCloud, FileText, Download, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,6 +15,11 @@ import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer'
 import ExceptionsTable from '@/components/engine-room/ExceptionsTable';
 import RevaMetricsChart from '@/components/engine-room/RevaMetricsChart';
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
+import PricingActions from '@/components/engine-room/PricingActions';
+import { exportPricingData } from '@/utils/pricing-export-utils';
+
+// Define workflow status type
+type WorkflowStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
 
 const EngineRoom: React.FC = () => {
   const { toast } = useToast();
@@ -25,6 +30,8 @@ const EngineRoom: React.FC = () => {
   const [showPricingExplainer, setShowPricingExplainer] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus>('draft');
+  const [modifiedItems, setModifiedItems] = useState<Set<string>>(new Set());
 
   // Get cached data if available
   const { data: engineData, isLoading, error } = useQuery({
@@ -67,6 +74,18 @@ const EngineRoom: React.FC = () => {
 
       // Process the file
       const processedData = await processEngineExcelFile(file);
+      
+      // Add workflow related fields to the processed data
+      processedData.items = processedData.items.map((item: any) => ({
+        ...item,
+        priceModified: false,
+        calculatedPrice: item.proposedPrice, // Store the original calculated price
+        workflowStatus: 'draft',
+      }));
+      
+      // Reset workflow status and modified items
+      setWorkflowStatus('draft');
+      setModifiedItems(new Set());
       
       // Update cache and trigger UI update
       localStorage.setItem('engineRoomData', JSON.stringify(processedData));
@@ -118,14 +137,156 @@ const EngineRoom: React.FC = () => {
     setShowPricingExplainer(true);
   };
 
+  // Handle price change
+  const handlePriceChange = (item: any, newPrice: number) => {
+    if (!engineData) return;
+    
+    // Deep clone the data to avoid modifying the cache directly
+    const updatedData = JSON.parse(JSON.stringify(engineData));
+    
+    // Find and update the item in the main items array
+    const foundItem = updatedData.items.find((i: any) => i.id === item.id);
+    if (foundItem) {
+      foundItem.proposedPrice = newPrice;
+      foundItem.priceModified = true;
+      
+      // Recalculate the margin
+      foundItem.proposedMargin = (newPrice - foundItem.avgCost) / newPrice;
+      
+      // Update flag2 if margin is below 3%
+      foundItem.flag2 = foundItem.proposedMargin < 0.03;
+    }
+    
+    // Also update in flagged items if present
+    const flaggedItemIndex = updatedData.flaggedItems.findIndex((i: any) => i.id === item.id);
+    if (flaggedItemIndex >= 0) {
+      updatedData.flaggedItems[flaggedItemIndex].proposedPrice = newPrice;
+      updatedData.flaggedItems[flaggedItemIndex].priceModified = true;
+      updatedData.flaggedItems[flaggedItemIndex].proposedMargin = 
+        (newPrice - updatedData.flaggedItems[flaggedItemIndex].avgCost) / newPrice;
+      updatedData.flaggedItems[flaggedItemIndex].flag2 = 
+        updatedData.flaggedItems[flaggedItemIndex].proposedMargin < 0.03;
+    }
+    
+    // Update the local storage and query cache
+    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
+    queryClient.setQueryData(['engineRoomData'], updatedData);
+    
+    // Track modified items
+    setModifiedItems(prev => {
+      const newSet = new Set(prev);
+      newSet.add(item.id);
+      return newSet;
+    });
+    
+    toast({
+      title: "Price updated",
+      description: `Updated price for ${item.description} to £${newPrice.toFixed(2)}`,
+    });
+  };
+
   // Export data
   const handleExport = () => {
     if (!engineData) return;
     
-    // Implementation for exporting data would go here
+    try {
+      const result = exportPricingData(engineData.items, {
+        includeWorkflowStatus: true,
+        fileName: `REVA_Pricing_${new Date().toISOString().substring(0, 10)}.xlsx`
+      });
+      
+      toast({
+        title: "Export complete",
+        description: `Exported ${result.exportedCount} items to ${result.fileName}`
+      });
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: "Export failed",
+        description: "An error occurred while exporting the data",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handle save changes
+  const handleSaveChanges = () => {
     toast({
-      title: "Export started",
-      description: "Your data export is being prepared."
+      title: "Changes saved",
+      description: `Saved changes to ${modifiedItems.size} items`
+    });
+  };
+
+  // Handle reset changes
+  const handleResetChanges = () => {
+    if (!engineData) return;
+    
+    // Deep clone the data to avoid modifying the cache directly
+    const updatedData = JSON.parse(JSON.stringify(engineData));
+    
+    // Reset all modified items
+    updatedData.items = updatedData.items.map((item: any) => {
+      if (item.priceModified) {
+        return {
+          ...item,
+          proposedPrice: item.calculatedPrice,
+          proposedMargin: (item.calculatedPrice - item.avgCost) / item.calculatedPrice,
+          priceModified: false,
+          flag2: ((item.calculatedPrice - item.avgCost) / item.calculatedPrice) < 0.03
+        };
+      }
+      return item;
+    });
+    
+    // Also update flagged items
+    updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
+    
+    // Update the local storage and query cache
+    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
+    queryClient.setQueryData(['engineRoomData'], updatedData);
+    
+    // Clear modified items
+    setModifiedItems(new Set());
+    
+    toast({
+      title: "Changes reset",
+      description: "All price changes have been reset to calculated values"
+    });
+  };
+
+  // Handle submit for approval
+  const handleSubmitForApproval = () => {
+    if (!engineData) return;
+    
+    // Update workflow status
+    setWorkflowStatus('submitted');
+    
+    // Deep clone the data to avoid modifying the cache directly
+    const updatedData = JSON.parse(JSON.stringify(engineData));
+    
+    // Update workflow status for all modified items
+    updatedData.items = updatedData.items.map((item: any) => {
+      if (item.priceModified) {
+        return {
+          ...item,
+          workflowStatus: 'submitted',
+          submissionDate: new Date().toISOString(),
+          submittedBy: 'Current User' // This would be the actual user in a real implementation
+        };
+      }
+      return item;
+    });
+    
+    // Update flagged items as well
+    updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
+    
+    // Update the local storage and query cache
+    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
+    queryClient.setQueryData(['engineRoomData'], updatedData);
+    
+    toast({
+      title: "Submitted for approval",
+      description: `${modifiedItems.size} price changes have been submitted for approval`
     });
   };
 
@@ -265,6 +426,17 @@ const EngineRoom: React.FC = () => {
             </div>
           </div>
 
+          {/* Workflow status and actions */}
+          <PricingActions 
+            modifiedCount={modifiedItems.size}
+            totalExceptions={(metrics.rule1Flags || 0) + (metrics.rule2Flags || 0)}
+            workflowStatus={workflowStatus}
+            onSave={handleSaveChanges}
+            onSubmit={handleSubmitForApproval}
+            onReset={handleResetChanges}
+            onExport={handleExport}
+          />
+
           {/* Metrics cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
@@ -316,7 +488,8 @@ const EngineRoom: React.FC = () => {
             <TabsContent value="all-items" className="space-y-4">
               <EngineDataTable 
                 data={engineData.items || []} 
-                onShowPriceDetails={handleShowItemDetails} 
+                onShowPriceDetails={handleShowItemDetails}
+                onPriceChange={handlePriceChange}
               />
             </TabsContent>
             
@@ -324,6 +497,7 @@ const EngineRoom: React.FC = () => {
               <ExceptionsTable 
                 data={engineData.flaggedItems || []} 
                 onShowPriceDetails={handleShowItemDetails}
+                onPriceChange={handlePriceChange}
               />
             </TabsContent>
             

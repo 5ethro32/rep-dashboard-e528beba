@@ -3,18 +3,21 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Edit2, CheckCircle } from 'lucide-react';
+import PriceEditor from './PriceEditor';
 
 interface EngineDataTableProps {
   data: any[];
   onShowPriceDetails: (item: any) => void;
+  onPriceChange?: (item: any, newPrice: number) => void;
 }
 
-const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDetails }) => {
+const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDetails, onPriceChange }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<string>('description');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const itemsPerPage = 20;
 
   // Filter the data based on search query
@@ -78,6 +81,19 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
       : <ChevronDown className="h-3 w-3 ml-1" />;
   };
 
+  // Handle price edit
+  const handleEditPrice = (item: any) => {
+    setEditingItemId(item.id);
+  };
+
+  // Handle save price
+  const handleSavePrice = (item: any, newPrice: number) => {
+    if (onPriceChange) {
+      onPriceChange(item, newPrice);
+    }
+    setEditingItemId(null);
+  };
+
   // Column configuration
   const columns = [
     { field: 'description', label: 'Description' },
@@ -131,15 +147,57 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
               {paginatedData.map((item, index) => (
                 <TableRow 
                   key={index} 
-                  className={`${(item.flag1 || item.flag2) ? 'bg-red-900/20' : ''}`}
+                  className={`${(item.flag1 || item.flag2) ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
                 >
-                  {columns.map((column) => (
-                    <TableCell key={column.field}>
-                      {column.format 
-                        ? column.format(item[column.field]) 
-                        : item[column.field]}
-                    </TableCell>
-                  ))}
+                  {columns.map((column) => {
+                    // Check if this is the proposed price cell and is being edited
+                    if (column.field === 'proposedPrice' && editingItemId === item.id) {
+                      return (
+                        <TableCell key={column.field} className="p-1">
+                          <PriceEditor
+                            initialPrice={item.proposedPrice || 0}
+                            currentPrice={item.currentREVAPrice || 0}
+                            calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
+                            cost={item.avgCost || 0}
+                            onSave={(newPrice) => handleSavePrice(item, newPrice)}
+                            onCancel={() => setEditingItemId(null)}
+                          />
+                        </TableCell>
+                      );
+                    } else if (column.field === 'proposedPrice') {
+                      return (
+                        <TableCell key={column.field}>
+                          <div className="flex items-center">
+                            {column.format ? column.format(item[column.field]) : item[column.field]}
+                            {item.priceModified && (
+                              <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
+                            )}
+                            {onPriceChange && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="ml-2 h-6 w-6 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditPrice(item);
+                                }}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      );
+                    } else {
+                      return (
+                        <TableCell key={column.field}>
+                          {column.format 
+                            ? column.format(item[column.field]) 
+                            : item[column.field]}
+                        </TableCell>
+                      );
+                    }
+                  })}
                   <TableCell>
                     <Button 
                       variant="ghost" 

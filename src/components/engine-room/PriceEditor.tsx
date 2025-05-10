@@ -1,0 +1,98 @@
+
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Check, X, RotateCcw } from 'lucide-react';
+
+interface PriceEditorProps {
+  initialPrice: number;
+  currentPrice: number;
+  calculatedPrice: number;
+  cost: number;
+  onSave: (newPrice: number) => void;
+  onCancel: () => void;
+}
+
+const PriceEditor: React.FC<PriceEditorProps> = ({
+  initialPrice,
+  currentPrice,
+  calculatedPrice,
+  cost,
+  onSave,
+  onCancel
+}) => {
+  const [priceValue, setPriceValue] = useState<string>(initialPrice.toFixed(2));
+  const [margin, setMargin] = useState<number>(0);
+  const [isValid, setIsValid] = useState<boolean>(true);
+  
+  useEffect(() => {
+    const numericPrice = parseFloat(priceValue);
+    if (!isNaN(numericPrice) && numericPrice > 0) {
+      const calculatedMargin = (numericPrice - cost) / numericPrice;
+      setMargin(calculatedMargin * 100);
+      setIsValid(true);
+    } else {
+      setIsValid(false);
+    }
+  }, [priceValue, cost]);
+  
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPriceValue(e.target.value);
+  };
+  
+  const handleReset = () => {
+    setPriceValue(calculatedPrice.toFixed(2));
+  };
+  
+  const handleSave = () => {
+    const numericPrice = parseFloat(priceValue);
+    if (isValid && numericPrice > 0) {
+      onSave(numericPrice);
+    }
+  };
+  
+  const getMarginClass = () => {
+    if (margin < 3) return "text-red-400";
+    if (margin < 5) return "text-yellow-400";
+    return "text-green-400";
+  };
+  
+  return (
+    <div className="flex flex-col space-y-2 p-2">
+      <div className="flex space-x-2">
+        <Input
+          type="number"
+          step="0.01"
+          min="0"
+          value={priceValue}
+          onChange={handlePriceChange}
+          className={isValid ? "" : "border-red-500"}
+          autoFocus
+        />
+        <Button variant="ghost" size="icon" onClick={handleReset} title="Reset to calculated price">
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <div className="flex justify-between items-center text-xs text-muted-foreground">
+        <span>Current: £{currentPrice.toFixed(2)}</span>
+        <span className={getMarginClass()}>
+          Margin: {isValid ? margin.toFixed(2) : "0.00"}%
+        </span>
+      </div>
+      
+      <div className="flex justify-end space-x-2 mt-2">
+        <Button variant="outline" size="sm" onClick={onCancel}>
+          <X className="h-3 w-3 mr-1" />
+          Cancel
+        </Button>
+        <Button variant="default" size="sm" onClick={handleSave} disabled={!isValid}>
+          <Check className="h-3 w-3 mr-1" />
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default PriceEditor;
