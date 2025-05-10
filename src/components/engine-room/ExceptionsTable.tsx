@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download, Edit2, CheckCircle, X, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import PriceEditor from './PriceEditor';
 
 interface ExceptionsTableProps {
@@ -17,6 +18,9 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
   const rule2Flags = data.filter(item => item.flag2);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortField, setSortField] = useState<string>('usageRank');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Group the exceptions by rule and usage rank
   const groupBy = (items: any[], key: string) => {
@@ -26,6 +30,57 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
       result[group].push(item);
       return result;
     }, {});
+  };
+
+  // Handle sort click
+  const handleSort = (field: string) => {
+    if (field === sortField) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Filter the data based on search query
+  const filterData = (items: any[]) => {
+    if (!searchQuery) return items;
+    
+    return items.filter(item => 
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+
+  // Sort the data
+  const sortData = (items: any[]) => {
+    return [...items].sort((a, b) => {
+      let fieldA = a[sortField];
+      let fieldB = b[sortField];
+      
+      // Handle null/undefined values
+      if (fieldA === undefined || fieldA === null) fieldA = sortField.includes('Price') ? 0 : '';
+      if (fieldB === undefined || fieldB === null) fieldB = sortField.includes('Price') ? 0 : '';
+      
+      if (typeof fieldA === 'string') {
+        return sortDirection === 'asc' 
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
+      } else {
+        return sortDirection === 'asc'
+          ? fieldA - fieldB
+          : fieldB - fieldA;
+      }
+    });
+  };
+
+  // Calculate price change percentage
+  const calculatePriceChangePercentage = (item: any) => {
+    const currentPrice = item.currentREVAPrice || 0;
+    const proposedPrice = item.proposedPrice || 0;
+    
+    if (currentPrice === 0) return 0;
+    
+    return ((proposedPrice - currentPrice) / currentPrice) * 100;
   };
 
   // Group Rule 1 exceptions by usage rank
@@ -57,90 +112,194 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
     setEditingItemId(null);
   };
 
+  // Render sort indicator
+  const renderSortIndicator = (field: string) => {
+    if (field !== sortField) return null;
+    
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-3 w-3 ml-1" /> 
+      : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
+
   const renderExceptionTable = (items: any[]) => {
+    const filteredItems = filterData(items);
+    const sortedItems = sortData(filteredItems);
+
     return (
       <div className="rounded-md border overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Description</TableHead>
-                <TableHead>Usage Rank</TableHead>
-                <TableHead>Current Price</TableHead>
-                <TableHead>Proposed Price</TableHead>
-                <TableHead>Market Low</TableHead>
-                <TableHead>True Market Low</TableHead>
-                <TableHead>Rule</TableHead>
-                <TableHead>In Stock</TableHead>
-                <TableHead>On Order</TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('description')}
+                >
+                  <div className="flex items-center">
+                    Description
+                    {renderSortIndicator('description')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('usageRank')}
+                >
+                  <div className="flex items-center">
+                    Usage Rank
+                    {renderSortIndicator('usageRank')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('currentREVAPrice')}
+                >
+                  <div className="flex items-center">
+                    Current Price
+                    {renderSortIndicator('currentREVAPrice')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('proposedPrice')}
+                >
+                  <div className="flex items-center">
+                    Proposed Price
+                    {renderSortIndicator('proposedPrice')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('priceChangePercentage')}
+                >
+                  <div className="flex items-center">
+                    % Change
+                    {renderSortIndicator('priceChangePercentage')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('marketLow')}
+                >
+                  <div className="flex items-center">
+                    Market Low
+                    {renderSortIndicator('marketLow')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('trueMarketLow')}
+                >
+                  <div className="flex items-center">
+                    True Market Low
+                    {renderSortIndicator('trueMarketLow')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('appliedRule')}
+                >
+                  <div className="flex items-center">
+                    Rule
+                    {renderSortIndicator('appliedRule')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('inStock')}
+                >
+                  <div className="flex items-center">
+                    In Stock
+                    {renderSortIndicator('inStock')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('onOrder')}
+                >
+                  <div className="flex items-center">
+                    On Order
+                    {renderSortIndicator('onOrder')}
+                  </div>
+                </TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.length === 0 ? (
+              {sortedItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-10">
+                  <TableCell colSpan={11} className="text-center py-10">
                     No exceptions found
                   </TableCell>
                 </TableRow>
               ) : (
-                items.map((item, index) => (
-                  <TableRow key={index} className={item.priceModified ? 'bg-blue-900/20' : ''}>
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.usageRank}</TableCell>
-                    <TableCell>£{item.currentREVAPrice.toFixed(2)}</TableCell>
-                    
-                    {/* Proposed price cell with edit capability */}
-                    <TableCell className={editingItemId === item.id || (bulkEditMode && !item.priceModified) ? "p-1" : ""}>
-                      {editingItemId === item.id || (bulkEditMode && !item.priceModified) ? (
-                        <PriceEditor
-                          initialPrice={item.proposedPrice || 0}
-                          currentPrice={item.currentREVAPrice || 0}
-                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
-                          cost={item.avgCost || 0}
-                          onSave={(newPrice) => handleSavePrice(item, newPrice)}
-                          onCancel={() => setEditingItemId(null)}
-                          compact={bulkEditMode}
-                        />
-                      ) : (
-                        <div className="flex items-center">
-                          £{(item.proposedPrice || 0).toFixed(2)}
-                          {item.priceModified && (
-                            <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
-                          )}
-                          {onPriceChange && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="ml-2 h-6 w-6 p-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditPrice(item);
-                              }}
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                    
-                    <TableCell>£{(item.marketLow || 0).toFixed(2)}</TableCell>
-                    <TableCell>£{(item.trueMarketLow || 0).toFixed(2)}</TableCell>
-                    <TableCell>{item.appliedRule}</TableCell>
-                    <TableCell>{item.inStock}</TableCell>
-                    <TableCell>{item.onOrder}</TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => onShowPriceDetails(item)}
-                      >
-                        Details
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                sortedItems.map((item, index) => {
+                  const priceChangePercentage = calculatePriceChangePercentage(item);
+                  // Add the percentage to the item for sorting
+                  item.priceChangePercentage = priceChangePercentage;
+                  
+                  return (
+                    <TableRow key={index} className={item.priceModified ? 'bg-blue-900/20' : ''}>
+                      <TableCell>{item.description}</TableCell>
+                      <TableCell>{item.usageRank}</TableCell>
+                      <TableCell>£{(item.currentREVAPrice || 0).toFixed(2)}</TableCell>
+                      
+                      {/* Proposed price cell with edit capability */}
+                      <TableCell className={editingItemId === item.id || (bulkEditMode && !item.priceModified) ? "p-1" : ""}>
+                        {editingItemId === item.id || (bulkEditMode && !item.priceModified) ? (
+                          <PriceEditor
+                            initialPrice={item.proposedPrice || 0}
+                            currentPrice={item.currentREVAPrice || 0}
+                            calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
+                            cost={item.avgCost || 0}
+                            onSave={(newPrice) => handleSavePrice(item, newPrice)}
+                            onCancel={() => setEditingItemId(null)}
+                            compact={bulkEditMode}
+                          />
+                        ) : (
+                          <div className="flex items-center">
+                            £{(item.proposedPrice || 0).toFixed(2)}
+                            {item.priceModified && (
+                              <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
+                            )}
+                            {onPriceChange && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="ml-2 h-6 w-6 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditPrice(item);
+                                }}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+                      
+                      {/* Price change percentage */}
+                      <TableCell className={priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}>
+                        {priceChangePercentage.toFixed(2)}%
+                      </TableCell>
+                      
+                      <TableCell>£{(item.marketLow || 0).toFixed(2)}</TableCell>
+                      <TableCell>£{(item.trueMarketLow || 0).toFixed(2)}</TableCell>
+                      <TableCell>{item.appliedRule}</TableCell>
+                      <TableCell>{item.inStock}</TableCell>
+                      <TableCell>{item.onOrder}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => onShowPriceDetails(item)}
+                        >
+                          Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -193,6 +352,16 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
         </Button>
       </div>
 
+      <div className="relative flex-1 mb-4">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by description..."
+          className="pl-8"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       {bulkEditMode && (
         <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
           <p className="text-sm">
@@ -201,10 +370,10 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
         </div>
       )}
 
-      <Tabs defaultValue="rule1">
-        <TabsList>
-          <TabsTrigger value="rule1">Rule 1 Flags ({rule1Flags.length})</TabsTrigger>
-          <TabsTrigger value="rule2">Rule 2 Flags ({rule2Flags.length})</TabsTrigger>
+      <Tabs defaultValue="rule1" className="w-full">
+        <TabsList className="w-full">
+          <TabsTrigger value="rule1" className="flex-1">Rule 1 Flags ({rule1Flags.length})</TabsTrigger>
+          <TabsTrigger value="rule2" className="flex-1">Rule 2 Flags ({rule2Flags.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="rule1" className="pt-4">
           {rule1Flags.length > 0 ? (
