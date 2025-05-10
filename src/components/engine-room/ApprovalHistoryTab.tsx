@@ -195,13 +195,13 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({ data, onExport 
               <PaginationItem>
                 <PaginationPrevious 
                   onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
               <PaginationItem>
                 <PaginationNext 
                   onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>
