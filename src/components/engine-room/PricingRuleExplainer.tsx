@@ -24,14 +24,14 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
   if (!item) return null;
 
   // Format currency
-  const formatCurrency = (value: number | undefined) => {
-    if (value === undefined) return '—';
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value === undefined || value === null) return '—';
     return `£${value.toFixed(2)}`;
   };
 
   // Format percentage
-  const formatPercentage = (value: number | undefined) => {
-    if (value === undefined) return '—';
+  const formatPercentage = (value: number | null | undefined) => {
+    if (value === undefined || value === null) return '—';
     return `${(value * 100).toFixed(2)}%`;
   };
   
