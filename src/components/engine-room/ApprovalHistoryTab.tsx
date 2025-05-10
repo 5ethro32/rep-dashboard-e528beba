@@ -5,6 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Download, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
 
 interface ApprovalHistoryTabProps {
   data: any[];
@@ -23,7 +30,7 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({ data, onExport 
 
   // Filter by search
   const filteredData = approvalItems.filter((item) => 
-    item.description.toLowerCase().includes(searchQuery.toLowerCase())
+    item.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Sort by review date (most recent first)
@@ -38,16 +45,23 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({ data, onExport 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
 
-  // Format percentage
-  const formatPercentage = (value: number) => {
+  // Format percentage - add null check
+  const formatPercentage = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return 'N/A';
     return `${(value * 100).toFixed(2)}%`;
   };
 
-  // Format price change
+  // Format price change - add null checks
   const formatPriceChange = (item: any) => {
-    const diff = item.proposedPrice - item.currentREVAPrice;
-    const percentage = (diff / item.currentREVAPrice) * 100;
+    const currentPrice = item.currentREVAPrice || 0;
+    const proposedPrice = item.proposedPrice || 0;
+    
+    if (currentPrice === 0) return 'N/A';
+    
+    const diff = proposedPrice - currentPrice;
+    const percentage = (diff / currentPrice) * 100;
     const sign = diff >= 0 ? '+' : '';
+    
     return (
       <div>
         <div className={diff >= 0 ? 'text-green-400' : 'text-red-400'}>
@@ -145,12 +159,12 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({ data, onExport 
             <TableBody>
               {paginatedData.map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">{item.description}</TableCell>
-                  <TableCell>£{item.currentREVAPrice.toFixed(2)}</TableCell>
-                  <TableCell>£{item.proposedPrice.toFixed(2)}</TableCell>
+                  <TableCell className="font-medium">{item.description || 'Unknown'}</TableCell>
+                  <TableCell>{item.currentREVAPrice ? `£${item.currentREVAPrice.toFixed(2)}` : 'N/A'}</TableCell>
+                  <TableCell>{item.proposedPrice ? `£${item.proposedPrice.toFixed(2)}` : 'N/A'}</TableCell>
                   <TableCell>{formatPriceChange(item)}</TableCell>
                   <TableCell>{formatPercentage(item.proposedMargin)}</TableCell>
-                  <TableCell>{item.usageRank}</TableCell>
+                  <TableCell>{item.usageRank || 'N/A'}</TableCell>
                   <TableCell>{renderStatusBadge(item.workflowStatus)}</TableCell>
                   <TableCell>{item.submittedBy || 'System'}</TableCell>
                   <TableCell>
@@ -170,30 +184,28 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({ data, onExport 
         </div>
       </div>
       
-      {/* Pagination */}
+      {/* Updated Pagination with shadcn UI components */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
             Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length}
           </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
     </div>
