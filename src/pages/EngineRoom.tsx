@@ -351,7 +351,7 @@ const EngineRoom: React.FC = () => {
     });
     
     // Update flagged items as well
-    updatedData.flaggedItems = updatedData.flaggedItems.map((item: any) => {
+    updatedData.flaggedItems = updatedData.items.map((item: any) => {
       if (itemIds.includes(item.id)) {
         return {
           ...item,
@@ -424,10 +424,9 @@ const EngineRoom: React.FC = () => {
 
     // Add approvals tab for manager/admin roles
     if (userRole === 'manager' || userRole === 'admin') {
-      const pendingCount = getPendingApprovalCount();
       baseTabItems.splice(2, 0, 
         <TabsTrigger key="approvals" value="approvals">
-          Approvals {pendingCount > 0 && `(${pendingCount})`}
+          Approvals {getPendingApprovalCount() > 0 && `(${getPendingApprovalCount()})`}
         </TabsTrigger>,
         <TabsTrigger key="approval-history" value="approval-history">
           Approval History
@@ -436,7 +435,7 @@ const EngineRoom: React.FC = () => {
     }
 
     return (
-      <TabsList className="grid grid-cols-1 md:grid-cols-auto-fit mb-6">
+      <TabsList className="grid grid-cols-5 mb-6">
         {baseTabItems}
       </TabsList>
     );

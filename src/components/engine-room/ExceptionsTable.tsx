@@ -16,7 +16,7 @@ interface ExceptionsTableProps {
 const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDetails, onPriceChange }) => {
   const rule1Flags = data.filter(item => item.flag1);
   const rule2Flags = data.filter(item => item.flag2);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingValues, setEditingValues] = useState<Record<string, number>>({});
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortField, setSortField] = useState<string>('usageRank');
@@ -89,27 +89,30 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
   // Group Rule 2 exceptions by usage rank
   const rule2ByRank = groupBy(rule2Flags, 'usageRank');
 
-  // Handle price edit
-  const handleEditPrice = (item: any) => {
-    // If we're in bulk mode, don't set an individual editing item
-    if (!bulkEditMode) {
-      setEditingItemId(item.id);
+  // Handle price input change
+  const handlePriceInputChange = (item: any, value: string) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      setEditingValues({ ...editingValues, [item.id]: numValue });
     }
   };
 
-  // Handle save price
-  const handleSavePrice = (item: any, newPrice: number) => {
-    if (onPriceChange) {
-      onPriceChange(item, newPrice);
+  // Handle price edit save
+  const handleSavePriceEdit = (item: any) => {
+    if (onPriceChange && editingValues[item.id] !== undefined) {
+      onPriceChange(item, editingValues[item.id]);
     }
-    setEditingItemId(null);
+    // Reset editing state for this item
+    const newEditingValues = { ...editingValues };
+    delete newEditingValues[item.id];
+    setEditingValues(newEditingValues);
   };
 
   // Toggle bulk edit mode
   const toggleBulkEditMode = () => {
     setBulkEditMode(!bulkEditMode);
-    // Clear any single edit when toggling bulk mode
-    setEditingItemId(null);
+    // Clear all edits when toggling bulk mode
+    setEditingValues({});
   };
 
   // Render sort indicator
@@ -243,36 +246,72 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                       <TableCell>{item.usageRank}</TableCell>
                       <TableCell>£{(item.currentREVAPrice || 0).toFixed(2)}</TableCell>
                       
-                      {/* Proposed price cell with edit capability */}
-                      <TableCell className={editingItemId === item.id || (bulkEditMode && !item.priceModified) ? "p-1" : ""}>
-                        {(editingItemId === item.id) || (bulkEditMode && !item.priceModified) ? (
+                      {/* Proposed price cell with inline editing */}
+                      <TableCell>
+                        {bulkEditMode && !item.priceModified ? (
                           <PriceEditor
                             initialPrice={item.proposedPrice || 0}
                             currentPrice={item.currentREVAPrice || 0}
                             calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
                             cost={item.avgCost || 0}
-                            onSave={(newPrice) => handleSavePrice(item, newPrice)}
-                            onCancel={() => setEditingItemId(null)}
-                            compact={bulkEditMode}
+                            onSave={(newPrice) => onPriceChange && onPriceChange(item, newPrice)}
+                            onCancel={() => {}}
+                            compact={true}
                           />
                         ) : (
-                          <div className="flex items-center">
-                            £{(item.proposedPrice || 0).toFixed(2)}
-                            {item.priceModified && (
-                              <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
-                            )}
-                            {onPriceChange && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="ml-2 h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditPrice(item);
-                                }}
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </Button>
+                          <div className="flex items-center gap-2">
+                            {editingValues[item.id] !== undefined ? (
+                              <>
+                                <Input
+                                  type="number"
+                                  value={editingValues[item.id]}
+                                  onChange={(e) => handlePriceInputChange(item, e.target.value)}
+                                  className="w-24 h-8 py-1 px-2"
+                                  autoFocus
+                                />
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 w-6 p-0" 
+                                  onClick={() => handleSavePriceEdit(item)}
+                                >
+                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => {
+                                    const newEditingValues = { ...editingValues };
+                                    delete newEditingValues[item.id];
+                                    setEditingValues(newEditingValues);
+                                  }}
+                                >
+                                  <X className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                £{(item.proposedPrice || 0).toFixed(2)}
+                                {item.priceModified && (
+                                  <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
+                                )}
+                                {onPriceChange && !bulkEditMode && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="ml-2 h-6 w-6 p-0"
+                                    onClick={() => {
+                                      setEditingValues({ 
+                                        ...editingValues, 
+                                        [item.id]: item.proposedPrice || 0 
+                                      });
+                                    }}
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </>
                             )}
                           </div>
                         )}
@@ -371,7 +410,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
       )}
 
       <Tabs defaultValue="rule1" className="w-full">
-        <TabsList className="w-full">
+        <TabsList className="grid grid-cols-2 w-full">
           <TabsTrigger value="rule1" className="flex-1">Rule 1 Flags ({rule1Flags.length})</TabsTrigger>
           <TabsTrigger value="rule2" className="flex-1">Rule 2 Flags ({rule2Flags.length})</TabsTrigger>
         </TabsList>
