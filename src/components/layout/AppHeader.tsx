@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Triangle } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -45,6 +46,8 @@ const AppHeader = ({
         return isMobile ? 'My Dashboard' : 'My Dashboard';
       case '/ai-vera':
         return isMobile ? 'Vera' : 'AI Vera';
+      case '/engine-room':
+        return isMobile ? 'Engine' : 'Engine Room';
       default:
         return '';
     }
@@ -110,6 +113,11 @@ const AppHeader = ({
       path: '/ai-vera',
       label: 'AI Vera',
       icon: <Bot className="h-4 w-4" />
+    },
+    {
+      path: '/engine-room',
+      label: 'Engine Room',
+      icon: <Settings className="h-4 w-4" />
     }
   ];
 

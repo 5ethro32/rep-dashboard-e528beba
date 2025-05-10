@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,6 +13,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RepTracker from "./pages/RepTracker";
 import AIVera from "./pages/AIVera"; 
 import MyPerformance from "./pages/MyPerformance";
+import EngineRoom from "./pages/EngineRoom"; // Add the new page import
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
 
@@ -132,6 +132,8 @@ const AppRoutes = () => {
           element={<MyPerformanceWithProps />} 
         />
         <Route path="/ai-vera" element={<AIVera />} />
+        {/* Add the new Engine Room route */}
+        <Route path="/engine-room" element={<EngineRoom />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
