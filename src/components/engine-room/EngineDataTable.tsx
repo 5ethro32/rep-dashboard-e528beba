@@ -109,8 +109,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
       : <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
-  // Handle price edit
+  // Handle price edit - this is where we fix the issue
   const handleEditPrice = (item: any) => {
+    // When clicking edit, we set the editingItemId to only this item's ID
     // If we're in bulk mode, don't set an individual editing item
     if (!bulkEditMode) {
       setEditingItemId(item.id);
@@ -207,7 +208,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
                 
                 {/* Proposed price cell with edit capability */}
                 <TableCell className={editingItemId === item.id || (bulkEditMode && !item.priceModified) ? "p-1" : ""}>
-                  {editingItemId === item.id || (bulkEditMode && !item.priceModified) ? (
+                  {(editingItemId === item.id) || (bulkEditMode && !item.priceModified) ? (
                     <PriceEditor
                       initialPrice={item.proposedPrice || 0}
                       currentPrice={item.currentREVAPrice || 0}

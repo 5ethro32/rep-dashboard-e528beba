@@ -245,7 +245,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                       
                       {/* Proposed price cell with edit capability */}
                       <TableCell className={editingItemId === item.id || (bulkEditMode && !item.priceModified) ? "p-1" : ""}>
-                        {editingItemId === item.id || (bulkEditMode && !item.priceModified) ? (
+                        {(editingItemId === item.id) || (bulkEditMode && !item.priceModified) ? (
                           <PriceEditor
                             initialPrice={item.proposedPrice || 0}
                             currentPrice={item.currentREVAPrice || 0}
