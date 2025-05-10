@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ArrowUp, ArrowDown, Edit2, CheckCircle, X, Flag } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Edit2, CheckCircle, X, Flag, Filter } from 'lucide-react';
 import PriceEditor from './PriceEditor';
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu';
 
 interface EngineDataTableProps {
   data: any[];
@@ -20,13 +27,78 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
   const [editingValues, setEditingValues] = useState<Record<string, number>>({});
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
   const [filterByRank, setFilterByRank] = useState<string | null>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const itemsPerPage = 20;
 
-  // Filter the data based on search query and usage rank filter
+  // Get unique values for each column to use in filters
+  const uniqueValues = useMemo(() => {
+    const values: Record<string, Set<any>> = {};
+    
+    // Initialize sets for each filterable column
+    columns.forEach(column => {
+      if (column.filterable) {
+        values[column.field] = new Set();
+      }
+    });
+    
+    // Collect unique values
+    data.forEach(item => {
+      columns.forEach(column => {
+        if (column.filterable && item[column.field] !== undefined && item[column.field] !== null) {
+          values[column.field].add(item[column.field]);
+        }
+      });
+    });
+    
+    // Convert sets to sorted arrays
+    const result: Record<string, any[]> = {};
+    Object.keys(values).forEach(key => {
+      result[key] = Array.from(values[key]).sort((a, b) => {
+        if (typeof a === 'string' && typeof b === 'string') {
+          return a.localeCompare(b);
+        }
+        return a - b;
+      });
+    });
+    
+    return result;
+  }, [data]);
+
+  // Filter the data based on search query, usage rank filter, and column filters
   const filteredData = data.filter((item) => {
+    // Match search query
     const matchesSearch = item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Match usage rank filter
     const matchesRankFilter = filterByRank ? item.usageRank === parseInt(filterByRank, 10) : true;
-    return matchesSearch && matchesRankFilter;
+    
+    // Match all column filters
+    const matchesColumnFilters = Object.keys(columnFilters).every(field => {
+      if (!columnFilters[field] || columnFilters[field].length === 0) {
+        return true;
+      }
+      
+      if (field === 'flags') {
+        // Special handling for flags which is an array or multiple flags
+        if (Array.isArray(item.flags)) {
+          return columnFilters[field].some((flag: string) => 
+            item.flags.includes(flag) || 
+            (flag === 'HIGH_PRICE' && item.flag1) || 
+            (flag === 'LOW_MARGIN' && item.flag2)
+          );
+        } else {
+          // Handle legacy flag1/flag2 properties
+          return columnFilters[field].some((flag: string) => 
+            (flag === 'HIGH_PRICE' && item.flag1) || 
+            (flag === 'LOW_MARGIN' && item.flag2)
+          );
+        }
+      }
+      
+      return columnFilters[field].includes(item[field]);
+    });
+    
+    return matchesSearch && matchesRankFilter && matchesColumnFilters;
   });
 
   // Get unique usage ranks for filter dropdown
@@ -93,6 +165,25 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
       setSortField(field);
       setSortDirection('asc');
     }
+  };
+
+  // Handle column filter change
+  const handleFilterChange = (field: string, value: any) => {
+    setColumnFilters(prev => {
+      const current = prev[field] || [];
+      
+      // Toggle the value in the filter
+      const newFilter = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+        
+      return {
+        ...prev,
+        [field]: newFilter
+      };
+    });
+    // Reset to first page when filter changes
+    setCurrentPage(1);
   };
 
   // Format currency - with null/undefined check
@@ -175,19 +266,112 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
 
   // Column configuration
   const columns = [
-    { field: 'description', label: 'Description' },
-    { field: 'inStock', label: 'In Stock' },
-    { field: 'revaUsage', label: 'Usage' },
-    { field: 'usageRank', label: 'Rank' },
-    { field: 'avgCost', label: 'Avg Cost', format: formatCurrency },
-    { field: 'marketLow', label: 'Market Low', format: formatCurrency },
-    { field: 'currentREVAPrice', label: 'Current Price', format: formatCurrency },
-    { field: 'currentREVAMargin', label: 'Current Margin', format: formatPercentage },
-    { field: 'proposedPrice', label: 'Proposed Price', format: formatCurrency, editable: true },
-    { field: 'priceChangePercentage', label: '% Change' },
-    { field: 'proposedMargin', label: 'Proposed Margin', format: formatPercentage },
-    { field: 'appliedRule', label: 'Rule' },
+    { field: 'description', label: 'Description', filterable: true },
+    { field: 'inStock', label: 'In Stock', filterable: true },
+    { field: 'revaUsage', label: 'Usage', filterable: false },
+    { field: 'usageRank', label: 'Rank', filterable: true },
+    { field: 'avgCost', label: 'Avg Cost', format: formatCurrency, filterable: false },
+    { field: 'marketLow', label: 'Market Low', format: formatCurrency, filterable: false },
+    { field: 'currentREVAPrice', label: 'Current Price', format: formatCurrency, filterable: false },
+    { field: 'currentREVAMargin', label: 'Current Margin', format: formatPercentage, filterable: false },
+    { field: 'proposedPrice', label: 'Proposed Price', format: formatCurrency, editable: true, filterable: false },
+    { field: 'priceChangePercentage', label: '% Change', filterable: false },
+    { field: 'proposedMargin', label: 'Proposed Margin', format: formatPercentage, filterable: false },
+    { field: 'appliedRule', label: 'Rule', filterable: true },
   ];
+
+  // Render the column header with sort and filter
+  const renderColumnHeader = (column: any) => {
+    return (
+      <div className="flex items-center justify-between">
+        <div 
+          className="flex items-center cursor-pointer"
+          onClick={() => handleSort(column.field)}
+        >
+          {column.label}
+          {renderSortIndicator(column.field)}
+        </div>
+        
+        {column.filterable && uniqueValues[column.field]?.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Filter className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
+              <div className="p-2">
+                <p className="text-sm font-medium">Filter by {column.label}</p>
+                <Input
+                  placeholder="Search..."
+                  className="h-8 mt-2"
+                  onChange={(e) => {
+                    // Filter dropdown options, not implemented fully
+                  }}
+                />
+              </div>
+              <DropdownMenuSeparator />
+              {uniqueValues[column.field]?.map((value, i) => (
+                <DropdownMenuCheckboxItem
+                  key={i}
+                  checked={columnFilters[column.field]?.includes(value)}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    handleFilterChange(column.field, value);
+                  }}
+                >
+                  {value !== null && value !== undefined ? 
+                    (typeof value === 'number' ? value.toString() : value) : 
+                    '(Empty)'}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    );
+  };
+
+  // Special case for flags column
+  const renderFlagsColumnHeader = () => {
+    return (
+      <div className="flex items-center justify-between">
+        <span>Flags</span>
+        {uniqueFlags.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-6 w-6 p-0 ml-2 ${columnFilters['flags']?.length ? 'bg-primary/20' : ''}`}
+              >
+                <Filter className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {uniqueFlags.map((flag, i) => (
+                <DropdownMenuCheckboxItem
+                  key={i}
+                  checked={columnFilters['flags']?.includes(flag)}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    handleFilterChange('flags', flag);
+                  }}
+                >
+                  {flag}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    );
+  };
 
   // Render the data table with rows
   const renderDataTable = (items: any[]) => {
@@ -199,15 +383,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
               <TableHead 
                 key={column.field}
                 className="cursor-pointer bg-gray-900/70 hover:bg-gray-900"
-                onClick={() => handleSort(column.field)}
               >
-                <div className="flex items-center">
-                  {column.label}
-                  {renderSortIndicator(column.field)}
-                </div>
+                {renderColumnHeader(column)}
               </TableHead>
             ))}
-            <TableHead className="bg-gray-900/70">Flags</TableHead>
+            <TableHead className="bg-gray-900/70">
+              {renderFlagsColumnHeader()}
+            </TableHead>
             <TableHead className="bg-gray-900/70">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -396,6 +578,58 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
     );
   };
 
+  // Active filters summary
+  const renderActiveFilters = () => {
+    const activeFilters = Object.entries(columnFilters)
+      .filter(([_, values]) => values && values.length > 0)
+      .map(([field, values]) => {
+        const column = columns.find(col => col.field === field);
+        const label = column ? column.label : field === 'flags' ? 'Flags' : field;
+        return {
+          field,
+          label,
+          values: Array.isArray(values) ? values : [values]
+        };
+      });
+
+    if (activeFilters.length === 0) return null;
+
+    return (
+      <div className="flex flex-wrap items-center gap-2 my-2 bg-gray-900/20 p-2 rounded-md">
+        <span className="text-sm text-muted-foreground">Active filters:</span>
+        {activeFilters.map((filter, i) => (
+          <div key={i} className="flex flex-wrap gap-1">
+            <span className="text-sm">{filter.label}:</span>
+            {filter.values.map((value, j) => (
+              <span 
+                key={j} 
+                className="bg-gray-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1"
+              >
+                {value}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0"
+                  onClick={() => handleFilterChange(filter.field, value)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </span>
+            ))}
+          </div>
+        ))}
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-6 p-1 text-xs"
+          onClick={() => setColumnFilters({})}
+        >
+          Clear all
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -419,24 +653,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
               <option key={rank} value={rank}>Rank {rank}</option>
             ))}
           </select>
-          
-          {/* New Flag Filter */}
-          {uniqueFlags.length > 0 && (
-            <select 
-              className="bg-gray-800 border border-gray-700 rounded-md px-2 py-2 text-sm w-40"
-              value=""
-              onChange={(e) => {
-                if (e.target.value) {
-                  setSearchQuery(e.target.value);
-                }
-              }}
-            >
-              <option value="">Filter by Flag</option>
-              {uniqueFlags.map(flag => (
-                <option key={flag} value={flag}>{flag}</option>
-              ))}
-            </select>
-          )}
         </div>
         
         {onPriceChange && (
@@ -460,7 +676,17 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
         )}
       </div>
       
-      {/* ... keep existing code (bulk edit mode notice) */}
+      {/* Active filters display */}
+      {renderActiveFilters()}
+      
+      {/* Bulk edit mode notice */}
+      {bulkEditMode && (
+        <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
+          <p className="text-sm">
+            <strong>Bulk Edit Mode:</strong> You can now edit multiple prices at once. Click "Save" on each item to apply changes.
+          </p>
+        </div>
+      )}
       
       {filterByRank ? (
         <div className="rounded-md border overflow-hidden">
