@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,7 +14,9 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RepTracker from "./pages/RepTracker";
 import AIVera from "./pages/AIVera"; 
 import MyPerformance from "./pages/MyPerformance";
-import EngineRoom from "./pages/EngineRoom"; // Add the new page import
+import EngineRoom from "./pages/EngineRoom"; 
+import EngineDashboard from "./pages/engine-room/EngineDashboard";
+import EngineOperations from "./pages/engine-room/EngineOperations";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
 
@@ -132,8 +135,11 @@ const AppRoutes = () => {
           element={<MyPerformanceWithProps />} 
         />
         <Route path="/ai-vera" element={<AIVera />} />
-        {/* Add the new Engine Room route */}
-        <Route path="/engine-room" element={<EngineRoom />} />
+        
+        {/* Engine Room Routes - Restructured */}
+        <Route path="/engine-room" element={<Navigate to="/engine-room/dashboard" replace />} />
+        <Route path="/engine-room/dashboard" element={<EngineDashboard />} />
+        <Route path="/engine-room/engine" element={<EngineOperations />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

@@ -1,0 +1,352 @@
+
+import React, { useState } from 'react';
+import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
+import { UploadCloud, FileText, Download } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Info } from 'lucide-react';
+import MetricCard from '@/components/MetricCard';
+import EngineDataTable from '@/components/engine-room/EngineDataTable';
+import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer';
+import ExceptionsTable from '@/components/engine-room/ExceptionsTable';
+import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
+import PricingActions from '@/components/engine-room/PricingActions';
+import ApprovalsTab from '@/components/engine-room/ApprovalsTab';
+import ApprovalHistoryTab from '@/components/engine-room/ApprovalHistoryTab';
+
+const EngineOperationsContent = () => {
+  const {
+    engineData,
+    isLoading,
+    isUploading,
+    uploadProgress,
+    errorMessage,
+    modifiedItems,
+    workflowStatus,
+    userRole,
+    handleFileUpload,
+    handlePriceChange,
+    handleResetChanges,
+    handleSaveChanges,
+    handleSubmitForApproval,
+    handleApproveItems,
+    handleRejectItems,
+    handleExport,
+    setUserRole,
+    getPendingApprovalCount
+  } = useEngineRoom();
+  const [showPricingExplainer, setShowPricingExplainer] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+
+  // Calculate metrics for the summary cards
+  const getMetrics = () => {
+    if (!engineData) return {
+      totalItems: 0,
+      activeItems: 0,
+      totalRevenue: 0,
+      totalProfit: 0,
+      overallMargin: 0,
+      rule1Flags: 0,
+      rule2Flags: 0,
+      profitDelta: 0,
+      marginLift: 0
+    };
+    
+    return {
+      totalItems: engineData.totalItems || 0,
+      activeItems: engineData.activeItems || 0,
+      totalRevenue: engineData.totalRevenue || 0,
+      totalProfit: engineData.totalProfit || 0,
+      overallMargin: engineData.overallMargin || 0,
+      rule1Flags: engineData.rule1Flags || 0, 
+      rule2Flags: engineData.rule2Flags || 0,
+      profitDelta: engineData.profitDelta || 0,
+      marginLift: engineData.marginLift || 0
+    };
+  };
+  
+  const metrics = getMetrics();
+  
+  // Show item details
+  const handleShowItemDetails = (item: any) => {
+    setSelectedItem(item);
+    setShowPricingExplainer(true);
+  };
+  
+  // Handle drag and drop file upload
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  // Helper function to render tabs based on user role
+  const renderTabsList = () => {
+    const baseTabItems = [
+      <TabsTrigger key="all-items" value="all-items">All Items</TabsTrigger>,
+      <TabsTrigger key="exceptions" value="exceptions">
+        Exceptions ({metrics.rule1Flags + metrics.rule2Flags})
+      </TabsTrigger>,
+      <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
+    ];
+
+    // Add approvals tab for manager/admin roles
+    if (userRole === 'manager' || userRole === 'admin') {
+      baseTabItems.splice(2, 0, 
+        <TabsTrigger key="approvals" value="approvals">
+          Approvals {getPendingApprovalCount() > 0 && `(${getPendingApprovalCount()})`}
+        </TabsTrigger>,
+        <TabsTrigger key="approval-history" value="approval-history">
+          Approval History
+        </TabsTrigger>
+      );
+    }
+
+    return (
+      <TabsList className="inline-flex w-full">
+        {baseTabItems}
+      </TabsList>
+    );
+  };
+
+  if (!engineData) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2">REVA Pricing Engine</h1>
+          <p className="text-muted-foreground">Upload and optimize REVA pricing data</p>
+        </div>
+
+        <div 
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all
+            ${isUploading ? "pointer-events-none" : "border-gray-700 hover:border-primary/50"}`}
+        >
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <UploadCloud className="h-12 w-12 text-gray-400" />
+            <div className="space-y-1">
+              <h3 className="text-lg font-medium">Upload REVA Pricing Sheet</h3>
+              <p className="text-sm text-muted-foreground">
+                Drag and drop your Excel or CSV file, or click to browse
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Required columns: Description, REVA Usage, Usage Rank, AvgCost, Next Buying Price, Current REVA Price
+              </p>
+            </div>
+          </div>
+
+          {isUploading && (
+            <div className="mt-6 w-full max-w-md mx-auto">
+              <Progress value={uploadProgress} className="h-2" />
+              <p className="text-sm mt-2 text-muted-foreground">
+                Processing file... {Math.round(uploadProgress)}%
+              </p>
+            </div>
+          )}
+        </div>
+        
+        {errorMessage && (
+          <Alert variant="destructive" className="mt-4">
+            <div className="flex items-start">
+              <Info className="h-4 w-4 mr-2 mt-0.5" />
+              <div>
+                <AlertTitle>Error processing file</AlertTitle>
+                <AlertDescription className="mt-1">{errorMessage}</AlertDescription>
+                <AlertDescription className="mt-2">
+                  <p className="font-medium">Supported column names include:</p>
+                  <ul className="list-disc pl-5 mt-1 text-sm space-y-1">
+                    <li>Description: "Description"</li>
+                    <li>Stock: "InStock"</li>
+                    <li>Order: "OnOrder"</li>
+                    <li>Usage: "REVA Usage"</li>
+                    <li>Rank: "Usage Rank"</li>
+                    <li>Cost: "AvgCost"</li>
+                    <li>Next Cost: "Next Buying Price"</li>
+                    <li>Current Price: "Current REVA Price"</li>
+                    <li>Current Margin: "Current REVA %"</li>
+                    <li>Competitor prices: "ETH NET", "ETH", "Nupharm", "LEXON", "AAH"</li>
+                  </ul>
+                </AlertDescription>
+              </div>
+            </div>
+          </Alert>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">REVA Pricing Engine</h1>
+        <p className="text-muted-foreground">Optimize and approve pricing changes</p>
+      </div>
+
+      {/* Role indicator for demo */}
+      <div className="flex justify-end mb-2">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">Current role:</span>
+          <select
+            value={userRole}
+            onChange={(e) => setUserRole(e.target.value as 'analyst' | 'manager' | 'admin')}
+            className="bg-gray-800 border border-gray-700 rounded-md text-sm px-2 py-1"
+          >
+            <option value="analyst">Analyst</option>
+            <option value="manager">Manager</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Top actions */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex items-center space-x-2">
+          <FileText className="h-5 w-5 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            {engineData.fileName || "REVA Pricing Data"}
+          </span>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              localStorage.removeItem('engineRoomData');
+              window.location.reload();
+            }}
+            className="flex items-center space-x-1"
+          >
+            <UploadCloud className="h-4 w-4 mr-1" />
+            <span>New Upload</span>
+          </Button>
+          <Button 
+            variant="secondary" 
+            size="sm"
+            onClick={handleExport}
+            className="flex items-center space-x-1"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            <span>Export Data</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Workflow status and actions */}
+      <PricingActions 
+        modifiedCount={modifiedItems.size}
+        totalExceptions={(metrics.rule1Flags || 0) + (metrics.rule2Flags || 0)}
+        workflowStatus={workflowStatus}
+        onSave={handleSaveChanges}
+        onSubmit={handleSubmitForApproval}
+        onReset={handleResetChanges}
+        onExport={handleExport}
+      />
+
+      {/* Key metrics summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+        <MetricCard
+          title="Modified Items"
+          value={`${modifiedItems.size}`}
+          subtitle="Items with price changes"
+        />
+        <MetricCard
+          title="Pending Approvals"
+          value={`${getPendingApprovalCount()}`}
+          subtitle="Items awaiting review"
+        />
+        <MetricCard
+          title="Flagged Items"
+          value={`${metrics.rule1Flags + metrics.rule2Flags}`}
+          subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`}
+        />
+        <MetricCard
+          title="Profit Impact"
+          value={`£${metrics.profitDelta.toLocaleString()}`}
+          change={{
+            value: `${metrics.marginLift > 0 ? '+' : ''}${metrics.marginLift.toFixed(2)}%`,
+            type: metrics.marginLift >= 0 ? 'increase' : 'decrease'
+          }}
+        />
+      </div>
+
+      {/* Tabs for different views */}
+      <Tabs defaultValue="all-items" className="mt-8">
+        {renderTabsList()}
+        
+        <TabsContent value="all-items" className="space-y-4">
+          <EngineDataTable 
+            data={engineData.items || []} 
+            onShowPriceDetails={handleShowItemDetails}
+            onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
+          />
+        </TabsContent>
+        
+        <TabsContent value="exceptions" className="space-y-4">
+          <ExceptionsTable 
+            data={engineData.flaggedItems || []} 
+            onShowPriceDetails={handleShowItemDetails}
+            onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
+          />
+        </TabsContent>
+
+        {(userRole === 'manager' || userRole === 'admin') && (
+          <TabsContent value="approvals" className="space-y-4">
+            <ApprovalsTab 
+              data={engineData.items || []}
+              onApprove={handleApproveItems}
+              onReject={handleRejectItems}
+            />
+          </TabsContent>
+        )}
+        
+        {/* Approval History Tab */}
+        {(userRole === 'manager' || userRole === 'admin') && (
+          <TabsContent value="approval-history" className="space-y-4">
+            <ApprovalHistoryTab 
+              data={engineData.items || []}
+              onExport={handleExport}
+            />
+          </TabsContent>
+        )}
+        
+        <TabsContent value="configuration" className="space-y-4">
+          <ConfigurationPanel 
+            currentConfig={engineData.ruleConfig || {}} 
+            onConfigChange={(newConfig) => {
+              console.log("Updated rule config:", newConfig);
+            }}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Pricing rule explainer dialog */}
+      {showPricingExplainer && selectedItem && (
+        <PricingRuleExplainer
+          item={selectedItem}
+          open={showPricingExplainer}
+          onClose={() => setShowPricingExplainer(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Wrapper component to provide context
+const EngineOperations = () => (
+  <EngineRoomProvider>
+    <EngineOperationsContent />
+  </EngineRoomProvider>
+);
+
+export default EngineOperations;

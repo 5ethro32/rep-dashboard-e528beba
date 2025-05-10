@@ -4,10 +4,18 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Settings } from 'lucide-react';
+import { 
+  Home, 
+  BarChart3, 
+  ClipboardList, 
+  UserCircle, 
+  Bot, 
+  ChevronDown, 
+  RefreshCw, 
+  Settings 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import VeraAssistant from '@/components/chat/VeraAssistant';
@@ -31,8 +39,14 @@ const AppHeader = ({
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isSubNavOpen, setIsSubNavOpen] = useState(false);
   const [isVeraOpen, setIsVeraOpen] = useState(false);
   
+  // Check if we're in the Engine Room section
+  const isEngineRoomSection = location.pathname.startsWith('/engine-room');
+  const isEngineDashboard = location.pathname === '/engine-room/dashboard';
+  const isEngineOperations = location.pathname === '/engine-room/engine';
+
   // Function to get the current page title based on the URL path
   const getCurrentPageTitle = () => {
     switch (location.pathname) {
@@ -47,7 +61,10 @@ const AppHeader = ({
       case '/ai-vera':
         return isMobile ? 'Vera' : 'AI Vera';
       case '/engine-room':
-        return isMobile ? 'Engine' : 'Engine Room';
+      case '/engine-room/dashboard':
+      case '/engine-room/engine':
+        const subSection = isEngineDashboard ? 'Dashboard' : isEngineOperations ? 'Engine' : '';
+        return isMobile ? 'Engine' : `Engine Room${subSection ? ` / ${subSection}` : ''}`;
       default:
         return '';
     }
@@ -115,9 +132,14 @@ const AppHeader = ({
       icon: <Bot className="h-4 w-4" />
     },
     {
-      path: '/engine-room',
+      path: '/engine-room/dashboard',
       label: 'Engine Room',
-      icon: <Settings className="h-4 w-4" />
+      icon: <Settings className="h-4 w-4" />,
+      hasSubNav: true,
+      subItems: [
+        { path: '/engine-room/dashboard', label: 'Dashboard' },
+        { path: '/engine-room/engine', label: 'Engine' }
+      ]
     }
   ];
 
@@ -216,31 +238,111 @@ const AppHeader = ({
           >
             <nav className="flex items-center py-1">
               {navItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) => cn(
-                    "px-4 py-2 flex items-center gap-2 text-sm font-medium relative",
-                    isActive 
-                      ? "text-finance-red" 
-                      : "text-white/60 hover:text-white"
-                  )}
+                <div 
+                  key={item.path} 
+                  className="relative"
+                  onMouseEnter={() => item.hasSubNav && setIsSubNavOpen(true)}
+                  onMouseLeave={() => item.hasSubNav && setIsSubNavOpen(false)}
                 >
-                  {({ isActive }) => (
-                    <>
-                      {/* Replace icon with gradient line for active items */}
-                      {isActive && (
-                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
-                      )}
-                      <span>{item.label}</span>
-                    </>
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) => cn(
+                      "px-4 py-2 flex items-center gap-2 text-sm font-medium relative",
+                      (isActive || (item.hasSubNav && isEngineRoomSection))
+                        ? "text-finance-red" 
+                        : "text-white/60 hover:text-white"
+                    )}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {/* Replace icon with gradient line for active items */}
+                        {(isActive || (item.hasSubNav && isEngineRoomSection)) && (
+                          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                        )}
+                        <span>{item.label}</span>
+                        {item.hasSubNav && (
+                          <ChevronDown 
+                            className={cn(
+                              "h-3 w-3 ml-0.5 transition-transform",
+                              isSubNavOpen ? "rotate-180" : ""
+                            )}
+                          />
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                  
+                  {/* Subnav Dropdown for Engine Room */}
+                  {item.hasSubNav && isSubNavOpen && (
+                    <div 
+                      className="absolute top-full left-0 w-40 bg-gray-900 border border-gray-800 rounded-md shadow-lg z-50 overflow-hidden"
+                      onMouseEnter={() => setIsSubNavOpen(true)}
+                      onMouseLeave={() => setIsSubNavOpen(false)}
+                    >
+                      {item.subItems?.map((subItem) => (
+                        <NavLink
+                          key={subItem.path}
+                          to={subItem.path}
+                          className={({ isActive }) => cn(
+                            "block px-4 py-2 text-sm",
+                            isActive
+                              ? "bg-gray-800 text-finance-red"
+                              : "text-white/70 hover:bg-gray-800 hover:text-white"
+                          )}
+                        >
+                          {subItem.label}
+                        </NavLink>
+                      ))}
+                    </div>
                   )}
-                </NavLink>
+                </div>
               ))}
             </nav>
           </div>
         )}
       </div>
+      
+      {/* Engine Room Sub-Navigation when in Engine Room section */}
+      {!isMobile && isEngineRoomSection && (
+        <div className="bg-gray-900/80 border-t border-b border-gray-800/40">
+          <div className="container max-w-7xl mx-auto px-4">
+            <div className="flex space-x-4 py-1">
+              <NavLink 
+                to="/engine-room/dashboard" 
+                className={({ isActive }) => cn(
+                  "px-4 py-1.5 text-sm font-medium relative",
+                  isActive ? "text-finance-red" : "text-white/60 hover:text-white"
+                )}
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                    )}
+                    Dashboard
+                  </>
+                )}
+              </NavLink>
+              <NavLink 
+                to="/engine-room/engine" 
+                className={({ isActive }) => cn(
+                  "px-4 py-1.5 text-sm font-medium relative",
+                  isActive ? "text-finance-red" : "text-white/60 hover:text-white"
+                )}
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                    )}
+                    Engine
+                  </>
+                )}
+              </NavLink>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
