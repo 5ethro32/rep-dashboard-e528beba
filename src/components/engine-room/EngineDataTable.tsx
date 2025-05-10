@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,22 @@ interface EngineDataTableProps {
   onShowPriceDetails: (item: any) => void;
   onPriceChange?: (item: any, newPrice: number) => void;
 }
+
+// Define column configuration outside component to avoid recreation on each render
+const columns = [
+  { field: 'description', label: 'Description', filterable: true },
+  { field: 'inStock', label: 'In Stock', filterable: true },
+  { field: 'revaUsage', label: 'Usage', filterable: false },
+  { field: 'usageRank', label: 'Rank', filterable: true },
+  { field: 'avgCost', label: 'Avg Cost', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
+  { field: 'marketLow', label: 'Market Low', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
+  { field: 'currentREVAPrice', label: 'Current Price', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
+  { field: 'currentREVAMargin', label: 'Current Margin', format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`, filterable: false },
+  { field: 'proposedPrice', label: 'Proposed Price', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, editable: true, filterable: false },
+  { field: 'priceChangePercentage', label: '% Change', filterable: false },
+  { field: 'proposedMargin', label: 'Proposed Margin', format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`, filterable: false },
+  { field: 'appliedRule', label: 'Rule', filterable: true },
+];
 
 const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDetails, onPriceChange }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,13 +59,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
     });
     
     // Collect unique values
-    data.forEach(item => {
-      columns.forEach(column => {
-        if (column.filterable && item[column.field] !== undefined && item[column.field] !== null) {
-          values[column.field].add(item[column.field]);
-        }
+    if (data && data.length > 0) {
+      data.forEach(item => {
+        columns.forEach(column => {
+          if (column.filterable && item[column.field] !== undefined && item[column.field] !== null) {
+            values[column.field].add(item[column.field]);
+          }
+        });
       });
-    });
+    }
     
     // Convert sets to sorted arrays
     const result: Record<string, any[]> = {};
@@ -64,83 +83,28 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
     return result;
   }, [data]);
 
-  // Filter the data based on search query, usage rank filter, and column filters
-  const filteredData = data.filter((item) => {
-    // Match search query
-    const matchesSearch = item.description.toLowerCase().includes(searchQuery.toLowerCase());
+  // Collect unique flags separately to avoid circular reference
+  const uniqueFlags = useMemo(() => {
+    const allFlags = new Set<string>();
     
-    // Match usage rank filter
-    const matchesRankFilter = filterByRank ? item.usageRank === parseInt(filterByRank, 10) : true;
-    
-    // Match all column filters
-    const matchesColumnFilters = Object.keys(columnFilters).every(field => {
-      if (!columnFilters[field] || columnFilters[field].length === 0) {
-        return true;
-      }
-      
-      if (field === 'flags') {
-        // Special handling for flags which is an array or multiple flags
-        if (Array.isArray(item.flags)) {
-          return columnFilters[field].some((flag: string) => 
-            item.flags.includes(flag) || 
-            (flag === 'HIGH_PRICE' && item.flag1) || 
-            (flag === 'LOW_MARGIN' && item.flag2)
-          );
-        } else {
-          // Handle legacy flag1/flag2 properties
-          return columnFilters[field].some((flag: string) => 
-            (flag === 'HIGH_PRICE' && item.flag1) || 
-            (flag === 'LOW_MARGIN' && item.flag2)
-          );
+    if (data && data.length > 0) {
+      data.forEach(item => {
+        if (item.flags && Array.isArray(item.flags)) {
+          item.flags.forEach((flag: string) => allFlags.add(flag));
         }
-      }
-      
-      return columnFilters[field].includes(item[field]);
-    });
+        if (item.flag1) allFlags.add('HIGH_PRICE');
+        if (item.flag2) allFlags.add('LOW_MARGIN');
+      });
+    }
     
-    return matchesSearch && matchesRankFilter && matchesColumnFilters;
-  });
+    return Array.from(allFlags);
+  }, [data]);
 
   // Get unique usage ranks for filter dropdown
-  const usageRanks = Array.from(new Set(data.map(item => item.usageRank))).sort((a, b) => a - b);
-  
-  // Get unique flags for filter dropdown
-  const allFlags = new Set<string>();
-  data.forEach(item => {
-    if (item.flags && Array.isArray(item.flags)) {
-      item.flags.forEach((flag: string) => allFlags.add(flag));
-    }
-    if (item.flag1) allFlags.add('HIGH_PRICE');
-    if (item.flag2) allFlags.add('LOW_MARGIN');
-  });
-  const uniqueFlags = Array.from(allFlags);
-
-  // Sort the data
-  const sortedData = [...filteredData].sort((a, b) => {
-    let fieldA = a[sortField];
-    let fieldB = b[sortField];
-    
-    // Handle special case for price change percentage
-    if (sortField === 'priceChangePercentage') {
-      const aChange = calculatePriceChangePercentage(a);
-      const bChange = calculatePriceChangePercentage(b);
-      return sortDirection === 'asc' ? aChange - bChange : bChange - aChange;
-    }
-    
-    // Handle null/undefined values
-    if (fieldA === undefined || fieldA === null) fieldA = sortField.includes('Price') ? 0 : '';
-    if (fieldB === undefined || fieldB === null) fieldB = sortField.includes('Price') ? 0 : '';
-    
-    if (typeof fieldA === 'string') {
-      return sortDirection === 'asc' 
-        ? fieldA.localeCompare(fieldB)
-        : fieldB.localeCompare(fieldA);
-    } else {
-      return sortDirection === 'asc'
-        ? fieldA - fieldB
-        : fieldB - fieldA;
-    }
-  });
+  const usageRanks = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return Array.from(new Set(data.map(item => item.usageRank))).sort((a, b) => a - b);
+  }, [data]);
 
   // Calculate price change percentage
   const calculatePriceChangePercentage = (item: any) => {
@@ -152,10 +116,98 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
     return ((proposedPrice - currentPrice) / currentPrice) * 100;
   };
 
+  // Filter the data based on search query, usage rank filter, and column filters
+  const filteredData = useMemo(() => {
+    if (!data) return [];
+    
+    return data.filter((item) => {
+      // Match search query
+      const matchesSearch = item.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+      
+      // Match usage rank filter
+      const matchesRankFilter = filterByRank ? item.usageRank === parseInt(filterByRank, 10) : true;
+      
+      // Match all column filters
+      const matchesColumnFilters = Object.keys(columnFilters).every(field => {
+        if (!columnFilters[field] || columnFilters[field].length === 0) {
+          return true;
+        }
+        
+        if (field === 'flags') {
+          // Special handling for flags which is an array or multiple flags
+          if (Array.isArray(item.flags)) {
+            return columnFilters[field].some((flag: string) => 
+              item.flags.includes(flag) || 
+              (flag === 'HIGH_PRICE' && item.flag1) || 
+              (flag === 'LOW_MARGIN' && item.flag2)
+            );
+          } else {
+            // Handle legacy flag1/flag2 properties
+            return columnFilters[field].some((flag: string) => 
+              (flag === 'HIGH_PRICE' && item.flag1) || 
+              (flag === 'LOW_MARGIN' && item.flag2)
+            );
+          }
+        }
+        
+        return columnFilters[field].includes(item[field]);
+      });
+      
+      return matchesSearch && matchesRankFilter && matchesColumnFilters;
+    });
+  }, [data, searchQuery, filterByRank, columnFilters]);
+
+  // Sort the filtered data
+  const sortedData = useMemo(() => {
+    if (!filteredData) return [];
+    
+    return [...filteredData].sort((a, b) => {
+      let fieldA = a[sortField];
+      let fieldB = b[sortField];
+      
+      // Handle special case for price change percentage
+      if (sortField === 'priceChangePercentage') {
+        const aChange = calculatePriceChangePercentage(a);
+        const bChange = calculatePriceChangePercentage(b);
+        return sortDirection === 'asc' ? aChange - bChange : bChange - aChange;
+      }
+      
+      // Handle null/undefined values
+      if (fieldA === undefined || fieldA === null) fieldA = sortField.includes('Price') ? 0 : '';
+      if (fieldB === undefined || fieldB === null) fieldB = sortField.includes('Price') ? 0 : '';
+      
+      if (typeof fieldA === 'string') {
+        return sortDirection === 'asc' 
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
+      } else {
+        return sortDirection === 'asc'
+          ? fieldA - fieldB
+          : fieldB - fieldA;
+      }
+    });
+  }, [filteredData, sortField, sortDirection, calculatePriceChangePercentage]);
+
   // Paginate the data
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const totalPages = Math.ceil((sortedData?.length || 0) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedData = (sortedData && sortedData.length > 0) 
+    ? sortedData.slice(startIndex, startIndex + itemsPerPage) 
+    : [];
+
+  // Group data by usage rank
+  const groupedByRank = useMemo(() => {
+    if (!sortedData || sortedData.length === 0) return {};
+    
+    return sortedData.reduce((acc: Record<string, any[]>, item: any) => {
+      const rank = item.usageRank || 'Unknown';
+      if (!acc[rank]) {
+        acc[rank] = [];
+      }
+      acc[rank].push(item);
+      return acc;
+    }, {});
+  }, [sortedData]);
 
   // Handle sort click
   const handleSort = (field: string) => {
@@ -254,32 +306,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
     setEditingItemId(null);
   };
 
-  // Group data by usage rank
-  const groupedByRank = sortedData.reduce((acc: Record<string, any[]>, item: any) => {
-    const rank = item.usageRank || 'Unknown';
-    if (!acc[rank]) {
-      acc[rank] = [];
-    }
-    acc[rank].push(item);
-    return acc;
-  }, {});
-
-  // Column configuration
-  const columns = [
-    { field: 'description', label: 'Description', filterable: true },
-    { field: 'inStock', label: 'In Stock', filterable: true },
-    { field: 'revaUsage', label: 'Usage', filterable: false },
-    { field: 'usageRank', label: 'Rank', filterable: true },
-    { field: 'avgCost', label: 'Avg Cost', format: formatCurrency, filterable: false },
-    { field: 'marketLow', label: 'Market Low', format: formatCurrency, filterable: false },
-    { field: 'currentREVAPrice', label: 'Current Price', format: formatCurrency, filterable: false },
-    { field: 'currentREVAMargin', label: 'Current Margin', format: formatPercentage, filterable: false },
-    { field: 'proposedPrice', label: 'Proposed Price', format: formatCurrency, editable: true, filterable: false },
-    { field: 'priceChangePercentage', label: '% Change', filterable: false },
-    { field: 'proposedMargin', label: 'Proposed Margin', format: formatPercentage, filterable: false },
-    { field: 'appliedRule', label: 'Rule', filterable: true },
-  ];
-
   // Render the column header with sort and filter
   const renderColumnHeader = (column: any) => {
     return (
@@ -369,6 +395,90 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
             </DropdownMenuContent>
           </DropdownMenu>
         )}
+      </div>
+    );
+  };
+
+  // Render flags for an item
+  const renderFlags = (item: any) => {
+    if (!item) return null;
+    
+    if (!item.flags || item.flags.length === 0) {
+      if (!item.flag1 && !item.flag2) return null;
+    }
+    
+    return (
+      <div className="flex items-center gap-1">
+        {item.flag1 && (
+          <span className="bg-red-900/30 text-xs px-1 py-0.5 rounded" title="Price ≥10% above TRUE MARKET LOW">
+            HIGH_PRICE
+          </span>
+        )}
+        {item.flag2 && (
+          <span className="bg-orange-900/30 text-xs px-1 py-0.5 rounded" title="Margin < 3%">
+            LOW_MARGIN
+          </span>
+        )}
+        {item.flags && Array.isArray(item.flags) && item.flags.map((flag: string, i: number) => {
+          if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN') return null; // Skip duplicates
+          return (
+            <span key={i} className="bg-blue-900/30 text-xs px-1 py-0.5 rounded" title={flag}>
+              {flag}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Active filters summary
+  const renderActiveFilters = () => {
+    const activeFilters = Object.entries(columnFilters)
+      .filter(([_, values]) => values && values.length > 0)
+      .map(([field, values]) => {
+        const column = columns.find(col => col.field === field);
+        const label = column ? column.label : field === 'flags' ? 'Flags' : field;
+        return {
+          field,
+          label,
+          values: Array.isArray(values) ? values : [values]
+        };
+      });
+
+    if (activeFilters.length === 0) return null;
+
+    return (
+      <div className="flex flex-wrap items-center gap-2 my-2 bg-gray-900/20 p-2 rounded-md">
+        <span className="text-sm text-muted-foreground">Active filters:</span>
+        {activeFilters.map((filter, i) => (
+          <div key={i} className="flex flex-wrap gap-1">
+            <span className="text-sm">{filter.label}:</span>
+            {filter.values.map((value, j) => (
+              <span 
+                key={j} 
+                className="bg-gray-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1"
+              >
+                {value}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0"
+                  onClick={() => handleFilterChange(filter.field, value)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </span>
+            ))}
+          </div>
+        ))}
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-6 p-1 text-xs"
+          onClick={() => setColumnFilters({})}
+        >
+          Clear all
+        </Button>
       </div>
     );
   };
@@ -544,88 +654,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
             )}
           </div>
         ))}
-      </div>
-    );
-  };
-
-  // Render flags for an item
-  const renderFlags = (item: any) => {
-    if (!item.flags || item.flags.length === 0) {
-      if (!item.flag1 && !item.flag2) return null;
-    }
-    
-    return (
-      <div className="flex items-center gap-1">
-        {item.flag1 && (
-          <span className="bg-red-900/30 text-xs px-1 py-0.5 rounded" title="Price ≥10% above TRUE MARKET LOW">
-            HIGH_PRICE
-          </span>
-        )}
-        {item.flag2 && (
-          <span className="bg-orange-900/30 text-xs px-1 py-0.5 rounded" title="Margin < 3%">
-            LOW_MARGIN
-          </span>
-        )}
-        {item.flags && item.flags.map((flag: string, i: number) => {
-          if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN') return null; // Skip duplicates
-          return (
-            <span key={i} className="bg-blue-900/30 text-xs px-1 py-0.5 rounded" title={flag}>
-              {flag}
-            </span>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // Active filters summary
-  const renderActiveFilters = () => {
-    const activeFilters = Object.entries(columnFilters)
-      .filter(([_, values]) => values && values.length > 0)
-      .map(([field, values]) => {
-        const column = columns.find(col => col.field === field);
-        const label = column ? column.label : field === 'flags' ? 'Flags' : field;
-        return {
-          field,
-          label,
-          values: Array.isArray(values) ? values : [values]
-        };
-      });
-
-    if (activeFilters.length === 0) return null;
-
-    return (
-      <div className="flex flex-wrap items-center gap-2 my-2 bg-gray-900/20 p-2 rounded-md">
-        <span className="text-sm text-muted-foreground">Active filters:</span>
-        {activeFilters.map((filter, i) => (
-          <div key={i} className="flex flex-wrap gap-1">
-            <span className="text-sm">{filter.label}:</span>
-            {filter.values.map((value, j) => (
-              <span 
-                key={j} 
-                className="bg-gray-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1"
-              >
-                {value}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0"
-                  onClick={() => handleFilterChange(filter.field, value)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </span>
-            ))}
-          </div>
-        ))}
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-6 p-1 text-xs"
-          onClick={() => setColumnFilters({})}
-        >
-          Clear all
-        </Button>
       </div>
     );
   };

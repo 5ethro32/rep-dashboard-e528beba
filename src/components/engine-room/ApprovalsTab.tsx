@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,30 +22,40 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
   const itemsPerPage = 20;
 
   // Only show items that have been submitted for approval
-  const submittedItems = data.filter(item => 
-    item.workflowStatus === 'submitted' && item.priceModified
-  );
+  const submittedItems = useMemo(() => {
+    if (!data) return [];
+    return data.filter(item => 
+      item.workflowStatus === 'submitted' && item.priceModified
+    );
+  }, [data]);
 
   // Filter by search
-  const filteredData = submittedItems.filter((item) => 
-    item.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredData = useMemo(() => {
+    if (!submittedItems) return [];
+    return submittedItems.filter((item) => 
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [submittedItems, searchQuery]);
 
   // Sort the data
-  const sortedData = [...filteredData].sort((a, b) => {
-    const fieldA = a[sortField];
-    const fieldB = b[sortField];
+  const sortedData = useMemo(() => {
+    if (!filteredData) return [];
     
-    if (typeof fieldA === 'string') {
-      return sortDirection === 'asc' 
-        ? fieldA.localeCompare(fieldB)
-        : fieldB.localeCompare(fieldA);
-    } else {
-      return sortDirection === 'asc'
-        ? fieldA - fieldB
-        : fieldB - fieldA;
-    }
-  });
+    return [...filteredData].sort((a, b) => {
+      const fieldA = a[sortField];
+      const fieldB = b[sortField];
+      
+      if (typeof fieldA === 'string') {
+        return sortDirection === 'asc' 
+          ? fieldA.localeCompare(fieldB)
+          : fieldB.localeCompare(fieldA);
+      } else {
+        return sortDirection === 'asc'
+          ? fieldA - fieldB
+          : fieldB - fieldA;
+      }
+    });
+  }, [filteredData, sortField, sortDirection]);
 
   // Paginate the data
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
@@ -118,9 +128,12 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
 
   // Format price change
   const formatPriceChange = (item: any) => {
+    if (!item) return null;
+    
     const diff = item.proposedPrice - item.currentREVAPrice;
     const percentage = (diff / item.currentREVAPrice) * 100;
     const sign = diff >= 0 ? '+' : '';
+    
     return (
       <div>
         <div className={diff >= 0 ? 'text-green-400' : 'text-red-400'}>
@@ -130,7 +143,7 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
     );
   };
 
-  if (submittedItems.length === 0) {
+  if (!submittedItems || submittedItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <div className="bg-gray-900/40 w-16 h-16 rounded-full flex items-center justify-center mb-4">
@@ -270,13 +283,13 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>£{item.currentREVAPrice.toFixed(2)}</TableCell>
-                  <TableCell>£{item.proposedPrice.toFixed(2)}</TableCell>
+                  <TableCell>£{item.currentREVAPrice?.toFixed(2) || '0.00'}</TableCell>
+                  <TableCell>£{item.proposedPrice?.toFixed(2) || '0.00'}</TableCell>
                   <TableCell>{formatPriceChange(item)}</TableCell>
-                  <TableCell>{formatPercentage(item.proposedMargin)}</TableCell>
+                  <TableCell>{formatPercentage(item.proposedMargin || 0)}</TableCell>
                   <TableCell>{item.usageRank}</TableCell>
                   <TableCell>{item.submittedBy || 'System'}</TableCell>
-                  <TableCell>{new Date(item.submissionDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{item.submissionDate ? new Date(item.submissionDate).toLocaleDateString() : '-'}</TableCell>
                   <TableCell>
                     <div className="flex space-x-1">
                       <Button 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,48 +13,49 @@ interface ExceptionsTableProps {
 }
 
 const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDetails, onPriceChange }) => {
-  // Instead of just rule1Flags and rule2Flags, let's organize by all flag types
-  const highPriceItems = data.filter(item => item.flag1);
-  const lowMarginItems = data.filter(item => item.flag2);
+  // Extract flagged items by type
+  const highPriceItems = useMemo(() => 
+    data ? data.filter(item => item.flag1) : [], 
+  [data]);
+  
+  const lowMarginItems = useMemo(() => 
+    data ? data.filter(item => item.flag2) : [], 
+  [data]);
   
   // Extract other flags from the flags array
-  const otherFlags = new Set<string>();
-  const flaggedItemsByType: Record<string, any[]> = {};
-  
-  data.forEach(item => {
-    if (item.flags && Array.isArray(item.flags)) {
-      item.flags.forEach((flag: string) => {
-        if (flag !== 'HIGH_PRICE' && flag !== 'LOW_MARGIN') {
-          otherFlags.add(flag);
-          if (!flaggedItemsByType[flag]) {
-            flaggedItemsByType[flag] = [];
+  const flaggedItemsByType = useMemo(() => {
+    if (!data) return {};
+    
+    const flagged: Record<string, any[]> = {};
+    const flagSet = new Set<string>();
+    
+    data.forEach(item => {
+      if (item.flags && Array.isArray(item.flags)) {
+        item.flags.forEach((flag: string) => {
+          if (flag !== 'HIGH_PRICE' && flag !== 'LOW_MARGIN') {
+            flagSet.add(flag);
+            if (!flagged[flag]) {
+              flagged[flag] = [];
+            }
+            flagged[flag].push(item);
           }
-          flaggedItemsByType[flag].push(item);
-        }
-      });
-    }
-  });
+        });
+      }
+    });
+    
+    return flagged;
+  }, [data]);
   
-  const uniqueOtherFlags = Array.from(otherFlags);
+  const uniqueOtherFlags = useMemo(() => 
+    Object.keys(flaggedItemsByType),
+  [flaggedItemsByType]);
   
-  const rule1Flags = data.filter(item => item.flag1);
-  const rule2Flags = data.filter(item => item.flag2);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<Record<string, number>>({});
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortField, setSortField] = useState<string>('usageRank');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-
-  // Group the exceptions by rule and usage rank
-  const groupBy = (items: any[], key: string) => {
-    return items.reduce((result, item) => {
-      const group = item[key];
-      result[group] = result[group] || [];
-      result[group].push(item);
-      return result;
-    }, {});
-  };
 
   // Handle sort click
   const handleSort = (field: string) => {
@@ -69,6 +70,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
   // Filter the data based on search query
   const filterData = (items: any[]) => {
     if (!searchQuery) return items;
+    if (!items || items.length === 0) return [];
     
     return items.filter(item => 
       item.description?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -77,6 +79,8 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
 
   // Sort the data
   const sortData = (items: any[]) => {
+    if (!items || items.length === 0) return [];
+    
     return [...items].sort((a, b) => {
       let fieldA = a[sortField];
       let fieldB = b[sortField];
@@ -99,6 +103,8 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
 
   // Calculate price change percentage
   const calculatePriceChangePercentage = (item: any) => {
+    if (!item) return 0;
+    
     const currentPrice = item.currentREVAPrice || 0;
     const proposedPrice = item.proposedPrice || 0;
     
@@ -106,12 +112,6 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
     
     return ((proposedPrice - currentPrice) / currentPrice) * 100;
   };
-
-  // Group Rule 1 exceptions by usage rank
-  const rule1ByRank = groupBy(rule1Flags, 'usageRank');
-  
-  // Group Rule 2 exceptions by usage rank
-  const rule2ByRank = groupBy(rule2Flags, 'usageRank');
 
   // Handle starting price edit for a specific item
   const handleStartEdit = (item: any) => {
@@ -165,7 +165,10 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
       : <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
+  // Render the exception table
   const renderExceptionTable = (items: any[], flagDescription: string = '') => {
+    if (!items) return null;
+    
     const filteredItems = filterData(items);
     const sortedItems = sortData(filteredItems);
 
@@ -381,24 +384,11 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
     );
   };
 
-  const renderRankGroups = (groupedData: Record<string, any[]>) => {
-    return (
-      <div className="space-y-6">
-        {Object.keys(groupedData).sort().map((rank) => (
-          <div key={rank} className="space-y-2">
-            <h3 className="text-lg font-medium">Usage Rank {rank} ({groupedData[rank].length} items)</h3>
-            {renderExceptionTable(groupedData[rank])}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold">Exceptions ({data.length})</h2>
+          <h2 className="text-xl font-semibold">Exceptions ({data?.length || 0})</h2>
           <Button 
             variant={bulkEditMode ? "default" : "outline"} 
             size="sm"
