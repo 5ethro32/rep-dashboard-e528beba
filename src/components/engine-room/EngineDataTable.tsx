@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ChevronDown, ChevronUp, Edit2, CheckCircle } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Edit2, CheckCircle, X } from 'lucide-react';
 import PriceEditor from './PriceEditor';
 
 interface EngineDataTableProps {
@@ -18,6 +18,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
   const itemsPerPage = 20;
 
   // Filter the data based on search query
@@ -94,6 +95,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
     setEditingItemId(null);
   };
 
+  // Toggle bulk edit mode
+  const toggleBulkEditMode = () => {
+    setBulkEditMode(!bulkEditMode);
+    // Clear any single edit when toggling bulk mode
+    setEditingItemId(null);
+  };
+
   // Column configuration
   const columns = [
     { field: 'description', label: 'Description' },
@@ -111,7 +119,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center justify-between">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -121,7 +129,35 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        {onPriceChange && (
+          <Button 
+            variant={bulkEditMode ? "default" : "outline"} 
+            size="sm" 
+            className="ml-4"
+            onClick={toggleBulkEditMode}
+          >
+            {bulkEditMode ? (
+              <>
+                <X className="h-4 w-4 mr-2" />
+                Exit Bulk Edit
+              </>
+            ) : (
+              <>
+                <Edit2 className="h-4 w-4 mr-2" />
+                Bulk Edit Mode
+              </>
+            )}
+          </Button>
+        )}
       </div>
+      
+      {bulkEditMode && (
+        <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
+          <p className="text-sm">
+            <strong>Bulk Edit Mode:</strong> You can now edit multiple prices at once. Click "Save" on each item to apply changes.
+          </p>
+        </div>
+      )}
       
       <div className="rounded-md border overflow-hidden">
         <div className="overflow-x-auto">
@@ -151,7 +187,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
                 >
                   {columns.map((column) => {
                     // Check if this is the proposed price cell and is being edited
-                    if (column.field === 'proposedPrice' && editingItemId === item.id) {
+                    if (column.field === 'proposedPrice' && (editingItemId === item.id || (bulkEditMode && !item.priceModified))) {
                       return (
                         <TableCell key={column.field} className="p-1">
                           <PriceEditor
@@ -161,6 +197,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
                             cost={item.avgCost || 0}
                             onSave={(newPrice) => handleSavePrice(item, newPrice)}
                             onCancel={() => setEditingItemId(null)}
+                            compact={bulkEditMode}
                           />
                         </TableCell>
                       );
@@ -172,7 +209,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
                             {item.priceModified && (
                               <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
                             )}
-                            {onPriceChange && (
+                            {onPriceChange && !bulkEditMode && (
                               <Button 
                                 variant="ghost" 
                                 size="sm"

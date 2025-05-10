@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download, Edit2, CheckCircle } from 'lucide-react';
+import { Download, Edit2, CheckCircle, X, Check } from 'lucide-react';
 import PriceEditor from './PriceEditor';
 
 interface ExceptionsTableProps {
@@ -16,6 +16,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
   const rule1Flags = data.filter(item => item.flag1);
   const rule2Flags = data.filter(item => item.flag2);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
 
   // Group the exceptions by rule and usage rank
   const groupBy = (items: any[], key: string) => {
@@ -43,6 +44,13 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
     if (onPriceChange) {
       onPriceChange(item, newPrice);
     }
+    setEditingItemId(null);
+  };
+
+  // Toggle bulk edit mode
+  const toggleBulkEditMode = () => {
+    setBulkEditMode(!bulkEditMode);
+    // Clear any single edit when toggling bulk mode
     setEditingItemId(null);
   };
 
@@ -81,7 +89,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                     
                     {/* Proposed price cell with edit capability */}
                     <TableCell>
-                      {editingItemId === item.id ? (
+                      {editingItemId === item.id || (bulkEditMode && !item.priceModified) ? (
                         <PriceEditor
                           initialPrice={item.proposedPrice || 0}
                           currentPrice={item.currentREVAPrice || 0}
@@ -89,6 +97,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                           cost={item.avgCost || 0}
                           onSave={(newPrice) => handleSavePrice(item, newPrice)}
                           onCancel={() => setEditingItemId(null)}
+                          compact={bulkEditMode}
                         />
                       ) : (
                         <div className="flex items-center">
@@ -96,7 +105,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                           {item.priceModified && (
                             <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
                           )}
-                          {onPriceChange && (
+                          {onPriceChange && !bulkEditMode && (
                             <Button 
                               variant="ghost" 
                               size="sm"
@@ -153,12 +162,40 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Exceptions ({data.length})</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold">Exceptions ({data.length})</h2>
+          <Button 
+            variant={bulkEditMode ? "default" : "outline"} 
+            size="sm"
+            onClick={toggleBulkEditMode}
+            className="ml-4"
+          >
+            {bulkEditMode ? (
+              <>
+                <X className="h-4 w-4 mr-2" />
+                Exit Bulk Edit
+              </>
+            ) : (
+              <>
+                <Edit2 className="h-4 w-4 mr-2" />
+                Bulk Edit Mode
+              </>
+            )}
+          </Button>
+        </div>
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
           Export Exceptions
         </Button>
       </div>
+
+      {bulkEditMode && (
+        <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
+          <p className="text-sm">
+            <strong>Bulk Edit Mode:</strong> You can now edit multiple prices at once. Click "Save" on each item to apply changes.
+          </p>
+        </div>
+      )}
 
       <Tabs defaultValue="rule1">
         <TabsList>

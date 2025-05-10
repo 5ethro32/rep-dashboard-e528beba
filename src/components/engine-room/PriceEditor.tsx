@@ -11,6 +11,7 @@ interface PriceEditorProps {
   cost: number;
   onSave: (newPrice: number) => void;
   onCancel: () => void;
+  compact?: boolean;
 }
 
 const PriceEditor: React.FC<PriceEditorProps> = ({
@@ -19,7 +20,8 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   calculatedPrice,
   cost,
   onSave,
-  onCancel
+  onCancel,
+  compact = false
 }) => {
   const [priceValue, setPriceValue] = useState<string>(initialPrice.toFixed(2));
   const [margin, setMargin] = useState<number>(0);
@@ -56,6 +58,31 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
     if (margin < 5) return "text-yellow-400";
     return "text-green-400";
   };
+  
+  if (compact) {
+    return (
+      <div className="flex space-x-1 items-center">
+        <Input
+          type="number"
+          step="0.01"
+          min="0"
+          value={priceValue}
+          onChange={handlePriceChange}
+          className={`h-7 w-24 ${isValid ? "" : "border-red-500"}`}
+          autoFocus
+        />
+        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleReset} title="Reset">
+          <RotateCcw className="h-3 w-3" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={onCancel} title="Cancel">
+          <X className="h-3 w-3" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleSave} disabled={!isValid} title="Save">
+          <Check className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
   
   return (
     <div className="flex flex-col space-y-2 p-2">

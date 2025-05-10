@@ -16,10 +16,14 @@ import ExceptionsTable from '@/components/engine-room/ExceptionsTable';
 import RevaMetricsChart from '@/components/engine-room/RevaMetricsChart';
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActions from '@/components/engine-room/PricingActions';
+import ApprovalsTab from '@/components/engine-room/ApprovalsTab';
 import { exportPricingData } from '@/utils/pricing-export-utils';
 
 // Define workflow status type
 type WorkflowStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+
+// Define user role type
+type UserRole = 'analyst' | 'manager' | 'admin';
 
 const EngineRoom: React.FC = () => {
   const { toast } = useToast();
@@ -32,6 +36,7 @@ const EngineRoom: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus>('draft');
   const [modifiedItems, setModifiedItems] = useState<Set<string>>(new Set());
+  const [userRole, setUserRole] = useState<UserRole>('manager'); // Default role for demo - would be set based on authentication
 
   // Get cached data if available
   const { data: engineData, isLoading, error } = useQuery({
@@ -290,6 +295,96 @@ const EngineRoom: React.FC = () => {
     });
   };
 
+  // Handle approve items
+  const handleApproveItems = (itemIds: string[], comment?: string) => {
+    if (!engineData) return;
+    
+    // Deep clone the data to avoid modifying the cache directly
+    const updatedData = JSON.parse(JSON.stringify(engineData));
+    
+    // Update workflow status for approved items
+    updatedData.items = updatedData.items.map((item: any) => {
+      if (itemIds.includes(item.id)) {
+        return {
+          ...item,
+          workflowStatus: 'approved',
+          reviewDate: new Date().toISOString(),
+          reviewer: 'Manager', // This would be the actual reviewer in a real implementation
+          reviewComments: comment || 'Approved'
+        };
+      }
+      return item;
+    });
+    
+    // Update flagged items as well
+    updatedData.flaggedItems = updatedData.flaggedItems.map((item: any) => {
+      if (itemIds.includes(item.id)) {
+        return {
+          ...item,
+          workflowStatus: 'approved',
+          reviewDate: new Date().toISOString(),
+          reviewer: 'Manager',
+          reviewComments: comment || 'Approved'
+        };
+      }
+      return item;
+    });
+    
+    // Update the local storage and query cache
+    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
+    queryClient.setQueryData(['engineRoomData'], updatedData);
+    
+    toast({
+      title: "Items approved",
+      description: `Approved ${itemIds.length} price changes`
+    });
+  };
+
+  // Handle reject items
+  const handleRejectItems = (itemIds: string[], comment: string) => {
+    if (!engineData || !comment.trim()) return;
+    
+    // Deep clone the data to avoid modifying the cache directly
+    const updatedData = JSON.parse(JSON.stringify(engineData));
+    
+    // Update workflow status for rejected items
+    updatedData.items = updatedData.items.map((item: any) => {
+      if (itemIds.includes(item.id)) {
+        return {
+          ...item,
+          workflowStatus: 'rejected',
+          reviewDate: new Date().toISOString(),
+          reviewer: 'Manager', // This would be the actual reviewer in a real implementation
+          reviewComments: comment
+        };
+      }
+      return item;
+    });
+    
+    // Update flagged items as well
+    updatedData.flaggedItems = updatedData.flaggedItems.map((item: any) => {
+      if (itemIds.includes(item.id)) {
+        return {
+          ...item,
+          workflowStatus: 'rejected',
+          reviewDate: new Date().toISOString(),
+          reviewer: 'Manager',
+          reviewComments: comment
+        };
+      }
+      return item;
+    });
+    
+    // Update the local storage and query cache
+    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
+    queryClient.setQueryData(['engineRoomData'], updatedData);
+    
+    toast({
+      title: "Items rejected",
+      description: `Rejected ${itemIds.length} price changes with comment`
+    });
+  };
+
   // Calculate metrics
   const getMetrics = () => {
     if (!engineData) return {
@@ -318,6 +413,42 @@ const EngineRoom: React.FC = () => {
   };
   
   const metrics = getMetrics();
+
+  // Count pending approvals
+  const getPendingApprovalCount = () => {
+    if (!engineData) return 0;
+    
+    return engineData.items.filter((item: any) => 
+      item.workflowStatus === 'submitted' && item.priceModified
+    ).length;
+  };
+
+  // Helper function to render tabs based on user role
+  const renderTabsList = () => {
+    const baseTabItems = [
+      <TabsTrigger key="all-items" value="all-items">All Items</TabsTrigger>,
+      <TabsTrigger key="exceptions" value="exceptions">
+        Exceptions ({metrics.rule1Flags + metrics.rule2Flags})
+      </TabsTrigger>,
+      <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
+    ];
+
+    // Add approvals tab for manager/admin roles
+    if (userRole === 'manager' || userRole === 'admin') {
+      const pendingCount = getPendingApprovalCount();
+      baseTabItems.splice(2, 0, 
+        <TabsTrigger key="approvals" value="approvals">
+          Approvals {pendingCount > 0 && `(${pendingCount})`}
+        </TabsTrigger>
+      );
+    }
+
+    return (
+      <TabsList className={`grid grid-cols-${baseTabItems.length} mb-6`}>
+        {baseTabItems}
+      </TabsList>
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -393,6 +524,22 @@ const EngineRoom: React.FC = () => {
       {/* Dashboard content - shown after file upload */}
       {engineData && (
         <div className="space-y-6">
+          {/* Role indicator for demo */}
+          <div className="flex justify-end mb-2">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">Current role:</span>
+              <select
+                value={userRole}
+                onChange={(e) => setUserRole(e.target.value as UserRole)}
+                className="bg-gray-800 border border-gray-700 rounded-md text-sm px-2 py-1"
+              >
+                <option value="analyst">Analyst</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+
           {/* Top actions */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div className="flex items-center space-x-2">
@@ -477,19 +624,13 @@ const EngineRoom: React.FC = () => {
 
           {/* Tabs for different views */}
           <Tabs defaultValue="all-items" className="mt-8">
-            <TabsList className="grid grid-cols-3 mb-6">
-              <TabsTrigger value="all-items">All Items</TabsTrigger>
-              <TabsTrigger value="exceptions">
-                Exceptions ({metrics.rule1Flags + metrics.rule2Flags})
-              </TabsTrigger>
-              <TabsTrigger value="configuration">Configuration</TabsTrigger>
-            </TabsList>
+            {renderTabsList()}
             
             <TabsContent value="all-items" className="space-y-4">
               <EngineDataTable 
                 data={engineData.items || []} 
                 onShowPriceDetails={handleShowItemDetails}
-                onPriceChange={handlePriceChange}
+                onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
               />
             </TabsContent>
             
@@ -497,9 +638,19 @@ const EngineRoom: React.FC = () => {
               <ExceptionsTable 
                 data={engineData.flaggedItems || []} 
                 onShowPriceDetails={handleShowItemDetails}
-                onPriceChange={handlePriceChange}
+                onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
               />
             </TabsContent>
+
+            {(userRole === 'manager' || userRole === 'admin') && (
+              <TabsContent value="approvals" className="space-y-4">
+                <ApprovalsTab 
+                  data={engineData.items || []}
+                  onApprove={handleApproveItems}
+                  onReject={handleRejectItems}
+                />
+              </TabsContent>
+            )}
             
             <TabsContent value="configuration" className="space-y-4">
               <ConfigurationPanel 
