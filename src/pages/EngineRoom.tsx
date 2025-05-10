@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { UploadCloud, FileText, Download, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
@@ -17,6 +16,7 @@ import RevaMetricsChart from '@/components/engine-room/RevaMetricsChart';
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActions from '@/components/engine-room/PricingActions';
 import ApprovalsTab from '@/components/engine-room/ApprovalsTab';
+import ApprovalHistoryTab from '@/components/engine-room/ApprovalHistoryTab';
 import { exportPricingData } from '@/utils/pricing-export-utils';
 
 // Define workflow status type
@@ -317,18 +317,7 @@ const EngineRoom: React.FC = () => {
     });
     
     // Update flagged items as well
-    updatedData.flaggedItems = updatedData.flaggedItems.map((item: any) => {
-      if (itemIds.includes(item.id)) {
-        return {
-          ...item,
-          workflowStatus: 'approved',
-          reviewDate: new Date().toISOString(),
-          reviewer: 'Manager',
-          reviewComments: comment || 'Approved'
-        };
-      }
-      return item;
-    });
+    updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
     
     // Update the local storage and query cache
     localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
@@ -439,12 +428,15 @@ const EngineRoom: React.FC = () => {
       baseTabItems.splice(2, 0, 
         <TabsTrigger key="approvals" value="approvals">
           Approvals {pendingCount > 0 && `(${pendingCount})`}
+        </TabsTrigger>,
+        <TabsTrigger key="approval-history" value="approval-history">
+          Approval History
         </TabsTrigger>
       );
     }
 
     return (
-      <TabsList className={`grid grid-cols-${baseTabItems.length} mb-6`}>
+      <TabsList className="grid grid-cols-1 md:grid-cols-auto-fit mb-6">
         {baseTabItems}
       </TabsList>
     );
@@ -648,6 +640,16 @@ const EngineRoom: React.FC = () => {
                   data={engineData.items || []}
                   onApprove={handleApproveItems}
                   onReject={handleRejectItems}
+                />
+              </TabsContent>
+            )}
+            
+            {/* New Approval History Tab */}
+            {(userRole === 'manager' || userRole === 'admin') && (
+              <TabsContent value="approval-history" className="space-y-4">
+                <ApprovalHistoryTab 
+                  data={engineData.items || []}
+                  onExport={handleExport}
                 />
               </TabsContent>
             )}

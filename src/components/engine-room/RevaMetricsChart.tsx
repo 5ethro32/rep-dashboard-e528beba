@@ -27,7 +27,7 @@ const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
     proposedMargin: '#ec4899',
     currentProfit: '#3b82f6',
     proposedProfit: '#8b5cf6',
-    barFill: '#0f172a',
+    barFill: '#1e293b',  // Lighter blue-gray shade for better visibility
   };
   
   // Format large numbers with k for thousands, etc.
@@ -133,7 +133,7 @@ const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
             tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
           />
           <Tooltip content={renderTooltip} />
-          <Legend />
+          {/* Removed Legend component */}
           
           {activeMetric === 'margin' ? (
             <>
@@ -184,9 +184,10 @@ const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
             name="Item Count" 
             yAxisId="right"
             barSize={20}
+            fillOpacity={0.7}
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={colors.barFill} fillOpacity={0.4} />
+              <Cell key={`cell-${index}`} fill={colors.barFill} />
             ))}
           </Bar>
         </ComposedChart>
