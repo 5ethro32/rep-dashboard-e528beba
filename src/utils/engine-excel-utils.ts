@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -108,6 +107,15 @@ const generateColumnMapping = (headers: string[]) => {
     const match = findColumnMatch(headers, variations);
     if (match) {
       mapping[field] = match;
+    }
+  }
+  
+  // Make sure we don't have the nextCost field for currentREVAPrice - that looks like a bug
+  if (mapping.nextCost && !mapping.currentREVAPrice) {
+    // Try to find a specific "Current REVA Price" column
+    const betterMatch = findColumnMatch(headers, ['Current REVA Price']);
+    if (betterMatch) {
+      mapping.currentREVAPrice = betterMatch;
     }
   }
   

@@ -53,13 +53,19 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
     }
   };
 
-  // Format currency
-  const formatCurrency = (value: number) => {
+  // Format currency - with null/undefined check
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value === null || value === undefined) {
+      return '£0.00';
+    }
     return `£${value.toFixed(2)}`;
   };
 
-  // Format percentage
-  const formatPercentage = (value: number) => {
+  // Format percentage - with null/undefined check
+  const formatPercentage = (value: number | null | undefined) => {
+    if (value === null || value === undefined) {
+      return '0.00%';
+    }
     return `${(value * 100).toFixed(2)}%`;
   };
 
