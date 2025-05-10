@@ -36,7 +36,10 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
 
   // Handle price edit
   const handleEditPrice = (item: any) => {
-    setEditingItemId(item.id);
+    // If we're in bulk mode, don't set an individual editing item
+    if (!bulkEditMode) {
+      setEditingItemId(item.id);
+    }
   };
 
   // Handle save price
@@ -88,7 +91,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                     <TableCell>£{item.currentREVAPrice.toFixed(2)}</TableCell>
                     
                     {/* Proposed price cell with edit capability */}
-                    <TableCell>
+                    <TableCell className={editingItemId === item.id || (bulkEditMode && !item.priceModified) ? "p-1" : ""}>
                       {editingItemId === item.id || (bulkEditMode && !item.priceModified) ? (
                         <PriceEditor
                           initialPrice={item.proposedPrice || 0}
@@ -105,7 +108,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                           {item.priceModified && (
                             <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
                           )}
-                          {onPriceChange && !bulkEditMode && (
+                          {onPriceChange && (
                             <Button 
                               variant="ghost" 
                               size="sm"
@@ -169,6 +172,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
             size="sm"
             onClick={toggleBulkEditMode}
             className="ml-4"
+            disabled={!onPriceChange}
           >
             {bulkEditMode ? (
               <>

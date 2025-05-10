@@ -84,7 +84,10 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
 
   // Handle price edit
   const handleEditPrice = (item: any) => {
-    setEditingItemId(item.id);
+    // If we're in bulk mode, don't set an individual editing item
+    if (!bulkEditMode) {
+      setEditingItemId(item.id);
+    }
   };
 
   // Handle save price
@@ -187,42 +190,42 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
                 >
                   {columns.map((column) => {
                     // Check if this is the proposed price cell and is being edited
-                    if (column.field === 'proposedPrice' && (editingItemId === item.id || (bulkEditMode && !item.priceModified))) {
+                    if (column.field === 'proposedPrice') {
+                      const isEditing = editingItemId === item.id || (bulkEditMode && !item.priceModified);
+                      
                       return (
-                        <TableCell key={column.field} className="p-1">
-                          <PriceEditor
-                            initialPrice={item.proposedPrice || 0}
-                            currentPrice={item.currentREVAPrice || 0}
-                            calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
-                            cost={item.avgCost || 0}
-                            onSave={(newPrice) => handleSavePrice(item, newPrice)}
-                            onCancel={() => setEditingItemId(null)}
-                            compact={bulkEditMode}
-                          />
-                        </TableCell>
-                      );
-                    } else if (column.field === 'proposedPrice') {
-                      return (
-                        <TableCell key={column.field}>
-                          <div className="flex items-center">
-                            {column.format ? column.format(item[column.field]) : item[column.field]}
-                            {item.priceModified && (
-                              <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
-                            )}
-                            {onPriceChange && !bulkEditMode && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="ml-2 h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditPrice(item);
-                                }}
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
+                        <TableCell key={column.field} className={isEditing ? "p-1" : ""}>
+                          {isEditing ? (
+                            <PriceEditor
+                              initialPrice={item.proposedPrice || 0}
+                              currentPrice={item.currentREVAPrice || 0}
+                              calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
+                              cost={item.avgCost || 0}
+                              onSave={(newPrice) => handleSavePrice(item, newPrice)}
+                              onCancel={() => setEditingItemId(null)}
+                              compact={bulkEditMode}
+                            />
+                          ) : (
+                            <div className="flex items-center">
+                              {column.format ? column.format(item[column.field]) : item[column.field]}
+                              {item.priceModified && (
+                                <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
+                              )}
+                              {onPriceChange && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="ml-2 h-6 w-6 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditPrice(item);
+                                  }}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
                         </TableCell>
                       );
                     } else {
