@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface PricingRuleExplainerProps {
   item: any;
@@ -21,6 +24,9 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
   open, 
   onClose 
 }) => {
+  const [simulatedPrice, setSimulatedPrice] = useState('');
+  const [simulatedResults, setSimulatedResults] = useState<any>(null);
+
   if (!item) return null;
 
   // Format currency
@@ -33,6 +39,26 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
   const formatPercentage = (value: number | null | undefined) => {
     if (value === undefined || value === null) return '—';
     return `${(value * 100).toFixed(2)}%`;
+  };
+  
+  // Simulate new price
+  const handleSimulatePrice = () => {
+    const newPrice = parseFloat(simulatedPrice);
+    if (isNaN(newPrice) || newPrice <= 0) return;
+
+    const newMargin = (newPrice - item.avgCost) / newPrice;
+    const priceChangePercentage = ((newPrice - item.currentREVAPrice) / item.currentREVAPrice) * 100;
+    const marginChangePercentage = ((newMargin - item.currentREVAMargin) / item.currentREVAMargin) * 100;
+    const profitChange = (newPrice - item.avgCost) * item.revaUsage - 
+                          (item.currentREVAPrice - item.avgCost) * item.revaUsage;
+
+    setSimulatedResults({
+      price: newPrice,
+      margin: newMargin,
+      priceChangePercentage,
+      marginChangePercentage,
+      profitChange
+    });
   };
   
   // Get rule description
@@ -186,84 +212,188 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-6">
-          {/* Input Values Card */}
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-medium mb-4">Input Values</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Average Cost</p>
-                  <p className="text-lg font-semibold">{formatCurrency(item.avgCost)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Market Low</p>
-                  <p className="text-lg font-semibold">{formatCurrency(item.marketLow)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Next Cost</p>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-lg font-semibold">{formatCurrency(item.nextCost)}</p>
-                    {item.trend === 'TrendDown' ? (
-                      <TrendingDown className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <TrendingUp className="h-4 w-4 text-red-500" />
-                    )}
+        <Tabs defaultValue="details" className="mt-4">
+          <TabsList className="grid grid-cols-2">
+            <TabsTrigger value="details">Price Details</TabsTrigger>
+            <TabsTrigger value="simulator">Price Simulator</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details" className="space-y-6">
+            {/* Current vs Proposed Comparison */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Price Comparison</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-900/40 p-4 rounded-lg">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Current Price</p>
+                      <p className="text-2xl font-bold">{formatCurrency(item.currentREVAPrice)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Current Margin</p>
+                      <p className="text-xl font-semibold">{formatPercentage(item.currentREVAMargin)}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Proposed Price</p>
+                      <p className="text-2xl font-bold text-primary">{formatCurrency(item.proposedPrice)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Proposed Margin</p>
+                      <p className="text-xl font-semibold text-primary">{formatPercentage(item.proposedMargin)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Price Change</p>
+                      <p className={`text-lg ${item.proposedPrice > item.currentREVAPrice ? 'text-green-500' : item.proposedPrice < item.currentREVAPrice ? 'text-red-500' : ''}`}>
+                        {((item.proposedPrice - item.currentREVAPrice) / item.currentREVAPrice * 100).toFixed(2)}%
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Usage Rank</p>
-                  <p className="text-lg font-semibold">{item.usageRank}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">True Market Low</p>
-                  <p className="text-lg font-semibold">{formatCurrency(item.trueMarketLow)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Current Price</p>
-                  <p className="text-lg font-semibold">{formatCurrency(item.currentREVAPrice)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
           
-          {/* Applied Rule Card */}
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-medium mb-4">Applied Rule: {item.appliedRule}</h3>
-              {getRuleDescription()}
-            </CardContent>
-          </Card>
-          
-          {/* Calculation Steps Card */}
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-medium mb-4">Calculation Steps</h3>
-              {getCalculationSteps()}
-              
-              <div className="mt-4 pt-4 border-t border-gray-700">
-                <h4 className="font-medium mb-2">Final Result</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Input Values Card */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Input Values</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Proposed Price</p>
-                    <p className="text-xl font-semibold">{formatCurrency(item.proposedPrice)}</p>
+                    <p className="text-sm text-muted-foreground mb-1">Average Cost</p>
+                    <p className="text-lg font-semibold">{formatCurrency(item.avgCost)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Proposed Margin</p>
-                    <p className="text-xl font-semibold">{formatPercentage(item.proposedMargin)}</p>
+                    <p className="text-sm text-muted-foreground mb-1">Market Low</p>
+                    <p className="text-lg font-semibold">{formatCurrency(item.marketLow)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Next Cost</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-lg font-semibold">{formatCurrency(item.nextCost)}</p>
+                      {item.trend === 'TrendDown' ? (
+                        <TrendingDown className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <TrendingUp className="h-4 w-4 text-red-500" />
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Usage Rank</p>
+                    <p className="text-lg font-semibold">{item.usageRank}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">True Market Low</p>
+                    <p className="text-lg font-semibold">{formatCurrency(item.trueMarketLow)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Current Price</p>
+                    <p className="text-lg font-semibold">{formatCurrency(item.currentREVAPrice)}</p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            
+            {/* Applied Rule Card */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Applied Rule: {item.appliedRule}</h3>
+                {getRuleDescription()}
+              </CardContent>
+            </Card>
+            
+            {/* Calculation Steps Card */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Calculation Steps</h3>
+                {getCalculationSteps()}
+                
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <h4 className="font-medium mb-2">Final Result</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Proposed Price</p>
+                      <p className="text-xl font-semibold">{formatCurrency(item.proposedPrice)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Proposed Margin</p>
+                      <p className="text-xl font-semibold">{formatPercentage(item.proposedMargin)}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Flag Status Card */}
+            <Card>
+              <CardContent className="pt-6 flex items-center">
+                {getFlagStatus()}
+              </CardContent>
+            </Card>
+          </TabsContent>
           
-          {/* Flag Status Card */}
-          <Card>
-            <CardContent className="pt-6 flex items-center">
-              {getFlagStatus()}
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="simulator" className="space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Price Simulator</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Enter a new price to simulate and see the impact on margins and profit.
+                </p>
+                
+                <div className="flex items-end gap-3 mb-6">
+                  <div className="flex-1">
+                    <label htmlFor="simulated-price" className="text-sm font-medium mb-1 block">
+                      Simulated Price
+                    </label>
+                    <Input
+                      id="simulated-price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Enter price"
+                      value={simulatedPrice}
+                      onChange={(e) => setSimulatedPrice(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={handleSimulatePrice}>
+                    Simulate
+                  </Button>
+                </div>
+                
+                {simulatedResults && (
+                  <div className="bg-gray-900/40 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3">Simulation Results</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Simulated Price</p>
+                        <p className="text-lg font-semibold">{formatCurrency(simulatedResults.price)}</p>
+                        <p className={`text-sm ${simulatedResults.priceChangePercentage > 0 ? 'text-green-500' : simulatedResults.priceChangePercentage < 0 ? 'text-red-500' : ''}`}>
+                          {simulatedResults.priceChangePercentage > 0 ? '+' : ''}{simulatedResults.priceChangePercentage.toFixed(2)}% vs current
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Simulated Margin</p>
+                        <p className="text-lg font-semibold">{formatPercentage(simulatedResults.margin)}</p>
+                        <p className={`text-sm ${simulatedResults.marginChangePercentage > 0 ? 'text-green-500' : simulatedResults.marginChangePercentage < 0 ? 'text-red-500' : ''}`}>
+                          {simulatedResults.marginChangePercentage > 0 ? '+' : ''}{simulatedResults.marginChangePercentage.toFixed(2)}% vs current
+                        </p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <p className="text-sm text-muted-foreground">Profit Impact</p>
+                        <p className={`text-lg font-semibold ${simulatedResults.profitChange > 0 ? 'text-green-500' : simulatedResults.profitChange < 0 ? 'text-red-500' : ''}`}>
+                          {simulatedResults.profitChange > 0 ? '+' : ''}{formatCurrency(simulatedResults.profitChange)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Based on usage of {item.revaUsage} units
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

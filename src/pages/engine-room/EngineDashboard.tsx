@@ -9,7 +9,6 @@ import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
 import RevaMetricsChart from '@/components/engine-room/RevaMetricsChart';
-import ProfitDistributionChart from '@/components/engine-room/ProfitDistributionChart';
 
 const EngineDashboardContent = () => {
   const {
@@ -153,26 +152,19 @@ const EngineDashboardContent = () => {
         />
       </div>
 
-      {/* Usage-Weighted Metrics Section */}
-      <UsageWeightedMetrics data={engineData.items || []} />
-
-      {/* Market Trend Analysis */}
-      <MarketTrendAnalysis data={engineData.items || []} />
-
-      {/* REVA Metrics Chart */}
-      <div className="mt-8">
+      {/* REVA Metrics Chart - Moved up */}
+      <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
         <div className="border border-white/10 bg-gray-900/40 backdrop-blur-sm rounded-lg p-4">
           <RevaMetricsChart data={engineData.chartData || []} />
         </div>
       </div>
 
-      {/* Profit Distribution Chart */}
-      <div className="mt-8">
-        <div className="border border-white/10 bg-gray-900/40 backdrop-blur-sm rounded-lg p-4">
-          <ProfitDistributionChart data={engineData.items || []} />
-        </div>
-      </div>
+      {/* Usage-Weighted Metrics Section */}
+      <UsageWeightedMetrics data={engineData.items || []} />
+
+      {/* Market Trend Analysis - Using updated UI style */}
+      <MarketTrendAnalysis data={engineData.items || []} />
     </div>
   );
 };

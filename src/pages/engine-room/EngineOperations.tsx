@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
-import { UploadCloud, FileText, Download } from 'lucide-react';
+import { UploadCloud, FileText, Download, Filter, Star, Package } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Info } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import MetricCard from '@/components/MetricCard';
 import EngineDataTable from '@/components/engine-room/EngineDataTable';
 import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer';
@@ -39,6 +41,9 @@ const EngineOperationsContent = () => {
   } = useEngineRoom();
   const [showPricingExplainer, setShowPricingExplainer] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
+  const [showShortageOnly, setShowShortageOnly] = useState(false);
+  const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -75,6 +80,43 @@ const EngineOperationsContent = () => {
     setShowPricingExplainer(true);
   };
   
+  // Toggle star for an item
+  const handleToggleStar = (itemId: string) => {
+    const newStarred = new Set(starredItems);
+    if (newStarred.has(itemId)) {
+      newStarred.delete(itemId);
+    } else {
+      newStarred.add(itemId);
+    }
+    setStarredItems(newStarred);
+  };
+  
+  // Filter data based on toggles
+  const filterData = (items: any[]) => {
+    if (!items) return [];
+    
+    return items.filter(item => {
+      // Filter out inactive products if toggle is on
+      if (hideInactiveProducts) {
+        const isActive = (item.inStock > 0 || item.onOrder > 0 || item.revaUsage > 0);
+        if (!isActive) return false;
+      }
+      
+      // Filter for shortage only if toggle is on
+      if (showShortageOnly) {
+        if (!item.shortage) return false;
+      }
+      
+      return true;
+    });
+  };
+  
+  // Get starred items
+  const getStarredItems = () => {
+    if (!engineData?.items) return [];
+    return engineData.items.filter(item => starredItems.has(item.id));
+  };
+  
   // Handle drag and drop file upload
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -97,12 +139,15 @@ const EngineOperationsContent = () => {
       <TabsTrigger key="exceptions" value="exceptions">
         Exceptions ({metrics.rule1Flags + metrics.rule2Flags})
       </TabsTrigger>,
+      <TabsTrigger key="starred" value="starred">
+        Starred ({starredItems.size})
+      </TabsTrigger>,
       <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
     ];
 
     // Add approvals tab for manager/admin roles
     if (userRole === 'manager' || userRole === 'admin') {
-      baseTabItems.splice(2, 0, 
+      baseTabItems.splice(3, 0, 
         <TabsTrigger key="approvals" value="approvals">
           Approvals {getPendingApprovalCount() > 0 && `(${getPendingApprovalCount()})`}
         </TabsTrigger>,
@@ -242,6 +287,35 @@ const EngineOperationsContent = () => {
         </div>
       </div>
 
+      {/* Current vs Proposed Comparison Metrics */}
+      <div className="bg-gray-900/40 border border-gray-800 rounded-lg p-4 mb-6">
+        <h3 className="text-lg font-medium mb-3">Pricing Impact Overview</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-gray-800/50 p-3 rounded-md">
+            <p className="text-sm text-muted-foreground">Current Average Margin</p>
+            <p className="text-xl font-semibold">{engineData.currentAvgMargin?.toFixed(2) || 0}%</p>
+          </div>
+          <div className="bg-gray-800/50 p-3 rounded-md">
+            <p className="text-sm text-muted-foreground">Proposed Average Margin</p>
+            <p className="text-xl font-semibold">{engineData.proposedAvgMargin?.toFixed(2) || 0}%</p>
+            <p className={`text-sm ${metrics.marginLift > 0 ? 'text-green-500' : metrics.marginLift < 0 ? 'text-red-500' : ''}`}>
+              {metrics.marginLift > 0 ? '+' : ''}{metrics.marginLift.toFixed(2)}%
+            </p>
+          </div>
+          <div className="bg-gray-800/50 p-3 rounded-md">
+            <p className="text-sm text-muted-foreground">Current Total Profit</p>
+            <p className="text-xl font-semibold">£{engineData.currentProfit?.toLocaleString() || 0}</p>
+          </div>
+          <div className="bg-gray-800/50 p-3 rounded-md">
+            <p className="text-sm text-muted-foreground">Proposed Total Profit</p>
+            <p className="text-xl font-semibold">£{engineData.proposedProfit?.toLocaleString() || 0}</p>
+            <p className={`text-sm ${metrics.profitDelta > 0 ? 'text-green-500' : metrics.profitDelta < 0 ? 'text-red-500' : ''}`}>
+              {metrics.profitDelta > 0 ? '+' : ''}£{Math.abs(engineData.proposedProfit - engineData.currentProfit).toLocaleString() || 0}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Workflow status and actions */}
       <PricingActions 
         modifiedCount={modifiedItems.size}
@@ -251,6 +325,11 @@ const EngineOperationsContent = () => {
         onSubmit={handleSubmitForApproval}
         onReset={handleResetChanges}
         onExport={handleExport}
+        approvalMetrics={{
+          pending: getPendingApprovalCount(),
+          approved: engineData.approvedItems?.length || 0,
+          rejected: engineData.rejectedItems?.length || 0
+        }}
       />
 
       {/* Key metrics summary */}
@@ -280,23 +359,81 @@ const EngineOperationsContent = () => {
         />
       </div>
 
+      {/* Filter toggles */}
+      <div className="flex flex-wrap gap-4 items-center my-4 p-3 bg-gray-900/40 rounded-lg">
+        <div className="flex items-center space-x-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Filters:</span>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="inactive-toggle" 
+            checked={hideInactiveProducts}
+            onCheckedChange={setHideInactiveProducts}
+          />
+          <label htmlFor="inactive-toggle" className="text-sm cursor-pointer">
+            Hide inactive products
+          </label>
+          <Badge variant="outline" className="ml-1 text-xs">
+            No stock/order/usage
+          </Badge>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="shortage-toggle" 
+            checked={showShortageOnly}
+            onCheckedChange={setShowShortageOnly}
+          />
+          <label htmlFor="shortage-toggle" className="text-sm cursor-pointer">
+            Show shortage only
+          </label>
+          <Badge variant="outline" className="ml-1 text-xs bg-orange-900/30 text-orange-400">
+            <Package className="h-3 w-3 mr-1" />
+            Shortage
+          </Badge>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Star className={`h-4 w-4 ${starredItems.size > 0 ? 'text-yellow-400' : 'text-muted-foreground'}`} />
+          <span className="text-sm">
+            {starredItems.size} items starred
+          </span>
+        </div>
+      </div>
+
       {/* Tabs for different views */}
       <Tabs defaultValue="all-items" className="mt-8">
         {renderTabsList()}
         
         <TabsContent value="all-items" className="space-y-4">
           <EngineDataTable 
-            data={engineData.items || []} 
+            data={filterData(engineData.items || [])} 
             onShowPriceDetails={handleShowItemDetails}
             onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
+            onToggleStar={handleToggleStar}
+            starredItems={starredItems}
           />
         </TabsContent>
         
         <TabsContent value="exceptions" className="space-y-4">
           <ExceptionsTable 
-            data={engineData.flaggedItems || []} 
+            data={filterData(engineData.flaggedItems || [])} 
             onShowPriceDetails={handleShowItemDetails}
             onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
+            onToggleStar={handleToggleStar}
+            starredItems={starredItems}
+          />
+        </TabsContent>
+        
+        <TabsContent value="starred" className="space-y-4">
+          <EngineDataTable 
+            data={getStarredItems()} 
+            onShowPriceDetails={handleShowItemDetails}
+            onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
+            onToggleStar={handleToggleStar}
+            starredItems={starredItems}
           />
         </TabsContent>
 
@@ -306,6 +443,8 @@ const EngineOperationsContent = () => {
               data={engineData.items || []}
               onApprove={handleApproveItems}
               onReject={handleRejectItems}
+              onToggleStar={handleToggleStar}
+              starredItems={starredItems}
             />
           </TabsContent>
         )}
@@ -316,6 +455,8 @@ const EngineOperationsContent = () => {
             <ApprovalHistoryTab 
               data={engineData.items || []}
               onExport={handleExport}
+              onToggleStar={handleToggleStar}
+              starredItems={starredItems}
             />
           </TabsContent>
         )}
