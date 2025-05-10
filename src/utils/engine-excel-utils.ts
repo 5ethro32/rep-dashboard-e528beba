@@ -5,11 +5,17 @@ import * as XLSX from 'xlsx';
 interface RevaItem {
   description: string;
   inStock: number;
+  inRF?: number;
   onOrder: number;
+  blocked?: number;
+  keepRemove?: string;
   revaUsage: number;
   usageRank: number;
+  flag?: string;
   avgCost: number;
+  avgCostLessThanML?: string;
   nextCost: number;
+  trend?: string;
   currentREVAPrice: number;
   currentREVAMargin: number;
   eth_net?: number;
@@ -19,7 +25,6 @@ interface RevaItem {
   aah?: number;
   marketLow?: number;
   trueMarketLow?: number;
-  trend?: string;
   appliedRule?: string;
   proposedPrice?: number;
   proposedMargin?: number;
@@ -78,13 +83,19 @@ const generateColumnMapping = (headers: string[]) => {
   const columnVariations = {
     description: ['description', 'desc', 'product', 'item'],
     inStock: ['instock', 'in stock', 'stock', 'quantity', 'qty'],
+    inRF: ['inrf', 'in rf', 'rf'],
     onOrder: ['onorder', 'on order', 'order', 'ordered'],
-    revaUsage: ['revausage', 'usage', 'monthly usage', 'sales', 'units sold'],
+    blocked: ['blocked'],
+    keepRemove: ['keep/remove', 'keep', 'remove'],
+    revaUsage: ['revausage', 'usage', 'reva usage', 'monthly usage', 'sales', 'units sold'],
     usageRank: ['usagerank', 'usage rank', 'rank', 'priority', 'group'],
+    flag: ['flag'],
     avgCost: ['avgcost', 'avg cost', 'average cost', 'cost', 'unit cost'],
-    nextCost: ['nextcost', 'next cost', 'future cost', 'new cost'],
-    currentREVAPrice: ['currentrevaprice', 'price', 'selling price', 'current price', 'reva price'],
-    currentREVAMargin: ['currentrevamargin', 'margin', 'current margin', 'reva margin'],
+    avgCostLessThanML: ['avgcost<ml', 'avgcost < ml'],
+    nextCost: ['nextcost', 'next cost', 'next buying price', 'future cost', 'new cost'],
+    trend: ['trend', 'downwards', 'upwards'],
+    currentREVAPrice: ['currentrevaprice', 'current reva price', 'price', 'selling price', 'current price', 'reva price'],
+    currentREVAMargin: ['currentrevamargin', 'current reva %', 'margin', 'current margin', 'reva margin', 'current reva margin'],
     eth_net: ['eth_net', 'eth net', 'ethnet', 'market low'],
     eth: ['eth', 'eth price'],
     nupharm: ['nupharm', 'nu pharm', 'nupharm price'],
@@ -125,10 +136,13 @@ export const processEngineExcelFile = async (file: File): Promise<ProcessedEngin
         }
         
         console.log('Processing REVA file:', file.name);
+        console.log('Raw data headers:', Object.keys(rawData[0] as object));
         
         // Extract headers from first row
         const headers = Object.keys(rawData[0] as object);
         const columnMapping = generateColumnMapping(headers);
+        
+        console.log('Column mapping:', columnMapping);
         
         // Check for minimum required columns
         const requiredFields = [
@@ -175,13 +189,19 @@ export const processEngineExcelFile = async (file: File): Promise<ProcessedEngin
 const columnVariations = {
   description: ['description', 'desc', 'product', 'item'],
   inStock: ['instock', 'in stock', 'stock', 'quantity', 'qty'],
+  inRF: ['inrf', 'in rf', 'rf'],
   onOrder: ['onorder', 'on order', 'order', 'ordered'],
-  revaUsage: ['revausage', 'usage', 'monthly usage', 'sales', 'units sold'],
+  blocked: ['blocked'],
+  keepRemove: ['keep/remove', 'keep', 'remove'],
+  revaUsage: ['revausage', 'usage', 'reva usage', 'monthly usage', 'sales', 'units sold'],
   usageRank: ['usagerank', 'usage rank', 'rank', 'priority', 'group'],
+  flag: ['flag'],
   avgCost: ['avgcost', 'avg cost', 'average cost', 'cost', 'unit cost'],
-  nextCost: ['nextcost', 'next cost', 'future cost', 'new cost'],
-  currentREVAPrice: ['currentrevaprice', 'price', 'selling price', 'current price', 'reva price'],
-  currentREVAMargin: ['currentrevamargin', 'margin', 'current margin', 'reva margin'],
+  avgCostLessThanML: ['avgcost<ml', 'avgcost < ml'],
+  nextCost: ['nextcost', 'next cost', 'next buying price', 'future cost', 'new cost'],
+  trend: ['trend', 'downwards', 'upwards'],
+  currentREVAPrice: ['currentrevaprice', 'current reva price', 'price', 'selling price', 'current price', 'reva price'],
+  currentREVAMargin: ['currentrevamargin', 'current reva %', 'margin', 'current margin', 'reva margin', 'current reva margin'],
   eth_net: ['eth_net', 'eth net', 'ethnet', 'market low'],
   eth: ['eth', 'eth price'],
   nupharm: ['nupharm', 'nu pharm', 'nupharm price'],
@@ -200,8 +220,16 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
     avgCost: Number(row[mapping.avgCost] || 0),
     nextCost: Number(row[mapping.nextCost] || 0),
     currentREVAPrice: Number(row[mapping.currentREVAPrice] || 0),
-    currentREVAMargin: Number(row[mapping.currentREVAMargin] || 0),
+    currentREVAMargin: parseFloat(String(row[mapping.currentREVAMargin] || '0').replace('%', '')) / 100,
   };
+  
+  // Add optional fields
+  if (mapping.inRF && row[mapping.inRF] !== undefined) transformed.inRF = Number(row[mapping.inRF]);
+  if (mapping.blocked && row[mapping.blocked] !== undefined) transformed.blocked = Number(row[mapping.blocked]);
+  if (mapping.keepRemove && row[mapping.keepRemove] !== undefined) transformed.keepRemove = String(row[mapping.keepRemove]);
+  if (mapping.flag && row[mapping.flag] !== undefined) transformed.flag = String(row[mapping.flag]);
+  if (mapping.avgCostLessThanML && row[mapping.avgCostLessThanML] !== undefined) transformed.avgCostLessThanML = String(row[mapping.avgCostLessThanML]);
+  if (mapping.trend && row[mapping.trend] !== undefined) transformed.trend = String(row[mapping.trend]);
   
   // Add optional competitor pricing fields
   if (mapping.eth_net && row[mapping.eth_net] !== undefined) transformed.eth_net = Number(row[mapping.eth_net]);
@@ -215,6 +243,17 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
 
 // Process raw data into the structure needed for the engine room
 const processRawData = (transformedData: RevaItem[], fileName: string): ProcessedEngineData => {
+  // Map trend values if they exist
+  transformedData.forEach(item => {
+    if (item.trend) {
+      // Map "Downwards" to "TrendDown" and any other value to "TrendFlatUp"
+      item.trend = item.trend.toLowerCase().includes('down') ? 'TrendDown' : 'TrendFlatUp';
+    } else {
+      // Set default trend based on cost comparison
+      item.trend = item.nextCost <= item.avgCost ? 'TrendDown' : 'TrendFlatUp';
+    }
+  });
+  
   // Apply pricing rules and calculate derived values
   const processedItems = applyPricingRules(transformedData, defaultRuleConfig);
   

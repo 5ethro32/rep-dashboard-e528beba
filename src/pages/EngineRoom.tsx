@@ -185,7 +185,7 @@ const EngineRoom: React.FC = () => {
                   Drag and drop your Excel or CSV file, or click to browse
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Required columns: Description, InStock, OnOrder, Usage/Sales, Rank, AvgCost, NextCost, Price, Margin
+                  Required columns: Description, REVA Usage, Usage Rank, AvgCost, Next Buying Price, Current REVA Price
                 </p>
               </div>
             </div>
@@ -208,14 +208,18 @@ const EngineRoom: React.FC = () => {
                   <AlertTitle>Error processing file</AlertTitle>
                   <AlertDescription className="mt-1">{errorMessage}</AlertDescription>
                   <AlertDescription className="mt-2">
-                    <p className="font-medium">Accepted column names:</p>
-                    <ul className="list-disc pl-5 mt-1 text-sm">
-                      <li>Description: "Description", "Desc", "Product", "Item"</li>
-                      <li>Usage: "RevaUsage", "Usage", "Monthly Usage", "Sales", "Units Sold"</li>
-                      <li>Usage Rank: "UsageRank", "Usage Rank", "Rank", "Priority", "Group"</li>
-                      <li>Average Cost: "AvgCost", "Avg Cost", "Average Cost", "Cost", "Unit Cost"</li>
-                      <li>Next Cost: "NextCost", "Next Cost", "Future Cost", "New Cost"</li>
-                      <li>Current Price: "CurrentREVAPrice", "Price", "Selling Price", "Current Price", "REVA Price"</li>
+                    <p className="font-medium">Supported column names include:</p>
+                    <ul className="list-disc pl-5 mt-1 text-sm space-y-1">
+                      <li>Description: "Description"</li>
+                      <li>Stock: "InStock"</li>
+                      <li>Order: "OnOrder"</li>
+                      <li>Usage: "REVA Usage"</li>
+                      <li>Rank: "Usage Rank"</li>
+                      <li>Cost: "AvgCost"</li>
+                      <li>Next Cost: "Next Buying Price"</li>
+                      <li>Current Price: "Current REVA Price"</li>
+                      <li>Current Margin: "Current REVA %"</li>
+                      <li>Competitor prices: "ETH NET", "ETH", "Nupharm", "LEXON", "AAH"</li>
                     </ul>
                   </AlertDescription>
                 </div>
