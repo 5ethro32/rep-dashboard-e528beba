@@ -1,11 +1,12 @@
 
 import React, { useState, useMemo } from 'react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
-import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ScatterChart } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import DonutChart from '@/components/DonutChart';
 
 interface MarketTrendAnalysisProps {
   data: any[];
@@ -61,7 +62,7 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
       trendCounts: { up: trendingUp, down: trendingDown }
     };
   }, [data]);
-  
+
   // Custom tooltip for scatter chart
   const CustomScatterTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -86,19 +87,6 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
     return null;
   };
 
-  // Custom tooltip for pie chart
-  const CustomPieTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-gray-800 p-2 border border-white/10 rounded-md text-xs md:text-sm shadow-lg backdrop-blur-sm">
-          <p className="text-white font-medium">{payload[0].name}</p>
-          <p className="text-white/80">{`${payload[0].value} products (${((payload[0].value / (trendData.trendCounts.up + trendData.trendCounts.down)) * 100).toFixed(1)}%)`}</p>
-        </div>
-      );
-    }
-    return null;
-  };
-  
   return (
     <div className="space-y-4 mb-6">
       <div className="flex items-center justify-between">
@@ -152,26 +140,12 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                 </div>
                 
                 <div className="md:col-span-2 h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={trendData.trendDistribution}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={100}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {trendData.trendDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomPieTooltip />} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {/* Replaced PieChart with DonutChart component */}
+                  <DonutChart 
+                    data={trendData.trendDistribution}
+                    innerValue={`${trendData.trendCounts.up + trendData.trendCounts.down}`}
+                    innerLabel="Products"
+                  />
                 </div>
               </div>
             ) : (
