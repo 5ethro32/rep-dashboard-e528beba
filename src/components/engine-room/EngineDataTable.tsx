@@ -32,7 +32,7 @@ const columns = [
   { field: 'usageRank', label: 'Rank', filterable: true },
   { field: 'avgCost', label: 'Avg Cost', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
   { field: 'marketLow', label: 'Market Low', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
-  { field: 'tml', label: 'TML', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
+  { field: 'trueMarketLow', label: 'TML', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
   { field: 'currentREVAPrice', label: 'Current Price', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false, bold: true },
   { field: 'currentREVAMargin', label: 'Current Margin', format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`, filterable: false },
   { field: 'proposedPrice', label: 'Proposed Price', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, editable: true, filterable: false, bold: true },
@@ -61,31 +61,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [showShortageOnly, setShowShortageOnly] = useState(false);
   const itemsPerPage = 20;
 
-  // Updated TML calculation for each item in the data
+  // We don't need to recalculate TML here anymore, just pass through the existing value
   const dataWithTml = useMemo(() => {
     if (!data) return [];
     
-    return data.map(item => {
-      // Update: Explicitly use all competitor prices
-      const competitors = {
-        'ETH NET': item.ETH_NET || null,
-        'ETH': item.ETH || null,
-        'Nupharm': item.Nupharm || null,
-        'LEXON': item.LEXON || null,
-        'AAH': item.AAH || null
-      };
-      
-      const validPrices = Object.values(competitors)
-        .filter(price => price !== null && price !== undefined && !isNaN(Number(price)))
-        .map(price => Number(price));
-      
-      const tml = validPrices.length > 0 ? Math.min(...validPrices) : null;
-      
-      return {
-        ...item,
-        tml: tml
-      };
-    });
+    return data;
   }, [data]);
 
   // Get unique values for each column to use in filters
@@ -650,10 +630,10 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* TML cell with popover */}
+                    {/* TML cell with popover - updated to use trueMarketLow */}
                     <TableCell>
-                      <CellDetailsPopover item={item} field="tml">
-                        {formatCurrency(item.tml)}
+                      <CellDetailsPopover item={item} field="trueMarketLow">
+                        {formatCurrency(item.trueMarketLow)}
                       </CellDetailsPopover>
                     </TableCell>
                     

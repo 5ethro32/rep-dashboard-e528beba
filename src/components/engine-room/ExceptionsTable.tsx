@@ -286,11 +286,11 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer"
-                  onClick={() => handleSort('tml')}
+                  onClick={() => handleSort('trueMarketLow')}
                 >
                   <div className="flex items-center">
                     TML
-                    {renderSortIndicator('tml')}
+                    {renderSortIndicator('trueMarketLow')}
                   </div>
                 </TableHead>
                 <TableHead 
@@ -433,9 +433,10 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                         </CellDetailsPopover>
                       </TableCell>
                       
+                      {/* TML cell with popover - updated to use trueMarketLow */}
                       <TableCell>
-                        <CellDetailsPopover item={item} field="tml">
-                          £{(item.tml || 0).toFixed(2)}
+                        <CellDetailsPopover item={item} field="trueMarketLow">
+                          {formatCurrency(item.trueMarketLow)}
                         </CellDetailsPopover>
                       </TableCell>
                       

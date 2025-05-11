@@ -375,8 +375,9 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
           processedItem.aah || Infinity
         );
     
-    // Calculate True Market Low
+    // Calculate True Market Low - this is the absolute lowest price across all competitors
     processedItem.trueMarketLow = Math.min(
+      processedItem.eth_net || Infinity,
       processedItem.eth || Infinity,
       processedItem.nupharm || Infinity, 
       processedItem.lexon || Infinity, 

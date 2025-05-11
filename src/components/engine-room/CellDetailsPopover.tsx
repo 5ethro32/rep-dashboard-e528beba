@@ -34,8 +34,9 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
           result: item.marketLow || 'N/A'
         };
 
+      case 'trueMarketLow':
       case 'tml':
-        // Updated: True Market Low (lowest of all competitors - ETH NET, ETH, Nupharm, LEXON, AAH)
+        // True Market Low (lowest of all competitors - ETH NET, ETH, Nupharm, LEXON, AAH)
         const allCompetitors = {
           'ETH NET': item.ETH_NET || null,
           'ETH': item.ETH || null,
@@ -54,10 +55,14 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
           
         const lowestSource = validCompetitorPrices.find(p => p.price === lowestPrice)?.name || 'N/A';
         
+        const result = item.trueMarketLow !== undefined 
+          ? item.trueMarketLow 
+          : (item.tml !== undefined ? item.tml : lowestPrice);
+        
         return {
           formula: 'min(ETH NET, ETH, Nupharm, LEXON, AAH)',
           values: validCompetitorPrices.map(p => `${p.name}: £${p.price.toFixed(2)}`),
-          result: lowestPrice !== null ? `£${lowestPrice.toFixed(2)} (${lowestSource})` : 'N/A'
+          result: result !== null ? `£${Number(result).toFixed(2)} (${lowestSource})` : 'N/A'
         };
         
       case 'avgCost':
@@ -154,6 +159,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
       usageRank: "Usage ranking from 1-5 (1 being highest usage)",
       avgCost: "Average purchase cost based on historical data",
       marketLow: "Lowest competitor price in the market",
+      trueMarketLow: "True Market Low - absolute lowest price across all competitors",
       tml: "True Market Low - absolute lowest price across all competitors",
       currentREVAPrice: "Current selling price in the REVA system",
       currentREVAMargin: "Current margin percentage ((price-cost)/price)",
