@@ -1,16 +1,18 @@
 
 import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { Info } from 'lucide-react';
 
 interface CellDetailsPopoverProps {
   item: any;
   field: string;
   children: React.ReactNode;
+  isColumnHeader?: boolean;
 }
 
-const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, children }) => {
+const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, children, isColumnHeader = false }) => {
   // Get field-specific calculation details and formula
   const getDetails = () => {
     switch (field) {
@@ -130,63 +132,63 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
   };
   
   const details = getDetails();
-  const isColumnHeader = !item || !Object.keys(item).length;
+  const isEmptyItem = !item || Object.keys(item).length === 0;
   
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <div className="cursor-pointer hover:bg-gray-800/30 relative inline-block">
-          {children}
-          <div className="absolute top-0 right-0 h-2 w-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="absolute top-0 right-0 h-2 w-2 bg-blue-500 rounded-full opacity-50"></span>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end" className="text-xs">
-                  Click for details
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-4">
-        {isColumnHeader ? (
+  // For column headers with sorting capability
+  if (isColumnHeader || isEmptyItem) {
+    return (
+      <HoverCard openDelay={200} closeDelay={100}>
+        <HoverCardTrigger asChild>
+          <div>{children}</div>
+        </HoverCardTrigger>
+        <HoverCardContent side="top" align="start" className="w-80 p-4 z-50">
           <div>
             <h4 className="font-semibold text-sm mb-2">{field}</h4>
             <p className="text-sm text-muted-foreground">{getColumnDescription()}</p>
           </div>
-        ) : (
-          <div>
-            <h4 className="font-semibold text-sm mb-2">
-              {field.charAt(0).toUpperCase() + field.slice(1)} Calculation
-            </h4>
-            <div className="bg-gray-900/20 p-2 rounded-md mb-2">
-              <p className="text-sm font-mono">{details.formula}</p>
-            </div>
-            <div className="space-y-1">
-              {details.values.map((value, index) => (
-                <div key={index} className="text-sm flex justify-between">
-                  <span>{value.split(':')[0]}:</span>
-                  <span className="font-mono">{value.split(':')[1]}</span>
-                </div>
-              ))}
-              <div className="border-t border-gray-700 mt-2 pt-2 flex justify-between">
-                <span className="font-semibold">Result:</span>
-                <span className="font-mono font-semibold">
-                  {typeof details.result === 'number' 
-                    ? field.includes('margin') 
-                      ? `${(details.result * 100).toFixed(2)}%` 
-                      : `£${details.result.toFixed(2)}`
-                    : details.result}
-                </span>
+        </HoverCardContent>
+      </HoverCard>
+    );
+  }
+  
+  // For regular cell values
+  return (
+    <HoverCard openDelay={200} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <div className="cursor-help relative inline-block">
+          {children}
+          <span className="absolute top-0 right-0 h-1.5 w-1.5 bg-blue-500 rounded-full opacity-50"></span>
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent side="top" align="start" className="w-80 p-4 z-50">
+        <div>
+          <h4 className="font-semibold text-sm mb-2">
+            {field.charAt(0).toUpperCase() + field.slice(1)} Calculation
+          </h4>
+          <div className="bg-gray-900/20 p-2 rounded-md mb-2">
+            <p className="text-sm font-mono">{details.formula}</p>
+          </div>
+          <div className="space-y-1">
+            {details.values.map((value, index) => (
+              <div key={index} className="text-sm flex justify-between">
+                <span>{value.split(':')[0]}:</span>
+                <span className="font-mono">{value.split(':')[1]}</span>
               </div>
+            ))}
+            <div className="border-t border-gray-700 mt-2 pt-2 flex justify-between">
+              <span className="font-semibold">Result:</span>
+              <span className="font-mono font-semibold">
+                {typeof details.result === 'number' 
+                  ? field.includes('margin') 
+                    ? `${(details.result * 100).toFixed(2)}%` 
+                    : `£${details.result.toFixed(2)}`
+                  : details.result}
+              </span>
             </div>
           </div>
-        )}
-      </PopoverContent>
-    </Popover>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
 };
 

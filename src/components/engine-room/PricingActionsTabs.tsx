@@ -14,7 +14,9 @@ import {
   AlertTriangle,
   FileText,
   CheckCircle,
-  XCircle
+  XCircle,
+  TrendingUp,
+  DollarSign
 } from 'lucide-react';
 
 interface PricingActionsTabsProps {
@@ -30,6 +32,14 @@ interface PricingActionsTabsProps {
     approved: number;
     rejected: number;
   };
+  pricingImpactMetrics?: {
+    currentAvgMargin: number;
+    proposedAvgMargin: number;
+    currentProfit: number;
+    proposedProfit: number;
+    marginLift: number;
+    profitDelta: number;
+  };
 }
 
 const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
@@ -40,7 +50,15 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
   onSubmit,
   onReset,
   onExport,
-  approvalMetrics
+  approvalMetrics,
+  pricingImpactMetrics = {
+    currentAvgMargin: 0,
+    proposedAvgMargin: 0,
+    currentProfit: 0,
+    proposedProfit: 0,
+    marginLift: 0,
+    profitDelta: 0
+  }
 }) => {
   const getStatusColor = () => {
     switch (workflowStatus) {
@@ -121,6 +139,38 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
                     <span>{totalExceptions} exceptions</span>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Pricing Impact Overview */}
+            <div className="bg-gray-900/20 rounded-lg p-3 mb-3">
+              <h4 className="text-sm font-medium mb-2 flex items-center">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                Pricing Impact Overview
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-gray-900/30 p-2 rounded-md">
+                  <p className="text-xs text-muted-foreground">Current Average Margin</p>
+                  <p className="text-lg font-semibold">{pricingImpactMetrics.currentAvgMargin?.toFixed(2) || 0}%</p>
+                </div>
+                <div className="bg-gray-900/30 p-2 rounded-md">
+                  <p className="text-xs text-muted-foreground">Proposed Average Margin</p>
+                  <p className="text-lg font-semibold">{pricingImpactMetrics.proposedAvgMargin?.toFixed(2) || 0}%</p>
+                  <p className={`text-xs ${pricingImpactMetrics.marginLift > 0 ? 'text-green-500' : pricingImpactMetrics.marginLift < 0 ? 'text-red-500' : ''}`}>
+                    {pricingImpactMetrics.marginLift > 0 ? '+' : ''}{pricingImpactMetrics.marginLift.toFixed(2)}%
+                  </p>
+                </div>
+                <div className="bg-gray-900/30 p-2 rounded-md">
+                  <p className="text-xs text-muted-foreground">Current Total Profit</p>
+                  <p className="text-lg font-semibold">£{(pricingImpactMetrics.currentProfit || 0).toLocaleString()}</p>
+                </div>
+                <div className="bg-gray-900/30 p-2 rounded-md">
+                  <p className="text-xs text-muted-foreground">Proposed Total Profit</p>
+                  <p className="text-lg font-semibold">£{(pricingImpactMetrics.proposedProfit || 0).toLocaleString()}</p>
+                  <p className={`text-xs ${pricingImpactMetrics.profitDelta > 0 ? 'text-green-500' : pricingImpactMetrics.profitDelta < 0 ? 'text-red-500' : ''}`}>
+                    {pricingImpactMetrics.profitDelta > 0 ? '+' : ''}£{Math.abs(pricingImpactMetrics.profitDelta || 0).toLocaleString()}
+                  </p>
+                </div>
               </div>
             </div>
             

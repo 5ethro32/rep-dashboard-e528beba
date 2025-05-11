@@ -1,10 +1,11 @@
+
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   DropdownMenu,
@@ -56,6 +57,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
   const [filterByRank, setFilterByRank] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
+  const [hideInactiveProducts, setHideInactiveProducts] = useState(false); // Default should be false
+  const [showShortageOnly, setShowShortageOnly] = useState(false);
   const itemsPerPage = 20;
 
   // Get unique values for each column to use in filters
@@ -164,9 +167,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         return columnFilters[field].includes(item[field]);
       });
       
-      return matchesSearch && matchesRankFilter && matchesColumnFilters;
+      // Only filter inactive products if the toggle is enabled
+      const isActive = !hideInactiveProducts || (item.inStock > 0 || item.onOrder > 0 || item.revaUsage > 0);
+      
+      // Filter for shortage only if toggle is on
+      const matchesShortage = !showShortageOnly || item.shortage;
+      
+      return matchesSearch && matchesRankFilter && matchesColumnFilters && isActive && matchesShortage;
     });
-  }, [data, searchQuery, filterByRank, columnFilters]);
+  }, [data, searchQuery, filterByRank, columnFilters, hideInactiveProducts, showShortageOnly]);
 
   // Sort the filtered data
   const sortedData = useMemo(() => {
@@ -212,7 +221,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           : (Number(fieldB) || 0) - (Number(fieldA) || 0);
       }
     });
-  }, [filteredData, sortField, sortDirection, calculatePriceChangePercentage]);
+  }, [filteredData, sortField, sortDirection]);
 
   // Paginate the data
   const totalPages = Math.ceil((sortedData?.length || 0) / itemsPerPage);
@@ -332,10 +341,20 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     setEditingItemId(null);
   };
 
+  // Toggle the hide inactive products filter
+  const toggleHideInactiveProducts = () => {
+    setHideInactiveProducts(!hideInactiveProducts);
+  };
+
+  // Toggle the shortage only filter
+  const toggleShortageOnly = () => {
+    setShowShortageOnly(!showShortageOnly);
+  };
+
   // Render the column header with sort and filter
   const renderColumnHeader = (column: any) => {
     return (
-      <CellDetailsPopover field={column.field} item={{}}>
+      <CellDetailsPopover field={column.field} item={{}} isColumnHeader={true}>
         <div className="flex items-center justify-between">
           <div 
             className="flex items-center cursor-pointer"
@@ -734,96 +753,126 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by description..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by description..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <select 
+              className="bg-gray-800 border border-gray-700 rounded-md px-2 py-2 text-sm w-32"
+              value={filterByRank || ''}
+              onChange={(e) => setFilterByRank(e.target.value || null)}
+            >
+              <option value="">All Ranks</option>
+              {usageRanks.map(rank => (
+                <option key={rank} value={rank}>Rank {rank}</option>
+              ))}
+            </select>
           </div>
-          <select 
-            className="bg-gray-800 border border-gray-700 rounded-md px-2 py-2 text-sm w-32"
-            value={filterByRank || ''}
-            onChange={(e) => setFilterByRank(e.target.value || null)}
-          >
-            <option value="">All Ranks</option>
-            {usageRanks.map(rank => (
-              <option key={rank} value={rank}>Rank {rank}</option>
-            ))}
-          </select>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <div 
+              className="flex items-center gap-2 bg-gray-900 px-2 py-1 rounded-md cursor-pointer"
+              onClick={toggleHideInactiveProducts}
+            >
+              <input 
+                type="checkbox" 
+                checked={hideInactiveProducts} 
+                onChange={() => {}} 
+                className="h-4 w-4" 
+              />
+              <span className="text-sm">Hide inactive products</span>
+            </div>
+            
+            <div 
+              className="flex items-center gap-2 bg-gray-900 px-2 py-1 rounded-md cursor-pointer"
+              onClick={toggleShortageOnly}
+            >
+              <input 
+                type="checkbox" 
+                checked={showShortageOnly} 
+                onChange={() => {}} 
+                className="h-4 w-4" 
+              />
+              <span className="text-sm">Shortage only</span>
+            </div>
+            
+            {onPriceChange && (
+              <Button 
+                variant={bulkEditMode ? "default" : "outline"} 
+                size="sm" 
+                onClick={toggleBulkEditMode}
+              >
+                {bulkEditMode ? (
+                  <>
+                    <X className="h-4 w-4 mr-2" />
+                    Exit Bulk Edit
+                  </>
+                ) : (
+                  <>
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Bulk Edit Mode
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
         
-        {onPriceChange && (
-          <Button 
-            variant={bulkEditMode ? "default" : "outline"} 
-            size="sm" 
-            onClick={toggleBulkEditMode}
-          >
-            {bulkEditMode ? (
-              <>
-                <X className="h-4 w-4 mr-2" />
-                Exit Bulk Edit
-              </>
-            ) : (
-              <>
-                <Edit2 className="h-4 w-4 mr-2" />
-                Bulk Edit Mode
-              </>
-            )}
-          </Button>
+        {/* Active filters display */}
+        {renderActiveFilters()}
+        
+        {/* Bulk edit mode notice */}
+        {bulkEditMode && (
+          <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
+            <p className="text-sm">
+              <strong>Bulk Edit Mode:</strong> You can now edit multiple prices at once. Click "Save" on each item to apply changes.
+            </p>
+          </div>
+        )}
+        
+        {filterByRank ? (
+          renderDataTable(paginatedData)
+        ) : (
+          renderGroupedItems()
+        )}
+        
+        {/* Pagination - only show when filtering by rank */}
+        {filterByRank && totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length}
+            </div>
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         )}
       </div>
-      
-      {/* Active filters display */}
-      {renderActiveFilters()}
-      
-      {/* Bulk edit mode notice */}
-      {bulkEditMode && (
-        <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
-          <p className="text-sm">
-            <strong>Bulk Edit Mode:</strong> You can now edit multiple prices at once. Click "Save" on each item to apply changes.
-          </p>
-        </div>
-      )}
-      
-      {filterByRank ? (
-        renderDataTable(paginatedData)
-      ) : (
-        renderGroupedItems()
-      )}
-      
-      {/* Pagination - only show when filtering by rank */}
-      {filterByRank && totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length}
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+    </TooltipProvider>
   );
 };
 

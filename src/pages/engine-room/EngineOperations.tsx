@@ -41,8 +41,6 @@ const EngineOperationsContent = () => {
   } = useEngineRoom();
   const [showPricingExplainer, setShowPricingExplainer] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
-  const [showShortageOnly, setShowShortageOnly] = useState(false);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
 
   // Calculate metrics for the summary cards
@@ -74,6 +72,27 @@ const EngineOperationsContent = () => {
   
   const metrics = getMetrics();
   
+  // Get pricing impact metrics
+  const getPricingImpactMetrics = () => {
+    if (!engineData) return {
+      currentAvgMargin: 0,
+      proposedAvgMargin: 0,
+      currentProfit: 0,
+      proposedProfit: 0,
+      marginLift: 0,
+      profitDelta: 0
+    };
+
+    return {
+      currentAvgMargin: engineData.currentAvgMargin || 0,
+      proposedAvgMargin: engineData.proposedAvgMargin || 0,
+      currentProfit: engineData.currentProfit || 0,
+      proposedProfit: engineData.proposedProfit || 0,
+      marginLift: metrics.marginLift || 0,
+      profitDelta: metrics.profitDelta || 0
+    };
+  };
+  
   // Show item details
   const handleShowItemDetails = (item: any) => {
     setSelectedItem(item);
@@ -94,21 +113,7 @@ const EngineOperationsContent = () => {
   // Filter data based on toggles
   const filterData = (items: any[]) => {
     if (!items) return [];
-    
-    return items.filter(item => {
-      // Filter out inactive products if toggle is on
-      if (hideInactiveProducts) {
-        const isActive = (item.inStock > 0 || item.onOrder > 0 || item.revaUsage > 0);
-        if (!isActive) return false;
-      }
-      
-      // Filter for shortage only if toggle is on
-      if (showShortageOnly) {
-        if (!item.shortage) return false;
-      }
-      
-      return true;
-    });
+    return items;
   };
   
   // Get starred items
@@ -287,35 +292,6 @@ const EngineOperationsContent = () => {
         </div>
       </div>
 
-      {/* Current vs Proposed Comparison Metrics */}
-      <div className="bg-gray-900/40 border border-gray-800 rounded-lg p-4 mb-6">
-        <h3 className="text-lg font-medium mb-3">Pricing Impact Overview</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gray-800/50 p-3 rounded-md">
-            <p className="text-sm text-muted-foreground">Current Average Margin</p>
-            <p className="text-xl font-semibold">{engineData.currentAvgMargin?.toFixed(2) || 0}%</p>
-          </div>
-          <div className="bg-gray-800/50 p-3 rounded-md">
-            <p className="text-sm text-muted-foreground">Proposed Average Margin</p>
-            <p className="text-xl font-semibold">{engineData.proposedAvgMargin?.toFixed(2) || 0}%</p>
-            <p className={`text-sm ${metrics.marginLift > 0 ? 'text-green-500' : metrics.marginLift < 0 ? 'text-red-500' : ''}`}>
-              {metrics.marginLift > 0 ? '+' : ''}{metrics.marginLift.toFixed(2)}%
-            </p>
-          </div>
-          <div className="bg-gray-800/50 p-3 rounded-md">
-            <p className="text-sm text-muted-foreground">Current Total Profit</p>
-            <p className="text-xl font-semibold">£{engineData.currentProfit?.toLocaleString() || 0}</p>
-          </div>
-          <div className="bg-gray-800/50 p-3 rounded-md">
-            <p className="text-sm text-muted-foreground">Proposed Total Profit</p>
-            <p className="text-xl font-semibold">£{engineData.proposedProfit?.toLocaleString() || 0}</p>
-            <p className={`text-sm ${metrics.profitDelta > 0 ? 'text-green-500' : metrics.profitDelta < 0 ? 'text-red-500' : ''}`}>
-              {metrics.profitDelta > 0 ? '+' : ''}£{Math.abs(engineData.proposedProfit - engineData.currentProfit).toLocaleString() || 0}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* New tabbed workflow status and actions */}
       <div className="mb-6">
         <PricingActionsTabs
@@ -331,6 +307,7 @@ const EngineOperationsContent = () => {
             approved: engineData.approvedItems?.length || 0,
             rejected: engineData.rejectedItems?.length || 0
           }}
+          pricingImpactMetrics={getPricingImpactMetrics()}
         />
       </div>
 
@@ -366,35 +343,6 @@ const EngineOperationsContent = () => {
         <div className="flex items-center space-x-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Filters:</span>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="inactive-toggle" 
-            checked={hideInactiveProducts}
-            onCheckedChange={setHideInactiveProducts}
-          />
-          <label htmlFor="inactive-toggle" className="text-sm cursor-pointer">
-            Hide inactive products
-          </label>
-          <Badge variant="outline" className="ml-1 text-xs">
-            No stock/order/usage
-          </Badge>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="shortage-toggle" 
-            checked={showShortageOnly}
-            onCheckedChange={setShowShortageOnly}
-          />
-          <label htmlFor="shortage-toggle" className="text-sm cursor-pointer">
-            Show shortage only
-          </label>
-          <Badge variant="outline" className="ml-1 text-xs bg-orange-900/30 text-orange-400">
-            <Package className="h-3 w-3 mr-1" />
-            Shortage
-          </Badge>
         </div>
         
         <div className="flex items-center space-x-2">
