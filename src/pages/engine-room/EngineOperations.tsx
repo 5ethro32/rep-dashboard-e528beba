@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
-import { UploadCloud, FileText, Download, Filter, Star, Package, TrendingDown, TrendingUp } from 'lucide-react';
+import { UploadCloud, FileText, Download, Filter, Star, Package } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -392,12 +392,6 @@ const EngineOperationsContent = () => {
           <span className="text-sm">
             {starredItems.size} items starred
           </span>
-        </div>
-        
-        {/* Market trend indicators - removed text labels, keeping only icons */}
-        <div className="flex items-center space-x-4 ml-auto">
-          <TrendingUp className="h-4 w-4 text-green-500" />
-          <TrendingDown className="h-4 w-4 text-red-500" />
         </div>
       </div>
 
