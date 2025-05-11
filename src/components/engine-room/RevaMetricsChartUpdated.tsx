@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface RevaMetricsChartProps {
   data: any[];
@@ -129,20 +129,21 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       
-      // Safely format numbers with null/undefined checks
-      const formatValue = (value: number | null | undefined) => {
-        if (value === null || value === undefined) {
-          return "N/A";
-        }
-        return value.toFixed(1);
+      // Format numbers with better precision
+      const formatMargin = (value: number | null | undefined) => {
+        if (value === null || value === undefined) return "N/A";
+        return `${value.toFixed(1)}%`;
       };
       
-      // Safely format currency with null/undefined checks
       const formatCurrency = (value: number | null | undefined) => {
-        if (value === null || value === undefined) {
-          return "N/A";
+        if (value === null || value === undefined) return "N/A";
+        
+        if (value >= 1000000) {
+          return `£${(value / 1000000).toFixed(1)}M`;
+        } else if (value >= 1000) {
+          return `£${(value / 1000).toFixed(1)}K`;
         }
-        return `£${value.toLocaleString()}`;
+        return `£${value.toFixed(0)}`;
       };
       
       return (
@@ -151,7 +152,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           <p className="text-xs text-gray-400">{data.rangeDescription}</p>
           <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
             <div>
-              <p><span className="text-blue-400">Current Margin:</span> {formatValue(data.currentMargin)}%</p>
+              <p><span className="text-blue-400">Current Margin:</span> {formatMargin(data.currentMargin)}</p>
             </div>
             <div>
               <p><span className="text-blue-400">Current Profit:</span> {formatCurrency(data.currentProfit)}</p>
@@ -170,7 +171,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   // Calculate the maximum margin value
   const maxMargin = Math.max(...processedData.map(item => item.currentMargin || 0)); 
   
-  // Format Y-axis labels for profit
+  // Format Y-axis labels for profit - with cleaner formatting
   const formatProfitAxis = (value: number) => {
     if (value >= 1000000) {
       return `£${(value / 1000000).toFixed(1)}M`;
@@ -180,7 +181,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     return `£${value}`;
   };
   
-  // Format Y-axis labels for margin
+  // Format Y-axis labels for margin - with cleaner formatting
   const formatMarginAxis = (value: number) => {
     return `${value.toFixed(1)}%`;
   };
@@ -203,13 +204,13 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             yAxisId="left" 
             orientation="left" 
             tickFormatter={formatMarginAxis}
-            domain={[0, Math.max(maxMargin * 1.1, 30)]} // Set domain with padding, minimum 30%
+            domain={[0, Math.max(maxMargin * 1.1, 30)]}
           />
           <YAxis 
             yAxisId="right" 
             orientation="right" 
             tickFormatter={formatProfitAxis}
-            domain={[0, maxProfit * 1.1]} // Set domain with 10% padding
+            domain={[0, maxProfit * 1.1]}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
