@@ -52,9 +52,13 @@ const TableFooter = React.forwardRef<
 ))
 TableFooter.displayName = "TableFooter"
 
+interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
+  isExpanded?: boolean;
+}
+
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
-  React.HTMLAttributes<HTMLTableRowElement> & { isExpanded?: boolean }
+  TableRowProps
 >(({ className, isExpanded, ...props }, ref) => (
   <tr
     ref={ref}

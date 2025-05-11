@@ -51,6 +51,7 @@ const AppHeader = ({
   const isEngineRoomSection = location.pathname.startsWith('/engine-room');
   const isEngineDashboard = location.pathname === '/engine-room/dashboard';
   const isEngineOperations = location.pathname === '/engine-room/engine';
+  const isEngineApprovals = location.pathname === '/engine-room/approvals';
 
   // Function to get the current page title based on the URL path
   const getCurrentPageTitle = () => {
@@ -65,11 +66,14 @@ const AppHeader = ({
         return isMobile ? 'My Dashboard' : 'My Dashboard';
       case '/ai-vera':
         return isMobile ? 'Vera' : 'AI Vera';
-      case '/engine-room':
       case '/engine-room/dashboard':
+        return isMobile ? 'Engine Dashboard' : 'Engine Room / Dashboard';
       case '/engine-room/engine':
-        const subSection = isEngineDashboard ? 'Dashboard' : isEngineOperations ? 'Engine' : '';
-        return isMobile ? 'Engine' : `Engine Room${subSection ? ` / ${subSection}` : ''}`;
+        return isMobile ? 'Engine' : 'Engine Room / Engine';
+      case '/engine-room/approvals':
+        return isMobile ? 'Approvals' : 'Engine Room / Approvals';
+      case '/engine-room':
+        return isMobile ? 'Engine' : 'Engine Room';
       default:
         return '';
     }
@@ -141,6 +145,9 @@ const AppHeader = ({
     }, {
       path: '/engine-room/engine',
       label: 'Engine'
+    }, {
+      path: '/engine-room/approvals',
+      label: 'Approvals'
     }]
   }];
 
@@ -297,6 +304,23 @@ const AppHeader = ({
                       <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
                     )}
                     Engine
+                  </>
+                )}
+              </NavLink>
+              
+              <NavLink 
+                to="/engine-room/approvals"
+                className={({ isActive }) => cn(
+                  "px-4 py-1.5 text-sm font-medium relative",
+                  isActive ? "text-finance-red" : "text-white/70 hover:text-white"
+                )}
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                    )}
+                    Approvals
                   </>
                 )}
               </NavLink>

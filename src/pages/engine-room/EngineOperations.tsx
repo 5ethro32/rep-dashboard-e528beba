@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package } from 'lucide-react';
@@ -20,8 +21,6 @@ import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer'
 import ExceptionsTable from '@/components/engine-room/ExceptionsTable';
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
-import ApprovalsTab from '@/components/engine-room/ApprovalsTab';
-import ApprovalHistoryTab from '@/components/engine-room/ApprovalHistoryTab';
 
 const EngineOperationsContent = () => {
   const {
@@ -38,8 +37,6 @@ const EngineOperationsContent = () => {
     handleResetChanges,
     handleSaveChanges,
     handleSubmitForApproval,
-    handleApproveItems,
-    handleRejectItems,
     handleExport,
     getPendingApprovalCount
   } = useEngineRoom();
@@ -167,38 +164,6 @@ const EngineOperationsContent = () => {
     }
   };
 
-  // Helper function to render tabs based on user role
-  const renderTabsList = () => {
-    const baseTabItems = [
-      <TabsTrigger key="all-items" value="all-items">All Items</TabsTrigger>,
-      <TabsTrigger key="exceptions" value="exceptions">
-        Exceptions ({metrics.rule1Flags + metrics.rule2Flags})
-      </TabsTrigger>,
-      <TabsTrigger key="starred" value="starred">
-        Starred ({starredItems.size})
-      </TabsTrigger>,
-      <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
-    ];
-
-    // Add approvals tab for manager/admin roles
-    if (userRole === 'manager' || userRole === 'admin') {
-      baseTabItems.splice(3, 0, 
-        <TabsTrigger key="approvals" value="approvals">
-          Approvals {getPendingApprovalCount() > 0 && `(${getPendingApprovalCount()})`}
-        </TabsTrigger>,
-        <TabsTrigger key="approval-history" value="approval-history">
-          Approval History
-        </TabsTrigger>
-      );
-    }
-
-    return (
-      <TabsList className="inline-flex w-full">
-        {baseTabItems}
-      </TabsList>
-    );
-  };
-
   if (!engineData) {
     return (
       <div className="container mx-auto px-4 py-6">
@@ -296,6 +261,43 @@ const EngineOperationsContent = () => {
         </div>
       </div>
 
+      {/* Flag metrics cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-medium mb-2">High Price Flags</h3>
+            <div className="text-2xl font-bold mb-1 text-red-400">
+              {metrics.rule1Flags || 0}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Items with prices significantly above market
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-medium mb-2">Low Margin Flags</h3>
+            <div className="text-2xl font-bold mb-1 text-amber-400">
+              {metrics.rule2Flags || 0}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Items with margins below threshold
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-medium mb-2">Items to Review</h3>
+            <div className="text-2xl font-bold mb-1">{modifiedItems.size}</div>
+            <div className="text-sm text-muted-foreground">
+              Items with pending price changes
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Pricing workflow status and actions */}
       <div className="mb-6">
         <PricingActionsTabs
@@ -317,7 +319,16 @@ const EngineOperationsContent = () => {
 
       {/* Tabs for different views */}
       <Tabs defaultValue="all-items" className="mt-8">
-        {renderTabsList()}
+        <TabsList className="inline-flex w-full">
+          <TabsTrigger key="all-items" value="all-items">All Items</TabsTrigger>
+          <TabsTrigger key="exceptions" value="exceptions">
+            Exceptions ({metrics.rule1Flags + metrics.rule2Flags})
+          </TabsTrigger>
+          <TabsTrigger key="starred" value="starred">
+            Starred ({starredItems.size})
+          </TabsTrigger>
+          <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
+        </TabsList>
         
         <TabsContent value="all-items" className="space-y-4">
           <EngineDataTable 
@@ -348,30 +359,6 @@ const EngineOperationsContent = () => {
             starredItems={starredItems}
           />
         </TabsContent>
-
-        {(userRole === 'manager' || userRole === 'admin') && (
-          <TabsContent value="approvals" className="space-y-4">
-            <ApprovalsTab 
-              data={engineData.items || []}
-              onApprove={handleApproveItems}
-              onReject={handleRejectItems}
-              onToggleStar={handleToggleStar}
-              starredItems={starredItems}
-            />
-          </TabsContent>
-        )}
-        
-        {/* Approval History Tab */}
-        {(userRole === 'manager' || userRole === 'admin') && (
-          <TabsContent value="approval-history" className="space-y-4">
-            <ApprovalHistoryTab 
-              data={engineData.items || []}
-              onExport={handleExport}
-              onToggleStar={handleToggleStar}
-              starredItems={starredItems}
-            />
-          </TabsContent>
-        )}
         
         <TabsContent value="configuration" className="space-y-4">
           <ConfigurationPanel 

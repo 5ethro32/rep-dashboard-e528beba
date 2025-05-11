@@ -17,6 +17,7 @@ import MyPerformance from "./pages/MyPerformance";
 import EngineRoom from "./pages/EngineRoom"; 
 import EngineDashboard from "./pages/engine-room/EngineDashboard";
 import EngineOperations from "./pages/engine-room/EngineOperations";
+import ApprovalsDashboard from "./pages/engine-room/ApprovalsDashboard";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
 
@@ -140,6 +141,7 @@ const AppRoutes = () => {
         <Route path="/engine-room" element={<Navigate to="/engine-room/dashboard" replace />} />
         <Route path="/engine-room/dashboard" element={<EngineDashboard />} />
         <Route path="/engine-room/engine" element={<EngineOperations />} />
+        <Route path="/engine-room/approvals" element={<ApprovalsDashboard />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
