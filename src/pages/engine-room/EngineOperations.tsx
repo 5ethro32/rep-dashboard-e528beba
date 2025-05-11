@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package } from 'lucide-react';
@@ -46,8 +47,6 @@ const EngineOperationsContent = () => {
   const [showPricingExplainer, setShowPricingExplainer] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
-  const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
-  const [selectedFlag, setSelectedFlag] = useState<string>('');
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -146,38 +145,6 @@ const EngineOperationsContent = () => {
     });
     
     return Array.from(flags).sort();
-  };
-  
-  // Filter data based on toggles and selected flag
-  const filterData = (items: any[]) => {
-    if (!items) return [];
-    
-    // Apply inactive product filter if enabled
-    let filteredItems = items;
-    
-    if (hideInactiveProducts) {
-      filteredItems = filteredItems.filter(item => (item.revaUsage || 0) > 0);
-    }
-    
-    // Apply flag filter if selected
-    if (selectedFlag) {
-      filteredItems = filteredItems.filter(item => {
-        // Check for built-in flags
-        if (selectedFlag === 'SHORT' && item.shortage) return true;
-        if (selectedFlag === 'HIGH_PRICE' && item.flag1) return true;
-        if (selectedFlag === 'LOW_MARGIN' && item.flag2) return true;
-        
-        // Check for flag field
-        if (item.flag && item.flag === selectedFlag) return true;
-        
-        // Check in flags array
-        if (item.flags && Array.isArray(item.flags) && item.flags.includes(selectedFlag)) return true;
-        
-        return false;
-      });
-    }
-    
-    return filteredItems;
   };
   
   // Get starred items
@@ -295,9 +262,6 @@ const EngineOperationsContent = () => {
     );
   }
 
-  // Get unique flags for the dropdown
-  const uniqueFlags = getUniqueFlags();
-
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Top actions */}
@@ -352,56 +316,13 @@ const EngineOperationsContent = () => {
         />
       </div>
 
-      {/* Filter toggles */}
-      <div className="flex flex-wrap gap-4 items-center my-4 p-3 bg-gray-900/40 rounded-lg">
-        <div className="flex items-center space-x-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Filters:</span>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="hideInactive" 
-            checked={hideInactiveProducts}
-            onCheckedChange={setHideInactiveProducts}
-          />
-          <label htmlFor="hideInactive" className="text-sm cursor-pointer">
-            Hide Inactive Products
-          </label>
-        </div>
-        
-        {/* Replace Shortage Only toggle with Flag dropdown */}
-        <div className="flex items-center space-x-2">
-          <Select value={selectedFlag} onValueChange={setSelectedFlag}>
-            <SelectTrigger className="w-[180px] h-8">
-              <SelectValue placeholder="Filter by flag" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All flags</SelectItem>
-              {uniqueFlags.map(flag => (
-                <SelectItem key={flag} value={flag}>
-                  {flag}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Star className={`h-4 w-4 ${starredItems.size > 0 ? 'text-yellow-400' : 'text-muted-foreground'}`} />
-          <span className="text-sm">
-            {starredItems.size} items starred
-          </span>
-        </div>
-      </div>
-
       {/* Tabs for different views */}
       <Tabs defaultValue="all-items" className="mt-8">
         {renderTabsList()}
         
         <TabsContent value="all-items" className="space-y-4">
           <EngineDataTable 
-            data={filterData(engineData.items || [])} 
+            data={engineData.items || []} 
             onShowPriceDetails={handleShowItemDetails}
             onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
             onToggleStar={handleToggleStar}
@@ -411,7 +332,7 @@ const EngineOperationsContent = () => {
         
         <TabsContent value="exceptions" className="space-y-4">
           <ExceptionsTable 
-            data={filterData(engineData.flaggedItems || [])} 
+            data={engineData.flaggedItems || []} 
             onShowPriceDetails={handleShowItemDetails}
             onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
             onToggleStar={handleToggleStar}

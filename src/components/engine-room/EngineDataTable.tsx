@@ -101,7 +101,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [filterByRank, setFilterByRank] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
-  const itemsPerPage = 20;
+  const itemsPerPage = 50; // Increased for larger tables
 
   // Extract unique usage ranks from the data for the dropdown
   const usageRanks = useMemo(() => {
@@ -265,19 +265,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const totalPages = Math.ceil((sortedData?.length || 0) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = sortedData && sortedData.length > 0 ? sortedData.slice(startIndex, startIndex + itemsPerPage) : [];
-
-  // Group data by usage rank
-  const groupedByRank = useMemo(() => {
-    if (!sortedData || sortedData.length === 0) return {};
-    return sortedData.reduce((acc: Record<string, any[]>, item: any) => {
-      const rank = item.usageRank || 'Unknown';
-      if (!acc[rank]) {
-        acc[rank] = [];
-      }
-      acc[rank].push(item);
-      return acc;
-    }, {});
-  }, [sortedData]);
 
   // Handle sort click
   const handleSort = (field: string) => {
@@ -509,16 +496,105 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       </div>;
   };
 
-  // Render the data table with rows
-  const renderDataTable = (items: any[]) => {
-    return <div className="rounded-md border overflow-hidden">
+  // Render a unified filter bar
+  const renderUnifiedFilterBar = () => {
+    return (
+      <div className="flex flex-wrap gap-4 items-center mb-4">
+        {/* Search box */}
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search by description..." 
+            className="pl-8" 
+            value={searchQuery} 
+            onChange={e => setSearchQuery(e.target.value)} 
+          />
+        </div>
+        
+        {/* Rank filter */}
+        <Select value={filterByRank || ''} onValueChange={value => setFilterByRank(value === '' ? null : value)}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Ranks" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Ranks</SelectItem>
+            {usageRanks.map(rank => (
+              <SelectItem key={rank} value={rank.toString()}>
+                Rank {rank}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {/* Flag filter */}
+        <Select value={columnFilters['flags']?.[0] || ''} onValueChange={value => {
+          if (value === '') {
+            setColumnFilters(prev => {
+              const newFilters = {...prev};
+              delete newFilters['flags'];
+              return newFilters;
+            });
+          } else {
+            setColumnFilters(prev => ({...prev, flags: [value]}));
+          }
+        }}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Filter by flag" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All flags</SelectItem>
+            {uniqueFlags.map(flag => (
+              <SelectItem key={flag} value={flag}>{flag}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {/* Hide Inactive toggle */}
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="hideInactive" 
+            checked={hideInactiveProducts}
+            onCheckedChange={setHideInactiveProducts}
+          />
+          <label htmlFor="hideInactive" className="text-sm cursor-pointer">
+            Hide Inactive Products
+          </label>
+        </div>
+        
+        {/* Bulk Edit toggle */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={toggleBulkEditMode} 
+          className={bulkEditMode ? "bg-primary/20" : ""}
+        >
+          {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit Prices"}
+        </Button>
+        
+        {/* Starred items info */}
+        <div className="flex items-center space-x-2">
+          <Star className={`h-4 w-4 ${starredItems.size > 0 ? 'text-yellow-400' : 'text-muted-foreground'}`} />
+          <span className="text-sm">
+            {starredItems.size} items starred
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  // Render the data table with rows - Now used for one combined table
+  const renderDataTable = () => {
+    return (
+      <div className="rounded-md border overflow-hidden">
         <ScrollArea className="h-[600px]">
           <Table>
             <TableHeader className="sticky top-0 z-10">
               <TableRow>
-                {columns.map(column => <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900">
+                {columns.map(column => (
+                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900">
                     {renderColumnHeader(column)}
-                  </TableHead>)}
+                  </TableHead>
+                ))}
                 <TableHead className="bg-gray-900/70 sticky top-0">
                   {renderFlagsColumnHeader()}
                 </TableHead>
@@ -526,16 +602,23 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.length === 0 && <TableRow>
+              {paginatedData.length === 0 && (
+                <TableRow>
                   <TableCell colSpan={columns.length + 2} className="text-center py-10">
                     No items found matching your search criteria
                   </TableCell>
-                </TableRow>}
-              {items.map((item, index) => {
-              // Calculate price change percentage for each item
-              const priceChangePercentage = calculatePriceChangePercentage(item);
-              const isEditing = editingItemId === item.id;
-              return <TableRow key={index} className={`${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}>
+                </TableRow>
+              )}
+              {paginatedData.map((item, index) => {
+                // Calculate price change percentage for each item
+                const priceChangePercentage = calculatePriceChangePercentage(item);
+                const isEditing = editingItemId === item.id;
+                
+                return (
+                  <TableRow 
+                    key={index} 
+                    className={`${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
+                  >
                     <TableCell>{item.description}</TableCell>
                     <TableCell>{item.inStock}</TableCell>
                     <TableCell>{item.revaUsage}</TableCell>
@@ -582,26 +665,63 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                     
                     {/* Proposed price cell with inline editing */}
                     <TableCell>
-                      {bulkEditMode && !item.priceModified ? <PriceEditor initialPrice={item.proposedPrice || 0} currentPrice={item.currentREVAPrice || 0} calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} cost={item.avgCost || 0} onSave={newPrice => onPriceChange && onPriceChange(item, newPrice)} onCancel={() => {}} compact={true} /> : isEditing ? <div className="flex items-center gap-2">
-                          <Input type="number" value={editingValues[item.id]} onChange={e => handlePriceInputChange(item, e.target.value)} className="w-24 h-8 py-1 px-2" autoFocus />
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleSavePriceEdit(item)}>
+                      {bulkEditMode && !item.priceModified ? (
+                        <PriceEditor 
+                          initialPrice={item.proposedPrice || 0} 
+                          currentPrice={item.currentREVAPrice || 0} 
+                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} 
+                          cost={item.avgCost || 0} 
+                          onSave={newPrice => onPriceChange && onPriceChange(item, newPrice)} 
+                          onCancel={() => {}} 
+                          compact={true} 
+                        />
+                      ) : isEditing ? (
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            type="number" 
+                            value={editingValues[item.id]} 
+                            onChange={e => handlePriceInputChange(item, e.target.value)} 
+                            className="w-24 h-8 py-1 px-2" 
+                            autoFocus 
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0" 
+                            onClick={() => handleSavePriceEdit(item)}
+                          >
                             <CheckCircle className="h-4 w-4 text-green-500" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleCancelEdit}>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0" 
+                            onClick={handleCancelEdit}
+                          >
                             <X className="h-4 w-4 text-red-500" />
                           </Button>
-                        </div> : <CellDetailsPopover item={item} field="proposedPrice">
+                        </div>
+                      ) : (
+                        <CellDetailsPopover item={item} field="proposedPrice">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
                             {item.priceModified && <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />}
-                            {onPriceChange && !bulkEditMode && <Button variant="ghost" size="sm" className="ml-2 h-6 w-6 p-0" onClick={e => {
-                        e.stopPropagation();
-                        handleStartEdit(item);
-                      }}>
+                            {onPriceChange && !bulkEditMode && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="ml-2 h-6 w-6 p-0" 
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleStartEdit(item);
+                                }}
+                              >
                                 <Edit2 className="h-3 w-3" />
-                              </Button>}
+                              </Button>
+                            )}
                           </div>
-                        </CellDetailsPopover>}
+                        </CellDetailsPopover>
+                      )}
                     </TableCell>
                     
                     {/* Price change percentage */}
@@ -624,98 +744,78 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                     </TableCell>
                     
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => onShowPriceDetails(item)}>
-                        Details
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => onShowPriceDetails(item)}
+                        >
+                          Details
+                        </Button>
+                        
+                        {onToggleStar && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleStar(item.id);
+                            }}
+                          >
+                            <Star
+                              className={`h-4 w-4 ${starredItems.has(item.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
+                            />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
-                  </TableRow>;
-            })}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </ScrollArea>
-      </div>;
+      </div>
+    );
   };
 
-  // Render the grouped items by usage rank
-  const renderGroupedItems = () => {
-    if (filterByRank) {
-      // If filtering by rank, don't group
-      return <div className="rounded-md border overflow-hidden">
-          <div className="overflow-x-auto">
-            {renderDataTable(paginatedData)}
-          </div>
-        </div>;
-    }
-    return <div className="space-y-6">
-        {Object.keys(groupedByRank).sort((a, b) => Number(a) - Number(b)).map(rank => <div key={rank} className="space-y-2">
-            
-            <div className="rounded-md border overflow-hidden">
-              <div className="overflow-x-auto">
-                {renderDataTable(groupedByRank[rank].slice(0, itemsPerPage))}
-              </div>
-            </div>
-            {groupedByRank[rank].length > itemsPerPage && <div className="text-center text-sm text-muted-foreground mt-2">
-                <Button variant="link" size="sm" onClick={() => setFilterByRank(rank)}>
-                  View all {groupedByRank[rank].length} items in Rank {rank}
-                </Button>
-              </div>}
-          </div>)}
-      </div>;
-  };
-
-  // Use the starredItems prop and add functionality for toggling stars
-  const handleToggleStar = (event: React.MouseEvent, itemId: string) => {
-    event.stopPropagation();
-    if (onToggleStar) {
-      onToggleStar(itemId);
-    }
+  // Pagination controls
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    
+    return (
+      <div className="flex items-center justify-between mt-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+        <div className="text-sm">
+          Page {currentPage} of {totalPages} 
+          ({sortedData.length} items)
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+          disabled={currentPage === totalPages || totalPages === 0}
+        >
+          Next
+        </Button>
+      </div>
+    );
   };
 
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search by description..." className="pl-8" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-            </div>
-            <select className="bg-gray-800 border border-gray-700 rounded-md px-2 py-2 text-sm w-32" value={filterByRank || ''} onChange={e => setFilterByRank(e.target.value === '' ? null : e.target.value)}>
-              <option value="">All Ranks</option>
-              {usageRanks.map(rank => (
-                <option key={rank} value={rank.toString()}>
-                  Rank {rank}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Button variant="outline" size="sm" onClick={toggleBulkEditMode} className={bulkEditMode ? "bg-primary/20" : ""}>
-              {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit Prices"}
-            </Button>
-            
-            <Button variant="outline" size="sm" onClick={toggleHideInactiveProducts} className={hideInactiveProducts ? "bg-primary/20" : ""}>
-              {hideInactiveProducts ? "Show All" : "Hide Inactive"}
-            </Button>
-          </div>
-        </div>
-
+        {renderUnifiedFilterBar()}
         {renderActiveFilters()}
-        
-        {filterByRank ? renderDataTable(paginatedData) : renderGroupedItems()}
-        
-        {/* Pagination controls - only show when filtering by rank */}
-        {filterByRank && <div className="flex items-center justify-between mt-4">
-            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-              Previous
-            </Button>
-            <div className="text-sm">
-              Page {currentPage} of {totalPages || 1}
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}>
-              Next
-            </Button>
-          </div>}
+        {renderDataTable()}
+        {renderPagination()}
       </div>
     </TooltipProvider>
   );
