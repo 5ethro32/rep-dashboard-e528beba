@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import VeraAssistant from '@/components/chat/VeraAssistant';
+
 interface AppHeaderProps {
   selectedUserId?: string | null;
   onSelectUser?: (userId: string | null, displayName: string) => void;
@@ -16,6 +17,7 @@ interface AppHeaderProps {
   onRefresh?: () => void;
   isLoading?: boolean;
 }
+
 const AppHeader = ({
   selectedUserId,
   onSelectUser,
@@ -59,12 +61,14 @@ const AppHeader = ({
         return '';
     }
   };
+  
   const handleUserSelection = (userId: string | null, displayName: string) => {
     console.log(`AppHeader: User selection changed to ${displayName} (${userId})`);
     if (onSelectUser) {
       onSelectUser(userId, displayName);
     }
   };
+  
   const handleRefreshClick = () => {
     console.log('Refresh button clicked in AppHeader');
 
@@ -92,6 +96,7 @@ const AppHeader = ({
       onRefresh();
     }
   };
+  
   const navItems = [{
     path: '/rep-performance',
     label: 'Home',
@@ -128,6 +133,7 @@ const AppHeader = ({
 
   // Check if refresh functionality should be shown
   const showRefresh = onRefresh !== undefined || location.pathname === '/rep-performance' && window.repPerformanceRefresh !== undefined;
+  
   return <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-gray-950/95">
       <div className="container max-w-7xl mx-auto px-4">
         {/* Main header with logo and user profile */}
@@ -203,9 +209,49 @@ const AppHeader = ({
       </div>
       
       {/* Engine Room Sub-Navigation when in Engine Room section */}
-      {!isMobile && isEngineRoomSection && <div className="bg-gray-900/80 border-t border-b border-gray-800/40">
-          
-        </div>}
+      {!isMobile && isEngineRoomSection && (
+        <div className="bg-gray-900/80 border-t border-b border-gray-800/40">
+          <div className="container max-w-7xl mx-auto px-4">
+            <div className="flex items-center h-10">
+              <NavLink 
+                to="/engine-room/dashboard" 
+                className={({ isActive }) => 
+                  cn("px-4 h-full flex items-center text-sm font-medium relative", 
+                     isActive ? "text-finance-red" : "text-white/60 hover:text-white"
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                    )}
+                    Dashboard
+                  </>
+                )}
+              </NavLink>
+              <NavLink 
+                to="/engine-room/engine" 
+                className={({ isActive }) => 
+                  cn("px-4 h-full flex items-center text-sm font-medium relative", 
+                     isActive ? "text-finance-red" : "text-white/60 hover:text-white"
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                    )}
+                    Engine
+                  </>
+                )}
+              </NavLink>
+            </div>
+          </div>
+        </div>
+      )}
     </header>;
 };
+
 export default AppHeader;
