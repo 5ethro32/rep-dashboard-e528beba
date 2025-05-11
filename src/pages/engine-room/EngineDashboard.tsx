@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
-import RevaMetricsChart from '@/components/engine-room/RevaMetricsChart';
+import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUpdated';
 
 const EngineDashboardContent = () => {
   const {
@@ -27,6 +27,7 @@ const EngineDashboardContent = () => {
       totalRevenue: 0,
       totalProfit: 0,
       overallMargin: 0,
+      avgCostLessThanMLCount: 0,
       rule1Flags: 0,
       rule2Flags: 0,
       profitDelta: 0,
@@ -39,6 +40,7 @@ const EngineDashboardContent = () => {
       totalRevenue: engineData.totalRevenue || 0,
       totalProfit: engineData.totalProfit || 0,
       overallMargin: engineData.overallMargin || 0,
+      avgCostLessThanMLCount: engineData.avgCostLessThanMLCount || 0,
       rule1Flags: engineData.rule1Flags || 0, 
       rule2Flags: engineData.rule2Flags || 0,
       profitDelta: engineData.profitDelta || 0,
@@ -125,27 +127,42 @@ const EngineDashboardContent = () => {
     let totalUsage = 0;
     let proposedRevenue = 0;
     let proposedProfit = 0;
+    let totalUsageWeightedMargin = 0;
+    let totalProposedUsageWeightedMargin = 0;
     
     engineData.items?.forEach(item => {
       if (item.revaUsage && item.currentREVAPrice) {
         const currentRevenue = item.revaUsage * item.currentREVAPrice;
         const currentProfit = item.revaUsage * (item.currentREVAPrice - item.avgCost);
         
+        // Calculate current margin correctly
+        const currentMargin = item.currentREVAPrice > 0 ? 
+          (item.currentREVAPrice - item.avgCost) / item.currentREVAPrice : 0;
+        const currentUsageWeightedMargin = currentMargin * item.revaUsage;
+        
         // Calculate proposed values if available
         const proposedPrice = item.proposedPrice || item.currentREVAPrice;
         const proposedItemRevenue = item.revaUsage * proposedPrice;
         const proposedItemProfit = item.revaUsage * (proposedPrice - item.avgCost);
+        
+        // Calculate proposed margin correctly
+        const proposedMargin = proposedPrice > 0 ? 
+          (proposedPrice - item.avgCost) / proposedPrice : 0;
+        const proposedUsageWeightedMargin = proposedMargin * item.revaUsage;
         
         totalRevenue += currentRevenue;
         totalProfit += currentProfit;
         totalUsage += item.revaUsage;
         proposedRevenue += proposedItemRevenue;
         proposedProfit += proposedItemProfit;
+        totalUsageWeightedMargin += currentUsageWeightedMargin;
+        totalProposedUsageWeightedMargin += proposedUsageWeightedMargin;
       }
     });
     
-    const weightedMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-    const proposedWeightedMargin = proposedRevenue > 0 ? (proposedProfit / proposedRevenue) * 100 : 0;
+    // Calculate usage-weighted margin properly
+    const weightedMargin = totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0;
+    const proposedWeightedMargin = totalUsage > 0 ? (totalProposedUsageWeightedMargin / totalUsage) * 100 : 0;
     const marginImprovement = proposedWeightedMargin - weightedMargin;
     
     return {
@@ -169,26 +186,26 @@ const EngineDashboardContent = () => {
           {/* Primary metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <MetricCard
-              title="Total SKUs"
-              value={metrics.totalItems.toString()}
-              subtitle={`${metrics.activeItems} active SKUs`}
+              title="Total Active SKUs"
+              value={metrics.activeItems.toString()}
+              subtitle={`${metrics.totalItems} total SKUs`}
               icon={<Package />}
-              iconPosition="right"
-            />
-            
-            <MetricCard
-              title="Total Profit"
-              value={`£${metrics.totalProfit.toLocaleString()}`}
-              subtitle={`£${metrics.totalRevenue.toLocaleString()} revenue`}
-              icon={<TrendingUp />}
               iconPosition="right"
             />
             
             <MetricCard
               title="Overall Margin"
               value={`${metrics.overallMargin.toFixed(2)}%`}
-              subtitle={`Based on ${metrics.totalItems} SKUs`}
+              subtitle="Usage-weighted average"
               icon={<Percent />}
+              iconPosition="right"
+            />
+            
+            <MetricCard
+              title="Average Cost < Market Low"
+              value={`${metrics.avgCostLessThanMLCount}`}
+              subtitle={`${Math.round((metrics.avgCostLessThanMLCount / metrics.totalItems) * 100)}% of items`}
+              icon={<TrendingUp />}
               iconPosition="right"
             />
             
@@ -229,11 +246,11 @@ const EngineDashboardContent = () => {
         </CardContent>
       </Card>
 
-      {/* REVA Metrics Chart */}
+      {/* REVA Metrics Chart - Using the updated chart component */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
         <div className="border border-white/10 bg-gray-900/40 backdrop-blur-sm rounded-lg p-4">
-          <RevaMetricsChart data={engineData.chartData || []} />
+          <RevaMetricsChartUpdated data={engineData.chartData || []} />
         </div>
       </div>
 
