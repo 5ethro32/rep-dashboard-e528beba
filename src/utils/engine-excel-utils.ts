@@ -354,26 +354,35 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
   let avgCostLessThanMLCount = 0;
   
   processedItems.forEach(item => {
-    // Calculate revenue and profit based on proposed prices
-    const itemRevenue = (item.proposedPrice || 0) * item.revaUsage;
-    const itemCost = item.avgCost * item.revaUsage;
-    const itemProfit = itemRevenue - itemCost;
-    
-    // Calculate current profit for comparison
-    const currentItemRevenue = item.currentREVAPrice * item.revaUsage;
-    const currentItemProfit = currentItemRevenue - itemCost;
-    
-    // Calculate usage-weighted margin for this item
-    const itemMargin = item.proposedPrice && item.proposedPrice > 0 ? 
-      (item.proposedPrice - item.avgCost) / item.proposedPrice : 0;
-    const usageWeightedMargin = itemMargin * item.revaUsage;
-    
-    totalRevenue += itemRevenue;
-    totalCost += itemCost;
-    totalProfit += itemProfit;
-    currentTotalProfit += currentItemProfit;
-    totalUsageWeightedMargin += usageWeightedMargin;
-    totalUsage += item.revaUsage;
+    // Fixed: Check if revaUsage and proposedPrice/currentREVAPrice are numbers (including zero)
+    // instead of using them directly in a condition which would exclude zeros
+    if (typeof item.revaUsage === 'number') {
+      // Calculate revenue and profit based on proposed prices
+      const itemPrice = typeof item.proposedPrice === 'number' ? item.proposedPrice : 
+                        (typeof item.currentREVAPrice === 'number' ? item.currentREVAPrice : 0);
+      
+      const itemRevenue = itemPrice * item.revaUsage;
+      const itemCost = item.avgCost * item.revaUsage;
+      const itemProfit = itemRevenue - itemCost;
+      
+      // Calculate current profit for comparison
+      const currentItemRevenue = (typeof item.currentREVAPrice === 'number' ? item.currentREVAPrice : 0) * item.revaUsage;
+      const currentItemProfit = currentItemRevenue - itemCost;
+      
+      // Calculate usage-weighted margin for this item
+      let itemMargin = 0;
+      if (itemPrice > 0) {
+        itemMargin = (itemPrice - item.avgCost) / itemPrice;
+      }
+      const usageWeightedMargin = itemMargin * item.revaUsage;
+      
+      totalRevenue += itemRevenue;
+      totalCost += itemCost;
+      totalProfit += itemProfit;
+      currentTotalProfit += currentItemProfit;
+      totalUsageWeightedMargin += usageWeightedMargin;
+      totalUsage += item.revaUsage;
+    }
     
     // Count items where avgCost is less than marketLow
     if (item.marketLow && item.avgCost < item.marketLow) {

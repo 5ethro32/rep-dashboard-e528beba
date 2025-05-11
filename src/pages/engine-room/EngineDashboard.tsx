@@ -131,7 +131,9 @@ const EngineDashboardContent = () => {
     let totalProposedUsageWeightedMargin = 0;
     
     engineData.items?.forEach(item => {
-      if (item.revaUsage && item.currentREVAPrice) {
+      // Fixed: Check if revaUsage and currentREVAPrice are numbers (including zero)
+      // instead of using them directly in a condition which would exclude zeros
+      if (typeof item.revaUsage === 'number' && typeof item.currentREVAPrice === 'number') {
         const currentRevenue = item.revaUsage * item.currentREVAPrice;
         const currentProfit = item.revaUsage * (item.currentREVAPrice - item.avgCost);
         
