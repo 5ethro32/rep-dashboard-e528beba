@@ -1,9 +1,8 @@
 
 import React from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Info } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface CellDetailsPopoverProps {
   item: any;
@@ -101,6 +100,16 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
           ],
           result: item.proposedPrice ? `£${Number(item.proposedPrice).toFixed(2)}` : 'N/A'
         };
+
+      case 'marketTrend':
+        return {
+          formula: 'Market price trend analysis',
+          values: [
+            `Previous Market Low: £${Number(item.prevMarketLow || 0).toFixed(2)}`,
+            `Current Market Low: £${Number(item.marketLow || 0).toFixed(2)}`,
+          ],
+          result: item.marketTrend || 'Stable'
+        };
         
       default:
         return {
@@ -125,7 +134,9 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
       proposedPrice: "System calculated or manually set new price",
       priceChangePercentage: "Percentage change between current and proposed price",
       proposedMargin: "Margin percentage with proposed price",
-      appliedRule: "Pricing rule used to calculate the proposed price"
+      appliedRule: "Pricing rule used to calculate the proposed price",
+      marketTrend: "Indicates if market prices are trending up or down",
+      shortage: "Indicates if the product is experiencing a shortage"
     };
     
     return descriptions[field] || `Details for ${field}`;
@@ -157,7 +168,8 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
       <HoverCardTrigger asChild>
         <div className="cursor-help relative inline-block">
           {children}
-          <span className="absolute top-0 right-0 h-1.5 w-1.5 bg-blue-500 rounded-full opacity-50"></span>
+          {/* Improved positioning of the indicator dot */}
+          <span className="absolute -top-1 -right-1 h-1.5 w-1.5 bg-blue-500 rounded-full opacity-50"></span>
         </div>
       </HoverCardTrigger>
       <HoverCardContent side="top" align="start" className="w-80 p-4 z-50">

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
-import { UploadCloud, FileText, Download, Filter, Star, Package } from 'lucide-react';
+import { UploadCloud, FileText, Download, Filter, Star, Package, TrendingDown, TrendingUp } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ const EngineOperationsContent = () => {
   const [showPricingExplainer, setShowPricingExplainer] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
+  const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -99,20 +100,28 @@ const EngineOperationsContent = () => {
     setShowPricingExplainer(true);
   };
   
-  // Toggle star for an item
+  // Toggle star for a single item (fixed to prevent toggling all stars)
   const handleToggleStar = (itemId: string) => {
-    const newStarred = new Set(starredItems);
-    if (newStarred.has(itemId)) {
-      newStarred.delete(itemId);
-    } else {
-      newStarred.add(itemId);
-    }
-    setStarredItems(newStarred);
+    setStarredItems(prev => {
+      const newStarred = new Set(prev);
+      if (newStarred.has(itemId)) {
+        newStarred.delete(itemId);
+      } else {
+        newStarred.add(itemId);
+      }
+      return newStarred;
+    });
   };
   
   // Filter data based on toggles
   const filterData = (items: any[]) => {
     if (!items) return [];
+    
+    // Apply inactive product filter if enabled
+    if (hideInactiveProducts) {
+      items = items.filter(item => (item.revaUsage || 0) > 0);
+    }
+    
     return items;
   };
   
@@ -292,7 +301,7 @@ const EngineOperationsContent = () => {
         </div>
       </div>
 
-      {/* New tabbed workflow status and actions */}
+      {/* Pricing workflow status and actions */}
       <div className="mb-6">
         <PricingActionsTabs
           modifiedCount={modifiedItems.size}
@@ -311,8 +320,8 @@ const EngineOperationsContent = () => {
         />
       </div>
 
-      {/* Key metrics summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+      {/* Key metrics summary - Removed pricing impact metrics as they're now in PricingActionsTabs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-4 my-6">
         <MetricCard
           title="Modified Items"
           value={`${modifiedItems.size}`}
@@ -328,14 +337,6 @@ const EngineOperationsContent = () => {
           value={`${metrics.rule1Flags + metrics.rule2Flags}`}
           subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`}
         />
-        <MetricCard
-          title="Profit Impact"
-          value={`£${metrics.profitDelta.toLocaleString()}`}
-          change={{
-            value: `${metrics.marginLift > 0 ? '+' : ''}${metrics.marginLift.toFixed(2)}%`,
-            type: metrics.marginLift >= 0 ? 'increase' : 'decrease'
-          }}
-        />
       </div>
 
       {/* Filter toggles */}
@@ -346,10 +347,33 @@ const EngineOperationsContent = () => {
         </div>
         
         <div className="flex items-center space-x-2">
+          <Switch 
+            id="hideInactive" 
+            checked={hideInactiveProducts}
+            onCheckedChange={setHideInactiveProducts}
+          />
+          <label htmlFor="hideInactive" className="text-sm cursor-pointer">
+            Hide Inactive Products
+          </label>
+        </div>
+        
+        <div className="flex items-center space-x-2">
           <Star className={`h-4 w-4 ${starredItems.size > 0 ? 'text-yellow-400' : 'text-muted-foreground'}`} />
           <span className="text-sm">
             {starredItems.size} items starred
           </span>
+        </div>
+        
+        {/* Market trend indicators */}
+        <div className="flex items-center space-x-4 ml-auto">
+          <div className="flex items-center space-x-1">
+            <TrendingUp className="h-4 w-4 text-green-500" />
+            <span className="text-xs text-muted-foreground">Market Trend Up</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <TrendingDown className="h-4 w-4 text-red-500" />
+            <span className="text-xs text-muted-foreground">Market Trend Down</span>
+          </div>
         </div>
       </div>
 

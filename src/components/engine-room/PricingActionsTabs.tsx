@@ -142,7 +142,7 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
               </div>
             </div>
 
-            {/* Pricing Impact Overview */}
+            {/* Pricing Impact Overview - Moved inside tab content */}
             <div className="bg-gray-900/20 rounded-lg p-3 mb-3">
               <h4 className="text-sm font-medium mb-2 flex items-center">
                 <TrendingUp className="w-3 h-3 mr-1" />
