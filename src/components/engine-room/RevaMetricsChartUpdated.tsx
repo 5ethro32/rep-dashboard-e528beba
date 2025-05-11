@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface RevaMetricsChartProps {
   data: any[];
@@ -155,7 +155,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               <p><span className="text-blue-400">Current Margin:</span> {formatMargin(data.currentMargin)}</p>
             </div>
             <div>
-              <p><span className="text-blue-400">Current Profit:</span> {formatCurrency(data.currentProfit)}</p>
+              <p><span className="text-green-400">Current Profit:</span> {formatCurrency(data.currentProfit)}</p>
             </div>
             <p className="col-span-2"><span className="text-gray-400">Items:</span> {data.itemCount}</p>
           </div>
@@ -186,10 +186,14 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     return `${value.toFixed(1)}%`;
   };
 
+  // Define colors for the lines
+  const marginColor = "#3b82f6"; // Blue for margin (keep existing color)
+  const profitColor = "#10B981"; // Green for profit
+
   return (
     <div className="w-full h-72 md:h-96">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart
+        <LineChart
           data={processedData}
           margin={{
             top: 5,
@@ -205,24 +209,17 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             orientation="left" 
             tickFormatter={formatMarginAxis}
             domain={[0, Math.max(maxMargin * 1.1, 30)]}
+            label={{ value: 'Margin %', angle: -90, position: 'insideLeft', offset: -5, style: { textAnchor: 'middle', fill: marginColor } }}
           />
           <YAxis 
             yAxisId="right" 
             orientation="right" 
             tickFormatter={formatProfitAxis}
             domain={[0, maxProfit * 1.1]}
+            label={{ value: 'Profit (£)', angle: 90, position: 'insideRight', offset: 0, style: { textAnchor: 'middle', fill: profitColor } }}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          
-          {/* Bar for current profit */}
-          <Bar 
-            yAxisId="right" 
-            dataKey="currentProfit" 
-            name="Current Profit" 
-            fill="#3b82f6" 
-            opacity={0.6}
-          />
           
           {/* Line for current margin */}
           <Line 
@@ -230,12 +227,24 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             type="monotone" 
             dataKey="currentMargin" 
             name="Current Margin %" 
-            stroke="#3b82f6" 
+            stroke={marginColor} 
             strokeWidth={3} 
-            dot={{ r: 5, fill: "#3b82f6" }} 
+            dot={{ r: 5, fill: marginColor }} 
             activeDot={{ r: 6 }} 
           />
-        </ComposedChart>
+          
+          {/* Line for current profit */}
+          <Line 
+            yAxisId="right" 
+            type="monotone" 
+            dataKey="currentProfit" 
+            name="Current Profit" 
+            stroke={profitColor} 
+            strokeWidth={3} 
+            dot={{ r: 5, fill: profitColor }} 
+            activeDot={{ r: 6 }} 
+          />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );
