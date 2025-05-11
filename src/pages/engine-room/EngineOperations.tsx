@@ -394,16 +394,10 @@ const EngineOperationsContent = () => {
           </span>
         </div>
         
-        {/* Market trend indicators */}
+        {/* Market trend indicators - removed text labels, keeping only icons */}
         <div className="flex items-center space-x-4 ml-auto">
-          <div className="flex items-center space-x-1">
-            <TrendingUp className="h-4 w-4 text-green-500" />
-            <span className="text-xs text-muted-foreground">Market Trend Up</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <TrendingDown className="h-4 w-4 text-red-500" />
-            <span className="text-xs text-muted-foreground">Market Trend Down</span>
-          </div>
+          <TrendingUp className="h-4 w-4 text-green-500" />
+          <TrendingDown className="h-4 w-4 text-red-500" />
         </div>
       </div>
 
