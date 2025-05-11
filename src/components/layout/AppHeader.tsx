@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
@@ -39,6 +40,13 @@ const AppHeader = ({
   const isEngineRoomSection = location.pathname.startsWith('/engine-room');
   const isEngineDashboard = location.pathname === '/engine-room/dashboard';
   const isEngineOperations = location.pathname === '/engine-room/engine';
+
+  // Automatically open engine subnav when hovering in Engine Room section
+  useEffect(() => {
+    if (isEngineRoomSection && isNavOpen) {
+      setIsEngineNavOpen(true);
+    }
+  }, [isEngineRoomSection, isNavOpen]);
 
   // Function to get the current page title based on the URL path
   const getCurrentPageTitle = () => {
@@ -139,7 +147,16 @@ const AppHeader = ({
       <div className="container max-w-7xl mx-auto px-4">
         {/* Main header with logo and user profile */}
         <div className="h-16 flex items-center justify-between" 
-             onMouseEnter={() => !isMobile && setIsNavOpen(true)} 
+             onMouseEnter={() => {
+               if (!isMobile) {
+                 setIsNavOpen(true);
+                 // Automatically open engine sub nav when in Engine Room section
+                 if (isEngineRoomSection) {
+                   setIsSubNavOpen(true);
+                   setIsEngineNavOpen(true);
+                 }
+               }
+             }} 
              onMouseLeave={() => !isMobile && setIsNavOpen(false)}>
           <div className="flex items-center gap-3">
             <Link to="/rep-performance" className="flex items-center">
@@ -185,9 +202,17 @@ const AppHeader = ({
         {!isMobile && <div 
           className={cn("border-t border-white/5 overflow-hidden transition-all duration-300", 
                       isNavOpen ? "max-h-16 opacity-100" : "max-h-0 opacity-0")} 
-          onMouseEnter={() => setIsNavOpen(true)} 
+          onMouseEnter={() => {
+            setIsNavOpen(true);
+            // Automatically open engine sub nav when in Engine Room section
+            if (isEngineRoomSection) {
+              setIsSubNavOpen(true);
+              setIsEngineNavOpen(true);
+            }
+          }} 
           onMouseLeave={() => {
             setIsNavOpen(false);
+            setIsSubNavOpen(false);
             setIsEngineNavOpen(false);
           }}>
             <nav className="flex items-center py-1">
@@ -204,8 +229,8 @@ const AppHeader = ({
                      }} 
                      onMouseLeave={() => {
                        if (item.hasSubNav) {
-                         setIsSubNavOpen(false);
-                         if (!isNavOpen) {
+                         if (!isNavOpen || !isEngineRoomSection) {
+                           setIsSubNavOpen(false);
                            setIsEngineNavOpen(false);
                          }
                        }
@@ -225,6 +250,16 @@ const AppHeader = ({
                       {isSubNavOpen && isEngineNavOpen && (
                         <div 
                           className="absolute top-full left-0 w-40 bg-gray-950/95 backdrop-blur-sm border border-white/5 rounded-md shadow-lg z-50 overflow-hidden"
+                          onMouseEnter={() => {
+                            setIsSubNavOpen(true);
+                            setIsEngineNavOpen(true);
+                          }}
+                          onMouseLeave={() => {
+                            if (!isEngineRoomSection) {
+                              setIsSubNavOpen(false);
+                              setIsEngineNavOpen(false);
+                            }
+                          }}
                         >
                           {item.subItems?.map(subItem => (
                             <NavLink 
