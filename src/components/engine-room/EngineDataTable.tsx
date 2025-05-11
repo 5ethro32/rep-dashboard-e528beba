@@ -836,4 +836,97 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             <select 
               className="bg-gray-800 border border-gray-700 rounded-md px-2 py-2 text-sm w-32"
               value={filterByRank || ''}
-              onChange={(e) => setFilterByRank
+              onChange={(e) => setFilterByRank(e.target.value === '' ? null : e.target.value)}
+            >
+              <option value="">All Ranks</option>
+              {usageRanks.map((rank) => (
+                <option key={rank} value={rank.toString()}>
+                  Rank {rank}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant={hideInactiveProducts ? "secondary" : "outline"}
+              size="sm"
+              className="h-9 text-xs"
+              onClick={toggleHideInactiveProducts}
+            >
+              {hideInactiveProducts ? "Showing Active Only" : "Show All Products"}
+            </Button>
+            
+            <Button
+              variant={showShortageOnly ? "secondary" : "outline"}
+              size="sm"
+              className="h-9 text-xs"
+              onClick={toggleShortageOnly}
+            >
+              {showShortageOnly ? "Showing Shortage Only" : "Show All Supply"}
+            </Button>
+            
+            {onPriceChange && (
+              <Button
+                variant={bulkEditMode ? "destructive" : "outline"}
+                size="sm"
+                className="h-9 text-xs"
+                onClick={toggleBulkEditMode}
+              >
+                {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit Prices"}
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        {renderActiveFilters()}
+        
+        {filterByRank ? (
+          <div className="text-sm text-muted-foreground mb-4">
+            <Button 
+              variant="link" 
+              size="sm" 
+              className="p-0" 
+              onClick={() => setFilterByRank(null)}
+            >
+              ← Back to all ranks
+            </Button>
+            <span className="ml-2">
+              Currently viewing {sortedData.length} items in Rank {filterByRank}
+            </span>
+          </div>
+        ) : null}
+        
+        {renderGroupedItems()}
+        
+        {filterByRank && totalPages > 1 ? (
+          <div className="flex justify-center mt-4 gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            >
+              Previous
+            </Button>
+            
+            <span className="flex items-center text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            >
+              Next
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </TooltipProvider>
+  );
+};
+
+export default EngineDataTable;
