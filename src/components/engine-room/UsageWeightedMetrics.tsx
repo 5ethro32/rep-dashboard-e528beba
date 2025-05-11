@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -93,29 +92,7 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => 
   return (
     <div className="space-y-6 mb-6">
       <div className="flex items-center gap-2 mb-2">
-        <h2 className="text-xl font-semibold">Usage-Weighted Analysis</h2>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MetricCard
-          title="Usage-Weighted Margin"
-          value={`${metrics.weightedMargin.toFixed(2)}%`}
-          change={metrics.marginImprovement !== 0 ? {
-            value: `${metrics.marginImprovement > 0 ? '+' : ''}${metrics.marginImprovement.toFixed(2)}%`,
-            type: metrics.marginImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined}
-          subtitle="Based on product usage volume"
-        />
-        <MetricCard
-          title="Total Revenue (Usage-Weighted)"
-          value={`£${metrics.totalRevenue.toLocaleString()}`}
-          subtitle={`${metrics.usageCount.toLocaleString()} total units`}
-        />
-        <MetricCard
-          title="Usage-Weighted Profit"
-          value={`£${metrics.totalProfit.toLocaleString()}`}
-          subtitle="Profit calculated from actual usage"
-        />
+        <h2 className="text-xl font-semibold">Margin Distribution</h2>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
@@ -150,8 +127,6 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => 
           </CardContent>
         </Card>
       </div>
-      
-      <Separator className="bg-gray-700/30 my-6" />
     </div>
   );
 };
