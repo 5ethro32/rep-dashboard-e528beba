@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -9,7 +10,7 @@ interface RevaItem {
   blocked?: number;
   keepRemove?: string;
   revaUsage: number;
-  usageRank: number;
+  usageRank?: number; // Now optional as we'll calculate it
   flag?: string; // Used for SHORT flag and other flags
   avgCost: number;
   avgCostLessThanML?: string;
@@ -101,7 +102,7 @@ const generateColumnMapping = (headers: string[]) => {
     keepRemove: ['keep/remove', 'keep', 'remove'],
     revaUsage: ['revausage', 'usage', 'reva usage', 'monthly usage', 'sales', 'units sold'],
     usageRank: ['usagerank', 'usage rank', 'rank', 'priority', 'group'],
-    flag: ['flag'],
+    flag: ['flag', 'flags', 'note', 'comment'], // Expanded to look for flag column
     avgCost: ['avgcost', 'avg cost', 'average cost', 'cost', 'unit cost'],
     avgCostLessThanML: ['avgcost<ml', 'avgcost < ml'],
     nextCost: ['nextcost', 'next cost', 'next buying price', 'future cost', 'new cost'],
@@ -165,9 +166,9 @@ export const processEngineExcelFile = async (file: File): Promise<ProcessedEngin
         
         console.log('Column mapping:', columnMapping);
         
-        // Check for minimum required columns
+        // Check for minimum required columns - removed usageRank from required fields
         const requiredFields = [
-          'description', 'revaUsage', 'usageRank', 'avgCost', 
+          'description', 'revaUsage', 'avgCost', 
           'nextCost', 'currentREVAPrice'
         ];
         
@@ -216,7 +217,7 @@ const columnVariations = {
   keepRemove: ['keep/remove', 'keep', 'remove'],
   revaUsage: ['revausage', 'usage', 'reva usage', 'monthly usage', 'sales', 'units sold'],
   usageRank: ['usagerank', 'usage rank', 'rank', 'priority', 'group'],
-  flag: ['flag'],
+  flag: ['flag', 'flags', 'note', 'comment'], // Expanded to look for flag column
   avgCost: ['avgcost', 'avg cost', 'average cost', 'cost', 'unit cost'],
   avgCostLessThanML: ['avgcost<ml', 'avgcost < ml'],
   nextCost: ['nextcost', 'next cost', 'next buying price', 'future cost', 'new cost'],
@@ -237,11 +238,10 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
     inStock: Number(row[mapping.inStock] || 0),
     onOrder: Number(row[mapping.onOrder] || 0),
     revaUsage: Number(row[mapping.revaUsage] || 0),
-    usageRank: Number(row[mapping.usageRank] || 6),
     avgCost: Number(row[mapping.avgCost] || 0),
     nextCost: Number(row[mapping.nextCost] || 0),
     currentREVAPrice: Number(row[mapping.currentREVAPrice] || 0),
-    // Calculate current margin the same way as proposed margin for consistency
+    // Calculate current margin directly regardless if it exists in the file
     currentREVAMargin: 0, // Will be calculated below
   };
   
@@ -250,9 +250,11 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
     transformed.currentREVAMargin = (transformed.currentREVAPrice - transformed.avgCost) / transformed.currentREVAPrice;
   } else {
     // If we can't calculate it properly (missing price or cost), try to use the value from the file as fallback
-    const rawMargin = row[mapping.currentREVAMargin];
-    if (rawMargin !== undefined) {
-      transformed.currentREVAMargin = parseFloat(String(rawMargin).replace('%', '')) / 100;
+    if (mapping.currentREVAMargin && row[mapping.currentREVAMargin] !== undefined) {
+      const rawMargin = row[mapping.currentREVAMargin];
+      if (rawMargin !== undefined) {
+        transformed.currentREVAMargin = parseFloat(String(rawMargin).replace('%', '')) / 100;
+      }
     }
   }
   
@@ -260,7 +262,24 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
   if (mapping.inRF && row[mapping.inRF] !== undefined) transformed.inRF = Number(row[mapping.inRF]);
   if (mapping.blocked && row[mapping.blocked] !== undefined) transformed.blocked = Number(row[mapping.blocked]);
   if (mapping.keepRemove && row[mapping.keepRemove] !== undefined) transformed.keepRemove = String(row[mapping.keepRemove]);
-  if (mapping.flag && row[mapping.flag] !== undefined) transformed.flag = String(row[mapping.flag]);
+  
+  // Look for flag column and get flags
+  if (mapping.flag && row[mapping.flag] !== undefined) {
+    const flagValue = String(row[mapping.flag]);
+    transformed.flag = flagValue;
+    
+    // Check specifically for 'SHORT' flag in the flag column (case insensitive)
+    if (flagValue.toUpperCase().includes('SHORT')) {
+      if (!transformed.flags) transformed.flags = [];
+      transformed.flags.push('SHORT');
+    }
+  }
+  
+  // Check if we have a usage rank column, but it's no longer required
+  if (mapping.usageRank && row[mapping.usageRank] !== undefined) {
+    transformed.usageRank = Number(row[mapping.usageRank]);
+  }
+  
   if (mapping.avgCostLessThanML && row[mapping.avgCostLessThanML] !== undefined) transformed.avgCostLessThanML = String(row[mapping.avgCostLessThanML]);
   if (mapping.trend && row[mapping.trend] !== undefined) transformed.trend = String(row[mapping.trend]);
   
@@ -276,6 +295,27 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
 
 // Process raw data into the structure needed for the engine room
 const processRawData = (transformedData: RevaItem[], fileName: string): ProcessedEngineData => {
+  // Calculate usage rank if it doesn't exist
+  if (!transformedData.some(item => item.usageRank !== undefined)) {
+    // Sort by usage in descending order
+    const sortedByUsage = [...transformedData].sort((a, b) => b.revaUsage - a.revaUsage);
+    
+    // Calculate the number of items per rank group (roughly dividing into 6 groups)
+    const totalItems = transformedData.length;
+    const itemsPerGroup = Math.ceil(totalItems / 6);
+    
+    // Assign ranks 1-6 based on usage volume
+    sortedByUsage.forEach((item, index) => {
+      const rank = Math.min(Math.floor(index / itemsPerGroup) + 1, 6);
+      
+      // Find the original item in transformedData and assign the rank
+      const originalItem = transformedData.find(i => i.description === item.description);
+      if (originalItem) {
+        originalItem.usageRank = rank;
+      }
+    });
+  }
+  
   // Map trend values if they exist
   transformedData.forEach(item => {
     if (item.trend) {
@@ -287,10 +327,10 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
     }
     
     // Initialize flags array for each item
-    item.flags = [];
+    item.flags = item.flags || [];
     
     // Add any existing flag from FLAG column
-    if (item.flag && item.flag.trim() !== '') {
+    if (item.flag && item.flag.trim() !== '' && !item.flags.includes(item.flag.trim())) {
       item.flags.push(item.flag.trim());
     }
   });
@@ -492,28 +532,12 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       if (!processedItem.flags) processedItem.flags = [];
       processedItem.flags.push('LOW_MARGIN');
     }
+
+    // Add ID field for easier item identification if it doesn't already exist
+    if (!processedItem.id) {
+      processedItem.id = `item-${Math.random().toString(36).substr(2, 9)}`;
+    }
     
     return processedItem;
   });
 }
-
-// This function is now no longer needed since the chart component will do the grouping
-// but we'll keep it commented for reference
-/*
-function generateChartData(items: RevaItem[]): any[] {
-  // Group items by usage rank
-  const groupedByRank: { [key: number]: RevaItem[] } = {};
-  
-  items.forEach(item => {
-    if (!groupedByRank[item.usageRank]) {
-      groupedByRank[item.usageRank] = [];
-    }
-    groupedByRank[item.usageRank].push(item);
-  });
-  
-  // Generate chart data points
-  return Object.keys(groupedByRank).map(rankKey => {
-    // ... existing chart data generation logic
-  });
-}
-*/
