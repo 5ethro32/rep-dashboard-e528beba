@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -438,6 +437,19 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       </div>;
   };
 
+  // Simplify rule display
+  const formatRuleDisplay = (rule: string) => {
+    if (!rule) return '';
+
+    // Check if the rule follows the pattern "Grp X-Y" and convert to [X.Y]
+    const rulePattern = /Grp\s*(\d+)-(\d+)/i;
+    const match = rule.match(rulePattern);
+    if (match) {
+      return `[${match[1]}.${match[2]}]`;
+    }
+    return rule;
+  };
+
   // Render flags for an item
   const renderFlags = (item: any) => {
     if (!item) return null;
@@ -495,19 +507,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           Clear all
         </Button>
       </div>;
-  };
-
-  // Simplify rule display
-  const formatRuleDisplay = (rule: string) => {
-    if (!rule) return '';
-
-    // Check if the rule follows the pattern "Grp X-Y" and convert to [X.Y]
-    const rulePattern = /Grp\s*(\d+)-(\d+)/i;
-    const match = rule.match(rulePattern);
-    if (match) {
-      return `[${match[1]}.${match[2]}]`;
-    }
-    return rule;
   };
 
   // Render the data table with rows
