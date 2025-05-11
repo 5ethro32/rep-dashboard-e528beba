@@ -611,7 +611,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
           {lowMarginItems.length > 0 ? (
             renderExceptionTable(
               lowMarginItems, 
-              "These items are flagged because the proposed margin is below 3%"
+              "These items are flagged because the proposed margin is below 5%" // Updated from 3% to 5%
             )
           ) : (
             <div className="text-center py-10 text-muted-foreground">
