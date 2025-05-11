@@ -34,6 +34,32 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
           values: validPrices.map(p => `${p.name}: £${Number(p.price).toFixed(2)}`),
           result: item.marketLow || 'N/A'
         };
+
+      case 'tml':
+        // True Market Low (lowest of all competitors)
+        const allCompetitors = {
+          'ETH': item.ETH || null,
+          'ETH NET': item.ETH_NET || null,
+          'Nupharm': item.Nupharm || null,
+          'LEXON': item.LEXON || null,
+          'AAH': item.AAH || null
+        };
+        
+        const validCompetitorPrices = Object.entries(allCompetitors)
+          .filter(([_, price]) => price !== null && price !== undefined && !isNaN(price))
+          .map(([name, price]) => ({ name, price }));
+        
+        const lowestPrice = validCompetitorPrices.length > 0 
+          ? Math.min(...validCompetitorPrices.map(p => Number(p.price)))
+          : null;
+          
+        const lowestSource = validCompetitorPrices.find(p => Number(p.price) === lowestPrice)?.name || 'N/A';
+        
+        return {
+          formula: 'min(All competitor prices)',
+          values: validCompetitorPrices.map(p => `${p.name}: £${Number(p.price).toFixed(2)}`),
+          result: lowestPrice !== null ? `£${lowestPrice.toFixed(2)} (${lowestSource})` : 'N/A'
+        };
         
       case 'avgCost':
         return {
@@ -129,6 +155,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
       usageRank: "Usage ranking from 1-5 (1 being highest usage)",
       avgCost: "Average purchase cost based on historical data",
       marketLow: "Lowest competitor price in the market",
+      tml: "True Market Low - absolute lowest price across all competitors",
       currentREVAPrice: "Current selling price in the REVA system",
       currentREVAMargin: "Current margin percentage ((price-cost)/price)",
       proposedPrice: "System calculated or manually set new price",
@@ -168,8 +195,6 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
       <HoverCardTrigger asChild>
         <div className="cursor-help relative inline-block">
           {children}
-          {/* Improved positioning of the indicator dot */}
-          <span className="absolute -top-1 -right-1 h-1.5 w-1.5 bg-blue-500 rounded-full opacity-50"></span>
         </div>
       </HoverCardTrigger>
       <HoverCardContent side="top" align="start" className="w-80 p-4 z-50">

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -33,9 +32,10 @@ const columns = [
   { field: 'usageRank', label: 'Rank', filterable: true },
   { field: 'avgCost', label: 'Avg Cost', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
   { field: 'marketLow', label: 'Market Low', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
-  { field: 'currentREVAPrice', label: 'Current Price', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
+  { field: 'tml', label: 'TML', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false },
+  { field: 'currentREVAPrice', label: 'Current Price', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, filterable: false, bold: true },
   { field: 'currentREVAMargin', label: 'Current Margin', format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`, filterable: false },
-  { field: 'proposedPrice', label: 'Proposed Price', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, editable: true, filterable: false },
+  { field: 'proposedPrice', label: 'Proposed Price', format: (value: number) => `£${value?.toFixed(2) || '0.00'}`, editable: true, filterable: false, bold: true },
   { field: 'priceChangePercentage', label: '% Change', filterable: false },
   { field: 'proposedMargin', label: 'Proposed Margin', format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`, filterable: false },
   { field: 'appliedRule', label: 'Rule', filterable: true },
@@ -61,6 +61,32 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [showShortageOnly, setShowShortageOnly] = useState(false);
   const itemsPerPage = 20;
 
+  // Add TML calculation for each item in the data
+  const dataWithTml = useMemo(() => {
+    if (!data) return [];
+    
+    return data.map(item => {
+      const competitors = {
+        'ETH': item.ETH || null,
+        'ETH_NET': item.ETH_NET || null,
+        'Nupharm': item.Nupharm || null,
+        'LEXON': item.LEXON || null,
+        'AAH': item.AAH || null
+      };
+      
+      const validPrices = Object.values(competitors)
+        .filter(price => price !== null && price !== undefined && !isNaN(Number(price)))
+        .map(price => Number(price));
+      
+      const tml = validPrices.length > 0 ? Math.min(...validPrices) : null;
+      
+      return {
+        ...item,
+        tml: tml
+      };
+    });
+  }, [data]);
+
   // Get unique values for each column to use in filters
   const uniqueValues = useMemo(() => {
     const values: Record<string, Set<any>> = {};
@@ -73,8 +99,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     });
     
     // Collect unique values
-    if (data && data.length > 0) {
-      data.forEach(item => {
+    if (dataWithTml && dataWithTml.length > 0) {
+      dataWithTml.forEach(item => {
         columns.forEach(column => {
           if (column.filterable && item[column.field] !== undefined && item[column.field] !== null) {
             values[column.field].add(item[column.field]);
@@ -95,30 +121,31 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     });
     
     return result;
-  }, [data]);
+  }, [dataWithTml]);
 
   // Collect unique flags separately to avoid circular reference
   const uniqueFlags = useMemo(() => {
     const allFlags = new Set<string>();
     
-    if (data && data.length > 0) {
-      data.forEach(item => {
+    if (dataWithTml && dataWithTml.length > 0) {
+      dataWithTml.forEach(item => {
         if (item.flags && Array.isArray(item.flags)) {
           item.flags.forEach((flag: string) => allFlags.add(flag));
         }
         if (item.flag1) allFlags.add('HIGH_PRICE');
         if (item.flag2) allFlags.add('LOW_MARGIN');
+        if (item.shortage) allFlags.add('SHORT');
       });
     }
     
     return Array.from(allFlags);
-  }, [data]);
+  }, [dataWithTml]);
 
   // Get unique usage ranks for filter dropdown
   const usageRanks = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    return Array.from(new Set(data.map(item => item.usageRank))).sort((a, b) => a - b);
-  }, [data]);
+    if (!dataWithTml || dataWithTml.length === 0) return [];
+    return Array.from(new Set(dataWithTml.map(item => item.usageRank))).sort((a, b) => a - b);
+  }, [dataWithTml]);
 
   // Calculate price change percentage
   const calculatePriceChangePercentage = (item: any) => {
@@ -130,11 +157,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return ((proposedPrice - currentPrice) / currentPrice) * 100;
   };
 
-  // Filter the data based on search query, usage rank filter, and column filters
+  // Filter the data based on search query, usage rank filter, column filters, and toggle states
   const filteredData = useMemo(() => {
-    if (!data) return [];
+    if (!dataWithTml) return [];
     
-    return data.filter((item) => {
+    return dataWithTml.filter((item) => {
       // Match search query
       const matchesSearch = item.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
       
@@ -153,13 +180,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             return columnFilters[field].some((flag: string) => 
               item.flags.includes(flag) || 
               (flag === 'HIGH_PRICE' && item.flag1) || 
-              (flag === 'LOW_MARGIN' && item.flag2)
+              (flag === 'LOW_MARGIN' && item.flag2) ||
+              (flag === 'SHORT' && item.shortage)
             );
           } else {
-            // Handle legacy flag1/flag2 properties
+            // Handle legacy flag1/flag2/shortage properties
             return columnFilters[field].some((flag: string) => 
               (flag === 'HIGH_PRICE' && item.flag1) || 
-              (flag === 'LOW_MARGIN' && item.flag2)
+              (flag === 'LOW_MARGIN' && item.flag2) ||
+              (flag === 'SHORT' && item.shortage)
             );
           }
         }
@@ -175,7 +204,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       
       return matchesSearch && matchesRankFilter && matchesColumnFilters && isActive && matchesShortage;
     });
-  }, [data, searchQuery, filterByRank, columnFilters, hideInactiveProducts, showShortageOnly]);
+  }, [dataWithTml, searchQuery, filterByRank, columnFilters, hideInactiveProducts, showShortageOnly]);
 
   // Sort the filtered data
   const sortedData = useMemo(() => {
@@ -450,32 +479,44 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderFlags = (item: any) => {
     if (!item) return null;
     
-    if (!item.flags || item.flags.length === 0) {
-      if (!item.flag1 && !item.flag2) return null;
+    const flags = [];
+    
+    if (item.flag1) {
+      flags.push(
+        <span key="high-price" className="bg-red-900/30 text-xs px-1 py-0.5 rounded" title="Price ≥10% above TRUE MARKET LOW">
+          HIGH_PRICE
+        </span>
+      );
     }
     
-    return (
-      <div className="flex items-center gap-1">
-        {item.flag1 && (
-          <span className="bg-red-900/30 text-xs px-1 py-0.5 rounded" title="Price ≥10% above TRUE MARKET LOW">
-            HIGH_PRICE
+    if (item.flag2) {
+      flags.push(
+        <span key="low-margin" className="bg-orange-900/30 text-xs px-1 py-0.5 rounded" title="Margin < 3%">
+          LOW_MARGIN
+        </span>
+      );
+    }
+    
+    if (item.shortage) {
+      flags.push(
+        <span key="shortage" className="bg-purple-900/30 text-xs px-1 py-0.5 rounded" title="Product has supply shortage">
+          SHORT
+        </span>
+      );
+    }
+    
+    if (item.flags && Array.isArray(item.flags)) {
+      item.flags.forEach((flag: string, i: number) => {
+        if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT') return; // Skip duplicates
+        flags.push(
+          <span key={`flag-${i}`} className="bg-blue-900/30 text-xs px-1 py-0.5 rounded" title={flag}>
+            {flag}
           </span>
-        )}
-        {item.flag2 && (
-          <span className="bg-orange-900/30 text-xs px-1 py-0.5 rounded" title="Margin < 3%">
-            LOW_MARGIN
-          </span>
-        )}
-        {item.flags && Array.isArray(item.flags) && item.flags.map((flag: string, i: number) => {
-          if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN') return null; // Skip duplicates
-          return (
-            <span key={i} className="bg-blue-900/30 text-xs px-1 py-0.5 rounded" title={flag}>
-              {flag}
-            </span>
-          );
-        })}
-      </div>
-    );
+        );
+      });
+    }
+    
+    return flags.length > 0 ? <div className="flex items-center gap-1">{flags}</div> : null;
   };
 
   // Active filters summary
@@ -528,6 +569,21 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         </Button>
       </div>
     );
+  };
+
+  // Simplify rule display
+  const formatRuleDisplay = (rule: string) => {
+    if (!rule) return '';
+    
+    // Check if the rule follows the pattern "Grp X-Y" and convert to [X.Y]
+    const rulePattern = /Grp\s*(\d+)-(\d+)/i;
+    const match = rule.match(rulePattern);
+    
+    if (match) {
+      return `[${match[1]}.${match[2]}]`;
+    }
+    
+    return rule;
   };
 
   // Render the data table with rows
@@ -585,14 +641,25 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                     {/* Market Low cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="marketLow">
-                        {formatCurrency(item.marketLow)}
+                        <div className="flex items-center gap-1">
+                          {formatCurrency(item.marketLow)}
+                          {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
+                          {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
+                        </div>
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* TML cell with popover */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="tml">
+                        {formatCurrency(item.tml)}
                       </CellDetailsPopover>
                     </TableCell>
                     
                     {/* Current Price cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAPrice">
-                        {formatCurrency(item.currentREVAPrice)}
+                        <span className="font-medium">{formatCurrency(item.currentREVAPrice)}</span>
                       </CellDetailsPopover>
                     </TableCell>
                     
@@ -644,7 +711,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       ) : (
                         <CellDetailsPopover item={item} field="proposedPrice">
                           <div className="flex items-center gap-2">
-                            {formatCurrency(item.proposedPrice)}
+                            <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
                             {item.priceModified && (
                               <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
                             )}
@@ -678,7 +745,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>{item.appliedRule}</TableCell>
+                    <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
                     
                     {/* Flags cell */}
                     <TableCell>

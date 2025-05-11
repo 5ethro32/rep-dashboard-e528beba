@@ -43,6 +43,7 @@ const EngineOperationsContent = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
+  const [showShortageOnly, setShowShortageOnly] = useState(false);
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -118,11 +119,18 @@ const EngineOperationsContent = () => {
     if (!items) return [];
     
     // Apply inactive product filter if enabled
+    let filteredItems = items;
+    
     if (hideInactiveProducts) {
-      items = items.filter(item => (item.revaUsage || 0) > 0);
+      filteredItems = filteredItems.filter(item => (item.revaUsage || 0) > 0);
     }
     
-    return items;
+    // Apply shortage filter if enabled
+    if (showShortageOnly) {
+      filteredItems = filteredItems.filter(item => item.shortage === true);
+    }
+    
+    return filteredItems;
   };
   
   // Get starred items
@@ -320,7 +328,7 @@ const EngineOperationsContent = () => {
         />
       </div>
 
-      {/* Key metrics summary - Removed pricing impact metrics as they're now in PricingActionsTabs */}
+      {/* Key metrics summary - Simple metrics now that pricing impact is in PricingActionsTabs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-4 my-6">
         <MetricCard
           title="Modified Items"
@@ -354,6 +362,17 @@ const EngineOperationsContent = () => {
           />
           <label htmlFor="hideInactive" className="text-sm cursor-pointer">
             Hide Inactive Products
+          </label>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="shortageOnly" 
+            checked={showShortageOnly}
+            onCheckedChange={setShowShortageOnly}
+          />
+          <label htmlFor="shortageOnly" className="text-sm cursor-pointer">
+            Shortage Only
           </label>
         </div>
         
