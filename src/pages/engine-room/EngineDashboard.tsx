@@ -112,45 +112,45 @@ const EngineDashboardContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* All metrics in a single card with grid layout */}
+      {/* Create a container card that houses the individual metric cards */}
       <Card className="mb-6 border border-white/10 bg-gray-900/40 backdrop-blur-sm">
         <CardContent className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-xs text-white/50 uppercase tracking-wider font-bold">Total SKUs</div>
-                <Package size={18} className="text-white/40" />
-              </div>
-              <div className="text-3xl md:text-4xl font-bold">{metrics.totalItems}</div>
-              <div className="text-xs text-white/50">{metrics.activeItems} active SKUs</div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-xs text-white/50 uppercase tracking-wider font-bold">Total Profit</div>
-                <TrendingUp size={18} className="text-white/40" />
-              </div>
-              <div className="text-3xl md:text-4xl font-bold">£{metrics.totalProfit.toLocaleString()}</div>
-              <div className="text-xs text-white/50">£{metrics.totalRevenue.toLocaleString()} revenue</div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-xs text-white/50 uppercase tracking-wider font-bold">Overall Margin</div>
-                <Percent size={18} className="text-white/40" />
-              </div>
-              <div className="text-3xl md:text-4xl font-bold">{metrics.overallMargin.toFixed(2)}%</div>
-              <div className="text-xs text-white/50">Based on {metrics.totalItems} SKUs</div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-xs text-white/50 uppercase tracking-wider font-bold">Flagged Items</div>
-                <Flag size={18} className="text-white/40" />
-              </div>
-              <div className="text-3xl md:text-4xl font-bold">{metrics.rule1Flags + metrics.rule2Flags}</div>
-              <div className="text-xs text-white/50">Rule 1: {metrics.rule1Flags} | Rule 2: {metrics.rule2Flags}</div>
-            </div>
+            <MetricCard
+              title="Total SKUs"
+              value={metrics.totalItems.toString()}
+              subtitle={`${metrics.activeItems} active SKUs`}
+              icon={<Package />}
+              iconPosition="right"
+              className="border-none bg-transparent shadow-none"
+            />
+            
+            <MetricCard
+              title="Total Profit"
+              value={`£${metrics.totalProfit.toLocaleString()}`}
+              subtitle={`£${metrics.totalRevenue.toLocaleString()} revenue`}
+              icon={<TrendingUp />}
+              iconPosition="right"
+              className="border-none bg-transparent shadow-none"
+            />
+            
+            <MetricCard
+              title="Overall Margin"
+              value={`${metrics.overallMargin.toFixed(2)}%`}
+              subtitle={`Based on ${metrics.totalItems} SKUs`}
+              icon={<Percent />}
+              iconPosition="right"
+              className="border-none bg-transparent shadow-none"
+            />
+            
+            <MetricCard
+              title="Flagged Items"
+              value={`${metrics.rule1Flags + metrics.rule2Flags}`}
+              subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`}
+              icon={<Flag />}
+              iconPosition="right"
+              className="border-none bg-transparent shadow-none"
+            />
           </div>
         </CardContent>
       </Card>
