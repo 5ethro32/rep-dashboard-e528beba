@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -227,20 +226,18 @@ const AppHeader = ({
                            setIsEngineNavOpen(true);
                          }
                        }
-                     }} 
-                     onMouseLeave={() => {
-                       if (item.hasSubNav) {
-                         if (!isNavOpen || !isEngineRoomSection) {
-                           setIsSubNavOpen(false);
-                           setIsEngineNavOpen(false);
-                         }
-                       }
                      }}>
-                  {item.hasSubNav && isEngineRoomSection ? (
-                    // Special handling for Engine Room when in that section - show as active
-                    <div className="px-4 py-2 flex items-center gap-2 text-sm font-medium text-finance-red relative cursor-pointer">
+                  {/* Handle active state for Engine Room differently */}
+                  {item.hasSubNav ? (
+                    // Special rendering for items with subnavigation (Engine Room)
+                    <div className={cn(
+                      "px-4 py-2 flex items-center gap-2 text-sm font-medium relative cursor-pointer",
+                      isEngineRoomSection ? "text-finance-red" : "text-white/60 hover:text-white"
+                    )}>
                       {/* Gradient line for active Engine Room */}
-                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                      {isEngineRoomSection && 
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                      }
                       {item.icon}
                       <span>{item.label}</span>
                       <ChevronDown 
@@ -248,20 +245,10 @@ const AppHeader = ({
                         isSubNavOpen && isEngineNavOpen ? "rotate-180" : "")} 
                       />
                       
-                      {/* Engine Room Dropdown Menu (always visible when in Engine section) */}
+                      {/* Engine Room Dropdown Menu - Always visible when submenu is open */}
                       {isSubNavOpen && isEngineNavOpen && (
                         <div 
                           className="absolute top-full left-0 w-40 bg-gray-950/95 backdrop-blur-sm border border-white/5 rounded-md shadow-lg z-50 overflow-hidden"
-                          onMouseEnter={() => {
-                            setIsSubNavOpen(true);
-                            setIsEngineNavOpen(true);
-                          }}
-                          onMouseLeave={() => {
-                            if (!isEngineRoomSection) {
-                              setIsSubNavOpen(false);
-                              setIsEngineNavOpen(false);
-                            }
-                          }}
                         >
                           {item.subItems?.map(subItem => (
                             <NavLink 
@@ -279,60 +266,22 @@ const AppHeader = ({
                       )}
                     </div>
                   ) : (
-                    // Regular navigation links
+                    // Regular navigation links (non-Engine Room)
                     <NavLink 
                       to={item.path} 
                       className={({isActive}) => cn(
                         "px-4 py-2 flex items-center gap-2 text-sm font-medium relative", 
-                        isActive || (item.hasSubNav && isEngineRoomSection) ? 
-                          "text-finance-red" : 
-                          "text-white/60 hover:text-white"
+                        isActive ? "text-finance-red" : "text-white/60 hover:text-white"
                       )}
                     >
                       {({isActive}) => (
                         <>
                           {/* Replace icon with gradient line for active items */}
-                          {(isActive || (item.hasSubNav && isEngineRoomSection)) && 
+                          {isActive && 
                             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
                           }
                           {item.icon}
                           <span>{item.label}</span>
-                          {item.hasSubNav && 
-                            <ChevronDown 
-                              className={cn(
-                                "h-3 w-3 ml-0.5 transition-transform", 
-                                isSubNavOpen && isEngineNavOpen ? "rotate-180" : ""
-                              )} 
-                            />
-                          }
-                          
-                          {/* Engine Room Dropdown Menu for when NOT in Engine section */}
-                          {item.hasSubNav && !isEngineRoomSection && isSubNavOpen && isEngineNavOpen && (
-                            <div 
-                              className="absolute top-full left-0 w-40 bg-gray-950/95 backdrop-blur-sm border border-white/5 rounded-md shadow-lg z-50 overflow-hidden"
-                              onMouseEnter={() => {
-                                setIsSubNavOpen(true);
-                                setIsEngineNavOpen(true);
-                              }}
-                              onMouseLeave={() => {
-                                setIsSubNavOpen(false);
-                                setIsEngineNavOpen(false);
-                              }}
-                            >
-                              {item.subItems?.map(subItem => (
-                                <NavLink 
-                                  key={subItem.path} 
-                                  to={subItem.path} 
-                                  className={({isActive}) => 
-                                    cn("block px-4 py-2 text-sm", 
-                                      isActive ? "bg-white/5 text-finance-red" : "text-white/70 hover:bg-white/5 hover:text-white")
-                                  }
-                                >
-                                  {subItem.label}
-                                </NavLink>
-                              ))}
-                            </div>
-                          )}
                         </>
                       )}
                     </NavLink>
