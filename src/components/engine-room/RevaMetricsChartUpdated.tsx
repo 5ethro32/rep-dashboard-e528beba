@@ -18,6 +18,17 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     return groupA - groupB;
   });
 
+  // Shorten x-axis labels (Group names)
+  const shortenedData = sortedData.map(item => {
+    // Extract just the group number for shorter labels
+    const groupNumber = item.name.split(' ')[1];
+    return {
+      ...item,
+      shortName: `G${groupNumber}`, // Shortened name (e.g., "G1", "G2", etc.)
+      name: item.name // Keep original name for tooltip
+    };
+  });
+
   // Custom tooltip to show more details
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -41,15 +52,13 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
       
       return (
         <div className="bg-gray-800 p-3 rounded shadow-lg border border-gray-700">
-          <p className="font-bold text-sm">{label}</p>
+          <p className="font-bold text-sm">{data.name}</p>
           <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
             <div>
               <p><span className="text-blue-400">Current Margin:</span> {formatValue(data.currentMargin)}%</p>
-              <p><span className="text-green-400">Proposed Margin:</span> {formatValue(data.proposedMargin)}%</p>
             </div>
             <div>
               <p><span className="text-blue-400">Current Profit:</span> {formatCurrency(data.currentProfit)}</p>
-              <p><span className="text-green-400">Proposed Profit:</span> {formatCurrency(data.proposedProfit)}</p>
             </div>
             <p className="col-span-2"><span className="text-gray-400">Items:</span> {data.itemCount}</p>
           </div>
@@ -60,20 +69,13 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   };
 
   // Calculate the maximum profit value for proper scaling
-  const maxProfit = Math.max(...sortedData.map(item => 
-    Math.max(
-      item.currentProfit || 0, 
-      item.proposedProfit || 0
-    )
-  ));
+  const maxProfit = Math.max(...shortenedData.map(item => item.currentProfit || 0));
   
   // Calculate the maximum margin value
-  const maxMargin = Math.max(...sortedData.map(item => 
-    Math.max(
-      item.currentMargin || 0, 
-      item.proposedMargin || 0
-    )
-  )) * 100; // Convert to percentage
+  const maxMargin = Math.max(...shortenedData.map(item => item.currentMargin || 0)) * 100; // Convert to percentage
+  
+  // Get the maximum item count for bar scaling
+  const maxItemCount = Math.max(...shortenedData.map(item => item.itemCount || 0));
   
   // Format Y-axis labels for profit
   const formatProfitAxis = (value: number) => {
@@ -89,7 +91,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     <div className="w-full h-72 md:h-96">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
-          data={sortedData}
+          data={shortenedData}
           margin={{
             top: 5,
             right: 30,
@@ -98,7 +100,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-          <XAxis dataKey="name" />
+          <XAxis dataKey="shortName" /> {/* Use the shortened name for X-axis */}
           <YAxis 
             yAxisId="left" 
             orientation="left" 
@@ -112,43 +114,41 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             tickFormatter={formatProfitAxis}
             domain={[0, maxProfit * 1.1]} // Set domain with 10% padding
           />
+          <YAxis 
+            yAxisId="items" 
+            orientation="right" 
+            label={{ value: 'Items', angle: 90, position: 'insideRight', offset: 60 }}
+            domain={[0, maxItemCount * 1.1]} // Set domain with 10% padding
+            hide // Hide this axis but keep it for scaling
+          />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           
-          {/* Render bars first to make them appear behind the lines */}
+          {/* Bar for item count */}
+          <Bar 
+            yAxisId="items" 
+            dataKey="itemCount" 
+            name="Number of Items" 
+            fill="#9ca3af" 
+            opacity={0.4}
+          />
+          
+          {/* Bar for current profit */}
           <Bar 
             yAxisId="right" 
             dataKey="currentProfit" 
             name="Current Profit" 
             fill="#3b82f6" 
-            opacity={0.6} 
-            stackId="profit" // Remove stackId to show separate bars
-          />
-          <Bar 
-            yAxisId="right" 
-            dataKey="proposedProfit" 
-            name="Proposed Profit" 
-            fill="#10b981" 
-            opacity={0.6} 
-            stackId="profit" // Remove stackId to show separate bars
+            opacity={0.6}
           />
           
-          {/* Lines rendered after bars so they show on top */}
+          {/* Line for current margin */}
           <Line 
             yAxisId="left" 
             type="monotone" 
             dataKey="currentMargin" 
             name="Current Margin %" 
             stroke="#3b82f6" 
-            strokeWidth={3} 
-            dot={{ r: 5 }} 
-          />
-          <Line 
-            yAxisId="left" 
-            type="monotone" 
-            dataKey="proposedMargin" 
-            name="Proposed Margin %" 
-            stroke="#10b981" 
             strokeWidth={3} 
             dot={{ r: 5 }} 
           />
