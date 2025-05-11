@@ -1,9 +1,10 @@
+
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown, Flag, Star, TrendingUp, TrendingDown } from 'lucide-react';
+import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown, Flag, Star, TrendingUp, TrendingDown, Filter } from 'lucide-react';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
 import { formatCurrency } from '@/utils/rep-performance-utils'; // Import the formatCurrency function
@@ -69,6 +70,23 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const [showShortageOnly, setShowShortageOnly] = useState(false);
+  const [showRuleFilters, setShowRuleFilters] = useState(false);
+  const [selectedRules, setSelectedRules] = useState<string[]>([]);
+  
+  // Get all unique rules from the data
+  const uniqueRules = useMemo(() => {
+    if (!data) return [];
+    const rulesSet = new Set<string>();
+    
+    data.forEach(item => {
+      if (item.appliedRule) {
+        const rulePrefix = item.appliedRule.split(' - ')[0];
+        rulesSet.add(rulePrefix);
+      }
+    });
+    
+    return Array.from(rulesSet).sort();
+  }, [data]);
   
   // Handle sort click
   const handleSort = (field: string) => {
@@ -80,14 +98,29 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     }
   };
 
-  // Filter the data based on search query
+  // Filter the data based on search query and rule filters
   const filterData = (items: any[]) => {
-    if (!searchQuery) return items;
     if (!items || items.length === 0) return [];
     
-    return items.filter(item => 
-      item.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    let filteredItems = items;
+    
+    // Apply search filter
+    if (searchQuery) {
+      filteredItems = filteredItems.filter(item => 
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Apply rule filters
+    if (selectedRules.length > 0) {
+      filteredItems = filteredItems.filter(item => {
+        if (!item.appliedRule) return false;
+        const rulePrefix = item.appliedRule.split(' - ')[0];
+        return selectedRules.includes(rulePrefix);
+      });
+    }
+    
+    return filteredItems;
   };
 
   // Sort the data
@@ -167,6 +200,22 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     // Clear all edits when toggling bulk mode
     setEditingValues({});
     setEditingItemId(null);
+  };
+  
+  // Toggle rule filters
+  const toggleRuleFilters = () => {
+    setShowRuleFilters(!showRuleFilters);
+  };
+  
+  // Toggle rule selection
+  const toggleRuleSelection = (rule: string) => {
+    setSelectedRules(prev => {
+      if (prev.includes(rule)) {
+        return prev.filter(r => r !== rule);
+      } else {
+        return [...prev, rule];
+      }
+    });
   };
 
   // Render sort indicator
@@ -251,6 +300,15 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer"
+                  onClick={() => handleSort('avgCost')}
+                >
+                  <div className="flex items-center">
+                    <span className="font-bold">Avg Cost</span>
+                    {renderSortIndicator('avgCost')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
                   onClick={() => handleSort('currentREVAPrice')}
                 >
                   <div className="flex items-center">
@@ -328,7 +386,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
             <TableBody>
               {sortedItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-10">
+                  <TableCell colSpan={13} className="text-center py-10">
                     No exceptions found
                   </TableCell>
                 </TableRow>
@@ -349,6 +407,11 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                       <TableCell>
                         <CellDetailsPopover item={item} field="usageRank">
                           {item.usageRank}
+                        </CellDetailsPopover>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <CellDetailsPopover item={item} field="avgCost">
+                          £{(item.avgCost || 0).toFixed(2)}
                         </CellDetailsPopover>
                       </TableCell>
                       <TableCell className="font-bold">
@@ -434,16 +497,16 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                         </CellDetailsPopover>
                       </TableCell>
                       
-                      {/* TML cell with popover - updated to use trueMarketLow */}
+                      {/* TML cell with popover - updated to use trueMarketLow with 2 decimal places */}
                       <TableCell>
                         <CellDetailsPopover item={item} field="trueMarketLow">
-                          {formatCurrency(item.trueMarketLow)}
+                          £{(item.trueMarketLow || 0).toFixed(2)}
                         </CellDetailsPopover>
                       </TableCell>
                       
                       <TableCell>
                         <CellDetailsPopover item={item} field="appliedRule">
-                          {simplifyRuleDisplay(item.appliedRule)}
+                          {item.appliedRule ? item.appliedRule.replace(/ML \+ (\d+)%/, "ML + $1.00%") : ""}
                         </CellDetailsPopover>
                       </TableCell>
                       
@@ -545,6 +608,16 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleRuleFilters}
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            Rule Filters {selectedRules.length > 0 && `(${selectedRules.length})`}
+          </Button>
+          
           <div 
             className="flex items-center gap-2 bg-gray-900 px-2 py-1 rounded-md cursor-pointer"
             onClick={toggleHideInactiveProducts}
@@ -572,6 +645,26 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Rule filters panel */}
+      {showRuleFilters && (
+        <div className="bg-gray-900/50 p-4 rounded-md border border-gray-800">
+          <h3 className="text-sm font-medium mb-2">Filter by rules:</h3>
+          <div className="flex flex-wrap gap-2">
+            {uniqueRules.map(rule => (
+              <Button
+                key={rule}
+                variant={selectedRules.includes(rule) ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleRuleSelection(rule)}
+                className="text-xs"
+              >
+                {rule}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {bulkEditMode && (
         <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
