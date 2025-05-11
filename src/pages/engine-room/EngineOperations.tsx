@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, TrendingDown, TrendingUp } from 'lucide-react';
@@ -8,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Info } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import MetricCard from '@/components/MetricCard';
 import EngineDataTable from '@/components/engine-room/EngineDataTable';
 import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer';
 import ExceptionsTable from '@/components/engine-room/ExceptionsTable';
@@ -297,25 +297,6 @@ const EngineOperationsContent = () => {
             rejected: engineData.rejectedItems?.length || 0
           }}
           pricingImpactMetrics={getPricingImpactMetrics()}
-        />
-      </div>
-
-      {/* Key metrics summary - Simple metrics now that pricing impact is in PricingActionsTabs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-4 my-6">
-        <MetricCard
-          title="Modified Items"
-          value={`${modifiedItems.size}`}
-          subtitle="Items with price changes"
-        />
-        <MetricCard
-          title="Pending Approvals"
-          value={`${getPendingApprovalCount()}`}
-          subtitle="Items awaiting review"
-        />
-        <MetricCard
-          title="Flagged Items"
-          value={`${metrics.rule1Flags + metrics.rule2Flags}`}
-          subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`}
         />
       </div>
 

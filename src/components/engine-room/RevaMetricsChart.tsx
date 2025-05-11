@@ -111,8 +111,8 @@ const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
             dataKey="itemCount" 
             name="Item Count" 
             yAxisId="right"
-            barSize={30}  /* Increased bar size from 60 to 30 to make them more prominent */
-            fillOpacity={0.9}  /* Increased opacity from 0.8 to 0.9 */
+            barSize={45}  /* Increased bar size from 30 to 45 to make them more prominent */
+            fillOpacity={0.9}
           >
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={colors.barFill} />

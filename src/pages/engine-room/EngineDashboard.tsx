@@ -110,19 +110,70 @@ const EngineDashboardContent = () => {
     );
   }
 
+  // Get usage-weighted metrics
+  const getUsageWeightedMetrics = () => {
+    if (!engineData) return {
+      weightedMargin: 0,
+      totalRevenue: 0,
+      totalProfit: 0,
+      usageCount: 0,
+      marginImprovement: 0
+    };
+
+    let totalRevenue = 0;
+    let totalProfit = 0;
+    let totalUsage = 0;
+    let proposedRevenue = 0;
+    let proposedProfit = 0;
+    
+    engineData.items?.forEach(item => {
+      if (item.revaUsage && item.currentREVAPrice) {
+        const currentRevenue = item.revaUsage * item.currentREVAPrice;
+        const currentProfit = item.revaUsage * (item.currentREVAPrice - item.avgCost);
+        
+        // Calculate proposed values if available
+        const proposedPrice = item.proposedPrice || item.currentREVAPrice;
+        const proposedItemRevenue = item.revaUsage * proposedPrice;
+        const proposedItemProfit = item.revaUsage * (proposedPrice - item.avgCost);
+        
+        totalRevenue += currentRevenue;
+        totalProfit += currentProfit;
+        totalUsage += item.revaUsage;
+        proposedRevenue += proposedItemRevenue;
+        proposedProfit += proposedItemProfit;
+      }
+    });
+    
+    const weightedMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+    const proposedWeightedMargin = proposedRevenue > 0 ? (proposedProfit / proposedRevenue) * 100 : 0;
+    const marginImprovement = proposedWeightedMargin - weightedMargin;
+    
+    return {
+      weightedMargin,
+      totalRevenue,
+      totalProfit,
+      usageCount: totalUsage,
+      marginImprovement
+    };
+  };
+  
+  const usageMetrics = getUsageWeightedMetrics();
+
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Create a container card that houses the individual metric cards */}
-      <Card className="mb-6 border border-white/10 bg-gray-900/40 backdrop-blur-sm">
+      {/* Master container card for all metrics */}
+      <Card className="mb-8 border border-white/10 bg-gray-900/40 backdrop-blur-sm">
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <h2 className="text-xl font-semibold mb-4">Dashboard Metrics</h2>
+          
+          {/* Primary metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <MetricCard
               title="Total SKUs"
               value={metrics.totalItems.toString()}
               subtitle={`${metrics.activeItems} active SKUs`}
               icon={<Package />}
               iconPosition="right"
-              className="border-none bg-transparent shadow-none"
             />
             
             <MetricCard
@@ -131,7 +182,6 @@ const EngineDashboardContent = () => {
               subtitle={`£${metrics.totalRevenue.toLocaleString()} revenue`}
               icon={<TrendingUp />}
               iconPosition="right"
-              className="border-none bg-transparent shadow-none"
             />
             
             <MetricCard
@@ -140,7 +190,6 @@ const EngineDashboardContent = () => {
               subtitle={`Based on ${metrics.totalItems} SKUs`}
               icon={<Percent />}
               iconPosition="right"
-              className="border-none bg-transparent shadow-none"
             />
             
             <MetricCard
@@ -149,7 +198,32 @@ const EngineDashboardContent = () => {
               subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`}
               icon={<Flag />}
               iconPosition="right"
-              className="border-none bg-transparent shadow-none"
+            />
+          </div>
+          
+          {/* Usage-weighted metrics section */}
+          <h3 className="text-lg font-medium mb-4 mt-6">Usage-Weighted Analysis</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <MetricCard
+              title="Usage-Weighted Margin"
+              value={`${usageMetrics.weightedMargin.toFixed(2)}%`}
+              change={usageMetrics.marginImprovement !== 0 ? {
+                value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
+                type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+              subtitle="Based on product usage volume"
+            />
+            
+            <MetricCard
+              title="Total Revenue (Usage-Weighted)"
+              value={`£${usageMetrics.totalRevenue.toLocaleString()}`}
+              subtitle={`${usageMetrics.usageCount.toLocaleString()} total units`}
+            />
+            
+            <MetricCard
+              title="Usage-Weighted Profit"
+              value={`£${usageMetrics.totalProfit.toLocaleString()}`}
+              subtitle="Profit calculated from actual usage"
             />
           </div>
         </CardContent>
@@ -163,7 +237,7 @@ const EngineDashboardContent = () => {
         </div>
       </div>
 
-      {/* Usage-Weighted Metrics Section */}
+      {/* Margin Distribution Charts */}
       <UsageWeightedMetrics data={engineData.items || []} />
 
       {/* Market Trend Analysis */}
