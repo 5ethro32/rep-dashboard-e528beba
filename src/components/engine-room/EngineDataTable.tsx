@@ -83,6 +83,7 @@ const columns = [{
   label: 'Rule',
   filterable: true
 }];
+
 const EngineDataTable: React.FC<EngineDataTableProps> = ({
   data,
   onShowPriceDetails,
@@ -101,6 +102,20 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const itemsPerPage = 20;
+
+  // Extract unique usage ranks from the data for the dropdown
+  const usageRanks = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    
+    const uniqueRanks = new Set<number>();
+    data.forEach(item => {
+      if (item.usageRank !== undefined && item.usageRank !== null) {
+        uniqueRanks.add(item.usageRank);
+      }
+    });
+    
+    return Array.from(uniqueRanks).sort((a, b) => a - b);
+  }, [data]);
 
   // We don't need to recalculate TML here anymore, just pass through the existing value
   const dataWithTml = useMemo(() => {
@@ -703,4 +718,5 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     </TooltipProvider>
   );
 };
+
 export default EngineDataTable;
