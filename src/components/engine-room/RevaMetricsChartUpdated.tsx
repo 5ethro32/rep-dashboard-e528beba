@@ -59,6 +59,32 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     return null;
   };
 
+  // Calculate the maximum profit value for proper scaling
+  const maxProfit = Math.max(...sortedData.map(item => 
+    Math.max(
+      item.currentProfit || 0, 
+      item.proposedProfit || 0
+    )
+  ));
+  
+  // Calculate the maximum margin value
+  const maxMargin = Math.max(...sortedData.map(item => 
+    Math.max(
+      item.currentMargin || 0, 
+      item.proposedMargin || 0
+    )
+  )) * 100; // Convert to percentage
+  
+  // Format Y-axis labels for profit
+  const formatProfitAxis = (value: number) => {
+    if (value >= 1000000) {
+      return `£${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `£${(value / 1000).toFixed(0)}K`;
+    }
+    return `£${value}`;
+  };
+
   return (
     <div className="w-full h-72 md:h-96">
       <ResponsiveContainer width="100%" height="100%">
@@ -73,18 +99,59 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#444" />
           <XAxis dataKey="name" />
-          <YAxis yAxisId="left" orientation="left" label={{ value: 'Margin %', angle: -90, position: 'insideLeft' }} />
-          <YAxis yAxisId="right" orientation="right" label={{ value: 'Profit', angle: 90, position: 'insideRight' }} />
+          <YAxis 
+            yAxisId="left" 
+            orientation="left" 
+            label={{ value: 'Margin %', angle: -90, position: 'insideLeft' }}
+            domain={[0, Math.max(maxMargin * 1.1, 30)]} // Set domain with padding, minimum 30%
+          />
+          <YAxis 
+            yAxisId="right" 
+            orientation="right" 
+            label={{ value: 'Profit', angle: 90, position: 'insideRight' }}
+            tickFormatter={formatProfitAxis}
+            domain={[0, maxProfit * 1.1]} // Set domain with 10% padding
+          />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           
           {/* Render bars first to make them appear behind the lines */}
-          <Bar yAxisId="right" dataKey="currentProfit" name="Current Profit" fill="#3b82f6" opacity={0.6} />
-          <Bar yAxisId="right" dataKey="proposedProfit" name="Proposed Profit" fill="#10b981" opacity={0.6} />
+          <Bar 
+            yAxisId="right" 
+            dataKey="currentProfit" 
+            name="Current Profit" 
+            fill="#3b82f6" 
+            opacity={0.6} 
+            stackId="profit" // Remove stackId to show separate bars
+          />
+          <Bar 
+            yAxisId="right" 
+            dataKey="proposedProfit" 
+            name="Proposed Profit" 
+            fill="#10b981" 
+            opacity={0.6} 
+            stackId="profit" // Remove stackId to show separate bars
+          />
           
           {/* Lines rendered after bars so they show on top */}
-          <Line yAxisId="left" type="monotone" dataKey="currentMargin" name="Current Margin %" stroke="#3b82f6" strokeWidth={3} dot={{ r: 5 }} />
-          <Line yAxisId="left" type="monotone" dataKey="proposedMargin" name="Proposed Margin %" stroke="#10b981" strokeWidth={3} dot={{ r: 5 }} />
+          <Line 
+            yAxisId="left" 
+            type="monotone" 
+            dataKey="currentMargin" 
+            name="Current Margin %" 
+            stroke="#3b82f6" 
+            strokeWidth={3} 
+            dot={{ r: 5 }} 
+          />
+          <Line 
+            yAxisId="left" 
+            type="monotone" 
+            dataKey="proposedMargin" 
+            name="Proposed Margin %" 
+            stroke="#10b981" 
+            strokeWidth={3} 
+            dot={{ r: 5 }} 
+          />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
