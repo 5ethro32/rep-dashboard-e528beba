@@ -13,9 +13,9 @@ import {
   NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger
+  NavigationMenuTrigger,
+  NavigationMenuLink
 } from '@/components/ui/navigation-menu';
 import {
   DropdownMenu,
@@ -193,15 +193,20 @@ const AppHeader = ({
             <nav className="flex items-center py-1">
               {navItems.map((item) => 
                 item.hasSubNav ? (
-                  // For Engine Room, use the NavigationMenu component for better hover handling
+                  // Engine Room navigation with NavigationMenu for better hover/click handling
                   <NavigationMenu key={item.path} className="relative">
                     <NavigationMenuList>
                       <NavigationMenuItem>
+                        <Link to={item.path} className="hidden" aria-hidden={true} />
                         <NavigationMenuTrigger 
                           className={cn(
                             "px-4 py-2 flex items-center gap-2 text-sm font-medium bg-transparent hover:bg-transparent focus:bg-transparent",
                             isEngineRoomSection ? "text-finance-red" : "text-white/60 hover:text-white"
                           )}
+                          onClick={() => {
+                            // Navigate to dashboard when clicked directly
+                            window.location.href = item.path;
+                          }}
                         >
                           {isEngineRoomSection && (
                             <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
@@ -233,7 +238,7 @@ const AppHeader = ({
                     </NavigationMenuList>
                   </NavigationMenu>
                 ) : (
-                  // Regular navigation links (non-Engine Room)
+                  // Regular navigation links
                   <NavLink 
                     key={item.path}
                     to={item.path} 
@@ -244,7 +249,6 @@ const AppHeader = ({
                   >
                     {({isActive}) => (
                       <>
-                        {/* Replace icon with gradient line for active items */}
                         {isActive && 
                           <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
                         }
@@ -259,7 +263,7 @@ const AppHeader = ({
           </div>
         )}
 
-        {/* Alternative implementation using DropdownMenu for Engine Room subnav */}
+        {/* Alternative implementation for Engine Room subnav */}
         {!isMobile && isEngineRoomSection && (
           <div className="border-t border-white/5 bg-gray-900/60">
             <div className="flex px-4 py-1">
