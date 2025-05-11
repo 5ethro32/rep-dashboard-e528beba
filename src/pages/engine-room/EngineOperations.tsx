@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, TrendingDown, TrendingUp } from 'lucide-react';
@@ -36,7 +35,6 @@ const EngineOperationsContent = () => {
     handleApproveItems,
     handleRejectItems,
     handleExport,
-    setUserRole,
     getPendingApprovalCount
   } = useEngineRoom();
   const [showPricingExplainer, setShowPricingExplainer] = useState(false);
@@ -189,15 +187,10 @@ const EngineOperationsContent = () => {
   if (!engineData) {
     return (
       <div className="container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">REVA Pricing Engine</h1>
-          <p className="text-muted-foreground">Upload and optimize REVA pricing data</p>
-        </div>
-
         <div 
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all
+          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all mt-4
             ${isUploading ? "pointer-events-none" : "border-gray-700 hover:border-primary/50"}`}
         >
           <div className="flex flex-col items-center justify-center space-y-4">
@@ -255,27 +248,6 @@ const EngineOperationsContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">REVA Pricing Engine</h1>
-        <p className="text-muted-foreground">Optimize and approve pricing changes</p>
-      </div>
-
-      {/* Role indicator for demo */}
-      <div className="flex justify-end mb-2">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Current role:</span>
-          <select
-            value={userRole}
-            onChange={(e) => setUserRole(e.target.value as 'analyst' | 'manager' | 'admin')}
-            className="bg-gray-800 border border-gray-700 rounded-md text-sm px-2 py-1"
-          >
-            <option value="analyst">Analyst</option>
-            <option value="manager">Manager</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-      </div>
-
       {/* Top actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex items-center space-x-2">

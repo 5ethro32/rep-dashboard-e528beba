@@ -33,6 +33,7 @@ const AppHeader = ({
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isSubNavOpen, setIsSubNavOpen] = useState(false);
   const [isVeraOpen, setIsVeraOpen] = useState(false);
+  const [isEngineNavOpen, setIsEngineNavOpen] = useState(false);
 
   // Check if we're in the Engine Room section
   const isEngineRoomSection = location.pathname.startsWith('/engine-room');
@@ -137,7 +138,9 @@ const AppHeader = ({
   return <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-gray-950/95">
       <div className="container max-w-7xl mx-auto px-4">
         {/* Main header with logo and user profile */}
-        <div className="h-16 flex items-center justify-between" onMouseEnter={() => !isMobile && setIsNavOpen(true)} onMouseLeave={() => !isMobile && setIsNavOpen(false)}>
+        <div className="h-16 flex items-center justify-between" 
+             onMouseEnter={() => !isMobile && setIsNavOpen(true)} 
+             onMouseLeave={() => !isMobile && setIsNavOpen(false)}>
           <div className="flex items-center gap-3">
             <Link to="/rep-performance" className="flex items-center">
               <span className="text-2xl font-bold">
@@ -179,31 +182,76 @@ const AppHeader = ({
           </div>}
         
         {/* Navigation bar - Only collapsible on desktop, not shown on mobile at all as mobile has bottom navbar */}
-        {!isMobile && <div className={cn("border-t border-white/5 overflow-hidden transition-all duration-300", isNavOpen ? "max-h-16 opacity-100" : "max-h-0 opacity-0")} onMouseEnter={() => setIsNavOpen(true)} onMouseLeave={() => setIsNavOpen(false)}>
+        {!isMobile && <div 
+          className={cn("border-t border-white/5 overflow-hidden transition-all duration-300", 
+                      isNavOpen ? "max-h-16 opacity-100" : "max-h-0 opacity-0")} 
+          onMouseEnter={() => setIsNavOpen(true)} 
+          onMouseLeave={() => {
+            setIsNavOpen(false);
+            setIsEngineNavOpen(false);
+          }}>
             <nav className="flex items-center py-1">
-              {navItems.map(item => <div key={item.path} className="relative" onMouseEnter={() => item.hasSubNav && setIsSubNavOpen(true)} onMouseLeave={() => item.hasSubNav && setIsSubNavOpen(false)}>
+              {navItems.map(item => 
+                <div key={item.path} 
+                     className="relative" 
+                     onMouseEnter={() => {
+                       if (item.hasSubNav) {
+                         setIsSubNavOpen(true);
+                         if (item.path.includes('engine-room')) {
+                           setIsEngineNavOpen(true);
+                         }
+                       }
+                     }} 
+                     onMouseLeave={() => {
+                       if (item.hasSubNav) {
+                         setIsSubNavOpen(false);
+                         if (!isNavOpen) {
+                           setIsEngineNavOpen(false);
+                         }
+                       }
+                     }}>
                   <NavLink to={item.path} className={({
-              isActive
-            }) => cn("px-4 py-2 flex items-center gap-2 text-sm font-medium relative", isActive || item.hasSubNav && isEngineRoomSection ? "text-finance-red" : "text-white/60 hover:text-white")}>
+                    isActive
+                  }) => cn("px-4 py-2 flex items-center gap-2 text-sm font-medium relative", isActive || item.hasSubNav && isEngineRoomSection ? "text-finance-red" : "text-white/60 hover:text-white")}>
                     {({
-                isActive
-              }) => <>
+                      isActive
+                    }) => <>
                         {/* Replace icon with gradient line for active items */}
                         {(isActive || item.hasSubNav && isEngineRoomSection) && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>}
                         <span>{item.label}</span>
-                        {item.hasSubNav && <ChevronDown className={cn("h-3 w-3 ml-0.5 transition-transform", isSubNavOpen ? "rotate-180" : "")} />}
+                        {item.hasSubNav && <ChevronDown className={cn("h-3 w-3 ml-0.5 transition-transform", isSubNavOpen && isEngineNavOpen ? "rotate-180" : "")} />}
                       </>}
                   </NavLink>
                   
                   {/* Subnav Dropdown for Engine Room */}
-                  {item.hasSubNav && isSubNavOpen && <div className="absolute top-full left-0 w-40 bg-gray-900 border border-gray-800 rounded-md shadow-lg z-50 overflow-hidden" onMouseEnter={() => setIsSubNavOpen(true)} onMouseLeave={() => setIsSubNavOpen(false)}>
-                      {item.subItems?.map(subItem => <NavLink key={subItem.path} to={subItem.path} className={({
-                isActive
-              }) => cn("block px-4 py-2 text-sm", isActive ? "bg-gray-800 text-finance-red" : "text-white/70 hover:bg-gray-800 hover:text-white")}>
+                  {item.hasSubNav && isSubNavOpen && isEngineNavOpen && (
+                    <div 
+                      className="absolute top-full left-0 w-40 bg-gray-900 border border-gray-800 rounded-md shadow-lg z-50 overflow-hidden" 
+                      onMouseEnter={() => {
+                        setIsSubNavOpen(true);
+                        setIsEngineNavOpen(true);
+                      }} 
+                      onMouseLeave={() => {
+                        setIsSubNavOpen(false);
+                        setIsEngineNavOpen(false);
+                      }}
+                    >
+                      {item.subItems?.map(subItem => (
+                        <NavLink 
+                          key={subItem.path} 
+                          to={subItem.path} 
+                          className={({isActive}) => 
+                            cn("block px-4 py-2 text-sm", 
+                               isActive ? "bg-gray-800 text-finance-red" : "text-white/70 hover:bg-gray-800 hover:text-white")
+                          }
+                        >
                           {subItem.label}
-                        </NavLink>)}
-                    </div>}
-                </div>)}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </nav>
           </div>}
       </div>

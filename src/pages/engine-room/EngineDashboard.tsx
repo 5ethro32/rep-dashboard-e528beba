@@ -66,15 +66,10 @@ const EngineDashboardContent = () => {
   if (!engineData) {
     return (
       <div className="container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">Pricing Dashboard</h1>
-          <p className="text-muted-foreground">Visualise and analyse pricing data</p>
-        </div>
-
         <div 
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all
+          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all mt-4
             ${isUploading ? "pointer-events-none" : "border-gray-700 hover:border-primary/50"}`}
         >
           <div className="flex flex-col items-center justify-center space-y-4">
