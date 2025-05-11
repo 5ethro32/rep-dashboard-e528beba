@@ -29,7 +29,13 @@ export const isDateInRange = (date: Date, startDate: Date, endDate: Date): boole
   return timestamp >= startDate.getTime() && timestamp <= endDate.getTime();
 };
 
-// Calculate the percentage of working days completed in the month
+/**
+ * Calculates the percentage of working days completed in the current month
+ * Used for projecting monthly values based on partial month data
+ * 
+ * @param currentDate - The date to calculate the working day percentage for
+ * @returns The percentage of working days completed in the month (0-100)
+ */
 export const getWorkingDayPercentage = (currentDate: Date): number => {
   const now = new Date(currentDate);
   const year = now.getFullYear();
@@ -63,7 +69,14 @@ export const getWorkingDayPercentage = (currentDate: Date): number => {
   return (completedWorkingDays / totalWorkingDays) * 100;
 };
 
-// Project monthly value based on percentage completion
+/**
+ * Projects the full month value based on the current value and percentage completion
+ * Used to estimate end-of-month metrics based on partial month data
+ * 
+ * @param currentValue - The current value to project from
+ * @param percentageComplete - The percentage of the month completed
+ * @returns The projected full month value
+ */
 export const projectMonthlyValue = (currentValue: number, percentageComplete: number): number => {
   // Prevent division by zero
   if (percentageComplete <= 0) return currentValue;

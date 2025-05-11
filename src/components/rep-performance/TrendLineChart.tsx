@@ -82,8 +82,12 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const [selectedReps, setSelectedReps] = useState<string[]>([]);
   const [availableReps, setAvailableReps] = useState<string[]>([]);
 
-  // Calculate the working day percentage for the current month (May)
-  const workingDayPercentage = useMemo(() => getWorkingDayPercentage(new Date(2025, 4, 7)), []);
+  // Calculate the working day percentage for the current month using the current date
+  // This ensures projections are always based on the actual current day
+  const workingDayPercentage = useMemo(() => {
+    const currentDate = new Date();
+    return getWorkingDayPercentage(currentDate);
+  }, []);
 
   // Generate the list of available reps from all months' data
   React.useEffect(() => {
