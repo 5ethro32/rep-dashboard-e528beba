@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from 'recharts';
 
 interface RevaMetricsChartProps {
   data: any[];
@@ -168,19 +168,21 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   const maxProfit = Math.max(...processedData.map(item => item.currentProfit || 0));
   
   // Calculate the maximum margin value
-  const maxMargin = Math.max(...processedData.map(item => item.currentMargin || 0)); // Already in percentage
-  
-  // Get the maximum item count for bar scaling
-  const maxItemCount = Math.max(...processedData.map(item => item.itemCount || 0));
+  const maxMargin = Math.max(...processedData.map(item => item.currentMargin || 0)); 
   
   // Format Y-axis labels for profit
   const formatProfitAxis = (value: number) => {
     if (value >= 1000000) {
       return `£${(value / 1000000).toFixed(1)}M`;
     } else if (value >= 1000) {
-      return `£${(value / 1000).toFixed(0)}K`;
+      return `£${(value / 1000).toFixed(1)}K`;
     }
     return `£${value}`;
+  };
+  
+  // Format Y-axis labels for margin
+  const formatMarginAxis = (value: number) => {
+    return `${value.toFixed(1)}%`;
   };
 
   return (
@@ -200,34 +202,17 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           <YAxis 
             yAxisId="left" 
             orientation="left" 
-            label={{ value: 'Margin %', angle: -90, position: 'insideLeft' }}
+            tickFormatter={formatMarginAxis}
             domain={[0, Math.max(maxMargin * 1.1, 30)]} // Set domain with padding, minimum 30%
           />
           <YAxis 
             yAxisId="right" 
             orientation="right" 
-            label={{ value: 'Profit', angle: 90, position: 'insideRight' }}
             tickFormatter={formatProfitAxis}
             domain={[0, maxProfit * 1.1]} // Set domain with 10% padding
           />
-          <YAxis 
-            yAxisId="items" 
-            orientation="right" 
-            label={{ value: 'Items', angle: 90, position: 'insideRight', offset: 60 }}
-            domain={[0, maxItemCount * 1.1]} // Set domain with 10% padding
-            hide // Hide this axis but keep it for scaling
-          />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          
-          {/* Bar for item count */}
-          <Bar 
-            yAxisId="items" 
-            dataKey="itemCount" 
-            name="Number of Items" 
-            fill="#9ca3af" 
-            opacity={0.4}
-          />
           
           {/* Bar for current profit */}
           <Bar 
@@ -246,7 +231,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             name="Current Margin %" 
             stroke="#3b82f6" 
             strokeWidth={3} 
-            dot={{ r: 5 }} 
+            dot={{ r: 5, fill: "#3b82f6" }} 
+            activeDot={{ r: 6 }} 
           />
         </ComposedChart>
       </ResponsiveContainer>
