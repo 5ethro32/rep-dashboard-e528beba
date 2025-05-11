@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -240,8 +241,20 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
     avgCost: Number(row[mapping.avgCost] || 0),
     nextCost: Number(row[mapping.nextCost] || 0),
     currentREVAPrice: Number(row[mapping.currentREVAPrice] || 0),
-    currentREVAMargin: parseFloat(String(row[mapping.currentREVAMargin] || '0').replace('%', '')) / 100,
+    // Calculate current margin the same way as proposed margin for consistency
+    currentREVAMargin: 0, // Will be calculated below
   };
+  
+  // Calculate the current margin properly using the same formula as for proposed margin
+  if (transformed.currentREVAPrice > 0 && transformed.avgCost >= 0) {
+    transformed.currentREVAMargin = (transformed.currentREVAPrice - transformed.avgCost) / transformed.currentREVAPrice;
+  } else {
+    // If we can't calculate it properly (missing price or cost), try to use the value from the file as fallback
+    const rawMargin = row[mapping.currentREVAMargin];
+    if (rawMargin !== undefined) {
+      transformed.currentREVAMargin = parseFloat(String(rawMargin).replace('%', '')) / 100;
+    }
+  }
   
   // Add optional fields
   if (mapping.inRF && row[mapping.inRF] !== undefined) transformed.inRF = Number(row[mapping.inRF]);
