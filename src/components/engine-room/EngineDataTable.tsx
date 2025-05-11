@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -682,9 +683,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             </div>
             <select className="bg-gray-800 border border-gray-700 rounded-md px-2 py-2 text-sm w-32" value={filterByRank || ''} onChange={e => setFilterByRank(e.target.value === '' ? null : e.target.value)}>
               <option value="">All Ranks</option>
-              {usageRanks.map(rank => <option key={rank} value={rank.toString()}>
+              {usageRanks.map(rank => (
+                <option key={rank} value={rank.toString()}>
                   Rank {rank}
-                </option>)}
+                </option>
+              ))}
             </select>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">

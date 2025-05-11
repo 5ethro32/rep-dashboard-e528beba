@@ -377,7 +377,7 @@ const EngineOperationsContent = () => {
               <SelectValue placeholder="Filter by flag" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All flags</SelectItem>
+              <SelectItem value="all">All flags</SelectItem>
               {uniqueFlags.map(flag => (
                 <SelectItem key={flag} value={flag}>
                   {flag}
