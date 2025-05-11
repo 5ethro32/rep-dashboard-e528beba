@@ -3,6 +3,8 @@ import React from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { CheckCircle, XCircle, AlertCircle, Download } from 'lucide-react';
 import ApprovalsTab from '@/components/engine-room/ApprovalsTab';
 import ApprovalHistoryTab from '@/components/engine-room/ApprovalHistoryTab';
 
@@ -77,34 +79,76 @@ const ApprovalsDashboardContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Approvals Dashboard</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+        <h1 className="text-2xl font-bold">Approvals Dashboard</h1>
+        
+        <Button 
+          variant="secondary" 
+          size="sm"
+          onClick={handleExport}
+          className="flex items-center space-x-1"
+        >
+          <Download className="h-4 w-4 mr-1" />
+          <span>Export Approval Report</span>
+        </Button>
+      </div>
       
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+      {/* Metrics Cards - Styled like the image reference */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <Card className="border border-amber-800/30 bg-amber-900/10">
           <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2">Pending Approvals</h3>
-            <div className="text-2xl font-bold mb-1">
-              {metrics.pendingApprovals}
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Pending Approval</h4>
+                <p className="text-2xl font-semibold">{metrics.pendingApprovals}</p>
+              </div>
+              <div className="bg-amber-900/20 p-2 rounded-full">
+                <AlertCircle className="h-6 w-6 text-amber-400" />
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Items awaiting approval
-            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Items awaiting manager review
+            </p>
           </CardContent>
         </Card>
         
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+        <Card className="border border-green-800/30 bg-green-900/10">
           <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2">Approved Items</h3>
-            <div className="text-2xl font-bold mb-1">
-              {metrics.approvedItems}
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Approved</h4>
+                <p className="text-2xl font-semibold">{metrics.approvedItems}</p>
+              </div>
+              <div className="bg-green-900/20 p-2 rounded-full">
+                <CheckCircle className="h-6 w-6 text-green-400" />
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Items approved this period
-            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Items approved for implementation
+            </p>
           </CardContent>
         </Card>
         
+        <Card className="border border-red-800/30 bg-red-900/10">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground mb-1">Rejected</h4>
+                <p className="text-2xl font-semibold">{metrics.rejectedItems}</p>
+              </div>
+              <div className="bg-red-900/20 p-2 rounded-full">
+                <XCircle className="h-6 w-6 text-red-400" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Items needing revision
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Additional performance metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
           <CardContent className="p-4">
             <h3 className="text-sm font-medium mb-2">Profit Impact</h3>
@@ -132,6 +176,20 @@ const ApprovalsDashboardContent = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+      
+      {/* Approval process explanation */}
+      <div className="bg-gray-900/40 border border-gray-800 p-4 rounded-md mb-6">
+        <div className="flex items-start space-x-3">
+          <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+          <div>
+            <h3 className="font-medium mb-1">Approval Process</h3>
+            <p className="text-sm text-muted-foreground">
+              The approval process ensures pricing changes are reviewed before implementation. 
+              Managers can approve individual items or in bulk.
+            </p>
+          </div>
+        </div>
       </div>
       
       {/* Tabs for approvals and history */}

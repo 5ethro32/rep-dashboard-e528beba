@@ -150,6 +150,12 @@ const EngineOperationsContent = () => {
     return engineData.items.filter(item => starredItems.has(item.id));
   };
   
+  // Get submitted items
+  const getSubmittedItems = () => {
+    if (!engineData?.items) return [];
+    return engineData.items.filter(item => item.workflowStatus === 'submitted' && item.priceModified);
+  };
+  
   // Handle drag and drop file upload
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -325,6 +331,9 @@ const EngineOperationsContent = () => {
           <TabsTrigger key="exceptions" value="exceptions">
             Exceptions ({metrics.rule1Flags + metrics.rule2Flags})
           </TabsTrigger>
+          <TabsTrigger key="submitted" value="submitted">
+            Submitted ({getPendingApprovalCount()})
+          </TabsTrigger>
           <TabsTrigger key="starred" value="starred">
             Starred ({starredItems.size})
           </TabsTrigger>
@@ -346,6 +355,16 @@ const EngineOperationsContent = () => {
             data={engineData.flaggedItems || []} 
             onShowPriceDetails={handleShowItemDetails}
             onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
+            onToggleStar={handleToggleStar}
+            starredItems={starredItems}
+          />
+        </TabsContent>
+        
+        <TabsContent value="submitted" className="space-y-4">
+          <EngineDataTable 
+            data={getSubmittedItems()} 
+            onShowPriceDetails={handleShowItemDetails}
+            onPriceChange={undefined} // Read-only for submitted items
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
           />
