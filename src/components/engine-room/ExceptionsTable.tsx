@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown, Flag, Star, TrendingUp, TrendingDown } from 'lucide-react';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
+import { formatCurrency } from '@/utils/rep-performance-utils'; // Import the formatCurrency function
 
 interface ExceptionsTableProps {
   data: any[];
