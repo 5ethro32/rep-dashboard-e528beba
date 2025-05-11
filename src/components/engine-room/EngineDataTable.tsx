@@ -3,9 +3,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, ArrowUp, ArrowDown, Star, Edit2 } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu';
 import PriceEditor from './PriceEditor';
+import CellDetailsPopover from './CellDetailsPopover';
 
 interface EngineDataTableProps {
   data: any[];
