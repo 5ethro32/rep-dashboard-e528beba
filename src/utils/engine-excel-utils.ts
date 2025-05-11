@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -390,8 +389,14 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
     }
   });
   
-  // Calculate overall usage-weighted margin
-  const overallMargin = totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0;
+  // FIX: Calculate overall usage-weighted margin correctly
+  // Previously this was using totalUsageWeightedMargin/totalUsage which might be too small numerically
+  // Let's calculate it based on totalProfit and totalRevenue instead
+  let overallMargin = 0;
+  if (totalRevenue > 0) {
+    overallMargin = (totalProfit / totalRevenue) * 100;
+  }
+  
   const currentOverallMargin = totalRevenue > 0 ? (currentTotalProfit / totalRevenue) * 100 : 0;
   
   // Calculate profit delta and margin lift

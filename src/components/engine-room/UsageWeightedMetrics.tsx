@@ -89,9 +89,24 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => 
       }
     });
     
-    // Calculate usage-weighted margin properly
-    const weightedMargin = totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0;
-    const proposedWeightedMargin = totalUsage > 0 ? (totalProposedUsageWeightedMargin / totalUsage) * 100 : 0;
+    // FIX: Calculate usage-weighted margin properly
+    // Use profit/revenue ratio for better precision
+    let weightedMargin = 0;
+    if (totalRevenue > 0) {
+      weightedMargin = (totalProfit / totalRevenue) * 100;
+    } else if (totalUsage > 0) {
+      // Fallback to original method if needed
+      weightedMargin = (totalUsageWeightedMargin / totalUsage) * 100;
+    }
+    
+    // Calculate proposed weighted margin similarly
+    let proposedWeightedMargin = 0;
+    if (proposedRevenue > 0) {
+      proposedWeightedMargin = (proposedProfit / proposedRevenue) * 100;
+    } else if (totalUsage > 0) {
+      proposedWeightedMargin = (totalProposedUsageWeightedMargin / totalUsage) * 100;
+    }
+    
     const marginImprovement = proposedWeightedMargin - weightedMargin;
     
     return {

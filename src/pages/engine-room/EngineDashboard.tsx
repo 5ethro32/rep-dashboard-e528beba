@@ -34,6 +34,7 @@ const EngineDashboardContent = () => {
       marginLift: 0
     };
     
+    // Make sure we're using the correct overallMargin from the processed data
     return {
       totalItems: engineData.totalItems || 0,
       activeItems: engineData.activeItems || 0,
@@ -162,9 +163,24 @@ const EngineDashboardContent = () => {
       }
     });
     
-    // Calculate usage-weighted margin properly
-    const weightedMargin = totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0;
-    const proposedWeightedMargin = totalUsage > 0 ? (totalProposedUsageWeightedMargin / totalUsage) * 100 : 0;
+    // FIX: Calculate usage-weighted margin properly 
+    // We can calculate it directly as profit/revenue for better precision
+    let weightedMargin = 0;
+    if (totalRevenue > 0) {
+      weightedMargin = (totalProfit / totalRevenue) * 100;
+    } else if (totalUsage > 0) {
+      // Fallback to original method if needed
+      weightedMargin = (totalUsageWeightedMargin / totalUsage) * 100;
+    }
+    
+    // Calculate proposed weighted margin similarly
+    let proposedWeightedMargin = 0;
+    if (proposedRevenue > 0) {
+      proposedWeightedMargin = (proposedProfit / proposedRevenue) * 100;
+    } else if (totalUsage > 0) {
+      proposedWeightedMargin = (totalProposedUsageWeightedMargin / totalUsage) * 100;
+    }
+    
     const marginImprovement = proposedWeightedMargin - weightedMargin;
     
     return {
