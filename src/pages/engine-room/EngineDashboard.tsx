@@ -117,47 +117,50 @@ const EngineDashboardContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Metrics cards - Updated with icons and consistent extra details */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MetricCard
-          title="Total SKUs"
-          value={`${metrics.totalItems}`}
-          subtitle={`${metrics.activeItems} active SKUs`}
-          icon={<Package />}
-          iconPosition="right"
-        />
-        <MetricCard
-          title="Total Profit"
-          value={`£${metrics.totalProfit.toLocaleString()}`}
-          subtitle={`${metrics.totalRevenue.toLocaleString()} revenue`}
-          change={{
-            value: `${metrics.profitDelta > 0 ? '+' : ''}${metrics.profitDelta.toFixed(2)}%`,
-            type: metrics.profitDelta >= 0 ? 'increase' : 'decrease'
-          }}
-          icon={<TrendingUp />}
-          iconPosition="right"
-        />
-        <MetricCard
-          title="Overall Margin"
-          value={`${metrics.overallMargin.toFixed(2)}%`}
-          subtitle={`Based on ${metrics.totalItems} SKUs`}
-          change={{
-            value: `${metrics.marginLift > 0 ? '+' : ''}${metrics.marginLift.toFixed(2)}%`,
-            type: metrics.marginLift >= 0 ? 'increase' : 'decrease'
-          }}
-          icon={<Percent />}
-          iconPosition="right"
-        />
-        <MetricCard
-          title="Flagged Items"
-          value={`${metrics.rule1Flags + metrics.rule2Flags}`}
-          subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`}
-          icon={<Flag />}
-          iconPosition="right"
-        />
-      </div>
+      {/* All metrics in a single card with grid layout */}
+      <Card className="mb-6 border border-white/10 bg-gray-900/40 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs text-white/50 uppercase tracking-wider font-bold">Total SKUs</div>
+                <Package size={18} className="text-white/40" />
+              </div>
+              <div className="text-3xl md:text-4xl font-bold">{metrics.totalItems}</div>
+              <div className="text-xs text-white/50">{metrics.activeItems} active SKUs</div>
+            </div>
 
-      {/* REVA Metrics Chart - Moved up */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs text-white/50 uppercase tracking-wider font-bold">Total Profit</div>
+                <TrendingUp size={18} className="text-white/40" />
+              </div>
+              <div className="text-3xl md:text-4xl font-bold">£{metrics.totalProfit.toLocaleString()}</div>
+              <div className="text-xs text-white/50">£{metrics.totalRevenue.toLocaleString()} revenue</div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs text-white/50 uppercase tracking-wider font-bold">Overall Margin</div>
+                <Percent size={18} className="text-white/40" />
+              </div>
+              <div className="text-3xl md:text-4xl font-bold">{metrics.overallMargin.toFixed(2)}%</div>
+              <div className="text-xs text-white/50">Based on {metrics.totalItems} SKUs</div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs text-white/50 uppercase tracking-wider font-bold">Flagged Items</div>
+                <Flag size={18} className="text-white/40" />
+              </div>
+              <div className="text-3xl md:text-4xl font-bold">{metrics.rule1Flags + metrics.rule2Flags}</div>
+              <div className="text-xs text-white/50">Rule 1: {metrics.rule1Flags} | Rule 2: {metrics.rule2Flags}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* REVA Metrics Chart */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
         <div className="border border-white/10 bg-gray-900/40 backdrop-blur-sm rounded-lg p-4">
@@ -168,7 +171,7 @@ const EngineDashboardContent = () => {
       {/* Usage-Weighted Metrics Section */}
       <UsageWeightedMetrics data={engineData.items || []} />
 
-      {/* Market Trend Analysis - Using updated UI style */}
+      {/* Market Trend Analysis */}
       <MarketTrendAnalysis data={engineData.items || []} />
     </div>
   );
