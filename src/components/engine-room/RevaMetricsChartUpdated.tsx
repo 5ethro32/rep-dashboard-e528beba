@@ -22,17 +22,34 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      
+      // Safely format numbers with null/undefined checks
+      const formatValue = (value: number | null | undefined) => {
+        if (value === null || value === undefined) {
+          return "N/A";
+        }
+        return value.toFixed(1);
+      };
+      
+      // Safely format currency with null/undefined checks
+      const formatCurrency = (value: number | null | undefined) => {
+        if (value === null || value === undefined) {
+          return "N/A";
+        }
+        return `£${value.toLocaleString()}`;
+      };
+      
       return (
         <div className="bg-gray-800 p-3 rounded shadow-lg border border-gray-700">
           <p className="font-bold text-sm">{label}</p>
           <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
             <div>
-              <p><span className="text-blue-400">Current Margin:</span> {data.currentMargin.toFixed(1)}%</p>
-              <p><span className="text-green-400">Proposed Margin:</span> {data.proposedMargin.toFixed(1)}%</p>
+              <p><span className="text-blue-400">Current Margin:</span> {formatValue(data.currentMargin)}%</p>
+              <p><span className="text-green-400">Proposed Margin:</span> {formatValue(data.proposedMargin)}%</p>
             </div>
             <div>
-              <p><span className="text-blue-400">Current Profit:</span> £{data.currentProfit.toLocaleString()}</p>
-              <p><span className="text-green-400">Proposed Profit:</span> £{data.proposedProfit.toLocaleString()}</p>
+              <p><span className="text-blue-400">Current Profit:</span> {formatCurrency(data.currentProfit)}</p>
+              <p><span className="text-green-400">Proposed Profit:</span> {formatCurrency(data.proposedProfit)}</p>
             </div>
             <p className="col-span-2"><span className="text-gray-400">Items:</span> {data.itemCount}</p>
           </div>
