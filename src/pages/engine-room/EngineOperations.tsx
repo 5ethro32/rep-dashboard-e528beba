@@ -14,7 +14,7 @@ import EngineDataTable from '@/components/engine-room/EngineDataTable';
 import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer';
 import ExceptionsTable from '@/components/engine-room/ExceptionsTable';
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
-import PricingActions from '@/components/engine-room/PricingActions';
+import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
 import ApprovalsTab from '@/components/engine-room/ApprovalsTab';
 import ApprovalHistoryTab from '@/components/engine-room/ApprovalHistoryTab';
 
@@ -316,21 +316,23 @@ const EngineOperationsContent = () => {
         </div>
       </div>
 
-      {/* Workflow status and actions */}
-      <PricingActions 
-        modifiedCount={modifiedItems.size}
-        totalExceptions={(metrics.rule1Flags || 0) + (metrics.rule2Flags || 0)}
-        workflowStatus={workflowStatus}
-        onSave={handleSaveChanges}
-        onSubmit={handleSubmitForApproval}
-        onReset={handleResetChanges}
-        onExport={handleExport}
-        approvalMetrics={{
-          pending: getPendingApprovalCount(),
-          approved: engineData.approvedItems?.length || 0,
-          rejected: engineData.rejectedItems?.length || 0
-        }}
-      />
+      {/* New tabbed workflow status and actions */}
+      <div className="mb-6">
+        <PricingActionsTabs
+          modifiedCount={modifiedItems.size}
+          totalExceptions={(metrics.rule1Flags || 0) + (metrics.rule2Flags || 0)}
+          workflowStatus={workflowStatus}
+          onSave={handleSaveChanges}
+          onSubmit={handleSubmitForApproval}
+          onReset={handleResetChanges}
+          onExport={handleExport}
+          approvalMetrics={{
+            pending: getPendingApprovalCount(),
+            approved: engineData.approvedItems?.length || 0,
+            rejected: engineData.rejectedItems?.length || 0
+          }}
+        />
+      </div>
 
       {/* Key metrics summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
