@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -9,7 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch'; // Add the Switch import here
+import { Switch } from '@/components/ui/switch';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
 
@@ -199,8 +198,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       // Match search query
       const matchesSearch = item.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
 
-      // Match usage rank filter
-      const matchesRankFilter = filterByRank ? item.usageRank === parseInt(filterByRank, 10) : true;
+      // Match usage rank filter - updated for new filter value
+      const matchesRankFilter = !filterByRank || filterByRank === 'all' ? true : 
+                               item.usageRank === parseInt(filterByRank, 10);
 
       // Match all column filters
       const matchesColumnFilters = Object.keys(columnFilters).every(field => {
@@ -519,7 +519,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             <SelectValue placeholder="All Ranks" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Ranks</SelectItem>
+            {/* Fix: Don't use empty string as a value */}
+            <SelectItem value="all">All Ranks</SelectItem>
             {usageRanks.map(rank => (
               <SelectItem key={rank} value={rank.toString()}>
                 Rank {rank}
@@ -529,8 +530,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         </Select>
         
         {/* Flag filter */}
-        <Select value={columnFilters['flags']?.[0] || ''} onValueChange={value => {
-          if (value === '') {
+        <Select value={columnFilters['flags']?.[0] || 'all'} onValueChange={value => {
+          if (value === 'all') {
             setColumnFilters(prev => {
               const newFilters = {...prev};
               delete newFilters['flags'];
@@ -544,7 +545,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             <SelectValue placeholder="Filter by flag" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All flags</SelectItem>
+            {/* Fix: Use 'all' instead of empty string */}
+            <SelectItem value="all">All flags</SelectItem>
             {uniqueFlags.map(flag => (
               <SelectItem key={flag} value={flag}>{flag}</SelectItem>
             ))}
