@@ -95,6 +95,9 @@ const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
             dot={{ r: 5, strokeWidth: 0, fill: colors.proposedMargin }}
             activeDot={{ r: 6, strokeWidth: 0 }}
             yAxisId="left"
+            isAnimationActive={true}
+            animationDuration={800}
+            connectNulls={false}
           />
           <Line
             type="monotone"
@@ -105,6 +108,9 @@ const RevaMetricsChart: React.FC<RevaMetricsChartProps> = ({ data }) => {
             dot={{ r: 5, strokeWidth: 0, fill: colors.currentMargin }}
             activeDot={{ r: 6, strokeWidth: 0 }}
             yAxisId="left"
+            isAnimationActive={true}
+            animationDuration={800}
+            connectNulls={false}
           />
           
           <Bar 
