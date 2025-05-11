@@ -11,23 +11,118 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     return <div className="flex justify-center items-center h-64 bg-gray-800/30 rounded-lg">No data available</div>;
   }
 
-  // Sort data by group number
-  const sortedData = [...data].sort((a, b) => {
-    const groupA = parseInt(a.name.split(' ')[1]);
-    const groupB = parseInt(b.name.split(' ')[1]);
-    return groupA - groupB;
-  });
+  // Process the raw data to create usage-based grouping
+  const processDataByUsage = (rawData: any[]) => {
+    // Function to group items by usage volume
+    const groupItemsByUsage = (items: any[]) => {
+      // First, sort all items by usage in descending order
+      const sortedItems = [...items].sort((a, b) => {
+        // Safely handle cases where revaUsage might be undefined
+        const usageA = a.revaUsage || 0;
+        const usageB = b.revaUsage || 0;
+        return usageB - usageA; // Descending order
+      });
 
-  // Shorten x-axis labels (Group names)
-  const shortenedData = sortedData.map(item => {
-    // Extract just the group number for shorter labels
-    const groupNumber = item.name.split(' ')[1];
-    return {
-      ...item,
-      shortName: `G${groupNumber}`, // Shortened name (e.g., "G1", "G2", etc.)
-      name: item.name // Keep original name for tooltip
+      // Define group sizes
+      const groupSizes = [250, 250, 500, 500, 1000]; // Group 1: 1-250, Group 2: 251-500, etc.
+      const results = [];
+
+      let startIndex = 0;
+      for (let i = 0; i < groupSizes.length; i++) {
+        const endIndex = startIndex + groupSizes[i];
+        const groupItems = sortedItems.slice(startIndex, Math.min(endIndex, sortedItems.length));
+        
+        if (groupItems.length === 0) break; // No more items to group
+        
+        // Calculate metrics for this group
+        let totalUsage = 0;
+        let totalProfit = 0;
+        let totalUsageWeightedMargin = 0;
+
+        groupItems.forEach(item => {
+          const usage = item.revaUsage || 0;
+          const price = item.currentREVAPrice || 0;
+          const cost = item.avgCost || 0;
+          const profit = usage * (price - cost);
+          const margin = price > 0 ? (price - cost) / price : 0;
+          
+          totalUsage += usage;
+          totalProfit += profit;
+          totalUsageWeightedMargin += margin * usage;
+        });
+
+        // Determine the range description
+        const groupNumber = i + 1;
+        const rangeStart = startIndex + 1;
+        const rangeEnd = Math.min(endIndex, sortedItems.length);
+
+        results.push({
+          name: `Group ${groupNumber}`,
+          shortName: `G${groupNumber}`,
+          itemCount: groupItems.length,
+          currentProfit: totalProfit,
+          currentMargin: totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0,
+          rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
+        });
+
+        startIndex = endIndex;
+        if (startIndex >= sortedItems.length) break; // No more items to process
+      }
+
+      // If there are remaining items, add them as a final group
+      if (startIndex < sortedItems.length) {
+        const remainingItems = sortedItems.slice(startIndex);
+        let totalUsage = 0;
+        let totalProfit = 0;
+        let totalUsageWeightedMargin = 0;
+
+        remainingItems.forEach(item => {
+          const usage = item.revaUsage || 0;
+          const price = item.currentREVAPrice || 0;
+          const cost = item.avgCost || 0;
+          const profit = usage * (price - cost);
+          const margin = price > 0 ? (price - cost) / price : 0;
+          
+          totalUsage += usage;
+          totalProfit += profit;
+          totalUsageWeightedMargin += margin * usage;
+        });
+
+        const groupNumber = groupSizes.length + 1;
+        const rangeStart = startIndex + 1;
+        const rangeEnd = sortedItems.length;
+
+        results.push({
+          name: `Group ${groupNumber}`,
+          shortName: `G${groupNumber}`,
+          itemCount: remainingItems.length,
+          currentProfit: totalProfit,
+          currentMargin: totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0,
+          rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
+        });
+      }
+
+      return results;
     };
-  });
+
+    // Process the provided chart data or raw items
+    if (Array.isArray(rawData) && rawData.length > 0) {
+      // Check if data is raw items or already processed chart data
+      if (rawData[0].revaUsage !== undefined) {
+        // Raw items data
+        return groupItemsByUsage(rawData);
+      } else if (rawData[0].name && rawData[0].name.includes('Group')) {
+        // Data is already in chart format, but we need to regroup by usage
+        console.log('Regrouping pre-processed chart data is not supported. Please provide raw item data.');
+        return rawData; // Return as-is for now
+      }
+    }
+    
+    return [];
+  };
+
+  // Process data with usage-based grouping
+  const processedData = processDataByUsage(data);
 
   // Custom tooltip to show more details
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -53,6 +148,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
       return (
         <div className="bg-gray-800 p-3 rounded shadow-lg border border-gray-700">
           <p className="font-bold text-sm">{data.name}</p>
+          <p className="text-xs text-gray-400">{data.rangeDescription}</p>
           <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
             <div>
               <p><span className="text-blue-400">Current Margin:</span> {formatValue(data.currentMargin)}%</p>
@@ -69,13 +165,13 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   };
 
   // Calculate the maximum profit value for proper scaling
-  const maxProfit = Math.max(...shortenedData.map(item => item.currentProfit || 0));
+  const maxProfit = Math.max(...processedData.map(item => item.currentProfit || 0));
   
   // Calculate the maximum margin value
-  const maxMargin = Math.max(...shortenedData.map(item => item.currentMargin || 0)) * 100; // Convert to percentage
+  const maxMargin = Math.max(...processedData.map(item => item.currentMargin || 0)); // Already in percentage
   
   // Get the maximum item count for bar scaling
-  const maxItemCount = Math.max(...shortenedData.map(item => item.itemCount || 0));
+  const maxItemCount = Math.max(...processedData.map(item => item.itemCount || 0));
   
   // Format Y-axis labels for profit
   const formatProfitAxis = (value: number) => {
@@ -91,7 +187,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     <div className="w-full h-72 md:h-96">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
-          data={shortenedData}
+          data={processedData}
           margin={{
             top: 5,
             right: 30,
@@ -100,7 +196,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-          <XAxis dataKey="shortName" /> {/* Use the shortened name for X-axis */}
+          <XAxis dataKey="shortName" />
           <YAxis 
             yAxisId="left" 
             orientation="left" 

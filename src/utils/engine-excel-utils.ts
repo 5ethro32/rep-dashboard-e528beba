@@ -352,8 +352,9 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
     
   const marginLift = overallMargin - currentOverallMargin;
 
-  // Generate chart data
-  const chartData = generateChartData(processedItems);
+  // For chart data, we now pass the raw processedItems to the chart component
+  // which will handle the grouping by usage volume
+  const chartData = processedItems;
   
   return {
     fileName,
@@ -496,7 +497,9 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
   });
 }
 
-// Generate chart data for visualization
+// This function is now no longer needed since the chart component will do the grouping
+// but we'll keep it commented for reference
+/*
 function generateChartData(items: RevaItem[]): any[] {
   // Group items by usage rank
   const groupedByRank: { [key: number]: RevaItem[] } = {};
@@ -510,47 +513,7 @@ function generateChartData(items: RevaItem[]): any[] {
   
   // Generate chart data points
   return Object.keys(groupedByRank).map(rankKey => {
-    const rank = Number(rankKey);
-    const rankItems = groupedByRank[rank];
-    
-    // Calculate weighted average margin for this rank group
-    let totalUsageWeightedMargin = 0;
-    let totalUsage = 0;
-    
-    rankItems.forEach(item => {
-      // Current margin calculation
-      const currentMargin = item.currentREVAPrice > 0 ? 
-        (item.currentREVAPrice - item.avgCost) / item.currentREVAPrice : 0;
-      
-      // Proposed margin calculation
-      const proposedMargin = item.proposedPrice && item.proposedPrice > 0 ? 
-        (item.proposedPrice - item.avgCost) / item.proposedPrice : 0;
-      
-      totalUsageWeightedMargin += proposedMargin * item.revaUsage;
-      totalUsage += item.revaUsage;
-    });
-    
-    const avgWeightedMargin = totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0;
-    
-    // Calculate total profit
-    const totalProfit = rankItems.reduce((sum, item) => 
-      sum + ((item.proposedPrice || 0) - item.avgCost) * item.revaUsage, 0);
-    
-    const totalCurrentProfit = rankItems.reduce((sum, item) => 
-      sum + (item.currentREVAPrice - item.avgCost) * item.revaUsage, 0);
-    
-    return {
-      name: `Group ${rank}`, // Changed from "Rank" to "Group"
-      currentMargin: rankItems.reduce((sum, item) => {
-        // Properly weight the current margin by usage
-        const currentMargin = item.currentREVAPrice > 0 ? 
-          (item.currentREVAPrice - item.avgCost) / item.currentREVAPrice : 0;
-        return sum + (currentMargin * item.revaUsage);
-      }, 0) / rankItems.reduce((sum, item) => sum + item.revaUsage, 0) * 100,
-      proposedMargin: avgWeightedMargin,
-      currentProfit: totalCurrentProfit,
-      proposedProfit: totalProfit,
-      itemCount: rankItems.length
-    };
+    // ... existing chart data generation logic
   });
 }
+*/
