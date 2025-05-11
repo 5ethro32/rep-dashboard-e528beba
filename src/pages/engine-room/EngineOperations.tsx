@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, TrendingDown, TrendingUp } from 'lucide-react';
@@ -9,6 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Info } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import EngineDataTable from '@/components/engine-room/EngineDataTable';
 import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer';
 import ExceptionsTable from '@/components/engine-room/ExceptionsTable';
@@ -41,7 +47,7 @@ const EngineOperationsContent = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
-  const [showShortageOnly, setShowShortageOnly] = useState(false);
+  const [selectedFlag, setSelectedFlag] = useState<string>('');
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -99,7 +105,7 @@ const EngineOperationsContent = () => {
     setShowPricingExplainer(true);
   };
   
-  // Toggle star for a single item (fixed to prevent toggling all stars)
+  // Toggle star for a single item
   const handleToggleStar = (itemId: string) => {
     setStarredItems(prev => {
       const newStarred = new Set(prev);
@@ -112,7 +118,37 @@ const EngineOperationsContent = () => {
     });
   };
   
-  // Filter data based on toggles
+  // Get all unique flags from the data for the dropdown
+  const getUniqueFlags = () => {
+    if (!engineData?.items) return [];
+    
+    const flags = new Set<string>();
+    
+    // Add built-in flag types
+    flags.add('SHORT');
+    flags.add('HIGH_PRICE');
+    flags.add('LOW_MARGIN');
+    
+    // Add flags from the data
+    engineData.items.forEach(item => {
+      if (item.flag && typeof item.flag === 'string' && item.flag.trim()) {
+        flags.add(item.flag.trim());
+      }
+      
+      // Add any flags from the flags array
+      if (item.flags && Array.isArray(item.flags)) {
+        item.flags.forEach(flagItem => {
+          if (typeof flagItem === 'string' && flagItem.trim()) {
+            flags.add(flagItem.trim());
+          }
+        });
+      }
+    });
+    
+    return Array.from(flags).sort();
+  };
+  
+  // Filter data based on toggles and selected flag
   const filterData = (items: any[]) => {
     if (!items) return [];
     
@@ -123,9 +159,22 @@ const EngineOperationsContent = () => {
       filteredItems = filteredItems.filter(item => (item.revaUsage || 0) > 0);
     }
     
-    // Apply shortage filter if enabled
-    if (showShortageOnly) {
-      filteredItems = filteredItems.filter(item => item.shortage === true);
+    // Apply flag filter if selected
+    if (selectedFlag) {
+      filteredItems = filteredItems.filter(item => {
+        // Check for built-in flags
+        if (selectedFlag === 'SHORT' && item.shortage) return true;
+        if (selectedFlag === 'HIGH_PRICE' && item.flag1) return true;
+        if (selectedFlag === 'LOW_MARGIN' && item.flag2) return true;
+        
+        // Check for flag field
+        if (item.flag && item.flag === selectedFlag) return true;
+        
+        // Check in flags array
+        if (item.flags && Array.isArray(item.flags) && item.flags.includes(selectedFlag)) return true;
+        
+        return false;
+      });
     }
     
     return filteredItems;
@@ -246,6 +295,9 @@ const EngineOperationsContent = () => {
     );
   }
 
+  // Get unique flags for the dropdown
+  const uniqueFlags = getUniqueFlags();
+
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Top actions */}
@@ -318,15 +370,21 @@ const EngineOperationsContent = () => {
           </label>
         </div>
         
+        {/* Replace Shortage Only toggle with Flag dropdown */}
         <div className="flex items-center space-x-2">
-          <Switch 
-            id="shortageOnly" 
-            checked={showShortageOnly}
-            onCheckedChange={setShowShortageOnly}
-          />
-          <label htmlFor="shortageOnly" className="text-sm cursor-pointer">
-            Shortage Only
-          </label>
+          <Select value={selectedFlag} onValueChange={setSelectedFlag}>
+            <SelectTrigger className="w-[180px] h-8">
+              <SelectValue placeholder="Filter by flag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All flags</SelectItem>
+              {uniqueFlags.map(flag => (
+                <SelectItem key={flag} value={flag}>
+                  {flag}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         
         <div className="flex items-center space-x-2">

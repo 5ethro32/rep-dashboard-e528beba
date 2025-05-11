@@ -7,8 +7,10 @@ import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, Trendi
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
+
 interface EngineDataTableProps {
   data: any[];
   onShowPriceDetails: (item: any) => void;
@@ -98,7 +100,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [filterByRank, setFilterByRank] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
-  const [showShortageOnly, setShowShortageOnly] = useState(false);
   const itemsPerPage = 20;
 
   // We don't need to recalculate TML here anymore, just pass through the existing value
@@ -142,26 +143,28 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return result;
   }, [dataWithTml]);
 
-  // Collect unique flags separately to avoid circular reference
+  // Get unique flags and show them in dropdown filter
   const uniqueFlags = useMemo(() => {
     const allFlags = new Set<string>();
     if (dataWithTml && dataWithTml.length > 0) {
       dataWithTml.forEach(item => {
+        // Get flags from the flags array
         if (item.flags && Array.isArray(item.flags)) {
           item.flags.forEach((flag: string) => allFlags.add(flag));
         }
+        
+        // Get flag from the flag field
+        if (item.flag && typeof item.flag === 'string' && item.flag.trim()) {
+          allFlags.add(item.flag.trim());
+        }
+        
+        // Add built-in flags
         if (item.flag1) allFlags.add('HIGH_PRICE');
         if (item.flag2) allFlags.add('LOW_MARGIN');
         if (item.shortage) allFlags.add('SHORT');
       });
     }
     return Array.from(allFlags);
-  }, [dataWithTml]);
-
-  // Get unique usage ranks for filter dropdown
-  const usageRanks = useMemo(() => {
-    if (!dataWithTml || dataWithTml.length === 0) return [];
-    return Array.from(new Set(dataWithTml.map(item => item.usageRank))).sort((a, b) => a - b);
   }, [dataWithTml]);
 
   // Calculate price change percentage
@@ -202,11 +205,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       // Only filter inactive products if the toggle is enabled
       const isActive = !hideInactiveProducts || item.inStock > 0 || item.onOrder > 0 || item.revaUsage > 0;
 
-      // Filter for shortage only if toggle is on
-      const matchesShortage = !showShortageOnly || item.shortage;
-      return matchesSearch && matchesRankFilter && matchesColumnFilters && isActive && matchesShortage;
+      return matchesSearch && matchesRankFilter && matchesColumnFilters && isActive;
     });
-  }, [dataWithTml, searchQuery, filterByRank, columnFilters, hideInactiveProducts, showShortageOnly]);
+  }, [dataWithTml, searchQuery, filterByRank, columnFilters, hideInactiveProducts]);
 
   // Sort the filtered data
   const sortedData = useMemo(() => {
@@ -362,11 +363,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   // Toggle the hide inactive products filter
   const toggleHideInactiveProducts = () => {
     setHideInactiveProducts(!hideInactiveProducts);
-  };
-
-  // Toggle the shortage only filter
-  const toggleShortageOnly = () => {
-    setShowShortageOnly(!showShortageOnly);
   };
 
   // Render the column header with sort and filter
@@ -659,7 +655,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       onToggleStar(itemId);
     }
   };
-  return <TooltipProvider>
+
+  return (
+    <TooltipProvider>
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
           <div className="flex items-center gap-4 w-full md:w-auto">
@@ -682,10 +680,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             <Button variant="outline" size="sm" onClick={toggleHideInactiveProducts} className={hideInactiveProducts ? "bg-primary/20" : ""}>
               {hideInactiveProducts ? "Show All" : "Hide Inactive"}
             </Button>
-            
-            <Button variant="outline" size="sm" onClick={toggleShortageOnly} className={showShortageOnly ? "bg-primary/20" : ""}>
-              {showShortageOnly ? "Show All" : "Shortage Only"}
-            </Button>
           </div>
         </div>
 
@@ -706,6 +700,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             </Button>
           </div>}
       </div>
-    </TooltipProvider>;
+    </TooltipProvider>
+  );
 };
 export default EngineDataTable;
