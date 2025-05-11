@@ -21,6 +21,8 @@ interface MetricCardProps {
   iconClassName?: string;
   ranking?: number;
   hideRanking?: boolean;
+  details?: string;
+  valueSize?: 'small' | 'medium' | 'large';
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ 
@@ -35,7 +37,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
   iconPosition = 'right',
   iconClassName,
   ranking,
-  hideRanking = false
+  hideRanking = false,
+  details,
+  valueSize = 'large'
 }) => {
   // Helper function to get ranking badge styles
   const getRankingBadgeStyles = (rank?: number) => {
@@ -48,13 +52,23 @@ const MetricCard: React.FC<MetricCardProps> = ({
       default: return "bg-gray-800 text-white/60";
     }
   };
+
+  // Helper function to get value size class
+  const getValueSizeClass = (size: string) => {
+    switch(size) {
+      case 'small': return 'text-xl md:text-2xl';
+      case 'medium': return 'text-2xl md:text-3xl';
+      case 'large': return 'text-3xl md:text-4xl';
+      default: return 'text-3xl md:text-4xl';
+    }
+  };
   
   return (
     <Card 
       className={cn(
         "border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg",
         "transition-all duration-300 ease-in-out",
-        "hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02]",
+        "hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)]",
         "will-change-transform relative",
         className
       )}
@@ -62,13 +76,13 @@ const MetricCard: React.FC<MetricCardProps> = ({
       <CardContent className="p-4 md:p-5 relative overflow-hidden">
         {/* Top section with title and icon */}
         <div className="flex items-center justify-between mb-2">
-          <div className="text-xs md:text-sm font-medium text-finance-gray uppercase tracking-wider">
+          <div className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider">
             {title}
           </div>
           
           {icon && iconPosition === 'right' && (
             <div className={cn(
-              "flex-shrink-0 text-finance-gray",
+              "flex-shrink-0 text-muted-foreground",
               iconClassName
             )}>
               {React.cloneElement(icon as React.ReactElement, { size: 16 })}
@@ -84,14 +98,14 @@ const MetricCard: React.FC<MetricCardProps> = ({
             <>
               {icon && iconPosition === 'left' && (
                 <div className={cn(
-                  "flex-shrink-0 text-finance-gray mr-2",
+                  "flex-shrink-0 text-muted-foreground mr-2",
                   iconClassName
                 )}>
                   {React.cloneElement(icon as React.ReactElement, { size: 16 })}
                 </div>
               )}
               
-              <div className={cn("text-2xl md:text-3xl font-bold", valueClassName)}>
+              <div className={cn(getValueSizeClass(valueSize), "font-bold", valueClassName)}>
                 {value}
               </div>
               
@@ -100,9 +114,13 @@ const MetricCard: React.FC<MetricCardProps> = ({
           )}
         </div>
         
-        {/* Bottom section with subtitle */}
+        {/* Bottom section with subtitle or details */}
         {subtitle && !isLoading && (
-          <div className="text-xs text-finance-gray/80 mt-1">{subtitle}</div>
+          <div className="text-xs text-muted-foreground mt-1">{subtitle}</div>
+        )}
+        
+        {details && !isLoading && (
+          <div className="text-xs text-muted-foreground mt-2">{details}</div>
         )}
         
         {/* Ranking badge - only show for ranks 1-3 with gold/silver/bronze styling */}

@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, TrendingUp, TrendingDown } from 'lucide-react';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -57,7 +57,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
   const [filterByRank, setFilterByRank] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
-  const [hideInactiveProducts, setHideInactiveProducts] = useState(false); // Default should be false
+  const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const [showShortageOnly, setShowShortageOnly] = useState(false);
   const itemsPerPage = 20;
 
@@ -836,111 +836,4 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             <select 
               className="bg-gray-800 border border-gray-700 rounded-md px-2 py-2 text-sm w-32"
               value={filterByRank || ''}
-              onChange={(e) => setFilterByRank(e.target.value || null)}
-            >
-              <option value="">All Ranks</option>
-              {usageRanks.map(rank => (
-                <option key={rank} value={rank}>Rank {rank}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-3">
-            <div 
-              className="flex items-center gap-2 bg-gray-900 px-2 py-1 rounded-md cursor-pointer"
-              onClick={toggleHideInactiveProducts}
-            >
-              <input 
-                type="checkbox" 
-                checked={hideInactiveProducts} 
-                onChange={() => {}} 
-                className="h-4 w-4" 
-              />
-              <span className="text-sm">Hide inactive products</span>
-            </div>
-            
-            <div 
-              className="flex items-center gap-2 bg-gray-900 px-2 py-1 rounded-md cursor-pointer"
-              onClick={toggleShortageOnly}
-            >
-              <input 
-                type="checkbox" 
-                checked={showShortageOnly} 
-                onChange={() => {}} 
-                className="h-4 w-4" 
-              />
-              <span className="text-sm">Shortage only</span>
-            </div>
-            
-            {onPriceChange && (
-              <Button 
-                variant={bulkEditMode ? "default" : "outline"} 
-                size="sm" 
-                onClick={toggleBulkEditMode}
-              >
-                {bulkEditMode ? (
-                  <>
-                    <X className="h-4 w-4 mr-2" />
-                    Exit Bulk Edit
-                  </>
-                ) : (
-                  <>
-                    <Edit2 className="h-4 w-4 mr-2" />
-                    Bulk Edit Mode
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
-        
-        {/* Active filters display */}
-        {renderActiveFilters()}
-        
-        {/* Bulk edit mode notice */}
-        {bulkEditMode && (
-          <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
-            <p className="text-sm">
-              <strong>Bulk Edit Mode:</strong> You can now edit multiple prices at once. Click "Save" on each item to apply changes.
-            </p>
-          </div>
-        )}
-        
-        {filterByRank ? (
-          renderDataTable(paginatedData)
-        ) : (
-          renderGroupedItems()
-        )}
-        
-        {/* Pagination - only show when filtering by rank */}
-        {filterByRank && totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length}
-            </div>
-            <div className="space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-    </TooltipProvider>
-  );
-};
-
-export default EngineDataTable;
+              onChange={(e) => setFilterByRank

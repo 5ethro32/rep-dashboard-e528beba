@@ -65,7 +65,10 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortField, setSortField] = useState<string>('usageRank');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-
+  const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
+  const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
+  const [showShortageOnly, setShowShortageOnly] = useState(false);
+  
   // Handle sort click
   const handleSort = (field: string) => {
     if (field === sortField) {
@@ -181,6 +184,32 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     // Extract just the rule number and put it in square brackets
     const ruleMatch = ruleText.match(/Grp \d+-(\d+\.\d+)/);
     return ruleMatch ? `[${ruleMatch[1]}]` : ruleText;
+  };
+
+  // Toggle filters
+  const toggleHideInactiveProducts = () => {
+    setHideInactiveProducts(!hideInactiveProducts);
+  };
+  
+  const toggleShortageOnly = () => {
+    setShowShortageOnly(!showShortageOnly);
+  };
+
+  // Handle column filter change  
+  const handleFilterChange = (field: string, value: any) => {
+    setColumnFilters(prev => {
+      const current = prev[field] || [];
+      
+      // Toggle the value in the filter
+      const newFilter = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+        
+      return {
+        ...prev,
+        [field]: newFilter
+      };
+    });
   };
 
   // Render the exception table
@@ -396,7 +425,11 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                       
                       <TableCell>
                         <CellDetailsPopover item={item} field="marketLow">
-                          £{(item.marketLow || 0).toFixed(2)}
+                          <div className="flex items-center gap-1">
+                            £{(item.marketLow || 0).toFixed(2)}
+                            {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
+                            {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
+                          </div>
                         </CellDetailsPopover>
                       </TableCell>
                       
@@ -448,19 +481,6 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                           />
                         )}
                       </TableCell>
-                      
-                      {/* Market trend indicator */}
-                      {item.marketTrend && (
-                        <TableCell>
-                          <CellDetailsPopover item={item} field="marketTrend">
-                            {item.marketTrend === 'up' ? (
-                              <TrendingUp className="h-4 w-4 text-green-500" />
-                            ) : item.marketTrend === 'down' ? (
-                              <TrendingDown className="h-4 w-4 text-red-500" />
-                            ) : null}
-                          </CellDetailsPopover>
-                        </TableCell>
-                      )}
                     </TableRow>
                   );
                 })
@@ -511,14 +531,44 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
         </Button>
       </div>
 
-      <div className="relative flex-1 mb-4">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by description..."
-          className="pl-8"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by description..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-3">
+          <div 
+            className="flex items-center gap-2 bg-gray-900 px-2 py-1 rounded-md cursor-pointer"
+            onClick={toggleHideInactiveProducts}
+          >
+            <input 
+              type="checkbox" 
+              checked={hideInactiveProducts} 
+              onChange={() => {}} 
+              className="h-4 w-4" 
+            />
+            <span className="text-sm">Hide inactive products</span>
+          </div>
+          
+          <div 
+            className="flex items-center gap-2 bg-gray-900 px-2 py-1 rounded-md cursor-pointer"
+            onClick={toggleShortageOnly}
+          >
+            <input 
+              type="checkbox" 
+              checked={showShortageOnly} 
+              onChange={() => {}} 
+              className="h-4 w-4" 
+            />
+            <span className="text-sm">Shortage only</span>
+          </div>
+        </div>
       </div>
 
       {bulkEditMode && (
