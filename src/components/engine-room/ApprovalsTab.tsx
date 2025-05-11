@@ -1,9 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Check, X, ChevronDown, ChevronUp, CheckCircle, AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
+import { Search, Check, X, ChevronDown, ChevronUp, CheckCircle, AlertCircle, TrendingDown, TrendingUp, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -11,9 +10,17 @@ interface ApprovalsTabProps {
   data: any[];
   onApprove: (items: string[], comment?: string) => void;
   onReject: (items: string[], comment: string) => void;
+  onToggleStar?: (itemId: string) => void;
+  starredItems?: Set<string>;
 }
 
-const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }) => {
+const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ 
+  data, 
+  onApprove, 
+  onReject,
+  onToggleStar,
+  starredItems = new Set()
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<string>('description');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -198,6 +205,14 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({ data, onApprove, onReject }
         <TrendingUp className="h-3 w-3" /> UP
       </Badge>
     );
+  };
+  
+  // Add star functionality
+  const handleToggleStar = (event: React.MouseEvent, itemId: string) => {
+    event.stopPropagation();
+    if (onToggleStar) {
+      onToggleStar(itemId);
+    }
   };
 
   if (!submittedItems || submittedItems.length === 0) {

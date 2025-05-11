@@ -3,16 +3,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown, Flag } from 'lucide-react';
+import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown, Flag, Star } from 'lucide-react';
 import PriceEditor from './PriceEditor';
 
 interface ExceptionsTableProps {
   data: any[];
   onShowPriceDetails: (item: any) => void;
   onPriceChange?: (item: any, newPrice: number) => void;
+  onToggleStar?: (itemId: string) => void;
+  starredItems?: Set<string>;
 }
 
-const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDetails, onPriceChange }) => {
+const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ 
+  data, 
+  onShowPriceDetails, 
+  onPriceChange,
+  onToggleStar,
+  starredItems = new Set()
+}) => {
   // Extract flagged items by type
   const highPriceItems = useMemo(() => 
     data ? data.filter(item => item.flag1) : [], 
@@ -373,6 +381,14 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
                           Details
                         </Button>
                       </TableCell>
+                      {/* Star button */}
+                      <TableCell>
+                        {starredItems.has(item.id) ? (
+                          <Star className="h-4 w-4 text-yellow-500" onClick={(e) => handleToggleStar(e, item.id)} />
+                        ) : (
+                          <Star className="h-4 w-4 text-gray-400" onClick={(e) => handleToggleStar(e, item.id)} />
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })
@@ -382,6 +398,14 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({ data, onShowPriceDeta
         </div>
       </div>
     );
+  };
+
+  // Add star functionality
+  const handleToggleStar = (event: React.MouseEvent, itemId: string) => {
+    event.stopPropagation();
+    if (onToggleStar) {
+      onToggleStar(itemId);
+    }
   };
 
   return (

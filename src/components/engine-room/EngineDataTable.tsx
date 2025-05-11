@@ -1,23 +1,18 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, ArrowUp, ArrowDown, Edit2, CheckCircle, X, Flag, Filter } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Search, ArrowUp, ArrowDown, Star, Edit2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import PriceEditor from './PriceEditor';
-import CellDetailsPopover from './CellDetailsPopover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  DropdownMenu, 
-  DropdownMenuTrigger, 
-  DropdownMenuContent, 
-  DropdownMenuCheckboxItem,
-  DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu';
 
 interface EngineDataTableProps {
   data: any[];
   onShowPriceDetails: (item: any) => void;
   onPriceChange?: (item: any, newPrice: number) => void;
+  onToggleStar?: (itemId: string) => void;
+  starredItems?: Set<string>;
 }
 
 // Define column configuration outside component to avoid recreation on each render
@@ -36,7 +31,13 @@ const columns = [
   { field: 'appliedRule', label: 'Rule', filterable: true },
 ];
 
-const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDetails, onPriceChange }) => {
+const EngineDataTable: React.FC<EngineDataTableProps> = ({
+  data,
+  onShowPriceDetails,
+  onPriceChange,
+  onToggleStar,
+  starredItems = new Set()
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<string>('description');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -713,6 +714,14 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({ data, onShowPriceDeta
         ))}
       </div>
     );
+  };
+
+  // Use the starredItems prop and add functionality for toggling stars
+  const handleToggleStar = (event: React.MouseEvent, itemId: string) => {
+    event.stopPropagation();
+    if (onToggleStar) {
+      onToggleStar(itemId);
+    }
   };
 
   return (

@@ -19,6 +19,11 @@ interface PricingActionsProps {
   onSubmit: () => void;
   onReset: () => void;
   onExport: () => void;
+  approvalMetrics?: {
+    pending: number;
+    approved: number;
+    rejected: number;
+  };
 }
 
 const PricingActions: React.FC<PricingActionsProps> = ({
@@ -28,7 +33,8 @@ const PricingActions: React.FC<PricingActionsProps> = ({
   onSave,
   onSubmit,
   onReset,
-  onExport
+  onExport,
+  approvalMetrics
 }) => {
   const getStatusColor = () => {
     switch (workflowStatus) {

@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Download, CheckCircle, XCircle, Clock, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Download, CheckCircle, XCircle, Clock, ArrowUp, ArrowDown, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { 
   Pagination, 
@@ -16,9 +15,16 @@ import {
 interface ApprovalHistoryTabProps {
   data: any[];
   onExport?: () => void;
+  onToggleStar?: (itemId: string) => void;
+  starredItems?: Set<string>;
 }
 
-const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({ data, onExport }) => {
+const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({ 
+  data, 
+  onExport,
+  onToggleStar,
+  starredItems = new Set()
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string>('reviewDate');
@@ -171,6 +177,14 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({ data, onExport 
     }
   };
 
+  // Add star functionality
+  const handleToggleStar = (event: React.MouseEvent, itemId: string) => {
+    event.stopPropagation();
+    if (onToggleStar) {
+      onToggleStar(itemId);
+    }
+  };
+
   const renderApprovalTable = (items: any[]) => {
     return (
       <Table>
@@ -264,6 +278,13 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({ data, onExport 
                     <div className="max-w-[200px] truncate">
                       {item.reviewComments || '-'}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Star 
+                      className="h-4 w-4 cursor-pointer"
+                      onClick={(e) => handleToggleStar(e, item.id)}
+                      style={{ color: starredItems.has(item.id) ? 'yellow' : 'gray' }}
+                    />
                   </TableCell>
                 </TableRow>
               );
