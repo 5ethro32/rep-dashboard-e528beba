@@ -4,9 +4,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown, Flag, Star, TrendingUp, TrendingDown, Filter } from 'lucide-react';
+import { Download, Edit2, CheckCircle, X, Check, Search, ArrowUp, ArrowDown, Flag, Star, TrendingUp, TrendingDown, Filter, ChevronDown, ChevronRight } from 'lucide-react';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { formatCurrency } from '@/utils/rep-performance-utils'; // Import the formatCurrency function
 
 interface ExceptionsTableProps {
@@ -72,6 +74,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   const [showShortageOnly, setShowShortageOnly] = useState(false);
   const [showRuleFilters, setShowRuleFilters] = useState(false);
   const [selectedRules, setSelectedRules] = useState<string[]>([]);
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   
   // Get all unique rules from the data
   const uniqueRules = useMemo(() => {
@@ -218,6 +221,15 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     });
   };
 
+  // Toggle row expansion
+  const toggleRowExpansion = (itemId: string) => {
+    if (expandedRowId === itemId) {
+      setExpandedRowId(null);
+    } else {
+      setExpandedRowId(itemId);
+    }
+  };
+
   // Render sort indicator
   const renderSortIndicator = (field: string) => {
     if (field !== sortField) return null;
@@ -231,9 +243,16 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   const simplifyRuleDisplay = (ruleText: string) => {
     if (!ruleText) return '';
     
-    // Extract just the rule number and put it in square brackets
-    const ruleMatch = ruleText.match(/Grp \d+-(\d+\.\d+)/);
-    return ruleMatch ? `[${ruleMatch[1]}]` : ruleText;
+    // Extract the rule number and put it in square brackets
+    const ruleMatch = ruleText.match(/Rule (\d+[a-b]?)/i);
+    
+    // Format the ML + x% part properly
+    let formattedRule = ruleText;
+    formattedRule = formattedRule.replace(/ML \+ (\d+)%/, "ML + $1.00%");
+    
+    return ruleMatch 
+      ? `${ruleMatch[1]} ${formattedRule.includes('ML + ') ? formattedRule.split(' - ')[1].split('(')[0].trim() : ''}` 
+      : formattedRule;
   };
 
   // Toggle filters
@@ -261,6 +280,23 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
       };
     });
   };
+  
+  // Get item flags as formatted string
+  const getItemFlags = (item: any) => {
+    if (!item.flags || !Array.isArray(item.flags) || item.flags.length === 0) {
+      return '-';
+    }
+    
+    return (
+      <div className="flex flex-wrap gap-1">
+        {item.flags.map((flag: string, i: number) => (
+          <Badge key={i} variant="outline" className="text-xs py-0">
+            {flag}
+          </Badge>
+        ))}
+      </div>
+    );
+  };
 
   // Render the exception table
   const renderExceptionTable = (items: any[], flagDescription: string = '') => {
@@ -280,6 +316,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 px-2"></TableHead>
                 <TableHead 
                   className="cursor-pointer"
                   onClick={() => handleSort('description')}
@@ -354,6 +391,24 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                 </TableHead>
                 <TableHead 
                   className="cursor-pointer"
+                  onClick={() => handleSort('marketTrend')}
+                >
+                  <div className="flex items-center">
+                    Trend
+                    {renderSortIndicator('marketTrend')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
+                  onClick={() => handleSort('flags')}
+                >
+                  <div className="flex items-center">
+                    Flags
+                    {renderSortIndicator('flags')}
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer"
                   onClick={() => handleSort('appliedRule')}
                 >
                   <div className="flex items-center">
@@ -379,14 +434,13 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     {renderSortIndicator('onOrder')}
                   </div>
                 </TableHead>
-                <TableHead>Actions</TableHead>
-                <TableHead>Star</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="text-center py-10">
+                  <TableCell colSpan={14} className="text-center py-10">
                     No exceptions found
                   </TableCell>
                 </TableRow>
@@ -396,157 +450,224 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                   // Add the percentage to the item for sorting
                   item.priceChangePercentage = priceChangePercentage;
                   const isEditing = editingItemId === item.id;
+                  const isExpanded = expandedRowId === item.id;
                   
                   return (
-                    <TableRow key={index} className={item.priceModified ? 'bg-blue-900/20' : ''}>
-                      <TableCell>
-                        <CellDetailsPopover item={item} field="description">
-                          {item.description}
-                        </CellDetailsPopover>
-                      </TableCell>
-                      <TableCell>
-                        <CellDetailsPopover item={item} field="usageRank">
-                          {item.usageRank}
-                        </CellDetailsPopover>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <CellDetailsPopover item={item} field="avgCost">
-                          £{(item.avgCost || 0).toFixed(2)}
-                        </CellDetailsPopover>
-                      </TableCell>
-                      <TableCell className="font-bold">
-                        <CellDetailsPopover item={item} field="currentREVAPrice">
-                          £{(item.currentREVAPrice || 0).toFixed(2)}
-                        </CellDetailsPopover>
-                      </TableCell>
-                      
-                      {/* Proposed price cell with inline editing */}
-                      <TableCell className="font-bold">
-                        {bulkEditMode && !item.priceModified ? (
-                          <PriceEditor
-                            initialPrice={item.proposedPrice || 0}
-                            currentPrice={item.currentREVAPrice || 0}
-                            calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
-                            cost={item.avgCost || 0}
-                            onSave={(newPrice) => onPriceChange && onPriceChange(item, newPrice)}
-                            onCancel={() => {}}
-                            compact={true}
-                          />
-                        ) : isEditing ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              value={editingValues[item.id]}
-                              onChange={(e) => handlePriceInputChange(item, e.target.value)}
-                              className="w-24 h-8 py-1 px-2"
-                              autoFocus
-                            />
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-6 w-6 p-0" 
-                              onClick={() => handleSavePriceEdit(item)}
-                            >
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-6 w-6 p-0"
-                              onClick={handleCancelEdit}
-                            >
-                              <X className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <CellDetailsPopover item={item} field="proposedPrice">
-                            <div className="flex items-center gap-2">
-                              £{(item.proposedPrice || 0).toFixed(2)}
-                              {item.priceModified && (
-                                <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
-                              )}
-                              {onPriceChange && !bulkEditMode && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  className="ml-2 h-6 w-6 p-0"
-                                  onClick={() => handleStartEdit(item)}
-                                >
-                                  <Edit2 className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </div>
+                    <React.Fragment key={index}>
+                      <TableRow 
+                        className={`${item.priceModified ? 'bg-blue-900/20' : ''} ${isExpanded ? 'bg-gray-800/40' : ''} cursor-pointer`}
+                        onClick={() => toggleRowExpansion(item.id)}
+                      >
+                        <TableCell className="p-2">
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <CellDetailsPopover item={item} field="description">
+                            {item.description}
                           </CellDetailsPopover>
-                        )}
-                      </TableCell>
-                      
-                      {/* Price change percentage */}
-                      <TableCell className={priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}>
-                        <CellDetailsPopover item={item} field="priceChangePercentage">
-                          {priceChangePercentage.toFixed(2)}%
-                        </CellDetailsPopover>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <CellDetailsPopover item={item} field="marketLow">
-                          <div className="flex items-center gap-1">
-                            £{(item.marketLow || 0).toFixed(2)}
-                            {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
-                            {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
+                        </TableCell>
+                        <TableCell>
+                          <CellDetailsPopover item={item} field="usageRank">
+                            {item.usageRank}
+                          </CellDetailsPopover>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <CellDetailsPopover item={item} field="avgCost">
+                            £{(item.avgCost || 0).toFixed(2)}
+                          </CellDetailsPopover>
+                        </TableCell>
+                        <TableCell className="font-bold">
+                          <CellDetailsPopover item={item} field="currentREVAPrice">
+                            £{(item.currentREVAPrice || 0).toFixed(2)}
+                          </CellDetailsPopover>
+                        </TableCell>
+                        
+                        {/* Proposed price cell with inline editing */}
+                        <TableCell className="font-bold">
+                          {bulkEditMode && !item.priceModified ? (
+                            <PriceEditor
+                              initialPrice={item.proposedPrice || 0}
+                              currentPrice={item.currentREVAPrice || 0}
+                              calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
+                              cost={item.avgCost || 0}
+                              onSave={(newPrice) => onPriceChange && onPriceChange(item, newPrice)}
+                              onCancel={() => {}}
+                              compact={true}
+                            />
+                          ) : isEditing ? (
+                            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                              <Input
+                                type="number"
+                                value={editingValues[item.id]}
+                                onChange={(e) => handlePriceInputChange(item, e.target.value)}
+                                className="w-24 h-8 py-1 px-2"
+                                autoFocus
+                              />
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSavePriceEdit(item);
+                                }}
+                              >
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCancelEdit();
+                                }}
+                              >
+                                <X className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <CellDetailsPopover item={item} field="proposedPrice">
+                              <div className="flex items-center gap-2">
+                                £{(item.proposedPrice || 0).toFixed(2)}
+                                {item.priceModified && (
+                                  <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
+                                )}
+                                {onPriceChange && !bulkEditMode && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="ml-2 h-6 w-6 p-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStartEdit(item);
+                                    }}
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </CellDetailsPopover>
+                          )}
+                        </TableCell>
+                        
+                        {/* Price change percentage */}
+                        <TableCell className={priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}>
+                          <CellDetailsPopover item={item} field="priceChangePercentage">
+                            {priceChangePercentage.toFixed(2)}%
+                          </CellDetailsPopover>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <CellDetailsPopover item={item} field="marketLow">
+                            {item.marketLow ? `£${(item.marketLow || 0).toFixed(2)}` : '-'}
+                          </CellDetailsPopover>
+                        </TableCell>
+                        
+                        {/* TML cell with popover - updated to use trueMarketLow with 2 decimal places */}
+                        <TableCell>
+                          <CellDetailsPopover item={item} field="trueMarketLow">
+                            {item.trueMarketLow ? `£${(item.trueMarketLow || 0).toFixed(2)}` : '-'}
+                          </CellDetailsPopover>
+                        </TableCell>
+                        
+                        {/* Market Trend column */}
+                        <TableCell>
+                          <div className="flex items-center justify-center">
+                            {item.marketTrend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
+                            {item.marketTrend === 'down' && <TrendingDown className="h-4 w-4 text-red-500" />}
+                            {!item.marketTrend && <span>-</span>}
                           </div>
-                        </CellDetailsPopover>
-                      </TableCell>
+                        </TableCell>
+                        
+                        {/* Flags column */}
+                        <TableCell>
+                          {getItemFlags(item)}
+                        </TableCell>
+                        
+                        <TableCell>
+                          <CellDetailsPopover item={item} field="appliedRule">
+                            {simplifyRuleDisplay(item.appliedRule || "")}
+                          </CellDetailsPopover>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <CellDetailsPopover item={item} field="inStock">
+                            {item.inStock}
+                          </CellDetailsPopover>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <CellDetailsPopover item={item} field="onOrder">
+                            {item.onOrder}
+                          </CellDetailsPopover>
+                        </TableCell>
+                        
+                        {/* Star button */}
+                        <TableCell className="p-2" onClick={(e) => e.stopPropagation()}>
+                          {starredItems && starredItems.has(item.id) ? (
+                            <Star 
+                              className="h-4 w-4 text-yellow-500 cursor-pointer" 
+                              onClick={() => onToggleStar && onToggleStar(item.id)} 
+                            />
+                          ) : (
+                            <Star 
+                              className="h-4 w-4 text-gray-400 cursor-pointer" 
+                              onClick={() => onToggleStar && onToggleStar(item.id)} 
+                            />
+                          )}
+                        </TableCell>
+                      </TableRow>
                       
-                      {/* TML cell with popover - updated to use trueMarketLow with 2 decimal places */}
-                      <TableCell>
-                        <CellDetailsPopover item={item} field="trueMarketLow">
-                          £{(item.trueMarketLow || 0).toFixed(2)}
-                        </CellDetailsPopover>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <CellDetailsPopover item={item} field="appliedRule">
-                          {item.appliedRule ? item.appliedRule.replace(/ML \+ (\d+)%/, "ML + $1.00%") : ""}
-                        </CellDetailsPopover>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <CellDetailsPopover item={item} field="inStock">
-                          {item.inStock}
-                        </CellDetailsPopover>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <CellDetailsPopover item={item} field="onOrder">
-                          {item.onOrder}
-                        </CellDetailsPopover>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => onShowPriceDetails(item)}
-                        >
-                          Details
-                        </Button>
-                      </TableCell>
-                      
-                      {/* Star button */}
-                      <TableCell>
-                        {starredItems && starredItems.has(item.id) ? (
-                          <Star 
-                            className="h-4 w-4 text-yellow-500 cursor-pointer" 
-                            onClick={() => onToggleStar && onToggleStar(item.id)} 
-                          />
-                        ) : (
-                          <Star 
-                            className="h-4 w-4 text-gray-400 cursor-pointer" 
-                            onClick={() => onToggleStar && onToggleStar(item.id)} 
-                          />
-                        )}
-                      </TableCell>
-                    </TableRow>
+                      {/* Expanded row with details */}
+                      {isExpanded && (
+                        <TableRow className="bg-gray-800/20">
+                          <TableCell colSpan={14} className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <h4 className="font-semibold mb-2">Product Details</h4>
+                                <div className="space-y-2">
+                                  <p><span className="text-muted-foreground">Description:</span> {item.description}</p>
+                                  <p><span className="text-muted-foreground">Usage Rank:</span> {item.usageRank}</p>
+                                  <p><span className="text-muted-foreground">Monthly Usage:</span> {item.revaUsage || 0}</p>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <h4 className="font-semibold mb-2">Pricing Details</h4>
+                                <div className="space-y-2">
+                                  <p><span className="text-muted-foreground">Avg Cost:</span> £{(item.avgCost || 0).toFixed(2)}</p>
+                                  <p><span className="text-muted-foreground">Current Price:</span> £{(item.currentREVAPrice || 0).toFixed(2)}</p>
+                                  <p><span className="text-muted-foreground">Proposed Price:</span> £{(item.proposedPrice || 0).toFixed(2)}</p>
+                                  <p><span className="text-muted-foreground">Current Margin:</span> {((item.currentREVAMargin || 0) * 100).toFixed(2)}%</p>
+                                  <p><span className="text-muted-foreground">Proposed Margin:</span> {((item.proposedMargin || 0) * 100).toFixed(2)}%</p>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <h4 className="font-semibold mb-2">Market Information</h4>
+                                <div className="space-y-2">
+                                  <p><span className="text-muted-foreground">Market Low:</span> {item.marketLow ? `£${(item.marketLow).toFixed(2)}` : 'N/A'}</p>
+                                  <p><span className="text-muted-foreground">True Market Low:</span> {item.trueMarketLow ? `£${(item.trueMarketLow).toFixed(2)}` : 'N/A'}</p>
+                                  <p><span className="text-muted-foreground">Competitor Prices:</span></p>
+                                  <div className="pl-4 space-y-1 text-sm">
+                                    {item.eth_net !== undefined && <p>ETH NET: £{item.eth_net.toFixed(2)}</p>}
+                                    {item.eth !== undefined && <p>ETH: £{item.eth.toFixed(2)}</p>}
+                                    {item.nupharm !== undefined && <p>Nupharm: £{item.nupharm.toFixed(2)}</p>}
+                                    {item.lexon !== undefined && <p>LEXON: £{item.lexon.toFixed(2)}</p>}
+                                    {item.aah !== undefined && <p>AAH: £{item.aah.toFixed(2)}</p>}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   );
                 })
               )}
@@ -557,7 +678,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     );
   };
 
-  // Add star functionality
+  // Toggle star functionality
   const handleToggleStar = (event: React.MouseEvent, itemId: string) => {
     event.stopPropagation();
     if (onToggleStar) {
@@ -609,7 +730,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
         
         <div className="flex flex-wrap items-center gap-3">
           <Button
-            variant="outline"
+            variant={showRuleFilters ? "default" : "outline"}
             size="sm"
             onClick={toggleRuleFilters}
             className="flex items-center gap-2"
