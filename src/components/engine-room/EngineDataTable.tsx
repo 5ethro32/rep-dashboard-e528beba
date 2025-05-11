@@ -61,14 +61,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [showShortageOnly, setShowShortageOnly] = useState(false);
   const itemsPerPage = 20;
 
-  // Add TML calculation for each item in the data
+  // Updated TML calculation for each item in the data
   const dataWithTml = useMemo(() => {
     if (!data) return [];
     
     return data.map(item => {
+      // Update: Explicitly use all competitor prices
       const competitors = {
+        'ETH NET': item.ETH_NET || null,
         'ETH': item.ETH || null,
-        'ETH_NET': item.ETH_NET || null,
         'Nupharm': item.Nupharm || null,
         'LEXON': item.LEXON || null,
         'AAH': item.AAH || null
@@ -846,84 +847,66 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
               ))}
             </select>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant={hideInactiveProducts ? "secondary" : "outline"}
-              size="sm"
-              className="h-9 text-xs"
-              onClick={toggleHideInactiveProducts}
-            >
-              {hideInactiveProducts ? "Showing Active Only" : "Show All Products"}
-            </Button>
-            
-            <Button
-              variant={showShortageOnly ? "secondary" : "outline"}
-              size="sm"
-              className="h-9 text-xs"
-              onClick={toggleShortageOnly}
-            >
-              {showShortageOnly ? "Showing Shortage Only" : "Show All Supply"}
-            </Button>
-            
-            {onPriceChange && (
-              <Button
-                variant={bulkEditMode ? "destructive" : "outline"}
-                size="sm"
-                className="h-9 text-xs"
-                onClick={toggleBulkEditMode}
-              >
-                {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit Prices"}
-              </Button>
-            )}
-          </div>
-        </div>
-        
-        {renderActiveFilters()}
-        
-        {filterByRank ? (
-          <div className="text-sm text-muted-foreground mb-4">
-            <Button 
-              variant="link" 
-              size="sm" 
-              className="p-0" 
-              onClick={() => setFilterByRank(null)}
-            >
-              ← Back to all ranks
-            </Button>
-            <span className="ml-2">
-              Currently viewing {sortedData.length} items in Rank {filterByRank}
-            </span>
-          </div>
-        ) : null}
-        
-        {renderGroupedItems()}
-        
-        {filterByRank && totalPages > 1 ? (
-          <div className="flex justify-center mt-4 gap-2">
+          <div className="flex items-center gap-2 w-full md:w-auto">
             <Button
               variant="outline"
               size="sm"
+              onClick={toggleBulkEditMode}
+              className={bulkEditMode ? "bg-primary/20" : ""}
+            >
+              {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit Prices"}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleHideInactiveProducts}
+              className={hideInactiveProducts ? "bg-primary/20" : ""}
+            >
+              {hideInactiveProducts ? "Show All" : "Hide Inactive"}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleShortageOnly}
+              className={showShortageOnly ? "bg-primary/20" : ""}
+            >
+              {showShortageOnly ? "Show All" : "Shortage Only"}
+            </Button>
+          </div>
+        </div>
+
+        {renderActiveFilters()}
+        
+        {filterByRank 
+          ? renderDataTable(paginatedData) 
+          : renderGroupedItems()}
+        
+        {/* Pagination controls - only show when filtering by rank */}
+        {filterByRank && (
+          <div className="flex items-center justify-between mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             >
               Previous
             </Button>
-            
-            <span className="flex items-center text-sm">
-              Page {currentPage} of {totalPages}
-            </span>
-            
+            <div className="text-sm">
+              Page {currentPage} of {totalPages || 1}
+            </div>
             <Button
               variant="outline"
               size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
             >
               Next
             </Button>
           </div>
-        ) : null}
+        )}
       </div>
     </TooltipProvider>
   );

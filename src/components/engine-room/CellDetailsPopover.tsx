@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -36,10 +35,10 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
         };
 
       case 'tml':
-        // True Market Low (lowest of all competitors)
+        // Updated: True Market Low (lowest of all competitors - ETH NET, ETH, Nupharm, LEXON, AAH)
         const allCompetitors = {
-          'ETH': item.ETH || null,
           'ETH NET': item.ETH_NET || null,
+          'ETH': item.ETH || null,
           'Nupharm': item.Nupharm || null,
           'LEXON': item.LEXON || null,
           'AAH': item.AAH || null
@@ -47,17 +46,17 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ item, field, ch
         
         const validCompetitorPrices = Object.entries(allCompetitors)
           .filter(([_, price]) => price !== null && price !== undefined && !isNaN(price))
-          .map(([name, price]) => ({ name, price }));
+          .map(([name, price]) => ({ name, price: Number(price) }));
         
         const lowestPrice = validCompetitorPrices.length > 0 
-          ? Math.min(...validCompetitorPrices.map(p => Number(p.price)))
+          ? Math.min(...validCompetitorPrices.map(p => p.price))
           : null;
           
-        const lowestSource = validCompetitorPrices.find(p => Number(p.price) === lowestPrice)?.name || 'N/A';
+        const lowestSource = validCompetitorPrices.find(p => p.price === lowestPrice)?.name || 'N/A';
         
         return {
-          formula: 'min(All competitor prices)',
-          values: validCompetitorPrices.map(p => `${p.name}: £${Number(p.price).toFixed(2)}`),
+          formula: 'min(ETH NET, ETH, Nupharm, LEXON, AAH)',
+          values: validCompetitorPrices.map(p => `${p.name}: £${p.price.toFixed(2)}`),
           result: lowestPrice !== null ? `£${lowestPrice.toFixed(2)} (${lowestSource})` : 'N/A'
         };
         
