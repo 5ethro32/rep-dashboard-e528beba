@@ -3,7 +3,7 @@ import React from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info, UploadCloud } from 'lucide-react';
+import { Info, UploadCloud, Package, TrendingUp, Percent, Flag } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
@@ -67,8 +67,8 @@ const EngineDashboardContent = () => {
     return (
       <div className="container mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">REVA Pricing Dashboard</h1>
-          <p className="text-muted-foreground">Visualize and analyze REVA pricing data</p>
+          <h1 className="text-2xl font-bold mb-2">Pricing Dashboard</h1>
+          <p className="text-muted-foreground">Visualise and analyse pricing data</p>
         </div>
 
         <div 
@@ -80,7 +80,7 @@ const EngineDashboardContent = () => {
           <div className="flex flex-col items-center justify-center space-y-4">
             <UploadCloud className="h-12 w-12 text-gray-400" />
             <div className="space-y-1">
-              <h3 className="text-lg font-medium">Upload REVA Pricing Sheet</h3>
+              <h3 className="text-lg font-medium">Upload Pricing Sheet</h3>
               <p className="text-sm text-muted-foreground">
                 Drag and drop your Excel or CSV file to begin analysis
               </p>
@@ -117,38 +117,43 @@ const EngineDashboardContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">REVA Pricing Dashboard</h1>
-        <p className="text-muted-foreground">Analytics and insights for your pricing data</p>
-      </div>
-
-      {/* Metrics cards */}
+      {/* Metrics cards - Updated with icons and consistent extra details */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <MetricCard
           title="Total SKUs"
           value={`${metrics.totalItems}`}
           subtitle={`${metrics.activeItems} active SKUs`}
+          icon={<Package />}
+          iconPosition="right"
         />
         <MetricCard
           title="Total Profit"
           value={`£${metrics.totalProfit.toLocaleString()}`}
+          subtitle={`${metrics.totalRevenue.toLocaleString()} revenue`}
           change={{
             value: `${metrics.profitDelta > 0 ? '+' : ''}${metrics.profitDelta.toFixed(2)}%`,
             type: metrics.profitDelta >= 0 ? 'increase' : 'decrease'
           }}
+          icon={<TrendingUp />}
+          iconPosition="right"
         />
         <MetricCard
           title="Overall Margin"
           value={`${metrics.overallMargin.toFixed(2)}%`}
+          subtitle={`Based on ${metrics.totalItems} SKUs`}
           change={{
             value: `${metrics.marginLift > 0 ? '+' : ''}${metrics.marginLift.toFixed(2)}%`,
             type: metrics.marginLift >= 0 ? 'increase' : 'decrease'
           }}
+          icon={<Percent />}
+          iconPosition="right"
         />
         <MetricCard
           title="Flagged Items"
           value={`${metrics.rule1Flags + metrics.rule2Flags}`}
           subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`}
+          icon={<Flag />}
+          iconPosition="right"
         />
       </div>
 
