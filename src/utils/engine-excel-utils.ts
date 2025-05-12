@@ -41,6 +41,7 @@ interface RevaItem {
   id?: string; // Added for item identification
   // New flags property to store all flags that apply to this item
   flags?: string[];
+  noMarketPrice?: boolean; // Added for explicit tracking of missing market price
 }
 
 interface ProcessedEngineData {
@@ -481,37 +482,61 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     processedItem.marketLow = processedItem.eth_net;
     
     // Calculate True Market Low (TML) - Lowest price across all competitors including ETH NET
-    processedItem.trueMarketLow = Math.min(
-      processedItem.eth_net || Infinity,
-      processedItem.eth || Infinity,
-      processedItem.nupharm || Infinity, 
-      processedItem.lexon || Infinity, 
-      processedItem.aah || Infinity
-    );
-    
-    // Handle fallbacks for Market Low and True Market Low
-    if (processedItem.trueMarketLow === Infinity) {
-      // If no competitor prices available, use avgCost as fallback
-      processedItem.trueMarketLow = processedItem.avgCost;
+    let hasAnyCompetitorPrice = false;
+    let lowestPrice = Infinity;
+
+    // Check each competitor price and track if any are available
+    if (processedItem.eth_net !== undefined && !isNaN(processedItem.eth_net)) {
+      hasAnyCompetitorPrice = true;
+      lowestPrice = Math.min(lowestPrice, processedItem.eth_net);
+    }
+    if (processedItem.eth !== undefined && !isNaN(processedItem.eth)) {
+      hasAnyCompetitorPrice = true;
+      lowestPrice = Math.min(lowestPrice, processedItem.eth);
+    }
+    if (processedItem.nupharm !== undefined && !isNaN(processedItem.nupharm)) {
+      hasAnyCompetitorPrice = true;
+      lowestPrice = Math.min(lowestPrice, processedItem.nupharm);
+    }
+    if (processedItem.lexon !== undefined && !isNaN(processedItem.lexon)) {
+      hasAnyCompetitorPrice = true;
+      lowestPrice = Math.min(lowestPrice, processedItem.lexon);
+    }
+    if (processedItem.aah !== undefined && !isNaN(processedItem.aah)) {
+      hasAnyCompetitorPrice = true;
+      lowestPrice = Math.min(lowestPrice, processedItem.aah);
+    }
+
+    // FIXED: Don't use avgCost as fallback when no competitor prices are available
+    // Instead, set TML to 0 and flag it
+    if (!hasAnyCompetitorPrice || lowestPrice === Infinity) {
+      processedItem.trueMarketLow = 0; // Set to 0 instead of avgCost
+      processedItem.noMarketPrice = true; // Explicit flag for easier detection
       
       // Flag as "No Market Price Available"
       if (!processedItem.flags) processedItem.flags = [];
       if (!processedItem.flags.includes('No Market Price Available')) {
         processedItem.flags.push('No Market Price Available');
       }
+    } else {
+      processedItem.trueMarketLow = lowestPrice;
+      processedItem.noMarketPrice = false;
     }
     
     if (processedItem.marketLow === undefined || processedItem.marketLow === null) {
       // If ETH NET not available, use TML as fallback for Market Low
-      processedItem.marketLow = processedItem.trueMarketLow;
+      // But only if TML is actually available (not 0)
+      processedItem.marketLow = processedItem.noMarketPrice ? 0 : processedItem.trueMarketLow;
     }
     
     // Get group for rule application
     const group = processedItem.usageRank || 6; // Default to group 6 if missing
     const groupConfig = getGroupConfig(group, ruleConfig);
     
-    // RULE 1 - AvgCost < Market Low
-    if (processedItem.avgCost < processedItem.marketLow) {
+    // Modified rule application to properly handle missing market prices
+    
+    // RULE 1 - AvgCost < Market Low - but only if market low exists
+    if (!processedItem.noMarketPrice && processedItem.marketLow > 0 && processedItem.avgCost < processedItem.marketLow) {
       // Apply Rule 1a or Rule 1b based on market trend
       const isDownwardTrend = processedItem.trend === 'TrendDown';
       
@@ -533,13 +558,14 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         processedItem.appliedRule = `Rule 1b - ${usedPrice} Based (G${group}, Up)`;
       }
     } 
-    // RULE 2 - AvgCost >= Market Low
+    // RULE 2 - AvgCost >= Market Low OR No Market Price
     else {
       const isDownwardTrend = processedItem.trend === 'TrendDown';
       
-      if (isDownwardTrend) {
-        // Rule 2a - Downward Trend: Market Low + Uplift
-        if (processedItem.marketLow !== undefined) {
+      // Check if we have valid market price data first
+      if (!processedItem.noMarketPrice && processedItem.marketLow > 0) {
+        if (isDownwardTrend) {
+          // Rule 2a - Downward Trend: Market Low + Uplift
           // Apply uplift based on group (3%, 4%, or 5%)
           let uplift = 1.03; // Default for groups 1-2
           if (group >= 3 && group <= 4) uplift = 1.04;
@@ -548,14 +574,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
           processedItem.proposedPrice = processedItem.marketLow * uplift;
           processedItem.appliedRule = `Rule 2a - ML + ${((uplift - 1) * 100).toFixed(0)}% (G${group}, Down)`;
         } else {
-          // Fallback to cost-based pricing if no market low
-          const costMarkup = groupConfig.rule2.trend_down; // 12%, 13%, or 14% based on group
-          processedItem.proposedPrice = processedItem.avgCost * costMarkup;
-          processedItem.appliedRule = `Rule 2a - Cost + ${((costMarkup - 1) * 100).toFixed(0)}% (G${group}, No ML)`;
-        }
-      } else {
-        // Rule 2b - Upward Trend: Take higher of Market Low with uplift or AvgCost with markup
-        if (processedItem.marketLow !== undefined) {
+          // Rule 2b - Upward Trend: Take higher of Market Low with uplift or AvgCost with markup
           // Market Low uplift based on group (3%, 4%, or 5%)
           let mlUplift = 1.03; // Default for groups 1-2
           if (group >= 3 && group <= 4) mlUplift = 1.04;
@@ -569,12 +588,15 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
           processedItem.proposedPrice = Math.max(mlPrice, costPrice);
           const usedPrice = processedItem.proposedPrice === mlPrice ? "ML" : "Cost";
           processedItem.appliedRule = `Rule 2b - ${usedPrice} Based (G${group}, Up)`;
-        } else {
-          // Fallback to cost-based pricing if no market low
-          const costMarkup = groupConfig.rule2.trend_flat_up; // 12%, 13%, or 14% based on group
-          processedItem.proposedPrice = processedItem.avgCost * costMarkup;
-          processedItem.appliedRule = `Rule 2b - Cost + ${((costMarkup - 1) * 100).toFixed(0)}% (G${group}, No ML)`;
         }
+      } else {
+        // NO MARKET PRICE - Use cost-based pricing directly
+        const costMarkup = isDownwardTrend ? 
+          groupConfig.rule2.trend_down : 
+          groupConfig.rule2.trend_flat_up; // 12%, 13%, or 14% based on group
+        
+        processedItem.proposedPrice = processedItem.avgCost * costMarkup;
+        processedItem.appliedRule = `Cost + ${((costMarkup - 1) * 100).toFixed(0)}% (G${group}, No MP)`;
       }
     }
     
@@ -603,8 +625,9 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     }
     
     // Apply flag logic - Price ≥10% above TRUE MARKET LOW requires a manual review
-    if (processedItem.trueMarketLow && processedItem.proposedPrice && 
-        processedItem.proposedPrice >= processedItem.trueMarketLow * 1.10) {
+    // But only if we have a valid TML
+    if (!processedItem.noMarketPrice && processedItem.trueMarketLow && processedItem.trueMarketLow > 0 && 
+        processedItem.proposedPrice && processedItem.proposedPrice >= processedItem.trueMarketLow * 1.10) {
       processedItem.flag1 = true;
       if (!processedItem.flags) processedItem.flags = [];
       if (!processedItem.flags.includes('HIGH_PRICE')) {

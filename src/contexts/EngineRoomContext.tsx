@@ -121,7 +121,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [queryClient, toast]);
 
-  // Handle price change
+  // Handle price change - updated to use consistent flag handling for noMarketPrice
   const handlePriceChange = useCallback((item: any, newPrice: number) => {
     if (!engineData) return;
     
@@ -153,6 +153,24 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           foundItem.flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
         }
       }
+      
+      // Update HIGH_PRICE flag only if we have valid TML
+      if (!foundItem.noMarketPrice && foundItem.trueMarketLow && foundItem.trueMarketLow > 0) {
+        const isHighPrice = newPrice >= foundItem.trueMarketLow * 1.10;
+        foundItem.flag1 = isHighPrice;
+        
+        if (isHighPrice) {
+          if (!foundItem.flags) foundItem.flags = [];
+          if (!foundItem.flags.includes('HIGH_PRICE')) {
+            foundItem.flags.push('HIGH_PRICE');
+          }
+        } else {
+          // Remove HIGH_PRICE flag if it exists
+          if (foundItem.flags) {
+            foundItem.flags = foundItem.flags.filter(f => f !== 'HIGH_PRICE');
+          }
+        }
+      }
     }
     
     // Also update in flagged items if present
@@ -180,6 +198,26 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
           }
           updatedData.flaggedItems[flaggedItemIndex].flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
+        }
+      }
+      
+      // Update HIGH_PRICE flag for flagged items only if TML is valid
+      if (!updatedData.flaggedItems[flaggedItemIndex].noMarketPrice && 
+          updatedData.flaggedItems[flaggedItemIndex].trueMarketLow && 
+          updatedData.flaggedItems[flaggedItemIndex].trueMarketLow > 0) {
+        const isHighPrice = newPrice >= updatedData.flaggedItems[flaggedItemIndex].trueMarketLow * 1.10;
+        updatedData.flaggedItems[flaggedItemIndex].flag1 = isHighPrice;
+        
+        if (isHighPrice) {
+          if (!updatedData.flaggedItems[flaggedItemIndex].flags) updatedData.flaggedItems[flaggedItemIndex].flags = [];
+          if (!updatedData.flaggedItems[flaggedItemIndex].flags.includes('HIGH_PRICE')) {
+            updatedData.flaggedItems[flaggedItemIndex].flags.push('HIGH_PRICE');
+          }
+        } else {
+          // Remove HIGH_PRICE flag if it exists
+          if (updatedData.flaggedItems[flaggedItemIndex].flags) {
+            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => f !== 'HIGH_PRICE');
+          }
         }
       }
     }

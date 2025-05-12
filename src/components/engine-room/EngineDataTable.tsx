@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, TrendingUp, TrendingDown, Info, Ban } from 'lucide-react';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -328,8 +328,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     setCurrentPage(1);
   };
 
-  // Format currency - with null/undefined check
-  const formatCurrency = (value: number | null | undefined) => {
+  // Format currency - with null/undefined check and no market price indicator
+  const formatCurrency = (value: number | null | undefined, noMarketPrice?: boolean) => {
+    if (noMarketPrice || value === 0) {
+      return <span className="text-gray-400 italic">£0.00</span>;
+    }
     if (value === null || value === undefined) {
       return '£0.00';
     }
@@ -493,7 +496,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return rule;
   };
 
-  // Render flags for an item - Updated to use nicer formatting
+  // Render flags for an item - Updated to use nicer formatting with enhanced visibility for No Market Price
   const renderFlags = (item: any) => {
     if (!item) return null;
     const flags = [];
@@ -517,15 +520,18 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         No NBP
       </span>);
     }
-    if (item.noMarketPrice) {
-      flags.push(<span key="no-market-price" className="bg-emerald-900/30 text-xs px-2 py-0.5 rounded-md text-emerald-300" title="No Market Price Available">
-        No MP
+    
+    // Enhanced visibility for No Market Price
+    if (item.noMarketPrice || (item.flags && item.flags.includes('No Market Price Available'))) {
+      flags.push(<span key="no-market-price" className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300 flex items-center gap-1" title="No Market Price Available">
+        <Ban className="h-3 w-3" /> No MP
       </span>);
     }
+    
     if (item.flags && Array.isArray(item.flags)) {
       item.flags.forEach((flag: string, i: number) => {
         // Skip duplicates or already handled flags
-        if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT') return;
+        if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT' || flag === 'No Market Price Available') return;
         
         // Special handling for price decrease flags
         if (flag.startsWith('PRICE_DECREASE_')) {
@@ -533,10 +539,10 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           flags.push(
             <span 
               key={`price-decrease-${i}`} 
-              className="bg-red-900/30 text-xs px-2 py-0.5 rounded-md text-red-300" 
+              className="bg-red-900/30 text-xs px-2 py-0.5 rounded-md text-red-300 flex items-center gap-1" 
               title={`Price decrease of ${percentage}`}
             >
-              Price ↓{percentage}
+              <TrendingDown className="h-3 w-3" /> ↓{percentage}
             </span>
           );
         } else {
@@ -721,7 +727,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                 return (
                   <TableRow 
                     key={index} 
-                    className={`${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
+                    className={`${item.noMarketPrice ? 'bg-blue-900/10' : ''} ${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
                   >
                     <TableCell>{item.description}</TableCell>
                     <TableCell>{item.inStock}</TableCell>
@@ -742,21 +748,21 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Market Low cell with popover */}
+                    {/* Market Low cell with popover - Updated to handle no market price */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="marketLow">
                         <div className="flex items-center gap-1">
-                          {formatCurrency(item.marketLow)}
+                          {formatCurrency(item.marketLow, item.noMarketPrice)}
                           {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
                           {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
                         </div>
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* TML cell with popover - updated to use trueMarketLow */}
+                    {/* TML cell with popover - updated to handle no market price case */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="trueMarketLow">
-                        {formatCurrency(item.trueMarketLow)}
+                        {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
                       </CellDetailsPopover>
                     </TableCell>
                     
