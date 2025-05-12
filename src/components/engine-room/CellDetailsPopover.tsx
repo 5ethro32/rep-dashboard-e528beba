@@ -74,7 +74,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
   const getFieldDetails = () => {
     if (!field || !item) return { displayLabel: label, displayItems: items }; 
     
-    let displayLabel = label;
+    let displayLabel = null; // Default to null to avoid duplicate headers
     let displayItems: CellDetailItem[] = [];
     
     // Handle specific fields with custom popover content
@@ -89,10 +89,28 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
       case "marketLow":
         // Remove the redundant header by setting displayLabel to null
         displayLabel = null;
+        
+        // Find the competitor with the lowest price
+        const lowestCompetitor = findLowestPriceCompetitor(item);
+        
         displayItems = [
-          { label: "Market Low", value: formatValue(item.marketLow) },
-          { label: "True Market Low", value: item.trueMarketLow ? formatValue(item.trueMarketLow) : 'N/A' }
+          { label: "Market Low", value: formatValue(item.marketLow) }
         ];
+        
+        // Add True Market Low with competitor name if available
+        if (item.trueMarketLow) {
+          if (lowestCompetitor) {
+            displayItems.push({ 
+              label: `${lowestCompetitor} (Lowest)`, 
+              value: formatValue(item.trueMarketLow) 
+            });
+          } else {
+            displayItems.push({ 
+              label: "True Market Low", 
+              value: formatValue(item.trueMarketLow) 
+            });
+          }
+        }
         
         // Add the competitor pricing data
         if (item["ETH NET"] || item.eth_net) {
@@ -106,19 +124,6 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         }
         if (item.AAH || item.aah) {
           displayItems.push({ label: "AAH", value: formatValue(item.AAH || item.aah) });
-        }
-        
-        // Find and mark the competitor with the lowest price
-        const lowestCompetitor = findLowestPriceCompetitor(item);
-        if (lowestCompetitor && item.trueMarketLow) {
-          // Replace the TML entry with the competitor who has the lowest price
-          const tmlIndex = displayItems.findIndex(i => i.label === "True Market Low");
-          if (tmlIndex !== -1) {
-            displayItems[tmlIndex] = {
-              label: `${lowestCompetitor} (Lowest)`,
-              value: formatValue(item.trueMarketLow)
-            };
-          }
         }
         break;
       case "nextCost":
@@ -155,12 +160,25 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         break;
       case "proposedMargin":
         displayLabel = "Proposed Margin";
-        // Ensure we're using the actual margin data from the item
+        // Fix margin values by explicitly using the values from the item
         displayItems = [
           { label: "Proposed Margin", value: formatPercentage(item.proposedMargin) },
           { label: "Current Margin", value: item.currentREVAMargin ? formatPercentage(item.currentREVAMargin) : 'N/A' },
           { label: "Target Margin", value: item.targetMargin ? formatPercentage(item.targetMargin) : '15.0%' }
         ];
+        
+        // For debugging - add this to help identify why margin values might be wrong
+        console.log("Margin values for item:", {
+          id: item.id,
+          description: item.description,
+          proposedMargin: item.proposedMargin,
+          currentREVAMargin: item.currentREVAMargin,
+          proposedPrice: item.proposedPrice,
+          nextCost: item.nextCost || item.nextBuyingPrice,
+          calculatedMargin: item.proposedPrice && (item.nextCost || item.nextBuyingPrice) ? 
+            ((item.proposedPrice - (item.nextCost || item.nextBuyingPrice)) / item.proposedPrice) * 100 : 
+            null
+        });
         break;
       default:
         // For column headers or unspecified fields, use defaults
@@ -168,7 +186,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
           displayLabel = field.charAt(0).toUpperCase() + field.slice(1);
           displayItems = [];
         } else {
-          // For other fields, just set to null if we have items (to avoid duplication)
+          // For other fields, set a label and a single item
           displayLabel = field;
           displayItems = [{ label: field, value: formatValue(item[field]) || 'N/A' }];
         }
