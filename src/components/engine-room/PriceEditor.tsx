@@ -13,6 +13,8 @@ interface PriceEditorProps {
   onSave: (newPrice: number) => void;
   onCancel: () => void;
   compact?: boolean;
+  inline?: boolean; // New prop for inline editing mode
+  autoFocus?: boolean; // Control autofocus behavior
 }
 
 const PriceEditor: React.FC<PriceEditorProps> = ({
@@ -22,7 +24,9 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   cost,
   onSave,
   onCancel,
-  compact = false
+  compact = false,
+  inline = false, // Default to false for backward compatibility
+  autoFocus = true // Default to true for backward compatibility
 }) => {
   const [priceValue, setPriceValue] = useState<string>(initialPrice.toFixed(2));
   const [margin, setMargin] = useState<number>(0);
@@ -74,6 +78,15 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       onSave(numericPrice);
     }
   };
+
+  // Handle key press for inline editing
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
   
   const getMarginClass = () => {
     if (margin < 3) return "text-red-400";
@@ -84,6 +97,25 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   const getPriceChangeClass = () => {
     return isPriceDecrease ? "text-red-400" : "text-green-400";
   };
+
+  // New inline editor mode - just the input with minimal controls
+  if (inline) {
+    return (
+      <div className="flex items-center space-x-1">
+        <Input
+          type="number"
+          step="0.01"
+          min="0"
+          value={priceValue}
+          onChange={handlePriceChange}
+          onKeyDown={handleKeyPress}
+          onBlur={handleSave}
+          className={`h-7 ${isValid ? "" : "border-red-500"}`}
+          autoFocus={autoFocus}
+        />
+      </div>
+    );
+  }
   
   if (compact) {
     return (
@@ -94,8 +126,9 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           min="0"
           value={priceValue}
           onChange={handlePriceChange}
+          onKeyDown={handleKeyPress}
           className={`h-7 w-24 ${isValid ? "" : "border-red-500"}`}
-          autoFocus
+          autoFocus={autoFocus}
         />
         <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleReset} title="Reset to calculated price">
           <RotateCcw className="h-3 w-3" />
@@ -136,8 +169,9 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           min="0"
           value={priceValue}
           onChange={handlePriceChange}
+          onKeyDown={handleKeyPress}
           className={isValid ? "" : "border-red-500"}
-          autoFocus
+          autoFocus={autoFocus}
         />
         <Button variant="ghost" size="icon" onClick={handleReset} title="Reset to calculated price">
           <RotateCcw className="h-4 w-4" />

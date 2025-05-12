@@ -178,6 +178,12 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     
     console.log(`Changing price for item ${item.id} to £${newPrice}`);
     
+    // Skip if the price hasn't actually changed
+    if (item.proposedPrice === newPrice) {
+      console.log(`Price for ${item.id} is unchanged, skipping update`);
+      return;
+    }
+    
     // Deep clone the data to avoid modifying the cache directly
     const updatedData = JSON.parse(JSON.stringify(engineData));
     
@@ -298,6 +304,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     toast({
       title: "Price updated",
       description: `Updated price for ${item.description} to £${newPrice.toFixed(2)}`,
+      duration: 2000, // Shorter duration for less intrusive notifications
     });
   }, [engineData, queryClient, toast, modifiedItems]);
 
@@ -392,16 +399,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     
     // Also update flagged items
     if (updatedData.flaggedItems) {
-      updatedData.flaggedItems = updatedData.flaggedItems.map((item: any) => {
-        if (modifiedItems.has(item.id)) {
-          return {
-            ...item,
-            workflowStatus: 'draft',
-            lastSaved: new Date().toISOString()
-          };
-        }
-        return item;
-      });
+      updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
     }
     
     // Recalculate pricing impact metrics for the updated data
