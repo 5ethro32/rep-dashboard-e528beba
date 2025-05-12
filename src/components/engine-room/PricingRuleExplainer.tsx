@@ -8,10 +8,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertCircle, TrendingDown, TrendingUp, ArrowRight, Calculator } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
 
 interface PricingRuleExplainerProps {
   item: any;
@@ -28,18 +29,6 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
   const [simulatedResults, setSimulatedResults] = useState<any>(null);
 
   if (!item) return null;
-
-  // Format currency
-  const formatCurrency = (value: number | null | undefined) => {
-    if (value === undefined || value === null) return '—';
-    return `£${value.toFixed(2)}`;
-  };
-
-  // Format percentage
-  const formatPercentage = (value: number | null | undefined) => {
-    if (value === undefined || value === null) return '—';
-    return `${(value * 100).toFixed(2)}%`;
-  };
   
   // Simulate new price
   const handleSimulatePrice = () => {
@@ -102,78 +91,385 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
     }
   };
   
-  // Get calculation steps
+  // Get calculation steps based on the actual rule applied
   const getCalculationSteps = () => {
     const ruleType = item.appliedRule?.charAt(0) || '';
+    const group = item.usageRank || 1;
+    const isDownwardTrend = item.trend === 'TrendDown';
+    
+    // Helper function to determine uplift percentage based on group and rule
+    const getUpliftPercentage = (isRule1: boolean, isDownTrend: boolean, groupNum: number) => {
+      if (isRule1) {
+        if (isDownTrend) {
+          // Rule 1a
+          if (groupNum <= 2) return 0;
+          if (groupNum <= 4) return 1;
+          return 2;
+        } else {
+          // Rule 1b
+          if (groupNum <= 2) return 3;
+          if (groupNum <= 4) return 4;
+          return 5;
+        }
+      } else {
+        // Rule 2 has same uplifts for both trends
+        if (groupNum <= 2) return 3;
+        if (groupNum <= 4) return 4;
+        return 5;
+      }
+    };
+    
+    // Helper function to get cost markup percentage
+    const getCostMarkupPercentage = (groupNum: number) => {
+      if (groupNum <= 2) return 12;
+      if (groupNum <= 4) return 13;
+      return 14;
+    };
     
     if (ruleType === '1') {
       // Rule 1 calculation steps
-      return (
-        <ol className="space-y-2 pl-4 list-decimal">
-          <li className="text-sm">
-            <span className="font-medium">Determine multiplier based on usage rank and trend:</span>
-            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
-              UsageRank: {item.usageRank}, Trend: {item.trend} → 
-              Multiplier: {((item.proposedPrice / item.avgCost) || 0).toFixed(2)}
+      const upliftPercentage = getUpliftPercentage(true, isDownwardTrend, group);
+      const upliftMultiplier = 1 + (upliftPercentage / 100);
+      
+      const costMarkupPercentage = getCostMarkupPercentage(group);
+      const costMarkupMultiplier = 1 + (costMarkupPercentage / 100);
+      
+      if (isDownwardTrend) {
+        // Rule 1a - Market Low + uplift
+        return (
+          <div className="space-y-4">
+            <div className="px-5 py-4 rounded-lg bg-slate-900/50 border border-slate-700/40">
+              <h3 className="font-semibold text-base mb-3 text-blue-400">Calculation Steps</h3>
+              
+              <ol className="space-y-4">
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">1</div>
+                    <span>Determine pricing based on usage rank and trend:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    <div>Usage Rank: {group}, Trend: {isDownwardTrend ? 'Downward' : 'Upward'}</div>
+                    <div>Applied Rule: Rule 1a (Market Low + {upliftPercentage}%)</div>
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">2</div>
+                    <span>Calculate proposed price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    Market Low × (1 + {upliftPercentage}%) = {formatCurrency(item.marketLow)} × {upliftMultiplier.toFixed(2)} = {formatCurrency(item.marketLow * upliftMultiplier)}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">3</div>
+                    <span>Ensure price is not lower than current price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    max(calculated price, current price) = max({formatCurrency(item.marketLow * upliftMultiplier)}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(item.marketLow * upliftMultiplier, item.currentREVAPrice))}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">4</div>
+                    <span>Calculate margin:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    (proposedPrice - avgCost) / proposedPrice = ({formatCurrency(item.proposedPrice)} - {formatCurrency(item.avgCost)}) / {formatCurrency(item.proposedPrice)} = {formatPercentage(item.proposedMargin)}
+                  </div>
+                </li>
+              </ol>
             </div>
-          </li>
-          <li className="text-sm">
-            <span className="font-medium">Calculate base proposed price:</span>
-            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
-              avgCost × multiplier = {formatCurrency(item.avgCost)} × {((item.proposedPrice / item.avgCost) || 0).toFixed(2)} = {formatCurrency(item.avgCost * ((item.proposedPrice / item.avgCost) || 0))}
+            
+            <div className="mt-4 pt-4 border-t border-gray-700/50">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-blue-400" />
+                <h4 className="font-semibold text-lg">Final Result</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
+                <div className="bg-blue-950/30 p-4 rounded-lg border border-blue-900/50">
+                  <p className="text-sm text-blue-300">Proposed Price</p>
+                  <p className="text-2xl font-bold">{formatCurrency(item.proposedPrice)}</p>
+                </div>
+                <div className="bg-blue-950/30 p-4 rounded-lg border border-blue-900/50">
+                  <p className="text-sm text-blue-300">Proposed Margin</p>
+                  <p className="text-2xl font-bold">{formatPercentage(item.proposedMargin)}</p>
+                </div>
+              </div>
             </div>
-          </li>
-          <li className="text-sm">
-            <span className="font-medium">Ensure price is not lower than current price:</span>
-            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
-              max(calculated price, current price) = max({formatCurrency(item.avgCost * ((item.proposedPrice / item.avgCost) || 0))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(item.proposedPrice)}
+          </div>
+        );
+      } else {
+        // Rule 1b - Higher of Market Low + uplift or Cost + markup
+        const mlPrice = item.marketLow * upliftMultiplier;
+        const costPrice = item.avgCost * costMarkupMultiplier;
+        
+        return (
+          <div className="space-y-4">
+            <div className="px-5 py-4 rounded-lg bg-slate-900/50 border border-slate-700/40">
+              <h3 className="font-semibold text-base mb-3 text-blue-400">Calculation Steps</h3>
+              
+              <ol className="space-y-4">
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">1</div>
+                    <span>Determine pricing based on usage rank and trend:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    <div>Usage Rank: {group}, Trend: {isDownwardTrend ? 'Downward' : 'Upward'}</div>
+                    <div>Applied Rule: Rule 1b (Higher of Market Low + {upliftPercentage}% or Average Cost + {costMarkupPercentage}%)</div>
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">2</div>
+                    <span>Calculate Market Low price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    Market Low × (1 + {upliftPercentage}%) = {formatCurrency(item.marketLow)} × {upliftMultiplier.toFixed(2)} = {formatCurrency(mlPrice)}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">3</div>
+                    <span>Calculate Cost-based price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    avgCost × (1 + {costMarkupPercentage}%) = {formatCurrency(item.avgCost)} × {costMarkupMultiplier.toFixed(2)} = {formatCurrency(costPrice)}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">4</div>
+                    <span>Take higher of the two prices:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    max(ML price, Cost price) = max({formatCurrency(mlPrice)}, {formatCurrency(costPrice)}) = {formatCurrency(Math.max(mlPrice, costPrice))}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">5</div>
+                    <span>Ensure price is not lower than current price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    max(calculated price, current price) = max({formatCurrency(Math.max(mlPrice, costPrice))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(item.proposedPrice)}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">6</div>
+                    <span>Calculate margin:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    (proposedPrice - avgCost) / proposedPrice = ({formatCurrency(item.proposedPrice)} - {formatCurrency(item.avgCost)}) / {formatCurrency(item.proposedPrice)} = {formatPercentage(item.proposedMargin)}
+                  </div>
+                </li>
+              </ol>
             </div>
-          </li>
-          <li className="text-sm">
-            <span className="font-medium">Calculate margin:</span>
-            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
-              (proposedPrice - avgCost) / proposedPrice = ({formatCurrency(item.proposedPrice)} - {formatCurrency(item.avgCost)}) / {formatCurrency(item.proposedPrice)} = {formatPercentage(item.proposedMargin)}
+            
+            <div className="mt-4 pt-4 border-t border-gray-700/50">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-blue-400" />
+                <h4 className="font-semibold text-lg">Final Result</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
+                <div className="bg-blue-950/30 p-4 rounded-lg border border-blue-900/50">
+                  <p className="text-sm text-blue-300">Proposed Price</p>
+                  <p className="text-2xl font-bold">{formatCurrency(item.proposedPrice)}</p>
+                </div>
+                <div className="bg-blue-950/30 p-4 rounded-lg border border-blue-900/50">
+                  <p className="text-sm text-blue-300">Proposed Margin</p>
+                  <p className="text-2xl font-bold">{formatPercentage(item.proposedMargin)}</p>
+                </div>
+              </div>
             </div>
-          </li>
-        </ol>
-      );
+          </div>
+        );
+      }
     } else {
       // Rule 2 calculation steps
-      return (
-        <ol className="space-y-2 pl-4 list-decimal">
-          <li className="text-sm">
-            <span className="font-medium">Determine multiplier based on usage rank and trend:</span>
-            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
-              UsageRank: {item.usageRank}, Trend: {item.trend} → 
-              Multiplier: {((item.proposedPrice / item.avgCost) || 0).toFixed(2)}
+      const upliftPercentage = getUpliftPercentage(false, isDownwardTrend, group);
+      const upliftMultiplier = 1 + (upliftPercentage / 100);
+      
+      const costMarkupPercentage = getCostMarkupPercentage(group);
+      const costMarkupMultiplier = 1 + (costMarkupPercentage / 100);
+      
+      if (isDownwardTrend) {
+        // Rule 2a - Market Low + uplift
+        return (
+          <div className="space-y-4">
+            <div className="px-5 py-4 rounded-lg bg-slate-900/50 border border-slate-700/40">
+              <h3 className="font-semibold text-base mb-3 text-blue-400">Calculation Steps</h3>
+              
+              <ol className="space-y-4">
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">1</div>
+                    <span>Determine pricing based on usage rank and trend:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    <div>Usage Rank: {group}, Trend: {isDownwardTrend ? 'Downward' : 'Upward'}</div>
+                    <div>Applied Rule: Rule 2a (Market Low + {upliftPercentage}%)</div>
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">2</div>
+                    <span>Calculate proposed price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    Market Low × (1 + {upliftPercentage}%) = {formatCurrency(item.marketLow)} × {upliftMultiplier.toFixed(2)} = {formatCurrency(item.marketLow * upliftMultiplier)}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">3</div>
+                    <span>Ensure price is not lower than current price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    max(calculated price, current price) = max({formatCurrency(item.marketLow * upliftMultiplier)}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(item.marketLow * upliftMultiplier, item.currentREVAPrice))}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">4</div>
+                    <span>Calculate margin:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    (proposedPrice - avgCost) / proposedPrice = ({formatCurrency(item.proposedPrice)} - {formatCurrency(item.avgCost)}) / {formatCurrency(item.proposedPrice)} = {formatPercentage(item.proposedMargin)}
+                  </div>
+                </li>
+              </ol>
             </div>
-          </li>
-          <li className="text-sm">
-            <span className="font-medium">Calculate base proposed price:</span>
-            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
-              avgCost × multiplier = {formatCurrency(item.avgCost)} × {((item.proposedPrice / item.avgCost) || 0).toFixed(2)} = {formatCurrency(item.avgCost * ((item.proposedPrice / item.avgCost) || 0))}
+            
+            <div className="mt-4 pt-4 border-t border-gray-700/50">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-blue-400" />
+                <h4 className="font-semibold text-lg">Final Result</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
+                <div className="bg-blue-950/30 p-4 rounded-lg border border-blue-900/50">
+                  <p className="text-sm text-blue-300">Proposed Price</p>
+                  <p className="text-2xl font-bold">{formatCurrency(item.proposedPrice)}</p>
+                </div>
+                <div className="bg-blue-950/30 p-4 rounded-lg border border-blue-900/50">
+                  <p className="text-sm text-blue-300">Proposed Margin</p>
+                  <p className="text-2xl font-bold">{formatPercentage(item.proposedMargin)}</p>
+                </div>
+              </div>
             </div>
-          </li>
-          <li className="text-sm">
-            <span className="font-medium">Ensure price is not lower than current price:</span>
-            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
-              max(calculated price, current price) = max({formatCurrency(item.avgCost * ((item.proposedPrice / item.avgCost) || 0))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(item.avgCost * ((item.proposedPrice / item.avgCost) || 0), item.currentREVAPrice))}
+          </div>
+        );
+      } else {
+        // Rule 2b - Higher of Market Low + uplift or Cost + markup
+        const mlPrice = item.marketLow * upliftMultiplier;
+        const costPrice = item.avgCost * costMarkupMultiplier;
+        
+        return (
+          <div className="space-y-4">
+            <div className="px-5 py-4 rounded-lg bg-slate-900/50 border border-slate-700/40">
+              <h3 className="font-semibold text-base mb-3 text-blue-400">Calculation Steps</h3>
+              
+              <ol className="space-y-4">
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">1</div>
+                    <span>Determine pricing based on usage rank and trend:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    <div>Usage Rank: {group}, Trend: {isDownwardTrend ? 'Downward' : 'Upward'}</div>
+                    <div>Applied Rule: Rule 2b (Higher of Market Low + {upliftPercentage}% or Average Cost + {costMarkupPercentage}%)</div>
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">2</div>
+                    <span>Calculate Market Low price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    Market Low × (1 + {upliftPercentage}%) = {formatCurrency(item.marketLow)} × {upliftMultiplier.toFixed(2)} = {formatCurrency(mlPrice)}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">3</div>
+                    <span>Calculate Cost-based price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    avgCost × (1 + {costMarkupPercentage}%) = {formatCurrency(item.avgCost)} × {costMarkupMultiplier.toFixed(2)} = {formatCurrency(costPrice)}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">4</div>
+                    <span>Take higher of the two prices:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    max(ML price, Cost price) = max({formatCurrency(mlPrice)}, {formatCurrency(costPrice)}) = {formatCurrency(Math.max(mlPrice, costPrice))}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">5</div>
+                    <span>Ensure price is not lower than current price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    max(calculated price, current price) = max({formatCurrency(Math.max(mlPrice, costPrice))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(item.proposedPrice)}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">6</div>
+                    <span>Calculate margin:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    (proposedPrice - avgCost) / proposedPrice = ({formatCurrency(item.proposedPrice)} - {formatCurrency(item.avgCost)}) / {formatCurrency(item.proposedPrice)} = {formatPercentage(item.proposedMargin)}
+                  </div>
+                </li>
+              </ol>
             </div>
-          </li>
-          <li className="text-sm">
-            <span className="font-medium">Ensure price is not higher than market low:</span>
-            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
-              min(max price, marketLow) = min({formatCurrency(Math.max(item.avgCost * ((item.proposedPrice / item.avgCost) || 0), item.currentREVAPrice))}, {formatCurrency(item.marketLow)}) = {formatCurrency(item.proposedPrice)}
+            
+            <div className="mt-4 pt-4 border-t border-gray-700/50">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-5 w-5 text-blue-400" />
+                <h4 className="font-semibold text-lg">Final Result</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3">
+                <div className="bg-blue-950/30 p-4 rounded-lg border border-blue-900/50">
+                  <p className="text-sm text-blue-300">Proposed Price</p>
+                  <p className="text-2xl font-bold">{formatCurrency(item.proposedPrice)}</p>
+                </div>
+                <div className="bg-blue-950/30 p-4 rounded-lg border border-blue-900/50">
+                  <p className="text-sm text-blue-300">Proposed Margin</p>
+                  <p className="text-2xl font-bold">{formatPercentage(item.proposedMargin)}</p>
+                </div>
+              </div>
             </div>
-          </li>
-          <li className="text-sm">
-            <span className="font-medium">Calculate margin:</span>
-            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
-              (proposedPrice - avgCost) / proposedPrice = ({formatCurrency(item.proposedPrice)} - {formatCurrency(item.avgCost)}) / {formatCurrency(item.proposedPrice)} = {formatPercentage(item.proposedMargin)}
-            </div>
-          </li>
-        </ol>
-      );
+          </div>
+        );
+      }
     }
   };
   
@@ -190,7 +486,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
       return (
         <div className="flex items-center space-x-2 text-red-500">
           <AlertCircle className="h-5 w-5" />
-          <span>Flagged: Proposed margin is below 3%</span>
+          <span>Flagged: Proposed margin is below 5%</span>
         </div>
       );
     }
@@ -206,13 +502,13 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Pricing Rule Explanation</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl">Pricing Rule Explanation</DialogTitle>
+          <DialogDescription className="text-base">
             Details for {item.description}
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs defaultValue="details" className="mt-4">
+        <Tabs defaultValue="details" className="mt-6">
           <TabsList className="grid grid-cols-2">
             <TabsTrigger value="details">Price Details</TabsTrigger>
             <TabsTrigger value="simulator">Price Simulator</TabsTrigger>
@@ -220,10 +516,13 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
           
           <TabsContent value="details" className="space-y-6">
             {/* Current vs Proposed Comparison */}
-            <Card>
+            <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
               <CardContent className="pt-6">
-                <h3 className="text-lg font-medium mb-4">Price Comparison</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-900/40 p-4 rounded-lg">
+                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-blue-500 rounded-sm"></span>
+                  Price Comparison
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-900/80 p-5 rounded-lg">
                   <div className="space-y-3">
                     <div>
                       <p className="text-sm text-muted-foreground">Current Price</p>
@@ -234,7 +533,10 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                       <p className="text-xl font-semibold">{formatPercentage(item.currentREVAMargin)}</p>
                     </div>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-3 relative">
+                    <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 text-gray-500 hidden md:block">
+                      <ArrowRight className="h-5 w-5" />
+                    </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Proposed Price</p>
                       <p className="text-2xl font-bold text-primary">{formatCurrency(item.proposedPrice)}</p>
@@ -255,9 +557,12 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
             </Card>
           
             {/* Input Values Card */}
-            <Card>
+            <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
               <CardContent className="pt-6">
-                <h3 className="text-lg font-medium mb-4">Input Values</h3>
+                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-blue-500 rounded-sm"></span>
+                  Input Values
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Average Cost</p>
@@ -295,37 +600,25 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
             </Card>
             
             {/* Applied Rule Card */}
-            <Card>
+            <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
               <CardContent className="pt-6">
-                <h3 className="text-lg font-medium mb-4">Applied Rule: {item.appliedRule}</h3>
+                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-blue-500 rounded-sm"></span>
+                  Applied Rule: {item.appliedRule}
+                </h3>
                 {getRuleDescription()}
               </CardContent>
             </Card>
             
             {/* Calculation Steps Card */}
-            <Card>
+            <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
               <CardContent className="pt-6">
-                <h3 className="text-lg font-medium mb-4">Calculation Steps</h3>
                 {getCalculationSteps()}
-                
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                  <h4 className="font-medium mb-2">Final Result</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Proposed Price</p>
-                      <p className="text-xl font-semibold">{formatCurrency(item.proposedPrice)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Proposed Margin</p>
-                      <p className="text-xl font-semibold">{formatPercentage(item.proposedMargin)}</p>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
             
             {/* Flag Status Card */}
-            <Card>
+            <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
               <CardContent className="pt-6 flex items-center">
                 {getFlagStatus()}
               </CardContent>
@@ -333,9 +626,12 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
           </TabsContent>
           
           <TabsContent value="simulator" className="space-y-6">
-            <Card>
+            <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
               <CardContent className="pt-6">
-                <h3 className="text-lg font-medium mb-4">Price Simulator</h3>
+                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                  <span className="w-2 h-6 bg-blue-500 rounded-sm"></span>
+                  Price Simulator
+                </h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Enter a new price to simulate and see the impact on margins and profit.
                 </p>
@@ -353,16 +649,17 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                       placeholder="Enter price"
                       value={simulatedPrice}
                       onChange={(e) => setSimulatedPrice(e.target.value)}
+                      className="bg-gray-800/50 border-gray-700"
                     />
                   </div>
-                  <Button onClick={handleSimulatePrice}>
+                  <Button onClick={handleSimulatePrice} className="bg-blue-600 hover:bg-blue-700">
                     Simulate
                   </Button>
                 </div>
                 
                 {simulatedResults && (
-                  <div className="bg-gray-900/40 p-4 rounded-lg">
-                    <h4 className="font-semibold mb-3">Simulation Results</h4>
+                  <div className="bg-gray-900/80 p-5 rounded-lg border border-gray-800/80">
+                    <h4 className="font-semibold mb-3 text-blue-400">Simulation Results</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Simulated Price</p>
