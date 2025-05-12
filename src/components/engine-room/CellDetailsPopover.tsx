@@ -47,6 +47,28 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
     
     return value;
   };
+
+  // Find which competitor has the lowest price (for TML display)
+  const findLowestPriceCompetitor = (item: any) => {
+    if (!item) return null;
+
+    const competitors = [
+      { name: 'ETH NET', value: item["ETH NET"] || item.eth_net },
+      { name: 'Nupharm', value: item.Nupharm || item.nupharm },
+      { name: 'LEXON', value: item.LEXON || item.lexon },
+      { name: 'AAH', value: item.AAH || item.aah }
+    ];
+    
+    let lowest = { name: '', value: Number.MAX_VALUE };
+    
+    for (const comp of competitors) {
+      if (comp.value && typeof comp.value === 'number' && comp.value < lowest.value) {
+        lowest = comp;
+      }
+    }
+    
+    return lowest.name !== '' ? lowest.name : null;
+  };
   
   // Generate label and details based on field if provided
   const getFieldDetails = () => {
@@ -65,15 +87,39 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         ];
         break;
       case "marketLow":
-        displayLabel = "Market Low";
+        // Remove the redundant header by setting displayLabel to null
+        displayLabel = null;
         displayItems = [
           { label: "Market Low", value: formatValue(item.marketLow) },
-          { label: "True Market Low", value: item.trueMarketLow ? formatValue(item.trueMarketLow) : 'N/A' },
-          { label: "ETH NET", value: item["ETH NET"] || item.eth_net ? formatValue(item["ETH NET"] || item.eth_net) : 'N/A' },
-          { label: "Nupharm", value: item.Nupharm || item.nupharm ? formatValue(item.Nupharm || item.nupharm) : 'N/A' },
-          { label: "LEXON", value: item.LEXON || item.lexon ? formatValue(item.LEXON || item.lexon) : 'N/A' },
-          { label: "AAH", value: item.AAH || item.aah ? formatValue(item.AAH || item.aah) : 'N/A' }
+          { label: "True Market Low", value: item.trueMarketLow ? formatValue(item.trueMarketLow) : 'N/A' }
         ];
+        
+        // Add the competitor pricing data
+        if (item["ETH NET"] || item.eth_net) {
+          displayItems.push({ label: "ETH NET", value: formatValue(item["ETH NET"] || item.eth_net) });
+        }
+        if (item.Nupharm || item.nupharm) {
+          displayItems.push({ label: "Nupharm", value: formatValue(item.Nupharm || item.nupharm) });
+        }
+        if (item.LEXON || item.lexon) {
+          displayItems.push({ label: "LEXON", value: formatValue(item.LEXON || item.lexon) });
+        }
+        if (item.AAH || item.aah) {
+          displayItems.push({ label: "AAH", value: formatValue(item.AAH || item.aah) });
+        }
+        
+        // Find and mark the competitor with the lowest price
+        const lowestCompetitor = findLowestPriceCompetitor(item);
+        if (lowestCompetitor && item.trueMarketLow) {
+          // Replace the TML entry with the competitor who has the lowest price
+          const tmlIndex = displayItems.findIndex(i => i.label === "True Market Low");
+          if (tmlIndex !== -1) {
+            displayItems[tmlIndex] = {
+              label: `${lowestCompetitor} (Lowest)`,
+              value: formatValue(item.trueMarketLow)
+            };
+          }
+        }
         break;
       case "nextCost":
         displayLabel = "Next Buying Price";
@@ -91,6 +137,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         break;
       case "currentREVAMargin":
         displayLabel = "Current Margin";
+        // Ensure we're using the actual margin data from the item
         displayItems = [
           { label: "Current Margin", value: formatPercentage(item.currentREVAMargin) },
           { label: "Target Margin", value: item.targetMargin ? formatPercentage(item.targetMargin) : '15.0%' }
@@ -108,6 +155,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         break;
       case "proposedMargin":
         displayLabel = "Proposed Margin";
+        // Ensure we're using the actual margin data from the item
         displayItems = [
           { label: "Proposed Margin", value: formatPercentage(item.proposedMargin) },
           { label: "Current Margin", value: item.currentREVAMargin ? formatPercentage(item.currentREVAMargin) : 'N/A' },
@@ -120,6 +168,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
           displayLabel = field.charAt(0).toUpperCase() + field.slice(1);
           displayItems = [];
         } else {
+          // For other fields, just set to null if we have items (to avoid duplication)
           displayLabel = field;
           displayItems = [{ label: field, value: formatValue(item[field]) || 'N/A' }];
         }
@@ -129,7 +178,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
   };
   
   const { displayLabel, displayItems } = getFieldDetails();
-  const finalLabel = displayLabel || label || '';
+  const finalLabel = displayLabel || '';
   const finalItems = displayItems || []; // Ensure finalItems is never undefined
   
   // If children is provided, use that instead of value
@@ -149,11 +198,12 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
       </HoverCardTrigger>
       <HoverCardContent className="w-80 p-4 bg-gray-950/95 backdrop-blur-sm border border-white/10 z-50">
         <div className="space-y-2">
-          <h4 className="font-medium">{finalLabel}</h4>
+          {/* Only show heading if finalLabel exists */}
+          {finalLabel && <h4 className="font-medium">{finalLabel}</h4>}
           <div className="grid gap-2">
             {Array.isArray(finalItems) && finalItems.length > 0 && finalItems.map((item, index) => (
               <div key={index} className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">{item.label}:</p>
+                <p className="text-sm font-medium text-muted-foreground">{item.label}:</p>
                 <p className="text-sm font-medium">{item.value}</p>
               </div>
             ))}
