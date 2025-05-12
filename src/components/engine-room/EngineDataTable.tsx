@@ -9,7 +9,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
 
@@ -113,7 +112,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const [ruleFilter, setRuleFilter] = useState<string>('all');
-  const { toast } = useToast();
   const itemsPerPage = 50; // Increased for larger tables
 
   // Use external flag filter if provided
@@ -386,22 +384,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   // Handle price edit save
   const handleSavePriceEdit = (item: any) => {
     if (onPriceChange && editingValues[item.id] !== undefined) {
-      console.log(`Saving price edit for item ${item.id}:`, editingValues[item.id]);
       onPriceChange(item, editingValues[item.id]);
-      
-      toast({
-        title: "Price updated",
-        description: `Price updated for ${item.description.substring(0, 30)}...`,
-      });
-    } else {
-      console.error("Failed to save price edit", { item, value: editingValues[item.id] });
-      toast({
-        title: "Error",
-        description: "Failed to save price. Please try again.",
-        variant: "destructive",
-      });
     }
-    
     // Reset editing state for this item
     setEditingItemId(null);
     const newEditingValues = {
@@ -411,56 +395,14 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     setEditingValues(newEditingValues);
   };
 
-  // Handle price change from PriceEditor component
-  const handlePriceChange = (item: any, newPrice: number) => {
-    if (onPriceChange) {
-      console.log(`Price changed for item ${item.id}:`, newPrice);
-      onPriceChange(item, newPrice);
-      
-      toast({
-        title: "Price updated",
-        description: `Price updated for ${item.description.substring(0, 30)}...`,
-      });
-    }
-  };
-
-  // Handle bulk edit save for a specific item
-  const handleBulkSave = (item: any, newPrice: number) => {
-    console.log(`Bulk edit save for item ${item.id}:`, newPrice);
-    if (onPriceChange) {
-      onPriceChange(item, newPrice);
-    }
-  };
-
-  // Handle cancel price edit - for both bulk and single item edits
-  const handleCancelEdit = (item?: any) => {
-    console.log("Cancel edit called", item ? `for item ${item.id}` : 'globally');
-    
-    if (item) {
-      // Cancel for specific item in bulk mode
-      // Just let it continue in edit mode, no state changes needed
-    } else {
-      // Cancel for single item edit mode
-      setEditingItemId(null);
-    }
+  // Handle cancel price edit
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    // Keep the editingValues intact, just stop editing
   };
 
   // Toggle bulk edit mode
   const toggleBulkEditMode = () => {
-    if (bulkEditMode) {
-      console.log("Exiting bulk edit mode");
-      toast({
-        title: "Bulk edit mode disabled",
-        description: "Changes will no longer be applied immediately.",
-      });
-    } else {
-      console.log("Entering bulk edit mode");
-      toast({
-        title: "Bulk edit mode enabled",
-        description: "Changes will be applied immediately when saved.",
-      });
-    }
-    
     setBulkEditMode(!bulkEditMode);
     // Clear all edits when toggling bulk mode
     setEditingValues({});
@@ -470,13 +412,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   // Toggle the hide inactive products filter
   const toggleHideInactiveProducts = () => {
     setHideInactiveProducts(!hideInactiveProducts);
-    
-    toast({
-      title: hideInactiveProducts ? "Showing all products" : "Hiding inactive products",
-      description: hideInactiveProducts ? 
-        "Displaying all products including inactive ones." : 
-        "Only showing products with stock, orders, or usage.",
-    });
   };
 
   // Render the column header with sort and filter
@@ -853,7 +788,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Proposed price cell with inline editing - Updated implementation */}
+                    {/* Proposed price cell with inline editing */}
                     <TableCell>
                       {bulkEditMode && !item.priceModified ? (
                         <PriceEditor 
@@ -861,8 +796,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           currentPrice={item.currentREVAPrice || 0} 
                           calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} 
                           cost={item.avgCost || 0} 
-                          onSave={(newPrice) => handleBulkSave(item, newPrice)} 
-                          onCancel={() => handleCancelEdit(item)} 
+                          onSave={newPrice => onPriceChange && onPriceChange(item, newPrice)} 
+                          onCancel={() => {}} 
                           compact={true} 
                         />
                       ) : isEditing ? (
@@ -877,7 +812,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 w-8 p-1 hover:bg-green-500/20" 
+                            className="h-6 w-6 p-0" 
                             onClick={() => handleSavePriceEdit(item)}
                           >
                             <CheckCircle className="h-4 w-4 text-green-500" />
@@ -885,8 +820,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 w-8 p-1 hover:bg-red-500/20" 
-                            onClick={() => handleCancelEdit()}
+                            className="h-6 w-6 p-0" 
+                            onClick={handleCancelEdit}
                           >
                             <X className="h-4 w-4 text-red-500" />
                           </Button>
@@ -900,7 +835,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                className="ml-2 h-6 w-6 p-0 hover:bg-blue-500/20" 
+                                className="ml-2 h-6 w-6 p-0" 
                                 onClick={e => {
                                   e.stopPropagation();
                                   handleStartEdit(item);
@@ -936,22 +871,22 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                     {/* Flags cell */}
                     <TableCell>{renderFlags(item)}</TableCell>
                     
-                    {/* Actions cell - Updated styling for better visibility */}
+                    {/* Actions cell */}
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-7 w-7 p-0 hover:bg-blue-500/20" 
+                          className="h-6 w-6" 
                           onClick={() => onShowPriceDetails(item)} 
                         >
                           <Info className="h-4 w-4" />
                         </Button>
-                        {!isEditing && onPriceChange && !bulkEditMode && (
+                        {!isEditing && onPriceChange && (
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-7 w-7 p-0 hover:bg-blue-500/20" 
+                            className="h-6 w-6" 
                             onClick={() => handleStartEdit(item)}
                           >
                             <Edit2 className="h-4 w-4" />
@@ -965,7 +900,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                               e.stopPropagation();
                               onToggleStar(item.id);
                             }}
-                            className="h-7 w-7 p-0 hover:bg-yellow-500/20"
+                            className="h-6 w-6"
                           >
                             <Star 
                               className={`h-4 w-4 ${starredItems.has(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`}
