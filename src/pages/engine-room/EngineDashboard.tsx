@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw } from 'lucide-react';
+import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import MetricCard from '@/components/MetricCard';
@@ -34,6 +34,20 @@ const EngineDashboardContent = () => {
       title: "Cache cleared",
       description: "The data cache has been cleared. Please upload your file again to see recalculated metrics."
     });
+  };
+  
+  // Add a more aggressive cache reset
+  const handleForceReset = () => {
+    localStorage.removeItem('engineRoomData');
+    queryClient.clear(); // Clear all query cache
+    toast({
+      title: "Complete Data Reset",
+      description: "All cached data has been cleared. Please refresh the page and upload your file again."
+    });
+    // Force page refresh after a short delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   };
 
   // Get metrics
@@ -129,17 +143,30 @@ const EngineDashboardContent = () => {
   });
   
   return <div className="container mx-auto px-4 py-6">
-      {/* Add refresh button for clearing cache */}
-      <div className="mb-4 flex justify-end">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleClearCache}
-          className="flex items-center gap-2 text-xs"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Reset Calculations
-        </Button>
+      {/* Add more prominent reset buttons for clearing cache */}
+      <div className="mb-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Engine Room Dashboard</h1>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleClearCache}
+            className="flex items-center gap-2 text-xs"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Reset Calculations
+          </Button>
+          
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={handleForceReset}
+            className="flex items-center gap-2 text-xs"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Force Complete Reset
+          </Button>
+        </div>
       </div>
       
       {/* Master container card for all metrics */}

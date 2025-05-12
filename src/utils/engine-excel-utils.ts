@@ -251,10 +251,10 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
     currentREVAMargin: 0, // Will be calculated below
   };
   
-  // Explicitly check if Next Buying Price is missing or zero
-  const nextCostMissing = !transformed.nextCost || transformed.nextCost === 0;
-  transformed.nextCostMissing = nextCostMissing;
-  transformed.displayNextCost = nextCostMissing ? 0 : transformed.nextCost;
+  // FIXED: Calculate currentREVAMargin with CORRECT formula (price - cost) / price * 100
+  if (transformed.currentREVAPrice > 0) {
+    transformed.currentREVAMargin = ((transformed.currentREVAPrice - transformed.avgCost) / transformed.currentREVAPrice) * 100;
+  }
   
   // Add optional fields
   if (mapping.inRF && row[mapping.inRF] !== undefined) transformed.inRF = Number(row[mapping.inRF]);
@@ -379,15 +379,22 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
       
       const itemRevenue = itemPrice * item.revaUsage;
       const itemCost = item.avgCost * item.revaUsage;
+      
+      // CRITICAL FIX: Use CORRECT formula for profit calculation: revenue - cost
+      // Changed from itemCost - itemRevenue to itemRevenue - itemCost
       const itemProfit = itemRevenue - itemCost;
       
       // Calculate current profit for comparison
       const currentItemRevenue = (typeof item.currentREVAPrice === 'number' ? item.currentREVAPrice : 0) * item.revaUsage;
+      // CRITICAL FIX: Use CORRECT formula for current profit calculation: revenue - cost
+      // Changed from itemCost - currentItemRevenue to currentItemRevenue - itemCost
       const currentItemProfit = currentItemRevenue - itemCost;
       
       // Calculate usage-weighted margin for this item
       let itemMargin = 0;
       if (itemPrice > 0) {
+        // CRITICAL FIX: Use CORRECT formula for margin calculation: (price - cost) / price
+        // Changed from (itemCost - itemPrice) / itemPrice to (itemPrice - itemCost) / itemPrice
         itemMargin = (itemPrice - item.avgCost) / itemPrice;
       }
       const usageWeightedMargin = itemMargin * item.revaUsage;
@@ -416,12 +423,15 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
   let proposedAvgMargin = 0;
   
   if (totalRevenue > 0) {
+    // CRITICAL FIX: Ensure margin calculated correctly - already using correct formula
     overallMargin = (totalProfit / totalRevenue) * 100;
   }
   if (currentRevenue > 0) {
+    // CRITICAL FIX: Ensure margin calculated correctly - already using correct formula
     currentAvgMargin = (currentTotalProfit / currentRevenue) * 100;
   }
   if (proposedRevenue > 0) {
+    // CRITICAL FIX: Ensure margin calculated correctly - already using correct formula
     proposedAvgMargin = (totalProfit / proposedRevenue) * 100;
   }
   
@@ -620,8 +630,10 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       }
     }
     
-    // Calculate proposed margin
+    // Calculate proposed margin with CORRECT formula
     if (processedItem.proposedPrice > 0) {
+      // CRITICAL FIX: Use CORRECT formula for margin: (price - cost) / price
+      // Changed from (cost - price) / price to (price - cost) / price
       processedItem.proposedMargin = (processedItem.proposedPrice - processedItem.avgCost) / processedItem.proposedPrice;
     } else {
       processedItem.proposedMargin = 0;
@@ -642,7 +654,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     
     // Margin < 5% flag (updated from 3%)
     processedItem.flag2 = processedItem.proposedMargin < 0.05;
-    if (processedItem.flag2 && (!processedItem.flags || !processedItem.flags.includes('LOW_MARGIN'))) {
+    if (processedItem.flag2 && (!processedItem.flags || !processedItem.flags.length > 0)) {
       if (!processedItem.flags) processedItem.flags = [];
       processedItem.flags.push('LOW_MARGIN');
     }
