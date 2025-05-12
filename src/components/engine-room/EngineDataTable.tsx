@@ -705,26 +705,24 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return (
       <div className="rounded-md border overflow-hidden">
         {/* Table header outside ScrollArea */}
-        <div className="w-full">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {columns.map(column => (
-                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
-                    {renderColumnHeader(column)}
-                  </TableHead>
-                ))}
-                <TableHead className="bg-gray-900/70">
-                  {renderFlagsColumnHeader()}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map(column => (
+                <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
+                  {renderColumnHeader(column)}
                 </TableHead>
-                <TableHead className="bg-gray-900/70">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-          </Table>
-        </div>
+              ))}
+              <TableHead className="bg-gray-900/70">
+                {renderFlagsColumnHeader()}
+              </TableHead>
+              <TableHead className="bg-gray-900/70">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+        </Table>
         
-        {/* Table body inside ScrollArea */}
-        <ScrollArea className="h-[600px]">
+        {/* Table body inside ScrollArea - note that we're using only vertical orientation */}
+        <ScrollArea className="h-[600px]" orientation="vertical">
           <Table>
             <TableBody>
               {paginatedData.length === 0 && (
