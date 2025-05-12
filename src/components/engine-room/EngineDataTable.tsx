@@ -339,6 +339,14 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return `£${value.toFixed(2)}`;
   };
 
+  // Format for missing Next Buying Price - New method
+  const formatNextBuyingPrice = (item: any) => {
+    if (item.nextCostMissing) {
+      return <span className="text-blue-400 italic">£0.00</span>;
+    }
+    return `£${(item.nextCost || 0).toFixed(2)}`;
+  };
+
   // Format percentage - with null/undefined check
   const formatPercentage = (value: number | null | undefined) => {
     if (value === null || value === undefined) {
@@ -741,10 +749,10 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Next Buying Price cell with popover */}
+                    {/* Next Buying Price cell with popover - Updated to handle missing values */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="nextCost">
-                        {formatCurrency(item.nextCost || item.nextBuyingPrice)}
+                        {formatNextBuyingPrice(item)}
                       </CellDetailsPopover>
                     </TableCell>
                     

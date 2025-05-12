@@ -14,6 +14,8 @@ interface RevaItem {
   avgCost: number;
   avgCostLessThanML?: string;
   nextCost: number;
+  displayNextCost?: number; // Added for UI display of next cost
+  nextCostMissing?: boolean; // Added to track missing next cost
   trend?: string;
   currentREVAPrice: number;
   currentREVAMargin: number;
@@ -322,8 +324,17 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
   
   // Set market trend for each item
   transformedData.forEach(item => {
-    // If Next Buying Price is missing, set it to AvgCost and flag
-    if (!item.nextCost) {
+    // Check if Next Buying Price is missing or zero
+    const nextCostMissing = !item.nextCost || item.nextCost === 0;
+    
+    // Set nextCostMissing flag
+    item.nextCostMissing = nextCostMissing;
+    
+    // Store the original value (0 or undefined) as displayNextCost for UI
+    item.displayNextCost = nextCostMissing ? 0 : item.nextCost;
+    
+    // If Next Buying Price is missing, set it to AvgCost for calculation purposes
+    if (nextCostMissing) {
       item.nextCost = item.avgCost;
       if (!item.flags) item.flags = [];
       item.flags.push("Missing Next Buying Price");

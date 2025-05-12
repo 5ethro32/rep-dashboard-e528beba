@@ -128,10 +128,20 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         break;
       case "nextCost":
         displayLabel = null; // Remove duplicate header
-        displayItems = [
-          { label: "Next Buying Price", value: formatValue(item.nextCost || item.nextBuyingPrice) },
-          { label: "Current Cost", value: item.avgCost ? formatValue(item.avgCost) : 'N/A' }
-        ];
+        
+        // Check if Next Buying Price is missing
+        if (item.nextCostMissing) {
+          displayItems = [
+            { label: "Next Buying Price", value: "£0.00 (Missing)" },
+            { label: "Using for Calculation", value: formatValue(item.avgCost) },
+            { label: "Current Cost", value: item.avgCost ? formatValue(item.avgCost) : 'N/A' }
+          ];
+        } else {
+          displayItems = [
+            { label: "Next Buying Price", value: formatValue(item.nextCost) },
+            { label: "Current Cost", value: item.avgCost ? formatValue(item.avgCost) : 'N/A' }
+          ];
+        }
         break;
       case "currentREVAPrice":
         displayLabel = null; // Remove duplicate header
@@ -153,7 +163,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
           { label: "Proposed Price", value: formatValue(item.proposedPrice) },
           { label: "Calculated Price", value: item.calculatedPrice ? formatValue(item.calculatedPrice) : formatValue(item.proposedPrice) },
           { label: "Current Price", value: item.currentREVAPrice ? formatValue(item.currentREVAPrice) : 'N/A' },
-          { label: "Next Buying Price", value: item.nextCost || item.nextBuyingPrice ? formatValue(item.nextCost || item.nextBuyingPrice) : 'N/A' },
+          { label: "Next Buying Price", value: item.nextCostMissing ? "£0.00 (Missing)" : formatValue(item.nextCost) },
           { label: "Applied Rule", value: item.appliedRule || 'N/A' }
         ];
         break;
