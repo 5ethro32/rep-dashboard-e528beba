@@ -793,14 +793,14 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Next Buying Price cell with popover - Updated to handle missing values */}
+                    {/* Next Buying Price cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="nextCost">
                         {formatNextBuyingPrice(item)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Market Low cell with popover - Updated to handle no market price */}
+                    {/* Market Low cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="marketLow">
                         <div className="flex items-center gap-1">
@@ -811,7 +811,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* TML cell with popover - explicitly use trueMarketLow field type for consistency */}
+                    {/* TML cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="trueMarketLow">
                         {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
@@ -825,7 +825,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Current Margin cell with popover - FIXED to display correct percentage */}
+                    {/* Current Margin cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAMargin">
                         {item.currentREVAMargin !== undefined && item.currentREVAMargin !== null ? 
@@ -833,7 +833,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Proposed price cell with inline editing */}
+                    {/* Proposed price cell with inline editing - FIXED for bulk editing mode */}
                     <TableCell>
                       {bulkEditMode && onPriceChange ? (
                         <PriceEditor 
@@ -841,7 +841,12 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           currentPrice={item.currentREVAPrice || 0} 
                           calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} 
                           cost={item.avgCost || 0} 
-                          onSave={(newPrice) => onPriceChange(item, newPrice)} 
+                          // Fix: Directly call the onPriceChange function to update price
+                          onSave={(newPrice) => {
+                            if (onPriceChange) {
+                              onPriceChange(item, newPrice);
+                            }
+                          }}
                           onCancel={() => {}} 
                           compact={true} 
                         />
@@ -938,7 +943,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                         >
                           <Info className="h-4 w-4" />
                         </Button>
-                        {!isEditing && onPriceChange && (
+                        {!isEditing && onPriceChange && !bulkEditMode && (
                           <Button 
                             variant="ghost" 
                             size="icon" 

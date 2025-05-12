@@ -55,7 +55,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       toast({
         title: "Possible data issue detected",
         description: "Current price matches next buying price. This might indicate an issue with your Excel data.",
-        variant: "destructive" // Changed from "warning" to "destructive" as it's one of the allowed variants
+        variant: "destructive"
       });
     }
   }, [possibleDataIssue]);
@@ -103,7 +103,14 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
         <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={onCancel} title="Cancel">
           <X className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleSave} disabled={!isValid} title="Save">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-7 w-7 p-0" 
+          onClick={handleSave} 
+          disabled={!isValid} 
+          title="Save"
+        >
           <Check className="h-3 w-3" />
         </Button>
         {isPriceDecrease && (
