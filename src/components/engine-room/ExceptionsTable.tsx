@@ -26,9 +26,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import PriceEditor from './PriceEditor';
-import CellDetailsPopover from './CellDetailsPopover';
 import { Badge } from '@/components/ui/badge';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +35,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
 import {
   Select,
@@ -45,7 +44,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatCurrency } from '@/utils/rep-performance-utils'; // Import the formatCurrency function
+import { formatCurrency, formatPercentage, isTrendDown } from '@/utils/trend-utils'; 
+import CellDetailsHoverCard from './CellDetailsHoverCard';
 
 interface ExceptionsTableProps {
   data: any[];
@@ -108,32 +108,176 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const [showShortageOnly, setShowShortageOnly] = useState(false);
-  const [showRuleFilters, setShowRuleFilters] = useState(false);
   const [selectedRules, setSelectedRules] = useState<string[]>([]);
-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'all' | 'flagged' | 'modified'>('all');
-  const [showColumnSettings, setShowColumnSettings] = useState(false);
+  const [viewMode, setViewMode] = useState<'highPrice' | 'lowMargin' | 'other'>('highPrice');
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set([
     'description', 'usageRank', 'avgCost', 'currentREVAPrice', 'proposedPrice', 
-    'priceChangePercentage', 'marketLow', 'trueMarketLow', 'marketTrend', 
+    'priceChangePercentage', 'marketLow', 'nextBuyingPrice', 'trueMarketLow', 'proposedMargin', 
     'flags', 'appliedRule', 'inStock', 'onOrder'
   ]));
-  
-  // Get all unique rules from the data
-  const uniqueRules = useMemo(() => {
-    if (!data) return [];
-    const rulesSet = new Set<string>();
+
+  // Define columns configuration
+  const columns = useMemo(() => [
+    {
+      field: 'description',
+      label: 'Description',
+      filterable: true,
+      sticky: true
+    }, {
+      field: 'inStock',
+      label: 'In Stock',
+      filterable: false,
+    }, {
+      field: 'revaUsage',
+      label: 'Usage',
+      filterable: false,
+    }, {
+      field: 'usageRank',
+      label: 'Rank',
+      filterable: true,
+    }, {
+      field: 'avgCost',
+      label: 'Avg Cost',
+      format: (value: number) => formatCurrency(value),
+      filterable: false,
+    }, {
+      field: 'nextBuyingPrice',
+      label: 'Next Price',
+      format: (value: number) => formatCurrency(value),
+      filterable: false,
+    }, {
+      field: 'marketLow',
+      label: 'Market Low',
+      format: (value: number) => formatCurrency(value),
+      filterable: false,
+    }, {
+      field: 'trueMarketLow',
+      label: 'TML',
+      format: (value: number) => formatCurrency(value),
+      filterable: false,
+    }, {
+      field: 'currentREVAPrice',
+      label: 'Current Price',
+      format: (value: number) => formatCurrency(value),
+      filterable: false,
+      bold: true
+    }, {
+      field: 'currentREVAMargin',
+      label: 'Current Margin',
+      format: (value: number) => formatPercentage(value),
+      filterable: false,
+    }, {
+      field: 'proposedPrice',
+      label: 'Proposed Price',
+      format: (value: number) => formatCurrency(value),
+      editable: true,
+      filterable: false,
+      bold: true
+    }, {
+      field: 'priceChangePercentage',
+      label: '% Change',
+      format: (value: number) => `${value.toFixed(2)}%`,
+      filterable: false,
+      calculated: true
+    }, {
+      field: 'pctToMarketLow',
+      label: '% to ML',
+      format: (value: number) => `${value.toFixed(2)}%`,
+      filterable: false,
+      calculated: true
+    }, {
+      field: 'proposedMargin',
+      label: 'Proposed Margin',
+      format: (value: number) => formatPercentage(value),
+      filterable: false,
+    }, {
+      field: 'appliedRule',
+      label: 'Rule',
+      filterable: true,
+    }], []);
+
+  // Filter and process the data
+  const currentViewData = useMemo(() => {
+    if (viewMode === 'highPrice') {
+      return highPriceItems;
+    } else if (viewMode === 'lowMargin') {
+      return lowMarginItems;
+    } else {
+      // Return all other flags combined
+      return Object.values(flaggedItemsByType).flat();
+    }
+  }, [viewMode, highPriceItems, lowMarginItems, flaggedItemsByType]);
+
+  // Filter by search
+  const filteredData = useMemo(() => {
+    if (!currentViewData) return [];
     
-    data.forEach(item => {
-      if (item.appliedRule) {
-        const rulePrefix = item.appliedRule.split(' - ')[0];
-        rulesSet.add(rulePrefix);
+    return currentViewData.filter((item) => {
+      // Search query filter
+      const matchesSearch = item.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+      
+      // Column filters
+      const matchesColumnFilters = Object.entries(columnFilters).every(([field, values]) => {
+        if (!values || values.length === 0) return true;
+        return values.includes(item[field]);
+      });
+      
+      // Rules filter
+      const matchesRules = selectedRules.length === 0 || 
+        selectedRules.some(rule => item.appliedRule?.startsWith(rule));
+      
+      // Active products filter
+      const isActive = !hideInactiveProducts || 
+        item.inStock > 0 || item.onOrder > 0 || item.revaUsage > 0;
+      
+      // Shortage filter  
+      const matchesShortage = !showShortageOnly || item.shortage;
+      
+      return matchesSearch && matchesColumnFilters && matchesRules && isActive && matchesShortage;
+    });
+  }, [currentViewData, searchQuery, columnFilters, selectedRules, hideInactiveProducts, showShortageOnly]);
+  
+  // Calculate derived fields
+  const processedData = useMemo(() => {
+    return filteredData.map(item => {
+      // Calculate price change percentage
+      const priceChangePercentage = item.currentREVAPrice > 0 
+        ? ((item.proposedPrice - item.currentREVAPrice) / item.currentREVAPrice) * 100 
+        : 0;
+      
+      // Calculate percentage to market low
+      const pctToMarketLow = item.marketLow > 0 
+        ? ((item.proposedPrice - item.marketLow) / item.marketLow) * 100 
+        : 0;
+        
+      return {
+        ...item,
+        priceChangePercentage,
+        pctToMarketLow
+      };
+    });
+  }, [filteredData]);
+  
+  // Sort the filtered data
+  const sortedData = useMemo(() => {
+    if (!processedData) return [];
+    
+    return [...processedData].sort((a, b) => {
+      const fieldA = a[sortField] !== undefined ? a[sortField] : '';
+      const fieldB = b[sortField] !== undefined ? b[sortField] : '';
+      
+      if (typeof fieldA === 'string' && typeof fieldB === 'string') {
+        return sortDirection === 'asc' 
+          ? fieldA.localeCompare(fieldB) 
+          : fieldB.localeCompare(fieldA);
+      } else {
+        return sortDirection === 'asc' 
+          ? (fieldA ?? 0) - (fieldB ?? 0) 
+          : (fieldB ?? 0) - (fieldA ?? 0);
       }
     });
-    
-    return Array.from(rulesSet).sort();
-  }, [data]);
-  
+  }, [processedData, sortField, sortDirection]);
+
   // Handle sort click
   const handleSort = (field: string) => {
     if (field === sortField) {
@@ -144,75 +288,13 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     }
   };
 
-  // Filter the data based on search query and rule filters
-  const filterData = (items: any[]) => {
-    if (!items || items.length === 0) return [];
+  // Render sort indicator
+  const renderSortIndicator = (field: string) => {
+    if (field !== sortField) return null;
     
-    let filteredItems = items;
-    
-    // Apply search filter
-    if (searchQuery) {
-      filteredItems = filteredItems.filter(item => 
-        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    // Apply rule filters
-    if (selectedRules.length > 0) {
-      filteredItems = filteredItems.filter(item => {
-        if (!item.appliedRule) return false;
-        const rulePrefix = item.appliedRule.split(' - ')[0];
-        return selectedRules.includes(rulePrefix);
-      });
-    }
-
-    // Apply hide inactive filter
-    if (hideInactiveProducts) {
-      filteredItems = filteredItems.filter(item => item.isActive !== false);
-    }
-
-    // Apply shortage only filter
-    if (showShortageOnly) {
-      filteredItems = filteredItems.filter(item => item.inStock <= 0 || (item.inStock <= 5 && item.onOrder <= 0));
-    }
-    
-    return filteredItems;
-  };
-
-  // Sort the data
-  const sortData = (items: any[]) => {
-    if (!items || items.length === 0) return [];
-    
-    return [...items].sort((a, b) => {
-      let fieldA = a[sortField];
-      let fieldB = b[sortField];
-      
-      // Handle null/undefined values
-      if (fieldA === undefined || fieldA === null) fieldA = sortField.includes('Price') ? 0 : '';
-      if (fieldB === undefined || fieldB === null) fieldB = sortField.includes('Price') ? 0 : '';
-      
-      if (typeof fieldA === 'string') {
-        return sortDirection === 'asc' 
-          ? fieldA.localeCompare(fieldB)
-          : fieldB.localeCompare(fieldA);
-      } else {
-        return sortDirection === 'asc'
-          ? fieldA - fieldB
-          : fieldB - fieldA;
-      }
-    });
-  };
-
-  // Calculate price change percentage
-  const calculatePriceChangePercentage = (item: any) => {
-    if (!item) return 0;
-    
-    const currentPrice = item.currentREVAPrice || 0;
-    const proposedPrice = item.proposedPrice || 0;
-    
-    if (currentPrice === 0) return 0;
-    
-    return ((proposedPrice - currentPrice) / currentPrice) * 100;
+    return sortDirection === 'asc' ? 
+      <ArrowUp className="h-3 w-3 ml-1" /> : 
+      <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
   // Handle starting price edit for a specific item
@@ -224,11 +306,14 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     });
   };
 
-  // Handle price input change
+  // Handle price change input
   const handlePriceInputChange = (item: any, value: string) => {
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
-      setEditingValues({ ...editingValues, [item.id]: numValue });
+      setEditingValues({
+        ...editingValues,
+        [item.id]: numValue
+      });
     }
   };
 
@@ -237,17 +322,25 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     if (onPriceChange && editingValues[item.id] !== undefined) {
       onPriceChange(item, editingValues[item.id]);
     }
-    // Reset editing state for this item
     setEditingItemId(null);
-    const newEditingValues = { ...editingValues };
-    delete newEditingValues[item.id];
-    setEditingValues(newEditingValues);
   };
 
   // Handle cancel price edit
   const handleCancelEdit = () => {
     setEditingItemId(null);
-    // Keep editingValues intact, just stop editing
+  };
+
+  // Toggle column visibility
+  const toggleColumnVisibility = (field: string) => {
+    setVisibleColumns(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(field)) {
+        newSet.delete(field);
+      } else {
+        newSet.add(field);
+      }
+      return newSet;
+    });
   };
 
   // Toggle bulk edit mode
@@ -257,621 +350,442 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     setEditingValues({});
     setEditingItemId(null);
   };
-  
-  // Toggle rule selection
-  const toggleRuleSelection = (rule: string) => {
-    setSelectedRules(prev => {
-      if (prev.includes(rule)) {
-        return prev.filter(r => r !== rule);
-      } else {
-        return [...prev, rule];
-      }
-    });
+
+  // Toggle hide inactive products
+  const toggleHideInactiveProducts = () => {
+    setHideInactiveProducts(!hideInactiveProducts);
   };
 
-  // Toggle row expansion
-  const toggleRowExpansion = (itemId: string) => {
-    if (expandedRowId === itemId) {
-      setExpandedRowId(null);
-    } else {
-      setExpandedRowId(itemId);
+  // Toggle show shortage only
+  const toggleShowShortageOnly = () => {
+    setShowShortageOnly(!showShortageOnly);
+  };
+
+  // Format rule display
+  const formatRuleDisplay = (rule: string) => {
+    if (!rule) return '';
+    
+    const rulePattern = /Grp\s*(\d+)-(\d+)/i;
+    const match = rule.match(rulePattern);
+    if (match) {
+      return `[${match[1]}.${match[2]}]`;
     }
+    return rule;
   };
 
-  // Handle column toggle
-  const toggleColumn = (columnName: string) => {
-    setVisibleColumns(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(columnName)) {
-        newSet.delete(columnName);
-      } else {
-        newSet.add(columnName);
-      }
-      return newSet;
-    });
-  };
-
-  // Render sort indicator
-  const renderSortIndicator = (field: string) => {
-    if (field !== sortField) return null;
+  // Render flags for an item
+  const renderFlags = (item: any) => {
+    if (!item) return null;
     
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="h-3 w-3 ml-1" /> 
-      : <ArrowDown className="h-3 w-3 ml-1" />;
-  };
-
-  // Simplify rule display
-  const simplifyRuleDisplay = (ruleText: string) => {
-    if (!ruleText) return '';
+    const flags = [];
     
-    // Extract the rule number and put it in square brackets
-    const ruleMatch = ruleText.match(/Rule (\d+[a-b]?)/i);
-    
-    // Format the ML + x% part properly
-    let formattedRule = ruleText;
-    formattedRule = formattedRule.replace(/ML \+ (\d+)%/, "ML + $1.00%");
-    
-    return ruleMatch 
-      ? `${ruleMatch[1]} ${formattedRule.includes('ML + ') ? formattedRule.split(' - ')[1].split('(')[0].trim() : ''}` 
-      : formattedRule;
-  };
-
-  // Get item flags as formatted string
-  const getItemFlags = (item: any) => {
-    if (!item.flags || !Array.isArray(item.flags) || item.flags.length === 0) {
-      return '-';
+    if (item.flag1) {
+      flags.push(
+        <span key="high-price" className="bg-red-900/30 text-xs px-1 py-0.5 rounded" title="Price ≥10% above TRUE MARKET LOW">
+          HIGH PRICE
+        </span>
+      );
     }
     
-    return (
-      <div className="flex flex-wrap gap-1">
-        {item.flags.map((flag: string, i: number) => (
-          <Badge key={i} variant="outline" className="text-xs py-0">
+    if (item.flag2) {
+      flags.push(
+        <span key="low-margin" className="bg-amber-900/30 text-xs px-1 py-0.5 rounded" title="Margin < 3%">
+          LOW MARGIN
+        </span>
+      );
+    }
+    
+    if (item.shortage) {
+      flags.push(
+        <span key="shortage" className="bg-purple-900/30 text-xs px-1 py-0.5 rounded" title="Product has supply shortage">
+          SHORT
+        </span>
+      );
+    }
+    
+    if (item.flags && Array.isArray(item.flags)) {
+      item.flags.forEach((flag: string, i: number) => {
+        if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT') return;
+        
+        flags.push(
+          <span key={`flag-${i}`} className="bg-blue-900/30 text-xs px-1 py-0.5 rounded" title={flag}>
             {flag}
-          </Badge>
-        ))}
+          </span>
+        );
+      });
+    }
+    
+    return flags.length > 0 ? <div className="flex items-center gap-1">{flags}</div> : null;
+  };
+
+  // Handle column filter change
+  const handleFilterChange = (field: string, value: any) => {
+    setColumnFilters(prev => {
+      const current = prev[field] || [];
+      const newFilter = current.includes(value) 
+        ? current.filter(v => v !== value) 
+        : [...current, value];
+        
+      return {
+        ...prev,
+        [field]: newFilter
+      };
+    });
+  };
+
+  // Get unique values for each filterable column
+  const uniqueValues = useMemo(() => {
+    const values: Record<string, Set<any>> = {};
+    
+    columns.forEach(column => {
+      if (column.filterable) {
+        values[column.field] = new Set();
+      }
+    });
+    
+    if (data && data.length > 0) {
+      data.forEach(item => {
+        columns.forEach(column => {
+          if (column.filterable && item[column.field] !== undefined && item[column.field] !== null) {
+            values[column.field].add(item[column.field]);
+          }
+        });
+      });
+    }
+    
+    const result: Record<string, any[]> = {};
+    Object.keys(values).forEach(key => {
+      result[key] = Array.from(values[key]).sort((a, b) => {
+        if (typeof a === 'string' && typeof b === 'string') {
+          return a.localeCompare(b);
+        }
+        return a - b;
+      });
+    });
+    
+    return result;
+  }, [data, columns]);
+
+  // Render column header with sort and filter
+  const renderColumnHeader = (column: any) => {
+    return (
+      <div className={`flex items-center justify-between ${column.sticky ? 'sticky left-0 z-20 bg-gray-900/70' : ''}`}>
+        <CellDetailsHoverCard field={column.field} item={{}} isColumnHeader={true}>
+          <div className="flex items-center cursor-pointer" onClick={() => handleSort(column.field)}>
+            {column.label}
+            {renderSortIndicator(column.field)}
+          </div>
+        </CellDetailsHoverCard>
+        
+        {column.filterable && uniqueValues[column.field]?.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`} 
+                onClick={e => e.stopPropagation()}
+              >
+                <Filter className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto bg-gray-900 border-gray-700">
+              <div className="p-2">
+                <p className="text-sm font-medium">Filter by {column.label}</p>
+                <Input placeholder="Search..." className="h-8 mt-2" />
+              </div>
+              <DropdownMenuSeparator />
+              {uniqueValues[column.field]?.map((value, i) => (
+                <DropdownMenuCheckboxItem
+                  key={i}
+                  checked={columnFilters[column.field]?.includes(value)}
+                  onSelect={e => {
+                    e.preventDefault();
+                    handleFilterChange(column.field, value);
+                  }}
+                >
+                  {value !== null && value !== undefined ? typeof value === 'number' ? value.toString() : value : '(Empty)'}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     );
   };
 
-  // Get counts of different data categories
-  const getCounts = () => {
-    if (!data) return { total: 0, modified: 0, flagged: 0 };
+  // Render flags column header
+  const renderFlagsColumnHeader = () => {
+    const uniqueFlags = new Set<string>();
     
-    const total = data.length;
-    const modified = data.filter(item => item.priceModified).length;
-    const flagged = data.filter(item => (item.flags && item.flags.length > 0) || item.flag1 || item.flag2).length;
+    if (data && data.length > 0) {
+      data.forEach(item => {
+        if (item.flag1) uniqueFlags.add('HIGH_PRICE');
+        if (item.flag2) uniqueFlags.add('LOW_MARGIN');
+        if (item.shortage) uniqueFlags.add('SHORT');
+        
+        if (item.flags && Array.isArray(item.flags)) {
+          item.flags.forEach(flag => uniqueFlags.add(flag));
+        }
+      });
+    }
     
-    return { total, modified, flagged };
+    return (
+      <div className="flex items-center justify-between">
+        <span>Flags</span>
+        {uniqueFlags.size > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-6 w-6 p-0 ml-2 ${columnFilters['flags']?.length ? 'bg-primary/20' : ''}`}
+              >
+                <Filter className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56 bg-gray-900 border-gray-700">
+              {Array.from(uniqueFlags).map((flag, i) => (
+                <DropdownMenuCheckboxItem
+                  key={i}
+                  checked={columnFilters['flags']?.includes(flag)}
+                  onSelect={e => {
+                    e.preventDefault();
+                    handleFilterChange('flags', flag);
+                  }}
+                >
+                  {flag}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    );
   };
 
-  const counts = getCounts();
+  // Get the summary counts for flag types
+  const getExceptionCounts = () => {
+    return {
+      highPrice: highPriceItems.length,
+      lowMargin: lowMarginItems.length,
+      other: Object.values(flaggedItemsByType).flat().length,
+      total: data.length
+    };
+  };
+  
+  const exceptionCounts = getExceptionCounts();
 
-  // Render the unified filter bar
-  const renderUnifiedFilterBar = () => {
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold">Exceptions ({data?.length || 0})</h2>
-            <Badge variant={bulkEditMode ? "default" : "outline"} className="ml-2">
-              {counts.modified} Modified
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">
+            Exceptions ({exceptionCounts.total})
+          </h2>
+          <div className="flex items-center gap-2 text-muted-foreground mt-1">
+            <Badge variant="outline" className="bg-red-900/20 text-red-400 border-red-900">
+              HIGH PRICE: {exceptionCounts.highPrice}
             </Badge>
-            <Badge variant="outline" className="bg-amber-900/20 border-amber-900/40">
-              {counts.flagged} Flagged
+            <Badge variant="outline" className="bg-amber-900/20 text-amber-400 border-amber-900">
+              LOW MARGIN: {exceptionCounts.lowMargin}
             </Badge>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={toggleBulkEditMode}>
-              <Edit2 className="h-4 w-4 mr-2" />
-              {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit"}
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+            {exceptionCounts.other > 0 && (
+              <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900">
+                OTHER FLAGS: {exceptionCounts.other}
+              </Badge>
+            )}
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-2 items-center">
-          {/* Search Box */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by description..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* View Mode Filter */}
-          <Select
-            value={viewMode}
-            onValueChange={(value: 'all' | 'flagged' | 'modified') => setViewMode(value)}
+        
+        <div className="flex items-center gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                <span>Columns</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700 w-56">
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {columns.map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.field}
+                  checked={visibleColumns.has(column.field)}
+                  onSelect={() => toggleColumnVisibility(column.field)}
+                >
+                  {column.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem 
+                checked={visibleColumns.has('flags')}
+                onSelect={() => toggleColumnVisibility('flags')}
+              >
+                Flags
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={toggleBulkEditMode} 
+            className={bulkEditMode ? "bg-primary/20" : ""}
           >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="View" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Items ({data?.length || 0})</SelectItem>
-              <SelectItem value="flagged">Flagged ({counts.flagged})</SelectItem>
-              <SelectItem value="modified">Modified ({counts.modified})</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Rules Filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Rules
-                {selectedRules.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">
-                    {selectedRules.length}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>Filter by Rules</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div className="max-h-[300px] overflow-y-auto p-2">
-                {uniqueRules.map(rule => (
-                  <div key={rule} className="flex items-center space-x-2 mb-2">
-                    <input 
-                      type="checkbox" 
-                      id={`rule-${rule}`} 
-                      checked={selectedRules.includes(rule)} 
-                      onChange={() => toggleRuleSelection(rule)}
-                      className="h-4 w-4" 
-                    />
-                    <label htmlFor={`rule-${rule}`} className="text-sm">
-                      {rule}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              {selectedRules.length > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => setSelectedRules([])}
-                    className="justify-center text-center"
-                  >
-                    Clear Filters
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Column Settings */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <SlidersHorizontal className="h-4 w-4 mr-2" />
-                Columns
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div className="max-h-[300px] overflow-y-auto p-2">
-                {[
-                  { id: 'description', label: 'Description' },
-                  { id: 'usageRank', label: 'Usage Rank' },
-                  { id: 'avgCost', label: 'Avg Cost' },
-                  { id: 'currentREVAPrice', label: 'Current Price' },
-                  { id: 'proposedPrice', label: 'Proposed Price' },
-                  { id: 'priceChangePercentage', label: '% Change' },
-                  { id: 'marketLow', label: 'Market Low' },
-                  { id: 'trueMarketLow', label: 'TML' },
-                  { id: 'marketTrend', label: 'Trend' },
-                  { id: 'flags', label: 'Flags' },
-                  { id: 'appliedRule', label: 'Rule' },
-                  { id: 'inStock', label: 'In Stock' },
-                  { id: 'onOrder', label: 'On Order' }
-                ].map(col => (
-                  <div key={col.id} className="flex items-center space-x-2 mb-2">
-                    <input 
-                      type="checkbox" 
-                      id={`col-${col.id}`} 
-                      checked={visibleColumns.has(col.id)} 
-                      onChange={() => toggleColumn(col.id)}
-                      className="h-4 w-4" 
-                    />
-                    <label htmlFor={`col-${col.id}`} className="text-sm">
-                      {col.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Toggle Switches */}
-          <div className="flex items-center gap-4 ml-2">
-            <div className="flex items-center space-x-2">
-              <Switch 
-                id="inactive-switch" 
-                checked={hideInactiveProducts}
-                onCheckedChange={setHideInactiveProducts}
-              />
-              <label htmlFor="inactive-switch" className="text-sm">
-                Hide Inactive
-              </label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch 
-                id="shortage-switch" 
-                checked={showShortageOnly} 
-                onCheckedChange={setShowShortageOnly}
-              />
-              <label htmlFor="shortage-switch" className="text-sm">
-                Shortage Only
-              </label>
-            </div>
-          </div>
+            {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit Prices"}
+          </Button>
         </div>
-
-        {/* Active Filter Pills */}
-        {(searchQuery || selectedRules.length > 0 || hideInactiveProducts || showShortageOnly) && (
-          <div className="flex flex-wrap items-center gap-2 mt-2">
-            <span className="text-sm text-muted-foreground">Active filters:</span>
-            
-            {searchQuery && (
-              <Badge variant="outline" className="flex items-center gap-1 bg-gray-800">
-                Search: {searchQuery}
-                <X 
-                  className="h-3 w-3 ml-1 cursor-pointer" 
-                  onClick={() => setSearchQuery('')} 
-                />
-              </Badge>
-            )}
-            
-            {selectedRules.map(rule => (
-              <Badge key={rule} variant="outline" className="flex items-center gap-1 bg-gray-800">
-                Rule: {rule}
-                <X 
-                  className="h-3 w-3 ml-1 cursor-pointer" 
-                  onClick={() => toggleRuleSelection(rule)} 
-                />
-              </Badge>
-            ))}
-            
-            {hideInactiveProducts && (
-              <Badge variant="outline" className="flex items-center gap-1 bg-gray-800">
-                Hide Inactive
-                <X 
-                  className="h-3 w-3 ml-1 cursor-pointer" 
-                  onClick={() => setHideInactiveProducts(false)} 
-                />
-              </Badge>
-            )}
-            
-            {showShortageOnly && (
-              <Badge variant="outline" className="flex items-center gap-1 bg-gray-800">
-                Shortage Only
-                <X 
-                  className="h-3 w-3 ml-1 cursor-pointer" 
-                  onClick={() => setShowShortageOnly(false)} 
-                />
-              </Badge>
-            )}
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedRules([]);
-                setHideInactiveProducts(false);
-                setShowShortageOnly(false);
-              }}
-              className="text-xs h-7"
-            >
-              Clear All
-            </Button>
-          </div>
-        )}
-
-        {bulkEditMode && (
-          <div className="bg-blue-900/20 p-3 rounded-md border border-blue-900/30">
-            <p className="text-sm">
-              <strong>Bulk Edit Mode:</strong> You can now edit multiple prices at once. Click "Save" on each item to apply changes.
-            </p>
-          </div>
-        )}
       </div>
-    );
-  };
-
-  // Render the exception table
-  const renderExceptionTable = (items: any[], flagDescription: string = '') => {
-    if (!items) return null;
-    
-    const filteredItems = filterData(items);
-    const sortedItems = sortData(filteredItems);
-
-    return (
-      <div className="rounded-md border overflow-hidden">
-        {flagDescription && (
-          <p className="text-sm text-muted-foreground mb-4 px-4 pt-3">
-            {flagDescription}
-          </p>
-        )}
+      
+      <Tabs defaultValue="highPrice" onValueChange={(value) => setViewMode(value as any)} className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="highPrice">
+            High Price ({exceptionCounts.highPrice})
+          </TabsTrigger>
+          <TabsTrigger value="lowMargin">
+            Low Margin ({exceptionCounts.lowMargin})
+          </TabsTrigger>
+          {exceptionCounts.other > 0 && (
+            <TabsTrigger value="other">
+              Other Flags ({exceptionCounts.other})
+            </TabsTrigger>
+          )}
+        </TabsList>
+      </Tabs>
+      
+      <div className="flex flex-wrap gap-4 items-center mb-4">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search by description..." 
+            className="pl-8" 
+            value={searchQuery} 
+            onChange={e => setSearchQuery(e.target.value)} 
+          />
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="hideInactive" 
+            checked={hideInactiveProducts}
+            onCheckedChange={toggleHideInactiveProducts}
+          />
+          <label htmlFor="hideInactive" className="text-sm cursor-pointer">
+            Hide Inactive Products
+          </label>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="showShortage" 
+            checked={showShortageOnly}
+            onCheckedChange={toggleShowShortageOnly}
+          />
+          <label htmlFor="showShortage" className="text-sm cursor-pointer">
+            Shortage Only
+          </label>
+        </div>
+      </div>
+      
+      <div className="relative rounded-md border overflow-hidden bg-gray-900/40 backdrop-blur-sm">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10 px-2"></TableHead>
-                {visibleColumns.has('description') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('description')}
-                  >
-                    <div className="flex items-center">
-                      Description
-                      {renderSortIndicator('description')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('usageRank') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('usageRank')}
-                  >
-                    <div className="flex items-center">
-                      Usage Rank
-                      {renderSortIndicator('usageRank')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('avgCost') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('avgCost')}
-                  >
-                    <div className="flex items-center">
-                      <span className="font-bold">Avg Cost</span>
-                      {renderSortIndicator('avgCost')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('currentREVAPrice') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('currentREVAPrice')}
-                  >
-                    <div className="flex items-center">
-                      <span className="font-bold">Current Price</span>
-                      {renderSortIndicator('currentREVAPrice')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('proposedPrice') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('proposedPrice')}
-                  >
-                    <div className="flex items-center">
-                      <span className="font-bold">Proposed Price</span>
-                      {renderSortIndicator('proposedPrice')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('priceChangePercentage') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('priceChangePercentage')}
-                  >
-                    <div className="flex items-center">
-                      % Change
-                      {renderSortIndicator('priceChangePercentage')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('marketLow') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('marketLow')}
-                  >
-                    <div className="flex items-center">
-                      Market Low
-                      {renderSortIndicator('marketLow')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('trueMarketLow') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('trueMarketLow')}
-                  >
-                    <div className="flex items-center">
-                      TML
-                      {renderSortIndicator('trueMarketLow')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('marketTrend') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('marketTrend')}
-                  >
-                    <div className="flex items-center">
-                      Trend
-                      {renderSortIndicator('marketTrend')}
-                    </div>
-                  </TableHead>
-                )}
+            <TableHeader className="sticky top-0 z-10">
+              <TableRow className="bg-gray-900/70 hover:bg-gray-900/90">
+                {columns.map((column) => (
+                  visibleColumns.has(column.field) && (
+                    <TableHead 
+                      key={column.field} 
+                      className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900 ${column.sticky ? 'sticky left-0 z-20' : ''}`}
+                    >
+                      {renderColumnHeader(column)}
+                    </TableHead>
+                  )
+                ))}
                 {visibleColumns.has('flags') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('flags')}
-                  >
-                    <div className="flex items-center">
-                      Flags
-                      {renderSortIndicator('flags')}
-                    </div>
+                  <TableHead className="bg-gray-900/70 hover:bg-gray-900">
+                    {renderFlagsColumnHeader()}
                   </TableHead>
                 )}
-                {visibleColumns.has('appliedRule') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('appliedRule')}
-                  >
-                    <div className="flex items-center">
-                      Rule
-                      {renderSortIndicator('appliedRule')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('inStock') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('inStock')}
-                  >
-                    <div className="flex items-center">
-                      In Stock
-                      {renderSortIndicator('inStock')}
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.has('onOrder') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('onOrder')}
-                  >
-                    <div className="flex items-center">
-                      On Order
-                      {renderSortIndicator('onOrder')}
-                    </div>
-                  </TableHead>
-                )}
-                <TableHead className="w-10"></TableHead>
+                <TableHead className="bg-gray-900/70 hover:bg-gray-900">Actions</TableHead>
               </TableRow>
             </TableHeader>
+            
             <TableBody>
-              {sortedItems.length === 0 ? (
+              {sortedData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={14} className="text-center py-10">
-                    No exceptions found
+                  <TableCell colSpan={columns.length + 2} className="text-center py-10">
+                    No items found matching your search criteria
                   </TableCell>
                 </TableRow>
-              ) : (
-                sortedItems.map((item, index) => {
-                  const priceChangePercentage = calculatePriceChangePercentage(item);
-                  // Add the percentage to the item for sorting
-                  item.priceChangePercentage = priceChangePercentage;
-                  const isEditing = editingItemId === item.id;
-                  const isExpanded = expandedRowId === item.id;
-                  
-                  return (
-                    <React.Fragment key={index}>
-                      <TableRow 
-                        className={`${item.priceModified ? 'bg-blue-900/20' : ''} ${isExpanded ? 'bg-gray-800/40' : ''} cursor-pointer`}
-                        onClick={() => toggleRowExpansion(item.id)}
-                      >
-                        <TableCell className="p-2">
-                          {isExpanded ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </TableCell>
-
-                        {/* Only render columns that are visible */}
-                        {visibleColumns.has('description') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="description">
-                              {item.description}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {visibleColumns.has('usageRank') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="usageRank">
-                              {item.usageRank}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {visibleColumns.has('avgCost') && (
-                          <TableCell className="font-medium">
-                            <CellDetailsPopover item={item} field="avgCost">
-                              £{(item.avgCost || 0).toFixed(2)}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {visibleColumns.has('currentREVAPrice') && (
-                          <TableCell className="font-bold">
-                            <CellDetailsPopover item={item} field="currentREVAPrice">
-                              £{(item.currentREVAPrice || 0).toFixed(2)}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {/* Proposed price cell with inline editing */}
-                        {visibleColumns.has('proposedPrice') && (
-                          <TableCell className="font-bold">
-                            {bulkEditMode && !item.priceModified ? (
-                              <PriceEditor
-                                initialPrice={item.proposedPrice || 0}
-                                currentPrice={item.currentREVAPrice || 0}
-                                calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
-                                cost={item.avgCost || 0}
-                                onSave={(newPrice) => onPriceChange && onPriceChange(item, newPrice)}
-                                onCancel={() => {}}
-                                compact={true}
-                              />
-                            ) : isEditing ? (
-                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                <Input
-                                  type="number"
-                                  value={editingValues[item.id]}
-                                  onChange={(e) => handlePriceInputChange(item, e.target.value)}
-                                  className="w-24 h-8 py-1 px-2"
-                                  autoFocus
+              )}
+              
+              {sortedData.map((item) => {
+                const isEditing = editingItemId === item.id;
+                
+                return (
+                  <TableRow 
+                    key={item.id} 
+                    className={`${item.flag1 || item.flag2 ? 'bg-red-950/20' : ''} ${item.priceModified ? 'bg-blue-950/20' : ''}`}
+                  >
+                    {columns.map((column) => {
+                      if (!visibleColumns.has(column.field)) return null;
+                      
+                      // Special treatment for specific columns
+                      if (column.field === 'proposedPrice' && (isEditing || bulkEditMode)) {
+                        return (
+                          <TableCell key={column.field} className={column.sticky ? 'sticky left-0 z-20 bg-opacity-90 bg-black' : ''}>
+                            {isEditing ? (
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  type="number" 
+                                  value={editingValues[item.id]} 
+                                  onChange={e => handlePriceInputChange(item, e.target.value)} 
+                                  className="w-24 h-8 py-1 px-2" 
+                                  autoFocus 
                                 />
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
                                   className="h-6 w-6 p-0" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSavePriceEdit(item);
-                                  }}
+                                  onClick={() => handleSavePriceEdit(item)}
                                 >
                                   <CheckCircle className="h-4 w-4 text-green-500" />
                                 </Button>
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="h-6 w-6 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCancelEdit();
-                                  }}
+                                  className="h-6 w-6 p-0" 
+                                  onClick={handleCancelEdit}
                                 >
                                   <X className="h-4 w-4 text-red-500" />
                                 </Button>
                               </div>
+                            ) : bulkEditMode ? (
+                              <PriceEditor 
+                                initialPrice={item.proposedPrice || 0} 
+                                currentPrice={item.currentREVAPrice || 0} 
+                                calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} 
+                                cost={item.avgCost || 0} 
+                                onSave={newPrice => onPriceChange && onPriceChange(item, newPrice)} 
+                                onCancel={() => {}} 
+                                compact={true} 
+                              />
                             ) : (
-                              <CellDetailsPopover item={item} field="proposedPrice">
+                              <CellDetailsHoverCard item={item} field={column.field}>
                                 <div className="flex items-center gap-2">
-                                  £{(item.proposedPrice || 0).toFixed(2)}
-                                  {item.priceModified && (
-                                    <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
-                                  )}
+                                  <span className={column.bold ? "font-medium" : ""}>
+                                    {column.format ? column.format(item[column.field]) : item[column.field]}
+                                  </span>
+                                  {item.priceModified && <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />}
                                   {onPriceChange && !bulkEditMode && (
                                     <Button 
                                       variant="ghost" 
-                                      size="sm"
-                                      className="ml-2 h-6 w-6 p-0"
-                                      onClick={(e) => {
+                                      size="sm" 
+                                      className="ml-2 h-6 w-6 p-0" 
+                                      onClick={e => {
                                         e.stopPropagation();
                                         handleStartEdit(item);
                                       }}
@@ -880,210 +794,181 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                                     </Button>
                                   )}
                                 </div>
-                              </CellDetailsPopover>
+                              </CellDetailsHoverCard>
                             )}
                           </TableCell>
-                        )}
-                        
-                        {/* Price change percentage */}
-                        {visibleColumns.has('priceChangePercentage') && (
-                          <TableCell className={priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}>
-                            <CellDetailsPopover item={item} field="priceChangePercentage">
-                              {priceChangePercentage.toFixed(2)}%
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {visibleColumns.has('marketLow') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="marketLow">
-                              {item.marketLow ? `£${(item.marketLow || 0).toFixed(2)}` : '-'}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {/* TML cell with popover - updated to use trueMarketLow with 2 decimal places */}
-                        {visibleColumns.has('trueMarketLow') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="trueMarketLow">
-                              {item.trueMarketLow ? `£${(item.trueMarketLow || 0).toFixed(2)}` : '-'}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {/* Market Trend column */}
-                        {visibleColumns.has('marketTrend') && (
-                          <TableCell>
-                            <div className="flex items-center justify-center">
-                              {item.marketTrend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
-                              {item.marketTrend === 'down' && <TrendingDown className="h-4 w-4 text-red-500" />}
-                              {!item.marketTrend && <span>-</span>}
-                            </div>
-                          </TableCell>
-                        )}
-                        
-                        {/* Flags column */}
-                        {visibleColumns.has('flags') && (
-                          <TableCell>
-                            {getItemFlags(item)}
-                          </TableCell>
-                        )}
-                        
-                        {visibleColumns.has('appliedRule') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="appliedRule">
-                              {simplifyRuleDisplay(item.appliedRule || "")}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {visibleColumns.has('inStock') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="inStock">
-                              {item.inStock}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {visibleColumns.has('onOrder') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="onOrder">
-                              {item.onOrder}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {/* Star button */}
-                        <TableCell className="p-2" onClick={(e) => e.stopPropagation()}>
-                          {starredItems && starredItems.has(item.id) ? (
-                            <Star 
-                              className="h-4 w-4 text-yellow-500 cursor-pointer" 
-                              onClick={() => onToggleStar && onToggleStar(item.id)} 
-                            />
-                          ) : (
-                            <Star 
-                              className="h-4 w-4 text-gray-400 cursor-pointer" 
-                              onClick={() => onToggleStar && onToggleStar(item.id)} 
-                            />
-                          )}
-                        </TableCell>
-                      </TableRow>
+                        );
+                      }
                       
-                      {/* Expanded row with details */}
-                      {isExpanded && (
-                        <TableRow className="bg-gray-800/20">
-                          <TableCell colSpan={14} className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
-                                <h4 className="font-semibold mb-2">Product Details</h4>
-                                <div className="space-y-2">
-                                  <p><span className="text-muted-foreground">Description:</span> {item.description}</p>
-                                  <p><span className="text-muted-foreground">Usage Rank:</span> {item.usageRank}</p>
-                                  <p><span className="text-muted-foreground">Monthly Usage:</span> {item.revaUsage || 0}</p>
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <h4 className="font-semibold mb-2">Pricing Details</h4>
-                                <div className="space-y-2">
-                                  <p><span className="text-muted-foreground">Avg Cost:</span> £{(item.avgCost || 0).toFixed(2)}</p>
-                                  <p><span className="text-muted-foreground">Current Price:</span> £{(item.currentREVAPrice || 0).toFixed(2)}</p>
-                                  <p><span className="text-muted-foreground">Proposed Price:</span> £{(item.proposedPrice || 0).toFixed(2)}</p>
-                                  <p><span className="text-muted-foreground">Current Margin:</span> {((item.currentREVAMargin || 0) * 100).toFixed(2)}%</p>
-                                  <p><span className="text-muted-foreground">Proposed Margin:</span> {((item.proposedMargin || 0) * 100).toFixed(2)}%</p>
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <h4 className="font-semibold mb-2">Market Information</h4>
-                                <div className="space-y-2">
-                                  <p><span className="text-muted-foreground">Market Low:</span> {item.marketLow ? `£${(item.marketLow).toFixed(2)}` : 'N/A'}</p>
-                                  <p><span className="text-muted-foreground">True Market Low:</span> {item.trueMarketLow ? `£${(item.trueMarketLow).toFixed(2)}` : 'N/A'}</p>
-                                  <p><span className="text-muted-foreground">Competitor Prices:</span></p>
-                                  <div className="pl-4 space-y-1 text-sm">
-                                    {item.eth_net !== undefined && <p>ETH NET: £{item.eth_net.toFixed(2)}</p>}
-                                    {item.eth !== undefined && <p>ETH: £{item.eth.toFixed(2)}</p>}
-                                    {item.nupharm !== undefined && <p>Nupharm: £{item.nupharm.toFixed(2)}</p>}
-                                    {item.lexon !== undefined && <p>LEXON: £{item.lexon.toFixed(2)}</p>}
-                                    {item.aah !== undefined && <p>AAH: £{item.aah.toFixed(2)}</p>}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                      // For the description column which is sticky
+                      if (column.field === 'description') {
+                        return (
+                          <TableCell key={column.field} className="sticky left-0 z-10 bg-opacity-90 bg-black">
+                            <CellDetailsHoverCard item={item} field={column.field}>
+                              {item[column.field]}
+                            </CellDetailsHoverCard>
                           </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  );
-                })
-              )}
+                        );
+                      }
+                      
+                      // For the priceChangePercentage column with colored text
+                      if (column.field === 'priceChangePercentage') {
+                        return (
+                          <TableCell key={column.field}>
+                            <CellDetailsHoverCard item={item} field={column.field}>
+                              <span className={
+                                item.priceChangePercentage > 0 
+                                  ? 'text-green-400' 
+                                  : item.priceChangePercentage < 0 
+                                    ? 'text-red-400' 
+                                    : ''
+                              }>
+                                {item.priceChangePercentage.toFixed(2)}%
+                              </span>
+                            </CellDetailsHoverCard>
+                          </TableCell>
+                        );
+                      }
+                      
+                      // For the pctToMarketLow column with colored text
+                      if (column.field === 'pctToMarketLow') {
+                        return (
+                          <TableCell key={column.field}>
+                            <CellDetailsHoverCard item={item} field={column.field}>
+                              <span className={
+                                item.pctToMarketLow > 10 
+                                  ? 'text-red-400' 
+                                  : item.pctToMarketLow > 5 
+                                    ? 'text-amber-400' 
+                                    : 'text-green-400'
+                              }>
+                                {item.pctToMarketLow.toFixed(2)}%
+                              </span>
+                            </CellDetailsHoverCard>
+                          </TableCell>
+                        );
+                      }
+                      
+                      // For the avgCost column with hover card
+                      if (column.field === 'avgCost') {
+                        return (
+                          <TableCell key={column.field}>
+                            <CellDetailsHoverCard item={item} field={column.field}>
+                              {column.format ? column.format(item[column.field]) : item[column.field]}
+                            </CellDetailsHoverCard>
+                          </TableCell>
+                        );
+                      }
+                      
+                      // For the nextBuyingPrice column with trend indicator
+                      if (column.field === 'nextBuyingPrice') {
+                        return (
+                          <TableCell key={column.field}>
+                            <CellDetailsHoverCard item={item} field={column.field}>
+                              <div className="flex items-center gap-1">
+                                {column.format ? column.format(item[column.field]) : item[column.field]}
+                                {isTrendDown(item.nextBuyingPrice, item.avgCost) ? (
+                                  <TrendingDown className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <TrendingUp className="h-3 w-3 text-red-500" />
+                                )}
+                              </div>
+                            </CellDetailsHoverCard>
+                          </TableCell>
+                        );
+                      }
+                      
+                      // For the marketLow column with hover card
+                      if (column.field === 'marketLow' || column.field === 'trueMarketLow') {
+                        return (
+                          <TableCell key={column.field}>
+                            <CellDetailsHoverCard item={item} field={column.field}>
+                              {column.format ? column.format(item[column.field]) : item[column.field]}
+                            </CellDetailsHoverCard>
+                          </TableCell>
+                        );
+                      }
+                      
+                      // For the currentREVAPrice column with hover card
+                      if (column.field === 'currentREVAPrice') {
+                        return (
+                          <TableCell key={column.field}>
+                            <CellDetailsHoverCard item={item} field={column.field}>
+                              <span className={column.bold ? "font-medium" : ""}>
+                                {column.format ? column.format(item[column.field]) : item[column.field]}
+                              </span>
+                            </CellDetailsHoverCard>
+                          </TableCell>
+                        );
+                      }
+                      
+                      // For the currentREVAMargin column with hover card
+                      if (column.field === 'currentREVAMargin' || column.field === 'proposedMargin') {
+                        return (
+                          <TableCell key={column.field}>
+                            <CellDetailsHoverCard item={item} field={column.field}>
+                              {column.format ? column.format(item[column.field]) : item[column.field]}
+                            </CellDetailsHoverCard>
+                          </TableCell>
+                        );
+                      }
+                      
+                      // For the appliedRule column
+                      if (column.field === 'appliedRule') {
+                        return (
+                          <TableCell key={column.field}>
+                            {formatRuleDisplay(item[column.field])}
+                          </TableCell>
+                        );
+                      }
+                      
+                      // Default rendering for other columns
+                      return (
+                        <TableCell key={column.field}>
+                          {column.format ? column.format(item[column.field]) : item[column.field]}
+                        </TableCell>
+                      );
+                    })}
+                    
+                    {visibleColumns.has('flags') && (
+                      <TableCell>
+                        {renderFlags(item)}
+                      </TableCell>
+                    )}
+                    
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => onShowPriceDetails(item)}
+                        >
+                          Details
+                        </Button>
+                        
+                        {onToggleStar && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleStar(item.id);
+                            }}
+                          >
+                            <Star
+                              className={`h-4 w-4 ${starredItems.has(item.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
+                            />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
       </div>
-    );
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Unified Filter Bar */}
-      {renderUnifiedFilterBar()}
-
-      <Tabs defaultValue="high-price" className="w-full">
-        <TabsList className="inline-flex">
-          <TabsTrigger value="high-price" className="flex-1">High Price ({highPriceItems.length})</TabsTrigger>
-          <TabsTrigger value="low-margin" className="flex-1">Low Margin ({lowMarginItems.length})</TabsTrigger>
-          
-          {/* Add tabs for other flag types */}
-          {uniqueOtherFlags.map(flag => (
-            <TabsTrigger key={flag} value={flag} className="flex-1">
-              {flag} ({flaggedItemsByType[flag]?.length || 0})
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        
-        <TabsContent value="high-price" className="pt-4">
-          {highPriceItems.length > 0 ? (
-            renderExceptionTable(
-              highPriceItems, 
-              "These items are flagged because the proposed price is ≥ 10% above the True Market Low"
-            )
-          ) : (
-            <div className="text-center py-10 text-muted-foreground">
-              No high price exceptions found
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="low-margin" className="pt-4">
-          {lowMarginItems.length > 0 ? (
-            renderExceptionTable(
-              lowMarginItems, 
-              "These items are flagged because the proposed margin is below 5%" // Updated from 3% to 5%
-            )
-          ) : (
-            <div className="text-center py-10 text-muted-foreground">
-              No low margin exceptions found
-            </div>
-          )}
-        </TabsContent>
-        
-        {/* Add tab content for other flag types */}
-        {uniqueOtherFlags.map(flag => (
-          <TabsContent key={flag} value={flag} className="pt-4">
-            {flaggedItemsByType[flag]?.length > 0 ? (
-              renderExceptionTable(
-                flaggedItemsByType[flag], 
-                `Items flagged with: ${flag}`
-              )
-            ) : (
-              <div className="text-center py-10 text-muted-foreground">
-                No items with flag: {flag}
-              </div>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
     </div>
   );
 };
