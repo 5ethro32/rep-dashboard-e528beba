@@ -451,7 +451,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       console.log("Exiting bulk edit mode");
       toast({
         title: "Bulk edit mode disabled",
-        description: "Changes will no longer be applied immediately.",
+        description: "Your price changes have been saved.",
       });
     } else {
       console.log("Entering bulk edit mode");
@@ -462,8 +462,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     }
     
     setBulkEditMode(!bulkEditMode);
-    // Clear all edits when toggling bulk mode
-    setEditingValues({});
+    // Don't clear edits when toggling bulk mode, to preserve changes
     setEditingItemId(null);
   };
 
