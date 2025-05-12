@@ -4,9 +4,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Star, Filter } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Star, Filter, SlidersHorizontal, EyeOff } from 'lucide-react';
 import CellDetailsPopover from './CellDetailsPopover';
 import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface ExceptionsTableProps {
   data: any[];
@@ -24,18 +26,53 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   starredItems = new Set()
 }) => {
   const [filter, setFilter] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
+  const [rank, setRank] = useState('all');
+  const [flagFilter, setFlagFilter] = useState('all');
   
-  // Filter items based on the filter text
+  // Filter items based on the filter text and active tab
   const filteredData = React.useMemo(() => {
-    if (!filter) return data;
+    let result = data;
     
-    const lowercasedFilter = filter.toLowerCase();
-    return data.filter(item => 
-      (item.description && item.description.toLowerCase().includes(lowercasedFilter)) ||
-      (item.id && item.id.toLowerCase().includes(lowercasedFilter)) ||
-      (item.flag && typeof item.flag === 'string' && item.flag.toLowerCase().includes(lowercasedFilter))
-    );
-  }, [data, filter]);
+    // First filter by tab selection
+    if (activeTab === 'high-price') {
+      result = result.filter(item => item.flag1 || item.flag === 'HIGH_PRICE');
+    } else if (activeTab === 'low-margin') {
+      result = result.filter(item => item.flag2 || item.flag === 'LOW_MARGIN');
+    }
+    
+    // Apply text filter
+    if (filter) {
+      const lowercasedFilter = filter.toLowerCase();
+      result = result.filter(item => 
+        (item.description && item.description.toLowerCase().includes(lowercasedFilter)) ||
+        (item.id && item.id.toLowerCase().includes(lowercasedFilter)) ||
+        (item.flag && typeof item.flag === 'string' && item.flag.toLowerCase().includes(lowercasedFilter))
+      );
+    }
+    
+    // Apply rank filter
+    if (rank !== 'all') {
+      const rankNum = parseInt(rank);
+      result = result.filter(item => {
+        const itemRank = item.usageRank || item.rank;
+        return itemRank === rankNum;
+      });
+    }
+    
+    // Apply flag filter
+    if (flagFilter !== 'all') {
+      result = result.filter(item => item.flag === flagFilter);
+    }
+    
+    // Filter inactive products if enabled
+    if (hideInactiveProducts) {
+      result = result.filter(item => item.active !== false);
+    }
+    
+    return result;
+  }, [data, filter, activeTab, rank, flagFilter, hideInactiveProducts]);
 
   // Handle item click to show pricing details
   const handleItemClick = (item: any) => {
@@ -73,21 +110,127 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     return (item.proposedPrice - item.marketLow) / item.marketLow;
   };
   
+  // Get all unique ranks from the data for filtering
+  const getUniqueRanks = () => {
+    if (!data) return [];
+    
+    const ranks = new Set<number>();
+    data.forEach(item => {
+      const rank = item.usageRank || item.rank;
+      if (rank) ranks.add(rank);
+    });
+    
+    return Array.from(ranks).sort((a, b) => a - b);
+  };
+  
+  // Get all unique flags from the data for filtering
+  const getUniqueFlags = () => {
+    if (!data) return [];
+    
+    const flags = new Set<string>();
+    data.forEach(item => {
+      if (item.flag && typeof item.flag === 'string') {
+        flags.add(item.flag);
+      }
+    });
+    
+    return Array.from(flags).sort();
+  };
+  
+  const uniqueRanks = getUniqueRanks();
+  const uniqueFlags = getUniqueFlags();
+  
   return (
     <div className="space-y-4">
+      {/* Tab navigation for exception types */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all">All Exceptions</TabsTrigger>
+          <TabsTrigger value="high-price">High Price</TabsTrigger>
+          <TabsTrigger value="low-margin">Low Margin</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
       {/* Filter controls */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Filter items..."
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="pl-8"
-          />
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Filter items..."
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredData.length} of {data.length} items
+          </div>
         </div>
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredData.length} of {data.length} items
+        
+        {/* Advanced filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          {uniqueRanks.length > 0 && (
+            <select 
+              className="bg-gray-900/40 border border-white/10 text-sm rounded-md p-2" 
+              value={rank}
+              onChange={(e) => setRank(e.target.value)}
+            >
+              <option value="all">All Ranks</option>
+              {uniqueRanks.map(r => (
+                <option key={r} value={r}>Rank {r}</option>
+              ))}
+            </select>
+          )}
+          
+          {uniqueFlags.length > 0 && (
+            <select 
+              className="bg-gray-900/40 border border-white/10 text-sm rounded-md p-2"
+              value={flagFilter}
+              onChange={(e) => setFlagFilter(e.target.value)}
+            >
+              <option value="all">All Flags</option>
+              {uniqueFlags.map(flag => (
+                <option key={flag} value={flag}>{flag}</option>
+              ))}
+            </select>
+          )}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className={`flex items-center gap-1 ${hideInactiveProducts ? 'bg-muted/50' : ''}`}
+            onClick={() => setHideInactiveProducts(!hideInactiveProducts)}
+          >
+            <EyeOff className="h-3.5 w-3.5" />
+            <span>Hide Inactive</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => {
+              console.log("Bulk edit prices");
+              // Add bulk edit functionality 
+            }}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            <span>Bulk Edit Prices</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => {
+              console.log("View starred items");
+              // Add view starred functionality
+            }}
+          >
+            <Star className="h-3.5 w-3.5" />
+            <span>Starred Only</span>
+          </Button>
         </div>
       </div>
       
@@ -95,10 +238,10 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
       <div className="rounded-md border bg-gray-900/40 backdrop-blur-sm overflow-hidden">
         <div className="overflow-x-auto max-h-[calc(100vh-300px)]">
           <Table>
-            <TableHeader className="sticky top-0 z-10 bg-gray-950/90 backdrop-blur-sm">
+            <TableHeader className="sticky top-0 z-20 bg-gray-950/95 backdrop-blur-sm">
               <TableRow>
-                <TableHead className="sticky left-0 z-20 bg-gray-950/90 backdrop-blur-sm w-12"></TableHead>
-                <TableHead className="sticky left-12 z-20 bg-gray-950/90 backdrop-blur-sm min-w-[300px]">Description</TableHead>
+                <TableHead className="sticky left-0 z-30 bg-gray-950/95 backdrop-blur-sm w-12"></TableHead>
+                <TableHead className="sticky left-12 z-30 bg-gray-950/95 backdrop-blur-sm min-w-[300px]">Description</TableHead>
                 <TableHead className="text-right">Usage</TableHead>
                 <TableHead className="text-right">Avg Cost</TableHead>
                 <TableHead className="text-right">Next Price</TableHead>

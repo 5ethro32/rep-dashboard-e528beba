@@ -53,11 +53,11 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
           { label: "AAH", value: item.AAH || 'N/A' }
         ];
         break;
-      case "trueMarketLow":
-        displayLabel = "True Market Low";
+      case "nextCost":
+        displayLabel = "Next Cost";
         displayItems = [
-          { label: "True Market Low", value: item.trueMarketLow },
-          { label: "Market Low", value: item.marketLow || 'N/A' }
+          { label: "Next Cost", value: item.nextCost || item.nextBuyingPrice },
+          { label: "Current Cost", value: item.avgCost || 'N/A' }
         ];
         break;
       case "currentREVAPrice":
@@ -123,7 +123,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
           {content}
         </span>
       </HoverCardTrigger>
-      <HoverCardContent className="w-80 p-4">
+      <HoverCardContent className="w-80 p-4 bg-gray-950/95 backdrop-blur-sm border border-white/10 z-50">
         <div className="space-y-2">
           <h4 className="font-medium">{finalLabel}</h4>
           <div className="grid gap-2">
