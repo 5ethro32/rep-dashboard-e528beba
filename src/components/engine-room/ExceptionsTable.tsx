@@ -112,7 +112,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((item) => {
+              {filteredData.length > 0 ? filteredData.map((item) => {
                 const percentToMarketLow = getPercentToMarketLow(item);
                 return (
                   <TableRow 
@@ -175,8 +175,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     <TableCell>{getFlagBadge(item)}</TableCell>
                   </TableRow>
                 );
-              })}
-              {filteredData.length === 0 && (
+              }) : (
                 <TableRow>
                   <TableCell colSpan={12} className="h-24 text-center">
                     No items match the filter criteria.

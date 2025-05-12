@@ -20,7 +20,7 @@ export interface CellDetailsPopoverProps {
 const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({ 
   label, 
   value, 
-  items = [],
+  items = [], // Ensure items has a default empty array
   children,
   field,
   item,
@@ -28,7 +28,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
 }) => {
   // Generate label and details based on field if provided
   const getFieldDetails = () => {
-    if (!field || !item) return { displayLabel: label, displayItems: items };
+    if (!field || !item) return { displayLabel: label, displayItems: items || [] }; // Ensure displayItems is never undefined
     
     let displayLabel = label;
     let displayItems: CellDetailItem[] = [];
@@ -106,12 +106,12 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
   
   const { displayLabel, displayItems } = getFieldDetails();
   const finalLabel = displayLabel || label || '';
-  const finalItems = displayItems || items || [];
+  const finalItems = displayItems || []; // Ensure finalItems is never undefined
   
   // If children is provided, use that instead of value
   const content = children || value;
   
-  if (!content && !finalItems.length) {
+  if (!content && finalItems.length === 0) {
     // If we have neither content nor items to show, render without popover
     return <span>{value}</span>;
   }
@@ -127,7 +127,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         <div className="space-y-2">
           <h4 className="font-medium">{finalLabel}</h4>
           <div className="grid gap-2">
-            {finalItems.map((item, index) => (
+            {Array.isArray(finalItems) && finalItems.map((item, index) => (
               <div key={index} className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">{item.label}:</p>
                 <p className="text-sm font-medium">{item.value}</p>
