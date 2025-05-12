@@ -92,7 +92,9 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           <Check className="h-3 w-3" />
         </Button>
         {isPriceDecrease && (
-          <AlertCircle className="h-3 w-3 text-amber-500" title="Price decrease" />
+          <span title="Price decrease" aria-label="Price decrease">
+            <AlertCircle className="h-3 w-3 text-amber-500" />
+          </span>
         )}
       </div>
     );
