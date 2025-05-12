@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, X, RotateCcw, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface PriceEditorProps {
   initialPrice: number;
@@ -26,6 +27,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   const [priceValue, setPriceValue] = useState<string>(initialPrice.toFixed(2));
   const [margin, setMargin] = useState<number>(0);
   const [isValid, setIsValid] = useState<boolean>(true);
+  const { toast } = useToast();
   
   // Calculate price change percentage
   const priceChangePercent = calculatedPrice !== currentPrice ? 
@@ -49,15 +51,33 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
     setPriceValue(e.target.value);
   };
   
-  const handleReset = () => {
+  const handleReset = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
     setPriceValue(calculatedPrice.toFixed(2));
   };
   
-  const handleSave = () => {
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    
     const numericPrice = parseFloat(priceValue);
+    
     if (isValid && numericPrice > 0) {
+      console.log('PriceEditor: Saving price', numericPrice);
       onSave(numericPrice);
+    } else {
+      console.error('PriceEditor: Invalid price value', priceValue);
+      toast({
+        title: "Invalid price",
+        description: "Please enter a valid price greater than zero.",
+        variant: "destructive",
+      });
     }
+  };
+  
+  const handleCancelClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    console.log('PriceEditor: Cancel clicked');
+    onCancel();
   };
   
   const getMarginClass = () => {
@@ -82,13 +102,32 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           className={`h-7 w-24 ${isValid ? "" : "border-red-500"}`}
           autoFocus
         />
-        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleReset} title="Reset to calculated price">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-7 w-7 p-0 hover:bg-gray-300/20" 
+          onClick={handleReset} 
+          title="Reset to calculated price"
+        >
           <RotateCcw className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={onCancel} title="Cancel">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-7 w-7 p-0 hover:bg-gray-300/20" 
+          onClick={handleCancelClick} 
+          title="Cancel"
+        >
           <X className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleSave} disabled={!isValid} title="Save">
+        <Button 
+          variant={isValid ? "ghost" : "outline"} 
+          size="icon" 
+          className={`h-7 w-7 p-0 ${isValid ? "hover:bg-green-500/20" : "opacity-50 cursor-not-allowed"}`} 
+          onClick={handleSave} 
+          disabled={!isValid} 
+          title="Save"
+        >
           <Check className="h-3 w-3" />
         </Button>
         {isPriceDecrease && (
@@ -112,7 +151,12 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           className={isValid ? "" : "border-red-500"}
           autoFocus
         />
-        <Button variant="ghost" size="icon" onClick={handleReset} title="Reset to calculated price">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleReset} 
+          title="Reset to calculated price"
+        >
           <RotateCcw className="h-4 w-4" />
         </Button>
       </div>
@@ -127,16 +171,25 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       <div className="flex justify-between items-center text-xs text-muted-foreground">
         <span>Calculated: £{calculatedPrice.toFixed(2)}</span>
         <span className={getPriceChangeClass()}>
-          Change: {priceChangePercent.toFixed(2)}%
+          Change: {priceChangePercentage.toFixed(2)}%
         </span>
       </div>
       
       <div className="flex justify-end space-x-2 mt-2">
-        <Button variant="outline" size="sm" onClick={onCancel}>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleCancelClick}
+        >
           <X className="h-3 w-3 mr-1" />
           Cancel
         </Button>
-        <Button variant="default" size="sm" onClick={handleSave} disabled={!isValid}>
+        <Button 
+          variant="default" 
+          size="sm" 
+          onClick={handleSave} 
+          disabled={!isValid}
+        >
           <Check className="h-3 w-3 mr-1" />
           Save
         </Button>
