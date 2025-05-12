@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -45,7 +44,7 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from '@/components/ui/pagination';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface EngineDataTableProps {
   data: any[];
@@ -66,6 +65,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   flagFilter = 'all',
   onFlagFilterChange = () => {}
 }) => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('description');
   const [sortDirection, setSortDirection] = useState('asc');
@@ -110,7 +110,10 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   
   // Get unique usage ranks for filter
   const usageRanks = useMemo(() => {
-    const ranks = Array.from(new Set(data.map(item => item.usageRank))).filter(Boolean).sort((a, b) => a - b);
+    const ranks = Array.from(new Set(data
+      .map(item => item.usageRank)
+      .filter(rank => rank !== null && rank !== undefined && rank !== '')))
+      .sort((a, b) => a - b);
     return ranks;
   }, [data]);
   
@@ -572,9 +575,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             <SelectValue placeholder="Usage Rank" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Ranks</SelectItem>
+            <SelectItem value="all-ranks">All Ranks</SelectItem>
             {usageRanks.map(rank => (
-              <SelectItem key={rank.toString()} value={rank.toString()}>Rank {rank}</SelectItem>
+              <SelectItem key={rank.toString()} value={rank.toString()}>{`Rank ${rank}`}</SelectItem>
             ))}
           </SelectContent>
         </Select>

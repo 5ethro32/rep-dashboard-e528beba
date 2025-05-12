@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
@@ -387,7 +386,7 @@ const EngineOperationsContent = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Pricing rule explainer dialog - used by both tables now */}
+      {/* Pricing rule explainer dialog */}
       {showPricingExplainer && selectedItem && (
         <PricingRuleExplainer
           item={selectedItem}
