@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Star, Filter } from 'lucide-react';
 import CellDetailsPopover from './CellDetailsPopover';
-import { formatCurrency, formatPercentage } from '@/utils/engine-excel-utils';
+import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
 
 interface ExceptionsTableProps {
   data: any[];
@@ -60,7 +60,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     if (item.flag1) {
       return <Badge variant="destructive">High Price</Badge>;
     } else if (item.flag2) {
-      return <Badge variant="warning">Low Margin</Badge>;
+      return <Badge variant="secondary">Low Margin</Badge>;
     } else if (item.flag) {
       return <Badge>{item.flag}</Badge>;
     }
@@ -143,9 +143,9 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     <TableCell className="text-right">{item.revaUsage || '—'}</TableCell>
                     <TableCell className="text-right">
                       <CellDetailsPopover 
-                        title="Average Cost" 
+                        label="Average Cost" 
                         value={formatCurrency(item.avgCost)}
-                        details={[
+                        items={[
                           { label: "Average Cost", value: formatCurrency(item.avgCost) },
                           { label: "Last Purchase", value: formatCurrency(item.lastPurchase) }
                         ]}
@@ -153,9 +153,9 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <CellDetailsPopover 
-                        title="Next Price" 
+                        label="Next Price" 
                         value={formatCurrency(item.nextCost || item.nextBuyingPrice)}
-                        details={[
+                        items={[
                           { label: "Next Cost", value: formatCurrency(item.nextCost || item.nextBuyingPrice) },
                           { label: "Trend", value: item.trend === 'TrendDown' ? 'Decreasing' : 'Stable/Increasing' }
                         ]}
@@ -163,9 +163,9 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     </TableCell>
                     <TableCell className="text-right">
                       <CellDetailsPopover 
-                        title="Market Low" 
+                        label="Market Low" 
                         value={formatCurrency(item.marketLow)}
-                        details={[
+                        items={[
                           { label: "Market Low", value: formatCurrency(item.marketLow) },
                           { label: "True Market Low", value: formatCurrency(item.trueMarketLow) },
                           { label: "ETH NET", value: formatCurrency(item["ETH NET"]) },
