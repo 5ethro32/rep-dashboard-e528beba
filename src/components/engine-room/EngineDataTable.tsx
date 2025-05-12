@@ -384,12 +384,12 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return `£${(item.nextCost || 0).toFixed(2)}`;
   };
 
-  // Format percentage - with null/undefined check
+  // Format percentage - FIXED to not multiply by 100 when displaying since the value already includes the multiplier
   const formatPercentage = (value: number | null | undefined) => {
     if (value === null || value === undefined) {
       return '0.00%';
     }
-    return `${(value * 100).toFixed(2)}%`;
+    return `${value.toFixed(2)}%`;
   };
 
   // Render sort indicator
@@ -818,10 +818,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Current Margin cell with popover */}
+                    {/* Current Margin cell with popover - FIXED to display correct percentage */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAMargin">
-                        {formatPercentage(item.currentREVAMargin)}
+                        {item.currentREVAMargin !== undefined && item.currentREVAMargin !== null ? 
+                          `${(item.currentREVAMargin * 100).toFixed(2)}%` : '0.00%'}
                       </CellDetailsPopover>
                     </TableCell>
                     
