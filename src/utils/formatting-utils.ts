@@ -112,9 +112,10 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
       return;
     }
     
-    // Calculate current revenue and profit - USING CORRECT FORMULA: price - cost
+    // CRITICAL FIX: Ensure we're using price - cost (not cost - price)
+    // Calculate current revenue and profit with CORRECT formula
     const currentRevenue = usage * currentPrice;
-    const currentProfit = usage * (currentPrice - avgCost); // FIX: Ensure price - cost (not cost - price)
+    const currentProfit = usage * (currentPrice - avgCost); // IMPORTANT: price - cost is correct
     
     // Current margin as percentage - always ensure it's based on price division
     const currentMargin = currentPrice > 0 ? ((currentPrice - avgCost) / currentPrice) * 100 : 0;
@@ -147,7 +148,7 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
     
     if (isValidProposedPrice) {
       const proposedRevenue = usage * proposedPrice;
-      const proposedProfit = usage * (proposedPrice - avgCost); // FIX: Ensure price - cost
+      const proposedProfit = usage * (proposedPrice - avgCost); // IMPORTANT: price - cost is correct
       
       result.proposedRevenue += proposedRevenue;
       result.proposedProfit += proposedProfit;
@@ -177,7 +178,7 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
   
   // Calculate usage-weighted margin percentages for current pricing
   if (result.totalRevenue > 0) {
-    // FIX: This is the key formula that needs to be correct
+    // CRITICAL: This is the correct formula for margin percentage
     result.weightedMargin = (result.totalProfit / result.totalRevenue) * 100;
   }
   
@@ -187,7 +188,7 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
     result.marginImprovement = result.proposedWeightedMargin - result.weightedMargin;
   }
   
-  // For debugging
+  // For debugging - print out the actual profit and revenue to verify sign issues
   console.log('Usage-weighted metrics calculation results:', {
     validItemCount: result.validItemCount,
     totalUsage: result.totalUsage,

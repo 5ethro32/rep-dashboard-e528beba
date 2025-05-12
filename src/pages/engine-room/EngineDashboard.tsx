@@ -155,8 +155,8 @@ const EngineDashboardContent = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <MetricCard 
               title="Usage-Weighted Margin" 
-              // FIX: Ensure we're displaying the correct value
-              value={`${Math.abs(usageMetrics.weightedMargin).toFixed(2)}%`} 
+              // IMPORTANT: Display the correct positive value without using Math.abs
+              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
               icon={<Percent className="h-5 w-5" />}
               iconPosition="right"
               change={usageMetrics.marginImprovement !== 0 ? {
