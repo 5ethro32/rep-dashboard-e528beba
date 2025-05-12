@@ -172,17 +172,9 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [queryClient, toast]);
 
-  // Handle price change - updated to ensure modified items are properly tracked
+  // Handle price change - updated to use consistent flag handling for noMarketPrice
   const handlePriceChange = useCallback((item: any, newPrice: number) => {
     if (!engineData) return;
-    
-    console.log(`Changing price for item ${item.id} to £${newPrice}`);
-    
-    // Skip if the price hasn't actually changed
-    if (item.proposedPrice === newPrice) {
-      console.log(`Price for ${item.id} is unchanged, skipping update`);
-      return;
-    }
     
     // Deep clone the data to avoid modifying the cache directly
     const updatedData = JSON.parse(JSON.stringify(engineData));
@@ -206,10 +198,10 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const decreasePercent = ((foundItem.currentREVAPrice - newPrice) / foundItem.currentREVAPrice) * 100;
         if (decreasePercent > 5) {
           if (!foundItem.flags) foundItem.flags = [];
-          const existingDecreaseFlags = foundItem.flags.filter((f: string) => f.startsWith('PRICE_DECREASE_'));
+          const existingDecreaseFlags = foundItem.flags.filter(f => f.startsWith('PRICE_DECREASE_'));
           if (existingDecreaseFlags.length > 0) {
             // Remove existing price decrease flags
-            foundItem.flags = foundItem.flags.filter((f: string) => !f.startsWith('PRICE_DECREASE_'));
+            foundItem.flags = foundItem.flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
           }
           foundItem.flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
         }
@@ -228,7 +220,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         } else {
           // Remove HIGH_PRICE flag if it exists
           if (foundItem.flags) {
-            foundItem.flags = foundItem.flags.filter((f: string) => f !== 'HIGH_PRICE');
+            foundItem.flags = foundItem.flags.filter(f => f !== 'HIGH_PRICE');
           }
         }
       }
@@ -258,10 +250,10 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           if (!updatedData.flaggedItems[flaggedItemIndex].flags) {
             updatedData.flaggedItems[flaggedItemIndex].flags = [];
           }
-          const existingDecreaseFlags = updatedData.flaggedItems[flaggedItemIndex].flags.filter((f: string) => f.startsWith('PRICE_DECREASE_'));
+          const existingDecreaseFlags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => f.startsWith('PRICE_DECREASE_'));
           if (existingDecreaseFlags.length > 0) {
             // Remove existing price decrease flags
-            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter((f: string) => !f.startsWith('PRICE_DECREASE_'));
+            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
           }
           updatedData.flaggedItems[flaggedItemIndex].flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
         }
@@ -282,7 +274,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         } else {
           // Remove HIGH_PRICE flag if it exists
           if (updatedData.flaggedItems[flaggedItemIndex].flags) {
-            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter((f: string) => f !== 'HIGH_PRICE');
+            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => f !== 'HIGH_PRICE');
           }
         }
       }
@@ -292,21 +284,18 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
     queryClient.setQueryData(['engineRoomData'], updatedData);
     
-    // Track modified items - ensuring we properly add to the Set
+    // Track modified items
     setModifiedItems(prev => {
       const newSet = new Set(prev);
       newSet.add(item.id);
       return newSet;
     });
     
-    console.log(`Modified item ${item.id}, total modified items: ${modifiedItems.size + 1}`);
-    
     toast({
       title: "Price updated",
       description: `Updated price for ${item.description} to £${newPrice.toFixed(2)}`,
-      duration: 2000, // Shorter duration for less intrusive notifications
     });
-  }, [engineData, queryClient, toast, modifiedItems]);
+  }, [engineData, queryClient, toast]);
 
   // Handle reset changes
   const handleResetChanges = useCallback(() => {
@@ -352,18 +341,9 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   }, [engineData, queryClient, toast]);
 
-  // Handle save changes - UPDATED to properly persist changes and update workflow status
+  // Handle save changes - FIXED to properly persist changes
   const handleSaveChanges = useCallback(() => {
-    if (!engineData) {
-      toast({
-        title: "No data to save",
-        description: "There is no pricing data loaded to save."
-      });
-      return;
-    }
-    
-    const modifiedCount = modifiedItems.size;
-    if (modifiedCount === 0) {
+    if (!engineData || modifiedItems.size === 0) {
       toast({
         title: "No changes to save",
         description: "There are no modified items to save."
@@ -371,21 +351,12 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return;
     }
     
-    console.log(`Saving changes for ${modifiedCount} items`);
-    
     // Deep clone the data to avoid modifying the cache directly
     const updatedData = JSON.parse(JSON.stringify(engineData));
     
-    // Convert Set to Array for easier debugging
-    const modifiedIdsArray = Array.from(modifiedItems);
-    console.log('Modified item IDs:', modifiedIdsArray);
-    
     // Update all modified items' workflow status to 'draft'
-    let actuallyModifiedCount = 0;
-    
     updatedData.items = updatedData.items.map((item: any) => {
       if (modifiedItems.has(item.id)) {
-        actuallyModifiedCount++;
         return {
           ...item,
           workflowStatus: 'draft',
@@ -395,14 +366,23 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return item;
     });
     
-    console.log(`Found and updated ${actuallyModifiedCount} items out of ${modifiedCount} expected`);
-    
     // Also update flagged items
     if (updatedData.flaggedItems) {
-      updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
+      updatedData.flaggedItems = updatedData.flaggedItems.map((item: any) => {
+        if (modifiedItems.has(item.id)) {
+          return {
+            ...item,
+            workflowStatus: 'draft',
+            lastSaved: new Date().toISOString()
+          };
+        }
+        return item;
+      });
     }
     
     // Recalculate pricing impact metrics for the updated data
+    // This is assuming we have a function to do this - in reality it would use the actual data
+    // This is a simplified placeholder
     let totalCurrentProfit = 0;
     let totalProposedProfit = 0;
     let totalRevenue = 0;
@@ -436,11 +416,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     updatedData.marginLift = proposedMargin - currentMargin;
     updatedData.profitDelta = totalProposedProfit - totalCurrentProfit;
     
-    // IMPORTANT: Set the overall workflow status
-    if (modifiedCount > 0) {
-      setWorkflowStatus('draft');
-    }
-    
     // Update the local storage and query cache
     localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
     queryClient.setQueryData(['engineRoomData'], updatedData);
@@ -448,10 +423,8 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Toast notification
     toast({
       title: "Changes saved",
-      description: `Saved changes to ${modifiedCount} items`
+      description: `Saved changes to ${modifiedItems.size} items`
     });
-    
-    console.log(`Changes saved. New workflow status: draft`);
     
   }, [engineData, modifiedItems, queryClient, toast]);
 

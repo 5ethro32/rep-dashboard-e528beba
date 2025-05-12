@@ -116,7 +116,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const [ruleFilter, setRuleFilter] = useState<string>('all');
-  const [directEditCellIds, setDirectEditCellIds] = useState<Set<string>>(new Set());
   const itemsPerPage = 50; // Increased for larger tables
 
   // Use external flag filter if provided
@@ -405,50 +404,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     setEditingValues({
       ...editingValues,
       [item.id]: item.proposedPrice || 0
-    });
-  };
-
-  // Handle direct cell click for inline editing
-  const handleCellClick = (item: any) => {
-    if (!onPriceChange) return; // Don't allow editing if onPriceChange is not provided
-    
-    // Generate a unique ID for this cell
-    const cellEditId = `cell-${item.id}`;
-    setDirectEditCellIds(prev => {
-      const newSet = new Set(prev);
-      newSet.add(cellEditId);
-      return newSet;
-    });
-    
-    // Set initial value
-    setEditingValues({
-      ...editingValues,
-      [item.id]: item.proposedPrice || 0
-    });
-  };
-
-  // Handle direct price edit save
-  const handleDirectPriceEditSave = (item: any, newPrice: number) => {
-    if (onPriceChange) {
-      onPriceChange(item, newPrice);
-    }
-    
-    // Clear this cell from direct edit mode
-    const cellEditId = `cell-${item.id}`;
-    setDirectEditCellIds(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(cellEditId);
-      return newSet;
-    });
-  };
-
-  // Handle cancel of direct cell edit
-  const handleDirectEditCancel = (item: any) => {
-    const cellEditId = `cell-${item.id}`;
-    setDirectEditCellIds(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(cellEditId);
-      return newSet;
     });
   };
 
@@ -797,263 +752,300 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
-                {/* Star column */}
-                <TableHead className="w-10">
-                  <span className="sr-only">Star</span>
-                </TableHead>
-                
-                {/* Main data columns */}
-                {columns.map((column) => (
-                  <TableHead key={column.field} className={column.bold ? "font-medium" : ""}>
+                {columns.map(column => (
+                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
                     {renderColumnHeader(column)}
                   </TableHead>
                 ))}
-                
-                {/* Flags column */}
-                <TableHead>
+                <TableHead className="bg-gray-900/70">
                   {renderFlagsColumnHeader()}
                 </TableHead>
-                
-                {/* Actions column */}
-                <TableHead className="w-14">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                <TableHead className="bg-gray-900/70">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            
             <TableBody>
-              {paginatedData.length === 0 ? (
+              {paginatedData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={columns.length + 3} className="text-center py-8">
-                    No data to display
+                  <TableCell colSpan={columns.length + 2} className="text-center py-10">
+                    No items found matching your search criteria
                   </TableCell>
                 </TableRow>
-              ) : (
-                paginatedData.map((item) => {
-                  const isEditing = editingItemId === item.id;
-                  const isDirectEditing = directEditCellIds.has(`cell-${item.id}`);
-                  const priceChangePercent = calculatePriceChangePercentage(item);
-                  
-                  // Check if this item is modified
-                  const isModified = item.priceModified === true;
-                  
-                  return (
-                    <TableRow key={item.id}>
-                      {/* Star column */}
-                      <TableCell className="w-10 pr-0 text-center">
-                        {onToggleStar && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => onToggleStar(item.id)}
-                          >
-                            <Star
-                              className={`h-4 w-4 ${starredItems.has(item.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
-                            />
-                            <span className="sr-only">Star item</span>
-                          </Button>
-                        )}
-                      </TableCell>
-                      
-                      {/* Description */}
-                      <TableCell className="max-w-[200px] truncate">
-                        <span
-                          className="cursor-pointer hover:underline"
-                          onClick={() => onShowPriceDetails(item)}
-                        >
-                          {item.description}
-                        </span>
-                      </TableCell>
-                      
-                      {/* In Stock */}
-                      <TableCell>
-                        {item.inStock || 0}
-                      </TableCell>
-                      
-                      {/* Usage */}
-                      <TableCell>
-                        {item.revaUsage || 0}
-                      </TableCell>
-                      
-                      {/* Rank */}
-                      <TableCell>
-                        {item.usageRank || '-'}
-                      </TableCell>
-                      
-                      {/* Avg Cost */}
-                      <TableCell>
+              )}
+              {paginatedData.map((item, index) => {
+                // Calculate price change percentage for each item
+                const priceChangePercentage = calculatePriceChangePercentage(item);
+                const isEditing = editingItemId === item.id;
+                
+                return (
+                  <TableRow 
+                    key={index} 
+                    className={`${item.noMarketPrice ? 'bg-blue-900/10' : ''} ${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
+                  >
+                    <TableCell>{item.description}</TableCell>
+                    <TableCell>{item.inStock}</TableCell>
+                    <TableCell>{item.revaUsage}</TableCell>
+                    <TableCell>{item.usageRank}</TableCell>
+                    
+                    {/* Avg Cost cell with popover */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="avgCost">
                         {formatCurrency(item.avgCost)}
-                      </TableCell>
-                      
-                      {/* Next BP */}
-                      <TableCell>
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Next Buying Price cell with popover - Updated to handle missing values */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="nextCost">
                         {formatNextBuyingPrice(item)}
-                      </TableCell>
-                      
-                      {/* Market Low */}
-                      <TableCell>
-                        {formatCurrency(item.marketLow, item.noMarketPrice)}
-                      </TableCell>
-                      
-                      {/* TML */}
-                      <TableCell>
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Market Low cell with popover - Updated to handle no market price */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="marketLow">
+                        <div className="flex items-center gap-1">
+                          {formatCurrency(item.marketLow, item.noMarketPrice)}
+                          {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
+                          {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
+                        </div>
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* TML cell with popover - explicitly use trueMarketLow field type for consistency */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="trueMarketLow">
                         {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
-                      </TableCell>
-                      
-                      {/* Current Price */}
-                      <TableCell className="font-medium">
-                        {formatCurrency(item.currentREVAPrice)}
-                      </TableCell>
-                      
-                      {/* Current Margin */}
-                      <TableCell>
-                        {formatPercentage(item.currentREVAMargin * 100)}
-                      </TableCell>
-                      
-                      {/* Proposed Price - Editable */}
-                      <TableCell className="relative">
-                        {isDirectEditing ? (
-                          <PriceEditor
-                            initialPrice={item.proposedPrice || 0}
-                            currentPrice={item.currentREVAPrice || 0}
-                            calculatedPrice={item.calculatedPrice || item.currentREVAPrice || 0}
-                            cost={item.avgCost || 0}
-                            onSave={(newPrice) => handleDirectPriceEditSave(item, newPrice)}
-                            onCancel={() => handleDirectEditCancel(item)}
-                            inline={true}
-                            compact={true}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Current Price cell with popover */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="currentREVAPrice">
+                        <span className="font-medium">{formatCurrency(item.currentREVAPrice)}</span>
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Current Margin cell with popover - FIXED to display correct percentage */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="currentREVAMargin">
+                        {item.currentREVAMargin !== undefined && item.currentREVAMargin !== null ? 
+                          `${(item.currentREVAMargin * 100).toFixed(2)}%` : '0.00%'}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Proposed price cell with inline editing */}
+                    <TableCell>
+                      {bulkEditMode && onPriceChange ? (
+                        <PriceEditor 
+                          initialPrice={item.proposedPrice || 0} 
+                          currentPrice={item.currentREVAPrice || 0} 
+                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} 
+                          cost={item.avgCost || 0} 
+                          onSave={(newPrice) => onPriceChange(item, newPrice)} 
+                          onCancel={() => {}} 
+                          compact={true} 
+                        />
+                      ) : isEditing ? (
+                        <div className="flex items-center gap-2">
+                          <Input 
+                            type="number" 
+                            value={editingValues[item.id]} 
+                            onChange={e => handlePriceInputChange(item, e.target.value)} 
+                            className="w-24 h-8 py-1 px-2" 
+                            autoFocus 
                           />
-                        ) : (
-                          <div 
-                            className={`cursor-pointer ${onPriceChange ? 'hover:bg-secondary/30 p-1 rounded -m-1' : ''}`} 
-                            onClick={() => onPriceChange && handleCellClick(item)}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0" 
+                            onClick={() => handleSaveDirectPriceEdit(item)}
                           >
-                            <span className="font-medium">
-                              {formatCurrency(item.proposedPrice || 0)}
-                            </span>
-                            
-                            {/* Modified indicator dot */}
-                            {isModified && (
-                              <div 
-                                className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" 
-                                title="Price modified"
-                              />
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0" 
+                            onClick={handleCancelEdit}
+                          >
+                            <X className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <CellDetailsPopover item={item} field="proposedPrice">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
+                            {item.priceModified && <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />}
+                            {onPriceChange && !bulkEditMode && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="ml-2 h-6 w-6 p-0" 
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setEditingItemId(item.id);
+                                  setEditingValues({
+                                    ...editingValues,
+                                    [item.id]: item.proposedPrice || 0
+                                  });
+                                }}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
-                        )}
-                      </TableCell>
-                      
-                      {/* % Change */}
-                      <TableCell>
-                        <span className={priceChangePercent > 0 ? "text-green-400" : priceChangePercent < 0 ? "text-red-400" : ""}>
-                          {priceChangePercent.toFixed(2)}%
+                        </CellDetailsPopover>
+                      )}
+                    </TableCell>
+                    
+                    {/* Price change percentage cell */}
+                    <TableCell>
+                      {priceChangePercentage !== 0 && (
+                        <span className={priceChangePercentage > 0 ? "text-green-400" : "text-red-400"}>
+                          {priceChangePercentage > 0 ? "+" : ""}{priceChangePercentage.toFixed(2)}%
                         </span>
-                      </TableCell>
-                      
-                      {/* Proposed Margin */}
-                      <TableCell>
-                        <span className={item.proposedMargin * 100 < 5 ? "text-amber-400" : ""}>
-                          {formatPercentage(item.proposedMargin * 100)}
-                        </span>
-                      </TableCell>
-                      
-                      {/* % vs TML */}
-                      <TableCell>
+                      )}
+                    </TableCell>
+                    
+                    {/* Proposed margin cell */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="proposedMargin">
+                        {formatPercentage(item.proposedMargin)}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* NEW: TML Percentage cell */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="tmlPercentage">
                         {formatTMLPercentage(item.tmlPercentage)}
-                      </TableCell>
-                      
-                      {/* Rule */}
-                      <TableCell>
-                        {formatRuleDisplay(item.appliedRule || '')}
-                      </TableCell>
-                      
-                      {/* Flags */}
-                      <TableCell>
-                        {renderFlags(item)}
-                      </TableCell>
-                      
-                      {/* Actions */}
-                      <TableCell className="w-14">
-                        <div className="flex items-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onShowPriceDetails(item)}
-                            className="h-7 w-7 p-0"
-                            title="Show details"
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* Applied rule cell */}
+                    <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
+                    
+                    {/* Flags cell */}
+                    <TableCell>{renderFlags(item)}</TableCell>
+                    
+                    {/* Actions cell */}
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={() => onShowPriceDetails(item)} 
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                        {!isEditing && onPriceChange && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={() => {
+                              setEditingItemId(item.id);
+                              setEditingValues({
+                                ...editingValues,
+                                [item.id]: item.proposedPrice || 0
+                              });
+                            }}
                           >
-                            <Info className="h-4 w-4" />
+                            <Edit2 className="h-4 w-4" />
                           </Button>
-                          
-                          {onPriceChange && !isDirectEditing && !bulkEditMode && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleStartEdit(item)}
-                              className="h-7 w-7 p-0"
-                              title="Edit price"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
+                        )}
+                        {onToggleStar && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleStar(item.id);
+                            }}
+                            className="h-6 w-6"
+                          >
+                            <Star 
+                              className={`h-4 w-4 ${starredItems.has(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`}
+                            />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </ScrollArea>
       </div>
     );
   };
-  
-  // Render pagination controls
+
+  // Pagination controls
   const renderPagination = () => {
     if (totalPages <= 1) return null;
+    
     return (
       <div className="flex items-center justify-between mt-4">
-        <div className="text-sm text-muted-foreground">
-          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} items
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+        <div className="text-sm">
+          Page {currentPage} of {totalPages} 
+          ({sortedData.length} items)
         </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+          disabled={currentPage === totalPages || totalPages === 0}
+        >
+          Next
+        </Button>
       </div>
     );
   };
-  
+
   return (
-    <div>
-      {/* Filters */}
-      {renderUnifiedFilterBar()}
-      
-      {/* Active filters */}
-      {renderActiveFilters()}
-      
-      {/* Main table */}
-      {renderDataTable()}
-      
-      {/* Pagination */}
-      {renderPagination()}
-    </div>
+    <TooltipProvider>
+      <div className="space-y-4">
+        {renderUnifiedFilterBar()}
+        {renderActiveFilters()}
+        {renderDataTable()}
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between py-2">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} items
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                Previous
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 };
 
