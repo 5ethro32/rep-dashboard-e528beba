@@ -37,12 +37,6 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({ item, open,
     if (value === undefined || value === null) return '0%';
     return `${value.toFixed(2)}%`;
   };
-  
-  // Calculate percentage to market low
-  const calculatePercentToMarketLow = () => {
-    if (!item || !item.proposedPrice || !item.marketLow || item.marketLow === 0) return 0;
-    return ((item.proposedPrice - item.marketLow) / item.marketLow) * 100;
-  };
 
   // Get the display text for a rule
   const getRuleDescription = (ruleText: string) => {
@@ -139,7 +133,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({ item, open,
                   <div className="text-lg font-mono">{formatCurrency(item.avgCost)}</div>
                 </div>
                 <div className="bg-gray-900/30 p-3 rounded-md">
-                  <div className="text-xs text-gray-400">Next Buying Price</div>
+                  <div className="text-xs text-gray-400">Next Price</div>
                   <div className="text-lg font-mono">{formatCurrency(item.nextBuyingPrice)}</div>
                 </div>
                 <div className="bg-gray-900/30 p-3 rounded-md">
@@ -178,7 +172,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({ item, open,
                 <div className="bg-blue-900/30 p-3 rounded-md">
                   <div className="text-xs text-gray-400">% to Market Low</div>
                   <div className="text-lg font-mono">
-                    {formatPercentage(calculatePercentToMarketLow())}
+                    {formatPercentage(((item.proposedPrice || 0) - (item.marketLow || 0)) / (item.marketLow || 1) * 100)}
                   </div>
                 </div>
               </div>
