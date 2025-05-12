@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, X, RotateCcw } from 'lucide-react';
+import { Check, X, RotateCcw, AlertCircle } from 'lucide-react';
 
 interface PriceEditorProps {
   initialPrice: number;
@@ -27,6 +27,13 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   const [margin, setMargin] = useState<number>(0);
   const [isValid, setIsValid] = useState<boolean>(true);
   
+  // Calculate price change percentage
+  const priceChangePercent = calculatedPrice !== currentPrice ? 
+    ((calculatedPrice - currentPrice) / currentPrice) * 100 : 0;
+  
+  // Determine if this is a price decrease
+  const isPriceDecrease = priceChangePercent < 0;
+    
   useEffect(() => {
     const numericPrice = parseFloat(priceValue);
     if (!isNaN(numericPrice) && numericPrice > 0) {
@@ -59,6 +66,10 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
     return "text-green-400";
   };
   
+  const getPriceChangeClass = () => {
+    return isPriceDecrease ? "text-red-400" : "text-green-400";
+  };
+  
   if (compact) {
     return (
       <div className="flex space-x-1 items-center">
@@ -71,7 +82,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           className={`h-7 w-24 ${isValid ? "" : "border-red-500"}`}
           autoFocus
         />
-        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleReset} title="Reset">
+        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleReset} title="Reset to calculated price">
           <RotateCcw className="h-3 w-3" />
         </Button>
         <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={onCancel} title="Cancel">
@@ -80,6 +91,9 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
         <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleSave} disabled={!isValid} title="Save">
           <Check className="h-3 w-3" />
         </Button>
+        {isPriceDecrease && (
+          <AlertCircle className="h-3 w-3 text-amber-500" title="Price decrease" />
+        )}
       </div>
     );
   }
@@ -105,6 +119,13 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
         <span>Current: £{currentPrice.toFixed(2)}</span>
         <span className={getMarginClass()}>
           Margin: {isValid ? margin.toFixed(2) : "0.00"}%
+        </span>
+      </div>
+      
+      <div className="flex justify-between items-center text-xs text-muted-foreground">
+        <span>Calculated: £{calculatedPrice.toFixed(2)}</span>
+        <span className={getPriceChangeClass()}>
+          Change: {priceChangePercent.toFixed(2)}%
         </span>
       </div>
       

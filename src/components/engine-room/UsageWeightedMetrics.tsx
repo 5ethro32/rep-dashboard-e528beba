@@ -33,6 +33,11 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
     color: brandColors[index % brandColors.length]
   }));
   
+  // Determine if there's a significant margin improvement
+  const hasMarginImprovement = metrics.marginImprovement > 0;
+  const marginChangeClass = hasMarginImprovement ? 'text-green-400' : 'text-red-400';
+  const marginChangePrefix = hasMarginImprovement ? '+' : '';
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
       <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
@@ -50,7 +55,15 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
       
       <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
         <CardContent className="p-4">
-          <h3 className="font-medium mb-4">Profit Contribution by Margin Band</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium">Profit Contribution by Margin Band</h3>
+            <div className="flex items-center text-xs">
+              <span className="text-muted-foreground mr-1">Margin Change:</span>
+              <span className={marginChangeClass}>
+                {marginChangePrefix}{metrics.marginImprovement.toFixed(2)}%
+              </span>
+            </div>
+          </div>
           <div className="h-48 relative">
             <DonutChart 
               data={marginDistributionWithColors.map(band => ({

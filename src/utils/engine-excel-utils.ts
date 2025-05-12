@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -579,13 +578,22 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       }
     }
     
-    // Ensure we never go below current price
-    if (processedItem.currentREVAPrice !== undefined && processedItem.currentREVAPrice > 0) {
-      processedItem.proposedPrice = Math.max(processedItem.proposedPrice || 0, processedItem.currentREVAPrice);
-    }
-    
     // Store the calculated price for reference
     processedItem.calculatedPrice = processedItem.proposedPrice;
+    
+    // Add flag for price decreases instead of preventing them
+    if (processedItem.currentREVAPrice !== undefined && 
+        processedItem.currentREVAPrice > 0 && 
+        processedItem.calculatedPrice < processedItem.currentREVAPrice) {
+      // Calculate the percentage decrease
+      const decreasePercent = ((processedItem.currentREVAPrice - processedItem.calculatedPrice) / processedItem.currentREVAPrice) * 100;
+      
+      // Flag significant price decreases (> 5%)
+      if (decreasePercent > 5) {
+        if (!processedItem.flags) processedItem.flags = [];
+        processedItem.flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
+      }
+    }
     
     // Calculate proposed margin
     if (processedItem.proposedPrice > 0) {
