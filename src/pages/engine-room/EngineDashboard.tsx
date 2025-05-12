@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -10,6 +10,8 @@ import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
 import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUpdated';
+import PricingRuleToggle from '@/components/engine-room/PricingRuleToggle';
+import ImpactAnalysis from '@/components/engine-room/ImpactAnalysis';
 import { formatCurrency, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
@@ -25,6 +27,7 @@ const EngineDashboardContent = () => {
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [activeRule, setActiveRule] = useState('current');
 
   // Add a function to clear cache and force recalculation
   const handleClearCache = () => {
@@ -48,6 +51,11 @@ const EngineDashboardContent = () => {
     setTimeout(() => {
       window.location.reload();
     }, 1500);
+  };
+
+  // Handle rule toggle change
+  const handleRuleChange = (rule: string) => {
+    setActiveRule(rule);
   };
 
   // Get metrics
@@ -132,15 +140,61 @@ const EngineDashboardContent = () => {
       </div>;
   }
 
-  // Get usage-weighted metrics with the correct calculation method
-  const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
+  // Calculate metrics for different pricing rule views
+  const getUsageMetricsForCurrentView = () => {
+    if (!engineData || !engineData.items) return null;
+
+    const items = engineData.items || [];
+    const currentMetrics = calculateUsageWeightedMetrics(items);
+    
+    // For proposed metrics, we need to determine which rule to apply
+    let proposedItems;
+    switch (activeRule) {
+      case 'rule1':
+        // Use Rule 1 prices
+        proposedItems = items.map(item => ({
+          ...item,
+          proposedPrice: item.rule1Price || item.currentREVAPrice
+        }));
+        break;
+      case 'rule2':
+        // Use Rule 2 prices
+        proposedItems = items.map(item => ({
+          ...item,
+          proposedPrice: item.rule2Price || item.currentREVAPrice
+        }));
+        break;
+      case 'combined':
+        // Use proposed prices (which should be the combined rules)
+        proposedItems = items.map(item => ({
+          ...item,
+          proposedPrice: item.proposedPrice || item.currentREVAPrice
+        }));
+        break;
+      default:
+        // For 'current' view, use current prices as both current and proposed
+        proposedItems = items;
+    }
+    
+    const proposedMetrics = calculateUsageWeightedMetrics(proposedItems);
+    
+    return {
+      current: currentMetrics,
+      proposed: proposedMetrics
+    };
+  };
   
-  // Log the calculated metrics for debugging
-  console.log('EngineDashboard: Calculated usage-weighted metrics:', {
-    weightedMargin: usageMetrics.weightedMargin,
-    totalRevenue: usageMetrics.totalRevenue,
-    totalProfit: usageMetrics.totalProfit
-  });
+  const usageMetrics = getUsageMetricsForCurrentView();
+  
+  // Display the appropriate metrics based on the active rule
+  const displayMetrics = activeRule === 'current' ? 
+    usageMetrics?.current : 
+    usageMetrics?.proposed;
+  
+  if (!usageMetrics || !displayMetrics) {
+    // Handle case where metrics could not be calculated
+    return <div>Error calculating metrics. Please check your data and try again.</div>;
+  }
   
   return <div className="container mx-auto px-4 py-6">
       {/* Add more prominent reset buttons for clearing cache */}
@@ -169,10 +223,26 @@ const EngineDashboardContent = () => {
         </div>
       </div>
       
+      {/* Add pricing rule toggle */}
+      <div className="mb-4">
+        <PricingRuleToggle activeRule={activeRule} onRuleChange={handleRuleChange} />
+      </div>
+      
+      {/* Add impact analysis section (visible only when not in current view) */}
+      {activeRule !== 'current' && (
+        <ImpactAnalysis 
+          currentMetrics={usageMetrics.current} 
+          proposedMetrics={usageMetrics.proposed}
+          activeRule={activeRule}
+        />
+      )}
+      
       {/* Master container card for all metrics */}
       <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
         <CardContent className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Pricing Metrics</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            {activeRule === 'current' ? 'Current Pricing Metrics' : 'Projected Pricing Metrics'}
+          </h2>
           
           {/* Primary metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -186,9 +256,15 @@ const EngineDashboardContent = () => {
             
             <MetricCard 
               title="Overall Margin" 
-              value={`${metrics.overallMargin.toFixed(2)}%`}
+              value={`${displayMetrics.weightedMargin.toFixed(2)}%`}
               icon={<Percent className="h-5 w-5" />} 
-              iconPosition="right" 
+              iconPosition="right"
+              change={
+                activeRule !== 'current' ? {
+                  value: `${Math.abs(usageMetrics.proposed.weightedMargin - usageMetrics.current.weightedMargin).toFixed(2)}%`,
+                  type: usageMetrics.proposed.weightedMargin >= usageMetrics.current.weightedMargin ? 'increase' : 'decrease'
+                } : undefined
+              }
             />
             
             <MetricCard 
@@ -212,28 +288,42 @@ const EngineDashboardContent = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <MetricCard 
               title="Usage-Weighted Margin" 
-              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
+              value={`${displayMetrics.weightedMargin.toFixed(2)}%`} 
               icon={<Percent className="h-5 w-5" />}
               iconPosition="right"
-              change={usageMetrics.marginImprovement !== 0 ? {
-                value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
-                type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
-              } : undefined}
+              change={
+                activeRule !== 'current' ? {
+                  value: `${Math.abs(usageMetrics.proposed.weightedMargin - usageMetrics.current.weightedMargin).toFixed(2)}%`,
+                  type: usageMetrics.proposed.weightedMargin >= usageMetrics.current.weightedMargin ? 'increase' : 'decrease'
+                } : undefined
+              }
             />
             
             <MetricCard 
               title="Total Revenue (Usage-Weighted)" 
-              value={formatCurrency(usageMetrics.totalRevenue)} 
-              subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`}
+              value={formatCurrency(displayMetrics.totalRevenue)} 
+              subtitle={`${displayMetrics.totalUsage.toLocaleString()} total units`}
               icon={<DollarSign className="h-5 w-5" />}
               iconPosition="right"
+              change={
+                activeRule !== 'current' ? {
+                  value: `${Math.abs(((usageMetrics.proposed.totalRevenue - usageMetrics.current.totalRevenue) / usageMetrics.current.totalRevenue) * 100).toFixed(2)}%`,
+                  type: usageMetrics.proposed.totalRevenue >= usageMetrics.current.totalRevenue ? 'increase' : 'decrease'
+                } : undefined
+              }
             />
             
             <MetricCard 
               title="Usage-Weighted Profit" 
-              value={formatCurrency(usageMetrics.totalProfit)} 
+              value={formatCurrency(displayMetrics.totalProfit)} 
               icon={<TrendingUp className="h-5 w-5" />}
               iconPosition="right"
+              change={
+                activeRule !== 'current' ? {
+                  value: `${Math.abs(((usageMetrics.proposed.totalProfit - usageMetrics.current.totalProfit) / usageMetrics.current.totalProfit) * 100).toFixed(2)}%`,
+                  type: usageMetrics.proposed.totalProfit >= usageMetrics.current.totalProfit ? 'increase' : 'decrease'
+                } : undefined
+              }
             />
           </div>
         </CardContent>
@@ -244,13 +334,35 @@ const EngineDashboardContent = () => {
         <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
           <CardContent className="p-4">
-            <RevaMetricsChartUpdated data={engineData.chartData || []} />
+            <RevaMetricsChartUpdated 
+              data={engineData.chartData || []} 
+              showProposed={activeRule !== 'current'} 
+              activeRule={activeRule}
+            />
           </CardContent>
         </Card>
       </div>
 
       {/* Margin Distribution Charts - Now rendered separately */}
-      <UsageWeightedMetrics data={engineData.items || []} />
+      <UsageWeightedMetrics 
+        data={activeRule === 'current' ? 
+          engineData.items || [] : 
+          (engineData.items || []).map(item => ({
+            ...item,
+            currentREVAPrice: 
+              activeRule === 'rule1' ? (item.rule1Price || item.currentREVAPrice) :
+              activeRule === 'rule2' ? (item.rule2Price || item.currentREVAPrice) :
+              activeRule === 'combined' ? (item.proposedPrice || item.currentREVAPrice) :
+              item.currentREVAPrice
+          }))}
+        showingProjected={activeRule !== 'current'}
+        ruleName={
+          activeRule === 'rule1' ? 'Rule 1 (Market-based)' :
+          activeRule === 'rule2' ? 'Rule 2 (Margin-based)' :
+          activeRule === 'combined' ? 'Combined Rules' :
+          'Current'
+        }
+      />
 
       {/* Market Trend Analysis */}
       <MarketTrendAnalysis data={engineData.items || []} />
