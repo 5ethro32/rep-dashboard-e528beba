@@ -9,13 +9,22 @@ import { TrendingUp, DollarSign, Percent } from 'lucide-react';
 
 interface UsageWeightedMetricsProps {
   data: any[];
+  comparisonData?: any[];
+  showComparison?: boolean;
 }
 
 const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
-  data
+  data,
+  comparisonData,
+  showComparison = false
 }) => {
-  // Use the centralized calculation function
+  // Use the centralized calculation function for current data
   const metrics = calculateUsageWeightedMetrics(data);
+  
+  // Calculate comparison metrics if comparison is enabled and data is provided
+  const comparisonMetrics = showComparison && comparisonData 
+    ? calculateUsageWeightedMetrics(comparisonData)
+    : null;
 
   // Define chart colors to match the homepage style - red theme
   const brandColors = [
@@ -33,10 +42,40 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
     color: brandColors[index % brandColors.length]
   }));
   
+  // Calculate changes if comparison data is available
+  const weightedMarginChange = comparisonMetrics 
+    ? comparisonMetrics.weightedMargin - metrics.weightedMargin
+    : 0;
+    
+  const totalProfitChange = comparisonMetrics 
+    ? comparisonMetrics.totalProfit - metrics.totalProfit
+    : 0;
+    
+  const totalRevenueChange = comparisonMetrics 
+    ? comparisonMetrics.totalRevenue - metrics.totalRevenue
+    : 0;
+  
+  // Format percentage change for display
+  const formatChange = (change: number) => {
+    if (Math.abs(change) < 0.01) return '0%';
+    return `${change > 0 ? '+' : ''}${change.toFixed(2)}%`;
+  };
+  
+  // Format currency change for display
+  const formatCurrencyChange = (change: number) => {
+    if (Math.abs(change) < 0.01) return formatCurrency(0);
+    return `${change > 0 ? '+' : ''}${formatCurrency(change)}`;
+  };
+  
+  // Determine change type for styling
+  const getChangeType = (change: number) => {
+    if (Math.abs(change) < 0.01) return 'neutral';
+    return change > 0 ? 'increase' : 'decrease';
+  };
+  
   // Determine if there's a significant margin improvement
-  const hasMarginImprovement = metrics.marginImprovement > 0;
-  const marginChangeClass = hasMarginImprovement ? 'text-green-400' : 'text-red-400';
-  const marginChangePrefix = hasMarginImprovement ? '+' : '';
+  const marginChangeClass = weightedMarginChange > 0 ? 'text-green-400' : 'text-red-400';
+  const marginChangePrefix = weightedMarginChange > 0 ? '+' : '';
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
@@ -75,6 +114,13 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
               innerValue={formatCurrency(metrics.totalProfit)} 
               innerLabel="Total Profit" 
             />
+            {showComparison && comparisonMetrics && (
+              <div className="absolute bottom-2 right-2 bg-gray-800/90 px-2 py-1 rounded text-xs">
+                <span className={totalProfitChange > 0 ? 'text-green-400' : 'text-red-400'}>
+                  {formatCurrencyChange(totalProfitChange)}
+                </span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

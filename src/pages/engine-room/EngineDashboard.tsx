@@ -1,11 +1,14 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
@@ -25,6 +28,12 @@ const EngineDashboardContent = () => {
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Add state for toggling between current and proposed pricing
+  const [showProposed, setShowProposed] = useState(false);
+  
+  // Add state for selecting which pricing rule to apply
+  const [selectedPricingRule, setSelectedPricingRule] = useState<'rule1' | 'rule2' | 'combined'>('combined');
 
   // Add a function to clear cache and force recalculation
   const handleClearCache = () => {
@@ -81,6 +90,31 @@ const EngineDashboardContent = () => {
   };
   
   const metrics = getMetrics();
+  
+  // Filter items based on selected rule for proposed view
+  const getFilteredItems = () => {
+    if (!engineData?.items) return [];
+    
+    return engineData.items.map(item => {
+      const proposedPrice = (() => {
+        switch (selectedPricingRule) {
+          case 'rule1':
+            return item.rule1Price || item.currentRevaPrice;
+          case 'rule2':
+            return item.rule2Price || item.currentRevaPrice;
+          case 'combined':
+            return item.proposedPrice || item.currentRevaPrice;
+          default:
+            return item.currentRevaPrice;
+        }
+      })();
+      
+      return {
+        ...item,
+        currentRevaPrice: proposedPrice // Override with proposed price for metrics calculation
+      };
+    });
+  };
 
   // Handle drag and drop file upload
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -132,15 +166,30 @@ const EngineDashboardContent = () => {
       </div>;
   }
 
-  // Get usage-weighted metrics with the correct calculation method
-  const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
+  // Get current usage-weighted metrics
+  const currentMetrics = calculateUsageWeightedMetrics(engineData.items || []);
   
-  // Log the calculated metrics for debugging
-  console.log('EngineDashboard: Calculated usage-weighted metrics:', {
-    weightedMargin: usageMetrics.weightedMargin,
-    totalRevenue: usageMetrics.totalRevenue,
-    totalProfit: usageMetrics.totalProfit
-  });
+  // Get proposed usage-weighted metrics
+  const proposedItems = getFilteredItems();
+  const proposedMetrics = calculateUsageWeightedMetrics(proposedItems);
+  
+  // Calculate the changes for the metrics we want to display
+  const calculateChanges = () => {
+    const marginChange = proposedMetrics.weightedMargin - currentMetrics.weightedMargin;
+    const revenueChange = proposedMetrics.totalRevenue - currentMetrics.totalRevenue;
+    const profitChange = proposedMetrics.totalProfit - currentMetrics.totalProfit;
+    
+    return {
+      marginChange,
+      revenueChange,
+      profitChange,
+      marginChangeType: marginChange > 0 ? 'increase' : marginChange < 0 ? 'decrease' : 'neutral',
+      revenueChangeType: revenueChange > 0 ? 'increase' : revenueChange < 0 ? 'decrease' : 'neutral',
+      profitChangeType: profitChange > 0 ? 'increase' : profitChange < 0 ? 'decrease' : 'neutral',
+    };
+  };
+  
+  const changes = calculateChanges();
   
   return <div className="container mx-auto px-4 py-6">
       {/* Add more prominent reset buttons for clearing cache */}
@@ -169,6 +218,32 @@ const EngineDashboardContent = () => {
         </div>
       </div>
       
+      {/* Add toggle for current vs proposed pricing */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="pricing-toggle" 
+              checked={showProposed} 
+              onCheckedChange={setShowProposed} 
+            />
+            <Label htmlFor="pricing-toggle">
+              Show {showProposed ? "Proposed" : "Current"} Pricing
+            </Label>
+          </div>
+          
+          {showProposed && (
+            <Tabs value={selectedPricingRule} onValueChange={(v) => setSelectedPricingRule(v as any)} className="ml-4">
+              <TabsList className="h-8">
+                <TabsTrigger value="rule1" className="text-xs px-2 py-1 h-7">Rule 1</TabsTrigger>
+                <TabsTrigger value="rule2" className="text-xs px-2 py-1 h-7">Rule 2</TabsTrigger>
+                <TabsTrigger value="combined" className="text-xs px-2 py-1 h-7">Combined</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+        </div>
+      </div>
+      
       {/* Master container card for all metrics */}
       <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
         <CardContent className="p-6">
@@ -186,9 +261,13 @@ const EngineDashboardContent = () => {
             
             <MetricCard 
               title="Overall Margin" 
-              value={`${metrics.overallMargin.toFixed(2)}%`}
+              value={`${showProposed ? proposedMetrics.weightedMargin.toFixed(2) : metrics.overallMargin.toFixed(2)}%`}
               icon={<Percent className="h-5 w-5" />} 
-              iconPosition="right" 
+              iconPosition="right"
+              change={showProposed ? {
+                value: `${changes.marginChange > 0 ? '+' : ''}${changes.marginChange.toFixed(2)}%`,
+                type: changes.marginChangeType
+              } : undefined}
             />
             
             <MetricCard 
@@ -212,28 +291,36 @@ const EngineDashboardContent = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <MetricCard 
               title="Usage-Weighted Margin" 
-              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
+              value={`${showProposed ? proposedMetrics.weightedMargin.toFixed(2) : currentMetrics.weightedMargin.toFixed(2)}%`} 
               icon={<Percent className="h-5 w-5" />}
               iconPosition="right"
-              change={usageMetrics.marginImprovement !== 0 ? {
-                value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
-                type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
+              change={showProposed ? {
+                value: `${changes.marginChange > 0 ? '+' : ''}${changes.marginChange.toFixed(2)}%`,
+                type: changes.marginChangeType
               } : undefined}
             />
             
             <MetricCard 
               title="Total Revenue (Usage-Weighted)" 
-              value={formatCurrency(usageMetrics.totalRevenue)} 
-              subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`}
+              value={formatCurrency(showProposed ? proposedMetrics.totalRevenue : currentMetrics.totalRevenue)} 
+              subtitle={`${currentMetrics.totalUsage.toLocaleString()} total units`}
               icon={<DollarSign className="h-5 w-5" />}
               iconPosition="right"
+              change={showProposed ? {
+                value: formatCurrency(changes.revenueChange),
+                type: changes.revenueChangeType
+              } : undefined}
             />
             
             <MetricCard 
               title="Usage-Weighted Profit" 
-              value={formatCurrency(usageMetrics.totalProfit)} 
+              value={formatCurrency(showProposed ? proposedMetrics.totalProfit : currentMetrics.totalProfit)} 
               icon={<TrendingUp className="h-5 w-5" />}
               iconPosition="right"
+              change={showProposed ? {
+                value: formatCurrency(changes.profitChange),
+                type: changes.profitChangeType
+              } : undefined}
             />
           </div>
         </CardContent>
@@ -244,13 +331,21 @@ const EngineDashboardContent = () => {
         <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
           <CardContent className="p-4">
-            <RevaMetricsChartUpdated data={engineData.chartData || []} />
+            <RevaMetricsChartUpdated 
+              data={engineData.chartData || []} 
+              showProposedPrices={showProposed}
+              selectedPricingRule={selectedPricingRule}
+            />
           </CardContent>
         </Card>
       </div>
 
-      {/* Margin Distribution Charts - Now rendered separately */}
-      <UsageWeightedMetrics data={engineData.items || []} />
+      {/* Margin Distribution Charts */}
+      <UsageWeightedMetrics 
+        data={engineData.items || []}
+        comparisonData={showProposed ? proposedItems : undefined}
+        showComparison={showProposed}
+      />
 
       {/* Market Trend Analysis */}
       <MarketTrendAnalysis data={engineData.items || []} />
