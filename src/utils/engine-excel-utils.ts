@@ -1,5 +1,6 @@
 // This file should contain only utility functions for processing Excel data
 // and should not contain any React JSX components
+import { EngineData, RuleConfig } from '@/types/engine-room.types';
 
 // Format currency - with null/undefined check
 export const formatCurrency = (value: number | null | undefined, noMarketPrice?: boolean): string => {
@@ -47,8 +48,22 @@ export const formatNextBuyingPrice = (item: any): string => {
   return `£${(item.nextCost || 0).toFixed(2)}`;
 };
 
+// Default rule configuration
+export const defaultRuleConfig: RuleConfig = {
+  rule1: {
+    group1_2: { trend_down: 1.05, trend_flat_up: 1.08 },
+    group3_4: { trend_down: 1.07, trend_flat_up: 1.10 },
+    group5_6: { trend_down: 1.10, trend_flat_up: 1.12 }
+  },
+  rule2: {
+    group1_2: { trend_down: 1.02, trend_flat_up: 1.04 },
+    group3_4: { trend_down: 1.03, trend_flat_up: 1.05 },
+    group5_6: { trend_down: 1.05, trend_flat_up: 1.07 }
+  }
+};
+
 // Process Excel file data
-export const processEngineExcelFile = (file: File): Promise<any> => {
+export const processEngineExcelFile = (file: File): Promise<EngineData> => {
   return new Promise((resolve, reject) => {
     // This would contain the actual Excel processing logic
     // For now, we'll return a mock structure matching our expected format
@@ -56,14 +71,15 @@ export const processEngineExcelFile = (file: File): Promise<any> => {
     setTimeout(() => {
       try {
         // Mock data structure
-        const mockData = {
+        const mockData: EngineData = {
           items: [
             // Items would be populated here from Excel file
           ],
           flaggedItems: [],
           totalItems: 0,
           activeItems: 0,
-          fileName: file.name
+          fileName: file.name,
+          ruleConfig: defaultRuleConfig
           // Other metadata would be included here
         };
         

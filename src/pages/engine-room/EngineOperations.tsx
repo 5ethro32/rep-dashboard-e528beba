@@ -20,6 +20,21 @@ import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer'
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
 import MetricCard from '@/components/MetricCard';
+import { RuleConfig } from '@/types/engine-room.types';
+
+// Default rule configuration - same as in the context to ensure consistency
+const defaultRuleConfig: RuleConfig = {
+  rule1: {
+    group1_2: { trend_down: 1.05, trend_flat_up: 1.08 },
+    group3_4: { trend_down: 1.07, trend_flat_up: 1.10 },
+    group5_6: { trend_down: 1.10, trend_flat_up: 1.12 }
+  },
+  rule2: {
+    group1_2: { trend_down: 1.02, trend_flat_up: 1.04 },
+    group3_4: { trend_down: 1.03, trend_flat_up: 1.05 },
+    group5_6: { trend_down: 1.05, trend_flat_up: 1.07 }
+  }
+};
 
 const EngineOperationsContent = () => {
   const {
@@ -351,9 +366,11 @@ const EngineOperationsContent = () => {
         
         <TabsContent value="configuration" className="space-y-4">
           <ConfigurationPanel 
-            currentConfig={engineData.ruleConfig || {}} 
+            currentConfig={engineData?.ruleConfig || defaultRuleConfig} 
             onConfigChange={(newConfig) => {
               console.log("Updated rule config:", newConfig);
+              // Here you could add a function to save the updated configuration
+              // to your engineData and persist it
             }}
           />
         </TabsContent>
