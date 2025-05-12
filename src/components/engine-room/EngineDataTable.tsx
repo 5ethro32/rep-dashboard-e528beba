@@ -371,37 +371,57 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
 
   // Render the column header with sort and filter
   const renderColumnHeader = (column: any) => {
-    return <CellDetailsPopover field={column.field} item={{}} isColumnHeader={true}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center cursor-pointer" onClick={() => handleSort(column.field)}>
-            {column.label}
-            {renderSortIndicator(column.field)}
-          </div>
-          
-          {column.filterable && uniqueValues[column.field]?.length > 0 && <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`} onClick={e => e.stopPropagation()}>
-                  <Filter className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
-                <div className="p-2">
-                  <p className="text-sm font-medium">Filter by {column.label}</p>
-                  <Input placeholder="Search..." className="h-8 mt-2" onChange={e => {
-                // Filter dropdown options, not implemented fully
-              }} />
-                </div>
-                <DropdownMenuSeparator />
-                {uniqueValues[column.field]?.map((value, i) => <DropdownMenuCheckboxItem key={i} checked={columnFilters[column.field]?.includes(value)} onSelect={e => {
-              e.preventDefault();
-              handleFilterChange(column.field, value);
-            }}>
-                    {value !== null && value !== undefined ? typeof value === 'number' ? value.toString() : value : '(Empty)'}
-                  </DropdownMenuCheckboxItem>)}
-              </DropdownMenuContent>
-            </DropdownMenu>}
+    return (
+      <div className="flex items-center justify-between">
+        <div 
+          className="flex items-center cursor-pointer" 
+          onClick={() => handleSort(column.field)}
+        >
+          {column.label}
+          {renderSortIndicator(column.field)}
         </div>
-      </CellDetailsPopover>;
+        
+        {column.filterable && uniqueValues[column.field]?.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`} 
+                onClick={e => e.stopPropagation()}
+              >
+                <Filter className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
+              <div className="p-2">
+                <p className="text-sm font-medium">Filter by {column.label}</p>
+                <Input 
+                  placeholder="Search..." 
+                  className="h-8 mt-2" 
+                  onChange={e => {
+                    // Filter dropdown options, not implemented fully
+                  }} 
+                />
+              </div>
+              <DropdownMenuSeparator />
+              {uniqueValues[column.field]?.map((value, i) => (
+                <DropdownMenuCheckboxItem 
+                  key={i} 
+                  checked={columnFilters[column.field]?.includes(value)} 
+                  onSelect={e => {
+                    e.preventDefault();
+                    handleFilterChange(column.field, value);
+                  }}
+                >
+                  {value !== null && value !== undefined ? typeof value === 'number' ? value.toString() : value : '(Empty)'}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    );
   };
 
   // Special case for flags column

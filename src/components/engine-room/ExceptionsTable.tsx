@@ -60,7 +60,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     if (item.flag1) {
       return <Badge variant="destructive">High Price</Badge>;
     } else if (item.flag2) {
-      return <Badge variant="secondary">Low Margin</Badge>;
+      return <Badge variant="warning">Low Margin</Badge>;
     } else if (item.flag) {
       return <Badge>{item.flag}</Badge>;
     }
@@ -143,37 +143,27 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     <TableCell className="text-right">{item.revaUsage || '—'}</TableCell>
                     <TableCell className="text-right">
                       <CellDetailsPopover 
-                        label="Average Cost" 
-                        value={formatCurrency(item.avgCost)}
-                        items={[
-                          { label: "Average Cost", value: formatCurrency(item.avgCost) },
-                          { label: "Last Purchase", value: formatCurrency(item.lastPurchase) }
-                        ]}
-                      />
+                        field="avgCost"
+                        item={item}
+                      >
+                        {formatCurrency(item.avgCost)}
+                      </CellDetailsPopover>
                     </TableCell>
                     <TableCell className="text-right">
                       <CellDetailsPopover 
-                        label="Next Price" 
-                        value={formatCurrency(item.nextCost || item.nextBuyingPrice)}
-                        items={[
-                          { label: "Next Cost", value: formatCurrency(item.nextCost || item.nextBuyingPrice) },
-                          { label: "Trend", value: item.trend === 'TrendDown' ? 'Decreasing' : 'Stable/Increasing' }
-                        ]}
-                      />
+                        field="nextCost"
+                        item={item}
+                      >
+                        {formatCurrency(item.nextCost || item.nextBuyingPrice)}
+                      </CellDetailsPopover>
                     </TableCell>
                     <TableCell className="text-right">
                       <CellDetailsPopover 
-                        label="Market Low" 
-                        value={formatCurrency(item.marketLow)}
-                        items={[
-                          { label: "Market Low", value: formatCurrency(item.marketLow) },
-                          { label: "True Market Low", value: formatCurrency(item.trueMarketLow) },
-                          { label: "ETH NET", value: formatCurrency(item["ETH NET"]) },
-                          { label: "Nupharm", value: formatCurrency(item.Nupharm) },
-                          { label: "LEXON", value: formatCurrency(item.LEXON) },
-                          { label: "AAH", value: formatCurrency(item.AAH) }
-                        ]}
-                      />
+                        field="marketLow"
+                        item={item}
+                      >
+                        {formatCurrency(item.marketLow)}
+                      </CellDetailsPopover>
                     </TableCell>
                     <TableCell className="text-right">{formatCurrency(item.currentREVAPrice)}</TableCell>
                     <TableCell className="text-right">{formatPercentWithColor(item.currentREVAMargin)}</TableCell>
