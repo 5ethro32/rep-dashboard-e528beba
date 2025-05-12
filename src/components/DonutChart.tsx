@@ -39,16 +39,18 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel }) => {
-  // Updated brand colors for consistent styling with the rest of the app
+  // Updated brand colors to match homepage donuts - using red shades predominantly
   const brandColors = [
-    '#ef4444', // Finance Red (primary brand color)
-    '#f97316', // Orange
-    '#8b5cf6', // Purple
-    '#3b82f6', // Blue
-    '#10b981', // Green
-    '#6366f1', // Indigo
-    '#ec4899', // Pink
-    '#64748b', // Slate
+    '#ef4444', // Primary red
+    '#dc2626', // Darker red
+    '#f87171', // Lighter red/pink
+    '#fb923c', // Orange (for contrast/accent)
+    '#b91c1c', // Deep red
+    '#fca5a5', // Very light red
+    '#fdba74', // Light orange
+    '#c2410c', // Dark orange
+    '#fecdd3', // Pale pink
+    '#7f1d1d', // Very dark red
   ];
 
   return (
@@ -67,6 +69,8 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
             endAngle={450}
             animationDuration={1000}
             animationBegin={200}
+            stroke="rgba(0,0,0,0.1)"
+            strokeWidth={1}
           >
             {data.map((entry, index) => (
               <Cell 

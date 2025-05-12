@@ -51,9 +51,10 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
       }
     });
     
+    // Use colors that match the homepage donut charts
     const trendDistribution = [
-      { name: 'Trending UP', value: trendingUp, color: '#f97316' },  // Orange
-      { name: 'Trending DOWN', value: trendingDown, color: '#3b82f6' }, // Blue
+      { name: 'Trending UP', value: trendingUp, color: '#f87171' },  // Lighter red
+      { name: 'Trending DOWN', value: trendingDown, color: '#ef4444' }, // Main red
     ];
     
     return {
@@ -76,7 +77,7 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
             <p>Margin: {data.margin?.toFixed(2)}%</p>
             <p>Profit: £{data.profit?.toFixed(2)}</p>
             <div className="flex items-center mt-1">
-              <Badge variant="outline" className={data.trend === 'down' ? 'bg-blue-900/20 text-blue-400 border-blue-900' : 'bg-orange-900/20 text-orange-400 border-orange-900'}>
+              <Badge variant="outline" className={data.trend === 'down' ? 'bg-red-900/20 text-red-400 border-red-900' : 'bg-red-500/20 text-red-300 border-red-700'}>
                 {data.trend === 'down' ? 'Trending DOWN' : 'Trending UP'}
               </Badge>
             </div>
@@ -123,17 +124,17 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                   </div>
                   
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-blue-900/20 rounded-md">
+                    <div className="flex items-center justify-between p-3 bg-red-900/20 rounded-md">
                       <div className="flex items-center">
-                        <ChevronDown className="h-5 w-5 text-blue-400 mr-2" />
+                        <ChevronDown className="h-5 w-5 text-red-400 mr-2" />
                         <span className="font-medium">Trending DOWN</span>
                       </div>
                       <div className="font-bold">{trendData.trendCounts.down}</div>
                     </div>
                     
-                    <div className="flex items-center justify-between p-3 bg-orange-900/20 rounded-md">
+                    <div className="flex items-center justify-between p-3 bg-red-500/20 rounded-md">
                       <div className="flex items-center">
-                        <ChevronUp className="h-5 w-5 text-orange-400 mr-2" />
+                        <ChevronUp className="h-5 w-5 text-red-300 mr-2" />
                         <span className="font-medium">Trending UP</span>
                       </div>
                       <div className="font-bold">{trendData.trendCounts.up}</div>
@@ -180,12 +181,12 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                     <Scatter 
                       name="Trending DOWN" 
                       data={trendData.scatterData.filter(item => item.trend === 'down')} 
-                      fill="#3b82f6" 
+                      fill="#ef4444" 
                     />
                     <Scatter 
                       name="Trending UP" 
                       data={trendData.scatterData.filter(item => item.trend === 'up')} 
-                      fill="#f97316" 
+                      fill="#f87171" 
                     />
                     <Legend />
                   </ScatterChart>

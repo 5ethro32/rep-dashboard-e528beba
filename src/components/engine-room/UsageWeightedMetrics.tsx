@@ -17,14 +17,14 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   // Use the centralized calculation function
   const metrics = calculateUsageWeightedMetrics(data);
 
-  // Define chart colors to match the homepage style
+  // Define chart colors to match the homepage style - red theme
   const brandColors = [
-    '#ef4444', // Finance Red (primary brand color)
-    '#f97316', // Orange
-    '#8b5cf6', // Purple
-    '#3b82f6', // Blue
-    '#10b981', // Green
-    '#ec4899', // Pink
+    '#ef4444', // Primary red
+    '#dc2626', // Darker red
+    '#f87171', // Lighter red/pink
+    '#fb923c', // Orange (for contrast/accent)
+    '#b91c1c', // Deep red
+    '#fca5a5', // Very light red
   ];
   
   // Update chart data with new colors
