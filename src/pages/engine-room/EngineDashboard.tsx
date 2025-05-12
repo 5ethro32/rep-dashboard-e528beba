@@ -1,11 +1,13 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
@@ -25,6 +27,8 @@ const EngineDashboardContent = () => {
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [showProposed, setShowProposed] = useState(false);
+  const [selectedPricingRule, setSelectedPricingRule] = useState<'rule1' | 'rule2' | 'combined'>('combined');
 
   // Add a function to clear cache and force recalculation
   const handleClearCache = () => {
@@ -135,12 +139,29 @@ const EngineDashboardContent = () => {
   // Get usage-weighted metrics with the correct calculation method
   const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
   
-  // Log the calculated metrics for debugging
-  console.log('EngineDashboard: Calculated usage-weighted metrics:', {
-    weightedMargin: usageMetrics.weightedMargin,
-    totalRevenue: usageMetrics.totalRevenue,
-    totalProfit: usageMetrics.totalProfit
-  });
+  // Calculate current vs proposed differences
+  const revenueDifference = usageMetrics.proposedRevenue - usageMetrics.totalRevenue;
+  const profitDifference = usageMetrics.proposedProfit - usageMetrics.totalProfit;
+  const marginDifference = usageMetrics.proposedWeightedMargin - usageMetrics.weightedMargin;
+  
+  // Helper to determine increase/decrease/neutral for metrics
+  const getChangeType = (difference: number): "increase" | "decrease" | "neutral" => {
+    if (difference > 0) return "increase";
+    if (difference < 0) return "decrease";
+    return "neutral";
+  };
+  
+  // Format percentage difference with sign
+  const formatPercentageDifference = (difference: number): string => {
+    const sign = difference > 0 ? '+' : '';
+    return `${sign}${difference.toFixed(2)}%`;
+  };
+  
+  // Format currency difference with sign
+  const formatCurrencyDifference = (difference: number): string => {
+    const sign = difference > 0 ? '+' : '';
+    return `${sign}${formatCurrency(difference)}`;
+  };
   
   return <div className="container mx-auto px-4 py-6">
       {/* Add more prominent reset buttons for clearing cache */}
@@ -167,6 +188,31 @@ const EngineDashboardContent = () => {
             Force Complete Reset
           </Button>
         </div>
+      </div>
+      
+      {/* Add view toggle for current vs proposed pricing */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-medium">Current Prices</span>
+          <Switch 
+            checked={showProposed}
+            onCheckedChange={setShowProposed}
+          />
+          <span className="text-sm font-medium">Proposed Prices</span>
+        </div>
+        
+        {showProposed && (
+          <div className="flex items-center">
+            <span className="text-sm mr-2">Pricing Rule:</span>
+            <Tabs value={selectedPricingRule} onValueChange={(value) => setSelectedPricingRule(value as 'rule1' | 'rule2' | 'combined')}>
+              <TabsList className="h-8">
+                <TabsTrigger value="rule1" className="text-xs px-2">Rule 1</TabsTrigger>
+                <TabsTrigger value="rule2" className="text-xs px-2">Rule 2</TabsTrigger>
+                <TabsTrigger value="combined" className="text-xs px-2">Combined</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
       </div>
       
       {/* Master container card for all metrics */}
@@ -208,49 +254,63 @@ const EngineDashboardContent = () => {
             />
           </div>
           
-          {/* Margin Analysis Metrics - Now integrated into the main dashboard card */}
+          {/* Margin Analysis Metrics with comparison indicators */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <MetricCard 
               title="Usage-Weighted Margin" 
-              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
+              value={showProposed ? `${usageMetrics.proposedWeightedMargin.toFixed(2)}%` : `${usageMetrics.weightedMargin.toFixed(2)}%`} 
               icon={<Percent className="h-5 w-5" />}
               iconPosition="right"
-              change={usageMetrics.marginImprovement !== 0 ? {
-                value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
-                type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
+              change={showProposed ? {
+                value: formatPercentageDifference(marginDifference),
+                type: getChangeType(marginDifference)
               } : undefined}
             />
             
             <MetricCard 
               title="Total Revenue (Usage-Weighted)" 
-              value={formatCurrency(usageMetrics.totalRevenue)} 
+              value={showProposed ? formatCurrency(usageMetrics.proposedRevenue) : formatCurrency(usageMetrics.totalRevenue)} 
               subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`}
               icon={<DollarSign className="h-5 w-5" />}
               iconPosition="right"
+              change={showProposed ? {
+                value: formatCurrencyDifference(revenueDifference),
+                type: getChangeType(revenueDifference)
+              } : undefined}
             />
             
             <MetricCard 
               title="Usage-Weighted Profit" 
-              value={formatCurrency(usageMetrics.totalProfit)} 
+              value={showProposed ? formatCurrency(usageMetrics.proposedProfit) : formatCurrency(usageMetrics.totalProfit)} 
               icon={<TrendingUp className="h-5 w-5" />}
               iconPosition="right"
+              change={showProposed ? {
+                value: formatCurrencyDifference(profitDifference),
+                type: getChangeType(profitDifference)
+              } : undefined}
             />
           </div>
         </CardContent>
       </Card>
 
-      {/* REVA Metrics Chart - Using the updated chart component */}
+      {/* REVA Metrics Chart - updated to handle proposed pricing */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
           <CardContent className="p-4">
-            <RevaMetricsChartUpdated data={engineData.chartData || []} />
+            <RevaMetricsChartUpdated 
+              data={engineData.chartData || []} 
+              showProposed={showProposed}
+            />
           </CardContent>
         </Card>
       </div>
 
-      {/* Margin Distribution Charts - Now rendered separately */}
-      <UsageWeightedMetrics data={engineData.items || []} />
+      {/* Margin Distribution Charts - pass the showProposed flag */}
+      <UsageWeightedMetrics 
+        data={engineData.items || []} 
+        showProposed={showProposed}
+      />
 
       {/* Market Trend Analysis */}
       <MarketTrendAnalysis data={engineData.items || []} />
