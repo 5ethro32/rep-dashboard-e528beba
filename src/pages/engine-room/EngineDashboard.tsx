@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
+import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw, Trash2, Download } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -13,6 +13,7 @@ import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics'
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
 import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUpdated';
 import { formatCurrency, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
+import { exportPricingData } from '@/utils/pricing-export-utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -30,6 +31,37 @@ const EngineDashboardContent = () => {
   const [showProposed, setShowProposed] = useState(false);
   const [selectedPricingRule, setSelectedPricingRule] = useState<'rule1' | 'rule2' | 'combined'>('combined');
 
+  // Add function to handle data export
+  const handleExportData = () => {
+    if (!engineData || !engineData.items) {
+      toast({
+        title: "No data to export",
+        description: "Please upload a file first to generate export data.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Use the existing export function with all items
+      const result = exportPricingData(engineData.items, {
+        fileName: `REVA_Dashboard_Export_${new Date().toISOString().slice(0,10)}.xlsx`
+      });
+      
+      toast({
+        title: "Export successful",
+        description: `${result.exportedCount} items exported to ${result.fileName}`,
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting the data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   // Add a function to clear cache and force recalculation
   const handleClearCache = () => {
     localStorage.removeItem('engineRoomData');
@@ -164,10 +196,20 @@ const EngineDashboardContent = () => {
   };
   
   return <div className="container mx-auto px-4 py-6">
-      {/* Add more prominent reset buttons for clearing cache */}
+      {/* Add export button and reset buttons */}
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Engine Room Dashboard</h1>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportData}
+            className="flex items-center gap-2 text-xs"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export All Items
+          </Button>
+          
           <Button 
             variant="outline" 
             size="sm" 
