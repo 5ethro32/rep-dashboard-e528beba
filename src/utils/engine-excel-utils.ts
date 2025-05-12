@@ -748,8 +748,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     }
     
     // Margin < 5% flag (updated from 3%)
-    processedItem.flag2 = processedItem.proposedMargin < 0.05;
-    if (processedItem.flag2 && (!processedItem.flags || !processedItem.flags.length > 0)) {
+    if (processedItem.flag2 && (!processedItem.flags || processedItem.flags.length > 0)) {
       if (!processedItem.flags) processedItem.flags = [];
       processedItem.flags.push('LOW_MARGIN');
     }
