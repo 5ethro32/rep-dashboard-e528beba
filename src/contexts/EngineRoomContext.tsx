@@ -3,8 +3,33 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 import { processEngineExcelFile } from '@/utils/engine-excel-utils';
 
+// Define a proper interface for the engine data
+interface EngineData {
+  items: any[];
+  flaggedItems: any[];
+  totalItems: number;
+  activeItems?: number;
+  totalRevenue?: number;
+  totalProfit?: number;
+  overallMargin?: number;
+  currentAvgMargin?: number;
+  proposedAvgMargin?: number;
+  currentProfit?: number;
+  proposedProfit?: number;
+  profitDelta?: number;
+  marginLift?: number;
+  avgCostLessThanMLCount?: number;
+  rule1Flags?: number;
+  rule2Flags?: number;
+  fileName?: string;
+  chartData?: any[];
+  approvedItems?: any[];
+  rejectedItems?: any[];
+  ruleConfig?: Record<string, any>;
+}
+
 interface EngineRoomContextType {
-  engineData: any;
+  engineData: EngineData | null;
   isLoading: boolean;
   error: any;
   modifiedItems: Set<string>;
@@ -46,7 +71,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         // IMPORTANT: Force recalculation of metrics when data is loaded from cache
         // This ensures any fixes to calculation formulas are applied to cached data
         try {
-          const parsedData = JSON.parse(cachedData);
+          const parsedData: EngineData = JSON.parse(cachedData);
           
           // If data exists, recalculate key margin and profit metrics 
           // using the CORRECTED formula: (price - cost) / price
@@ -101,6 +126,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     staleTime: Infinity // Don't refetch automatically
   });
 
+  // Handle file upload
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.csv')) {
       toast({
@@ -127,12 +153,14 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const processedData = await processEngineExcelFile(file);
       
       // Add workflow related fields to the processed data
-      processedData.items = processedData.items.map((item: any) => ({
-        ...item,
-        priceModified: false,
-        calculatedPrice: item.proposedPrice, // Store the original calculated price
-        workflowStatus: 'draft',
-      }));
+      if (processedData && Array.isArray(processedData.items)) {
+        processedData.items = processedData.items.map((item: any) => ({
+          ...item,
+          priceModified: false,
+          calculatedPrice: item.proposedPrice, // Store the original calculated price
+          workflowStatus: 'draft',
+        }));
+      }
       
       // Reset workflow status and modified items
       setWorkflowStatus('draft');
@@ -441,18 +469,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
     
     // Update flagged items as well
-    updatedData.flaggedItems = updatedData.items.map((item: any) => {
-      if (itemIds.includes(item.id)) {
-        return {
-          ...item,
-          workflowStatus: 'rejected',
-          reviewDate: new Date().toISOString(),
-          reviewer: 'Manager',
-          reviewComments: comment
-        };
-      }
-      return item;
-    });
+    updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
     
     // Update the local storage and query cache
     localStorage.setItem('engineRoomData', JSON.stringify(updatedData));

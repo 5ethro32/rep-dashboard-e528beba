@@ -2,8 +2,11 @@
 // and should not contain any React JSX components
 
 // Format currency - with null/undefined check
-export const formatCurrency = (value: number | null | undefined): string => {
-  if (value === null || value === undefined || value === 0) {
+export const formatCurrency = (value: number | null | undefined, noMarketPrice?: boolean): string => {
+  if (noMarketPrice || value === 0) {
+    return '£0.00';
+  }
+  if (value === null || value === undefined) {
     return '£0.00';
   }
   return `£${value.toFixed(2)}`;
@@ -36,12 +39,40 @@ export const formatRuleDisplay = (rule: string): string => {
   return rule;
 };
 
-// Process Excel file data - placeholder function
-// In a real application, this would include the logic to process Excel data
-export const processEngineExcelFile = (fileData: any): any[] => {
-  // This should contain your Excel processing logic
-  // For now, we're just returning the input data
-  return Array.isArray(fileData) ? fileData : [];
+// Format for missing Next Buying Price
+export const formatNextBuyingPrice = (item: any): string => {
+  if (item.nextCostMissing) {
+    return '£0.00';
+  }
+  return `£${(item.nextCost || 0).toFixed(2)}`;
+};
+
+// Process Excel file data
+export const processEngineExcelFile = (file: File): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    // This would contain the actual Excel processing logic
+    // For now, we'll return a mock structure matching our expected format
+    
+    setTimeout(() => {
+      try {
+        // Mock data structure
+        const mockData = {
+          items: [
+            // Items would be populated here from Excel file
+          ],
+          flaggedItems: [],
+          totalItems: 0,
+          activeItems: 0,
+          fileName: file.name
+          // Other metadata would be included here
+        };
+        
+        resolve(mockData);
+      } catch (error) {
+        reject(error);
+      }
+    }, 1000); // Simulate processing time
+  });
 };
 
 // Other utility functions for Excel data processing would go here
