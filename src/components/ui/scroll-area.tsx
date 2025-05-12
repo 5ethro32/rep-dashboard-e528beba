@@ -22,7 +22,7 @@ const ScrollArea = React.forwardRef<
       <ScrollBar orientation="vertical" />
     ) : null}
     {orientation === "horizontal" || orientation === "both" ? (
-      <ScrollBar orientation="horizontal" className="hidden" />
+      <ScrollBar orientation="horizontal" />
     ) : null}
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>

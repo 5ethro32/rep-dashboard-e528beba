@@ -700,30 +700,25 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     );
   };
 
-  // Render the data table with rows - Modified to place headers outside of ScrollArea
+  // Render the data table with rows - Now used for one combined table
   const renderDataTable = () => {
     return (
       <div className="rounded-md border overflow-hidden">
-        {/* Table header outside ScrollArea */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map(column => (
-                <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
-                  {renderColumnHeader(column)}
-                </TableHead>
-              ))}
-              <TableHead className="bg-gray-900/70">
-                {renderFlagsColumnHeader()}
-              </TableHead>
-              <TableHead className="bg-gray-900/70">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-        </Table>
-        
-        {/* Table body inside ScrollArea - note that we're using only vertical orientation */}
-        <ScrollArea className="h-[600px]" orientation="vertical">
+        <ScrollArea className="h-[600px]">
           <Table>
+            <TableHeader>
+              <TableRow>
+                {columns.map(column => (
+                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
+                    {renderColumnHeader(column)}
+                  </TableHead>
+                ))}
+                <TableHead className="bg-gray-900/70">
+                  {renderFlagsColumnHeader()}
+                </TableHead>
+                <TableHead className="bg-gray-900/70">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
               {paginatedData.length === 0 && (
                 <TableRow>
