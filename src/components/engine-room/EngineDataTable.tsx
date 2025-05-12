@@ -706,17 +706,17 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       <div className="rounded-md border overflow-hidden">
         <ScrollArea className="h-[600px]">
           <Table>
-            <TableHeader className="sticky top-0 z-10">
+            <TableHeader>
               <TableRow>
                 {columns.map(column => (
-                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900">
+                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
                     {renderColumnHeader(column)}
                   </TableHead>
                 ))}
-                <TableHead className="bg-gray-900/70 sticky top-0">
+                <TableHead className="bg-gray-900/70">
                   {renderFlagsColumnHeader()}
                 </TableHead>
-                <TableHead className="bg-gray-900/70 sticky top-0">Actions</TableHead>
+                <TableHead className="bg-gray-900/70">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
