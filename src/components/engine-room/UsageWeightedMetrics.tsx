@@ -16,75 +16,56 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
 }) => {
   // Use the centralized calculation function
   const metrics = calculateUsageWeightedMetrics(data);
+
+  // Define chart colors to match the homepage style
+  const brandColors = [
+    '#ef4444', // Finance Red (primary brand color)
+    '#f97316', // Orange
+    '#8b5cf6', // Purple
+    '#3b82f6', // Blue
+    '#10b981', // Green
+    '#ec4899', // Pink
+  ];
+  
+  // Update chart data with new colors
+  const marginDistributionWithColors = metrics.marginDistribution.map((band, index) => ({
+    ...band,
+    color: brandColors[index % brandColors.length]
+  }));
   
   return (
-    <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg p-6 mb-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Margin Analysis</h2>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+      <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
+        <CardContent className="p-4">
+          <h3 className="font-medium mb-4">Margin Distribution by Product Count</h3>
+          <div className="h-48 relative">
+            <DonutChart 
+              data={marginDistributionWithColors} 
+              innerValue={metrics.validItemCount.toString()} 
+              innerLabel="Products" 
+            />
+          </div>
+        </CardContent>
+      </Card>
       
-      {/* Summary metrics in cards with icons */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <MetricCard 
-          title="Usage-Weighted Margin" 
-          value={`${metrics.weightedMargin.toFixed(2)}%`} 
-          icon={<Percent className="h-5 w-5" />}
-          iconPosition="right"
-          change={metrics.marginImprovement !== 0 ? {
-            value: `${metrics.marginImprovement > 0 ? '+' : ''}${metrics.marginImprovement.toFixed(2)}%`,
-            type: metrics.marginImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined}
-        />
-        
-        <MetricCard 
-          title="Total Revenue (Usage-Weighted)" 
-          value={formatCurrency(metrics.totalRevenue)} 
-          subtitle={`${metrics.totalUsage.toLocaleString()} total units`}
-          icon={<DollarSign className="h-5 w-5" />}
-          iconPosition="right"
-        />
-        
-        <MetricCard 
-          title="Usage-Weighted Profit" 
-          value={formatCurrency(metrics.totalProfit)} 
-          icon={<TrendingUp className="h-5 w-5" />}
-          iconPosition="right"
-        />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
-          <CardContent className="p-4">
-            <h3 className="font-medium text-sm mb-4">Margin Distribution by Product Count</h3>
-            <div className="h-48 relative">
-              <DonutChart 
-                data={metrics.marginDistribution} 
-                innerValue={metrics.validItemCount.toString()} 
-                innerLabel="Products" 
-              />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
-          <CardContent className="p-4">
-            <h3 className="font-medium text-sm mb-4">Profit Contribution by Margin Band</h3>
-            <div className="h-48 relative">
-              <DonutChart 
-                data={metrics.marginDistribution.map(band => ({
-                  name: band.name,
-                  value: band.profit > 0 && metrics.totalProfit > 0 ? band.profit / metrics.totalProfit * 100 : 0,
-                  color: band.color,
-                  profit: band.profit
-                }))} 
-                innerValue={formatCurrency(metrics.totalProfit)} 
-                innerLabel="Total Profit" 
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </Card>
+      <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
+        <CardContent className="p-4">
+          <h3 className="font-medium mb-4">Profit Contribution by Margin Band</h3>
+          <div className="h-48 relative">
+            <DonutChart 
+              data={marginDistributionWithColors.map(band => ({
+                name: band.name,
+                value: band.profit > 0 && metrics.totalProfit > 0 ? band.profit / metrics.totalProfit * 100 : 0,
+                color: band.color,
+                profit: band.profit
+              }))} 
+              innerValue={formatCurrency(metrics.totalProfit)} 
+              innerLabel="Total Profit" 
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

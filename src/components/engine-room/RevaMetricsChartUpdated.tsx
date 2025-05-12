@@ -234,7 +234,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         </ToggleGroup>
       </div>
       
-      <div className="w-full h-56">
+      <div className="w-full h-52">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={processedData}
@@ -278,8 +278,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
                 name="Margin %" 
                 stroke={marginColor} 
                 strokeWidth={3} 
-                dot={{ r: 5, fill: marginColor }} 
-                activeDot={{ r: 6 }} 
+                dot={{ r: 4, fill: marginColor }} 
+                activeDot={{ r: 5 }} 
               />
             )}
             
@@ -292,8 +292,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
                 name="Profit" 
                 stroke={profitColor} 
                 strokeWidth={3} 
-                dot={{ r: 5, fill: profitColor }} 
-                activeDot={{ r: 6 }} 
+                dot={{ r: 4, fill: profitColor }} 
+                activeDot={{ r: 5 }} 
               />
             )}
           </LineChart>

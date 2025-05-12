@@ -3,7 +3,7 @@ import React from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info, UploadCloud, Package, TrendingUp, Percent, Flag } from 'lucide-react';
+import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
@@ -108,7 +108,7 @@ const EngineDashboardContent = () => {
       {/* Master container card for all metrics */}
       <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
         <CardContent className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Dashboard Metrics</h2>
+          <h2 className="text-xl font-semibold mb-4">Pricing Metrics</h2>
           
           {/* Primary metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -143,6 +143,35 @@ const EngineDashboardContent = () => {
               iconPosition="right" 
             />
           </div>
+          
+          {/* Margin Analysis Metrics - Now integrated into the main dashboard card */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <MetricCard 
+              title="Usage-Weighted Margin" 
+              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
+              icon={<Percent className="h-5 w-5" />}
+              iconPosition="right"
+              change={usageMetrics.marginImprovement !== 0 ? {
+                value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
+                type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+            />
+            
+            <MetricCard 
+              title="Total Revenue (Usage-Weighted)" 
+              value={formatCurrency(usageMetrics.totalRevenue)} 
+              subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`}
+              icon={<DollarSign className="h-5 w-5" />}
+              iconPosition="right"
+            />
+            
+            <MetricCard 
+              title="Usage-Weighted Profit" 
+              value={formatCurrency(usageMetrics.totalProfit)} 
+              icon={<TrendingUp className="h-5 w-5" />}
+              iconPosition="right"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -156,7 +185,7 @@ const EngineDashboardContent = () => {
         </Card>
       </div>
 
-      {/* Margin Distribution Charts */}
+      {/* Margin Distribution Charts - Now rendered separately */}
       <UsageWeightedMetrics data={engineData.items || []} />
 
       {/* Market Trend Analysis */}
