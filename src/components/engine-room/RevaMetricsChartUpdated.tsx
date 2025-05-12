@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -13,6 +12,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   const [showRule1, setShowRule1] = useState<boolean>(false);
   const [showRule2, setShowRule2] = useState<boolean>(false);
   const [showBothRules, setShowBothRules] = useState<boolean>(false);
+  const [showCombined, setShowCombined] = useState<boolean>(false);
 
   if (!data || data.length === 0) {
     return <div className="flex justify-center items-center h-64 bg-gray-800/30 rounded-lg">No data available</div>;
@@ -58,6 +58,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         let totalProposedRule1Profit = 0;
         let totalProposedRule2Revenue = 0;
         let totalProposedRule2Profit = 0;
+        let totalCombinedRevenue = 0;
+        let totalCombinedProfit = 0;
 
         groupItems.forEach(item => {
           const usage = Math.max(0, item.revaUsage || 0); // Ensure non-negative usage
@@ -74,6 +76,12 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           // Rule 2: TML - 5% (simplified)
           const tml = Math.max(0, item.trueMarketLow || 0);
           const rule2Price = tml > 0 ? tml * 0.95 : proposedPrice; // 5% below TML
+          
+          // Calculate combined price - use whichever rule gives higher profit
+          // This is a simple way of combining the rules - using the better of the two prices
+          const rule1Profit = usage * (rule1Price - cost);
+          const rule2Profit = usage * (rule2Price - cost);
+          const combinedPrice = rule1Profit > rule2Profit ? rule1Price : rule2Price;
           
           // Only calculate profit if we have valid values
           if (usage > 0 && price > 0) {
@@ -93,6 +101,10 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             const proposedRule2Revenue = usage * rule2Price;
             const proposedRule2Profit = usage * (rule2Price - cost);
             
+            // Calculate Combined rules metrics
+            const combinedRevenue = usage * combinedPrice;
+            const combinedProfit = usage * (combinedPrice - cost);
+            
             totalUsage += usage;
             totalRevenue += revenue;
             totalProfit += profit;
@@ -104,6 +116,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             totalProposedRule1Profit += proposedRule1Profit;
             totalProposedRule2Revenue += proposedRule2Revenue;
             totalProposedRule2Profit += proposedRule2Profit;
+            totalCombinedRevenue += combinedRevenue;
+            totalCombinedProfit += combinedProfit;
             
             // Calculate margin only for valid items
             if (price > 0) {
@@ -126,6 +140,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         const proposedMargin = totalProposedRevenue > 0 ? (totalProposedProfit / totalProposedRevenue) * 100 : 0;
         const proposedRule1Margin = totalProposedRule1Revenue > 0 ? (totalProposedRule1Profit / totalProposedRule1Revenue) * 100 : 0;
         const proposedRule2Margin = totalProposedRule2Revenue > 0 ? (totalProposedRule2Profit / totalProposedRule2Revenue) * 100 : 0;
+        const combinedMargin = totalCombinedRevenue > 0 ? (totalCombinedProfit / totalCombinedRevenue) * 100 : 0;
 
         results.push({
           name: `Group ${groupNumber}`,
@@ -139,6 +154,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           proposedRule1Margin: proposedRule1Margin,
           proposedRule2Profit: totalProposedRule2Profit,
           proposedRule2Margin: proposedRule2Margin,
+          combinedProfit: totalCombinedProfit,
+          combinedMargin: combinedMargin,
           rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
         });
       }
@@ -160,6 +177,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         let totalProposedRule1Profit = 0;
         let totalProposedRule2Revenue = 0;
         let totalProposedRule2Profit = 0;
+        let totalCombinedRevenue = 0;
+        let totalCombinedProfit = 0;
 
         remainingItems.forEach(item => {
           const usage = Math.max(0, item.revaUsage || 0); // Ensure non-negative usage
@@ -176,6 +195,11 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           // Rule 2: TML - 5% (simplified)
           const tml = Math.max(0, item.trueMarketLow || 0);
           const rule2Price = tml > 0 ? tml * 0.95 : proposedPrice; // 5% below TML
+          
+          // Calculate combined price - use whichever rule gives higher profit
+          const rule1Profit = usage * (rule1Price - cost);
+          const rule2Profit = usage * (rule2Price - cost);
+          const combinedPrice = rule1Profit > rule2Profit ? rule1Price : rule2Price;
           
           // Only calculate profit if we have valid values
           if (usage > 0 && price > 0) {
@@ -195,6 +219,10 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             const proposedRule2Revenue = usage * rule2Price;
             const proposedRule2Profit = usage * (rule2Price - cost);
             
+            // Calculate Combined rules metrics
+            const combinedRevenue = usage * combinedPrice;
+            const combinedProfit = usage * (combinedPrice - cost);
+            
             totalUsage += usage;
             totalRevenue += revenue;
             totalProfit += profit;
@@ -206,6 +234,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             totalProposedRule1Profit += proposedRule1Profit;
             totalProposedRule2Revenue += proposedRule2Revenue;
             totalProposedRule2Profit += proposedRule2Profit;
+            totalCombinedRevenue += combinedRevenue;
+            totalCombinedProfit += combinedProfit;
             
             // Calculate margin only for valid items
             if (price > 0) {
@@ -226,6 +256,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         const proposedMargin = totalProposedRevenue > 0 ? (totalProposedProfit / totalProposedRevenue) * 100 : 0;
         const proposedRule1Margin = totalProposedRule1Revenue > 0 ? (totalProposedRule1Profit / totalProposedRule1Revenue) * 100 : 0;
         const proposedRule2Margin = totalProposedRule2Revenue > 0 ? (totalProposedRule2Profit / totalProposedRule2Revenue) * 100 : 0;
+        const combinedMargin = totalCombinedRevenue > 0 ? (totalCombinedProfit / totalCombinedRevenue) * 100 : 0;
 
         results.push({
           name: `Group 6`,
@@ -239,6 +270,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           proposedRule1Margin: proposedRule1Margin,
           proposedRule2Profit: totalProposedRule2Profit,
           proposedRule2Margin: proposedRule2Margin,
+          combinedProfit: totalCombinedProfit,
+          combinedMargin: combinedMargin,
           rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
         });
       }
@@ -316,7 +349,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
       item.currentProfit || 0,
       item.proposedProfit || 0,
       item.proposedRule1Profit || 0,
-      item.proposedRule2Profit || 0
+      item.proposedRule2Profit || 0,
+      item.combinedProfit || 0
     ))
   );
   
@@ -326,7 +360,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
       item.currentMargin || 0,
       item.proposedMargin || 0,
       item.proposedRule1Margin || 0,
-      item.proposedRule2Margin || 0
+      item.proposedRule2Margin || 0,
+      item.combinedMargin || 0
     ))
   ); 
   
@@ -350,7 +385,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   const profitColor = "#ef4444"; // Finance red for profit
   const rule1Color = "#1EAEDB"; // Bright blue for Rule 1
   const rule2Color = "#8B5CF6"; // Vivid purple for Rule 2
-  const bothRulesColor = "#10B981"; // Green for combined rules
+  const combinedColor = "#10B981"; // Green for combined rules
 
   // Handle toggle changes
   const handleDisplayOptionsChange = (values: string[]) => {
@@ -362,23 +397,41 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   // Toggle handlers for rule displays
   const toggleRule1 = () => {
     setShowRule1(!showRule1);
-    // If turning on rule1, turn off "both rules" if it's active
-    if (!showRule1 && showBothRules) setShowBothRules(false);
+    // If turning on rule1, turn off "combined" and "both rules" if they're active
+    if (!showRule1) {
+      setShowCombined(false);
+      if (showBothRules) setShowBothRules(false);
+    }
   };
   
   const toggleRule2 = () => {
     setShowRule2(!showRule2);
-    // If turning on rule2, turn off "both rules" if it's active
-    if (!showRule2 && showBothRules) setShowBothRules(false);
+    // If turning on rule2, turn off "combined" and "both rules" if they're active
+    if (!showRule2) {
+      setShowCombined(false);
+      if (showBothRules) setShowBothRules(false);
+    }
   };
   
-  // New toggle handler for both rules
+  // Toggle handler for both rules (showing both individually)
   const toggleBothRules = () => {
     setShowBothRules(!showBothRules);
-    // When toggling both rules on, turn off individual rule toggles
+    // When toggling both rules on, turn off individual rule toggles and combined
     if (!showBothRules) {
       setShowRule1(false);
       setShowRule2(false);
+      setShowCombined(false);
+    }
+  };
+  
+  // New toggle handler for combined rules (showing optimized combination)
+  const toggleCombined = () => {
+    setShowCombined(!showCombined);
+    // When toggling combined on, turn off individual rule toggles and both
+    if (!showCombined) {
+      setShowRule1(false);
+      setShowRule2(false);
+      setShowBothRules(false);
     }
   };
 
@@ -413,7 +466,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           </ToggleGroupItem>
         </ToggleGroup>
         
-        {/* Updated toggle group with three options: Rule 1, Rule 2, and Both */}
+        {/* Updated toggle group with four options: Rule 1, Rule 2, Both, and Combined */}
         <ToggleGroup
           type="multiple"
           className="justify-end"
@@ -445,13 +498,25 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           <ToggleGroupItem
             value="bothRules"
             aria-label="Show Both Rules"
-            className={`border-gray-700 text-xs ${showBothRules ? 'bg-green-500/20 text-green-400' : ''}`}
+            className={`border-gray-700 text-xs ${showBothRules ? 'bg-blue-500/20 text-blue-400' : ''}`}
             onClick={toggleBothRules}
             data-state={showBothRules ? "on" : "off"}
           >
             <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full" style={{ background: bothRulesColor }}></span>
+              <span className="h-2 w-2 rounded-full" style={{ background: rule1Color }}></span>
               <span>Both</span>
+            </span>
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="combined"
+            aria-label="Show Combined Rules"
+            className={`border-gray-700 text-xs ${showCombined ? 'bg-green-500/20 text-green-400' : ''}`}
+            onClick={toggleCombined}
+            data-state={showCombined ? "on" : "off"}
+          >
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full" style={{ background: combinedColor }}></span>
+              <span>Combined</span>
             </span>
           </ToggleGroupItem>
         </ToggleGroup>
@@ -520,7 +585,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               />
             )}
             
-            {/* Rule 1 lines - now controlled by showRule1 state */}
+            {/* Rule 1 lines - controlled by showRule1 state */}
             {showRule1 && displayOptions.includes('margin') && (
               <Line 
                 yAxisId="left" 
@@ -549,7 +614,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               />
             )}
             
-            {/* Rule 2 lines - now controlled by showRule2 state */}
+            {/* Rule 2 lines - controlled by showRule2 state */}
             {showRule2 && displayOptions.includes('margin') && (
               <Line 
                 yAxisId="left" 
@@ -632,12 +697,39 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
                 />
               </>
             )}
+            
+            {/* Combined rules (optimized combination) */}
+            {showCombined && displayOptions.includes('margin') && (
+              <Line 
+                yAxisId="left" 
+                type="monotone" 
+                dataKey="combinedMargin" 
+                name="Combined Margin %" 
+                stroke={combinedColor} 
+                strokeWidth={2}
+                dot={{ r: 3, fill: combinedColor }} 
+                activeDot={{ r: 4 }} 
+              />
+            )}
+            
+            {showCombined && displayOptions.includes('profit') && (
+              <Line 
+                yAxisId="right" 
+                type="monotone" 
+                dataKey="combinedProfit" 
+                name="Combined Profit" 
+                stroke={combinedColor} 
+                strokeWidth={2}
+                dot={{ r: 3, fill: combinedColor }} 
+                activeDot={{ r: 4 }} 
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
       
       {/* Legend for the rules - updated to show based on visibility */}
-      {(showRule1 || showRule2 || showBothRules) && (
+      {(showRule1 || showRule2 || showBothRules || showCombined) && (
         <div className="flex flex-wrap gap-4 justify-start text-xs">
           {(showRule1 || showBothRules) && (
             <div className="flex items-center gap-1.5">
@@ -649,6 +741,12 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             <div className="flex items-center gap-1.5">
               <span className="h-2 w-4 bg-[#8B5CF6] rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #8B5CF6, #8B5CF6 3px, transparent 3px, transparent 6px)' }}></span>
               <span>Rule 2 (TML - 5%)</span>
+            </div>
+          )}
+          {showCombined && (
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-4 bg-[#10B981] rounded-sm"></span>
+              <span>Combined (Best price of Rule 1 & 2)</span>
             </div>
           )}
         </div>
