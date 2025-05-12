@@ -7,20 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import DonutChart from '@/components/DonutChart';
+import LineChart from '@/components/LineChart';
 
 interface MarketTrendAnalysisProps {
   data: any[];
 }
 
 const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
-  const [chartType, setChartType] = useState<'trend' | 'usage'>('trend');
+  const [chartType, setChartType] = useState<'trend' | 'usage' | 'comparison'>('trend');
   
   // Process data for trend analysis
   const trendData = useMemo(() => {
     if (!data || data.length === 0) return {
       trendDistribution: [],
       scatterData: [],
-      trendCounts: { up: 0, down: 0 }
+      trendCounts: { up: 0, down: 0 },
+      competitorComparison: []
     };
     
     // For trend distribution
@@ -28,6 +30,16 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
     let trendingDown = 0;
     const scatterData: any[] = [];
     
+    // For competitor comparison
+    const competitors = ['ETH', 'ETH_NET', 'Nupharm', 'LEXON', 'AAH'];
+    const competitorData: {[key: string]: {name: string, margin: number, count: number}[]} = {};
+    
+    // Initialize competitor data structure
+    competitors.forEach(comp => {
+      competitorData[comp] = [];
+    });
+    
+    // Process data for trend analysis and competitor comparison
     data.forEach(item => {
       // Determine trend
       const isTrendingDown = item.nextCost <= item.avgCost;
@@ -49,17 +61,63 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
           trend: isTrendingDown ? 'down' : 'up',
         });
       }
+      
+      // Process competitor data
+      competitors.forEach(comp => {
+        if (item[comp] && item.currentREVAPrice) {
+          const compPrice = parseFloat(item[comp]);
+          if (compPrice > 0) {
+            // Calculate margin against our cost
+            const margin = ((compPrice - item.avgCost) / compPrice) * 100;
+            
+            // Group by margin range
+            let marginRange = Math.floor(margin / 5) * 5; // Group in 5% increments
+            marginRange = Math.max(-20, Math.min(50, marginRange)); // Limit to -20% to 50%
+            
+            // Add to the competitor's data
+            const existingRange = competitorData[comp].find(d => d.name === `${marginRange}%`);
+            if (existingRange) {
+              existingRange.count += 1;
+              existingRange.margin = (existingRange.margin * (existingRange.count - 1) + margin) / existingRange.count;
+            } else {
+              competitorData[comp].push({
+                name: `${marginRange}%`,
+                margin: margin,
+                count: 1
+              });
+            }
+          }
+        }
+      });
     });
     
+    // Create competition comparison chart data
+    const competitorComparison = competitors.map(comp => {
+      // Sort by margin range
+      const sortedData = competitorData[comp]
+        .sort((a, b) => parseInt(a.name) - parseInt(b.name))
+        .map(d => ({
+          name: d.name,
+          value: d.margin,
+          count: d.count
+        }));
+      
+      return {
+        name: comp,
+        data: sortedData
+      };
+    }).filter(comp => comp.data.length > 0);
+    
     const trendDistribution = [
-      { name: 'Trending UP', value: trendingUp, color: '#ec4899' },
-      { name: 'Trending DOWN', value: trendingDown, color: '#3b82f6' },
+      { name: 'Trending UP', value: trendingUp, color: '#9b87f5' }, // Updated to brand purple
+      { name: 'Trending DOWN', value: trendingDown, color: '#3b82f6' }, // Updated to brand blue
     ];
     
     return {
       trendDistribution,
       scatterData: scatterData.sort((a, b) => b.usage - a.usage).slice(0, 100), // Top 100 by usage
-      trendCounts: { up: trendingUp, down: trendingDown }
+      trendCounts: { up: trendingUp, down: trendingDown },
+      competitorComparison
     };
   }, [data]);
 
@@ -68,7 +126,7 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-gray-800 p-3 border border-gray-700 rounded-md shadow-lg">
+        <div className="bg-gray-800/90 backdrop-blur-sm p-3 border border-white/10 rounded-md shadow-lg">
           <p className="font-medium mb-1">{data.name}</p>
           <div className="text-sm space-y-1">
             <p>Usage: {data.usage}</p>
@@ -76,7 +134,7 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
             <p>Margin: {data.margin?.toFixed(2)}%</p>
             <p>Profit: £{data.profit?.toFixed(2)}</p>
             <div className="flex items-center mt-1">
-              <Badge variant="outline" className={data.trend === 'down' ? 'bg-blue-900/20 text-blue-400 border-blue-900' : 'bg-pink-900/20 text-pink-400 border-pink-900'}>
+              <Badge variant="outline" className={data.trend === 'down' ? 'bg-blue-900/20 text-blue-400 border-blue-900' : 'bg-purple-900/20 text-purple-400 border-purple-900'}>
                 {data.trend === 'down' ? 'Trending DOWN' : 'Trending UP'}
               </Badge>
             </div>
@@ -106,6 +164,13 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
           >
             Usage vs Margin
           </Button>
+          <Button
+            variant={chartType === 'comparison' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setChartType('comparison')}
+          >
+            Competitor Margins
+          </Button>
         </div>
       </div>
       
@@ -129,9 +194,9 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                       <div className="font-bold">{trendData.trendCounts.down}</div>
                     </div>
                     
-                    <div className="flex items-center justify-between p-3 bg-pink-900/20 rounded-md">
+                    <div className="flex items-center justify-between p-3 bg-purple-900/20 rounded-md">
                       <div className="flex items-center">
-                        <ChevronUp className="h-5 w-5 text-pink-400 mr-2" />
+                        <ChevronUp className="h-5 w-5 text-purple-400 mr-2" />
                         <span className="font-medium">Trending UP</span>
                       </div>
                       <div className="font-bold">{trendData.trendCounts.up}</div>
@@ -140,7 +205,6 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                 </div>
                 
                 <div className="md:col-span-2 h-80">
-                  {/* Replaced PieChart with DonutChart component */}
                   <DonutChart 
                     data={trendData.trendDistribution}
                     innerValue={`${trendData.trendCounts.up + trendData.trendCounts.down}`}
@@ -148,7 +212,7 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                   />
                 </div>
               </div>
-            ) : (
+            ) : chartType === 'usage' ? (
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart
@@ -184,11 +248,37 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                     <Scatter 
                       name="Trending UP" 
                       data={trendData.scatterData.filter(item => item.trend === 'up')} 
-                      fill="#ec4899" 
+                      fill="#9b87f5" 
                     />
                     <Legend />
                   </ScatterChart>
                 </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-96">
+                <h3 className="text-lg font-medium mb-4">Margin Comparison with Competitors</h3>
+                {trendData.competitorComparison.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+                    {trendData.competitorComparison.slice(0, 4).map((competitor, index) => (
+                      <div key={index} className="h-80">
+                        <h4 className="text-sm font-medium mb-2">{competitor.name} Margin Distribution</h4>
+                        <div className="h-72">
+                          <LineChart
+                            data={competitor.data}
+                            color={index % 2 === 0 ? '#9b87f5' : '#3b82f6'}
+                            yAxisFormatter={(value) => `${value.toFixed(1)}%`}
+                            showAverage={false}
+                            hasPercentageMetric={true}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">No competitor data available for comparison</p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

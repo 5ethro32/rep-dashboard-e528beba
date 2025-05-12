@@ -1,250 +1,143 @@
 
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ResponsiveContainer, ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
+import { cn } from "@/lib/utils";
 
-interface RevaMetricsChartProps {
+interface RevaMetricsChartUpdatedProps {
   data: any[];
 }
 
-const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
-  if (!data || data.length === 0) {
-    return <div className="flex justify-center items-center h-64 bg-gray-800/30 rounded-lg">No data available</div>;
-  }
-
-  // Process the raw data to create usage-based grouping
-  const processDataByUsage = (rawData: any[]) => {
-    // Function to group items by usage volume
-    const groupItemsByUsage = (items: any[]) => {
-      // First, sort all items by usage in descending order
-      const sortedItems = [...items].sort((a, b) => {
-        // Safely handle cases where revaUsage might be undefined
-        const usageA = a.revaUsage || 0;
-        const usageB = b.revaUsage || 0;
-        return usageB - usageA; // Descending order
-      });
-
-      // Define group sizes
-      const groupSizes = [250, 250, 500, 500, 1000]; // Group 1: 1-250, Group 2: 251-500, etc.
-      const results = [];
-
-      let startIndex = 0;
-      for (let i = 0; i < groupSizes.length; i++) {
-        const endIndex = startIndex + groupSizes[i];
-        const groupItems = sortedItems.slice(startIndex, Math.min(endIndex, sortedItems.length));
-        
-        if (groupItems.length === 0) break; // No more items to group
-        
-        // Calculate metrics for this group
-        let totalUsage = 0;
-        let totalProfit = 0;
-        let totalUsageWeightedMargin = 0;
-
-        groupItems.forEach(item => {
-          const usage = item.revaUsage || 0;
-          const price = item.currentREVAPrice || 0;
-          const cost = item.avgCost || 0;
-          const profit = usage * (price - cost);
-          const margin = price > 0 ? (price - cost) / price : 0;
-          
-          totalUsage += usage;
-          totalProfit += profit;
-          totalUsageWeightedMargin += margin * usage;
-        });
-
-        // Determine the range description
-        const groupNumber = i + 1;
-        const rangeStart = startIndex + 1;
-        const rangeEnd = Math.min(endIndex, sortedItems.length);
-
-        results.push({
-          name: `Group ${groupNumber}`,
-          shortName: `G${groupNumber}`,
-          itemCount: groupItems.length,
-          currentProfit: totalProfit,
-          currentMargin: totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0,
-          rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
-        });
-
-        startIndex = endIndex;
-        if (startIndex >= sortedItems.length) break; // No more items to process
-      }
-
-      // If there are remaining items, add them as a final group
-      if (startIndex < sortedItems.length) {
-        const remainingItems = sortedItems.slice(startIndex);
-        let totalUsage = 0;
-        let totalProfit = 0;
-        let totalUsageWeightedMargin = 0;
-
-        remainingItems.forEach(item => {
-          const usage = item.revaUsage || 0;
-          const price = item.currentREVAPrice || 0;
-          const cost = item.avgCost || 0;
-          const profit = usage * (price - cost);
-          const margin = price > 0 ? (price - cost) / price : 0;
-          
-          totalUsage += usage;
-          totalProfit += profit;
-          totalUsageWeightedMargin += margin * usage;
-        });
-
-        const groupNumber = groupSizes.length + 1;
-        const rangeStart = startIndex + 1;
-        const rangeEnd = sortedItems.length;
-
-        results.push({
-          name: `Group ${groupNumber}`,
-          shortName: `G${groupNumber}`,
-          itemCount: remainingItems.length,
-          currentProfit: totalProfit,
-          currentMargin: totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0,
-          rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
-        });
-      }
-
-      return results;
-    };
-
-    // Process the provided chart data or raw items
-    if (Array.isArray(rawData) && rawData.length > 0) {
-      // Check if data is raw items or already processed chart data
-      if (rawData[0].revaUsage !== undefined) {
-        // Raw items data
-        return groupItemsByUsage(rawData);
-      } else if (rawData[0].name && rawData[0].name.includes('Group')) {
-        // Data is already in chart format, but we need to regroup by usage
-        console.log('Regrouping pre-processed chart data is not supported. Please provide raw item data.');
-        return rawData; // Return as-is for now
-      }
-    }
-    
-    return [];
+const RevaMetricsChartUpdated: React.FC<RevaMetricsChartUpdatedProps> = ({ data }) => {
+  // Color configuration aligned with branding
+  const colors = {
+    proposedMargin: '#9b87f5', // Updated to brand purple
+    currentMargin: '#3b82f6', // Updated to brand blue
+    barFill: '#1A1F2C', // Updated to dark background
   };
+  
+  // Custom tooltip to show all values with improved styling
+  const renderTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || !payload.length) {
+      return null;
+    }
 
-  // Process data with usage-based grouping
-  const processedData = processDataByUsage(data);
-
-  // Custom tooltip to show more details
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      
-      // Format numbers with better precision
-      const formatMargin = (value: number | null | undefined) => {
-        if (value === null || value === undefined) return "N/A";
-        return `${value.toFixed(1)}%`;
-      };
-      
-      const formatCurrency = (value: number | null | undefined) => {
-        if (value === null || value === undefined) return "N/A";
-        
-        if (value >= 1000000) {
-          return `£${(value / 1000000).toFixed(1)}M`;
-        } else if (value >= 1000) {
-          return `£${(value / 1000).toFixed(1)}K`;
-        }
-        return `£${value.toFixed(0)}`;
-      };
-      
-      return (
-        <div className="bg-gray-800 p-3 rounded shadow-lg border border-gray-700">
-          <p className="font-bold text-sm">{data.name}</p>
-          <p className="text-xs text-gray-400">{data.rangeDescription}</p>
-          <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
-            <div>
-              <p><span className="text-blue-400">Current Margin:</span> {formatMargin(data.currentMargin)}</p>
+    return (
+      <div className="bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 p-3 rounded-md shadow-lg">
+        <p className="text-sm font-medium mb-2">{label}</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center">
+              <span className="w-2 h-2 inline-block mr-2 rounded-full" style={{ backgroundColor: colors.proposedMargin }}></span>
+              <span className="text-xs">Proposed Margin:</span>
             </div>
-            <div>
-              <p><span className="text-green-400">Current Profit:</span> {formatCurrency(data.currentProfit)}</p>
+            <span className="text-xs font-medium">{payload[0] && payload[0].value !== undefined ? payload[0].value.toFixed(2) : '0.00'}%</span>
+          </div>
+          
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center">
+              <span className="w-2 h-2 inline-block mr-2 rounded-full" style={{ backgroundColor: colors.currentMargin }}></span>
+              <span className="text-xs">Current Margin:</span>
             </div>
-            <p className="col-span-2"><span className="text-gray-400">Items:</span> {data.itemCount}</p>
+            <span className="text-xs font-medium">{payload[1] && payload[1].value !== undefined ? payload[1].value.toFixed(2) : '0.00'}%</span>
+          </div>
+          
+          <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-700/50 mt-1">
+            <div className="flex items-center">
+              <span className="w-2 h-2 inline-block mr-2 rounded-full" style={{ backgroundColor: colors.barFill }}></span>
+              <span className="text-xs">Item Count:</span>
+            </div>
+            <span className="text-xs font-medium">{payload[2] && payload[2].value !== undefined ? payload[2].value : '0'}</span>
           </div>
         </div>
-      );
-    }
-    return null;
+      </div>
+    );
   };
-
-  // Calculate the maximum profit value for proper scaling
-  const maxProfit = Math.max(...processedData.map(item => item.currentProfit || 0));
-  
-  // Calculate the maximum margin value
-  const maxMargin = Math.max(...processedData.map(item => item.currentMargin || 0)); 
-  
-  // Format Y-axis labels for profit - with cleaner formatting
-  const formatProfitAxis = (value: number) => {
-    if (value >= 1000000) {
-      return `£${(value / 1000000).toFixed(1)}M`;
-    } else if (value >= 1000) {
-      return `£${(value / 1000).toFixed(1)}K`;
-    }
-    return `£${value}`;
-  };
-  
-  // Format Y-axis labels for margin - with cleaner formatting
-  const formatMarginAxis = (value: number) => {
-    return `${value.toFixed(1)}%`;
-  };
-
-  // Define colors for the lines
-  const marginColor = "#3b82f6"; // Blue for margin (keep existing color)
-  const profitColor = "#10B981"; // Green for profit
 
   return (
-    <div className="w-full h-72 md:h-96">
+    <div className="w-full h-96">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={processedData}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
+        <ComposedChart
+          data={data}
+          margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-          <XAxis dataKey="shortName" />
-          <YAxis 
-            yAxisId="left" 
-            orientation="left" 
-            tickFormatter={formatMarginAxis}
-            domain={[0, Math.max(maxMargin * 1.1, 30)]}
-            label={{ value: 'Margin %', angle: -90, position: 'insideLeft', offset: -5, style: { textAnchor: 'middle', fill: marginColor } }}
-          />
-          <YAxis 
-            yAxisId="right" 
-            orientation="right" 
-            tickFormatter={formatProfitAxis}
-            domain={[0, maxProfit * 1.1]}
-            label={{ value: 'Profit (£)', angle: 90, position: 'insideRight', offset: 0, style: { textAnchor: 'middle', fill: profitColor } }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
+          <defs>
+            <linearGradient id="proposedMarginGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={colors.proposedMargin} stopOpacity={0.8}/>
+              <stop offset="95%" stopColor={colors.proposedMargin} stopOpacity={0.2}/>
+            </linearGradient>
+          </defs>
           
-          {/* Line for current margin */}
-          <Line 
-            yAxisId="left" 
-            type="monotone" 
-            dataKey="currentMargin" 
-            name="Current Margin %" 
-            stroke={marginColor} 
-            strokeWidth={3} 
-            dot={{ r: 5, fill: marginColor }} 
-            activeDot={{ r: 6 }} 
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <XAxis 
+            dataKey="name" 
+            tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
+            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            tickLine={false}
+            tickMargin={10}
+            hide={false} // Hide axis label but keep ticks
           />
           
-          {/* Line for current profit */}
-          <Line 
-            yAxisId="right" 
-            type="monotone" 
-            dataKey="currentProfit" 
-            name="Current Profit" 
-            stroke={profitColor} 
-            strokeWidth={3} 
-            dot={{ r: 5, fill: profitColor }} 
-            activeDot={{ r: 6 }} 
+          <YAxis 
+            yAxisId="left"
+            orientation="left"
+            tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }}
+            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            tickLine={false}
+            tickFormatter={(value) => `${value}%`}
+            domain={['dataMin - 5', 'dataMax + 5']}
+            hide={true} // Hide axis label but keep ticks
           />
-        </LineChart>
+          
+          <YAxis 
+            yAxisId="right"
+            orientation="right"
+            tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }}
+            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            tickLine={false}
+            domain={[0, 'dataMax + 20']}
+            hide={true} // Hide axis label but keep ticks
+          />
+          
+          <Tooltip content={renderTooltip} cursor={{ strokeDasharray: '3 3' }} />
+          
+          <Bar 
+            dataKey="itemCount" 
+            name="Item Count" 
+            yAxisId="right"
+            barSize={30}
+            fillOpacity={0.5}
+            fill={colors.barFill}
+            radius={[5, 5, 0, 0]}
+          />
+          
+          <Line
+            type="monotone"
+            dataKey="proposedMargin"
+            name="Proposed Margin"
+            stroke={colors.proposedMargin}
+            strokeWidth={2.5}
+            dot={{ r: 5, strokeWidth: 0, fill: colors.proposedMargin }}
+            activeDot={{ r: 7, strokeWidth: 0 }}
+            yAxisId="left"
+            isAnimationActive={true}
+            animationDuration={1000}
+            connectNulls={true}
+          />
+          
+          <Line
+            type="monotone"
+            dataKey="currentMargin"
+            name="Current Margin"
+            stroke={colors.currentMargin}
+            strokeWidth={2.5}
+            dot={{ r: 5, strokeWidth: 0, fill: colors.currentMargin }}
+            activeDot={{ r: 7, strokeWidth: 0 }}
+            yAxisId="left"
+            isAnimationActive={true}
+            animationDuration={1000}
+            connectNulls={true}
+          />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
