@@ -76,15 +76,15 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
   // For debugging purposes
   console.log(`Processing ${items.length} items for usage-weighted metrics`);
   
-  // Process each item
+  // Process each item with validation to ensure no negative values
   items.forEach((item, index) => {
     // Basic data validation - ensure we have all required fields with valid numeric values
-    const usage = Number(item.revaUsage);
-    const currentPrice = Number(item.currentREVAPrice);
-    const avgCost = Number(item.avgCost);
+    const usage = Math.max(0, Number(item.revaUsage) || 0); // Ensure non-negative usage
+    const currentPrice = Math.max(0, Number(item.currentREVAPrice) || 0); // Ensure non-negative price
+    const avgCost = Math.max(0, Number(item.avgCost) || 0); // Ensure non-negative cost
     
-    const isValidUsage = !isNaN(usage) && usage > 0;
-    const isValidPrice = !isNaN(currentPrice) && currentPrice > 0;
+    const isValidUsage = usage > 0;
+    const isValidPrice = currentPrice > 0;
     const isValidCost = !isNaN(avgCost);
     
     // Skip items with invalid data
@@ -109,8 +109,8 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
     const currentRevenue = usage * currentPrice;
     const currentProfit = usage * (currentPrice - avgCost);
     
-    // Current margin as percentage
-    const currentMargin = (currentPrice - avgCost) / currentPrice * 100;
+    // Current margin as percentage - always ensure it's based on price division
+    const currentMargin = currentPrice > 0 ? ((currentPrice - avgCost) / currentPrice) * 100 : 0;
     
     // Accumulate totals for current pricing
     result.totalRevenue += currentRevenue;
@@ -119,8 +119,8 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
     result.validItemCount++;
     
     // Calculate proposed values if available
-    const proposedPrice = Number(item.proposedPrice);
-    const isValidProposedPrice = !isNaN(proposedPrice) && proposedPrice > 0;
+    const proposedPrice = Math.max(0, Number(item.proposedPrice) || 0); // Ensure non-negative
+    const isValidProposedPrice = proposedPrice > 0;
     
     if (isValidProposedPrice) {
       const proposedRevenue = usage * proposedPrice;
@@ -131,6 +131,9 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
     }
     
     // Categorize for margin distribution (using current values)
+    // Using absolute value for margin percentage to categorize (making negative margins positive for visualization only)
+    const marginForDistribution = Math.abs(currentMargin);
+    
     if (currentMargin < 5) {
       result.marginDistribution[0].value += 1;
       result.marginDistribution[0].profit += currentProfit;

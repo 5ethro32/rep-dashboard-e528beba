@@ -41,21 +41,34 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         
         if (groupItems.length === 0) break; // No more items to group
         
-        // Calculate metrics for this group
+        // Calculate metrics for this group with validation
         let totalUsage = 0;
+        let totalRevenue = 0;
         let totalProfit = 0;
         let totalUsageWeightedMargin = 0;
+        let validMarginItems = 0;
 
         groupItems.forEach(item => {
-          const usage = item.revaUsage || 0;
-          const price = item.currentREVAPrice || 0;
-          const cost = item.avgCost || 0;
-          const profit = usage * (price - cost);
-          const margin = price > 0 ? (price - cost) / price : 0;
+          const usage = Math.max(0, item.revaUsage || 0); // Ensure non-negative usage
+          const price = Math.max(0, item.currentREVAPrice || 0); // Ensure non-negative price
+          const cost = Math.max(0, item.avgCost || 0); // Ensure non-negative cost
           
-          totalUsage += usage;
-          totalProfit += profit;
-          totalUsageWeightedMargin += margin * usage;
+          // Only calculate profit if we have valid values
+          if (usage > 0 && price > 0) {
+            const revenue = usage * price;
+            const profit = usage * (price - cost);
+            
+            totalUsage += usage;
+            totalRevenue += revenue;
+            totalProfit += profit;
+            
+            // Calculate margin only for valid items
+            if (price > 0) {
+              const margin = (price - cost) / price * 100; // Convert to percentage
+              totalUsageWeightedMargin += margin * usage;
+              validMarginItems += 1;
+            }
+          }
         });
 
         // Determine the range description
@@ -63,12 +76,15 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         const rangeStart = startIndex + 1;
         const rangeEnd = Math.min(endIndex, totalItems);
 
+        // Calculate usage-weighted margin
+        const currentMargin = totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) : 0;
+
         results.push({
           name: `Group ${groupNumber}`,
           shortName: `G${groupNumber}`,
           itemCount: groupItems.length,
           currentProfit: totalProfit,
-          currentMargin: totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0,
+          currentMargin: currentMargin,
           rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
         });
       }
@@ -78,30 +94,46 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
       if (remainingStartIndex < totalItems) {
         const remainingItems = sortedItems.slice(remainingStartIndex);
         let totalUsage = 0;
+        let totalRevenue = 0;
         let totalProfit = 0;
         let totalUsageWeightedMargin = 0;
+        let validMarginItems = 0;
 
         remainingItems.forEach(item => {
-          const usage = item.revaUsage || 0;
-          const price = item.currentREVAPrice || 0;
-          const cost = item.avgCost || 0;
-          const profit = usage * (price - cost);
-          const margin = price > 0 ? (price - cost) / price : 0;
+          const usage = Math.max(0, item.revaUsage || 0); // Ensure non-negative usage
+          const price = Math.max(0, item.currentREVAPrice || 0); // Ensure non-negative price
+          const cost = Math.max(0, item.avgCost || 0); // Ensure non-negative cost
           
-          totalUsage += usage;
-          totalProfit += profit;
-          totalUsageWeightedMargin += margin * usage;
+          // Only calculate profit if we have valid values
+          if (usage > 0 && price > 0) {
+            const revenue = usage * price;
+            const profit = usage * (price - cost);
+            
+            totalUsage += usage;
+            totalRevenue += revenue;
+            totalProfit += profit;
+            
+            // Calculate margin only for valid items
+            if (price > 0) {
+              const margin = (price - cost) / price * 100; // Convert to percentage
+              totalUsageWeightedMargin += margin * usage;
+              validMarginItems += 1;
+            }
+          }
         });
 
         const rangeStart = remainingStartIndex + 1;
         const rangeEnd = totalItems;
+
+        // Calculate usage-weighted margin
+        const currentMargin = totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) : 0;
 
         results.push({
           name: `Group 6`,
           shortName: `G6`,
           itemCount: remainingItems.length,
           currentProfit: totalProfit,
-          currentMargin: totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0,
+          currentMargin: currentMargin,
           rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
         });
       }
