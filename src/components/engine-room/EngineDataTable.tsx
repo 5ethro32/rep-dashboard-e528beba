@@ -797,4 +797,264 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
-                {columns.map(column =>
+                {/* Star column */}
+                <TableHead className="w-10">
+                  <span className="sr-only">Star</span>
+                </TableHead>
+                
+                {/* Main data columns */}
+                {columns.map((column) => (
+                  <TableHead key={column.field} className={column.bold ? "font-medium" : ""}>
+                    {renderColumnHeader(column)}
+                  </TableHead>
+                ))}
+                
+                {/* Flags column */}
+                <TableHead>
+                  {renderFlagsColumnHeader()}
+                </TableHead>
+                
+                {/* Actions column */}
+                <TableHead className="w-14">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            
+            <TableBody>
+              {paginatedData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length + 3} className="text-center py-8">
+                    No data to display
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedData.map((item) => {
+                  const isEditing = editingItemId === item.id;
+                  const isDirectEditing = directEditCellIds.has(`cell-${item.id}`);
+                  const priceChangePercent = calculatePriceChangePercentage(item);
+                  
+                  // Check if this item is modified
+                  const isModified = item.priceModified === true;
+                  
+                  return (
+                    <TableRow key={item.id}>
+                      {/* Star column */}
+                      <TableCell className="w-10 pr-0 text-center">
+                        {onToggleStar && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => onToggleStar(item.id)}
+                          >
+                            <Star
+                              className={`h-4 w-4 ${starredItems.has(item.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
+                            />
+                            <span className="sr-only">Star item</span>
+                          </Button>
+                        )}
+                      </TableCell>
+                      
+                      {/* Description */}
+                      <TableCell className="max-w-[200px] truncate">
+                        <span
+                          className="cursor-pointer hover:underline"
+                          onClick={() => onShowPriceDetails(item)}
+                        >
+                          {item.description}
+                        </span>
+                      </TableCell>
+                      
+                      {/* In Stock */}
+                      <TableCell>
+                        {item.inStock || 0}
+                      </TableCell>
+                      
+                      {/* Usage */}
+                      <TableCell>
+                        {item.revaUsage || 0}
+                      </TableCell>
+                      
+                      {/* Rank */}
+                      <TableCell>
+                        {item.usageRank || '-'}
+                      </TableCell>
+                      
+                      {/* Avg Cost */}
+                      <TableCell>
+                        {formatCurrency(item.avgCost)}
+                      </TableCell>
+                      
+                      {/* Next BP */}
+                      <TableCell>
+                        {formatNextBuyingPrice(item)}
+                      </TableCell>
+                      
+                      {/* Market Low */}
+                      <TableCell>
+                        {formatCurrency(item.marketLow, item.noMarketPrice)}
+                      </TableCell>
+                      
+                      {/* TML */}
+                      <TableCell>
+                        {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
+                      </TableCell>
+                      
+                      {/* Current Price */}
+                      <TableCell className="font-medium">
+                        {formatCurrency(item.currentREVAPrice)}
+                      </TableCell>
+                      
+                      {/* Current Margin */}
+                      <TableCell>
+                        {formatPercentage(item.currentREVAMargin * 100)}
+                      </TableCell>
+                      
+                      {/* Proposed Price - Editable */}
+                      <TableCell className="relative">
+                        {isDirectEditing ? (
+                          <PriceEditor
+                            initialPrice={item.proposedPrice || 0}
+                            currentPrice={item.currentREVAPrice || 0}
+                            calculatedPrice={item.calculatedPrice || item.currentREVAPrice || 0}
+                            cost={item.avgCost || 0}
+                            onSave={(newPrice) => handleDirectPriceEditSave(item, newPrice)}
+                            onCancel={() => handleDirectEditCancel(item)}
+                            inline={true}
+                            compact={true}
+                          />
+                        ) : (
+                          <div 
+                            className={`cursor-pointer ${onPriceChange ? 'hover:bg-secondary/30 p-1 rounded -m-1' : ''}`} 
+                            onClick={() => onPriceChange && handleCellClick(item)}
+                          >
+                            <span className="font-medium">
+                              {formatCurrency(item.proposedPrice || 0)}
+                            </span>
+                            
+                            {/* Modified indicator dot */}
+                            {isModified && (
+                              <div 
+                                className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" 
+                                title="Price modified"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+                      
+                      {/* % Change */}
+                      <TableCell>
+                        <span className={priceChangePercent > 0 ? "text-green-400" : priceChangePercent < 0 ? "text-red-400" : ""}>
+                          {priceChangePercent.toFixed(2)}%
+                        </span>
+                      </TableCell>
+                      
+                      {/* Proposed Margin */}
+                      <TableCell>
+                        <span className={item.proposedMargin * 100 < 5 ? "text-amber-400" : ""}>
+                          {formatPercentage(item.proposedMargin * 100)}
+                        </span>
+                      </TableCell>
+                      
+                      {/* % vs TML */}
+                      <TableCell>
+                        {formatTMLPercentage(item.tmlPercentage)}
+                      </TableCell>
+                      
+                      {/* Rule */}
+                      <TableCell>
+                        {formatRuleDisplay(item.appliedRule || '')}
+                      </TableCell>
+                      
+                      {/* Flags */}
+                      <TableCell>
+                        {renderFlags(item)}
+                      </TableCell>
+                      
+                      {/* Actions */}
+                      <TableCell className="w-14">
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onShowPriceDetails(item)}
+                            className="h-7 w-7 p-0"
+                            title="Show details"
+                          >
+                            <Info className="h-4 w-4" />
+                          </Button>
+                          
+                          {onPriceChange && !isDirectEditing && !bulkEditMode && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleStartEdit(item)}
+                              className="h-7 w-7 p-0"
+                              title="Edit price"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+      </div>
+    );
+  };
+  
+  // Render pagination controls
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} items
+        </div>
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    );
+  };
+  
+  return (
+    <div>
+      {/* Filters */}
+      {renderUnifiedFilterBar()}
+      
+      {/* Active filters */}
+      {renderActiveFilters()}
+      
+      {/* Main table */}
+      {renderDataTable()}
+      
+      {/* Pagination */}
+      {renderPagination()}
+    </div>
+  );
+};
+
+export default EngineDataTable;

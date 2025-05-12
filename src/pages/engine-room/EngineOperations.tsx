@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
@@ -21,6 +22,7 @@ import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
 import MetricCard from '@/components/MetricCard';
 
+// This component uses the useEngineRoom hook
 const EngineOperationsContent = () => {
   const {
     engineData,
@@ -389,11 +391,13 @@ const EngineOperationsContent = () => {
   );
 };
 
-// Wrapper component to provide context
-const EngineOperations = () => (
-  <EngineRoomProvider>
-    <EngineOperationsContent />
-  </EngineRoomProvider>
-);
+// The wrapper component that provides the context
+const EngineOperations = () => {
+  return (
+    <EngineRoomProvider>
+      <EngineOperationsContent />
+    </EngineRoomProvider>
+  );
+};
 
 export default EngineOperations;
