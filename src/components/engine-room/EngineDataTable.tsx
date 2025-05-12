@@ -759,7 +759,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* TML cell with popover - updated to handle no market price case */}
+                    {/* TML cell with popover - explicitly use trueMarketLow field type for consistency */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="trueMarketLow">
                         {formatCurrency(item.trueMarketLow, item.noMarketPrice)}

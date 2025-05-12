@@ -80,7 +80,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
     // Handle specific fields with custom popover content
     switch (field) {
       case "avgCost":
-        displayLabel = "Average Cost";
+        displayLabel = null; // Remove duplicate header
         displayItems = [
           { label: "Average Cost", value: formatValue(item.avgCost) },
           { label: "Last Purchase", value: item.lastPurchase ? formatValue(item.lastPurchase) : 'N/A' }
@@ -127,29 +127,28 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         }
         break;
       case "nextCost":
-        displayLabel = "Next Buying Price";
+        displayLabel = null; // Remove duplicate header
         displayItems = [
           { label: "Next Buying Price", value: formatValue(item.nextCost || item.nextBuyingPrice) },
           { label: "Current Cost", value: item.avgCost ? formatValue(item.avgCost) : 'N/A' }
         ];
         break;
       case "currentREVAPrice":
-        displayLabel = "Current Price";
+        displayLabel = null; // Remove duplicate header
         displayItems = [
           { label: "Current Price", value: formatValue(item.currentREVAPrice) },
           { label: "Previous Price", value: item.previousPrice ? formatValue(item.previousPrice) : 'N/A' }
         ];
         break;
       case "currentREVAMargin":
-        displayLabel = "Current Margin";
-        // Ensure we're using the actual margin data from the item
+        displayLabel = null; // Remove duplicate header
         displayItems = [
           { label: "Current Margin", value: formatPercentage(item.currentREVAMargin) },
           { label: "Target Margin", value: item.targetMargin ? formatPercentage(item.targetMargin) : '15.0%' }
         ];
         break;
       case "proposedPrice":
-        displayLabel = "Proposed Price";
+        displayLabel = null; // Remove duplicate header
         displayItems = [
           { label: "Proposed Price", value: formatValue(item.proposedPrice) },
           { label: "Calculated Price", value: item.calculatedPrice ? formatValue(item.calculatedPrice) : formatValue(item.proposedPrice) },
@@ -159,7 +158,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         ];
         break;
       case "proposedMargin":
-        displayLabel = "Proposed Margin";
+        displayLabel = null; // Remove duplicate header
         // Fix margin values by explicitly using the values from the item
         displayItems = [
           { label: "Proposed Margin", value: formatPercentage(item.proposedMargin) },
@@ -179,6 +178,16 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
             ((item.proposedPrice - (item.nextCost || item.nextBuyingPrice)) / item.proposedPrice) * 100 : 
             null
         });
+        break;
+      case "trueMarketLow":
+        displayLabel = null; // Remove duplicate header
+        const lowestCompetitorForTml = findLowestPriceCompetitor(item);
+        displayItems = [
+          { 
+            label: lowestCompetitorForTml ? `${lowestCompetitorForTml} (Lowest)` : "True Market Low", 
+            value: formatValue(item.trueMarketLow) 
+          }
+        ];
         break;
       default:
         // For column headers or unspecified fields, use defaults
