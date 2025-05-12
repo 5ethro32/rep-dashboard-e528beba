@@ -52,11 +52,14 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   };
   
   const handleReset = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation(); // Prevent event bubbling
+    console.log('PriceEditor: Reset clicked, setting price to:', calculatedPrice.toFixed(2));
     setPriceValue(calculatedPrice.toFixed(2));
   };
   
   const handleSave = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation(); // Prevent event bubbling
     
     const numericPrice = parseFloat(priceValue);
@@ -75,6 +78,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   };
   
   const handleCancelClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation(); // Prevent event bubbling
     console.log('PriceEditor: Cancel clicked');
     onCancel();
@@ -121,9 +125,9 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           <X className="h-3 w-3" />
         </Button>
         <Button 
-          variant={isValid ? "ghost" : "outline"} 
+          variant={isValid ? "secondary" : "outline"} 
           size="icon" 
-          className={`h-7 w-7 p-0 ${isValid ? "hover:bg-green-500/20" : "opacity-50 cursor-not-allowed"}`} 
+          className={`h-7 w-7 p-0 ${isValid ? "bg-green-100 hover:bg-green-200" : "opacity-50 cursor-not-allowed"}`} 
           onClick={handleSave} 
           disabled={!isValid} 
           title="Save"
@@ -189,6 +193,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           size="sm" 
           onClick={handleSave} 
           disabled={!isValid}
+          className={isValid ? "bg-green-600 hover:bg-green-700" : ""}
         >
           <Check className="h-3 w-3 mr-1" />
           Save
