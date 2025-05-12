@@ -700,11 +700,12 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     );
   };
 
-  // Render the data table with rows - Now used for one combined table
+  // Render the data table with rows - Modified to place headers outside of ScrollArea
   const renderDataTable = () => {
     return (
       <div className="rounded-md border overflow-hidden">
-        <ScrollArea className="h-[600px]">
+        {/* Table header outside ScrollArea */}
+        <div className="w-full">
           <Table>
             <TableHeader>
               <TableRow>
@@ -719,6 +720,12 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                 <TableHead className="bg-gray-900/70">Actions</TableHead>
               </TableRow>
             </TableHeader>
+          </Table>
+        </div>
+        
+        {/* Table body inside ScrollArea */}
+        <ScrollArea className="h-[600px]">
+          <Table>
             <TableBody>
               {paginatedData.length === 0 && (
                 <TableRow>
