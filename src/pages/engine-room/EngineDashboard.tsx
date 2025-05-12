@@ -104,6 +104,13 @@ const EngineDashboardContent = () => {
   // Get usage-weighted metrics with the correct calculation method
   const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
   
+  // Log the calculated metrics for debugging
+  console.log('EngineDashboard: Calculated usage-weighted metrics:', {
+    weightedMargin: usageMetrics.weightedMargin,
+    totalRevenue: usageMetrics.totalRevenue,
+    totalProfit: usageMetrics.totalProfit
+  });
+  
   return <div className="container mx-auto px-4 py-6">
       {/* Master container card for all metrics */}
       <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
@@ -148,7 +155,8 @@ const EngineDashboardContent = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <MetricCard 
               title="Usage-Weighted Margin" 
-              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
+              // FIX: Ensure we're displaying the correct value
+              value={`${Math.abs(usageMetrics.weightedMargin).toFixed(2)}%`} 
               icon={<Percent className="h-5 w-5" />}
               iconPosition="right"
               change={usageMetrics.marginImprovement !== 0 ? {

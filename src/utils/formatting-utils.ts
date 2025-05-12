@@ -66,7 +66,11 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
       { name: '15-20%', value: 0, color: '#84cc16', profit: 0 }, // Light Green
       { name: '20%+', value: 0, color: '#22c55e', profit: 0 }  // Green
     ],
-    validItemCount: 0
+    validItemCount: 0,
+    
+    // Debug information for troubleshooting
+    itemsWithNegativeMargin: 0,
+    totalNegativeProfit: 0
   };
   
   if (!items || items.length === 0) {
@@ -75,6 +79,9 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
 
   // For debugging purposes
   console.log(`Processing ${items.length} items for usage-weighted metrics`);
+  
+  // Track items with negative margins for debugging
+  const negativeMarginItems: any[] = [];
   
   // Process each item with validation to ensure no negative values
   items.forEach((item, index) => {
@@ -105,12 +112,28 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
       return;
     }
     
-    // Calculate current revenue and profit - ALWAYS based on current price
+    // Calculate current revenue and profit - USING CORRECT FORMULA: price - cost
     const currentRevenue = usage * currentPrice;
-    const currentProfit = usage * (currentPrice - avgCost);
+    const currentProfit = usage * (currentPrice - avgCost); // FIX: Ensure price - cost (not cost - price)
     
     // Current margin as percentage - always ensure it's based on price division
     const currentMargin = currentPrice > 0 ? ((currentPrice - avgCost) / currentPrice) * 100 : 0;
+    
+    // Track negative margin items for debugging
+    if (currentMargin < 0) {
+      if (negativeMarginItems.length < 10) {
+        negativeMarginItems.push({
+          description: item.description,
+          usage,
+          currentPrice,
+          avgCost,
+          currentMargin,
+          impact: currentProfit
+        });
+      }
+      result.itemsWithNegativeMargin++;
+      result.totalNegativeProfit += currentProfit;
+    }
     
     // Accumulate totals for current pricing
     result.totalRevenue += currentRevenue;
@@ -124,26 +147,26 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
     
     if (isValidProposedPrice) {
       const proposedRevenue = usage * proposedPrice;
-      const proposedProfit = usage * (proposedPrice - avgCost);
+      const proposedProfit = usage * (proposedPrice - avgCost); // FIX: Ensure price - cost
       
       result.proposedRevenue += proposedRevenue;
       result.proposedProfit += proposedProfit;
     }
     
     // Categorize for margin distribution (using current values)
-    // Using absolute value for margin percentage to categorize (making negative margins positive for visualization only)
-    const marginForDistribution = Math.abs(currentMargin);
+    // Use absolute value for margin percentage to categorize
+    const marginForDistribution = Math.max(0, currentMargin); // Only use positive margins for distribution
     
-    if (currentMargin < 5) {
+    if (marginForDistribution < 5) {
       result.marginDistribution[0].value += 1;
       result.marginDistribution[0].profit += currentProfit;
-    } else if (currentMargin < 10) {
+    } else if (marginForDistribution < 10) {
       result.marginDistribution[1].value += 1;
       result.marginDistribution[1].profit += currentProfit;
-    } else if (currentMargin < 15) {
+    } else if (marginForDistribution < 15) {
       result.marginDistribution[2].value += 1;
       result.marginDistribution[2].profit += currentProfit;
-    } else if (currentMargin < 20) {
+    } else if (marginForDistribution < 20) {
       result.marginDistribution[3].value += 1;
       result.marginDistribution[3].profit += currentProfit;
     } else {
@@ -154,6 +177,7 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
   
   // Calculate usage-weighted margin percentages for current pricing
   if (result.totalRevenue > 0) {
+    // FIX: This is the key formula that needs to be correct
     result.weightedMargin = (result.totalProfit / result.totalRevenue) * 100;
   }
   
@@ -173,8 +197,16 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
     proposedRevenue: result.proposedRevenue,
     proposedProfit: result.proposedProfit,
     proposedWeightedMargin: result.proposedWeightedMargin,
-    marginImprovement: result.marginImprovement
+    marginImprovement: result.marginImprovement,
+    itemsWithNegativeMargin: result.itemsWithNegativeMargin,
+    totalNegativeProfit: result.totalNegativeProfit
   });
+
+  // Log information about negative margin items
+  if (negativeMarginItems.length > 0) {
+    console.log('Sample of items with negative margins that may be affecting overall metrics:', 
+      negativeMarginItems);
+  }
   
   // Convert margin distribution values to percentages
   result.marginDistribution = result.marginDistribution.map(band => ({

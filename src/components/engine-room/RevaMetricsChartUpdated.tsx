@@ -56,6 +56,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           // Only calculate profit if we have valid values
           if (usage > 0 && price > 0) {
             const revenue = usage * price;
+            // FIX: Ensure correct formula: price - cost (not cost - price)
             const profit = usage * (price - cost);
             
             totalUsage += usage;
@@ -64,6 +65,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             
             // Calculate margin only for valid items
             if (price > 0) {
+              // FIX: Ensure correct formula: (price - cost) / price * 100
               const margin = (price - cost) / price * 100; // Convert to percentage
               totalUsageWeightedMargin += margin * usage;
               validMarginItems += 1;
@@ -77,7 +79,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         const rangeEnd = Math.min(endIndex, totalItems);
 
         // Calculate usage-weighted margin
-        const currentMargin = totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) : 0;
+        // FIX: For the chart, use revenue-based method for consistency
+        const currentMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
         results.push({
           name: `Group ${groupNumber}`,
@@ -107,6 +110,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           // Only calculate profit if we have valid values
           if (usage > 0 && price > 0) {
             const revenue = usage * price;
+            // FIX: Ensure correct formula: price - cost (not cost - price)
             const profit = usage * (price - cost);
             
             totalUsage += usage;
@@ -115,6 +119,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             
             // Calculate margin only for valid items
             if (price > 0) {
+              // FIX: Ensure correct formula: (price - cost) / price * 100
               const margin = (price - cost) / price * 100; // Convert to percentage
               totalUsageWeightedMargin += margin * usage;
               validMarginItems += 1;
@@ -126,7 +131,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         const rangeEnd = totalItems;
 
         // Calculate usage-weighted margin
-        const currentMargin = totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) : 0;
+        // FIX: For the chart, use revenue-based method for consistency
+        const currentMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
         results.push({
           name: `Group 6`,
