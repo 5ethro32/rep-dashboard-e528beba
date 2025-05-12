@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -119,13 +118,11 @@ const EngineDashboardContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Master container card for all metrics with enhanced styling */}
-      <Card className="mb-8 border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/10 px-6 py-3 border-b border-white/5">
-          <h2 className="text-xl font-semibold">Dashboard Metrics</h2>
-        </div>
-        
+      {/* Master container card for all metrics */}
+      <Card className="mb-8 border border-white/10 bg-gray-900/40 backdrop-blur-sm">
         <CardContent className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Dashboard Metrics</h2>
+          
           {/* Primary metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <MetricCard
@@ -145,7 +142,7 @@ const EngineDashboardContent = () => {
             />
             
             <MetricCard
-              title="Cost < Market Low"
+              title="Average Cost < Market Low"
               value={`${metrics.avgCostLessThanMLCount}`}
               subtitle={`${Math.round((metrics.avgCostLessThanMLCount / metrics.totalItems) * 100)}% of items`}
               icon={<TrendingUp />}
@@ -160,40 +157,48 @@ const EngineDashboardContent = () => {
               iconPosition="right"
             />
           </div>
+          
+          {/* Usage-weighted metrics section */}
+          <h3 className="text-lg font-medium mb-4 mt-6">Usage-Weighted Analysis</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <MetricCard
+              title="Usage-Weighted Margin"
+              value={`${usageMetrics.weightedMargin.toFixed(2)}%`}
+              change={usageMetrics.marginImprovement !== 0 ? {
+                value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
+                type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+              subtitle="Total Profit ÷ Total Revenue × 100%"
+            />
+            
+            <MetricCard
+              title="Total Revenue (Usage-Weighted)"
+              value={formatCurrency(usageMetrics.totalRevenue)}
+              subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`}
+            />
+            
+            <MetricCard
+              title="Usage-Weighted Profit"
+              value={formatCurrency(usageMetrics.totalProfit)}
+              subtitle="Sum of ((Price - AvgCost) × Usage)"
+            />
+          </div>
         </CardContent>
       </Card>
 
       {/* REVA Metrics Chart - Using the updated chart component */}
       <div className="mb-8">
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/10 px-6 py-3 border-b border-white/5">
-            <h2 className="text-xl font-semibold">Pricing Analysis</h2>
-          </div>
-          <CardContent className="p-6">
-            <RevaMetricsChartUpdated data={engineData.chartData || []} />
-          </CardContent>
-        </Card>
+        <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
+        <div className="border border-white/10 bg-gray-900/40 backdrop-blur-sm rounded-lg p-4">
+          <RevaMetricsChartUpdated data={engineData.chartData || []} />
+        </div>
       </div>
 
       {/* Margin Distribution Charts */}
-      <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-xl overflow-hidden mb-8">
-        <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/10 px-6 py-3 border-b border-white/5">
-          {/* Section title moved to card header */}
-        </div>
-        <CardContent className="p-6">
-          <UsageWeightedMetrics data={engineData.items || []} />
-        </CardContent>
-      </Card>
+      <UsageWeightedMetrics data={engineData.items || []} />
 
       {/* Market Trend Analysis */}
-      <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-xl overflow-hidden mb-8">
-        <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/10 px-6 py-3 border-b border-white/5">
-          {/* Section title moved to component */}
-        </div>
-        <CardContent className="p-6">
-          <MarketTrendAnalysis data={engineData.items || []} />
-        </CardContent>
-      </Card>
+      <MarketTrendAnalysis data={engineData.items || []} />
     </div>
   );
 };
