@@ -1,26 +1,10 @@
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 import { processEngineExcelFile } from '@/utils/engine-excel-utils';
-import { EngineData, RuleConfig } from '@/types/engine-room.types';
-
-// Define the default rule configuration
-const defaultRuleConfig: RuleConfig = {
-  rule1: {
-    group1_2: { trend_down: 1.05, trend_flat_up: 1.08 },
-    group3_4: { trend_down: 1.07, trend_flat_up: 1.10 },
-    group5_6: { trend_down: 1.10, trend_flat_up: 1.12 }
-  },
-  rule2: {
-    group1_2: { trend_down: 1.02, trend_flat_up: 1.04 },
-    group3_4: { trend_down: 1.03, trend_flat_up: 1.05 },
-    group5_6: { trend_down: 1.05, trend_flat_up: 1.07 }
-  }
-};
 
 interface EngineRoomContextType {
-  engineData: EngineData | null;
+  engineData: any;
   isLoading: boolean;
   error: any;
   modifiedItems: Set<string>;
@@ -62,12 +46,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         // IMPORTANT: Force recalculation of metrics when data is loaded from cache
         // This ensures any fixes to calculation formulas are applied to cached data
         try {
-          const parsedData: EngineData = JSON.parse(cachedData);
-          
-          // Ensure rule configuration exists or use default
-          if (!parsedData.ruleConfig) {
-            parsedData.ruleConfig = defaultRuleConfig;
-          }
+          const parsedData = JSON.parse(cachedData);
           
           // If data exists, recalculate key margin and profit metrics 
           // using the CORRECTED formula: (price - cost) / price
@@ -122,7 +101,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     staleTime: Infinity // Don't refetch automatically
   });
 
-  // Handle file upload
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.csv')) {
       toast({
@@ -149,19 +127,12 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const processedData = await processEngineExcelFile(file);
       
       // Add workflow related fields to the processed data
-      if (processedData && Array.isArray(processedData.items)) {
-        processedData.items = processedData.items.map((item: any) => ({
-          ...item,
-          priceModified: false,
-          calculatedPrice: item.proposedPrice, // Store the original calculated price
-          workflowStatus: 'draft',
-        }));
-        
-        // Make sure we have a valid rule config
-        if (!processedData.ruleConfig) {
-          processedData.ruleConfig = defaultRuleConfig;
-        }
-      }
+      processedData.items = processedData.items.map((item: any) => ({
+        ...item,
+        priceModified: false,
+        calculatedPrice: item.proposedPrice, // Store the original calculated price
+        workflowStatus: 'draft',
+      }));
       
       // Reset workflow status and modified items
       setWorkflowStatus('draft');
@@ -470,7 +441,18 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
     
     // Update flagged items as well
-    updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
+    updatedData.flaggedItems = updatedData.items.map((item: any) => {
+      if (itemIds.includes(item.id)) {
+        return {
+          ...item,
+          workflowStatus: 'rejected',
+          reviewDate: new Date().toISOString(),
+          reviewer: 'Manager',
+          reviewComments: comment
+        };
+      }
+      return item;
+    });
     
     // Update the local storage and query cache
     localStorage.setItem('engineRoomData', JSON.stringify(updatedData));

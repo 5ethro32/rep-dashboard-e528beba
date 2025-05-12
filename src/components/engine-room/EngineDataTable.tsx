@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -113,14 +113,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const [ruleFilter, setRuleFilter] = useState<string>('all');
   const itemsPerPage = 50; // Increased for larger tables
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  // Reset scroll position when entering bulk edit mode
-  useEffect(() => {
-    if (bulkEditMode && scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = 0;
-    }
-  }, [bulkEditMode]);
 
   // Use external flag filter if provided
   useEffect(() => {
@@ -415,9 +407,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     // Clear all edits when toggling bulk mode
     setEditingValues({});
     setEditingItemId(null);
-    // Reset to first page when entering bulk edit mode
-    setCurrentPage(1);
-    // Scroll position will be reset by the useEffect hook
   };
 
   // Toggle the hide inactive products filter
@@ -715,7 +704,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderDataTable = () => {
     return (
       <div className="rounded-md border overflow-hidden">
-        <ScrollArea className="h-[600px]" ref={scrollAreaRef}>
+        <ScrollArea className="h-[600px]">
           <Table>
             <TableHeader className="sticky top-0 z-10">
               <TableRow>
@@ -807,12 +796,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           currentPrice={item.currentREVAPrice || 0} 
                           calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} 
                           cost={item.avgCost || 0} 
-                          onSave={(newPrice) => {
-                            // Ensure we're calling onPriceChange with the correct arguments
-                            if (onPriceChange) {
-                              onPriceChange(item, newPrice);
-                            }
-                          }} 
+                          onSave={newPrice => onPriceChange && onPriceChange(item, newPrice)} 
                           onCancel={() => {}} 
                           compact={true} 
                         />

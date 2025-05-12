@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -5,7 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Save, Undo2 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { RuleConfig } from '@/types/engine-room.types';
+
+interface RuleConfig {
+  rule1: {
+    group1_2: { trend_down: number; trend_flat_up: number };
+    group3_4: { trend_down: number; trend_flat_up: number };
+    group5_6: { trend_down: number; trend_flat_up: number };
+  };
+  rule2: {
+    group1_2: { trend_down: number; trend_flat_up: number };
+    group3_4: { trend_down: number; trend_flat_up: number };
+    group5_6: { trend_down: number; trend_flat_up: number };
+  };
+}
 
 interface ConfigurationPanelProps {
   currentConfig: RuleConfig;
