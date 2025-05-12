@@ -18,8 +18,8 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   const metrics = calculateUsageWeightedMetrics(data);
   
   return (
-    <div className="space-y-6 mb-6">
-      <div className="flex items-center justify-between">
+    <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg p-6 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Margin Analysis</h2>
       </div>
       
@@ -28,7 +28,6 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
         <MetricCard 
           title="Usage-Weighted Margin" 
           value={`${metrics.weightedMargin.toFixed(2)}%`} 
-          subtitle="Total Profit ÷ Total Revenue × 100%" 
           icon={<Percent className="h-5 w-5" />}
           iconPosition="right"
           change={metrics.marginImprovement !== 0 ? {
@@ -48,13 +47,12 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
         <MetricCard 
           title="Usage-Weighted Profit" 
           value={formatCurrency(metrics.totalProfit)} 
-          subtitle="Sum of ((Price - AvgCost) × Usage)"
           icon={<TrendingUp className="h-5 w-5" />}
           iconPosition="right"
         />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
           <CardContent className="p-4">
             <h3 className="font-medium text-sm mb-4">Margin Distribution by Product Count</h3>
@@ -86,7 +84,7 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
           </CardContent>
         </Card>
       </div>
-    </div>
+    </Card>
   );
 };
 

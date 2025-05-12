@@ -9,6 +9,7 @@ import { Star, Filter, SlidersHorizontal, EyeOff, Info } from 'lucide-react';
 import CellDetailsPopover from './CellDetailsPopover';
 import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Card } from '@/components/ui/card';
 
 interface ExceptionsTableProps {
   data: any[];
@@ -223,7 +224,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
           <Button
             variant="outline"
             size="sm"
-            className={`flex items-center gap-1 ${hideInactiveProducts ? 'bg-muted/50' : ''}`}
+            className={`flex items-center gap-1 ${hideInactiveProducts ? 'bg-muted/50' : 'bg-gray-900/40'}`}
             onClick={() => setHideInactiveProducts(!hideInactiveProducts)}
           >
             <EyeOff className="h-3.5 w-3.5" />
@@ -233,7 +234,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 bg-gray-900/40"
             onClick={() => {
               console.log("Bulk edit prices");
               // Add bulk edit functionality 
@@ -246,7 +247,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
           <Button
             variant="outline"
             size="sm"
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 bg-gray-900/40"
             onClick={() => {
               console.log("View starred items");
               // Add view starred functionality
@@ -259,7 +260,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
       </div>
       
       {/* Exceptions table with sticky header and first column */}
-      <div className="rounded-md border bg-gray-900/40 backdrop-blur-sm overflow-hidden">
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg overflow-hidden">
         <div className="overflow-x-auto max-h-[calc(100vh-300px)]">
           <Table>
             <TableHeader className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur-sm">
@@ -363,7 +364,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
             </TableBody>
           </Table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

@@ -106,7 +106,7 @@ const EngineDashboardContent = () => {
   
   return <div className="container mx-auto px-4 py-6">
       {/* Master container card for all metrics */}
-      <Card className="mb-8 border border-white/10 bg-gray-900/40 backdrop-blur-sm">
+      <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
         <CardContent className="p-6">
           <h2 className="text-xl font-semibold mb-4">Dashboard Metrics</h2>
           
@@ -122,8 +122,7 @@ const EngineDashboardContent = () => {
             
             <MetricCard 
               title="Overall Margin" 
-              value={`${metrics.overallMargin.toFixed(2)}%`} 
-              subtitle="Usage-weighted average" 
+              value={`${metrics.overallMargin.toFixed(2)}%`}
               icon={<Percent className="h-5 w-5" />} 
               iconPosition="right" 
             />
@@ -150,9 +149,11 @@ const EngineDashboardContent = () => {
       {/* REVA Metrics Chart - Using the updated chart component */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
-        <div className="border border-white/10 bg-gray-900/40 backdrop-blur-sm rounded-lg p-4">
-          <RevaMetricsChartUpdated data={engineData.chartData || []} />
-        </div>
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+          <CardContent className="p-4">
+            <RevaMetricsChartUpdated data={engineData.chartData || []} />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Margin Distribution Charts */}

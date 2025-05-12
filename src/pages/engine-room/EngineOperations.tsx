@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info } from 'lucide-react';
@@ -269,7 +268,7 @@ const EngineOperationsContent = () => {
 
       {/* Flag metrics cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
           <CardContent className="p-4">
             <h3 className="text-sm font-medium mb-2">High Price Flags</h3>
             <div className="text-2xl font-bold mb-1 text-red-400">
@@ -281,7 +280,7 @@ const EngineOperationsContent = () => {
           </CardContent>
         </Card>
         
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
           <CardContent className="p-4">
             <h3 className="text-sm font-medium mb-2">Low Margin Flags</h3>
             <div className="text-2xl font-bold mb-1 text-amber-400">
@@ -293,7 +292,7 @@ const EngineOperationsContent = () => {
           </CardContent>
         </Card>
         
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
           <CardContent className="p-4">
             <h3 className="text-sm font-medium mb-2">Items to Review</h3>
             <div className="text-2xl font-bold mb-1">{modifiedItems.size}</div>
@@ -325,24 +324,24 @@ const EngineOperationsContent = () => {
 
       {/* Tabs for different views */}
       <Tabs defaultValue="all-items" className="mt-8">
-        <TabsList className="inline-flex w-full">
-          <TabsTrigger key="all-items" value="all-items">
+        <TabsList className="grid grid-cols-5 w-full">
+          <TabsTrigger key="all-items" value="all-items" className="flex gap-2">
             All Items
             {modifiedItems.size > 0 && (
-              <Badge variant="secondary" className="ml-2">{modifiedItems.size}</Badge>
+              <Badge variant="secondary" className="bg-finance-red text-white">{modifiedItems.size}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger key="exceptions" value="exceptions">
+          <TabsTrigger key="exceptions" value="exceptions" className="flex gap-2">
             Exceptions
-            <Badge variant="secondary" className="ml-2">{metrics.rule1Flags + metrics.rule2Flags}</Badge>
+            <Badge variant="secondary" className="bg-amber-500 text-white">{metrics.rule1Flags + metrics.rule2Flags}</Badge>
           </TabsTrigger>
-          <TabsTrigger key="submitted" value="submitted">
+          <TabsTrigger key="submitted" value="submitted" className="flex gap-2">
             Submitted
-            <Badge variant="secondary" className="ml-2">{getPendingApprovalCount()}</Badge>
+            <Badge variant="secondary" className="bg-blue-500 text-white">{getPendingApprovalCount()}</Badge>
           </TabsTrigger>
-          <TabsTrigger key="starred" value="starred">
+          <TabsTrigger key="starred" value="starred" className="flex gap-2">
             Starred
-            <Badge variant="secondary" className="ml-2">{starredItems.size}</Badge>
+            <Badge variant="secondary" className="bg-yellow-500 text-white">{starredItems.size}</Badge>
           </TabsTrigger>
           <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
         </TabsList>

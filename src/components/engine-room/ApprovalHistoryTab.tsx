@@ -11,6 +11,7 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from '@/components/ui/pagination';
+import { Card } from '@/components/ui/card';
 
 interface ApprovalHistoryTabProps {
   data: any[];
@@ -158,20 +159,20 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
     switch (status) {
       case 'approved':
         return (
-          <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-900">
-            <CheckCircle className="h-3 w-3 mr-1" /> Approved
+          <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-900 flex items-center gap-1">
+            <CheckCircle className="h-3 w-3" /> Approved
           </Badge>
         );
       case 'rejected':
         return (
-          <Badge variant="outline" className="bg-red-900/20 text-red-400 border-red-900">
-            <XCircle className="h-3 w-3 mr-1" /> Rejected
+          <Badge variant="outline" className="bg-red-900/20 text-red-400 border-red-900 flex items-center gap-1">
+            <XCircle className="h-3 w-3" /> Rejected
           </Badge>
         );
       default:
         return (
-          <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900">
-            <Clock className="h-3 w-3 mr-1" /> Pending
+          <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900 flex items-center gap-1">
+            <Clock className="h-3 w-3" /> Pending
           </Badge>
         );
     }
@@ -188,7 +189,7 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
   const renderApprovalTable = (items: any[]) => {
     return (
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur-sm">
           <TableRow>
             <TableHead className="cursor-pointer" onClick={() => handleSort('description')}>
               <div className="flex items-center">
@@ -245,12 +246,13 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
               </div>
             </TableHead>
             <TableHead>Comments</TableHead>
+            <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={10} className="text-center py-10">
+              <TableCell colSpan={11} className="text-center py-10">
                 No approval history items found
               </TableCell>
             </TableRow>
@@ -260,7 +262,7 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
               const priceChangePercentage = calculatePriceChangePercentage(item);
               
               return (
-                <TableRow key={index}>
+                <TableRow key={index} className="hover:bg-gray-800/40">
                   <TableCell className="font-medium">{item.description || 'Unknown'}</TableCell>
                   <TableCell>{item.currentREVAPrice ? `£${item.currentREVAPrice.toFixed(2)}` : 'N/A'}</TableCell>
                   <TableCell>{item.proposedPrice ? `£${item.proposedPrice.toFixed(2)}` : 'N/A'}</TableCell>
@@ -281,9 +283,8 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
                   </TableCell>
                   <TableCell>
                     <Star 
-                      className="h-4 w-4 cursor-pointer"
+                      className={`h-4 w-4 cursor-pointer ${starredItems.has(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400 hover:text-gray-300'}`}
                       onClick={(e) => handleToggleStar(e, item.id)}
-                      style={{ color: starredItems.has(item.id) ? 'yellow' : 'gray' }}
                     />
                   </TableCell>
                 </TableRow>
@@ -300,11 +301,11 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
     if (filterByRank) {
       // If filtering by rank, don't group
       return (
-        <div className="rounded-md border overflow-hidden">
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             {renderApprovalTable(paginatedData)}
           </div>
-        </div>
+        </Card>
       );
     }
 
@@ -313,11 +314,11 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
         {Object.keys(groupedByRank).sort((a, b) => Number(a) - Number(b)).map((rank) => (
           <div key={rank} className="space-y-2">
             <h3 className="text-lg font-medium">Usage Rank {rank} ({groupedByRank[rank].length} items)</h3>
-            <div className="rounded-md border overflow-hidden">
+            <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg overflow-hidden">
               <div className="overflow-x-auto">
                 {renderApprovalTable(groupedByRank[rank].slice(0, itemsPerPage))}
               </div>
-            </div>
+            </Card>
             {groupedByRank[rank].length > itemsPerPage && (
               <div className="text-center text-sm text-muted-foreground mt-2">
                 <Button 
@@ -367,7 +368,7 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
         </div>
 
         <select 
-          className="bg-gray-800 border border-gray-700 rounded-md px-2 py-2 text-sm w-32"
+          className="bg-gray-900/40 border border-gray-700 rounded-md px-2 py-2 text-sm w-32"
           value={filterByRank || ''}
           onChange={(e) => setFilterByRank(e.target.value || null)}
         >
@@ -382,7 +383,7 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
             variant="outline" 
             size="sm"
             onClick={onExport}
-            className="whitespace-nowrap"
+            className="whitespace-nowrap bg-gray-900/40"
           >
             <Download className="h-4 w-4 mr-2" />
             Export History
@@ -391,11 +392,11 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
       </div>
       
       {filterByRank ? (
-        <div className="rounded-md border overflow-hidden">
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             {renderApprovalTable(paginatedData)}
           </div>
-        </div>
+        </Card>
       ) : (
         renderGroupedItems()
       )}

@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Send, Download, Save, RotateCcw, Info, AlertTriangle, FileText } from 'lucide-react';
+import { AlertCircle, Send, Download, Save, RotateCcw, Info, AlertTriangle, FileText, PenLine, CheckCircle, XCircle } from 'lucide-react';
 
 interface PricingActionsTabsProps {
   modifiedCount: number;
@@ -78,33 +78,52 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
   };
   
   return (
-    <Card className="border border-gray-800 bg-gray-950/50 w-full">
+    <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg w-full">
       <CardContent className="p-4 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
             <h3 className="text-lg font-medium">Pricing Actions</h3>
             <div className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor()}`}>
               {getStatusText()}
             </div>
           </div>
-          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+          
+          <div className="flex flex-wrap gap-2">
             {modifiedCount > 0 && (
-              <div className="flex items-center">
-                <Info className="h-3 w-3 mr-1" />
-                <span>{modifiedCount} modified prices</span>
-              </div>
+              <Badge variant="outline" className="bg-finance-red/10 border-finance-red/30 text-finance-red flex items-center gap-1 py-1 px-3">
+                <PenLine className="h-3 w-3" />
+                <span>{modifiedCount} modified</span>
+              </Badge>
+            )}
+            {approvalMetrics.pending > 0 && (
+              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-400 flex items-center gap-1 py-1 px-3">
+                <AlertCircle className="h-3 w-3" />
+                <span>{approvalMetrics.pending} pending</span>
+              </Badge>
+            )}
+            {approvalMetrics.approved > 0 && (
+              <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400 flex items-center gap-1 py-1 px-3">
+                <CheckCircle className="h-3 w-3" />
+                <span>{approvalMetrics.approved} approved</span>
+              </Badge>
+            )}
+            {approvalMetrics.rejected > 0 && (
+              <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 flex items-center gap-1 py-1 px-3">
+                <XCircle className="h-3 w-3" />
+                <span>{approvalMetrics.rejected} rejected</span>
+              </Badge>
             )}
             {totalExceptions > 0 && (
-              <div className="flex items-center ml-3">
-                <AlertTriangle className="h-3 w-3 mr-1 text-amber-400" />
+              <Badge variant="outline" className="bg-amber-700/10 border-amber-700/30 text-amber-400 flex items-center gap-1 py-1 px-3">
+                <AlertTriangle className="h-3 w-3" />
                 <span>{totalExceptions} exceptions</span>
-              </div>
+              </Badge>
             )}
           </div>
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={onSave} disabled={modifiedCount === 0}>
+          <Button variant="outline" size="sm" onClick={onSave} disabled={modifiedCount === 0} className="bg-gray-900/40">
             <Save className="h-4 w-4 mr-2" />
             Save Changes
           </Button>
@@ -114,7 +133,7 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
             Submit for Approval
           </Button>
           
-          <Button variant="outline" size="sm" onClick={onReset} disabled={modifiedCount === 0}>
+          <Button variant="outline" size="sm" onClick={onReset} disabled={modifiedCount === 0} className="bg-gray-900/40">
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset Changes
           </Button>
