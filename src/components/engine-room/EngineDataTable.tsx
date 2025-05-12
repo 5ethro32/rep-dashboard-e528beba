@@ -45,9 +45,9 @@ const columns = [{
   format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
   filterable: false
 }, {
-  field: 'nextBuyingPrice',
+  field: 'nextCost',
   label: 'Next BP', 
-  format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
+  // Don't use simple format here - we'll use a custom formatter
   filterable: false
 }, {
   field: 'marketLow',
