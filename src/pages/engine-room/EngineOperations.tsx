@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package } from 'lucide-react';
@@ -95,7 +94,7 @@ const EngineOperationsContent = () => {
     };
   };
   
-  // Show item details
+  // Show item details - this will now be used by both tables
   const handleShowItemDetails = (item: any) => {
     setSelectedItem(item);
     setShowPricingExplainer(true);
@@ -327,15 +326,23 @@ const EngineOperationsContent = () => {
       {/* Tabs for different views */}
       <Tabs defaultValue="all-items" className="mt-8">
         <TabsList className="inline-flex w-full">
-          <TabsTrigger key="all-items" value="all-items">All Items</TabsTrigger>
+          <TabsTrigger key="all-items" value="all-items">
+            All Items
+            {modifiedItems.size > 0 && (
+              <Badge variant="secondary" className="ml-2">{modifiedItems.size}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger key="exceptions" value="exceptions">
-            Exceptions ({metrics.rule1Flags + metrics.rule2Flags})
+            Exceptions
+            <Badge variant="secondary" className="ml-2">{metrics.rule1Flags + metrics.rule2Flags}</Badge>
           </TabsTrigger>
           <TabsTrigger key="submitted" value="submitted">
-            Submitted ({getPendingApprovalCount()})
+            Submitted
+            <Badge variant="secondary" className="ml-2">{getPendingApprovalCount()}</Badge>
           </TabsTrigger>
           <TabsTrigger key="starred" value="starred">
-            Starred ({starredItems.size})
+            Starred
+            <Badge variant="secondary" className="ml-2">{starredItems.size}</Badge>
           </TabsTrigger>
           <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
         </TabsList>
@@ -390,7 +397,7 @@ const EngineOperationsContent = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Pricing rule explainer dialog */}
+      {/* Pricing rule explainer dialog - used by both tables now */}
       {showPricingExplainer && selectedItem && (
         <PricingRuleExplainer
           item={selectedItem}

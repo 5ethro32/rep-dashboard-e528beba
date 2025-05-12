@@ -270,7 +270,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Next Cost</p>
                     <div className="flex items-center space-x-2">
-                      <p className="text-lg font-semibold">{formatCurrency(item.nextCost)}</p>
+                      <p className="text-lg font-semibold">{formatCurrency(item.nextCost || item.nextBuyingPrice)}</p>
                       {item.trend === 'TrendDown' ? (
                         <TrendingDown className="h-4 w-4 text-green-500" />
                       ) : (
