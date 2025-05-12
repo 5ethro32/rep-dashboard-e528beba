@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { SummaryData } from '@/types/rep-performance.types';
@@ -83,10 +84,11 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   const [availableReps, setAvailableReps] = useState<string[]>([]);
 
   // Calculate the working day percentage for the current month using the current date
-  // This ensures projections are always based on the actual current day
+  // Set adjustForDataLag to true to account for stale data (yesterday's data)
   const workingDayPercentage = useMemo(() => {
     const currentDate = new Date();
-    return getWorkingDayPercentage(currentDate);
+    // Use adjustForDataLag=true because our data doesn't include today yet
+    return getWorkingDayPercentage(currentDate, true);
   }, []);
 
   // Generate the list of available reps from all months' data
@@ -146,7 +148,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     ];
   }, [febSummary, marchSummary, aprilSummary]);
   
-  // Calculate projected May values based on MTD data
+  // Calculate projected May values based on MTD data, with adjusted working day percentage
   const projectedMayValues = useMemo(() => {
     const projectedProfit = projectMonthlyValue(maySummary.totalProfit || 0, workingDayPercentage);
     const projectedSpend = projectMonthlyValue(maySummary.totalSpend || 0, workingDayPercentage);
@@ -470,7 +472,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   };
   
   return (
-    <Card className="bg-gray-900/40 border border-white/10 backdrop-blur-sm shadow-lg">
+    <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 shadow-lg">
       <CardHeader className="pb-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -488,7 +490,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
                 <TooltipContent side="right" className="max-w-[280px]">
                   <p className="text-sm">
                     May shows projected performance based on {workingDayPercentage.toFixed(1)}% 
-                    of working days completed. Dotted lines indicate projections.
+                    of working days completed (adjusted for data lag). Dotted lines indicate projections.
                   </p>
                 </TooltipContent>
               </UITooltip>

@@ -34,9 +34,10 @@ export const isDateInRange = (date: Date, startDate: Date, endDate: Date): boole
  * Used for projecting monthly values based on partial month data
  * 
  * @param currentDate - The date to calculate the working day percentage for
+ * @param adjustForDataLag - If true, subtracts one day from completed days to account for data lag
  * @returns The percentage of working days completed in the month (0-100)
  */
-export const getWorkingDayPercentage = (currentDate: Date): number => {
+export const getWorkingDayPercentage = (currentDate: Date, adjustForDataLag: boolean = false): number => {
   const now = new Date(currentDate);
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -60,7 +61,10 @@ export const getWorkingDayPercentage = (currentDate: Date): number => {
       totalWorkingDays++;
       
       if (day <= currentDay) {
-        completedWorkingDays++;
+        // Only count as completed if it's before the current day, or if we're not adjusting for data lag
+        if (day < currentDay || !adjustForDataLag) {
+          completedWorkingDays++;
+        }
       }
     }
   }
