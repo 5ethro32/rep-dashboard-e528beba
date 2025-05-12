@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
@@ -21,9 +20,10 @@ import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer'
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
 import MetricCard from '@/components/MetricCard';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const EngineOperationsContent = () => {
+  const { toast } = useToast();
   const {
     engineData,
     isLoading,
@@ -132,7 +132,7 @@ const EngineOperationsContent = () => {
         });
       }
     }
-  }, [engineData, workflowStatus, modifiedItems.size, getPendingApprovalCount]);
+  }, [engineData, workflowStatus, modifiedItems.size, getPendingApprovalCount, toast]);
 
   // Get all unique flags from the data for the dropdown (not needed anymore as it's handled inside EngineDataTable)
   

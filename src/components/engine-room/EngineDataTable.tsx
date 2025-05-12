@@ -1,100 +1,53 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, TrendingUp, TrendingDown, Info, Ban } from 'lucide-react';
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  ChevronDown, 
+  ChevronUp, 
+  Search, 
+  Filter, 
+  Star, 
+  Info, 
+  AlertTriangle, 
+  Edit, 
+  Check, 
+  X, 
+  ArrowUpDown,
+  Download,
+  FileText,
+  Trash2,
+  Save,
+  RotateCcw
+} from 'lucide-react';
 import PriceEditor from './PriceEditor';
-import CellDetailsPopover from './CellDetailsPopover';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { Card } from '@/components/ui/card';
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
+import { toast } from '@/hooks/use-toast';
 
-interface EngineDataTableProps {
-  data: any[];
-  onShowPriceDetails: (item: any) => void;
-  onPriceChange?: (item: any, newPrice: number) => void;
-  onToggleStar?: (itemId: string) => void;
-  starredItems?: Set<string>;
-  flagFilter?: string;
-  onFlagFilterChange?: (filter: string) => void;
-}
-
-// Define column configuration outside component to avoid recreation on each render
-const columns = [{
-  field: 'description',
-  label: 'Description',
-  filterable: true
-}, {
-  field: 'inStock',
-  label: 'In Stock',
-  filterable: true
-}, {
-  field: 'revaUsage',
-  label: 'Usage',
-  filterable: false
-}, {
-  field: 'usageRank',
-  label: 'Rank',
-  filterable: true
-}, {
-  field: 'avgCost',
-  label: 'Avg Cost',
-  format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
-  filterable: false
-}, {
-  field: 'nextCost',
-  label: 'Next BP', 
-  // Don't use simple format here - we'll use a custom formatter
-  filterable: false
-}, {
-  field: 'marketLow',
-  label: 'Market Low',
-  format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
-  filterable: false
-}, {
-  field: 'trueMarketLow',
-  label: 'TML',
-  format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
-  filterable: false
-}, {
-  field: 'currentREVAPrice',
-  label: 'Current Price',
-  format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
-  filterable: false,
-  bold: true
-}, {
-  field: 'currentREVAMargin',
-  label: 'Current Margin',
-  format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`,
-  filterable: false
-}, {
-  field: 'proposedPrice',
-  label: 'Proposed Price',
-  format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
-  editable: true,
-  filterable: false,
-  bold: true
-}, {
-  field: 'priceChangePercentage',
-  label: '% Change',
-  filterable: false
-}, {
-  field: 'proposedMargin',
-  label: 'Proposed Margin',
-  format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`,
-  filterable: false
-}, {
-  field: 'appliedRule',
-  label: 'Rule',
-  filterable: true
-}];
-
-const EngineDataTable: React.FC<EngineDataTableProps> = ({
-  data,
+const EngineDataTable = ({ 
+  data, 
   onShowPriceDetails,
   onPriceChange,
   onToggleStar,
@@ -103,209 +56,173 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   onFlagFilterChange
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState<string>('description');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState('description');
+  const [sortDirection, setSortDirection] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingValues, setEditingValues] = useState<Record<string, number>>({});
-  const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
-  const [filterByRank, setFilterByRank] = useState<string | null>(null);
-  const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
-  const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
-  const [ruleFilter, setRuleFilter] = useState<string>('all');
-  const { toast } = useToast();
-  const itemsPerPage = 50; // Increased for larger tables
-
-  // Use external flag filter if provided
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [expandedItems, setExpandedItems] = useState(new Set());
+  const [filterOptions, setFilterOptions] = useState({
+    usageRank: '',
+    flag: flagFilter || 'all',
+    margin: '',
+    priceChange: ''
+  });
+  const [bulkEditMode, setBulkEditMode] = useState(false);
+  const [editingItems, setEditingItems] = useState(new Map());
+  const [justExitedBulkEdit, setJustExitedBulkEdit] = useState(false);
+  
+  // Reset page when search or filters change
   useEffect(() => {
-    if (flagFilter && flagFilter !== 'all') {
-      setColumnFilters(prev => ({...prev, flags: [flagFilter]}));
+    setCurrentPage(1);
+  }, [searchQuery, filterOptions]);
+  
+  // Update filter when flagFilter prop changes
+  useEffect(() => {
+    if (flagFilter && flagFilter !== filterOptions.flag) {
+      setFilterOptions(prev => ({ ...prev, flag: flagFilter }));
     }
   }, [flagFilter]);
-
-  // Extract unique usage ranks from the data for the dropdown
+  
+  // When we exit bulk edit mode, we want to ensure the data reflects the latest changes
+  useEffect(() => {
+    if (justExitedBulkEdit) {
+      // Reset the flag after a short delay to avoid infinite loops
+      const timer = setTimeout(() => {
+        setJustExitedBulkEdit(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [justExitedBulkEdit]);
+  
+  // Get unique usage ranks for filter
   const usageRanks = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    
-    const uniqueRanks = new Set<number>();
+    const ranks = Array.from(new Set(data.map(item => item.usageRank))).filter(Boolean).sort((a, b) => a - b);
+    return ranks;
+  }, [data]);
+  
+  // Get unique flags for filter
+  const flags = useMemo(() => {
+    const allFlags = new Set();
     data.forEach(item => {
-      if (item.usageRank !== undefined && item.usageRank !== null) {
-        uniqueRanks.add(item.usageRank);
+      if (item.flags && Array.isArray(item.flags)) {
+        item.flags.forEach(flag => allFlags.add(flag));
       }
+      if (item.flag1) allFlags.add('HIGH_PRICE');
+      if (item.flag2) allFlags.add('LOW_MARGIN');
     });
-    
-    return Array.from(uniqueRanks).sort((a, b) => a - b);
-  }, [data]);
-
-  // We don't need to recalculate TML here anymore, just pass through the existing value
-  const dataWithTml = useMemo(() => {
-    if (!data) return [];
-    return data;
-  }, [data]);
-
-  // Get unique values for each column to use in filters
-  const uniqueValues = useMemo(() => {
-    const values: Record<string, Set<any>> = {};
-
-    // Initialize sets for each filterable column
-    columns.forEach(column => {
-      if (column.filterable) {
-        values[column.field] = new Set();
-      }
-    });
-
-    // Collect unique values
-    if (dataWithTml && dataWithTml.length > 0) {
-      dataWithTml.forEach(item => {
-        columns.forEach(column => {
-          if (column.filterable && item[column.field] !== undefined && item[column.field] !== null) {
-            values[column.field].add(item[column.field]);
-          }
-        });
-      });
-    }
-
-    // Convert sets to sorted arrays
-    const result: Record<string, any[]> = {};
-    Object.keys(values).forEach(key => {
-      result[key] = Array.from(values[key]).sort((a, b) => {
-        if (typeof a === 'string' && typeof b === 'string') {
-          return a.localeCompare(b);
-        }
-        return a - b;
-      });
-    });
-    return result;
-  }, [dataWithTml]);
-
-  // Get unique flags and show them in dropdown filter
-  const uniqueFlags = useMemo(() => {
-    const allFlags = new Set<string>();
-    if (dataWithTml && dataWithTml.length > 0) {
-      dataWithTml.forEach(item => {
-        // Get flags from the flags array
-        if (item.flags && Array.isArray(item.flags)) {
-          item.flags.forEach((flag: string) => allFlags.add(flag));
-        }
-        
-        // Get flag from the flag field
-        if (item.flag && typeof item.flag === 'string' && item.flag.trim()) {
-          allFlags.add(item.flag.trim());
-        }
-        
-        // Add built-in flags
-        if (item.flag1) allFlags.add('HIGH_PRICE');
-        if (item.flag2) allFlags.add('LOW_MARGIN');
-        if (item.shortage) allFlags.add('SHORT');
-      });
-    }
     return Array.from(allFlags);
-  }, [dataWithTml]);
-
-  // Extract unique rules for rule filter
-  const uniqueRules = useMemo(() => {
-    const rules = new Set<string>();
-    if (dataWithTml && dataWithTml.length > 0) {
-      dataWithTml.forEach(item => {
-        if (item.appliedRule && typeof item.appliedRule === 'string' && item.appliedRule.trim()) {
-          rules.add(item.appliedRule.trim());
-        }
-      });
-    }
-    return Array.from(rules).sort();
-  }, [dataWithTml]);
-
-  // Calculate price change percentage
-  const calculatePriceChangePercentage = (item: any) => {
-    const currentPrice = item.currentREVAPrice || 0;
-    const proposedPrice = item.proposedPrice || 0;
-    if (currentPrice === 0) return 0;
-    return (proposedPrice - currentPrice) / currentPrice * 100;
-  };
-
-  // Filter the data based on search query, usage rank filter, column filters, and toggle states
+  }, [data]);
+  
+  // Filter data based on search and filters
   const filteredData = useMemo(() => {
-    if (!dataWithTml) return [];
-    return dataWithTml.filter(item => {
-      // Match search query
-      const matchesSearch = item.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
-
-      // Match usage rank filter - updated for new filter value
-      const matchesRankFilter = !filterByRank || filterByRank === 'all' ? true : 
-                               item.usageRank === parseInt(filterByRank, 10);
-
-      // Match rule filter
-      const matchesRuleFilter = ruleFilter === 'all' ? true :
-                              item.appliedRule === ruleFilter;
-
-      // Match all column filters
-      const matchesColumnFilters = Object.keys(columnFilters).every(field => {
-        if (!columnFilters[field] || columnFilters[field].length === 0) {
-          return true;
+    return data.filter(item => {
+      // Search filter
+      const matchesSearch = item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Usage rank filter
+      const matchesRank = !filterOptions.usageRank || item.usageRank === parseInt(filterOptions.usageRank);
+      
+      // Flag filter
+      let matchesFlag = true;
+      if (filterOptions.flag && filterOptions.flag !== 'all') {
+        if (filterOptions.flag === 'HIGH_PRICE') {
+          matchesFlag = item.flag1 || (item.flags && item.flags.includes('HIGH_PRICE'));
+        } else if (filterOptions.flag === 'LOW_MARGIN') {
+          matchesFlag = item.flag2 || (item.flags && item.flags.includes('LOW_MARGIN'));
+        } else {
+          matchesFlag = item.flags && item.flags.includes(filterOptions.flag);
         }
-        if (field === 'flags') {
-          // Special handling for flags which is an array or multiple flags
-          if (Array.isArray(item.flags)) {
-            return columnFilters[field].some((flag: string) => item.flags.includes(flag) || flag === 'HIGH_PRICE' && item.flag1 || flag === 'LOW_MARGIN' && item.flag2 || flag === 'SHORT' && item.shortage);
-          } else {
-            // Handle legacy flag1/flag2/shortage properties
-            return columnFilters[field].some((flag: string) => flag === 'HIGH_PRICE' && item.flag1 || flag === 'LOW_MARGIN' && item.flag2 || flag === 'SHORT' && item.shortage);
-          }
+      }
+      
+      // Margin filter
+      let matchesMargin = true;
+      if (filterOptions.margin) {
+        const margin = item.proposedMargin || item.currentREVAMargin || 0;
+        if (filterOptions.margin === 'low') {
+          matchesMargin = margin < 0.05;
+        } else if (filterOptions.margin === 'medium') {
+          matchesMargin = margin >= 0.05 && margin < 0.15;
+        } else if (filterOptions.margin === 'high') {
+          matchesMargin = margin >= 0.15;
         }
-        return columnFilters[field].includes(item[field]);
-      });
-
-      // Only filter inactive products if the toggle is enabled
-      const isActive = !hideInactiveProducts || item.inStock > 0 || item.onOrder > 0 || item.revaUsage > 0;
-
-      return matchesSearch && matchesRankFilter && matchesRuleFilter && matchesColumnFilters && isActive;
+      }
+      
+      // Price change filter
+      let matchesPriceChange = true;
+      if (filterOptions.priceChange) {
+        const currentPrice = item.currentREVAPrice || 0;
+        const proposedPrice = item.proposedPrice || currentPrice;
+        const priceDiff = currentPrice > 0 ? (proposedPrice - currentPrice) / currentPrice : 0;
+        
+        if (filterOptions.priceChange === 'increase') {
+          matchesPriceChange = priceDiff > 0;
+        } else if (filterOptions.priceChange === 'decrease') {
+          matchesPriceChange = priceDiff < 0;
+        } else if (filterOptions.priceChange === 'nochange') {
+          matchesPriceChange = Math.abs(priceDiff) < 0.001;
+        }
+      }
+      
+      return matchesSearch && matchesRank && matchesFlag && matchesMargin && matchesPriceChange;
     });
-  }, [dataWithTml, searchQuery, filterByRank, ruleFilter, columnFilters, hideInactiveProducts]);
-
-  // Sort the filtered data
+  }, [data, searchQuery, filterOptions]);
+  
+  // Sort data
   const sortedData = useMemo(() => {
-    if (!filteredData) return [];
     return [...filteredData].sort((a, b) => {
       let fieldA = a[sortField];
       let fieldB = b[sortField];
-
-      // Handle special case for price change percentage
-      if (sortField === 'priceChangePercentage') {
-        const aChange = calculatePriceChangePercentage(a);
-        const bChange = calculatePriceChangePercentage(b);
-        return sortDirection === 'asc' ? aChange - bChange : bChange - aChange;
-      }
-
+      
       // Handle null/undefined values
-      if (fieldA === undefined || fieldA === null) fieldA = sortField.includes('Price') ? 0 : '';
-      if (fieldB === undefined || fieldB === null) fieldB = sortField.includes('Price') ? 0 : '';
-
-      // Fix: Type-check before using string methods
-      if (typeof fieldA === 'string' && typeof fieldB === 'string') {
-        return sortDirection === 'asc' ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
-      } else {
-        // Convert to strings if comparing mixed types
-        if (typeof fieldA !== typeof fieldB) {
-          if (typeof fieldA === 'string') {
-            return sortDirection === 'asc' ? fieldA.localeCompare(String(fieldB)) : String(fieldB).localeCompare(fieldA);
-          } else if (typeof fieldB === 'string') {
-            return sortDirection === 'asc' ? String(fieldA).localeCompare(fieldB) : fieldB.localeCompare(String(fieldA));
-          }
-        }
-
-        // Use numeric comparison for numbers or convert to string
-        return sortDirection === 'asc' ? (Number(fieldA) || 0) - (Number(fieldB) || 0) : (Number(fieldB) || 0) - (Number(fieldA) || 0);
+      if (fieldA === undefined || fieldA === null) fieldA = '';
+      if (fieldB === undefined || fieldB === null) fieldB = '';
+      
+      // Special case for price change percentage
+      if (sortField === 'priceChangePercentage') {
+        const aCurrentPrice = a.currentREVAPrice || 0;
+        const aProposedPrice = a.proposedPrice || aCurrentPrice;
+        const aPriceChange = aCurrentPrice > 0 ? (aProposedPrice - aCurrentPrice) / aCurrentPrice : 0;
+        
+        const bCurrentPrice = b.currentREVAPrice || 0;
+        const bProposedPrice = b.proposedPrice || bCurrentPrice;
+        const bPriceChange = bCurrentPrice > 0 ? (bProposedPrice - bCurrentPrice) / bCurrentPrice : 0;
+        
+        return sortDirection === 'asc' ? aPriceChange - bPriceChange : bPriceChange - aPriceChange;
       }
+      
+      // Special case for margin
+      if (sortField === 'margin') {
+        const aMargin = a.proposedMargin || a.currentREVAMargin || 0;
+        const bMargin = b.proposedMargin || b.currentREVAMargin || 0;
+        return sortDirection === 'asc' ? aMargin - bMargin : bMargin - aMargin;
+      }
+      
+      // String comparison
+      if (typeof fieldA === 'string') {
+        return sortDirection === 'asc' 
+          ? fieldA.localeCompare(fieldB) 
+          : fieldB.localeCompare(fieldA);
+      }
+      
+      // Number comparison
+      return sortDirection === 'asc' ? fieldA - fieldB : fieldB - fieldA;
     });
   }, [filteredData, sortField, sortDirection]);
-
-  // Paginate the data
-  const totalPages = Math.ceil((sortedData?.length || 0) / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = sortedData && sortedData.length > 0 ? sortedData.slice(startIndex, startIndex + itemsPerPage) : [];
-
-  // Handle sort click
-  const handleSort = (field: string) => {
+  
+  // Paginate data
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedData.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedData, currentPage, itemsPerPage]);
+  
+  // Calculate total pages
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  
+  // Handle sort
+  const handleSort = (field) => {
     if (field === sortField) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -313,741 +230,671 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       setSortDirection('asc');
     }
   };
-
-  // Handle column filter change
-  const handleFilterChange = (field: string, value: any) => {
-    setColumnFilters(prev => {
-      const current = prev[field] || [];
-
-      // Toggle the value in the filter
-      const newFilter = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
-      return {
-        ...prev,
-        [field]: newFilter
-      };
+  
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+  
+  // Handle filter change
+  const handleFilterChange = (key, value) => {
+    setFilterOptions(prev => ({ ...prev, [key]: value }));
+    if (key === 'flag' && onFlagFilterChange) {
+      onFlagFilterChange(value);
+    }
+  };
+  
+  // Handle item selection
+  const handleSelectItem = (itemId) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
     });
-    // Reset to first page when filter changes
-    setCurrentPage(1);
   };
-
-  // Format currency - with null/undefined check and no market price indicator
-  const formatCurrency = (value: number | null | undefined, noMarketPrice?: boolean) => {
-    if (noMarketPrice || value === 0) {
-      return <span className="text-gray-400 italic">£0.00</span>;
+  
+  // Handle select all
+  const handleSelectAll = () => {
+    if (selectedItems.size === paginatedData.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(paginatedData.map(item => item.id)));
     }
-    if (value === null || value === undefined) {
-      return '£0.00';
-    }
-    return `£${value.toFixed(2)}`;
   };
-
-  // Format for missing Next Buying Price - New method
-  const formatNextBuyingPrice = (item: any) => {
-    if (item.nextCostMissing) {
-      return <span className="text-blue-400 italic">£0.00</span>;
-    }
-    return `£${(item.nextCost || 0).toFixed(2)}`;
+  
+  // Handle item expansion
+  const handleToggleExpand = (itemId) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
   };
-
-  // Format percentage - with null/undefined check
-  const formatPercentage = (value: number | null | undefined) => {
-    if (value === null || value === undefined) {
-      return '0.00%';
+  
+  // Handle edit item
+  const handleEditItem = (itemId) => {
+    setEditingItemId(itemId);
+  };
+  
+  // Handle save price
+  const handleSavePrice = (item, newPrice) => {
+    if (onPriceChange) {
+      onPriceChange(item, newPrice);
     }
+    setEditingItemId(null);
+  };
+  
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+  };
+  
+  // Format price
+  const formatPrice = (price) => {
+    if (price === null || price === undefined) return 'N/A';
+    return `£${price.toFixed(2)}`;
+  };
+  
+  // Format percentage
+  const formatPercentage = (value) => {
+    if (value === null || value === undefined) return 'N/A';
     return `${(value * 100).toFixed(2)}%`;
   };
-
-  // Render sort indicator
-  const renderSortIndicator = (field: string) => {
-    if (field !== sortField) return null;
-    return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
-  };
-
-  // Handle starting price edit for a specific item
-  const handleStartEdit = (item: any) => {
-    setEditingItemId(item.id);
-    setEditingValues({
-      ...editingValues,
-      [item.id]: item.proposedPrice || 0
-    });
-  };
-
-  // Handle price change input
-  const handlePriceInputChange = (item: any, value: string) => {
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue)) {
-      setEditingValues({
-        ...editingValues,
-        [item.id]: numValue
-      });
-    }
-  };
-
-  // Handle price edit save
-  const handleSavePriceEdit = (item: any) => {
-    if (onPriceChange && editingValues[item.id] !== undefined) {
-      console.log(`Saving price edit for item ${item.id}:`, editingValues[item.id]);
-      onPriceChange(item, editingValues[item.id]);
-      
-      toast({
-        title: "Price updated",
-        description: `Price updated for ${item.description.substring(0, 30)}...`,
-      });
-    } else {
-      console.error("Failed to save price edit", { item, value: editingValues[item.id] });
-      toast({
-        title: "Error",
-        description: "Failed to save price. Please try again.",
-        variant: "destructive",
-      });
-    }
+  
+  // Calculate price change percentage
+  const calculatePriceChangePercentage = (item) => {
+    const currentPrice = item.currentREVAPrice || 0;
+    const proposedPrice = item.proposedPrice || currentPrice;
     
-    // Reset editing state for this item
-    setEditingItemId(null);
-    const newEditingValues = {
-      ...editingValues
-    };
-    delete newEditingValues[item.id];
-    setEditingValues(newEditingValues);
-  };
-
-  // Handle price change from PriceEditor component
-  const handlePriceChange = (item: any, newPrice: number) => {
-    if (onPriceChange) {
-      console.log(`Price changed for item ${item.id}:`, newPrice);
-      onPriceChange(item, newPrice);
-      
-      toast({
-        title: "Price updated",
-        description: `Price updated for ${item.description.substring(0, 30)}...`,
-      });
-    }
-  };
-
-  // Handle bulk edit save for a specific item
-  const handleBulkSave = (item: any, newPrice: number) => {
-    console.log(`Bulk edit save for item ${item.id}:`, newPrice);
-    if (onPriceChange) {
-      onPriceChange(item, newPrice);
-    }
-  };
-
-  // Handle cancel price edit - for both bulk and single item edits
-  const handleCancelEdit = (item?: any) => {
-    console.log("Cancel edit called", item ? `for item ${item.id}` : 'globally');
+    if (currentPrice === 0) return 0;
     
-    if (item) {
-      // Cancel for specific item in bulk mode
-      // Just let it continue in edit mode, no state changes needed
-    } else {
-      // Cancel for single item edit mode
-      setEditingItemId(null);
-    }
+    return ((proposedPrice - currentPrice) / currentPrice) * 100;
   };
-
-  // Toggle bulk edit mode
-  const toggleBulkEditMode = () => {
-    if (bulkEditMode) {
-      console.log("Exiting bulk edit mode");
-      toast({
-        title: "Bulk edit mode disabled",
-        description: "Your price changes have been saved.",
-      });
-    } else {
-      console.log("Entering bulk edit mode");
-      toast({
-        title: "Bulk edit mode enabled",
-        description: "Changes will be applied immediately when saved.",
-      });
-    }
+  
+  // Format price change
+  const formatPriceChange = (item) => {
+    const currentPrice = item.currentREVAPrice || 0;
+    const proposedPrice = item.proposedPrice || currentPrice;
     
-    setBulkEditMode(!bulkEditMode);
-    // Don't clear edits when toggling bulk mode, to preserve changes
-    setEditingItemId(null);
-  };
-
-  // Toggle the hide inactive products filter
-  const toggleHideInactiveProducts = () => {
-    setHideInactiveProducts(!hideInactiveProducts);
+    if (currentPrice === 0) return 'N/A';
     
-    toast({
-      title: hideInactiveProducts ? "Showing all products" : "Hiding inactive products",
-      description: hideInactiveProducts ? 
-        "Displaying all products including inactive ones." : 
-        "Only showing products with stock, orders, or usage.",
-    });
-  };
-
-  // Render the column header with sort and filter
-  const renderColumnHeader = (column: any) => {
+    const diff = proposedPrice - currentPrice;
+    const percentage = (diff / currentPrice) * 100;
+    const sign = diff >= 0 ? '+' : '';
+    
     return (
-      <div className="flex items-center justify-between">
-        <div 
-          className="flex items-center cursor-pointer" 
-          onClick={() => handleSort(column.field)}
-        >
-          {column.label}
-          {renderSortIndicator(column.field)}
+      <div>
+        <div className={diff >= 0 ? 'text-green-400' : 'text-red-400'}>
+          {sign}£{Math.abs(diff).toFixed(2)} ({sign}{percentage.toFixed(2)}%)
         </div>
-        
-        {column.filterable && uniqueValues[column.field]?.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`} 
-                onClick={e => e.stopPropagation()}
-              >
-                <Filter className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
-              <div className="p-2">
-                <p className="text-sm font-medium">Filter by {column.label}</p>
-                <Input 
-                  placeholder="Search..." 
-                  className="h-8 mt-2" 
-                  onChange={e => {
-                    // Filter dropdown options, not implemented fully
-                  }} 
-                />
-              </div>
-              <DropdownMenuSeparator />
-              {uniqueValues[column.field]?.map((value, i) => (
-                <DropdownMenuCheckboxItem 
-                  key={i} 
-                  checked={columnFilters[column.field]?.includes(value)} 
-                  onSelect={e => {
-                    e.preventDefault();
-                    handleFilterChange(column.field, value);
-                  }}
-                >
-                  {value !== null && value !== undefined ? typeof value === 'number' ? value.toString() : value : '(Empty)'}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
       </div>
     );
   };
-
-  // Special case for flags column
-  const renderFlagsColumnHeader = () => {
-    return <div className="flex items-center justify-between">
-        <span>Flags</span>
-        {uniqueFlags.length > 0 && <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ml-2 ${columnFilters['flags']?.length ? 'bg-primary/20' : ''}`}>
-                <Filter className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              {uniqueFlags.map((flag, i) => <DropdownMenuCheckboxItem key={i} checked={columnFilters['flags']?.includes(flag)} onSelect={e => {
-            e.preventDefault();
-            handleFilterChange('flags', flag);
-          }}>
-                  {flag}
-                </DropdownMenuCheckboxItem>)}
-            </DropdownMenuContent>
-          </DropdownMenu>}
-      </div>;
-  };
-
-  // Simplify rule display
-  const formatRuleDisplay = (rule: string) => {
-    if (!rule) return '';
-
-    // Check if the rule follows the pattern "Grp X-Y" and convert to [X.Y]
-    const rulePattern = /Grp\s*(\d+)-(\d+)/i;
-    const match = rule.match(rulePattern);
-    if (match) {
-      return `[${match[1]}.${match[2]}]`;
-    }
-    return rule;
-  };
-
-  // Render flags for an item - Updated to use nicer formatting with enhanced visibility for No Market Price
-  const renderFlags = (item: any) => {
-    if (!item) return null;
+  
+  // Render flags
+  const renderFlags = (item) => {
     const flags = [];
-    if (item.flag1) {
-      flags.push(<span key="high-price" className="bg-red-900/30 text-xs px-2 py-0.5 rounded-md text-red-300" title="Price ≥10% above TRUE MARKET LOW">
-        High Price
-      </span>);
-    }
-    if (item.flag2) {
-      flags.push(<span key="low-margin" className="bg-orange-900/30 text-xs px-2 py-0.5 rounded-md text-orange-300" title="Margin < 5%">
-        Low Margin
-      </span>);
-    }
-    if (item.shortage) {
-      flags.push(<span key="short" className="bg-purple-900/30 text-xs px-2 py-0.5 rounded-md text-purple-300" title="Product has supply shortage">
-        Short
-      </span>);
-    }
-    if (item.missingNextBuying) {
-      flags.push(<span key="missing-nbp" className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300" title="Missing Next Buying Price">
-        No NBP
-      </span>);
+    
+    if (item.flag1 || (item.flags && item.flags.includes('HIGH_PRICE'))) {
+      flags.push(
+        <Badge key="high-price" variant="outline" className="bg-red-900/20 text-red-400 border-red-900">
+          High Price
+        </Badge>
+      );
     }
     
-    // Enhanced visibility for No Market Price
-    if (item.noMarketPrice || (item.flags && item.flags.includes('No Market Price Available'))) {
-      flags.push(<span key="no-market-price" className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300 flex items-center gap-1" title="No Market Price Available">
-        <Ban className="h-3 w-3" /> No MP
-      </span>);
+    if (item.flag2 || (item.flags && item.flags.includes('LOW_MARGIN'))) {
+      flags.push(
+        <Badge key="low-margin" variant="outline" className="bg-amber-900/20 text-amber-400 border-amber-900">
+          Low Margin
+        </Badge>
+      );
     }
     
+    // Add other flags from the flags array
     if (item.flags && Array.isArray(item.flags)) {
-      item.flags.forEach((flag: string, i: number) => {
-        // Skip duplicates or already handled flags
-        if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT' || flag === 'No Market Price Available') return;
-        
-        // Special handling for price decrease flags
-        if (flag.startsWith('PRICE_DECREASE_')) {
-          const percentage = flag.replace('PRICE_DECREASE_', '');
-          flags.push(
-            <span 
-              key={`price-decrease-${i}`} 
-              className="bg-red-900/30 text-xs px-2 py-0.5 rounded-md text-red-300 flex items-center gap-1" 
-              title={`Price decrease of ${percentage}`}
-            >
-              <TrendingDown className="h-3 w-3" /> ↓{percentage}
-            </span>
-          );
-        } else {
-          flags.push(<span key={`flag-${i}`} className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300" title={flag}>
-              {flag}
-            </span>);
+      item.flags.forEach(flag => {
+        if (flag !== 'HIGH_PRICE' && flag !== 'LOW_MARGIN') {
+          if (flag.startsWith('PRICE_DECREASE_')) {
+            flags.push(
+              <Badge key={flag} variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900">
+                {flag.replace('PRICE_DECREASE_', 'Decrease ')}
+              </Badge>
+            );
+          } else {
+            flags.push(
+              <Badge key={flag} variant="outline" className="bg-gray-900/20 text-gray-400 border-gray-700">
+                {flag}
+              </Badge>
+            );
+          }
         }
       });
     }
-    return flags.length > 0 ? <div className="flex flex-wrap gap-1">{flags}</div> : null;
+    
+    return flags.length > 0 ? (
+      <div className="flex flex-wrap gap-1">{flags}</div>
+    ) : null;
   };
-
-  // Active filters summary
-  const renderActiveFilters = () => {
-    const activeFilters = Object.entries(columnFilters).filter(([_, values]) => values && values.length > 0).map(([field, values]) => {
-      const column = columns.find(col => col.field === field);
-      const label = column ? column.label : field === 'flags' ? 'Flags' : field;
-      return {
-        field,
-        label,
-        values: Array.isArray(values) ? values : [values]
-      };
+  
+  // Handle bulk edit mode
+  const enterBulkEditMode = () => {
+    setBulkEditMode(true);
+    // Initialize with current prices
+    const initialPrices = new Map();
+    selectedItems.forEach(itemId => {
+      const item = data.find(i => i.id === itemId);
+      if (item) {
+        initialPrices.set(itemId, item.proposedPrice || item.currentREVAPrice);
+      }
     });
-    if (activeFilters.length === 0) return null;
-    return <div className="flex flex-wrap items-center gap-2 my-2 bg-gray-900/20 p-2 rounded-md">
-        <span className="text-sm text-muted-foreground">Active filters:</span>
-        {activeFilters.map((filter, i) => <div key={i} className="flex flex-wrap gap-1">
-            <span className="text-sm">{filter.label}:</span>
-            {filter.values.map((value, j) => <span key={j} className="bg-gray-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                {value}
-                <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handleFilterChange(filter.field, value)}>
-                  <X className="h-3 w-3" />
-                </Button>
-              </span>)}
-          </div>)}
-        <Button variant="ghost" size="sm" className="h-6 p-1 text-xs" onClick={() => setColumnFilters({})}>
-          Clear all
-        </Button>
-      </div>;
+    setEditingItems(initialPrices);
   };
-
-  // Render a unified filter bar with more compact layout
-  const renderUnifiedFilterBar = () => {
+  
+  // Function to exit bulk edit mode
+  const exitBulkEditMode = useCallback(() => {
+    // Save any pending edits first if needed
+    if (editingItems.size > 0) {
+      // Process any unsaved edits
+      editingItems.forEach((newPrice, itemId) => {
+        const item = data.find(i => i.id === itemId);
+        if (item) {
+          onPriceChange(item, newPrice);
+        }
+      });
+    }
+    
+    setBulkEditMode(false);
+    setEditingItems(new Map());
+    setJustExitedBulkEdit(true); // Mark that we just exited bulk edit mode
+    
+    // Show toast notification about exiting bulk edit mode
+    toast({
+      title: "Bulk edit mode exited",
+      description: `Applied changes to ${editingItems.size} items.`,
+      duration: 3000,
+    });
+  }, [editingItems, data, onPriceChange]);
+  
+  // Handle bulk price change
+  const handleBulkPriceChange = (itemId, newPrice) => {
+    setEditingItems(prev => {
+      const newMap = new Map(prev);
+      newMap.set(itemId, newPrice);
+      return newMap;
+    });
+  };
+  
+  // Apply percentage change to selected items
+  const applyPercentageChange = (percentage) => {
+    const newEditingItems = new Map(editingItems);
+    
+    selectedItems.forEach(itemId => {
+      const item = data.find(i => i.id === itemId);
+      if (item) {
+        const currentPrice = item.currentREVAPrice || 0;
+        if (currentPrice > 0) {
+          const newPrice = currentPrice * (1 + percentage / 100);
+          newEditingItems.set(itemId, newPrice);
+        }
+      }
+    });
+    
+    setEditingItems(newEditingItems);
+  };
+  
+  // Apply fixed margin to selected items
+  const applyFixedMargin = (marginPercentage) => {
+    const newEditingItems = new Map(editingItems);
+    
+    selectedItems.forEach(itemId => {
+      const item = data.find(i => i.id === itemId);
+      if (item && item.avgCost) {
+        const cost = item.avgCost;
+        // Calculate price from cost and desired margin
+        // price = cost / (1 - margin)
+        const margin = marginPercentage / 100;
+        const newPrice = cost / (1 - margin);
+        newEditingItems.set(itemId, newPrice);
+      }
+    });
+    
+    setEditingItems(newEditingItems);
+  };
+  
+  // Render bulk edit controls
+  const renderBulkEditControls = () => {
     return (
-      <div className="flex flex-wrap gap-4 items-center mb-4">
-        {/* Search box - with reduced width */}
-        <div className="relative flex-1 min-w-[150px] max-w-[250px]">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search..." 
-            className="pl-8" 
-            value={searchQuery} 
-            onChange={e => setSearchQuery(e.target.value)} 
-          />
+      <div className="flex flex-col sm:flex-row gap-2 mb-4 p-3 bg-gray-800/50 rounded-md border border-gray-700">
+        <div className="flex-1">
+          <h3 className="text-sm font-medium mb-1">Bulk Edit Mode</h3>
+          <p className="text-xs text-muted-foreground">
+            Editing {selectedItems.size} items. Changes will be applied when you exit bulk edit mode.
+          </p>
         </div>
         
-        {/* Rank filter */}
-        <Select value={filterByRank || 'all'} onValueChange={value => setFilterByRank(value === 'all' ? null : value)}>
-          <SelectTrigger className="w-[130px]">
-            <SelectValue placeholder="All Ranks" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Ranks</SelectItem>
-            {usageRanks.map(rank => (
-              <SelectItem key={rank} value={rank.toString()}>
-                Rank {rank}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
-        {/* Flag filter */}
-        <Select value={columnFilters['flags']?.[0] || 'all'} onValueChange={value => {
-          if (value === 'all') {
-            setColumnFilters(prev => {
-              const newFilters = {...prev};
-              delete newFilters['flags'];
-              return newFilters;
-            });
-            if (onFlagFilterChange) onFlagFilterChange('all');
-          } else {
-            setColumnFilters(prev => ({...prev, flags: [value]}));
-            if (onFlagFilterChange) onFlagFilterChange(value);
-          }
-        }}>
-          <SelectTrigger className="w-[130px]">
-            <SelectValue placeholder="All Flags" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Flags</SelectItem>
-            {uniqueFlags.map(flag => (
-              <SelectItem key={flag} value={flag}>
-                {flag === 'HIGH_PRICE' ? 'High Price' : 
-                 flag === 'LOW_MARGIN' ? 'Low Margin' : flag}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
-        {/* Rule filter - NEW */}
-        <Select value={ruleFilter} onValueChange={setRuleFilter}>
-          <SelectTrigger className="w-[130px]">
-            <SelectValue placeholder="All Rules" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Rules</SelectItem>
-            {uniqueRules.map(rule => (
-              <SelectItem key={rule} value={rule}>
-                {formatRuleDisplay(rule)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
-        {/* Hide Inactive toggle */}
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="hideInactive" 
-            checked={hideInactiveProducts}
-            onCheckedChange={setHideInactiveProducts}
-          />
-          <label htmlFor="hideInactive" className="text-sm cursor-pointer">
-            Hide Inactive
-          </label>
+        <div className="flex flex-wrap gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Apply % Change
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => applyPercentageChange(5)}>
+                Increase by 5%
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => applyPercentageChange(10)}>
+                Increase by 10%
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => applyPercentageChange(-5)}>
+                Decrease by 5%
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => applyPercentageChange(-10)}>
+                Decrease by 10%
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Set Margin
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => applyFixedMargin(15)}>
+                Set 15% Margin
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => applyFixedMargin(20)}>
+                Set 20% Margin
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => applyFixedMargin(25)}>
+                Set 25% Margin
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => applyFixedMargin(30)}>
+                Set 30% Margin
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={exitBulkEditMode}
+          >
+            <Save className="h-4 w-4 mr-1" />
+            Save & Exit
+          </Button>
         </div>
-        
-        {/* Bulk Edit toggle */}
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={toggleBulkEditMode} 
-          className={bulkEditMode ? "bg-primary/20" : ""}
-        >
-          {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit"}
-        </Button>
-        
-        {/* Starred items info - more concise */}
-        {starredItems && starredItems.size > 0 && (
-          <div className="flex items-center space-x-2 ml-auto">
-            <Star className="h-4 w-4 text-yellow-400" />
-            <span className="text-sm">
-              {starredItems.size} starred
-            </span>
-          </div>
-        )}
       </div>
     );
   };
-
-  // Render the data table with rows - Now used for one combined table
-  const renderDataTable = () => {
-    return (
-      <div className="rounded-md border overflow-hidden">
-        <ScrollArea className="h-[600px]">
+  
+  return (
+    <div className="space-y-4">
+      {/* Search and filter controls */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by description..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <Select
+          value={filterOptions.usageRank}
+          onValueChange={(value) => handleFilterChange('usageRank', value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Usage Rank" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Ranks</SelectItem>
+            {usageRanks.map(rank => (
+              <SelectItem key={rank} value={rank.toString()}>Rank {rank}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        <Select
+          value={filterOptions.flag}
+          onValueChange={(value) => handleFilterChange('flag', value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Flag Filter" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Items</SelectItem>
+            <SelectItem value="HIGH_PRICE">High Price</SelectItem>
+            <SelectItem value="LOW_MARGIN">Low Margin</SelectItem>
+            {flags.filter(f => f !== 'HIGH_PRICE' && f !== 'LOW_MARGIN').map(flag => (
+              <SelectItem key={flag} value={flag}>{flag}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {/* Bulk actions */}
+      {selectedItems.size > 0 && !bulkEditMode && (
+        <div className="flex items-center gap-2 p-2 bg-gray-800/50 rounded-md">
+          <span className="text-sm">{selectedItems.size} items selected</span>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={enterBulkEditMode}
+            disabled={!onPriceChange}
+          >
+            <Edit className="h-4 w-4 mr-1" />
+            Bulk Edit
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setSelectedItems(new Set())}
+          >
+            <X className="h-4 w-4 mr-1" />
+            Clear Selection
+          </Button>
+        </div>
+      )}
+      
+      {/* Bulk edit controls */}
+      {bulkEditMode && renderBulkEditControls()}
+      
+      {/* Data table */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="sticky top-0 z-10">
+            <TableHeader className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur-sm">
               <TableRow>
-                {columns.map(column => (
-                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900">
-                    {renderColumnHeader(column)}
-                  </TableHead>
-                ))}
-                <TableHead className="bg-gray-900/70 sticky top-0">
-                  {renderFlagsColumnHeader()}
+                <TableHead className="w-[30px]">
+                  <Checkbox 
+                    checked={selectedItems.size === paginatedData.length && paginatedData.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
                 </TableHead>
-                <TableHead className="bg-gray-900/70 sticky top-0">Actions</TableHead>
+                <TableHead className="w-[30px]"></TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort('description')}>
+                  <div className="flex items-center">
+                    Description
+                    {sortField === 'description' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort('currentREVAPrice')}>
+                  <div className="flex items-center">
+                    Current Price
+                    {sortField === 'currentREVAPrice' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort('proposedPrice')}>
+                  <div className="flex items-center">
+                    Proposed Price
+                    {sortField === 'proposedPrice' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort('priceChangePercentage')}>
+                  <div className="flex items-center">
+                    Change
+                    {sortField === 'priceChangePercentage' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort('margin')}>
+                  <div className="flex items-center">
+                    Margin
+                    {sortField === 'margin' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort('usageRank')}>
+                  <div className="flex items-center">
+                    Rank
+                    {sortField === 'usageRank' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />
+                    )}
+                  </div>
+                </TableHead>
+                <TableHead>Flags</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedData.length === 0 && (
+              {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length + 2} className="text-center py-10">
-                    No items found matching your search criteria
+                  <TableCell colSpan={9} className="text-center py-10">
+                    No items found matching your filters
                   </TableCell>
                 </TableRow>
-              )}
-              {paginatedData.map((item, index) => {
-                // Calculate price change percentage for each item
-                const priceChangePercentage = calculatePriceChangePercentage(item);
-                const isEditing = editingItemId === item.id;
-                
-                return (
-                  <TableRow 
-                    key={index} 
-                    className={`${item.noMarketPrice ? 'bg-blue-900/10' : ''} ${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
-                  >
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.inStock}</TableCell>
-                    <TableCell>{item.revaUsage}</TableCell>
-                    <TableCell>{item.usageRank}</TableCell>
-                    
-                    {/* Avg Cost cell with popover */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="avgCost">
-                        {formatCurrency(item.avgCost)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    {/* Next Buying Price cell with popover - Updated to handle missing values */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="nextCost">
-                        {formatNextBuyingPrice(item)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    {/* Market Low cell with popover - Updated to handle no market price */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="marketLow">
-                        <div className="flex items-center gap-1">
-                          {formatCurrency(item.marketLow, item.noMarketPrice)}
-                          {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
-                          {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
-                        </div>
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    {/* TML cell with popover - explicitly use trueMarketLow field type for consistency */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="trueMarketLow">
-                        {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    {/* Current Price cell with popover */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="currentREVAPrice">
-                        <span className="font-medium">{formatCurrency(item.currentREVAPrice)}</span>
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    {/* Current Margin cell with popover */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="currentREVAMargin">
-                        {formatPercentage(item.currentREVAMargin)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    {/* Proposed price cell with inline editing - Updated implementation */}
-                    <TableCell>
-                      {bulkEditMode && !item.priceModified ? (
-                        <PriceEditor 
-                          initialPrice={item.proposedPrice || 0} 
-                          currentPrice={item.currentREVAPrice || 0} 
-                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} 
-                          cost={item.avgCost || 0} 
-                          onSave={(newPrice) => handleBulkSave(item, newPrice)} 
-                          onCancel={() => handleCancelEdit(item)} 
-                          compact={true} 
-                        />
-                      ) : isEditing ? (
-                        <div className="flex items-center gap-2">
-                          <Input 
-                            type="number" 
-                            value={editingValues[item.id]} 
-                            onChange={e => handlePriceInputChange(item, e.target.value)} 
-                            className="w-24 h-8 py-1 px-2" 
-                            autoFocus 
+              ) : (
+                paginatedData.map((item) => {
+                  const isExpanded = expandedItems.has(item.id);
+                  const isEditing = editingItemId === item.id;
+                  const isSelected = selectedItems.has(item.id);
+                  const isStarred = starredItems.has(item.id);
+                  const priceChangePercentage = calculatePriceChangePercentage(item);
+                  const margin = item.proposedMargin || item.currentREVAMargin || 0;
+                  
+                  return (
+                    <React.Fragment key={item.id}>
+                      <TableRow 
+                        className={`${isExpanded ? 'bg-gray-800/30' : ''} ${isSelected ? 'bg-blue-900/20' : ''}`}
+                        isExpanded={isExpanded}
+                      >
+                        <TableCell>
+                          <Checkbox 
+                            checked={isSelected}
+                            onCheckedChange={() => handleSelectItem(item.id)}
                           />
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-1 hover:bg-green-500/20" 
-                            onClick={() => handleSavePriceEdit(item)}
-                          >
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-1 hover:bg-red-500/20" 
-                            onClick={() => handleCancelEdit()}
-                          >
-                            <X className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <CellDetailsPopover item={item} field="proposedPrice">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
-                            {item.priceModified && <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />}
-                            {onPriceChange && !bulkEditMode && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="ml-2 h-6 w-6 p-0 hover:bg-blue-500/20" 
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  handleStartEdit(item);
-                                }}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
+                        </TableCell>
+                        <TableCell>
+                          <Star 
+                            className={`h-4 w-4 cursor-pointer ${isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400 hover:text-gray-300'}`}
+                            onClick={() => onToggleStar && onToggleStar(item.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center">
+                            <span 
+                              className="cursor-pointer hover:underline"
+                              onClick={() => handleToggleExpand(item.id)}
+                            >
+                              {item.description || 'Unknown'}
+                            </span>
+                            {item.priceModified && (
+                              <Badge variant="outline" className="ml-2 bg-blue-900/20 text-blue-400 border-blue-900">
+                                Modified
+                              </Badge>
                             )}
                           </div>
-                        </CellDetailsPopover>
-                      )}
-                    </TableCell>
-                    
-                    {/* Price change percentage cell */}
-                    <TableCell>
-                      {priceChangePercentage !== 0 && (
-                        <span className={priceChangePercentage > 0 ? "text-green-400" : "text-red-400"}>
-                          {priceChangePercentage > 0 ? "+" : ""}{priceChangePercentage.toFixed(2)}%
-                        </span>
-                      )}
-                    </TableCell>
-                    
-                    {/* Proposed margin cell */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="proposedMargin">
-                        {formatPercentage(item.proposedMargin)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    {/* Applied rule cell */}
-                    <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
-                    
-                    {/* Flags cell */}
-                    <TableCell>{renderFlags(item)}</TableCell>
-                    
-                    {/* Actions cell - Updated styling for better visibility */}
-                    <TableCell>
-                      <div className="flex items-center space-x-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7 p-0 hover:bg-blue-500/20" 
-                          onClick={() => onShowPriceDetails(item)} 
-                        >
-                          <Info className="h-4 w-4" />
-                        </Button>
-                        {!isEditing && onPriceChange && !bulkEditMode && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 p-0 hover:bg-blue-500/20" 
-                            onClick={() => handleStartEdit(item)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {onToggleStar && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onToggleStar(item.id);
-                            }}
-                            className="h-7 w-7 p-0 hover:bg-yellow-500/20"
-                          >
-                            <Star 
-                              className={`h-4 w-4 ${starredItems.has(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`}
+                        </TableCell>
+                        <TableCell>{formatPrice(item.currentREVAPrice)}</TableCell>
+                        <TableCell>
+                          {bulkEditMode && isSelected ? (
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={editingItems.get(item.id) || ''}
+                              onChange={(e) => handleBulkPriceChange(item.id, parseFloat(e.target.value))}
+                              className="h-7 w-24"
                             />
+                          ) : isEditing ? (
+                            <PriceEditor
+                              initialPrice={item.proposedPrice || item.currentREVAPrice}
+                              currentPrice={item.currentREVAPrice}
+                              calculatedPrice={item.calculatedPrice || item.currentREVAPrice}
+                              cost={item.avgCost}
+                              onSave={(newPrice) => handleSavePrice(item, newPrice)}
+                              onCancel={handleCancelEdit}
+                              compact={true}
+                            />
+                          ) : (
+                            formatPrice(item.proposedPrice || item.currentREVAPrice)
+                          )}
+                        </TableCell>
+                        <TableCell>{formatPriceChange(item)}</TableCell>
+                        <TableCell>
+                          <span className={
+                            margin < 0.03 ? 'text-red-400' : 
+                            margin < 0.05 ? 'text-amber-400' : 
+                            margin > 0.3 ? 'text-green-400' : ''
+                          }>
+                            {formatPercentage(margin)}
+                          </span>
+                        </TableCell>
+                        <TableCell>{item.usageRank || 'N/A'}</TableCell>
+                        <TableCell>{renderFlags(item)}</TableCell>
+                        <TableCell className="text-right">
+                          {!bulkEditMode && !isEditing && onPriceChange && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleEditItem(item.id)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => onShowPriceDetails && onShowPriceDetails(item)}
+                          >
+                            <Info className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                        </TableCell>
+                      </TableRow>
+                      
+                      {/* Expanded row with additional details */}
+                      {isExpanded && (
+                        <TableRow className="bg-gray-800/20">
+                          <TableCell colSpan={9} className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <h4 className="text-sm font-medium mb-2">Item Details</h4>
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">SKU:</span>
+                                    <span>{item.sku || 'N/A'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">In Stock:</span>
+                                    <span>{item.inStock || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">On Order:</span>
+                                    <span>{item.onOrder || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Usage:</span>
+                                    <span>{item.revaUsage || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <h4 className="text-sm font-medium mb-2">Cost & Pricing</h4>
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Avg Cost:</span>
+                                    <span>{formatPrice(item.avgCost)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Next Cost:</span>
+                                    <span>{formatPrice(item.nextBuyingPrice)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Current Margin:</span>
+                                    <span>{formatPercentage(item.currentREVAMargin)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Proposed Margin:</span>
+                                    <span>{formatPercentage(item.proposedMargin)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <h4 className="text-sm font-medium mb-2">Market Prices</h4>
+                                <div className="space-y-1 text-sm">
+                                  {item.competitorPrices ? (
+                                    Object.entries(item.competitorPrices).map(([competitor, price]) => (
+                                      <div key={competitor} className="flex justify-between">
+                                        <span className="text-muted-foreground">{competitor}:</span>
+                                        <span>{formatPrice(price)}</span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-muted-foreground">No competitor prices available</div>
+                                  )}
+                                  <div className="flex justify-between mt-2">
+                                    <span className="text-muted-foreground">True Market Low:</span>
+                                    <span>{item.trueMarketLow ? formatPrice(item.trueMarketLow) : 'N/A'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
-        </ScrollArea>
-      </div>
-    );
-  };
-
-  // Pagination controls
-  const renderPagination = () => {
-    if (totalPages <= 1) return null;
-    
-    return (
-      <div className="flex items-center justify-between mt-4">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-          disabled={currentPage === 1}
-        >
-          Previous
-        </Button>
-        <div className="text-sm">
-          Page {currentPage} of {totalPages} 
-          ({sortedData.length} items)
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-          disabled={currentPage === totalPages || totalPages === 0}
-        >
-          Next
-        </Button>
-      </div>
-    );
-  };
-
-  return (
-    <TooltipProvider>
-      <div className="space-y-4">
-        {renderUnifiedFilterBar()}
-        {renderActiveFilters()}
-        {renderDataTable()}
-        
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between py-2">
-            <div className="text-sm text-muted-foreground">
-              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} items
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(currentPage - 1)}
-              >
-                Previous
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(currentPage + 1)}
-              >
-                Next
-              </Button>
-            </div>
+      </Card>
+      
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, sortedData.length)} of {sortedData.length}
           </div>
-        )}
-      </div>
-    </TooltipProvider>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <span className="px-2">
+                  Page {currentPage} of {totalPages}
+                </span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+    </div>
   );
 };
 

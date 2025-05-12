@@ -75,6 +75,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       console.log('PriceEditor: Saving price', numericPrice);
       
       try {
+        // Call the onSave callback with the new price
         onSave(numericPrice);
         
         toast({
@@ -82,6 +83,13 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           description: `Saved new price £${numericPrice.toFixed(2)}`,
           variant: "default",
         });
+        
+        // Explicitly call onCancel after saving to close the editor
+        // This ensures the UI is updated after save
+        setTimeout(() => {
+          setIsSaving(false);
+          // onCancel();
+        }, 300);
       } catch (error) {
         console.error('Error saving price:', error);
         toast({
@@ -89,7 +97,6 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           description: "An error occurred while saving the price",
           variant: "destructive",
         });
-      } finally {
         setIsSaving(false);
       }
     } else {
