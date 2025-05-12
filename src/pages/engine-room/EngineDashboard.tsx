@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics'
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
 import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUpdated';
 import { formatCurrency, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
+
 const EngineDashboardContent = () => {
   const {
     engineData,
@@ -61,6 +63,7 @@ const EngineDashboardContent = () => {
       handleFileUpload(e.dataTransfer.files[0]);
     }
   };
+  
   if (!engineData) {
     return <div className="container mx-auto px-4 py-6">
         <div onDragOver={handleDragOver} onDrop={handleDrop} className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all mt-4
@@ -100,6 +103,7 @@ const EngineDashboardContent = () => {
 
   // Get usage-weighted metrics with the correct calculation method
   const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
+  
   return <div className="container mx-auto px-4 py-6">
       {/* Master container card for all metrics */}
       <Card className="mb-8 border border-white/10 bg-gray-900/40 backdrop-blur-sm">
@@ -115,19 +119,6 @@ const EngineDashboardContent = () => {
             <MetricCard title="Average Cost < Market Low" value={`${metrics.avgCostLessThanMLCount}`} subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} icon={<TrendingUp />} iconPosition="right" />
             
             <MetricCard title="Flagged Items" value={`${metrics.rule1Flags + metrics.rule2Flags}`} subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} icon={<Flag />} iconPosition="right" />
-          </div>
-          
-          {/* Usage-weighted metrics section */}
-          
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <MetricCard title="Usage-Weighted Margin" value={`${usageMetrics.weightedMargin.toFixed(2)}%`} change={usageMetrics.marginImprovement !== 0 ? {
-            value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
-            type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined} subtitle="Total Profit ÷ Total Revenue × 100%" />
-            
-            <MetricCard title="Total Revenue (Usage-Weighted)" value={formatCurrency(usageMetrics.totalRevenue)} subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`} />
-            
-            <MetricCard title="Usage-Weighted Profit" value={formatCurrency(usageMetrics.totalProfit)} subtitle="Sum of ((Price - AvgCost) × Usage)" />
           </div>
         </CardContent>
       </Card>

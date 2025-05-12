@@ -42,16 +42,23 @@ export const formatNumber = (value: number | undefined | null): string => {
  * @returns Object containing calculated metrics
  */
 export const calculateUsageWeightedMetrics = (items: any[]) => {
-  // Initialize result with default values
+  // Initialize result with default values for both current and proposed metrics
   const result = {
+    // Current metrics (based on current REVA Price)
     totalRevenue: 0,
     totalProfit: 0,
     totalUsage: 0,
     weightedMargin: 0,
+    
+    // Proposed metrics (based on proposed Price)
     proposedRevenue: 0,
     proposedProfit: 0,
     proposedWeightedMargin: 0,
+    
+    // Comparison metrics
     marginImprovement: 0,
+    
+    // Distribution metrics
     marginDistribution: [
       { name: '<5%', value: 0, color: '#ef4444', profit: 0 }, // Red
       { name: '5-10%', value: 0, color: '#f97316', profit: 0 }, // Orange
@@ -98,26 +105,30 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
       return;
     }
     
-    // Calculate current revenue and profit
+    // Calculate current revenue and profit - ALWAYS based on current price
     const currentRevenue = usage * currentPrice;
     const currentProfit = usage * (currentPrice - avgCost);
     
     // Current margin as percentage
     const currentMargin = (currentPrice - avgCost) / currentPrice * 100;
     
-    // Accumulate totals
+    // Accumulate totals for current pricing
     result.totalRevenue += currentRevenue;
     result.totalProfit += currentProfit;
     result.totalUsage += usage;
     result.validItemCount++;
     
     // Calculate proposed values if available
-    const proposedPrice = Number(item.proposedPrice) || currentPrice;
-    const proposedRevenue = usage * proposedPrice;
-    const proposedProfit = usage * (proposedPrice - avgCost);
+    const proposedPrice = Number(item.proposedPrice);
+    const isValidProposedPrice = !isNaN(proposedPrice) && proposedPrice > 0;
     
-    result.proposedRevenue += proposedRevenue;
-    result.proposedProfit += proposedProfit;
+    if (isValidProposedPrice) {
+      const proposedRevenue = usage * proposedPrice;
+      const proposedProfit = usage * (proposedPrice - avgCost);
+      
+      result.proposedRevenue += proposedRevenue;
+      result.proposedProfit += proposedProfit;
+    }
     
     // Categorize for margin distribution (using current values)
     if (currentMargin < 5) {
@@ -138,16 +149,16 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
     }
   });
   
-  // Calculate usage-weighted margin percentages
+  // Calculate usage-weighted margin percentages for current pricing
   if (result.totalRevenue > 0) {
     result.weightedMargin = (result.totalProfit / result.totalRevenue) * 100;
   }
   
+  // Calculate usage-weighted margin percentages for proposed pricing
   if (result.proposedRevenue > 0) {
     result.proposedWeightedMargin = (result.proposedProfit / result.proposedRevenue) * 100;
+    result.marginImprovement = result.proposedWeightedMargin - result.weightedMargin;
   }
-  
-  result.marginImprovement = result.proposedWeightedMargin - result.weightedMargin;
   
   // For debugging
   console.log('Usage-weighted metrics calculation results:', {
@@ -161,6 +172,12 @@ export const calculateUsageWeightedMetrics = (items: any[]) => {
     proposedWeightedMargin: result.proposedWeightedMargin,
     marginImprovement: result.marginImprovement
   });
+  
+  // Convert margin distribution values to percentages
+  result.marginDistribution = result.marginDistribution.map(band => ({
+    ...band,
+    value: result.validItemCount > 0 ? (band.value / result.validItemCount) * 100 : 0
+  }));
   
   return result;
 };

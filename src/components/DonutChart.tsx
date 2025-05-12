@@ -30,7 +30,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     return (
       <div className="bg-gray-800 p-2 border border-white/10 rounded-md text-xs md:text-sm shadow-lg backdrop-blur-sm">
         <p className="text-white font-medium">{payload[0].name}</p>
-        <p className="text-white/80">{`${payload[0].value}%`}</p>
+        <p className="text-white/80">{`${payload[0].value.toFixed(1)}%`}</p>
         <p className="text-white/80">{payload[0].payload.profit ? formatCurrency(payload[0].payload.profit) : ''}</p>
       </div>
     );
@@ -39,6 +39,15 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel }) => {
+  // Brand colors for consistent styling
+  const brandColors = [
+    '#3b82f6', // Blue
+    '#10b981', // Green
+    '#6366f1', // Indigo
+    '#8b5cf6', // Violet
+    '#ec4899', // Pink
+  ];
+
   return (
     <div className="relative h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -59,7 +68,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
             {data.map((entry, index) => (
               <Cell 
                 key={`cell-${index}`} 
-                fill={entry.color} 
+                fill={entry.color || brandColors[index % brandColors.length]} 
                 className="transition-all duration-300 ease-in-out cursor-pointer hover:opacity-80"
               />
             ))}
@@ -71,7 +80,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
       {innerValue && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
           <div className="text-lg md:text-xl font-bold text-white">{innerValue}</div>
-          {innerLabel && <div className="text-2xs md:text-xs text-finance-gray mt-0.5 opacity-80">{innerLabel}</div>}
+          {innerLabel && <div className="text-2xs md:text-xs text-gray-400 mt-0.5 opacity-80">{innerLabel}</div>}
         </div>
       )}
     </div>
