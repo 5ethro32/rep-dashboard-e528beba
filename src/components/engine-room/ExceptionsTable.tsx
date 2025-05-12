@@ -13,7 +13,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 interface ExceptionsTableProps {
   data: any[];
   onShowPriceDetails: (item: any) => void;
-  onPriceChange?: (itemId: string, newPrice: number) => void;
+  onPriceChange?: (item: any, newPrice: number) => void;
   onToggleStar?: (itemId: string) => void;
   starredItems?: Set<string>;
 }
@@ -31,15 +31,15 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   const [rank, setRank] = useState('all');
   const [flagFilter, setFlagFilter] = useState('all');
   
-  // Filter items based on the filter text and active tab
+  // Filter items based on all active filters
   const filteredData = React.useMemo(() => {
     let result = data;
     
     // First filter by tab selection
     if (activeTab === 'high-price') {
-      result = result.filter(item => item.flag1 || item.flag === 'HIGH_PRICE');
+      result = result.filter(item => item.flag1 || (item.flags && item.flags.includes('HIGH_PRICE')));
     } else if (activeTab === 'low-margin') {
-      result = result.filter(item => item.flag2 || item.flag === 'LOW_MARGIN');
+      result = result.filter(item => item.flag2 || (item.flags && item.flags.includes('LOW_MARGIN')));
     }
     
     // Apply text filter
@@ -63,12 +63,21 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     
     // Apply flag filter
     if (flagFilter !== 'all') {
-      result = result.filter(item => item.flag === flagFilter);
+      result = result.filter(item => {
+        if (flagFilter === 'HIGH_PRICE') {
+          return item.flag1 || (item.flags && item.flags.includes('HIGH_PRICE'));
+        } else if (flagFilter === 'LOW_MARGIN') {
+          return item.flag2 || (item.flags && item.flags.includes('LOW_MARGIN'));
+        } else {
+          // Check if any flag matches the filter
+          return item.flags && item.flags.includes(flagFilter);
+        }
+      });
     }
     
     // Filter inactive products if enabled
     if (hideInactiveProducts) {
-      result = result.filter(item => item.active !== false);
+      result = result.filter(item => (item.inStock > 0 || item.onOrder > 0));
     }
     
     return result;
@@ -112,7 +121,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   
   // Get all unique ranks from the data for filtering
   const getUniqueRanks = () => {
-    if (!data) return [];
+    if (!data || data.length === 0) return [];
     
     const ranks = new Set<number>();
     data.forEach(item => {
@@ -125,12 +134,20 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   
   // Get all unique flags from the data for filtering
   const getUniqueFlags = () => {
-    if (!data) return [];
+    if (!data || data.length === 0) return [];
     
     const flags = new Set<string>();
+    
+    // Add standard flags
+    flags.add('HIGH_PRICE');
+    flags.add('LOW_MARGIN');
+    
+    // Add flags from the data items
     data.forEach(item => {
-      if (item.flag && typeof item.flag === 'string') {
-        flags.add(item.flag);
+      if (item.flags && Array.isArray(item.flags)) {
+        item.flags.forEach(flag => flags.add(flag));
+      } else if (item.flag && typeof item.flag === 'string' && item.flag.trim()) {
+        flags.add(item.flag.trim());
       }
     });
     
@@ -191,7 +208,10 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
             >
               <option value="all">All Flags</option>
               {uniqueFlags.map(flag => (
-                <option key={flag} value={flag}>{flag}</option>
+                <option key={flag} value={flag}>
+                  {flag === 'HIGH_PRICE' ? 'High Price' : 
+                   flag === 'LOW_MARGIN' ? 'Low Margin' : flag}
+                </option>
               ))}
             </select>
           )}
@@ -238,7 +258,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
       <div className="rounded-md border bg-gray-900/40 backdrop-blur-sm overflow-hidden">
         <div className="overflow-x-auto max-h-[calc(100vh-300px)]">
           <Table>
-            <TableHeader className="sticky top-0 z-20 bg-gray-950/95 backdrop-blur-sm">
+            <TableHeader className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur-sm">
               <TableRow>
                 <TableHead className="sticky left-0 z-30 bg-gray-950/95 backdrop-blur-sm w-12"></TableHead>
                 <TableHead className="sticky left-12 z-30 bg-gray-950/95 backdrop-blur-sm min-w-[300px]">Description</TableHead>
@@ -252,6 +272,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                 <TableHead className="text-right">Proposed Margin</TableHead>
                 <TableHead className="text-right">% to Market Low</TableHead>
                 <TableHead>Flag</TableHead>
+                <TableHead>Rule</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -263,7 +284,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     onClick={() => handleItemClick(item)}
                     className="cursor-pointer hover:bg-gray-800/40"
                   >
-                    <TableCell className="sticky left-0 z-10 bg-inherit w-12">
+                    <TableCell className="sticky left-0 z-20 bg-inherit w-12">
                       {onToggleStar && (
                         <Button
                           variant="ghost"
@@ -280,7 +301,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                         </Button>
                       )}
                     </TableCell>
-                    <TableCell className="sticky left-12 z-10 bg-inherit font-medium">
+                    <TableCell className="sticky left-12 z-20 bg-inherit font-medium">
                       {item.description}
                     </TableCell>
                     <TableCell className="text-right">{item.revaUsage || '—'}</TableCell>
@@ -310,17 +331,27 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     </TableCell>
                     <TableCell className="text-right">{formatCurrency(item.currentREVAPrice)}</TableCell>
                     <TableCell className="text-right">{formatPercentWithColor(item.currentREVAMargin)}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatCurrency(item.proposedPrice)}</TableCell>
+                    <TableCell className="text-right font-semibold">
+                      <CellDetailsPopover 
+                        field="proposedPrice"
+                        item={item}
+                      >
+                        {formatCurrency(item.proposedPrice)}
+                      </CellDetailsPopover>
+                    </TableCell>
                     <TableCell className="text-right font-semibold">{formatPercentWithColor(item.proposedMargin)}</TableCell>
                     <TableCell className="text-right">
                       {percentToMarketLow !== null ? formatPercentage(percentToMarketLow) : '—'}
                     </TableCell>
                     <TableCell>{getFlagBadge(item)}</TableCell>
+                    <TableCell className="text-xs">
+                      {item.appliedRule && <span className="text-muted-foreground">{item.appliedRule}</span>}
+                    </TableCell>
                   </TableRow>
                 );
               }) : (
                 <TableRow>
-                  <TableCell colSpan={12} className="h-24 text-center">
+                  <TableCell colSpan={13} className="h-24 text-center">
                     No items match the filter criteria.
                   </TableCell>
                 </TableRow>

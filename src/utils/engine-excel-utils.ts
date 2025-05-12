@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -56,6 +57,10 @@ interface ProcessedEngineData {
   rule2Flags: number;
   profitDelta: number;
   marginLift: number;
+  currentAvgMargin: number;
+  proposedAvgMargin: number;
+  currentProfit: number;
+  proposedProfit: number;
   items: RevaItem[];
   flaggedItems: RevaItem[];
   chartData: any[];
@@ -295,10 +300,10 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
 // Process raw data into the structure needed for the engine room
 const processRawData = (transformedData: RevaItem[], fileName: string): ProcessedEngineData => {
   // Calculate usage rank based on usage volume ranking
-  // Instead of dividing into 6 equal groups, use fixed index ranges as specified
+  // Sort by usage and assign ranks 1-6 based on index ranges per the specification
   const sortedByUsage = [...transformedData].sort((a, b) => b.revaUsage - a.revaUsage);
   
-  // Assign ranks 1-6 based on index ranges
+  // Assign ranks 1-6 based on index ranges as specified
   sortedByUsage.forEach((item, index) => {
     let rank;
     if (index < 250) rank = 1;
@@ -315,15 +320,20 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
     }
   });
   
-  // Map trend values if they exist
+  // Set market trend for each item
   transformedData.forEach(item => {
-    if (item.trend) {
-      // Map "Downwards" to "TrendDown" and any other value to "TrendFlatUp"
-      item.trend = item.trend.toLowerCase().includes('down') ? 'TrendDown' : 'TrendFlatUp';
+    // If Next Buying Price is missing, set it to AvgCost and flag
+    if (!item.nextCost) {
+      item.nextCost = item.avgCost;
+      if (!item.flags) item.flags = [];
+      item.flags.push("Missing Next Buying Price");
+    }
+    
+    // Determine market trend based on Next Buying Price vs AvgCost
+    if (item.nextCost <= item.avgCost) {
+      item.trend = 'TrendDown';
     } else {
-      // Set default trend based on cost comparison
-      // Downward Trend = Next Buying Price <= Average Cost
-      item.trend = item.nextCost <= item.avgCost ? 'TrendDown' : 'TrendFlatUp';
+      item.trend = 'TrendFlatUp';
     }
     
     // Initialize flags array for each item
@@ -353,9 +363,12 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
   let totalUsage = 0;
   let avgCostLessThanMLCount = 0;
   
+  // For calculating current vs proposed metrics
+  let currentRevenue = 0;
+  let proposedRevenue = 0;
+  
   processedItems.forEach(item => {
     // Fixed: Check if revaUsage and proposedPrice/currentREVAPrice are numbers (including zero)
-    // instead of using them directly in a condition which would exclude zeros
     if (typeof item.revaUsage === 'number') {
       // Calculate revenue and profit based on proposed prices
       const itemPrice = typeof item.proposedPrice === 'number' ? item.proposedPrice : 
@@ -382,6 +395,10 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
       currentTotalProfit += currentItemProfit;
       totalUsageWeightedMargin += usageWeightedMargin;
       totalUsage += item.revaUsage;
+      
+      // For current vs proposed metrics
+      currentRevenue += currentItemRevenue;
+      proposedRevenue += itemRevenue;
     }
     
     // Count items where avgCost is less than marketLow
@@ -390,25 +407,29 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
     }
   });
   
-  // FIX: Calculate overall usage-weighted margin correctly
-  // Previously this was using totalUsageWeightedMargin/totalUsage which might be too small numerically
-  // Let's calculate it based on totalProfit and totalRevenue instead
+  // FIX: Calculate overall margin and comparison metrics correctly
   let overallMargin = 0;
+  let currentAvgMargin = 0;
+  let proposedAvgMargin = 0;
+  
   if (totalRevenue > 0) {
     overallMargin = (totalProfit / totalRevenue) * 100;
   }
-  
-  const currentOverallMargin = totalRevenue > 0 ? (currentTotalProfit / totalRevenue) * 100 : 0;
+  if (currentRevenue > 0) {
+    currentAvgMargin = (currentTotalProfit / currentRevenue) * 100;
+  }
+  if (proposedRevenue > 0) {
+    proposedAvgMargin = (totalProfit / proposedRevenue) * 100;
+  }
   
   // Calculate profit delta and margin lift
   const profitDelta = currentTotalProfit > 0 
     ? ((totalProfit - currentTotalProfit) / currentTotalProfit) * 100 
     : 0;
     
-  const marginLift = overallMargin - currentOverallMargin;
+  const marginLift = proposedAvgMargin - currentAvgMargin;
 
-  // For chart data, we now pass the raw processedItems to the chart component
-  // which will handle the grouping by usage volume
+  // For chart data, we pass the raw processedItems to the chart component
   const chartData = processedItems;
   
   return {
@@ -424,6 +445,10 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
     rule2Flags: processedItems.filter(item => item.flag2).length,
     profitDelta,
     marginLift,
+    currentAvgMargin,
+    proposedAvgMargin,
+    currentProfit: currentTotalProfit,
+    proposedProfit: totalProfit,
     items: processedItems,
     flaggedItems,
     chartData,
@@ -434,36 +459,29 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
 // Updated rule configuration based on new definitions
 const defaultRuleConfig: RuleConfig = {
   rule1: {
-    // For Rule 1a (Downward Trend)
-    group1_2: { trend_down: 1.00, trend_flat_up: 1.03 }, // ML + 0%, ML + 3%
-    group3_4: { trend_down: 1.01, trend_flat_up: 1.04 }, // ML + 1%, ML + 4%
-    group5_6: { trend_down: 1.02, trend_flat_up: 1.05 }  // ML + 2%, ML + 5%
+    // Rule 1a and 1b (when AvgCost < Market Low)
+    group1_2: { trend_down: 1.00, trend_flat_up: 1.03 }, // Rule 1a: ML + 0%, Rule 1b: ML + 3%
+    group3_4: { trend_down: 1.01, trend_flat_up: 1.04 }, // Rule 1a: ML + 1%, Rule 1b: ML + 4%
+    group5_6: { trend_down: 1.02, trend_flat_up: 1.05 }  // Rule 1a: ML + 2%, Rule 1b: ML + 5%
   },
   rule2: {
-    // For Rule 1b AvgCost markups (Cost-based pricing)
+    // For Rule 1b and Rule 2 cost-based pricing (AvgCost markup)
     group1_2: { trend_down: 1.12, trend_flat_up: 1.12 }, // AvgCost + 12%
     group3_4: { trend_down: 1.13, trend_flat_up: 1.13 }, // AvgCost + 13%
     group5_6: { trend_down: 1.14, trend_flat_up: 1.14 }  // AvgCost + 14%
   }
 };
 
-// Apply pricing rules to the data - Updated with new rule logic from the provided definition
+// Apply pricing rules to the data - Implementing the detailed rule logic from the provided specs
 function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[] {
   return items.map(item => {
     // Make a copy of the item to avoid modifying the original
     const processedItem = { ...item };
     
-    // Calculate Market Low (ML) - Based on ETH NET column
-    processedItem.marketLow = processedItem.eth_net !== undefined && processedItem.eth_net > 0 
-      ? processedItem.eth_net
-      : Math.min(
-          processedItem.eth || Infinity,
-          processedItem.nupharm || Infinity, 
-          processedItem.lexon || Infinity, 
-          processedItem.aah || Infinity
-        );
+    // Calculate Market Low (ML) - Directly use ETH NET column if available
+    processedItem.marketLow = processedItem.eth_net;
     
-    // Calculate True Market Low (TML) - Lowest price across all competitors
+    // Calculate True Market Low (TML) - Lowest price across all competitors including ETH NET
     processedItem.trueMarketLow = Math.min(
       processedItem.eth_net || Infinity,
       processedItem.eth || Infinity,
@@ -472,80 +490,99 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.aah || Infinity
     );
     
-    // If true market low is Infinity (no competitor prices given), use the market low or avg cost as fallback
+    // Handle fallbacks for Market Low and True Market Low
     if (processedItem.trueMarketLow === Infinity) {
-      processedItem.trueMarketLow = processedItem.marketLow || processedItem.avgCost;
+      // If no competitor prices available, use avgCost as fallback
+      processedItem.trueMarketLow = processedItem.avgCost;
+      
+      // Flag as "No Market Price Available"
+      if (!processedItem.flags) processedItem.flags = [];
+      if (!processedItem.flags.includes('No Market Price Available')) {
+        processedItem.flags.push('No Market Price Available');
+      }
     }
     
-    // If market low is Infinity, use the true market low or the avg cost
-    if (processedItem.marketLow === Infinity) {
-      processedItem.marketLow = processedItem.trueMarketLow || processedItem.avgCost;
+    if (processedItem.marketLow === undefined || processedItem.marketLow === null) {
+      // If ETH NET not available, use TML as fallback for Market Low
+      processedItem.marketLow = processedItem.trueMarketLow;
     }
-    
-    // Check which rule applies
-    const isRule1Applicable = processedItem.avgCost < processedItem.marketLow;
-    const isDownwardTrend = processedItem.nextCost <= processedItem.avgCost;
     
     // Get group for rule application
     const group = processedItem.usageRank || 6; // Default to group 6 if missing
-    let groupConfig;
+    const groupConfig = getGroupConfig(group, ruleConfig);
     
-    if (group <= 2) {
-      groupConfig = { rule1: ruleConfig.rule1.group1_2, rule2: ruleConfig.rule2.group1_2 };
-    } else if (group <= 4) {
-      groupConfig = { rule1: ruleConfig.rule1.group3_4, rule2: ruleConfig.rule2.group3_4 };
-    } else {
-      groupConfig = { rule1: ruleConfig.rule1.group5_6, rule2: ruleConfig.rule2.group5_6 };
-    }
-    
-    // RULE ONE - Implementing according to provided definition
-    if (isRule1Applicable) {
-      // Rule 1a - Downward Trend (Next Buying Price <= Average Cost)
+    // RULE 1 - AvgCost < Market Low
+    if (processedItem.avgCost < processedItem.marketLow) {
+      // Apply Rule 1a or Rule 1b based on market trend
+      const isDownwardTrend = processedItem.trend === 'TrendDown';
+      
       if (isDownwardTrend) {
-        // Apply Market Low + Group Markup
-        const mlMarkup = isDownwardTrend ? groupConfig.rule1.trend_down : groupConfig.rule1.trend_flat_up;
+        // Rule 1a - Downward Trend: Market Low + Group Markup
+        const mlMarkup = groupConfig.rule1.trend_down; // 0%, 1%, or 2% based on group
         processedItem.proposedPrice = processedItem.marketLow * mlMarkup;
-        processedItem.appliedRule = `Rule 1a - ML + ${((mlMarkup - 1) * 100).toFixed(0)}% (G${group}, ${isDownwardTrend ? 'Down' : 'Up'})`;
-      } 
-      // Rule 1b - Upward Trend (Next Buying Price > Average Cost)
-      else {
-        // Calculate Market Low price with markup
-        const mlPrice = processedItem.marketLow * groupConfig.rule1.trend_flat_up;
+        processedItem.appliedRule = `Rule 1a - ML + ${((mlMarkup - 1) * 100).toFixed(0)}% (G${group}, Down)`;
+      } else {
+        // Rule 1b - Upward Trend: Take higher of Market Low with markup or AvgCost with markup
+        const mlMarkup = groupConfig.rule1.trend_flat_up; // 3%, 4%, or 5% based on group
+        const costMarkup = groupConfig.rule2.trend_flat_up; // 12%, 13%, or 14% based on group
         
-        // Calculate AvgCost price with markup
-        const costPrice = processedItem.avgCost * groupConfig.rule2.trend_flat_up;
+        const mlPrice = processedItem.marketLow * mlMarkup;
+        const costPrice = processedItem.avgCost * costMarkup;
         
-        // Take the higher of the two
         processedItem.proposedPrice = Math.max(mlPrice, costPrice);
-        
         const usedPrice = processedItem.proposedPrice === mlPrice ? "ML" : "Cost";
         processedItem.appliedRule = `Rule 1b - ${usedPrice} Based (G${group}, Up)`;
       }
-    }
-    // Not Rule 1 applicable (AvgCost >= Market Low)
+    } 
+    // RULE 2 - AvgCost >= Market Low
     else {
-      // If we have a Market Low price, use AvgCost + markup based on group
-      if (processedItem.marketLow !== undefined && processedItem.marketLow !== processedItem.avgCost) {
-        // Use the higher of (TML + markup) or (AvgCost + markup)
-        const tmlPrice = processedItem.trueMarketLow * 1.03; // TML + 3%
-        const costMarkup = groupConfig.rule2.trend_flat_up;
-        const costPrice = processedItem.avgCost * costMarkup;
-        
-        processedItem.proposedPrice = Math.max(tmlPrice, costPrice);
-        
-        const usedPrice = processedItem.proposedPrice === tmlPrice ? "TML" : "Cost";
-        processedItem.appliedRule = `Rule 2 - ${usedPrice} Based (G${group})`;
-      }
-      // No Market Low available, use cost-based pricing with group-based markup
-      else {
-        const costMarkup = groupConfig.rule2.trend_flat_up;
-        processedItem.proposedPrice = processedItem.avgCost * costMarkup;
-        processedItem.appliedRule = `Rule 2 - Cost + ${((costMarkup - 1) * 100).toFixed(0)}% (G${group})`;
+      const isDownwardTrend = processedItem.trend === 'TrendDown';
+      
+      if (isDownwardTrend) {
+        // Rule 2a - Downward Trend: Market Low + Uplift
+        if (processedItem.marketLow !== undefined) {
+          // Apply uplift based on group (3%, 4%, or 5%)
+          let uplift = 1.03; // Default for groups 1-2
+          if (group >= 3 && group <= 4) uplift = 1.04;
+          else if (group >= 5) uplift = 1.05;
+          
+          processedItem.proposedPrice = processedItem.marketLow * uplift;
+          processedItem.appliedRule = `Rule 2a - ML + ${((uplift - 1) * 100).toFixed(0)}% (G${group}, Down)`;
+        } else {
+          // Fallback to cost-based pricing if no market low
+          const costMarkup = groupConfig.rule2.trend_down; // 12%, 13%, or 14% based on group
+          processedItem.proposedPrice = processedItem.avgCost * costMarkup;
+          processedItem.appliedRule = `Rule 2a - Cost + ${((costMarkup - 1) * 100).toFixed(0)}% (G${group}, No ML)`;
+        }
+      } else {
+        // Rule 2b - Upward Trend: Take higher of Market Low with uplift or AvgCost with markup
+        if (processedItem.marketLow !== undefined) {
+          // Market Low uplift based on group (3%, 4%, or 5%)
+          let mlUplift = 1.03; // Default for groups 1-2
+          if (group >= 3 && group <= 4) mlUplift = 1.04;
+          else if (group >= 5) mlUplift = 1.05;
+          
+          const costMarkup = groupConfig.rule2.trend_flat_up; // 12%, 13%, or 14% based on group
+          
+          const mlPrice = processedItem.marketLow * mlUplift;
+          const costPrice = processedItem.avgCost * costMarkup;
+          
+          processedItem.proposedPrice = Math.max(mlPrice, costPrice);
+          const usedPrice = processedItem.proposedPrice === mlPrice ? "ML" : "Cost";
+          processedItem.appliedRule = `Rule 2b - ${usedPrice} Based (G${group}, Up)`;
+        } else {
+          // Fallback to cost-based pricing if no market low
+          const costMarkup = groupConfig.rule2.trend_flat_up; // 12%, 13%, or 14% based on group
+          processedItem.proposedPrice = processedItem.avgCost * costMarkup;
+          processedItem.appliedRule = `Rule 2b - Cost + ${((costMarkup - 1) * 100).toFixed(0)}% (G${group}, No ML)`;
+        }
       }
     }
     
     // Ensure we never go below current price
-    processedItem.proposedPrice = Math.max(processedItem.proposedPrice || 0, processedItem.currentREVAPrice || 0);
+    if (processedItem.currentREVAPrice !== undefined && processedItem.currentREVAPrice > 0) {
+      processedItem.proposedPrice = Math.max(processedItem.proposedPrice || 0, processedItem.currentREVAPrice);
+    }
     
     // Store the calculated price for reference
     processedItem.calculatedPrice = processedItem.proposedPrice;
@@ -557,7 +594,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.proposedMargin = 0;
     }
     
-    // Apply flag logic - IMPORTANT CHECK: Any computed price that is ≥10% above TRUE MARKET LOW requires a manual review
+    // Apply flag logic - Price ≥10% above TRUE MARKET LOW requires a manual review
     if (processedItem.trueMarketLow && processedItem.proposedPrice && 
         processedItem.proposedPrice >= processedItem.trueMarketLow * 1.10) {
       processedItem.flag1 = true;
@@ -569,7 +606,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.flag1 = false;
     }
     
-    // Updated: Margin check for <5% instead of 3%
+    // Margin < 5% flag (updated from 3%)
     processedItem.flag2 = processedItem.proposedMargin < 0.05;
     if (processedItem.flag2 && (!processedItem.flags || !processedItem.flags.includes('LOW_MARGIN'))) {
       if (!processedItem.flags) processedItem.flags = [];
@@ -583,4 +620,15 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     
     return processedItem;
   });
+}
+
+// Helper function to get group configuration based on group number
+function getGroupConfig(group: number, ruleConfig: RuleConfig) {
+  if (group <= 2) {
+    return { rule1: ruleConfig.rule1.group1_2, rule2: ruleConfig.rule2.group1_2 };
+  } else if (group <= 4) {
+    return { rule1: ruleConfig.rule1.group3_4, rule2: ruleConfig.rule2.group3_4 };
+  } else {
+    return { rule1: ruleConfig.rule1.group5_6, rule2: ruleConfig.rule2.group5_6 };
+  }
 }

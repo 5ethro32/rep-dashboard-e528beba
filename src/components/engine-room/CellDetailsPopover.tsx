@@ -28,7 +28,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
 }) => {
   // Generate label and details based on field if provided
   const getFieldDetails = () => {
-    if (!field || !item) return { displayLabel: label, displayItems: items || [] }; // Ensure displayItems is never undefined
+    if (!field || !item) return { displayLabel: label, displayItems: items }; 
     
     let displayLabel = label;
     let displayItems: CellDetailItem[] = [];
@@ -47,10 +47,10 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         displayItems = [
           { label: "Market Low", value: item.marketLow },
           { label: "True Market Low", value: item.trueMarketLow || 'N/A' },
-          { label: "ETH NET", value: item["ETH NET"] || 'N/A' },
-          { label: "Nupharm", value: item.Nupharm || 'N/A' },
-          { label: "LEXON", value: item.LEXON || 'N/A' },
-          { label: "AAH", value: item.AAH || 'N/A' }
+          { label: "ETH NET", value: item["ETH NET"] || item.eth_net || 'N/A' },
+          { label: "Nupharm", value: item.Nupharm || item.nupharm || 'N/A' },
+          { label: "LEXON", value: item.LEXON || item.lexon || 'N/A' },
+          { label: "AAH", value: item.AAH || item.aah || 'N/A' }
         ];
         break;
       case "nextCost":
@@ -79,7 +79,8 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         displayItems = [
           { label: "Proposed Price", value: item.proposedPrice },
           { label: "Calculated Price", value: item.calculatedPrice || item.proposedPrice },
-          { label: "Current Price", value: item.currentREVAPrice || 'N/A' }
+          { label: "Current Price", value: item.currentREVAPrice || 'N/A' },
+          { label: "Applied Rule", value: item.appliedRule || 'N/A' }
         ];
         break;
       case "proposedMargin":
@@ -127,7 +128,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         <div className="space-y-2">
           <h4 className="font-medium">{finalLabel}</h4>
           <div className="grid gap-2">
-            {Array.isArray(finalItems) && finalItems.map((item, index) => (
+            {Array.isArray(finalItems) && finalItems.length > 0 && finalItems.map((item, index) => (
               <div key={index} className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">{item.label}:</p>
                 <p className="text-sm font-medium">{item.value}</p>
