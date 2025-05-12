@@ -734,6 +734,9 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.proposedMargin = 0;
     }
     
+    // FIXED: Set the flag2 (low margin) based on margin value - margin less than 5%
+    processedItem.flag2 = processedItem.proposedMargin < 0.05;
+    
     // Apply flag logic - Price ≥10% above TRUE MARKET LOW requires a manual review
     // But only if we have a valid TML
     if (!processedItem.noMarketPrice && processedItem.trueMarketLow && processedItem.trueMarketLow > 0 && 
@@ -748,9 +751,11 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     }
     
     // Margin < 5% flag (updated from 3%)
-    if (processedItem.flag2 && (!processedItem.flags || processedItem.flags.length > 0)) {
+    if (processedItem.flag2) {
       if (!processedItem.flags) processedItem.flags = [];
-      processedItem.flags.push('LOW_MARGIN');
+      if (!processedItem.flags.includes('LOW_MARGIN')) {
+        processedItem.flags.push('LOW_MARGIN');
+      }
     }
 
     // Add ID field for easier item identification if it doesn't already exist
