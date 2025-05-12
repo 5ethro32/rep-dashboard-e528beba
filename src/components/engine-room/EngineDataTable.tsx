@@ -87,6 +87,10 @@ const columns = [{
   format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`,
   filterable: false
 }, {
+  field: 'tmlPercentage', // New field for TML percentage
+  label: '% vs TML',
+  filterable: false
+}, {
   field: 'appliedRule',
   label: 'Rule',
   filterable: true
@@ -138,7 +142,20 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   // We don't need to recalculate TML here anymore, just pass through the existing value
   const dataWithTml = useMemo(() => {
     if (!data) return [];
-    return data;
+    
+    // Calculate the TML percentage for each item
+    return data.map(item => {
+      const proposedPrice = item.proposedPrice || 0;
+      const tml = item.trueMarketLow || 0;
+      
+      // Add tmlPercentage field - avoid division by zero
+      const tmlPercentage = tml > 0 ? ((proposedPrice - tml) / tml) * 100 : 0;
+      
+      return {
+        ...item,
+        tmlPercentage
+      };
+    });
   }, [data]);
 
   // Get unique values for each column to use in filters
@@ -339,7 +356,27 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return `£${value.toFixed(2)}`;
   };
 
-  // Format for missing Next Buying Price - New method
+  // Format TML percentage - new function
+  const formatTMLPercentage = (percentage: number | null | undefined) => {
+    if (percentage === null || percentage === undefined) {
+      return '0.00%';
+    }
+    
+    const formattedValue = percentage.toFixed(2) + '%';
+    
+    // Add color based on value - higher percentages might indicate potential issues
+    if (percentage > 15) {
+      return <span className="text-red-400">{formattedValue}</span>;
+    } else if (percentage > 5) {
+      return <span className="text-amber-400">{formattedValue}</span>;
+    } else if (percentage < -5) {
+      return <span className="text-green-400">{formattedValue}</span>;
+    }
+    
+    return formattedValue;
+  };
+
+  // Format next buying price - new method
   const formatNextBuyingPrice = (item: any) => {
     if (item.nextCostMissing) {
       return <span className="text-blue-400 italic">£0.00</span>;
@@ -862,6 +899,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                     <TableCell>
                       <CellDetailsPopover item={item} field="proposedMargin">
                         {formatPercentage(item.proposedMargin)}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
+                    {/* NEW: TML Percentage cell */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="tmlPercentage">
+                        {formatTMLPercentage(item.tmlPercentage)}
                       </CellDetailsPopover>
                     </TableCell>
                     
