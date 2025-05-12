@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -652,11 +653,16 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.flag1 = false;
     }
     
+    // FIX: Change boolean > number comparison to proper numeric check
     // Margin < 5% flag (updated from 3%)
-    processedItem.flag2 = processedItem.proposedMargin < 0.05;
-    if (processedItem.flag2 && (!processedItem.flags || !processedItem.flags.length > 0)) {
+    const marginValue = processedItem.proposedMargin !== undefined ? processedItem.proposedMargin : 0;
+    processedItem.flag2 = marginValue < 0.05;
+    
+    if (processedItem.flag2) {
       if (!processedItem.flags) processedItem.flags = [];
-      processedItem.flags.push('LOW_MARGIN');
+      if (!processedItem.flags.includes('LOW_MARGIN')) {
+        processedItem.flags.push('LOW_MARGIN');
+      }
     }
 
     // Add ID field for easier item identification if it doesn't already exist

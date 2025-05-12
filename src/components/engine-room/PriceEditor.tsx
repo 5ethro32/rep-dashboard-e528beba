@@ -171,7 +171,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       <div className="flex justify-between items-center text-xs text-muted-foreground">
         <span>Calculated: £{calculatedPrice.toFixed(2)}</span>
         <span className={getPriceChangeClass()}>
-          Change: {priceChangePercentage.toFixed(2)}%
+          Change: {priceChangePercent.toFixed(2)}%
         </span>
       </div>
       
