@@ -20,7 +20,7 @@ interface RuleSimulatorConfigPanelProps {
 }
 
 const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onRunSimulation }) => {
-  // Updated rule configuration to match the implementation in engine-excel-utils.ts
+  // Updated rule configuration to match actual implementation in engine-excel-utils.ts
   const [ruleConfig, setRuleConfig] = useState({
     rule1: {
       // Rule 1a and 1b (when Cost vs Market Low)
@@ -34,10 +34,10 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
       }
     },
     rule2: {
-      // For Rule 2 cost-based pricing (cost markup)
-      group1_2: { trend_down: 12, trend_flat_up: 12 }, // Cost + 12%
-      group3_4: { trend_down: 13, trend_flat_up: 13 }, // Cost + 13%
-      group5_6: { trend_down: 14, trend_flat_up: 14 }  // Cost + 14%
+      // For Rule 2 cost-based pricing (single rule now)
+      group1_2: 12, // Cost + 12%
+      group3_4: 13, // Cost + 13%
+      group5_6: 14  // Cost + 14%
     },
     globalMarginFloor: 5 // 5% minimum margin
   });
@@ -57,17 +57,14 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
     }));
   };
 
-  // Handle cost markup percentage changes for Rule 2
-  const handleRule2MarkupChange = (trend: 'trend_down' | 'trend_flat_up', group: string, value: number[]) => {
+  // Handle cost markup percentage changes for Rule 2 (simplified)
+  const handleRule2MarkupChange = (group: string, value: number[]) => {
     const groupKey = group as 'group1_2' | 'group3_4' | 'group5_6';
     setRuleConfig(prev => ({
       ...prev,
       rule2: {
         ...prev.rule2,
-        [groupKey]: {
-          ...prev.rule2[groupKey],
-          [trend]: value[0] // Keep as percentage
-        }
+        [groupKey]: value[0] // Keep as percentage
       }
     }));
   };
@@ -108,9 +105,9 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
         }
       },
       rule2: {
-        group1_2: { trend_down: 12, trend_flat_up: 12 },
-        group3_4: { trend_down: 13, trend_flat_up: 13 },
-        group5_6: { trend_down: 14, trend_flat_up: 14 }
+        group1_2: 12,
+        group3_4: 13,
+        group5_6: 14
       },
       globalMarginFloor: 5
     });
@@ -120,13 +117,11 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
   const ruleTooltips = {
     rule1a: "Applied when cost is ABOVE or EQUAL TO market low price. Uses Market Low price plus a percentage based on usage group.",
     rule1b: "Applied when cost is BELOW market low price (within 5%). Uses Market Low price plus a percentage based on usage group.",
-    rule2a: "Applied when cost is 5-10% below market low price. Uses direct cost markup based on usage group.",
-    rule2b: "Applied when cost is more than 10% below market low price. Uses direct cost markup based on usage group."
+    rule2: "Applied for cost-based pricing when no market price is available or in other scenarios where cost-based pricing is needed."
   };
 
   // Prepare config for simulation (convert to format expected by the simulation engine)
   const prepareConfigForSimulation = () => {
-    // Convert rule1 and rule2 config to expected format
     return {
       rule1: {
         marginCaps: {
@@ -149,16 +144,9 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
       },
       rule2: {
         markups: {
-          rule2a: {
-            group1_2: ruleConfig.rule2.group1_2.trend_down,
-            group3_4: ruleConfig.rule2.group3_4.trend_down,
-            group5_6: ruleConfig.rule2.group5_6.trend_down,
-          },
-          rule2b: {
-            group1_2: ruleConfig.rule2.group1_2.trend_flat_up,
-            group3_4: ruleConfig.rule2.group3_4.trend_flat_up,
-            group5_6: ruleConfig.rule2.group5_6.trend_flat_up,
-          }
+          group1_2: ruleConfig.rule2.group1_2,
+          group3_4: ruleConfig.rule2.group3_4,
+          group5_6: ruleConfig.rule2.group5_6,
         }
       },
       globalMarginFloor: ruleConfig.globalMarginFloor
@@ -415,14 +403,14 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
             </TabsContent>
             
             <TabsContent value="rule2" className="space-y-6">
-              {/* Rule explanation */}
+              {/* Rule explanation - Updated to match actual rule logic */}
               <div className="text-sm text-muted-foreground mb-4 p-3 bg-gray-800/30 rounded-md">
                 <p><strong>Rule 2:</strong> Applied for cost-based pricing when needed.</p>
                 <p className="mt-1">These markups are applied directly to the cost when necessary, like when no market price is available.</p>
-                <p className="mt-1">The same markup is used for both Trend Down and Trend Flat/Up.</p>
+                <p className="mt-1">The same markup is used for both Trend Down and Trend Flat/Up scenarios.</p>
               </div>
               
-              {/* Rule 2 Cost Markups - Trend Down */}
+              {/* Rule 2 Cost Markups - Simplified to a single rule */}
               <Collapsible defaultOpen>
                 <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
                   <div className="flex items-center gap-2">
@@ -433,7 +421,7 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                           <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="text-xs">Applied when using direct cost-based pricing, like when no market price is available.</p>
+                          <p className="text-xs">{ruleTooltips.rule2}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -445,15 +433,15 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                     {/* Groups 1-2 */}
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <Label>Groups 1-2: {ruleConfig.rule2.group1_2.trend_down}%</Label>
+                        <Label>Groups 1-2: {ruleConfig.rule2.group1_2}%</Label>
                         <span className="text-xs text-muted-foreground">Low Usage</span>
                       </div>
                       <Slider
-                        value={[ruleConfig.rule2.group1_2.trend_down]}
+                        value={[ruleConfig.rule2.group1_2]}
                         min={5}
                         max={30}
                         step={1}
-                        onValueChange={(value) => handleRule2MarkupChange('trend_down', 'group1_2', value)}
+                        onValueChange={(value) => handleRule2MarkupChange('group1_2', value)}
                         className="py-4"
                       />
                     </div>
@@ -461,15 +449,15 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                     {/* Groups 3-4 */}
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <Label>Groups 3-4: {ruleConfig.rule2.group3_4.trend_down}%</Label>
+                        <Label>Groups 3-4: {ruleConfig.rule2.group3_4}%</Label>
                         <span className="text-xs text-muted-foreground">Medium Usage</span>
                       </div>
                       <Slider
-                        value={[ruleConfig.rule2.group3_4.trend_down]}
+                        value={[ruleConfig.rule2.group3_4]}
                         min={5}
                         max={30}
                         step={1}
-                        onValueChange={(value) => handleRule2MarkupChange('trend_down', 'group3_4', value)}
+                        onValueChange={(value) => handleRule2MarkupChange('group3_4', value)}
                         className="py-4"
                       />
                     </div>
@@ -477,15 +465,15 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                     {/* Groups 5-6 */}
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <Label>Groups 5-6: {ruleConfig.rule2.group5_6.trend_down}%</Label>
+                        <Label>Groups 5-6: {ruleConfig.rule2.group5_6}%</Label>
                         <span className="text-xs text-muted-foreground">High Usage</span>
                       </div>
                       <Slider
-                        value={[ruleConfig.rule2.group5_6.trend_down]}
+                        value={[ruleConfig.rule2.group5_6]}
                         min={5}
                         max={30}
                         step={1}
-                        onValueChange={(value) => handleRule2MarkupChange('trend_down', 'group5_6', value)}
+                        onValueChange={(value) => handleRule2MarkupChange('group5_6', value)}
                         className="py-4"
                       />
                     </div>

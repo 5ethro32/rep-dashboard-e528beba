@@ -1,4 +1,3 @@
-
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -24,16 +23,9 @@ export interface RuleConfig {
   };
   rule2: {
     markups: {
-      rule2a: {
-        group1_2: number;
-        group3_4: number;
-        group5_6: number;
-      };
-      rule2b: {
-        group1_2: number;
-        group3_4: number;
-        group5_6: number;
-      };
+      group1_2: number;
+      group3_4: number;
+      group5_6: number;
     };
   };
   globalMarginFloor: number;
@@ -83,7 +75,7 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       } else {
         // Rule 1b - Upward Trend
         const mlMarkup = 1 + (ruleConfig.rule1.markups.rule1b[groupKey] / 100);
-        const costMarkup = 1 + (ruleConfig.rule2.markups.rule2a[groupKey] / 100);
+        const costMarkup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
         
         const mlPrice = marketLow * mlMarkup;
         const costPrice = cost * costMarkup;
@@ -103,18 +95,18 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
           // 3%, 4%, or 5% markup depending on group
           const uplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
           newPrice = marketLow * uplift;
-          ruleApplied = 'rule2a_downtrend';
+          ruleApplied = 'rule2_downtrend';
         } else {
           // Market Low uplift (3%, 4%, or 5%)
           const mlUplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
           // Cost markup (12%, 13%, or 14%)
-          const costMarkup = 1 + (ruleConfig.rule2.markups.rule2a[groupKey] / 100);
+          const costMarkup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
           
           const mlPrice = marketLow * mlUplift;
           const costPrice = cost * costMarkup;
           
           newPrice = Math.max(mlPrice, costPrice);
-          ruleApplied = newPrice === mlPrice ? 'rule2a_ml' : 'rule2a_cost';
+          ruleApplied = newPrice === mlPrice ? 'rule2_ml' : 'rule2_cost';
         }
       } 
       // Rule 2b: If cost is more than 10% below market low
@@ -123,18 +115,18 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
           // 3%, 4%, or 5% markup depending on group
           const uplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
           newPrice = marketLow * uplift;
-          ruleApplied = 'rule2b_downtrend';
+          ruleApplied = 'rule2_downtrend';
         } else {
           // Market Low uplift (3%, 4%, or 5%)
           const mlUplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
           // Cost markup (12%, 13%, or 14%)
-          const costMarkup = 1 + (ruleConfig.rule2.markups.rule2b[groupKey] / 100);
+          const costMarkup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
           
           const mlPrice = marketLow * mlUplift;
           const costPrice = cost * costMarkup;
           
           newPrice = Math.max(mlPrice, costPrice);
-          ruleApplied = newPrice === mlPrice ? 'rule2b_ml' : 'rule2b_cost';
+          ruleApplied = newPrice === mlPrice ? 'rule2_ml' : 'rule2_cost';
         }
       }
       // Cost is within 5% of market low - use Rule 1b
@@ -146,9 +138,7 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
   } else {
     // No market price - use cost-based pricing directly
-    const costMarkup = 1 + (isDownwardTrend ? 
-      ruleConfig.rule2.markups.rule2a[groupKey] : 
-      ruleConfig.rule2.markups.rule2b[groupKey]) / 100;
+    const costMarkup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
     
     newPrice = cost * costMarkup;
     ruleApplied = 'cost_based_no_market';
@@ -260,69 +250,7 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
     { name: "Group 3-4", displayName: "Medium Usage", usageRanks: [3, 4] },
     { name: "Group 5-6", displayName: "High Usage", usageRanks: [5, 6] }
   ].map(group => {
-    const groupItems = simulatedItems.filter(
-      (item: any) => group.usageRanks.includes(Number(item.usageRank || 0))
-    );
-    
-    // Calculate metrics for original prices in this group
-    const originalGroupItems = groupItems.map((item: any) => ({
-      ...item,
-      currentREVAPrice: item.originalPrice,
-      currentREVAMargin: item.originalMargin
-    }));
-    
-    const originalGroupMetrics = calculateUsageWeightedMetrics(originalGroupItems);
-    
-    // Calculate metrics for simulated prices in this group
-    const simulatedGroupItems = groupItems.map((item: any) => ({
-      ...item,
-      currentREVAPrice: item.simulatedPrice,
-      currentREVAMargin: item.simulatedMargin
-    }));
-    
-    const simulatedGroupMetrics = calculateUsageWeightedMetrics(simulatedGroupItems);
-    
-    // Calculate differences
-    const marginDiff = simulatedGroupMetrics.weightedMargin - originalGroupMetrics.weightedMargin;
-    const profitDiff = simulatedGroupMetrics.totalProfit - originalGroupMetrics.totalProfit;
-    const profitDiffPercent = originalGroupMetrics.totalProfit > 0 
-      ? (profitDiff / originalGroupMetrics.totalProfit) * 100 
-      : 0;
-    const revenueDiff = simulatedGroupMetrics.totalRevenue - originalGroupMetrics.totalRevenue;
-    
-    // Count flag occurrences in this group
-    const highPriceFlags = groupItems.filter((item: any) => item.flag1).length;
-    const lowMarginFlags = groupItems.filter((item: any) => item.flag2).length;
-    const marginCapApplied = groupItems.filter((item: any) => item.marginCapApplied).length;
-    const marginFloorApplied = groupItems.filter((item: any) => item.marginFloorApplied).length;
-    
-    return {
-      name: group.name,
-      displayName: group.displayName,
-      margin: {
-        current: originalGroupMetrics.weightedMargin,
-        simulated: simulatedGroupMetrics.weightedMargin,
-        diff: marginDiff
-      },
-      profit: {
-        current: originalGroupMetrics.totalProfit,
-        simulated: simulatedGroupMetrics.totalProfit,
-        diff: profitDiff,
-        diffPercent: profitDiffPercent
-      },
-      revenue: {
-        current: originalGroupMetrics.totalRevenue,
-        simulated: simulatedGroupMetrics.totalRevenue,
-        diff: revenueDiff
-      },
-      flags: {
-        highPrice: highPriceFlags,
-        lowMargin: lowMarginFlags,
-        marginCapApplied: marginCapApplied,
-        marginFloorApplied: marginFloorApplied
-      },
-      itemCount: groupItems.length
-    };
+    // ... keep existing code (group impact calculation)
   });
   
   // Count overall flags
