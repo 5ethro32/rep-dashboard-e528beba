@@ -202,23 +202,6 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
     );
   };
 
-  // Determine trend
-  const getTrendIcon = () => {
-    const isTrendDown = item.nextBuyingPrice <= item.avgCost;
-    
-    return isTrendDown ? (
-      <div className="flex items-center space-x-2 text-green-500">
-        <TrendingDown className="h-5 w-5" />
-        <span>Downward Trend (Next buying price is lower)</span>
-      </div>
-    ) : (
-      <div className="flex items-center space-x-2 text-amber-500">
-        <TrendingUp className="h-5 w-5" />
-        <span>Upward Trend (Next buying price is higher)</span>
-      </div>
-    );
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -285,10 +268,10 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <p className="text-lg font-semibold">{formatCurrency(item.marketLow)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Next Buying Price</p>
+                    <p className="text-sm text-muted-foreground mb-1">Next Cost</p>
                     <div className="flex items-center space-x-2">
-                      <p className="text-lg font-semibold">{formatCurrency(item.nextBuyingPrice)}</p>
-                      {item.nextBuyingPrice <= item.avgCost ? (
+                      <p className="text-lg font-semibold">{formatCurrency(item.nextCost)}</p>
+                      {item.trend === 'TrendDown' ? (
                         <TrendingDown className="h-4 w-4 text-green-500" />
                       ) : (
                         <TrendingUp className="h-4 w-4 text-red-500" />
@@ -306,30 +289,6 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Current Price</p>
                     <p className="text-lg font-semibold">{formatCurrency(item.currentREVAPrice)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Cost Trend Card */}
-            <Card>
-              <CardContent className="pt-6">
-                <h3 className="text-lg font-medium mb-4">Cost Trend</h3>
-                {getTrendIcon()}
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Current Avg Cost</p>
-                    <p className="text-lg font-semibold">{formatCurrency(item.avgCost)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Next Buying Price</p>
-                    <p className="text-lg font-semibold">{formatCurrency(item.nextBuyingPrice)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Price to Market Low %</p>
-                    <p className="text-lg font-semibold">
-                      {item.marketLow ? ((item.proposedPrice - item.marketLow) / item.marketLow * 100).toFixed(2) : 0}%
-                    </p>
                   </div>
                 </div>
               </CardContent>
