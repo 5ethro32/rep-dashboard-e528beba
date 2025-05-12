@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -46,23 +47,33 @@ import {
 } from '@/components/ui/pagination';
 import { toast } from '@/hooks/use-toast';
 
-const EngineDataTable = ({ 
+interface EngineDataTableProps {
+  data: any[];
+  onShowPriceDetails: (item: any) => void;
+  onPriceChange?: (item: any, newPrice: number) => void;
+  onToggleStar: (itemId: string) => void;
+  starredItems?: Set<string>;
+  flagFilter?: string;
+  onFlagFilterChange?: (value: string) => void;
+}
+
+const EngineDataTable: React.FC<EngineDataTableProps> = ({ 
   data, 
   onShowPriceDetails,
   onPriceChange,
   onToggleStar,
   starredItems = new Set(),
-  flagFilter,
-  onFlagFilterChange
+  flagFilter = 'all',
+  onFlagFilterChange = () => {}
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('description');
   const [sortDirection, setSortDirection] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
-  const [selectedItems, setSelectedItems] = useState(new Set());
-  const [editingItemId, setEditingItemId] = useState(null);
-  const [expandedItems, setExpandedItems] = useState(new Set());
+  const [selectedItems, setSelectedItems] = useState(new Set<string>());
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [expandedItems, setExpandedItems] = useState(new Set<string>());
   const [filterOptions, setFilterOptions] = useState({
     usageRank: '',
     flag: flagFilter || 'all',
@@ -70,7 +81,7 @@ const EngineDataTable = ({
     priceChange: ''
   });
   const [bulkEditMode, setBulkEditMode] = useState(false);
-  const [editingItems, setEditingItems] = useState(new Map());
+  const [editingItems, setEditingItems] = useState(new Map<string, number>());
   const [justExitedBulkEdit, setJustExitedBulkEdit] = useState(false);
   
   // Reset page when search or filters change
@@ -105,7 +116,7 @@ const EngineDataTable = ({
   
   // Get unique flags for filter
   const flags = useMemo(() => {
-    const allFlags = new Set();
+    const allFlags = new Set<string>();
     data.forEach(item => {
       if (item.flags && Array.isArray(item.flags)) {
         item.flags.forEach(flag => allFlags.add(flag));
@@ -222,7 +233,7 @@ const EngineDataTable = ({
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
   
   // Handle sort
-  const handleSort = (field) => {
+  const handleSort = (field: string) => {
     if (field === sortField) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -232,12 +243,12 @@ const EngineDataTable = ({
   };
   
   // Handle page change
-  const handlePageChange = (page) => {
+  const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
   
   // Handle filter change
-  const handleFilterChange = (key, value) => {
+  const handleFilterChange = (key: string, value: string) => {
     setFilterOptions(prev => ({ ...prev, [key]: value }));
     if (key === 'flag' && onFlagFilterChange) {
       onFlagFilterChange(value);
@@ -245,7 +256,7 @@ const EngineDataTable = ({
   };
   
   // Handle item selection
-  const handleSelectItem = (itemId) => {
+  const handleSelectItem = (itemId: string) => {
     setSelectedItems(prev => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
@@ -267,7 +278,7 @@ const EngineDataTable = ({
   };
   
   // Handle item expansion
-  const handleToggleExpand = (itemId) => {
+  const handleToggleExpand = (itemId: string) => {
     setExpandedItems(prev => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
@@ -280,12 +291,12 @@ const EngineDataTable = ({
   };
   
   // Handle edit item
-  const handleEditItem = (itemId) => {
+  const handleEditItem = (itemId: string) => {
     setEditingItemId(itemId);
   };
   
   // Handle save price
-  const handleSavePrice = (item, newPrice) => {
+  const handleSavePrice = (item: any, newPrice: number) => {
     if (onPriceChange) {
       onPriceChange(item, newPrice);
     }
@@ -298,19 +309,19 @@ const EngineDataTable = ({
   };
   
   // Format price
-  const formatPrice = (price) => {
+  const formatPrice = (price: number | null | undefined) => {
     if (price === null || price === undefined) return 'N/A';
     return `£${price.toFixed(2)}`;
   };
   
   // Format percentage
-  const formatPercentage = (value) => {
+  const formatPercentage = (value: number | null | undefined) => {
     if (value === null || value === undefined) return 'N/A';
     return `${(value * 100).toFixed(2)}%`;
   };
   
   // Calculate price change percentage
-  const calculatePriceChangePercentage = (item) => {
+  const calculatePriceChangePercentage = (item: any) => {
     const currentPrice = item.currentREVAPrice || 0;
     const proposedPrice = item.proposedPrice || currentPrice;
     
@@ -320,7 +331,7 @@ const EngineDataTable = ({
   };
   
   // Format price change
-  const formatPriceChange = (item) => {
+  const formatPriceChange = (item: any) => {
     const currentPrice = item.currentREVAPrice || 0;
     const proposedPrice = item.proposedPrice || currentPrice;
     
@@ -340,7 +351,7 @@ const EngineDataTable = ({
   };
   
   // Render flags
-  const renderFlags = (item) => {
+  const renderFlags = (item: any) => {
     const flags = [];
     
     if (item.flag1 || (item.flags && item.flags.includes('HIGH_PRICE'))) {
@@ -389,7 +400,7 @@ const EngineDataTable = ({
   const enterBulkEditMode = () => {
     setBulkEditMode(true);
     // Initialize with current prices
-    const initialPrices = new Map();
+    const initialPrices = new Map<string, number>();
     selectedItems.forEach(itemId => {
       const item = data.find(i => i.id === itemId);
       if (item) {
@@ -402,7 +413,7 @@ const EngineDataTable = ({
   // Function to exit bulk edit mode
   const exitBulkEditMode = useCallback(() => {
     // Save any pending edits first if needed
-    if (editingItems.size > 0) {
+    if (editingItems.size > 0 && onPriceChange) {
       // Process any unsaved edits
       editingItems.forEach((newPrice, itemId) => {
         const item = data.find(i => i.id === itemId);
@@ -425,7 +436,7 @@ const EngineDataTable = ({
   }, [editingItems, data, onPriceChange]);
   
   // Handle bulk price change
-  const handleBulkPriceChange = (itemId, newPrice) => {
+  const handleBulkPriceChange = (itemId: string, newPrice: number) => {
     setEditingItems(prev => {
       const newMap = new Map(prev);
       newMap.set(itemId, newPrice);
@@ -434,7 +445,7 @@ const EngineDataTable = ({
   };
   
   // Apply percentage change to selected items
-  const applyPercentageChange = (percentage) => {
+  const applyPercentageChange = (percentage: number) => {
     const newEditingItems = new Map(editingItems);
     
     selectedItems.forEach(itemId => {
@@ -452,7 +463,7 @@ const EngineDataTable = ({
   };
   
   // Apply fixed margin to selected items
-  const applyFixedMargin = (marginPercentage) => {
+  const applyFixedMargin = (marginPercentage: number) => {
     const newEditingItems = new Map(editingItems);
     
     selectedItems.forEach(itemId => {
@@ -563,7 +574,7 @@ const EngineDataTable = ({
           <SelectContent>
             <SelectItem value="">All Ranks</SelectItem>
             {usageRanks.map(rank => (
-              <SelectItem key={rank} value={rank.toString()}>Rank {rank}</SelectItem>
+              <SelectItem key={rank.toString()} value={rank.toString()}>Rank {rank}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -698,7 +709,6 @@ const EngineDataTable = ({
                     <React.Fragment key={item.id}>
                       <TableRow 
                         className={`${isExpanded ? 'bg-gray-800/30' : ''} ${isSelected ? 'bg-blue-900/20' : ''}`}
-                        isExpanded={isExpanded}
                       >
                         <TableCell>
                           <Checkbox 
@@ -840,7 +850,7 @@ const EngineDataTable = ({
                                     Object.entries(item.competitorPrices).map(([competitor, price]) => (
                                       <div key={competitor} className="flex justify-between">
                                         <span className="text-muted-foreground">{competitor}:</span>
-                                        <span>{formatPrice(price)}</span>
+                                        <span>{formatPrice(price as number)}</span>
                                       </div>
                                     ))
                                   ) : (
