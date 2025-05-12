@@ -9,22 +9,17 @@ import { TrendingUp, DollarSign, Percent } from 'lucide-react';
 
 interface UsageWeightedMetricsProps {
   data: any[];
-  comparisonData?: any[];
-  showComparison?: boolean;
+  showingProjected?: boolean;
+  ruleName?: string;
 }
 
 const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   data,
-  comparisonData,
-  showComparison = false
+  showingProjected = false,
+  ruleName = 'Current'
 }) => {
-  // Use the centralized calculation function for current data
+  // Use the centralized calculation function
   const metrics = calculateUsageWeightedMetrics(data);
-  
-  // Calculate comparison metrics if comparison is enabled and data is provided
-  const comparisonMetrics = showComparison && comparisonData 
-    ? calculateUsageWeightedMetrics(comparisonData)
-    : null;
 
   // Define chart colors to match the homepage style - red theme
   const brandColors = [
@@ -42,46 +37,18 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
     color: brandColors[index % brandColors.length]
   }));
   
-  // Calculate changes if comparison data is available
-  const weightedMarginChange = comparisonMetrics 
-    ? comparisonMetrics.weightedMargin - metrics.weightedMargin
-    : 0;
-    
-  const totalProfitChange = comparisonMetrics 
-    ? comparisonMetrics.totalProfit - metrics.totalProfit
-    : 0;
-    
-  const totalRevenueChange = comparisonMetrics 
-    ? comparisonMetrics.totalRevenue - metrics.totalRevenue
-    : 0;
-  
-  // Format percentage change for display
-  const formatChange = (change: number) => {
-    if (Math.abs(change) < 0.01) return '0%';
-    return `${change > 0 ? '+' : ''}${change.toFixed(2)}%`;
-  };
-  
-  // Format currency change for display
-  const formatCurrencyChange = (change: number) => {
-    if (Math.abs(change) < 0.01) return formatCurrency(0);
-    return `${change > 0 ? '+' : ''}${formatCurrency(change)}`;
-  };
-  
-  // Determine change type for styling
-  const getChangeType = (change: number) => {
-    if (Math.abs(change) < 0.01) return 'neutral';
-    return change > 0 ? 'increase' : 'decrease';
-  };
-  
   // Determine if there's a significant margin improvement
-  const marginChangeClass = weightedMarginChange > 0 ? 'text-green-400' : 'text-red-400';
-  const marginChangePrefix = weightedMarginChange > 0 ? '+' : '';
+  const hasMarginImprovement = metrics.marginImprovement > 0;
+  const marginChangeClass = hasMarginImprovement ? 'text-green-400' : 'text-red-400';
+  const marginChangePrefix = hasMarginImprovement ? '+' : '';
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
       <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
         <CardContent className="p-4">
-          <h3 className="font-medium mb-4">Margin Distribution by Product Count</h3>
+          <h3 className="font-medium mb-4">
+            {showingProjected ? `${ruleName} - Margin Distribution` : 'Margin Distribution by Product Count'}
+          </h3>
           <div className="h-48 relative">
             <DonutChart 
               data={marginDistributionWithColors} 
@@ -95,13 +62,17 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
       <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
         <CardContent className="p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium">Profit Contribution by Margin Band</h3>
-            <div className="flex items-center text-xs">
-              <span className="text-muted-foreground mr-1">Margin Change:</span>
-              <span className={marginChangeClass}>
-                {marginChangePrefix}{metrics.marginImprovement.toFixed(2)}%
-              </span>
-            </div>
+            <h3 className="font-medium">
+              {showingProjected ? `${ruleName} - Profit Contribution` : 'Profit Contribution by Margin Band'}
+            </h3>
+            {metrics.marginImprovement !== 0 && (
+              <div className="flex items-center text-xs">
+                <span className="text-muted-foreground mr-1">Margin Change:</span>
+                <span className={marginChangeClass}>
+                  {marginChangePrefix}{metrics.marginImprovement.toFixed(2)}%
+                </span>
+              </div>
+            )}
           </div>
           <div className="h-48 relative">
             <DonutChart 
@@ -114,13 +85,6 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
               innerValue={formatCurrency(metrics.totalProfit)} 
               innerLabel="Total Profit" 
             />
-            {showComparison && comparisonMetrics && (
-              <div className="absolute bottom-2 right-2 bg-gray-800/90 px-2 py-1 rounded text-xs">
-                <span className={totalProfitChange > 0 ? 'text-green-400' : 'text-red-400'}>
-                  {formatCurrencyChange(totalProfitChange)}
-                </span>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
