@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -9,6 +10,7 @@ import AccountPerformance from "./pages/AccountPerformance";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./contexts/AuthContext";
+import { EngineRoomProvider } from "./contexts/EngineRoomContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RepTracker from "./pages/RepTracker";
 import AIVera from "./pages/AIVera"; 
@@ -137,12 +139,32 @@ const AppRoutes = () => {
         />
         <Route path="/ai-vera" element={<AIVera />} />
         
-        {/* Engine Room Routes - Restructured */}
-        <Route path="/engine-room" element={<Navigate to="/engine-room/dashboard" replace />} />
-        <Route path="/engine-room/dashboard" element={<EngineDashboard />} />
-        <Route path="/engine-room/engine" element={<EngineOperations />} />
-        <Route path="/engine-room/approvals" element={<ApprovalsDashboard />} />
-        <Route path="/engine-room/rule-simulator" element={<RuleSimulator />} />
+        {/* Engine Room Routes - Wrapped with EngineRoomProvider */}
+        <Route path="/engine-room" element={
+          <EngineRoomProvider>
+            <Navigate to="/engine-room/dashboard" replace />
+          </EngineRoomProvider>
+        } />
+        <Route path="/engine-room/dashboard" element={
+          <EngineRoomProvider>
+            <EngineDashboard />
+          </EngineRoomProvider>
+        } />
+        <Route path="/engine-room/engine" element={
+          <EngineRoomProvider>
+            <EngineOperations />
+          </EngineRoomProvider>
+        } />
+        <Route path="/engine-room/approvals" element={
+          <EngineRoomProvider>
+            <ApprovalsDashboard />
+          </EngineRoomProvider>
+        } />
+        <Route path="/engine-room/rule-simulator" element={
+          <EngineRoomProvider>
+            <RuleSimulator />
+          </EngineRoomProvider>
+        } />
       </Route>
 
       <Route path="*" element={<NotFound />} />
