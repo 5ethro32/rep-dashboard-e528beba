@@ -19,8 +19,8 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   
   return (
     <div className="space-y-6 mb-6">
-      <div className="flex items-center gap-2 mb-2">
-        {/* Header content if needed */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Margin Analysis</h2>
       </div>
       
       {/* Summary metrics in cards with icons */}

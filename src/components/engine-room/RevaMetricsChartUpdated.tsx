@@ -1,12 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface RevaMetricsChartProps {
   data: any[];
 }
 
 const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
+  // Add toggle state for chart display
+  const [displayOptions, setDisplayOptions] = useState<string[]>(["margin", "profit"]);
+
   if (!data || data.length === 0) {
     return <div className="flex justify-center items-center h-64 bg-gray-800/30 rounded-lg">No data available</div>;
   }
@@ -151,12 +155,16 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           <p className="font-bold text-sm">{data.name}</p>
           <p className="text-xs text-gray-400">{data.rangeDescription}</p>
           <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
-            <div>
-              <p><span className="text-blue-400">Current Margin:</span> {formatMargin(data.currentMargin)}</p>
-            </div>
-            <div>
-              <p><span className="text-green-400">Current Profit:</span> {formatCurrency(data.currentProfit)}</p>
-            </div>
+            {payload.map((entry: any, index: number) => (
+              <div key={index}>
+                <p>
+                  <span className="text-gray-400">{entry.name}: </span> 
+                  {entry.dataKey === 'currentMargin' 
+                    ? formatMargin(entry.value) 
+                    : formatCurrency(entry.value)}
+                </p>
+              </div>
+            ))}
             <p className="col-span-2"><span className="text-gray-400">Items:</span> {data.itemCount}</p>
           </div>
         </div>
@@ -186,66 +194,117 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     return `${value.toFixed(1)}%`;
   };
 
-  // Define colors for the lines
-  const marginColor = "#3b82f6"; // Blue for margin (keep existing color)
-  const profitColor = "#10B981"; // Green for profit
+  // Define colors for the lines - updated to use brand colors
+  const marginColor = "#f97316"; // Orange for margin
+  const profitColor = "#ef4444"; // Finance red for profit
+
+  // Handle toggle changes
+  const handleDisplayOptionsChange = (values: string[]) => {
+    // Ensure we always have at least one option selected
+    if (values.length === 0) return;
+    setDisplayOptions(values);
+  };
 
   return (
-    <div className="w-full h-72 md:h-96">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={processedData}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <ToggleGroup 
+          type="multiple" 
+          value={displayOptions} 
+          onValueChange={handleDisplayOptionsChange}
+          className="justify-end"
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-          <XAxis dataKey="shortName" />
-          <YAxis 
-            yAxisId="left" 
-            orientation="left" 
-            tickFormatter={formatMarginAxis}
-            domain={[0, Math.max(maxMargin * 1.1, 30)]}
-            label={{ value: 'Margin %', angle: -90, position: 'insideLeft', offset: -5, style: { textAnchor: 'middle', fill: marginColor } }}
-          />
-          <YAxis 
-            yAxisId="right" 
-            orientation="right" 
-            tickFormatter={formatProfitAxis}
-            domain={[0, maxProfit * 1.1]}
-            label={{ value: 'Profit (£)', angle: 90, position: 'insideRight', offset: 0, style: { textAnchor: 'middle', fill: profitColor } }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          
-          {/* Line for current margin */}
-          <Line 
-            yAxisId="left" 
-            type="monotone" 
-            dataKey="currentMargin" 
-            name="Current Margin %" 
-            stroke={marginColor} 
-            strokeWidth={3} 
-            dot={{ r: 5, fill: marginColor }} 
-            activeDot={{ r: 6 }} 
-          />
-          
-          {/* Line for current profit */}
-          <Line 
-            yAxisId="right" 
-            type="monotone" 
-            dataKey="currentProfit" 
-            name="Current Profit" 
-            stroke={profitColor} 
-            strokeWidth={3} 
-            dot={{ r: 5, fill: profitColor }} 
-            activeDot={{ r: 6 }} 
-          />
-        </LineChart>
-      </ResponsiveContainer>
+          <ToggleGroupItem 
+            value="margin" 
+            aria-label="Show margin" 
+            className="data-[state=on]:bg-orange-500/20 data-[state=on]:text-orange-400 border-gray-700"
+          >
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-orange-500"></span>
+              <span className="text-xs">Margin</span>
+            </span>
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="profit" 
+            aria-label="Show profit" 
+            className="data-[state=on]:bg-finance-red/20 data-[state=on]:text-finance-red border-gray-700"
+          >
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-finance-red"></span>
+              <span className="text-xs">Profit</span>
+            </span>
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      
+      <div className="w-full h-72 md:h-96">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={processedData}
+            margin={{
+              top: 5,
+              right: 20,
+              left: 10,
+              bottom: 5,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis 
+              dataKey="shortName" 
+              tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+            />
+            <YAxis 
+              yAxisId="left" 
+              orientation="left" 
+              tickFormatter={formatMarginAxis}
+              domain={[0, Math.max(maxMargin * 1.1, 30)]}
+              tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              // Removed axis label
+            />
+            <YAxis 
+              yAxisId="right" 
+              orientation="right" 
+              tickFormatter={formatProfitAxis}
+              domain={[0, maxProfit * 1.1]}
+              tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
+              axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              // Removed axis label
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            
+            {/* Line for current margin */}
+            {displayOptions.includes('margin') && (
+              <Line 
+                yAxisId="left" 
+                type="monotone" 
+                dataKey="currentMargin" 
+                name="Current Margin %" 
+                stroke={marginColor} 
+                strokeWidth={3} 
+                dot={{ r: 5, fill: marginColor }} 
+                activeDot={{ r: 6 }} 
+              />
+            )}
+            
+            {/* Line for current profit */}
+            {displayOptions.includes('profit') && (
+              <Line 
+                yAxisId="right" 
+                type="monotone" 
+                dataKey="currentProfit" 
+                name="Current Profit" 
+                stroke={profitColor} 
+                strokeWidth={3} 
+                dot={{ r: 5, fill: profitColor }} 
+                activeDot={{ r: 6 }} 
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };

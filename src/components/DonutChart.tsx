@@ -28,8 +28,8 @@ const formatCurrency = (value: number): string => {
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-gray-800 p-2 border border-white/10 rounded-md text-xs md:text-sm shadow-lg backdrop-blur-sm">
-        <p className="text-white font-medium">{payload[0].name}</p>
+      <div className="bg-gray-800 p-3 rounded-md text-xs md:text-sm shadow-lg backdrop-blur-sm border border-gray-700">
+        <p className="text-white font-medium mb-1">{payload[0].name}</p>
         <p className="text-white/80">{`${payload[0].value.toFixed(1)}%`}</p>
         <p className="text-white/80">{payload[0].payload.profit ? formatCurrency(payload[0].payload.profit) : ''}</p>
       </div>
@@ -39,13 +39,16 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel }) => {
-  // Brand colors for consistent styling
+  // Updated brand colors for consistent styling with the rest of the app
   const brandColors = [
+    '#ef4444', // Finance Red (primary brand color)
+    '#f97316', // Orange
+    '#8b5cf6', // Purple
     '#3b82f6', // Blue
     '#10b981', // Green
     '#6366f1', // Indigo
-    '#8b5cf6', // Violet
     '#ec4899', // Pink
+    '#64748b', // Slate
   ];
 
   return (
@@ -56,7 +59,7 @@ const DonutChart: React.FC<DonutChartProps> = ({ data, innerValue, innerLabel })
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius="55%" // Adjusted inner radius for a bit thicker donut
+            innerRadius="55%"
             outerRadius="85%"
             paddingAngle={2}
             dataKey="value"

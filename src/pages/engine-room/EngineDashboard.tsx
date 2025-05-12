@@ -112,13 +112,37 @@ const EngineDashboardContent = () => {
           
           {/* Primary metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <MetricCard title="Total Active SKUs" value={metrics.activeItems.toString()} subtitle={`${metrics.totalItems} total SKUs`} icon={<Package />} iconPosition="right" />
+            <MetricCard 
+              title="Total Active SKUs" 
+              value={metrics.activeItems.toString()} 
+              subtitle={`${metrics.totalItems} total SKUs`} 
+              icon={<Package className="h-5 w-5" />} 
+              iconPosition="right" 
+            />
             
-            <MetricCard title="Overall Margin" value={`${metrics.overallMargin.toFixed(2)}%`} subtitle="Usage-weighted average" icon={<Percent />} iconPosition="right" />
+            <MetricCard 
+              title="Overall Margin" 
+              value={`${metrics.overallMargin.toFixed(2)}%`} 
+              subtitle="Usage-weighted average" 
+              icon={<Percent className="h-5 w-5" />} 
+              iconPosition="right" 
+            />
             
-            <MetricCard title="Average Cost < Market Low" value={`${metrics.avgCostLessThanMLCount}`} subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} icon={<TrendingUp />} iconPosition="right" />
+            <MetricCard 
+              title="Average Cost < Market Low" 
+              value={`${metrics.avgCostLessThanMLCount}`} 
+              subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} 
+              icon={<TrendingUp className="h-5 w-5" />} 
+              iconPosition="right" 
+            />
             
-            <MetricCard title="Flagged Items" value={`${metrics.rule1Flags + metrics.rule2Flags}`} subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} icon={<Flag />} iconPosition="right" />
+            <MetricCard 
+              title="Flagged Items" 
+              value={`${metrics.rule1Flags + metrics.rule2Flags}`} 
+              subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} 
+              icon={<Flag className="h-5 w-5" />} 
+              iconPosition="right" 
+            />
           </div>
         </CardContent>
       </Card>

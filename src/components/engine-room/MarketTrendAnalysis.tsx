@@ -52,8 +52,8 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
     });
     
     const trendDistribution = [
-      { name: 'Trending UP', value: trendingUp, color: '#ec4899' },
-      { name: 'Trending DOWN', value: trendingDown, color: '#3b82f6' },
+      { name: 'Trending UP', value: trendingUp, color: '#f97316' },  // Orange
+      { name: 'Trending DOWN', value: trendingDown, color: '#3b82f6' }, // Blue
     ];
     
     return {
@@ -71,12 +71,12 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
         <div className="bg-gray-800 p-3 border border-gray-700 rounded-md shadow-lg">
           <p className="font-medium mb-1">{data.name}</p>
           <div className="text-sm space-y-1">
-            <p>Usage: {data.usage}</p>
+            <p>Usage: {data.usage.toLocaleString()}</p>
             <p>Price: £{data.price?.toFixed(2)}</p>
             <p>Margin: {data.margin?.toFixed(2)}%</p>
             <p>Profit: £{data.profit?.toFixed(2)}</p>
             <div className="flex items-center mt-1">
-              <Badge variant="outline" className={data.trend === 'down' ? 'bg-blue-900/20 text-blue-400 border-blue-900' : 'bg-pink-900/20 text-pink-400 border-pink-900'}>
+              <Badge variant="outline" className={data.trend === 'down' ? 'bg-blue-900/20 text-blue-400 border-blue-900' : 'bg-orange-900/20 text-orange-400 border-orange-900'}>
                 {data.trend === 'down' ? 'Trending DOWN' : 'Trending UP'}
               </Badge>
             </div>
@@ -96,6 +96,7 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
             variant={chartType === 'trend' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setChartType('trend')}
+            className={chartType === 'trend' ? 'bg-finance-red hover:bg-finance-red/90' : ''}
           >
             Trend Distribution
           </Button>
@@ -103,6 +104,7 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
             variant={chartType === 'usage' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setChartType('usage')}
+            className={chartType === 'usage' ? 'bg-finance-red hover:bg-finance-red/90' : ''}
           >
             Usage vs Margin
           </Button>
@@ -129,9 +131,9 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                       <div className="font-bold">{trendData.trendCounts.down}</div>
                     </div>
                     
-                    <div className="flex items-center justify-between p-3 bg-pink-900/20 rounded-md">
+                    <div className="flex items-center justify-between p-3 bg-orange-900/20 rounded-md">
                       <div className="flex items-center">
-                        <ChevronUp className="h-5 w-5 text-pink-400 mr-2" />
+                        <ChevronUp className="h-5 w-5 text-orange-400 mr-2" />
                         <span className="font-medium">Trending UP</span>
                       </div>
                       <div className="font-bold">{trendData.trendCounts.up}</div>
@@ -140,7 +142,6 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                 </div>
                 
                 <div className="md:col-span-2 h-80">
-                  {/* Replaced PieChart with DonutChart component */}
                   <DonutChart 
                     data={trendData.trendDistribution}
                     innerValue={`${trendData.trendCounts.up + trendData.trendCounts.down}`}
@@ -154,20 +155,20 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                   <ScatterChart
                     margin={{ top: 20, right: 20, bottom: 10, left: 10 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                     <XAxis 
                       type="number" 
                       dataKey="usage" 
                       name="Usage" 
-                      label={{ value: 'Usage Volume', position: 'insideBottom', offset: -5 }}
                       tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
+                      axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                     />
                     <YAxis 
                       type="number" 
                       dataKey="margin" 
                       name="Margin" 
-                      label={{ value: 'Margin (%)', angle: -90, position: 'insideLeft' }}
                       tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
+                      axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                     />
                     <ZAxis 
                       type="number" 
@@ -184,7 +185,7 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                     <Scatter 
                       name="Trending UP" 
                       data={trendData.scatterData.filter(item => item.trend === 'up')} 
-                      fill="#ec4899" 
+                      fill="#f97316" 
                     />
                     <Legend />
                   </ScatterChart>
