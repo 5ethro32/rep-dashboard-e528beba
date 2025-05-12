@@ -5,7 +5,7 @@ import { ScatterChart } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronUp, ChevronDown, Database, AlertTriangle } from 'lucide-react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import DonutChart from '@/components/DonutChart';
 import LineChart from '@/components/LineChart';
 
@@ -109,8 +109,8 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
     }).filter(comp => comp.data.length > 0);
     
     const trendDistribution = [
-      { name: 'Trending UP', value: trendingUp, color: '#9b87f5' }, // Brand purple
-      { name: 'Trending DOWN', value: trendingDown, color: '#3b82f6' }, // Brand blue
+      { name: 'Trending UP', value: trendingUp, color: '#9b87f5' }, // Updated to brand purple
+      { name: 'Trending DOWN', value: trendingDown, color: '#3b82f6' }, // Updated to brand blue
     ];
     
     return {
@@ -144,9 +144,6 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
     }
     return null;
   };
-
-  // Check if we have any competitor data
-  const hasCompetitorData = trendData.competitorComparison.length > 0;
 
   return (
     <div className="space-y-4 mb-6">
@@ -260,7 +257,7 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
             ) : (
               <div className="h-96">
                 <h3 className="text-lg font-medium mb-4">Margin Comparison with Competitors</h3>
-                {hasCompetitorData ? (
+                {trendData.competitorComparison.length > 0 ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                     {trendData.competitorComparison.slice(0, 4).map((competitor, index) => (
                       <div key={index} className="h-80">
@@ -278,34 +275,8 @@ const MarketTrendAnalysis: React.FC<MarketTrendAnalysisProps> = ({ data }) => {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full bg-gray-800/30 rounded-lg border border-gray-700/50">
-                    <div className="text-center p-8 max-w-md">
-                      <AlertTriangle className="h-12 w-12 text-amber-400/70 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-white mb-2">No Competitor Data Available</h3>
-                      <p className="text-gray-300 mb-6">
-                        No competitor pricing information was found in the uploaded data.
-                      </p>
-                      <div className="bg-gray-700/30 p-4 rounded-md text-sm text-gray-300 text-left mb-4">
-                        <p className="mb-2 font-medium">Required columns for competitor analysis:</p>
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>ETH</li>
-                          <li>ETH_NET</li>
-                          <li>Nupharm</li>
-                          <li>LEXON</li>
-                          <li>AAH</li>
-                        </ul>
-                      </div>
-                      <div className="flex justify-center">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setChartType('trend')}
-                          className="border-gray-600 hover:bg-gray-700/50"
-                        >
-                          <Database className="h-4 w-4 mr-2" />
-                          View Trend Analysis Instead
-                        </Button>
-                      </div>
-                    </div>
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">No competitor data available for comparison</p>
                   </div>
                 )}
               </div>
