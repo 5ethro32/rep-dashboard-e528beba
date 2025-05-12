@@ -184,10 +184,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (foundItem) {
       foundItem.proposedPrice = newPrice;
       foundItem.priceModified = true;
-      foundItem.workflowStatus = 'draft'; // Ensure item has workflow status
-      
-      // Add a timestamp for the modification
-      foundItem.lastModified = new Date().toISOString();
       
       // IMPORTANT: Fix the margin calculation formula here
       // Use CORRECT formula: margin = (price - cost) / price
@@ -231,12 +227,10 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
     
     // Also update in flagged items if present
-    const flaggedItemIndex = updatedData.flaggedItems?.findIndex((i: any) => i.id === item.id);
+    const flaggedItemIndex = updatedData.flaggedItems.findIndex((i: any) => i.id === item.id);
     if (flaggedItemIndex >= 0) {
       updatedData.flaggedItems[flaggedItemIndex].proposedPrice = newPrice;
       updatedData.flaggedItems[flaggedItemIndex].priceModified = true;
-      updatedData.flaggedItems[flaggedItemIndex].workflowStatus = 'draft';
-      updatedData.flaggedItems[flaggedItemIndex].lastModified = new Date().toISOString();
       
       // IMPORTANT: Fix the margin calculation formula here too
       // Use CORRECT formula: margin = (price - cost) / price
@@ -286,39 +280,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     }
     
-    // Calculate new metrics based on the changes
-    if (updatedData.items && updatedData.items.length > 0) {
-      let totalRevenue = 0;
-      let totalProfit = 0;
-      
-      updatedData.items.forEach((item: any) => {
-        if (item.revaUsage > 0 && item.proposedPrice > 0) {
-          const usage = Math.max(0, Number(item.revaUsage) || 0);
-          const price = Math.max(0, Number(item.proposedPrice) || 0);
-          const cost = Math.max(0, Number(item.avgCost) || 0);
-          
-          // Calculate revenue and profit
-          totalRevenue += usage * price;
-          totalProfit += usage * (price - cost);
-        }
-      });
-      
-      // Update overall metrics
-      if (totalRevenue > 0) {
-        updatedData.proposedProfit = totalProfit;
-        updatedData.proposedAvgMargin = (totalProfit / totalRevenue) * 100;
-        
-        // Calculate deltas from current values
-        if (updatedData.currentProfit && updatedData.currentProfit > 0) {
-          updatedData.profitDelta = ((totalProfit - updatedData.currentProfit) / updatedData.currentProfit) * 100;
-        }
-        
-        if (updatedData.currentAvgMargin && updatedData.currentAvgMargin > 0) {
-          updatedData.marginLift = updatedData.proposedAvgMargin - updatedData.currentAvgMargin;
-        }
-      }
-    }
-    
     // Update the local storage and query cache
     localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
     queryClient.setQueryData(['engineRoomData'], updatedData);
@@ -330,10 +291,11 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return newSet;
     });
     
-    console.log(`Price updated: ${item.description}, New price: £${newPrice.toFixed(2)}, Added to modified items set`);
-    
-    // Toast is now handled in the PriceEditor component
-  }, [engineData, queryClient]);
+    toast({
+      title: "Price updated",
+      description: `Updated price for ${item.description} to £${newPrice.toFixed(2)}`,
+    });
+  }, [engineData, queryClient, toast]);
 
   // Handle reset changes
   const handleResetChanges = useCallback(() => {

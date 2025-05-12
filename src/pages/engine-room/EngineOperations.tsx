@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -20,7 +20,6 @@ import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer'
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
 import MetricCard from '@/components/MetricCard';
-import { toast } from 'react-toastify';
 
 const EngineOperationsContent = () => {
   const {
@@ -95,7 +94,7 @@ const EngineOperationsContent = () => {
     };
   };
   
-  // Handle showing price details - used by all tables
+  // Show item details - used by all tables
   const handleShowItemDetails = (item: any) => {
     setSelectedItem(item);
     setShowPricingExplainer(true);
@@ -114,25 +113,6 @@ const EngineOperationsContent = () => {
     });
   };
   
-  // Display notification about the current workflow status
-  useEffect(() => {
-    if (engineData) {
-      if (workflowStatus === 'draft' && modifiedItems.size > 0) {
-        toast({
-          title: "Price changes are in draft mode",
-          description: `You have ${modifiedItems.size} pending changes. Submit for approval when ready.`,
-          duration: 5000,
-        });
-      } else if (workflowStatus === 'submitted') {
-        toast({
-          title: "Changes submitted for approval",
-          description: `${getPendingApprovalCount()} items are waiting for manager approval.`,
-          duration: 5000,
-        });
-      }
-    }
-  }, [engineData, workflowStatus, modifiedItems.size, getPendingApprovalCount, toast]);
-
   // Get all unique flags from the data for the dropdown (not needed anymore as it's handled inside EngineDataTable)
   
   // Get starred items

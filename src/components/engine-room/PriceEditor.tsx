@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, X, RotateCcw, AlertCircle, Save } from 'lucide-react';
+import { Check, X, RotateCcw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface PriceEditorProps {
@@ -27,7 +27,6 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   const [priceValue, setPriceValue] = useState<string>(initialPrice.toFixed(2));
   const [margin, setMargin] = useState<number>(0);
   const [isValid, setIsValid] = useState<boolean>(true);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
   const { toast } = useToast();
   
   // Calculate price change percentage
@@ -53,45 +52,18 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   };
   
   const handleReset = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation(); // Prevent event bubbling
-    console.log('PriceEditor: Reset clicked, setting price to:', calculatedPrice.toFixed(2));
     setPriceValue(calculatedPrice.toFixed(2));
-    
-    toast({
-      title: "Price reset",
-      description: `Reset to calculated price £${calculatedPrice.toFixed(2)}`,
-    });
   };
   
   const handleSave = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation(); // Prevent event bubbling
     
     const numericPrice = parseFloat(priceValue);
     
     if (isValid && numericPrice > 0) {
-      setIsSaving(true);
       console.log('PriceEditor: Saving price', numericPrice);
-      
-      try {
-        onSave(numericPrice);
-        
-        toast({
-          title: "Price saved",
-          description: `Saved new price £${numericPrice.toFixed(2)}`,
-          variant: "default",
-        });
-      } catch (error) {
-        console.error('Error saving price:', error);
-        toast({
-          title: "Save failed",
-          description: "An error occurred while saving the price",
-          variant: "destructive",
-        });
-      } finally {
-        setIsSaving(false);
-      }
+      onSave(numericPrice);
     } else {
       console.error('PriceEditor: Invalid price value', priceValue);
       toast({
@@ -103,15 +75,9 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   };
   
   const handleCancelClick = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation(); // Prevent event bubbling
     console.log('PriceEditor: Cancel clicked');
     onCancel();
-    
-    toast({
-      title: "Edit cancelled",
-      description: "Price changes were discarded",
-    });
   };
   
   const getMarginClass = () => {
@@ -150,23 +116,20 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           size="icon" 
           className="h-7 w-7 p-0 hover:bg-gray-300/20" 
           onClick={handleCancelClick} 
-          title="Cancel and discard changes"
+          title="Cancel"
         >
           <X className="h-3 w-3" />
         </Button>
         <Button 
-          variant={isValid ? "secondary" : "outline"} 
+          variant={isValid ? "ghost" : "outline"} 
           size="icon" 
-          className={`h-7 w-7 p-0 ${isValid ? "bg-green-100 hover:bg-green-200" : "opacity-50 cursor-not-allowed"}`} 
+          className={`h-7 w-7 p-0 ${isValid ? "hover:bg-green-500/20" : "opacity-50 cursor-not-allowed"}`} 
           onClick={handleSave} 
-          disabled={!isValid || isSaving} 
-          title="Save price changes"
+          disabled={!isValid} 
+          title="Save"
         >
           <Check className="h-3 w-3" />
         </Button>
-        {isSaving && (
-          <span className="animate-pulse text-xs text-blue-500 ml-1">Saving...</span>
-        )}
         {isPriceDecrease && (
           <span title="Price decrease" aria-label="Price decrease">
             <AlertCircle className="h-3 w-3 text-amber-500" />
@@ -217,7 +180,6 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           variant="outline" 
           size="sm" 
           onClick={handleCancelClick}
-          title="Cancel and discard changes"
         >
           <X className="h-3 w-3 mr-1" />
           Cancel
@@ -226,13 +188,10 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           variant="default" 
           size="sm" 
           onClick={handleSave} 
-          disabled={!isValid || isSaving}
-          className={isValid ? "bg-green-600 hover:bg-green-700" : ""}
-          title="Save price changes"
+          disabled={!isValid}
         >
           <Check className="h-3 w-3 mr-1" />
           Save
-          {isSaving && <span className="ml-1 animate-pulse">...</span>}
         </Button>
       </div>
     </div>
