@@ -11,7 +11,6 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   const [displayOptions, setDisplayOptions] = useState<string[]>(["margin", "profit"]);
   const [showRule1, setShowRule1] = useState<boolean>(false);
   const [showRule2, setShowRule2] = useState<boolean>(false);
-  const [showBothRules, setShowBothRules] = useState<boolean>(false);
   const [showCombined, setShowCombined] = useState<boolean>(false);
 
   if (!data || data.length === 0) {
@@ -397,29 +396,16 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   // Toggle handlers for rule displays
   const toggleRule1 = () => {
     setShowRule1(!showRule1);
-    // If turning on rule1, turn off "combined" and "both rules" if they're active
+    // If turning on rule1, turn off "combined" if it's active
     if (!showRule1) {
       setShowCombined(false);
-      if (showBothRules) setShowBothRules(false);
     }
   };
   
   const toggleRule2 = () => {
     setShowRule2(!showRule2);
-    // If turning on rule2, turn off "combined" and "both rules" if they're active
+    // If turning on rule2, turn off "combined" if it's active
     if (!showRule2) {
-      setShowCombined(false);
-      if (showBothRules) setShowBothRules(false);
-    }
-  };
-  
-  // Toggle handler for both rules (showing both individually)
-  const toggleBothRules = () => {
-    setShowBothRules(!showBothRules);
-    // When toggling both rules on, turn off individual rule toggles and combined
-    if (!showBothRules) {
-      setShowRule1(false);
-      setShowRule2(false);
       setShowCombined(false);
     }
   };
@@ -427,11 +413,10 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   // New toggle handler for combined rules (showing optimized combination)
   const toggleCombined = () => {
     setShowCombined(!showCombined);
-    // When toggling combined on, turn off individual rule toggles and both
+    // When toggling combined on, turn off individual rule toggles
     if (!showCombined) {
       setShowRule1(false);
       setShowRule2(false);
-      setShowBothRules(false);
     }
   };
 
@@ -466,7 +451,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           </ToggleGroupItem>
         </ToggleGroup>
         
-        {/* Updated toggle group with four options: Rule 1, Rule 2, Both, and Combined */}
+        {/* Updated toggle group with three options: Rule 1, Rule 2, and Combined */}
         <ToggleGroup
           type="multiple"
           className="justify-end"
@@ -493,18 +478,6 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full" style={{ background: rule2Color }}></span>
               <span>Rule 2</span>
-            </span>
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="bothRules"
-            aria-label="Show Both Rules"
-            className={`border-gray-700 text-xs ${showBothRules ? 'bg-blue-500/20 text-blue-400' : ''}`}
-            onClick={toggleBothRules}
-            data-state={showBothRules ? "on" : "off"}
-          >
-            <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full" style={{ background: rule1Color }}></span>
-              <span>Both</span>
             </span>
           </ToggleGroupItem>
           <ToggleGroupItem
@@ -643,61 +616,6 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               />
             )}
             
-            {/* Both Rules lines - controlled by showBothRules state */}
-            {showBothRules && displayOptions.includes('margin') && (
-              <>
-                <Line 
-                  yAxisId="left" 
-                  type="monotone" 
-                  dataKey="proposedRule1Margin" 
-                  name="Rule 1 Margin %" 
-                  stroke={rule1Color} 
-                  strokeWidth={2} 
-                  strokeDasharray="5 5"
-                  dot={{ r: 3, fill: rule1Color }} 
-                  activeDot={{ r: 4 }} 
-                />
-                <Line 
-                  yAxisId="left" 
-                  type="monotone" 
-                  dataKey="proposedRule2Margin" 
-                  name="Rule 2 Margin %" 
-                  stroke={rule2Color} 
-                  strokeWidth={2} 
-                  strokeDasharray="3 3"
-                  dot={{ r: 3, fill: rule2Color }} 
-                  activeDot={{ r: 4 }} 
-                />
-              </>
-            )}
-            
-            {showBothRules && displayOptions.includes('profit') && (
-              <>
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  dataKey="proposedRule1Profit" 
-                  name="Rule 1 Profit" 
-                  stroke={rule1Color} 
-                  strokeWidth={2} 
-                  strokeDasharray="5 5"
-                  dot={{ r: 3, fill: rule1Color }} 
-                  activeDot={{ r: 4 }} 
-                />
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  dataKey="proposedRule2Profit" 
-                  name="Rule 2 Profit" 
-                  stroke={rule2Color} 
-                  strokeWidth={2} 
-                  strokeDasharray="3 3"
-                  dot={{ r: 3, fill: rule2Color }} 
-                  activeDot={{ r: 4 }} 
-                />
-              </>
-            )}
-            
             {/* Combined rules (optimized combination) */}
             {showCombined && displayOptions.includes('margin') && (
               <Line 
@@ -729,15 +647,15 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
       </div>
       
       {/* Legend for the rules - updated to show based on visibility */}
-      {(showRule1 || showRule2 || showBothRules || showCombined) && (
+      {(showRule1 || showRule2 || showCombined) && (
         <div className="flex flex-wrap gap-4 justify-start text-xs">
-          {(showRule1 || showBothRules) && (
+          {showRule1 && (
             <div className="flex items-center gap-1.5">
               <span className="h-2 w-4 bg-[#1EAEDB] rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #1EAEDB, #1EAEDB 5px, transparent 5px, transparent 10px)' }}></span>
               <span>Rule 1 (Cost + 8% margin)</span>
             </div>
           )}
-          {(showRule2 || showBothRules) && (
+          {showRule2 && (
             <div className="flex items-center gap-1.5">
               <span className="h-2 w-4 bg-[#8B5CF6] rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #8B5CF6, #8B5CF6 3px, transparent 3px, transparent 6px)' }}></span>
               <span>Rule 2 (TML - 5%)</span>
