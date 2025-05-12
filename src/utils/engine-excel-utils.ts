@@ -337,9 +337,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   };
 
   // Format currency - with null/undefined check and no market price indicator
+  // Modified to return string values instead of JSX
   const formatCurrency = (value: number | null | undefined, noMarketPrice?: boolean) => {
     if (noMarketPrice || value === 0) {
-      return <span className="text-gray-400 italic">£0.00</span>;
+      // Return a string indicator instead of JSX
+      return '£0.00';
     }
     if (value === null || value === undefined) {
       return '£0.00';
@@ -348,9 +350,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   };
 
   // Format for missing Next Buying Price - New method
+  // Modified to return string values instead of JSX
   const formatNextBuyingPrice = (item: any) => {
     if (item.nextCostMissing) {
-      return <span className="text-blue-400 italic">£0.00</span>;
+      // Return a string indicator instead of JSX
+      return '£0.00';
     }
     return `£${(item.nextCost || 0).toFixed(2)}`;
   };
