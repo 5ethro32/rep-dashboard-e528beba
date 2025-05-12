@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
@@ -16,7 +16,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   }
 
   // Process the raw data to create usage-based grouping
-  const processDataByUsage = (rawData: any[]) => {
+  const processedData = useMemo(() => {
     // Function to group items by usage volume
     const groupItemsByUsage = (items: any[]) => {
       // First, sort all items by usage in descending order
@@ -27,14 +27,17 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         return usageB - usageA; // Descending order
       });
 
-      // Define group sizes
-      const groupSizes = [250, 250, 500, 500, 1000]; // Group 1: 1-250, Group 2: 251-500, etc.
+      const totalItems = sortedItems.length;
+      
+      // Define groups - 250 items per group for groups 1-5, rest in group 6
+      const groupSize = 250;
       const results = [];
-
-      let startIndex = 0;
-      for (let i = 0; i < groupSizes.length; i++) {
-        const endIndex = startIndex + groupSizes[i];
-        const groupItems = sortedItems.slice(startIndex, Math.min(endIndex, sortedItems.length));
+      
+      // Create exactly 5 equal groups of 250 items each
+      for (let i = 0; i < 5; i++) {
+        const startIndex = i * groupSize;
+        const endIndex = startIndex + groupSize;
+        const groupItems = sortedItems.slice(startIndex, Math.min(endIndex, totalItems));
         
         if (groupItems.length === 0) break; // No more items to group
         
@@ -58,7 +61,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         // Determine the range description
         const groupNumber = i + 1;
         const rangeStart = startIndex + 1;
-        const rangeEnd = Math.min(endIndex, sortedItems.length);
+        const rangeEnd = Math.min(endIndex, totalItems);
 
         results.push({
           name: `Group ${groupNumber}`,
@@ -68,14 +71,12 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           currentMargin: totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0,
           rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
         });
-
-        startIndex = endIndex;
-        if (startIndex >= sortedItems.length) break; // No more items to process
       }
 
-      // If there are remaining items, add them as a final group
-      if (startIndex < sortedItems.length) {
-        const remainingItems = sortedItems.slice(startIndex);
+      // If there are remaining items after the first 5 groups, add them as group 6
+      const remainingStartIndex = 5 * groupSize;
+      if (remainingStartIndex < totalItems) {
+        const remainingItems = sortedItems.slice(remainingStartIndex);
         let totalUsage = 0;
         let totalProfit = 0;
         let totalUsageWeightedMargin = 0;
@@ -92,13 +93,12 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           totalUsageWeightedMargin += margin * usage;
         });
 
-        const groupNumber = groupSizes.length + 1;
-        const rangeStart = startIndex + 1;
-        const rangeEnd = sortedItems.length;
+        const rangeStart = remainingStartIndex + 1;
+        const rangeEnd = totalItems;
 
         results.push({
-          name: `Group ${groupNumber}`,
-          shortName: `G${groupNumber}`,
+          name: `Group 6`,
+          shortName: `G6`,
           itemCount: remainingItems.length,
           currentProfit: totalProfit,
           currentMargin: totalUsage > 0 ? (totalUsageWeightedMargin / totalUsage) * 100 : 0,
@@ -110,23 +110,20 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     };
 
     // Process the provided chart data or raw items
-    if (Array.isArray(rawData) && rawData.length > 0) {
+    if (Array.isArray(data) && data.length > 0) {
       // Check if data is raw items or already processed chart data
-      if (rawData[0].revaUsage !== undefined) {
+      if (data[0].revaUsage !== undefined) {
         // Raw items data
-        return groupItemsByUsage(rawData);
-      } else if (rawData[0].name && rawData[0].name.includes('Group')) {
+        return groupItemsByUsage(data);
+      } else if (data[0].name && data[0].name.includes('Group')) {
         // Data is already in chart format, but we need to regroup by usage
         console.log('Regrouping pre-processed chart data is not supported. Please provide raw item data.');
-        return rawData; // Return as-is for now
+        return data; // Return as-is for now
       }
     }
     
     return [];
-  };
-
-  // Process data with usage-based grouping
-  const processedData = processDataByUsage(data);
+  }, [data]);
 
   // Custom tooltip to show more details
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -237,7 +234,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         </ToggleGroup>
       </div>
       
-      <div className="w-full h-64">
+      <div className="w-full h-56">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={processedData}
