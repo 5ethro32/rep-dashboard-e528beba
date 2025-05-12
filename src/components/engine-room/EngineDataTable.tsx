@@ -499,36 +499,51 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     const flags = [];
     if (item.flag1) {
       flags.push(<span key="high-price" className="bg-red-900/30 text-xs px-2 py-0.5 rounded-md text-red-300" title="Price ≥10% above TRUE MARKET LOW">
-          High Price
-        </span>);
+        High Price
+      </span>);
     }
     if (item.flag2) {
-      flags.push(<span key="low-margin" className="bg-orange-900/30 text-xs px-2 py-0.5 rounded-md text-orange-300" title="Margin < 3%">
-          Low Margin
-        </span>);
+      flags.push(<span key="low-margin" className="bg-orange-900/30 text-xs px-2 py-0.5 rounded-md text-orange-300" title="Margin < 5%">
+        Low Margin
+      </span>);
     }
     if (item.shortage) {
       flags.push(<span key="short" className="bg-purple-900/30 text-xs px-2 py-0.5 rounded-md text-purple-300" title="Product has supply shortage">
-          Short
-        </span>);
+        Short
+      </span>);
     }
     if (item.missingNextBuying) {
       flags.push(<span key="missing-nbp" className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300" title="Missing Next Buying Price">
-          No NBP
-        </span>);
+        No NBP
+      </span>);
     }
     if (item.noMarketPrice) {
       flags.push(<span key="no-market-price" className="bg-emerald-900/30 text-xs px-2 py-0.5 rounded-md text-emerald-300" title="No Market Price Available">
-          No MP
-        </span>);
+        No MP
+      </span>);
     }
     if (item.flags && Array.isArray(item.flags)) {
       item.flags.forEach((flag: string, i: number) => {
         // Skip duplicates or already handled flags
         if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT') return;
-        flags.push(<span key={`flag-${i}`} className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300" title={flag}>
-            {flag}
-          </span>);
+        
+        // Special handling for price decrease flags
+        if (flag.startsWith('PRICE_DECREASE_')) {
+          const percentage = flag.replace('PRICE_DECREASE_', '');
+          flags.push(
+            <span 
+              key={`price-decrease-${i}`} 
+              className="bg-red-900/30 text-xs px-2 py-0.5 rounded-md text-red-300" 
+              title={`Price decrease of ${percentage}`}
+            >
+              Price ↓{percentage}
+            </span>
+          );
+        } else {
+          flags.push(<span key={`flag-${i}`} className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300" title={flag}>
+              {flag}
+            </span>);
+        }
       });
     }
     return flags.length > 0 ? <div className="flex flex-wrap gap-1">{flags}</div> : null;

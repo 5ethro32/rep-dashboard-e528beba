@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
@@ -138,8 +137,22 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Recalculate the margin
       foundItem.proposedMargin = (newPrice - foundItem.avgCost) / newPrice;
       
-      // Update flag2 if margin is below 3%
-      foundItem.flag2 = foundItem.proposedMargin < 0.03;
+      // Update flag2 if margin is below the threshold (5%)
+      foundItem.flag2 = foundItem.proposedMargin < 0.05;
+
+      // Add flag for significant price decrease (>5%)
+      if (foundItem.currentREVAPrice > 0 && newPrice < foundItem.currentREVAPrice) {
+        const decreasePercent = ((foundItem.currentREVAPrice - newPrice) / foundItem.currentREVAPrice) * 100;
+        if (decreasePercent > 5) {
+          if (!foundItem.flags) foundItem.flags = [];
+          const existingDecreaseFlags = foundItem.flags.filter(f => f.startsWith('PRICE_DECREASE_'));
+          if (existingDecreaseFlags.length > 0) {
+            // Remove existing price decrease flags
+            foundItem.flags = foundItem.flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
+          }
+          foundItem.flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
+        }
+      }
     }
     
     // Also update in flagged items if present
@@ -150,7 +163,25 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       updatedData.flaggedItems[flaggedItemIndex].proposedMargin = 
         (newPrice - updatedData.flaggedItems[flaggedItemIndex].avgCost) / newPrice;
       updatedData.flaggedItems[flaggedItemIndex].flag2 = 
-        updatedData.flaggedItems[flaggedItemIndex].proposedMargin < 0.03;
+        updatedData.flaggedItems[flaggedItemIndex].proposedMargin < 0.05;
+        
+      // Add flag for significant price decrease in flagged items as well
+      if (updatedData.flaggedItems[flaggedItemIndex].currentREVAPrice > 0 && 
+          newPrice < updatedData.flaggedItems[flaggedItemIndex].currentREVAPrice) {
+        const decreasePercent = ((updatedData.flaggedItems[flaggedItemIndex].currentREVAPrice - newPrice) / 
+                               updatedData.flaggedItems[flaggedItemIndex].currentREVAPrice) * 100;
+        if (decreasePercent > 5) {
+          if (!updatedData.flaggedItems[flaggedItemIndex].flags) {
+            updatedData.flaggedItems[flaggedItemIndex].flags = [];
+          }
+          const existingDecreaseFlags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => f.startsWith('PRICE_DECREASE_'));
+          if (existingDecreaseFlags.length > 0) {
+            // Remove existing price decrease flags
+            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
+          }
+          updatedData.flaggedItems[flaggedItemIndex].flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
+        }
+      }
     }
     
     // Update the local storage and query cache
