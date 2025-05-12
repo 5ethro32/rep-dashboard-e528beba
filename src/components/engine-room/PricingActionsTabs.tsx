@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Send, Download, Save, RotateCcw, Info, AlertTriangle, FileText, PenLine, CheckCircle, XCircle } from 'lucide-react';
+import { AlertCircle, Send, Download, Save, RotateCcw, Info, AlertTriangle, FileText, PenLine, CheckCircle, XCircle, UploadCloud } from 'lucide-react';
 
 interface PricingActionsTabsProps {
   modifiedCount: number;
@@ -14,6 +14,8 @@ interface PricingActionsTabsProps {
   onSubmit: () => void;
   onReset: () => void;
   onExport: () => void;
+  onUpload?: () => void;
+  fileName?: string;
   approvalMetrics: {
     pending: number;
     approved: number;
@@ -37,6 +39,8 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
   onSubmit,
   onReset,
   onExport,
+  onUpload,
+  fileName,
   approvalMetrics,
   pricingImpactMetrics = {
     currentAvgMargin: 0,
@@ -82,44 +86,79 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
       <CardContent className="p-4 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
+            {fileName && (
+              <div className="flex items-center space-x-2">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  {fileName}
+                </span>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-2">
             <h3 className="text-lg font-medium">Pricing Actions</h3>
             <div className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor()}`}>
               {getStatusText()}
             </div>
           </div>
           
-          <div className="flex flex-wrap gap-2">
-            {modifiedCount > 0 && (
-              <Badge variant="outline" className="bg-finance-red/10 border-finance-red/30 text-finance-red flex items-center gap-1 py-1.5 px-3">
-                <PenLine className="h-3 w-3" />
-                <span>{modifiedCount} modified</span>
-              </Badge>
+          <div className="flex items-center space-x-3">
+            {onUpload && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onUpload}
+                className="flex items-center space-x-1"
+              >
+                <UploadCloud className="h-4 w-4 mr-1" />
+                <span>New Upload</span>
+              </Button>
             )}
-            {approvalMetrics.pending > 0 && (
-              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-400 flex items-center gap-1 py-1.5 px-3">
-                <AlertCircle className="h-3 w-3" />
-                <span>{approvalMetrics.pending} pending</span>
-              </Badge>
-            )}
-            {approvalMetrics.approved > 0 && (
-              <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400 flex items-center gap-1 py-1.5 px-3">
-                <CheckCircle className="h-3 w-3" />
-                <span>{approvalMetrics.approved} approved</span>
-              </Badge>
-            )}
-            {approvalMetrics.rejected > 0 && (
-              <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 flex items-center gap-1 py-1.5 px-3">
-                <XCircle className="h-3 w-3" />
-                <span>{approvalMetrics.rejected} rejected</span>
-              </Badge>
-            )}
-            {totalExceptions > 0 && (
-              <Badge variant="outline" className="bg-amber-700/10 border-amber-700/30 text-amber-400 flex items-center gap-1 py-1.5 px-3">
-                <AlertTriangle className="h-3 w-3" />
-                <span>{totalExceptions} exceptions</span>
-              </Badge>
-            )}
+            
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={onExport}
+              className="flex items-center space-x-1"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              <span>Export Data</span>
+            </Button>
           </div>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {modifiedCount > 0 && (
+            <Badge variant="outline" className="bg-finance-red/10 border-finance-red/30 text-finance-red flex items-center gap-1 py-1.5 px-3 rounded-full">
+              <PenLine className="h-3 w-3" />
+              <span>{modifiedCount} modified</span>
+            </Badge>
+          )}
+          {approvalMetrics.pending > 0 && (
+            <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
+              <AlertCircle className="h-3 w-3" />
+              <span>{approvalMetrics.pending} pending</span>
+            </Badge>
+          )}
+          {approvalMetrics.approved > 0 && (
+            <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
+              <CheckCircle className="h-3 w-3" />
+              <span>{approvalMetrics.approved} approved</span>
+            </Badge>
+          )}
+          {approvalMetrics.rejected > 0 && (
+            <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
+              <XCircle className="h-3 w-3" />
+              <span>{approvalMetrics.rejected} rejected</span>
+            </Badge>
+          )}
+          {totalExceptions > 0 && (
+            <Badge variant="outline" className="bg-amber-700/10 border-amber-700/30 text-amber-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
+              <AlertTriangle className="h-3 w-3" />
+              <span>{totalExceptions} exceptions</span>
+            </Badge>
+          )}
         </div>
         
         <div className="flex flex-wrap gap-2">
@@ -136,11 +175,6 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
           <Button variant="outline" size="sm" onClick={onReset} disabled={modifiedCount === 0} className="bg-gray-900/40">
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset Changes
-          </Button>
-          
-          <Button variant="secondary" size="sm" onClick={onExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export Data
           </Button>
         </div>
         

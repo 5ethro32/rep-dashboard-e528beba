@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,8 +32,42 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   const [rank, setRank] = useState('all');
   const [flagFilter, setFlagFilter] = useState('all');
   
+  // Memoize unique ranks and flags to prevent recalculation on every render
+  const uniqueRanks = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    
+    const ranks = new Set<number>();
+    data.forEach(item => {
+      const rank = item.usageRank || item.rank;
+      if (rank) ranks.add(rank);
+    });
+    
+    return Array.from(ranks).sort((a, b) => a - b);
+  }, [data]);
+  
+  const uniqueFlags = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    
+    const flags = new Set<string>();
+    
+    // Add standard flags
+    flags.add('HIGH_PRICE');
+    flags.add('LOW_MARGIN');
+    
+    // Add flags from the data items
+    data.forEach(item => {
+      if (item.flags && Array.isArray(item.flags)) {
+        item.flags.forEach(flag => flags.add(flag));
+      } else if (item.flag && typeof item.flag === 'string' && item.flag.trim()) {
+        flags.add(item.flag.trim());
+      }
+    });
+    
+    return Array.from(flags).sort();
+  }, [data]);
+  
   // Filter items based on all active filters
-  const filteredData = React.useMemo(() => {
+  const filteredData = useMemo(() => {
     let result = data;
     
     // First filter by tab selection
@@ -123,44 +157,6 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     if (!item.proposedPrice || !item.marketLow || item.marketLow === 0) return null;
     return (item.proposedPrice - item.marketLow) / item.marketLow;
   };
-  
-  // Get all unique ranks from the data for filtering
-  const getUniqueRanks = () => {
-    if (!data || data.length === 0) return [];
-    
-    const ranks = new Set<number>();
-    data.forEach(item => {
-      const rank = item.usageRank || item.rank;
-      if (rank) ranks.add(rank);
-    });
-    
-    return Array.from(ranks).sort((a, b) => a - b);
-  };
-  
-  // Get all unique flags from the data for filtering
-  const getUniqueFlags = () => {
-    if (!data || data.length === 0) return [];
-    
-    const flags = new Set<string>();
-    
-    // Add standard flags
-    flags.add('HIGH_PRICE');
-    flags.add('LOW_MARGIN');
-    
-    // Add flags from the data items
-    data.forEach(item => {
-      if (item.flags && Array.isArray(item.flags)) {
-        item.flags.forEach(flag => flags.add(flag));
-      } else if (item.flag && typeof item.flag === 'string' && item.flag.trim()) {
-        flags.add(item.flag.trim());
-      }
-    });
-    
-    return Array.from(flags).sort();
-  };
-  
-  const uniqueRanks = getUniqueRanks();
-  const uniqueFlags = getUniqueFlags();
   
   return (
     <div className="space-y-4">
@@ -261,7 +257,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
       
       {/* Exceptions table with sticky header and first column */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg overflow-hidden">
-        <div className="overflow-x-auto max-h-[calc(100vh-300px)]">
+        <div className="overflow-x-auto max-h-[calc(100vh-400px)]">
           <Table>
             <TableHeader className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur-sm">
               <TableRow>

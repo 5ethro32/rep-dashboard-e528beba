@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
-import { UploadCloud, FileText, Download, Filter, Star, Package, Info } from 'lucide-react';
+import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer'
 import ExceptionsTable from '@/components/engine-room/ExceptionsTable';
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
+import MetricCard from '@/components/MetricCard';
 
 const EngineOperationsContent = () => {
   const {
@@ -233,77 +234,7 @@ const EngineOperationsContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Top actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="flex items-center space-x-2">
-          <FileText className="h-5 w-5 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">
-            {engineData.fileName || "REVA Pricing Data"}
-          </span>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              localStorage.removeItem('engineRoomData');
-              window.location.reload();
-            }}
-            className="flex items-center space-x-1"
-          >
-            <UploadCloud className="h-4 w-4 mr-1" />
-            <span>New Upload</span>
-          </Button>
-          <Button 
-            variant="secondary" 
-            size="sm"
-            onClick={handleExport}
-            className="flex items-center space-x-1"
-          >
-            <Download className="h-4 w-4 mr-1" />
-            <span>Export Data</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Flag metrics cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
-          <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2">High Price Flags</h3>
-            <div className="text-2xl font-bold mb-1 text-red-400">
-              {metrics.rule1Flags || 0}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Items with prices significantly above market
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
-          <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2">Low Margin Flags</h3>
-            <div className="text-2xl font-bold mb-1 text-amber-400">
-              {metrics.rule2Flags || 0}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Items with margins below threshold
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
-          <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2">Items to Review</h3>
-            <div className="text-2xl font-bold mb-1">{modifiedItems.size}</div>
-            <div className="text-sm text-muted-foreground">
-              Items with pending price changes
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Pricing workflow status and actions */}
+      {/* Pricing actions card with upload and export buttons */}
       <div className="mb-6">
         <PricingActionsTabs
           modifiedCount={modifiedItems.size}
@@ -313,6 +244,11 @@ const EngineOperationsContent = () => {
           onSubmit={handleSubmitForApproval}
           onReset={handleResetChanges}
           onExport={handleExport}
+          onUpload={() => {
+            localStorage.removeItem('engineRoomData');
+            window.location.reload();
+          }}
+          fileName={engineData.fileName || "REVA Pricing Data"}
           approvalMetrics={{
             pending: getPendingApprovalCount(),
             approved: engineData.approvedItems?.length || 0,
@@ -322,26 +258,55 @@ const EngineOperationsContent = () => {
         />
       </div>
 
+      {/* Flag metrics cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <MetricCard
+          title="High Price Flags"
+          value={`${metrics.rule1Flags || 0}`}
+          subtitle="Items with prices significantly above market"
+          valueClassName="text-red-400"
+          icon={<TrendingUp />}
+          iconPosition="right"
+        />
+        
+        <MetricCard
+          title="Low Margin Flags"
+          value={`${metrics.rule2Flags || 0}`}
+          subtitle="Items with margins below threshold"
+          valueClassName="text-amber-400"
+          icon={<TrendingDown />}
+          iconPosition="right"
+        />
+        
+        <MetricCard
+          title="Items to Review"
+          value={`${modifiedItems.size}`}
+          subtitle="Items with pending price changes"
+          icon={<Tag />}
+          iconPosition="right"
+        />
+      </div>
+
       {/* Tabs for different views */}
       <Tabs defaultValue="all-items" className="mt-8">
         <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger key="all-items" value="all-items" className="flex gap-2">
             All Items
             {modifiedItems.size > 0 && (
-              <Badge variant="secondary" className="bg-finance-red text-white">{modifiedItems.size}</Badge>
+              <Badge variant="secondary" className="bg-finance-red text-white rounded-full">{modifiedItems.size}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger key="exceptions" value="exceptions" className="flex gap-2">
             Exceptions
-            <Badge variant="secondary" className="bg-amber-500 text-white">{metrics.rule1Flags + metrics.rule2Flags}</Badge>
+            <Badge variant="secondary" className="bg-amber-500 text-white rounded-full">{metrics.rule1Flags + metrics.rule2Flags}</Badge>
           </TabsTrigger>
           <TabsTrigger key="submitted" value="submitted" className="flex gap-2">
             Submitted
-            <Badge variant="secondary" className="bg-blue-500 text-white">{getPendingApprovalCount()}</Badge>
+            <Badge variant="secondary" className="bg-blue-500 text-white rounded-full">{getPendingApprovalCount()}</Badge>
           </TabsTrigger>
           <TabsTrigger key="starred" value="starred" className="flex gap-2">
             Starred
-            <Badge variant="secondary" className="bg-yellow-500 text-white">{starredItems.size}</Badge>
+            <Badge variant="secondary" className="bg-yellow-500 text-white rounded-full">{starredItems.size}</Badge>
           </TabsTrigger>
           <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
         </TabsList>
