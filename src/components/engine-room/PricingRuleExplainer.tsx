@@ -1,17 +1,17 @@
 
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Card, CardContent } from '@/components/ui/card';
+import { AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface PricingRuleExplainerProps {
   item: any;
@@ -19,267 +19,381 @@ interface PricingRuleExplainerProps {
   onClose: () => void;
 }
 
-const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({ item, open, onClose }) => {
-  // Calculate margin if not provided
-  const calculateMargin = (price: number, cost: number) => {
-    if (!price || !cost || price === 0) return 0;
-    return ((price - cost) / price) * 100;
-  };
+const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({ 
+  item, 
+  open, 
+  onClose 
+}) => {
+  const [simulatedPrice, setSimulatedPrice] = useState('');
+  const [simulatedResults, setSimulatedResults] = useState<any>(null);
+
+  if (!item) return null;
 
   // Format currency
-  const formatCurrency = (value: number | undefined) => {
-    if (value === undefined || value === null) return '£0.00';
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value === undefined || value === null) return '—';
     return `£${value.toFixed(2)}`;
   };
 
   // Format percentage
-  const formatPercentage = (value: number | undefined) => {
-    if (value === undefined || value === null) return '0%';
-    return `${value.toFixed(2)}%`;
+  const formatPercentage = (value: number | null | undefined) => {
+    if (value === undefined || value === null) return '—';
+    return `${(value * 100).toFixed(2)}%`;
   };
+  
+  // Simulate new price
+  const handleSimulatePrice = () => {
+    const newPrice = parseFloat(simulatedPrice);
+    if (isNaN(newPrice) || newPrice <= 0) return;
 
-  // Get the display text for a rule
-  const getRuleDescription = (ruleText: string) => {
-    if (!ruleText) return 'No rule applied';
+    const newMargin = (newPrice - item.avgCost) / newPrice;
+    const priceChangePercentage = ((newPrice - item.currentREVAPrice) / item.currentREVAPrice) * 100;
+    const marginChangePercentage = ((newMargin - item.currentREVAMargin) / item.currentREVAMargin) * 100;
+    const profitChange = (newPrice - item.avgCost) * item.revaUsage - 
+                          (item.currentREVAPrice - item.avgCost) * item.revaUsage;
+
+    setSimulatedResults({
+      price: newPrice,
+      margin: newMargin,
+      priceChangePercentage,
+      marginChangePercentage,
+      profitChange
+    });
+  };
+  
+  // Get rule description
+  const getRuleDescription = () => {
+    const ruleType = item.appliedRule?.charAt(0) || '';
+    const ruleVariant = item.appliedRule?.charAt(1) || '';
+    const usageGroup = item.appliedRule?.includes('1-2') 
+      ? 'Fast moving (rank 1-2)'
+      : item.appliedRule?.includes('3-4')
+        ? 'Medium moving (rank 3-4)'
+        : 'Slow moving (rank 5-6)';
     
-    if (ruleText.toLowerCase().includes('cost plus')) {
-      return 'Cost Plus: Sets price based on cost with added margin';
-    } else if (ruleText.toLowerCase().includes('market')) {
-      return 'Market Based: Sets price relative to market low';
-    } else if (ruleText.toLowerCase().includes('manual')) {
-      return 'Manual: Price manually set';
+    if (ruleType === '1') {
+      return (
+        <>
+          <p className="text-sm mb-2">
+            <strong>Rule 1 ({ruleVariant}):</strong> Applied when Average Cost is less than Market Low
+          </p>
+          <p className="text-sm mb-2">
+            <strong>Usage Group:</strong> {usageGroup}
+          </p>
+          <p className="text-sm">
+            <strong>Cost Trend:</strong> {item.trend === 'TrendDown' ? 'Downward' : 'Flat/Upward'}
+          </p>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <p className="text-sm mb-2">
+            <strong>Rule 2 ({ruleVariant}):</strong> Applied when Average Cost is greater than or equal to Market Low
+          </p>
+          <p className="text-sm mb-2">
+            <strong>Usage Group:</strong> {usageGroup}
+          </p>
+          <p className="text-sm">
+            <strong>Cost Trend:</strong> {item.trend === 'TrendDown' ? 'Downward' : 'Flat/Upward'}
+          </p>
+        </>
+      );
+    }
+  };
+  
+  // Get calculation steps
+  const getCalculationSteps = () => {
+    const ruleType = item.appliedRule?.charAt(0) || '';
+    
+    if (ruleType === '1') {
+      // Rule 1 calculation steps
+      return (
+        <ol className="space-y-2 pl-4 list-decimal">
+          <li className="text-sm">
+            <span className="font-medium">Determine multiplier based on usage rank and trend:</span>
+            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
+              UsageRank: {item.usageRank}, Trend: {item.trend} → 
+              Multiplier: {((item.proposedPrice / item.avgCost) || 0).toFixed(2)}
+            </div>
+          </li>
+          <li className="text-sm">
+            <span className="font-medium">Calculate base proposed price:</span>
+            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
+              avgCost × multiplier = {formatCurrency(item.avgCost)} × {((item.proposedPrice / item.avgCost) || 0).toFixed(2)} = {formatCurrency(item.avgCost * ((item.proposedPrice / item.avgCost) || 0))}
+            </div>
+          </li>
+          <li className="text-sm">
+            <span className="font-medium">Ensure price is not lower than current price:</span>
+            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
+              max(calculated price, current price) = max({formatCurrency(item.avgCost * ((item.proposedPrice / item.avgCost) || 0))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(item.proposedPrice)}
+            </div>
+          </li>
+          <li className="text-sm">
+            <span className="font-medium">Calculate margin:</span>
+            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
+              (proposedPrice - avgCost) / proposedPrice = ({formatCurrency(item.proposedPrice)} - {formatCurrency(item.avgCost)}) / {formatCurrency(item.proposedPrice)} = {formatPercentage(item.proposedMargin)}
+            </div>
+          </li>
+        </ol>
+      );
+    } else {
+      // Rule 2 calculation steps
+      return (
+        <ol className="space-y-2 pl-4 list-decimal">
+          <li className="text-sm">
+            <span className="font-medium">Determine multiplier based on usage rank and trend:</span>
+            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
+              UsageRank: {item.usageRank}, Trend: {item.trend} → 
+              Multiplier: {((item.proposedPrice / item.avgCost) || 0).toFixed(2)}
+            </div>
+          </li>
+          <li className="text-sm">
+            <span className="font-medium">Calculate base proposed price:</span>
+            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
+              avgCost × multiplier = {formatCurrency(item.avgCost)} × {((item.proposedPrice / item.avgCost) || 0).toFixed(2)} = {formatCurrency(item.avgCost * ((item.proposedPrice / item.avgCost) || 0))}
+            </div>
+          </li>
+          <li className="text-sm">
+            <span className="font-medium">Ensure price is not lower than current price:</span>
+            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
+              max(calculated price, current price) = max({formatCurrency(item.avgCost * ((item.proposedPrice / item.avgCost) || 0))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(item.avgCost * ((item.proposedPrice / item.avgCost) || 0), item.currentREVAPrice))}
+            </div>
+          </li>
+          <li className="text-sm">
+            <span className="font-medium">Ensure price is not higher than market low:</span>
+            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
+              min(max price, marketLow) = min({formatCurrency(Math.max(item.avgCost * ((item.proposedPrice / item.avgCost) || 0), item.currentREVAPrice))}, {formatCurrency(item.marketLow)}) = {formatCurrency(item.proposedPrice)}
+            </div>
+          </li>
+          <li className="text-sm">
+            <span className="font-medium">Calculate margin:</span>
+            <div className="ml-4 mt-1 bg-gray-800/30 p-2 rounded text-xs font-mono">
+              (proposedPrice - avgCost) / proposedPrice = ({formatCurrency(item.proposedPrice)} - {formatCurrency(item.avgCost)}) / {formatCurrency(item.proposedPrice)} = {formatPercentage(item.proposedMargin)}
+            </div>
+          </li>
+        </ol>
+      );
+    }
+  };
+  
+  // Flag status
+  const getFlagStatus = () => {
+    if (item.flag1) {
+      return (
+        <div className="flex items-center space-x-2 text-red-500">
+          <AlertCircle className="h-5 w-5" />
+          <span>Flagged: Proposed price is ≥ 10% above True Market Low</span>
+        </div>
+      );
+    } else if (item.flag2) {
+      return (
+        <div className="flex items-center space-x-2 text-red-500">
+          <AlertCircle className="h-5 w-5" />
+          <span>Flagged: Proposed margin is below 3%</span>
+        </div>
+      );
     }
     
-    return ruleText;
+    return (
+      <div className="text-muted-foreground">
+        No flags applied to this item
+      </div>
+    );
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">Price Calculation Details</DialogTitle>
+          <DialogTitle>Pricing Rule Explanation</DialogTitle>
           <DialogDescription>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <span className="px-2 py-0.5 bg-gray-700 rounded-full text-xs">
-                {item.description}
-              </span>
-              {item.appliedRule && (
-                <span className="px-2 py-0.5 bg-blue-900/30 rounded-full text-xs">
-                  Rule: {item.appliedRule}
-                </span>
-              )}
-            </div>
+            Details for {item.description}
           </DialogDescription>
         </DialogHeader>
         
-        {/* Product and calculation overview */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Product Information</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-gray-900/30 p-3 rounded-md">
-                <div className="text-xs text-gray-400">Product</div>
-                <div className="text-base truncate">{item.description}</div>
-              </div>
-              <div className="bg-gray-900/30 p-3 rounded-md">
-                <div className="text-xs text-gray-400">In Stock</div>
-                <div className="text-lg">{item.inStock || 0}</div>
-              </div>
-              <div className="bg-gray-900/30 p-3 rounded-md">
-                <div className="text-xs text-gray-400">Usage</div>
-                <div className="text-lg">{item.revaUsage || 0}</div>
-              </div>
-              <div className="bg-gray-900/30 p-3 rounded-md">
-                <div className="text-xs text-gray-400">Rank</div>
-                <div className="text-lg">{item.usageRank || 'N/A'}</div>
-              </div>
-              <div className="bg-gray-900/30 p-3 rounded-md">
-                <div className="text-xs text-gray-400">On Order</div>
-                <div className="text-lg">{item.onOrder || 0}</div>
-              </div>
-              <div className="bg-gray-900/30 p-3 rounded-md">
-                <div className="text-xs text-gray-400">Trend</div>
-                <div className="text-lg flex items-center">
-                  {item.marketTrend === 'up' && (
-                    <>
-                      <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
-                      <span>Up</span>
-                    </>
-                  )}
-                  {item.marketTrend === 'down' && (
-                    <>
-                      <TrendingDown className="h-4 w-4 mr-1 text-red-500" />
-                      <span>Down</span>
-                    </>
-                  )}
-                  {!item.marketTrend && "Stable"}
-                </div>
-              </div>
-            </div>
-          </div>
+        <Tabs defaultValue="details" className="mt-4">
+          <TabsList className="grid grid-cols-2">
+            <TabsTrigger value="details">Price Details</TabsTrigger>
+            <TabsTrigger value="simulator">Price Simulator</TabsTrigger>
+          </TabsList>
           
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Price Calculation</h3>
+          <TabsContent value="details" className="space-y-6">
+            {/* Current vs Proposed Comparison */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Price Comparison</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-900/40 p-4 rounded-lg">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Current Price</p>
+                      <p className="text-2xl font-bold">{formatCurrency(item.currentREVAPrice)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Current Margin</p>
+                      <p className="text-xl font-semibold">{formatPercentage(item.currentREVAMargin)}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Proposed Price</p>
+                      <p className="text-2xl font-bold text-primary">{formatCurrency(item.proposedPrice)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Proposed Margin</p>
+                      <p className="text-xl font-semibold text-primary">{formatPercentage(item.proposedMargin)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Price Change</p>
+                      <p className={`text-lg ${item.proposedPrice > item.currentREVAPrice ? 'text-green-500' : item.proposedPrice < item.currentREVAPrice ? 'text-red-500' : ''}`}>
+                        {((item.proposedPrice - item.currentREVAPrice) / item.currentREVAPrice * 100).toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          
+            {/* Input Values Card */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Input Values</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Average Cost</p>
+                    <p className="text-lg font-semibold">{formatCurrency(item.avgCost)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Market Low</p>
+                    <p className="text-lg font-semibold">{formatCurrency(item.marketLow)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Next Cost</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-lg font-semibold">{formatCurrency(item.nextCost)}</p>
+                      {item.trend === 'TrendDown' ? (
+                        <TrendingDown className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <TrendingUp className="h-4 w-4 text-red-500" />
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Usage Rank</p>
+                    <p className="text-lg font-semibold">{item.usageRank}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">True Market Low</p>
+                    <p className="text-lg font-semibold">{formatCurrency(item.trueMarketLow)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Current Price</p>
+                    <p className="text-lg font-semibold">{formatCurrency(item.currentREVAPrice)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             
-            <div className="grid gap-2">
-              <div className="bg-gray-900/30 p-3 rounded-md">
-                <div className="text-xs text-gray-400">Applied Rule</div>
-                <div className="text-sm">{getRuleDescription(item.appliedRule || '')}</div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-gray-900/30 p-3 rounded-md">
-                  <div className="text-xs text-gray-400">Average Cost</div>
-                  <div className="text-lg font-mono">{formatCurrency(item.avgCost)}</div>
-                </div>
-                <div className="bg-gray-900/30 p-3 rounded-md">
-                  <div className="text-xs text-gray-400">Next Price</div>
-                  <div className="text-lg font-mono">{formatCurrency(item.nextBuyingPrice)}</div>
-                </div>
-                <div className="bg-gray-900/30 p-3 rounded-md">
-                  <div className="text-xs text-gray-400">Current Price</div>
-                  <div className="text-lg font-mono">{formatCurrency(item.currentREVAPrice)}</div>
-                </div>
-                <div className="bg-gray-900/30 p-3 rounded-md">
-                  <div className="text-xs text-gray-400">Current Margin</div>
-                  <div className="text-lg font-mono">
-                    {formatPercentage(item.currentREVAMargin ? item.currentREVAMargin * 100 : calculateMargin(item.currentREVAPrice || 0, item.avgCost || 0))}
+            {/* Applied Rule Card */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Applied Rule: {item.appliedRule}</h3>
+                {getRuleDescription()}
+              </CardContent>
+            </Card>
+            
+            {/* Calculation Steps Card */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Calculation Steps</h3>
+                {getCalculationSteps()}
+                
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <h4 className="font-medium mb-2">Final Result</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Proposed Price</p>
+                      <p className="text-xl font-semibold">{formatCurrency(item.proposedPrice)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Proposed Margin</p>
+                      <p className="text-xl font-semibold">{formatPercentage(item.proposedMargin)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex items-center justify-center py-2">
-                <ArrowRight className="h-6 w-6" />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-blue-900/30 p-3 rounded-md">
-                  <div className="text-xs text-gray-400">Proposed Price</div>
-                  <div className="text-lg font-mono">{formatCurrency(item.proposedPrice)}</div>
-                </div>
-                <div className="bg-blue-900/30 p-3 rounded-md">
-                  <div className="text-xs text-gray-400">Proposed Margin</div>
-                  <div className="text-lg font-mono">
-                    {formatPercentage(item.proposedMargin ? item.proposedMargin * 100 : calculateMargin(item.proposedPrice || 0, item.avgCost || 0))}
+              </CardContent>
+            </Card>
+            
+            {/* Flag Status Card */}
+            <Card>
+              <CardContent className="pt-6 flex items-center">
+                {getFlagStatus()}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="simulator" className="space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium mb-4">Price Simulator</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Enter a new price to simulate and see the impact on margins and profit.
+                </p>
+                
+                <div className="flex items-end gap-3 mb-6">
+                  <div className="flex-1">
+                    <label htmlFor="simulated-price" className="text-sm font-medium mb-1 block">
+                      Simulated Price
+                    </label>
+                    <Input
+                      id="simulated-price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Enter price"
+                      value={simulatedPrice}
+                      onChange={(e) => setSimulatedPrice(e.target.value)}
+                    />
                   </div>
+                  <Button onClick={handleSimulatePrice}>
+                    Simulate
+                  </Button>
                 </div>
-                <div className="bg-blue-900/30 p-3 rounded-md">
-                  <div className="text-xs text-gray-400">Price Change</div>
-                  <div className="text-lg font-mono">
-                    {formatPercentage(((item.proposedPrice || 0) - (item.currentREVAPrice || 0)) / (item.currentREVAPrice || 1) * 100)}
+                
+                {simulatedResults && (
+                  <div className="bg-gray-900/40 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3">Simulation Results</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Simulated Price</p>
+                        <p className="text-lg font-semibold">{formatCurrency(simulatedResults.price)}</p>
+                        <p className={`text-sm ${simulatedResults.priceChangePercentage > 0 ? 'text-green-500' : simulatedResults.priceChangePercentage < 0 ? 'text-red-500' : ''}`}>
+                          {simulatedResults.priceChangePercentage > 0 ? '+' : ''}{simulatedResults.priceChangePercentage.toFixed(2)}% vs current
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Simulated Margin</p>
+                        <p className="text-lg font-semibold">{formatPercentage(simulatedResults.margin)}</p>
+                        <p className={`text-sm ${simulatedResults.marginChangePercentage > 0 ? 'text-green-500' : simulatedResults.marginChangePercentage < 0 ? 'text-red-500' : ''}`}>
+                          {simulatedResults.marginChangePercentage > 0 ? '+' : ''}{simulatedResults.marginChangePercentage.toFixed(2)}% vs current
+                        </p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <p className="text-sm text-muted-foreground">Profit Impact</p>
+                        <p className={`text-lg font-semibold ${simulatedResults.profitChange > 0 ? 'text-green-500' : simulatedResults.profitChange < 0 ? 'text-red-500' : ''}`}>
+                          {simulatedResults.profitChange > 0 ? '+' : ''}{formatCurrency(simulatedResults.profitChange)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Based on usage of {item.revaUsage} units
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="bg-blue-900/30 p-3 rounded-md">
-                  <div className="text-xs text-gray-400">% to Market Low</div>
-                  <div className="text-lg font-mono">
-                    {formatPercentage(((item.proposedPrice || 0) - (item.marketLow || 0)) / (item.marketLow || 1) * 100)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Competitor prices */}
-        <div className="mt-6">
-          <h3 className="text-lg font-medium mb-2">Competitor Prices</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Competitor</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Diff vs Current</TableHead>
-                <TableHead>Diff vs Proposed</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {item.ETH !== undefined && (
-                <TableRow>
-                  <TableCell>ETH</TableCell>
-                  <TableCell>{formatCurrency(item.ETH)}</TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.ETH || 0) - (item.currentREVAPrice || 0)) / (item.currentREVAPrice || 1) * 100)}
-                  </TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.ETH || 0) - (item.proposedPrice || 0)) / (item.proposedPrice || 1) * 100)}
-                  </TableCell>
-                </TableRow>
-              )}
-              {item.ETH_NET !== undefined && (
-                <TableRow>
-                  <TableCell>ETH NET</TableCell>
-                  <TableCell>{formatCurrency(item.ETH_NET)}</TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.ETH_NET || 0) - (item.currentREVAPrice || 0)) / (item.currentREVAPrice || 1) * 100)}
-                  </TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.ETH_NET || 0) - (item.proposedPrice || 0)) / (item.proposedPrice || 1) * 100)}
-                  </TableCell>
-                </TableRow>
-              )}
-              {item.Nupharm !== undefined && (
-                <TableRow>
-                  <TableCell>Nupharm</TableCell>
-                  <TableCell>{formatCurrency(item.Nupharm)}</TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.Nupharm || 0) - (item.currentREVAPrice || 0)) / (item.currentREVAPrice || 1) * 100)}
-                  </TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.Nupharm || 0) - (item.proposedPrice || 0)) / (item.proposedPrice || 1) * 100)}
-                  </TableCell>
-                </TableRow>
-              )}
-              {item.LEXON !== undefined && (
-                <TableRow>
-                  <TableCell>LEXON</TableCell>
-                  <TableCell>{formatCurrency(item.LEXON)}</TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.LEXON || 0) - (item.currentREVAPrice || 0)) / (item.currentREVAPrice || 1) * 100)}
-                  </TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.LEXON || 0) - (item.proposedPrice || 0)) / (item.proposedPrice || 1) * 100)}
-                  </TableCell>
-                </TableRow>
-              )}
-              {item.AAH !== undefined && (
-                <TableRow>
-                  <TableCell>AAH</TableCell>
-                  <TableCell>{formatCurrency(item.AAH)}</TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.AAH || 0) - (item.currentREVAPrice || 0)) / (item.currentREVAPrice || 1) * 100)}
-                  </TableCell>
-                  <TableCell>
-                    {formatPercentage(((item.AAH || 0) - (item.proposedPrice || 0)) / (item.proposedPrice || 1) * 100)}
-                  </TableCell>
-                </TableRow>
-              )}
-              <TableRow className="bg-gray-800/40">
-                <TableCell className="font-medium">Market Low</TableCell>
-                <TableCell>{formatCurrency(item.marketLow)}</TableCell>
-                <TableCell>
-                  {formatPercentage(((item.marketLow || 0) - (item.currentREVAPrice || 0)) / (item.currentREVAPrice || 1) * 100)}
-                </TableCell>
-                <TableCell>
-                  {formatPercentage(((item.marketLow || 0) - (item.proposedPrice || 0)) / (item.proposedPrice || 1) * 100)}
-                </TableCell>
-              </TableRow>
-              <TableRow className="bg-gray-800/40">
-                <TableCell className="font-medium">True Market Low</TableCell>
-                <TableCell>{formatCurrency(item.trueMarketLow || item.tml)}</TableCell>
-                <TableCell>
-                  {formatPercentage(((item.trueMarketLow || item.tml || 0) - (item.currentREVAPrice || 0)) / (item.currentREVAPrice || 1) * 100)}
-                </TableCell>
-                <TableCell>
-                  {formatPercentage(((item.trueMarketLow || item.tml || 0) - (item.proposedPrice || 0)) / (item.proposedPrice || 1) * 100)}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
-        
-        <DialogFooter className="mt-4">
-          <Button onClick={onClose}>Close</Button>
-        </DialogFooter>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
