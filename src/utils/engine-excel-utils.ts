@@ -44,6 +44,7 @@ interface RevaItem {
   // New flags property to store all flags that apply to this item
   flags?: string[];
   noMarketPrice?: boolean; // Added for explicit tracking of missing market price
+  marginCapApplied?: boolean; // Added to track if margin cap was applied
 }
 
 interface ProcessedEngineData {
@@ -74,6 +75,12 @@ interface RuleConfig {
     group1_2: { trend_down: number; trend_flat_up: number };
     group3_4: { trend_down: number; trend_flat_up: number };
     group5_6: { trend_down: number; trend_flat_up: number };
+    // New margin cap parameters
+    marginCaps: {
+      group1_2: number; // Maximum 10% margin cap for groups 1-2
+      group3_4: number; // Maximum 20% margin cap for groups 3-4
+      group5_6: number; // Maximum 30% margin cap for groups 5-6
+    };
   };
   rule2: {
     group1_2: { trend_down: number; trend_flat_up: number };
@@ -363,18 +370,18 @@ function transformRowWithMapping(row: any, mapping: Record<string, string>): Rev
 // Process raw data into the structure needed for the engine room
 const processRawData = (transformedData: RevaItem[], fileName: string): ProcessedEngineData => {
   // Calculate usage rank based on usage volume ranking
-  // Sort by usage and assign ranks 1-6 based on index ranges per the specification
+  // Sort by usage and assign ranks 1-6 based on index ranges per the updated specification
   const sortedByUsage = [...transformedData].sort((a, b) => b.revaUsage - a.revaUsage);
   
-  // Assign ranks 1-6 based on index ranges as specified
+  // Assign ranks 1-6 based on updated index ranges (200 items per group)
   sortedByUsage.forEach((item, index) => {
     let rank;
-    if (index < 250) rank = 1;
-    else if (index < 500) rank = 2;
-    else if (index < 750) rank = 3;
-    else if (index < 1000) rank = 4;
-    else if (index < 1250) rank = 5;
-    else rank = 6;
+    if (index < 200) rank = 1;         // Updated: Group 1: Ranks 1-200
+    else if (index < 400) rank = 2;    // Updated: Group 2: Ranks 201-400
+    else if (index < 600) rank = 3;    // Updated: Group 3: Ranks 401-600
+    else if (index < 800) rank = 4;    // Updated: Group 4: Ranks 601-800
+    else if (index < 1000) rank = 5;   // Updated: Group 5: Ranks 801-1000
+    else rank = 6;                     // Updated: Group 6: Ranks 1001+
     
     // Find the original item in transformedData and assign the rank
     const originalItem = transformedData.find(i => i.description === item.description);
@@ -564,13 +571,19 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
   };
 };
 
-// Updated rule configuration based on new definitions
+// Updated rule configuration based on new definitions and margin caps
 const defaultRuleConfig: RuleConfig = {
   rule1: {
     // Rule 1a and 1b (when AvgCost < Market Low)
     group1_2: { trend_down: 1.00, trend_flat_up: 1.03 }, // Rule 1a: ML + 0%, Rule 1b: ML + 3%
     group3_4: { trend_down: 1.01, trend_flat_up: 1.04 }, // Rule 1a: ML + 1%, Rule 1b: ML + 4%
-    group5_6: { trend_down: 1.02, trend_flat_up: 1.05 }  // Rule 1a: ML + 2%, Rule 1b: ML + 5%
+    group5_6: { trend_down: 1.02, trend_flat_up: 1.05 },  // Rule 1a: ML + 2%, Rule 1b: ML + 5%
+    // New margin caps by group
+    marginCaps: {
+      group1_2: 0.10, // Maximum 10% margin cap for groups 1-2
+      group3_4: 0.20, // Maximum 20% margin cap for groups 3-4
+      group5_6: 0.30, // Maximum 30% margin cap for groups 5-6
+    }
   },
   rule2: {
     // For Rule 1b and Rule 2 cost-based pricing (AvgCost markup)
@@ -585,6 +598,9 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
   return items.map(item => {
     // Make a copy of the item to avoid modifying the original
     const processedItem = { ...item };
+    
+    // Initialize the marginCapApplied flag as false
+    processedItem.marginCapApplied = false;
     
     // Calculate Market Low (ML) - Directly use ETH NET column if available
     processedItem.marketLow = processedItem.eth_net;
@@ -664,6 +680,32 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         processedItem.proposedPrice = Math.max(mlPrice, costPrice);
         const usedPrice = processedItem.proposedPrice === mlPrice ? "ML" : "Cost";
         processedItem.appliedRule = `Rule 1b - ${usedPrice} Based (G${group}, Up)`;
+      }
+      
+      // NEW: Apply margin cap for Rule 1
+      // Calculate the margin with the proposed price
+      if (processedItem.proposedPrice > 0) {
+        const proposedMargin = (processedItem.proposedPrice - processedItem.avgCost) / processedItem.proposedPrice;
+        
+        // Get the appropriate margin cap for this group
+        const marginCap = groupConfig.marginCap;
+        
+        // If the calculated margin exceeds the cap, recalculate the price
+        if (proposedMargin > marginCap) {
+          // Formula to calculate price from target margin: Price = Cost / (1 - targetMargin)
+          const cappedPrice = processedItem.avgCost / (1 - marginCap);
+          processedItem.proposedPrice = cappedPrice;
+          processedItem.marginCapApplied = true;
+          
+          // Update the rule description to indicate cap was applied
+          processedItem.appliedRule = `${processedItem.appliedRule} [${(marginCap * 100).toFixed(0)}% Margin Cap Applied]`;
+          
+          // Add flag for margin cap application
+          if (!processedItem.flags) processedItem.flags = [];
+          if (!processedItem.flags.includes('MARGIN_CAP_APPLIED')) {
+            processedItem.flags.push('MARGIN_CAP_APPLIED');
+          }
+        }
       }
     } 
     // RULE 2 - AvgCost >= Market Low OR No Market Price
@@ -770,10 +812,22 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
 // Helper function to get group configuration based on group number
 function getGroupConfig(group: number, ruleConfig: RuleConfig) {
   if (group <= 2) {
-    return { rule1: ruleConfig.rule1.group1_2, rule2: ruleConfig.rule2.group1_2 };
+    return { 
+      rule1: ruleConfig.rule1.group1_2, 
+      rule2: ruleConfig.rule2.group1_2,
+      marginCap: ruleConfig.rule1.marginCaps.group1_2 
+    };
   } else if (group <= 4) {
-    return { rule1: ruleConfig.rule1.group3_4, rule2: ruleConfig.rule2.group3_4 };
+    return { 
+      rule1: ruleConfig.rule1.group3_4, 
+      rule2: ruleConfig.rule2.group3_4,
+      marginCap: ruleConfig.rule1.marginCaps.group3_4 
+    };
   } else {
-    return { rule1: ruleConfig.rule1.group5_6, rule2: ruleConfig.rule2.group5_6 };
+    return { 
+      rule1: ruleConfig.rule1.group5_6, 
+      rule2: ruleConfig.rule2.group5_6,
+      marginCap: ruleConfig.rule1.marginCaps.group5_6 
+    };
   }
 }

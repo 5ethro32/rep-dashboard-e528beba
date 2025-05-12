@@ -31,11 +31,11 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
 
       const totalItems = sortedItems.length;
       
-      // Define groups - 250 items per group for groups 1-5, rest in group 6
-      const groupSize = 250;
+      // Define groups - 200 items per group for groups 1-5, rest in group 6
+      const groupSize = 200;
       const results = [];
       
-      // Create exactly 5 equal groups of 250 items each
+      // Create exactly 5 equal groups of 200 items each
       for (let i = 0; i < 5; i++) {
         const startIndex = i * groupSize;
         const endIndex = startIndex + groupSize;
