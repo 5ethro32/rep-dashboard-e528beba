@@ -10,6 +10,7 @@ interface RevaMetricsChartProps {
 const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   // Add toggle state for chart display
   const [displayOptions, setDisplayOptions] = useState<string[]>(["margin", "profit"]);
+  const [showProposed, setShowProposed] = useState<boolean>(true);
 
   if (!data || data.length === 0) {
     return <div className="flex justify-center items-center h-64 bg-gray-800/30 rounded-lg">No data available</div>;
@@ -47,11 +48,30 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         let totalProfit = 0;
         let totalUsageWeightedMargin = 0;
         let validMarginItems = 0;
+        
+        // For proposed metrics (Rules 1 & 2)
+        let totalProposedRevenue = 0;
+        let totalProposedProfit = 0;
+        let totalProposedRule1Revenue = 0;
+        let totalProposedRule1Profit = 0;
+        let totalProposedRule2Revenue = 0;
+        let totalProposedRule2Profit = 0;
 
         groupItems.forEach(item => {
           const usage = Math.max(0, item.revaUsage || 0); // Ensure non-negative usage
           const price = Math.max(0, item.currentREVAPrice || 0); // Ensure non-negative price
           const cost = Math.max(0, item.avgCost || 0); // Ensure non-negative cost
+          
+          // Get proposed price values if available
+          const proposedPrice = Math.max(0, item.proposedPrice || price);
+          
+          // Calculate proposed prices for rule 1 and rule 2 separately
+          // Rule 1: Cost + 8% margin (simplified)
+          const rule1Price = cost * 1.09; // Cost + ~9% markup (equivalent to 8% margin)
+          
+          // Rule 2: TML - 5% (simplified)
+          const tml = Math.max(0, item.trueMarketLow || 0);
+          const rule2Price = tml > 0 ? tml * 0.95 : proposedPrice; // 5% below TML
           
           // Only calculate profit if we have valid values
           if (usage > 0 && price > 0) {
@@ -59,9 +79,29 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             // CRITICAL FIX: Ensure we're using price - cost (not cost - price)
             const profit = usage * (price - cost);
             
+            // Calculate proposed metrics
+            const proposedRevenue = usage * proposedPrice;
+            const proposedProfit = usage * (proposedPrice - cost);
+            
+            // Calculate Rule 1 proposed metrics
+            const proposedRule1Revenue = usage * rule1Price;
+            const proposedRule1Profit = usage * (rule1Price - cost);
+            
+            // Calculate Rule 2 proposed metrics
+            const proposedRule2Revenue = usage * rule2Price;
+            const proposedRule2Profit = usage * (rule2Price - cost);
+            
             totalUsage += usage;
             totalRevenue += revenue;
             totalProfit += profit;
+            
+            // Add proposed totals
+            totalProposedRevenue += proposedRevenue;
+            totalProposedProfit += proposedProfit;
+            totalProposedRule1Revenue += proposedRule1Revenue;
+            totalProposedRule1Profit += proposedRule1Profit;
+            totalProposedRule2Revenue += proposedRule2Revenue;
+            totalProposedRule2Profit += proposedRule2Profit;
             
             // Calculate margin only for valid items
             if (price > 0) {
@@ -81,6 +121,9 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         // Calculate usage-weighted margin
         // Use revenue-based method for consistency
         const currentMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+        const proposedMargin = totalProposedRevenue > 0 ? (totalProposedProfit / totalProposedRevenue) * 100 : 0;
+        const proposedRule1Margin = totalProposedRule1Revenue > 0 ? (totalProposedRule1Profit / totalProposedRule1Revenue) * 100 : 0;
+        const proposedRule2Margin = totalProposedRule2Revenue > 0 ? (totalProposedRule2Profit / totalProposedRule2Revenue) * 100 : 0;
 
         results.push({
           name: `Group ${groupNumber}`,
@@ -88,6 +131,12 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           itemCount: groupItems.length,
           currentProfit: totalProfit,
           currentMargin: currentMargin,
+          proposedProfit: totalProposedProfit,
+          proposedMargin: proposedMargin,
+          proposedRule1Profit: totalProposedRule1Profit,
+          proposedRule1Margin: proposedRule1Margin,
+          proposedRule2Profit: totalProposedRule2Profit,
+          proposedRule2Margin: proposedRule2Margin,
           rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
         });
       }
@@ -101,11 +150,30 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         let totalProfit = 0;
         let totalUsageWeightedMargin = 0;
         let validMarginItems = 0;
+        
+        // For proposed metrics
+        let totalProposedRevenue = 0;
+        let totalProposedProfit = 0;
+        let totalProposedRule1Revenue = 0;
+        let totalProposedRule1Profit = 0;
+        let totalProposedRule2Revenue = 0;
+        let totalProposedRule2Profit = 0;
 
         remainingItems.forEach(item => {
           const usage = Math.max(0, item.revaUsage || 0); // Ensure non-negative usage
           const price = Math.max(0, item.currentREVAPrice || 0); // Ensure non-negative price
           const cost = Math.max(0, item.avgCost || 0); // Ensure non-negative cost
+          
+          // Get proposed price values if available
+          const proposedPrice = Math.max(0, item.proposedPrice || price);
+          
+          // Calculate proposed prices for rule 1 and rule 2 separately
+          // Rule 1: Cost + 8% margin (simplified)
+          const rule1Price = cost * 1.09; // Cost + ~9% markup (equivalent to 8% margin)
+          
+          // Rule 2: TML - 5% (simplified)
+          const tml = Math.max(0, item.trueMarketLow || 0);
+          const rule2Price = tml > 0 ? tml * 0.95 : proposedPrice; // 5% below TML
           
           // Only calculate profit if we have valid values
           if (usage > 0 && price > 0) {
@@ -113,9 +181,29 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             // CRITICAL FIX: Ensure we're using price - cost (not cost - price)
             const profit = usage * (price - cost);
             
+            // Calculate proposed metrics
+            const proposedRevenue = usage * proposedPrice;
+            const proposedProfit = usage * (proposedPrice - cost);
+            
+            // Calculate Rule 1 proposed metrics
+            const proposedRule1Revenue = usage * rule1Price;
+            const proposedRule1Profit = usage * (rule1Price - cost);
+            
+            // Calculate Rule 2 proposed metrics
+            const proposedRule2Revenue = usage * rule2Price;
+            const proposedRule2Profit = usage * (rule2Price - cost);
+            
             totalUsage += usage;
             totalRevenue += revenue;
             totalProfit += profit;
+            
+            // Add proposed totals
+            totalProposedRevenue += proposedRevenue;
+            totalProposedProfit += proposedProfit;
+            totalProposedRule1Revenue += proposedRule1Revenue;
+            totalProposedRule1Profit += proposedRule1Profit;
+            totalProposedRule2Revenue += proposedRule2Revenue;
+            totalProposedRule2Profit += proposedRule2Profit;
             
             // Calculate margin only for valid items
             if (price > 0) {
@@ -133,6 +221,9 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         // Calculate usage-weighted margin
         // Use revenue-based method for consistency
         const currentMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+        const proposedMargin = totalProposedRevenue > 0 ? (totalProposedProfit / totalProposedRevenue) * 100 : 0;
+        const proposedRule1Margin = totalProposedRule1Revenue > 0 ? (totalProposedRule1Profit / totalProposedRule1Revenue) * 100 : 0;
+        const proposedRule2Margin = totalProposedRule2Revenue > 0 ? (totalProposedRule2Profit / totalProposedRule2Revenue) * 100 : 0;
 
         results.push({
           name: `Group 6`,
@@ -140,6 +231,12 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           itemCount: remainingItems.length,
           currentProfit: totalProfit,
           currentMargin: currentMargin,
+          proposedProfit: totalProposedProfit,
+          proposedMargin: proposedMargin,
+          proposedRule1Profit: totalProposedRule1Profit,
+          proposedRule1Margin: proposedRule1Margin,
+          proposedRule2Profit: totalProposedRule2Profit,
+          proposedRule2Margin: proposedRule2Margin,
           rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
         });
       }
@@ -178,9 +275,9 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         if (value === null || value === undefined) return "N/A";
         
         if (value >= 1000000) {
-          return `£${(value / 1000000).toFixed(1)}M`;
+          return `£${(value / 1000000).toFixed(1)}m`;
         } else if (value >= 1000) {
-          return `£${(value / 1000).toFixed(1)}K`;
+          return `£${(value / 1000).toFixed(1)}k`;
         }
         return `£${value.toFixed(0)}`;
       };
@@ -190,16 +287,19 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           <p className="font-bold text-sm">{data.name}</p>
           <p className="text-xs text-gray-400">{data.rangeDescription}</p>
           <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
-            {payload.map((entry: any, index: number) => (
-              <div key={index}>
-                <p>
-                  <span className="text-gray-400">{entry.name}: </span> 
-                  {entry.dataKey === 'currentMargin' 
-                    ? formatMargin(entry.value) 
-                    : formatCurrency(entry.value)}
-                </p>
-              </div>
-            ))}
+            {payload.map((entry: any, index: number) => {
+              const isMargin = entry.dataKey.toLowerCase().includes('margin');
+              return (
+                <div key={index}>
+                  <p>
+                    <span className="text-gray-400">{entry.name}: </span> 
+                    {isMargin 
+                      ? formatMargin(entry.value) 
+                      : formatCurrency(entry.value)}
+                  </p>
+                </div>
+              );
+            })}
             <p className="col-span-2"><span className="text-gray-400">Items:</span> {data.itemCount}</p>
           </div>
         </div>
@@ -209,10 +309,24 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   };
 
   // Calculate the maximum profit value for proper scaling
-  const maxProfit = Math.max(...processedData.map(item => item.currentProfit || 0));
+  const maxProfit = Math.max(
+    ...processedData.map(item => Math.max(
+      item.currentProfit || 0,
+      item.proposedProfit || 0,
+      item.proposedRule1Profit || 0,
+      item.proposedRule2Profit || 0
+    ))
+  );
   
   // Calculate the maximum margin value
-  const maxMargin = Math.max(...processedData.map(item => item.currentMargin || 0)); 
+  const maxMargin = Math.max(
+    ...processedData.map(item => Math.max(
+      item.currentMargin || 0,
+      item.proposedMargin || 0,
+      item.proposedRule1Margin || 0,
+      item.proposedRule2Margin || 0
+    ))
+  ); 
   
   // Format Y-axis labels for profit - with cleaner formatting
   const formatProfitAxis = (value: number) => {
@@ -232,6 +346,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   // Define colors for the lines - updated to use brand colors
   const marginColor = "#f97316"; // Orange for margin
   const profitColor = "#ef4444"; // Finance red for profit
+  const rule1Color = "#1EAEDB"; // Bright blue for Rule 1
+  const rule2Color = "#8B5CF6"; // Vivid purple for Rule 2
 
   // Handle toggle changes
   const handleDisplayOptionsChange = (values: string[]) => {
@@ -240,9 +356,14 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     setDisplayOptions(values);
   };
 
+  // Toggle for proposed lines
+  const handleProposedToggle = () => {
+    setShowProposed(!showProposed);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-start">
+      <div className="flex justify-between items-center">
         <ToggleGroup 
           type="multiple" 
           value={displayOptions} 
@@ -268,6 +389,22 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               <span className="h-2 w-2 rounded-full bg-finance-red"></span>
               <span className="text-xs">Profit</span>
             </span>
+          </ToggleGroupItem>
+        </ToggleGroup>
+        
+        {/* Toggle for proposed lines */}
+        <ToggleGroup
+          type="single"
+          value={showProposed ? "on" : "off"}
+          onValueChange={(value) => value && setShowProposed(value === "on")}
+          className="justify-end"
+        >
+          <ToggleGroupItem
+            value="on"
+            aria-label="Show proposed lines"
+            className="data-[state=on]:bg-gray-700 border-gray-700 text-xs"
+          >
+            Show Proposed Lines
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
@@ -307,13 +444,13 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             />
             <Tooltip content={<CustomTooltip />} />
             
-            {/* Line for current margin */}
+            {/* Main data line */}
             {displayOptions.includes('margin') && (
               <Line 
                 yAxisId="left" 
                 type="monotone" 
                 dataKey="currentMargin" 
-                name="Margin %" 
+                name="Current Margin %" 
                 stroke={marginColor} 
                 strokeWidth={3} 
                 dot={{ r: 4, fill: marginColor }} 
@@ -327,16 +464,88 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
                 yAxisId="right" 
                 type="monotone" 
                 dataKey="currentProfit" 
-                name="Profit" 
+                name="Current Profit" 
                 stroke={profitColor} 
                 strokeWidth={3} 
                 dot={{ r: 4, fill: profitColor }} 
                 activeDot={{ r: 5 }} 
               />
             )}
+            
+            {/* New lines for Rule 1 proposed metrics */}
+            {showProposed && displayOptions.includes('margin') && (
+              <Line 
+                yAxisId="left" 
+                type="monotone" 
+                dataKey="proposedRule1Margin" 
+                name="Rule 1 Margin %" 
+                stroke={rule1Color} 
+                strokeWidth={2} 
+                strokeDasharray="5 5"
+                dot={{ r: 3, fill: rule1Color }} 
+                activeDot={{ r: 4 }} 
+              />
+            )}
+            
+            {showProposed && displayOptions.includes('profit') && (
+              <Line 
+                yAxisId="right" 
+                type="monotone" 
+                dataKey="proposedRule1Profit" 
+                name="Rule 1 Profit" 
+                stroke={rule1Color} 
+                strokeWidth={2} 
+                strokeDasharray="5 5"
+                dot={{ r: 3, fill: rule1Color }} 
+                activeDot={{ r: 4 }} 
+              />
+            )}
+            
+            {/* New lines for Rule 2 proposed metrics */}
+            {showProposed && displayOptions.includes('margin') && (
+              <Line 
+                yAxisId="left" 
+                type="monotone" 
+                dataKey="proposedRule2Margin" 
+                name="Rule 2 Margin %" 
+                stroke={rule2Color} 
+                strokeWidth={2} 
+                strokeDasharray="3 3"
+                dot={{ r: 3, fill: rule2Color }} 
+                activeDot={{ r: 4 }} 
+              />
+            )}
+            
+            {showProposed && displayOptions.includes('profit') && (
+              <Line 
+                yAxisId="right" 
+                type="monotone" 
+                dataKey="proposedRule2Profit" 
+                name="Rule 2 Profit" 
+                stroke={rule2Color} 
+                strokeWidth={2} 
+                strokeDasharray="3 3"
+                dot={{ r: 3, fill: rule2Color }} 
+                activeDot={{ r: 4 }} 
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
+      
+      {/* Legend for the proposed lines */}
+      {showProposed && (
+        <div className="flex flex-wrap gap-4 justify-start text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-4 bg-[#1EAEDB] rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #1EAEDB, #1EAEDB 5px, transparent 5px, transparent 10px)' }}></span>
+            <span>Rule 1 (Cost + 8% margin)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-4 bg-[#8B5CF6] rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #8B5CF6, #8B5CF6 3px, transparent 3px, transparent 6px)' }}></span>
+            <span>Rule 2 (TML - 5%)</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

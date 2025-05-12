@@ -8,6 +8,9 @@ interface DataPoint {
   avg?: number;
   isProjected?: boolean; // Field to indicate projected data points
   isTrajectory?: boolean; // Field to indicate trajectory line segments
+  // Add new fields for proposed values with rules applied
+  proposedRule1Value?: number;
+  proposedRule2Value?: number;
 }
 
 interface LineChartProps {
@@ -25,6 +28,10 @@ interface LineChartProps {
   useRightAxis?: boolean;
   // New prop for percentage-based metrics (like margin)
   hasPercentageMetric?: boolean;
+  // New props for showing proposed lines
+  showProposedRules?: boolean;
+  rule1Color?: string;
+  rule2Color?: string;
 }
 
 // Format currency values with £ symbol and k/m suffixes
@@ -48,7 +55,10 @@ const LineChart: React.FC<LineChartProps> = ({
   showTrajectory = false,
   shareXAxis = true,
   useRightAxis = false,
-  hasPercentageMetric = false
+  hasPercentageMetric = false,
+  showProposedRules = false,
+  rule1Color = "#1EAEDB",
+  rule2Color = "#8B5CF6"
 }) => {
   // Calculate the minimum and maximum values for the Y-axis
   const minValue = Math.min(...data.map(item => item.value));
@@ -60,16 +70,29 @@ const LineChart: React.FC<LineChartProps> = ({
   const trajectoryMinValue = trajectoryData ? Math.min(...trajectoryData.map(item => item.value)) : Infinity;
   const trajectoryMaxValue = trajectoryData ? Math.max(...trajectoryData.map(item => item.value)) : -Infinity;
   
+  // Consider proposed rule values if available
+  const rule1Values = data.filter(item => item.proposedRule1Value !== undefined).map(item => item.proposedRule1Value);
+  const rule2Values = data.filter(item => item.proposedRule2Value !== undefined).map(item => item.proposedRule2Value);
+  
+  const minRule1 = rule1Values.length > 0 ? Math.min(...rule1Values as number[]) : Infinity;
+  const maxRule1 = rule1Values.length > 0 ? Math.max(...rule1Values as number[]) : -Infinity;
+  const minRule2 = rule2Values.length > 0 ? Math.min(...rule2Values as number[]) : Infinity;
+  const maxRule2 = rule2Values.length > 0 ? Math.max(...rule2Values as number[]) : -Infinity;
+  
   // Set the domain to be slightly padded from the data points for better visualization
   const yAxisMin = Math.floor(Math.min(
     minValue, 
     minAvg !== Infinity ? minAvg : minValue,
-    trajectoryMinValue !== Infinity ? trajectoryMinValue : minValue
+    trajectoryMinValue !== Infinity ? trajectoryMinValue : minValue,
+    minRule1 !== Infinity ? minRule1 : minValue,
+    minRule2 !== Infinity ? minRule2 : minValue
   ) * 0.95);
   
   const yAxisMax = Math.ceil(Math.max(
     maxValue, 
-    trajectoryMaxValue !== -Infinity ? trajectoryMaxValue : maxValue
+    trajectoryMaxValue !== -Infinity ? trajectoryMaxValue : maxValue,
+    maxRule1 !== -Infinity ? maxRule1 : maxValue,
+    maxRule2 !== -Infinity ? maxRule2 : maxValue
   ) * 1.05);
   
   // For percentage-based metrics, use a fixed domain from 0-100
@@ -174,6 +197,42 @@ const LineChart: React.FC<LineChartProps> = ({
           connectNulls={true}
           yAxisId={hasPercentageMetric ? "percentage" : (useRightAxis ? "right" : "left")}
         />
+        
+        {/* Rule 1 line when enabled */}
+        {showProposedRules && (
+          <Line 
+            type="monotone" 
+            dataKey="proposedRule1Value"
+            name="Rule 1" 
+            stroke={rule1Color} 
+            strokeWidth={2}
+            strokeDasharray="5 5"
+            dot={{ fill: rule1Color, r: 2, strokeWidth: 0 }}
+            activeDot={{ r: 4, stroke: rule1Color }}
+            animationDuration={1500}
+            xAxisId="shared"
+            connectNulls={true}
+            yAxisId={hasPercentageMetric ? "percentage" : (useRightAxis ? "right" : "left")}
+          />
+        )}
+        
+        {/* Rule 2 line when enabled */}
+        {showProposedRules && (
+          <Line 
+            type="monotone" 
+            dataKey="proposedRule2Value" 
+            name="Rule 2"
+            stroke={rule2Color} 
+            strokeWidth={2}
+            strokeDasharray="3 3"
+            dot={{ fill: rule2Color, r: 2, strokeWidth: 0 }}
+            activeDot={{ r: 4, stroke: rule2Color }}
+            animationDuration={1500}
+            xAxisId="shared"
+            connectNulls={true}
+            yAxisId={hasPercentageMetric ? "percentage" : (useRightAxis ? "right" : "left")}
+          />
+        )}
         
         {/* Trajectory line when enabled */}
         {showTrajectory && trajectoryData && (
