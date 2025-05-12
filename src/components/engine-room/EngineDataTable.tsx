@@ -419,15 +419,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   };
 
   // Handle price edit save
-  const handleSavePriceEdit = (item: any, newPrice: number) => {
-    if (onPriceChange) {
-      onPriceChange(item, newPrice);
-    }
-    setEditingItemId(null);
-  };
-
-  // Handle direct price edit save (for input in table)
-  const handleSaveDirectPriceEdit = (item: any) => {
+  const handleSavePriceEdit = (item: any) => {
     if (onPriceChange && editingValues[item.id] !== undefined) {
       onPriceChange(item, editingValues[item.id]);
     }
@@ -443,6 +435,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   // Handle cancel price edit
   const handleCancelEdit = () => {
     setEditingItemId(null);
+    // Keep the editingValues intact, just stop editing
   };
 
   // Toggle bulk edit mode
@@ -835,13 +828,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                     
                     {/* Proposed price cell with inline editing */}
                     <TableCell>
-                      {bulkEditMode && onPriceChange ? (
+                      {bulkEditMode && !item.priceModified ? (
                         <PriceEditor 
                           initialPrice={item.proposedPrice || 0} 
                           currentPrice={item.currentREVAPrice || 0} 
                           calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} 
                           cost={item.avgCost || 0} 
-                          onSave={(newPrice) => onPriceChange(item, newPrice)} 
+                          onSave={newPrice => onPriceChange && onPriceChange(item, newPrice)} 
                           onCancel={() => {}} 
                           compact={true} 
                         />
@@ -858,7 +851,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                             variant="ghost" 
                             size="sm" 
                             className="h-6 w-6 p-0" 
-                            onClick={() => handleSaveDirectPriceEdit(item)}
+                            onClick={() => handleSavePriceEdit(item)}
                           >
                             <CheckCircle className="h-4 w-4 text-green-500" />
                           </Button>
@@ -883,11 +876,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                                 className="ml-2 h-6 w-6 p-0" 
                                 onClick={e => {
                                   e.stopPropagation();
-                                  setEditingItemId(item.id);
-                                  setEditingValues({
-                                    ...editingValues,
-                                    [item.id]: item.proposedPrice || 0
-                                  });
+                                  handleStartEdit(item);
                                 }}
                               >
                                 <Edit2 className="h-4 w-4" />
@@ -943,13 +932,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                             variant="ghost" 
                             size="icon" 
                             className="h-6 w-6" 
-                            onClick={() => {
-                              setEditingItemId(item.id);
-                              setEditingValues({
-                                ...editingValues,
-                                [item.id]: item.proposedPrice || 0
-                              });
-                            }}
+                            onClick={() => handleStartEdit(item)}
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>

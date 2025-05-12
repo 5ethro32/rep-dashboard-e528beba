@@ -341,92 +341,13 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   }, [engineData, queryClient, toast]);
 
-  // Handle save changes - FIXED to properly persist changes
+  // Handle save changes
   const handleSaveChanges = useCallback(() => {
-    if (!engineData || modifiedItems.size === 0) {
-      toast({
-        title: "No changes to save",
-        description: "There are no modified items to save."
-      });
-      return;
-    }
-    
-    // Deep clone the data to avoid modifying the cache directly
-    const updatedData = JSON.parse(JSON.stringify(engineData));
-    
-    // Update all modified items' workflow status to 'draft'
-    updatedData.items = updatedData.items.map((item: any) => {
-      if (modifiedItems.has(item.id)) {
-        return {
-          ...item,
-          workflowStatus: 'draft',
-          lastSaved: new Date().toISOString()
-        };
-      }
-      return item;
-    });
-    
-    // Also update flagged items
-    if (updatedData.flaggedItems) {
-      updatedData.flaggedItems = updatedData.flaggedItems.map((item: any) => {
-        if (modifiedItems.has(item.id)) {
-          return {
-            ...item,
-            workflowStatus: 'draft',
-            lastSaved: new Date().toISOString()
-          };
-        }
-        return item;
-      });
-    }
-    
-    // Recalculate pricing impact metrics for the updated data
-    // This is assuming we have a function to do this - in reality it would use the actual data
-    // This is a simplified placeholder
-    let totalCurrentProfit = 0;
-    let totalProposedProfit = 0;
-    let totalRevenue = 0;
-    
-    updatedData.items.forEach((item: any) => {
-      if (item.revaUsage > 0) {
-        const usage = Number(item.revaUsage);
-        const currentPrice = Number(item.currentREVAPrice);
-        const proposedPrice = Number(item.proposedPrice);
-        const cost = Number(item.avgCost);
-        
-        const revenue = usage * currentPrice;
-        const currentProfit = usage * (currentPrice - cost);
-        const proposedProfit = usage * (proposedPrice - cost);
-        
-        totalRevenue += revenue;
-        totalCurrentProfit += currentProfit;
-        totalProposedProfit += proposedProfit;
-      }
-    });
-    
-    // Calculate margins and impact
-    const currentMargin = totalRevenue > 0 ? (totalCurrentProfit / totalRevenue) * 100 : 0;
-    const proposedMargin = totalRevenue > 0 ? (totalProposedProfit / totalRevenue) * 100 : 0;
-    
-    // Update metrics in the data
-    updatedData.currentAvgMargin = currentMargin;
-    updatedData.proposedAvgMargin = proposedMargin;
-    updatedData.currentProfit = totalCurrentProfit;
-    updatedData.proposedProfit = totalProposedProfit;
-    updatedData.marginLift = proposedMargin - currentMargin;
-    updatedData.profitDelta = totalProposedProfit - totalCurrentProfit;
-    
-    // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
-    
-    // Toast notification
     toast({
       title: "Changes saved",
       description: `Saved changes to ${modifiedItems.size} items`
     });
-    
-  }, [engineData, modifiedItems, queryClient, toast]);
+  }, [modifiedItems.size, toast]);
 
   // Handle submit for approval
   const handleSubmitForApproval = useCallback(() => {
