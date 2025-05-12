@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
-import { UploadCloud, FileText, Download, Filter, Star, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
+import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -20,10 +20,9 @@ import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer'
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
 import MetricCard from '@/components/MetricCard';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'react-toastify';
 
 const EngineOperationsContent = () => {
-  const { toast } = useToast();
   const {
     engineData,
     isLoading,
@@ -326,8 +325,6 @@ const EngineOperationsContent = () => {
             onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
-            flagFilter="all"
-            onFlagFilterChange={setActiveTabFlagFilter}
           />
         </TabsContent>
         
@@ -359,8 +356,6 @@ const EngineOperationsContent = () => {
             onPriceChange={undefined} // Read-only for submitted items
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
-            flagFilter="all"
-            onFlagFilterChange={setActiveTabFlagFilter}
           />
         </TabsContent>
         
@@ -371,8 +366,6 @@ const EngineOperationsContent = () => {
             onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
-            flagFilter="all"
-            onFlagFilterChange={setActiveTabFlagFilter}
           />
         </TabsContent>
         
@@ -386,7 +379,7 @@ const EngineOperationsContent = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Pricing rule explainer dialog */}
+      {/* Pricing rule explainer dialog - used by both tables now */}
       {showPricingExplainer && selectedItem && (
         <PricingRuleExplainer
           item={selectedItem}

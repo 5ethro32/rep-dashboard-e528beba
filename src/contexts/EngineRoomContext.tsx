@@ -172,11 +172,9 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [queryClient, toast]);
 
-  // Handle price change function
+  // Handle price change - updated to use consistent flag handling for noMarketPrice
   const handlePriceChange = useCallback((item: any, newPrice: number) => {
     if (!engineData) return;
-    
-    console.log(`Processing price change for item ${item.id}: £${newPrice.toFixed(2)}`);
     
     // Deep clone the data to avoid modifying the cache directly
     const updatedData = JSON.parse(JSON.stringify(engineData));
@@ -184,10 +182,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Find and update the item in the main items array
     const foundItem = updatedData.items.find((i: any) => i.id === item.id);
     if (foundItem) {
-      // Store the previous price for reference
-      const previousPrice = foundItem.proposedPrice;
-      
-      // Update the item with the new price
       foundItem.proposedPrice = newPrice;
       foundItem.priceModified = true;
       foundItem.workflowStatus = 'draft'; // Ensure item has workflow status
@@ -195,6 +189,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Add a timestamp for the modification
       foundItem.lastModified = new Date().toISOString();
       
+      // IMPORTANT: Fix the margin calculation formula here
       // Use CORRECT formula: margin = (price - cost) / price
       const avgCost = Math.max(0, Number(foundItem.avgCost) || 0);
       foundItem.proposedMargin = newPrice > 0 ? (newPrice - avgCost) / newPrice : 0;
@@ -202,7 +197,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Update flag2 if margin is below the threshold (5%)
       foundItem.flag2 = foundItem.proposedMargin < 0.05;
 
-      // Update flags for price changes
+      // Add flag for significant price decrease (>5%)
       if (foundItem.currentREVAPrice > 0 && newPrice < foundItem.currentREVAPrice) {
         const decreasePercent = ((foundItem.currentREVAPrice - newPrice) / foundItem.currentREVAPrice) * 100;
         if (decreasePercent > 5) {
@@ -324,7 +319,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     }
     
-    // Important: Update the local storage and query cache right away
+    // Update the local storage and query cache
     localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
     queryClient.setQueryData(['engineRoomData'], updatedData);
     
@@ -335,9 +330,9 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return newSet;
     });
     
-    // Log the update
-    console.log(`Price updated and saved: ${item.description}, New price: £${newPrice.toFixed(2)}, Added to modified items set`);
+    console.log(`Price updated: ${item.description}, New price: £${newPrice.toFixed(2)}, Added to modified items set`);
     
+    // Toast is now handled in the PriceEditor component
   }, [engineData, queryClient]);
 
   // Handle reset changes
