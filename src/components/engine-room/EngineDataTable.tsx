@@ -43,6 +43,11 @@ const columns = [{
   format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
   filterable: false
 }, {
+  field: 'nextBuyingPrice',
+  label: 'Next BP', 
+  format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
+  filterable: false
+}, {
   field: 'marketLow',
   label: 'Market Low',
   format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
@@ -459,34 +464,45 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return rule;
   };
 
-  // Render flags for an item
+  // Render flags for an item - Updated to use nicer formatting
   const renderFlags = (item: any) => {
     if (!item) return null;
     const flags = [];
     if (item.flag1) {
-      flags.push(<span key="high-price" className="bg-red-900/30 text-xs px-1 py-0.5 rounded" title="Price ≥10% above TRUE MARKET LOW">
-          HIGH_PRICE
+      flags.push(<span key="high-price" className="bg-red-900/30 text-xs px-2 py-0.5 rounded-md text-red-300" title="Price ≥10% above TRUE MARKET LOW">
+          High Price
         </span>);
     }
     if (item.flag2) {
-      flags.push(<span key="low-margin" className="bg-orange-900/30 text-xs px-1 py-0.5 rounded" title="Margin < 3%">
-          LOW_MARGIN
+      flags.push(<span key="low-margin" className="bg-orange-900/30 text-xs px-2 py-0.5 rounded-md text-orange-300" title="Margin < 3%">
+          Low Margin
         </span>);
     }
     if (item.shortage) {
-      flags.push(<span key="shortage" className="bg-purple-900/30 text-xs px-1 py-0.5 rounded" title="Product has supply shortage">
-          SHORT
+      flags.push(<span key="shortage" className="bg-purple-900/30 text-xs px-2 py-0.5 rounded-md text-purple-300" title="Product has supply shortage">
+          Short
+        </span>);
+    }
+    if (item.missingNextBuying) {
+      flags.push(<span key="missing-nbp" className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300" title="Missing Next Buying Price">
+          No NBP
+        </span>);
+    }
+    if (item.noMarketPrice) {
+      flags.push(<span key="no-market-price" className="bg-emerald-900/30 text-xs px-2 py-0.5 rounded-md text-emerald-300" title="No Market Price Available">
+          No MP
         </span>);
     }
     if (item.flags && Array.isArray(item.flags)) {
       item.flags.forEach((flag: string, i: number) => {
-        if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT') return; // Skip duplicates
-        flags.push(<span key={`flag-${i}`} className="bg-blue-900/30 text-xs px-1 py-0.5 rounded" title={flag}>
+        // Skip duplicates or already handled flags
+        if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT') return;
+        flags.push(<span key={`flag-${i}`} className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300" title={flag}>
             {flag}
           </span>);
       });
     }
-    return flags.length > 0 ? <div className="flex items-center gap-1">{flags}</div> : null;
+    return flags.length > 0 ? <div className="flex flex-wrap gap-1">{flags}</div> : null;
   };
 
   // Active filters summary
@@ -655,6 +671,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
+                    {/* Next Buying Price cell with popover */}
+                    <TableCell>
+                      <CellDetailsPopover item={item} field="nextCost">
+                        {formatCurrency(item.nextCost || item.nextBuyingPrice)}
+                      </CellDetailsPopover>
+                    </TableCell>
+                    
                     {/* Market Low cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="marketLow">
@@ -748,46 +771,61 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       )}
                     </TableCell>
                     
-                    {/* Price change percentage */}
-                    <TableCell className={priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}>
-                      {priceChangePercentage.toFixed(2)}%
+                    {/* Price change percentage cell */}
+                    <TableCell>
+                      {priceChangePercentage !== 0 && (
+                        <span className={priceChangePercentage > 0 ? "text-green-400" : "text-red-400"}>
+                          {priceChangePercentage > 0 ? "+" : ""}{priceChangePercentage.toFixed(2)}%
+                        </span>
+                      )}
                     </TableCell>
                     
-                    {/* Proposed Margin with popover */}
+                    {/* Proposed margin cell */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="proposedMargin">
                         {formatPercentage(item.proposedMargin)}
                       </CellDetailsPopover>
                     </TableCell>
                     
+                    {/* Applied rule cell */}
                     <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
                     
                     {/* Flags cell */}
-                    <TableCell>
-                      {renderFlags(item)}
-                    </TableCell>
+                    <TableCell>{renderFlags(item)}</TableCell>
                     
+                    {/* Actions cell */}
                     <TableCell>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
                         <Button 
                           variant="ghost" 
-                          size="sm" 
-                          onClick={() => onShowPriceDetails(item)}
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={() => onShowPriceDetails(item)} 
                         >
-                          Details
+                          <Info className="h-4 w-4" />
                         </Button>
-                        
+                        {!isEditing && onPriceChange && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6" 
+                            onClick={() => handleStartEdit(item)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                        )}
                         {onToggleStar && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
                             onClick={(e) => {
                               e.stopPropagation();
                               onToggleStar(item.id);
                             }}
+                            className="h-6 w-6"
                           >
-                            <Star
-                              className={`h-4 w-4 ${starredItems.has(item.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
+                            <Star 
+                              className={`h-4 w-4 ${starredItems.has(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`}
                             />
                           </Button>
                         )}
@@ -839,7 +877,33 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         {renderUnifiedFilterBar()}
         {renderActiveFilters()}
         {renderDataTable()}
-        {renderPagination()}
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between py-2">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} items
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                Previous
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );

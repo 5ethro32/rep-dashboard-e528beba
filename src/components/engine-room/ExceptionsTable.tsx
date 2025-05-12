@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Filter, SlidersHorizontal, EyeOff } from 'lucide-react';
+import { Star, Filter, SlidersHorizontal, EyeOff, Info } from 'lucide-react';
 import CellDetailsPopover from './CellDetailsPopover';
 import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -104,11 +104,15 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   // Helper function to determine flag type and return appropriate badge
   const getFlagBadge = (item: any) => {
     if (item.flag1) {
-      return <Badge variant="destructive">High Price</Badge>;
+      return <Badge variant="destructive" className="font-normal py-0.5">High Price</Badge>;
     } else if (item.flag2) {
-      return <Badge variant="warning">Low Margin</Badge>;
+      return <Badge variant="warning" className="font-normal py-0.5">Low Margin</Badge>;
+    } else if (item.missingNextBuying) {
+      return <Badge variant="outline" className="bg-blue-900/30 border-blue-900 text-blue-300 font-normal py-0.5">No NBP</Badge>;
+    } else if (item.noMarketPrice) {
+      return <Badge variant="outline" className="bg-emerald-900/30 border-emerald-900 text-emerald-300 font-normal py-0.5">No MP</Badge>;
     } else if (item.flag) {
-      return <Badge>{item.flag}</Badge>;
+      return <Badge className="font-normal py-0.5">{item.flag}</Badge>;
     }
     return null;
   };
@@ -264,7 +268,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                 <TableHead className="sticky left-12 z-30 bg-gray-950/95 backdrop-blur-sm min-w-[300px]">Description</TableHead>
                 <TableHead className="text-right">Usage</TableHead>
                 <TableHead className="text-right">Avg Cost</TableHead>
-                <TableHead className="text-right">Next Price</TableHead>
+                <TableHead className="text-right">Next BP</TableHead>
                 <TableHead className="text-right">Market Low</TableHead>
                 <TableHead className="text-right">Current Price</TableHead>
                 <TableHead className="text-right">Current Margin</TableHead>
