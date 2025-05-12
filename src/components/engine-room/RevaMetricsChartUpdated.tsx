@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -8,9 +7,10 @@ interface RevaMetricsChartProps {
 }
 
 const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
-  // Add toggle state for chart display
+  // Add toggle state for chart display - modified to have separate rule toggles
   const [displayOptions, setDisplayOptions] = useState<string[]>(["margin", "profit"]);
-  const [showProposed, setShowProposed] = useState<boolean>(true);
+  const [showRule1, setShowRule1] = useState<boolean>(false);
+  const [showRule2, setShowRule2] = useState<boolean>(false);
 
   if (!data || data.length === 0) {
     return <div className="flex justify-center items-center h-64 bg-gray-800/30 rounded-lg">No data available</div>;
@@ -356,10 +356,9 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
     setDisplayOptions(values);
   };
 
-  // Toggle for proposed lines
-  const handleProposedToggle = () => {
-    setShowProposed(!showProposed);
-  };
+  // Toggle handlers for rule displays
+  const toggleRule1 = () => setShowRule1(!showRule1);
+  const toggleRule2 = () => setShowRule2(!showRule2);
 
   return (
     <div className="space-y-4">
@@ -392,19 +391,34 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           </ToggleGroupItem>
         </ToggleGroup>
         
-        {/* Toggle for proposed lines */}
+        {/* Replaced single toggle with two separate toggles for rules */}
         <ToggleGroup
-          type="single"
-          value={showProposed ? "on" : "off"}
-          onValueChange={(value) => value && setShowProposed(value === "on")}
+          type="multiple"
           className="justify-end"
         >
           <ToggleGroupItem
-            value="on"
-            aria-label="Show proposed lines"
-            className="data-[state=on]:bg-gray-700 border-gray-700 text-xs"
+            value="rule1"
+            aria-label="Show Rule 1"
+            className={`border-gray-700 text-xs ${showRule1 ? 'bg-blue-500/20 text-blue-400' : ''}`}
+            onClick={toggleRule1}
+            data-state={showRule1 ? "on" : "off"}
           >
-            Show Proposed Lines
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full" style={{ background: rule1Color }}></span>
+              <span>Rule 1</span>
+            </span>
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="rule2"
+            aria-label="Show Rule 2"
+            className={`border-gray-700 text-xs ${showRule2 ? 'bg-purple-500/20 text-purple-400' : ''}`}
+            onClick={toggleRule2}
+            data-state={showRule2 ? "on" : "off"}
+          >
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full" style={{ background: rule2Color }}></span>
+              <span>Rule 2</span>
+            </span>
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
@@ -472,8 +486,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               />
             )}
             
-            {/* New lines for Rule 1 proposed metrics */}
-            {showProposed && displayOptions.includes('margin') && (
+            {/* Rule 1 lines - now controlled by showRule1 state */}
+            {showRule1 && displayOptions.includes('margin') && (
               <Line 
                 yAxisId="left" 
                 type="monotone" 
@@ -487,7 +501,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               />
             )}
             
-            {showProposed && displayOptions.includes('profit') && (
+            {showRule1 && displayOptions.includes('profit') && (
               <Line 
                 yAxisId="right" 
                 type="monotone" 
@@ -501,8 +515,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               />
             )}
             
-            {/* New lines for Rule 2 proposed metrics */}
-            {showProposed && displayOptions.includes('margin') && (
+            {/* Rule 2 lines - now controlled by showRule2 state */}
+            {showRule2 && displayOptions.includes('margin') && (
               <Line 
                 yAxisId="left" 
                 type="monotone" 
@@ -516,7 +530,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               />
             )}
             
-            {showProposed && displayOptions.includes('profit') && (
+            {showRule2 && displayOptions.includes('profit') && (
               <Line 
                 yAxisId="right" 
                 type="monotone" 
@@ -533,17 +547,21 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         </ResponsiveContainer>
       </div>
       
-      {/* Legend for the proposed lines */}
-      {showProposed && (
+      {/* Legend for the rules - only displayed if at least one rule is shown */}
+      {(showRule1 || showRule2) && (
         <div className="flex flex-wrap gap-4 justify-start text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-4 bg-[#1EAEDB] rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #1EAEDB, #1EAEDB 5px, transparent 5px, transparent 10px)' }}></span>
-            <span>Rule 1 (Cost + 8% margin)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-4 bg-[#8B5CF6] rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #8B5CF6, #8B5CF6 3px, transparent 3px, transparent 6px)' }}></span>
-            <span>Rule 2 (TML - 5%)</span>
-          </div>
+          {showRule1 && (
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-4 bg-[#1EAEDB] rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #1EAEDB, #1EAEDB 5px, transparent 5px, transparent 10px)' }}></span>
+              <span>Rule 1 (Cost + 8% margin)</span>
+            </div>
+          )}
+          {showRule2 && (
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-4 bg-[#8B5CF6] rounded-sm" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #8B5CF6, #8B5CF6 3px, transparent 3px, transparent 6px)' }}></span>
+              <span>Rule 2 (TML - 5%)</span>
+            </div>
+          )}
         </div>
       )}
     </div>
