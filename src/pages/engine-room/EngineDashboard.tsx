@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +8,7 @@ import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
 import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUpdated';
+import { formatCurrency } from '@/utils/formatting-utils';
 
 const EngineDashboardContent = () => {
   const {
@@ -113,9 +113,9 @@ const EngineDashboardContent = () => {
     );
   }
 
-  // Get usage-weighted metrics
+  // Get usage-weighted metrics with the correct calculation method
   const getUsageWeightedMetrics = () => {
-    if (!engineData) return {
+    if (!engineData || !engineData.items || engineData.items.length === 0) return {
       weightedMargin: 0,
       totalRevenue: 0,
       totalProfit: 0,
@@ -128,57 +128,39 @@ const EngineDashboardContent = () => {
     let totalUsage = 0;
     let proposedRevenue = 0;
     let proposedProfit = 0;
-    let totalUsageWeightedMargin = 0;
-    let totalProposedUsageWeightedMargin = 0;
     
     engineData.items?.forEach(item => {
-      // Fixed: Check if revaUsage and currentREVAPrice are numbers (including zero)
-      // instead of using them directly in a condition which would exclude zeros
-      if (typeof item.revaUsage === 'number' && typeof item.currentREVAPrice === 'number') {
+      // Only process items with valid data
+      if (typeof item.revaUsage === 'number' && typeof item.currentREVAPrice === 'number' && typeof item.avgCost === 'number') {
+        // Calculate current revenue: Price × Usage
         const currentRevenue = item.revaUsage * item.currentREVAPrice;
-        const currentProfit = item.revaUsage * (item.currentREVAPrice - item.avgCost);
         
-        // Calculate current margin correctly
-        const currentMargin = item.currentREVAPrice > 0 ? 
-          (item.currentREVAPrice - item.avgCost) / item.currentREVAPrice : 0;
-        const currentUsageWeightedMargin = currentMargin * item.revaUsage;
+        // Calculate current profit: (Price - AvgCost) × Usage
+        const currentProfit = item.revaUsage * (item.currentREVAPrice - item.avgCost);
         
         // Calculate proposed values if available
         const proposedPrice = item.proposedPrice || item.currentREVAPrice;
         const proposedItemRevenue = item.revaUsage * proposedPrice;
         const proposedItemProfit = item.revaUsage * (proposedPrice - item.avgCost);
         
-        // Calculate proposed margin correctly
-        const proposedMargin = proposedPrice > 0 ? 
-          (proposedPrice - item.avgCost) / proposedPrice : 0;
-        const proposedUsageWeightedMargin = proposedMargin * item.revaUsage;
-        
         totalRevenue += currentRevenue;
         totalProfit += currentProfit;
         totalUsage += item.revaUsage;
         proposedRevenue += proposedItemRevenue;
         proposedProfit += proposedItemProfit;
-        totalUsageWeightedMargin += currentUsageWeightedMargin;
-        totalProposedUsageWeightedMargin += proposedUsageWeightedMargin;
       }
     });
     
-    // FIX: Calculate usage-weighted margin properly 
-    // We can calculate it directly as profit/revenue for better precision
+    // Calculate usage-weighted margin properly as Total Profit ÷ Total Revenue × 100%
     let weightedMargin = 0;
     if (totalRevenue > 0) {
       weightedMargin = (totalProfit / totalRevenue) * 100;
-    } else if (totalUsage > 0) {
-      // Fallback to original method if needed
-      weightedMargin = (totalUsageWeightedMargin / totalUsage) * 100;
     }
     
     // Calculate proposed weighted margin similarly
     let proposedWeightedMargin = 0;
     if (proposedRevenue > 0) {
       proposedWeightedMargin = (proposedProfit / proposedRevenue) * 100;
-    } else if (totalUsage > 0) {
-      proposedWeightedMargin = (totalProposedUsageWeightedMargin / totalUsage) * 100;
     }
     
     const marginImprovement = proposedWeightedMargin - weightedMargin;
@@ -246,19 +228,19 @@ const EngineDashboardContent = () => {
                 value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
                 type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
-              subtitle="Based on product usage volume"
+              subtitle="Total Profit ÷ Total Revenue × 100%"
             />
             
             <MetricCard
               title="Total Revenue (Usage-Weighted)"
-              value={`£${usageMetrics.totalRevenue.toLocaleString()}`}
+              value={formatCurrency(usageMetrics.totalRevenue)}
               subtitle={`${usageMetrics.usageCount.toLocaleString()} total units`}
             />
             
             <MetricCard
               title="Usage-Weighted Profit"
-              value={`£${usageMetrics.totalProfit.toLocaleString()}`}
-              subtitle="Profit calculated from actual usage"
+              value={formatCurrency(usageMetrics.totalProfit)}
+              subtitle="Sum of ((Price - AvgCost) × Usage)"
             />
           </div>
         </CardContent>

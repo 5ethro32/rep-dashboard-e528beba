@@ -25,5 +25,13 @@ export const formatPercentage = (value: number | undefined | null): string => {
     style: 'percent',
     minimumFractionDigits: 1,
     maximumFractionDigits: 1
-  }).format(value);
+  }).format(value / 100); // Division by 100 to convert percentage value to decimal
+};
+
+/**
+ * Format a number with thousand separators
+ */
+export const formatNumber = (value: number | undefined | null): string => {
+  if (value === undefined || value === null) return '—';
+  return new Intl.NumberFormat('en-GB').format(value);
 };

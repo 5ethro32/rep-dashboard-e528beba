@@ -4,13 +4,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import MetricCard from '@/components/MetricCard';
 import DonutChart from '@/components/DonutChart';
+import { formatCurrency } from '@/utils/formatting-utils';
 
 interface UsageWeightedMetricsProps {
   data: any[];
 }
 
 const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => {
-  // Calculate usage-weighted metrics
+  // Calculate usage-weighted metrics using correct formulas
   const calculateMetrics = () => {
     if (!data || data.length === 0) return {
       weightedMargin: 0,
@@ -26,8 +27,6 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => 
     let totalUsage = 0;
     let proposedRevenue = 0;
     let proposedProfit = 0;
-    let totalUsageWeightedMargin = 0;
-    let totalProposedUsageWeightedMargin = 0;
     
     // For margin distribution
     const marginBands = [
@@ -39,34 +38,28 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => 
     ];
     
     data.forEach(item => {
-      // Important: Check if revaUsage and currentREVAPrice are numbers (including zero)
-      // instead of using them directly in a condition which would exclude zeros
-      if (typeof item.revaUsage === 'number' && typeof item.currentREVAPrice === 'number') {
+      // Only process items with valid data
+      if (typeof item.revaUsage === 'number' && typeof item.currentREVAPrice === 'number' && typeof item.avgCost === 'number') {
+        // Calculate revenue: Price × Usage
         const currentRevenue = item.revaUsage * item.currentREVAPrice;
+        
+        // Calculate profit: (Price - AvgCost) × Usage
         const currentProfit = item.revaUsage * (item.currentREVAPrice - item.avgCost);
         
-        // Calculate current margin correctly
+        // Calculate current margin as (Price - AvgCost) / Price
         const currentMargin = item.currentREVAPrice > 0 ? 
           (item.currentREVAPrice - item.avgCost) / item.currentREVAPrice : 0;
-        const currentUsageWeightedMargin = currentMargin * item.revaUsage;
         
         // Calculate proposed values if available
         const proposedPrice = item.proposedPrice || item.currentREVAPrice;
         const proposedItemRevenue = item.revaUsage * proposedPrice;
         const proposedItemProfit = item.revaUsage * (proposedPrice - item.avgCost);
         
-        // Calculate proposed margin correctly
-        const proposedMargin = proposedPrice > 0 ? 
-          (proposedPrice - item.avgCost) / proposedPrice : 0;
-        const proposedUsageWeightedMargin = proposedMargin * item.revaUsage;
-        
         totalRevenue += currentRevenue;
         totalProfit += currentProfit;
         totalUsage += item.revaUsage;
         proposedRevenue += proposedItemRevenue;
         proposedProfit += proposedItemProfit;
-        totalUsageWeightedMargin += currentUsageWeightedMargin;
-        totalProposedUsageWeightedMargin += proposedUsageWeightedMargin;
         
         // Categorize for margin distribution
         const margin = currentMargin * 100;
@@ -89,22 +82,16 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => 
       }
     });
     
-    // FIX: Calculate usage-weighted margin properly
-    // Use profit/revenue ratio for better precision
+    // Calculate usage-weighted margin as Total Profit ÷ Total Revenue × 100%
     let weightedMargin = 0;
     if (totalRevenue > 0) {
       weightedMargin = (totalProfit / totalRevenue) * 100;
-    } else if (totalUsage > 0) {
-      // Fallback to original method if needed
-      weightedMargin = (totalUsageWeightedMargin / totalUsage) * 100;
     }
     
     // Calculate proposed weighted margin similarly
     let proposedWeightedMargin = 0;
     if (proposedRevenue > 0) {
       proposedWeightedMargin = (proposedProfit / proposedRevenue) * 100;
-    } else if (totalUsage > 0) {
-      proposedWeightedMargin = (totalProposedUsageWeightedMargin / totalUsage) * 100;
     }
     
     const marginImprovement = proposedWeightedMargin - weightedMargin;
@@ -153,7 +140,7 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => 
                   color: band.color,
                   profit: band.profit
                 }))}
-                innerValue={`£${Math.round(metrics.totalProfit).toLocaleString()}`}
+                innerValue={formatCurrency(metrics.totalProfit)}
                 innerLabel="Total Profit"
               />
             </div>
