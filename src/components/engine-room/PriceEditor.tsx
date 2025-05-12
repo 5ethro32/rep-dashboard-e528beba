@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, X, RotateCcw, AlertCircle } from 'lucide-react';
+import { toast } from "@/components/ui/use-toast";
 
 interface PriceEditorProps {
   initialPrice: number;
@@ -34,6 +35,9 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   // Determine if this is a price decrease
   const isPriceDecrease = priceChangePercent < 0;
     
+  // Check for possible data issues where current price matches cost
+  const possibleDataIssue = Math.abs(currentPrice - cost) < 0.001 && currentPrice > 0;
+  
   useEffect(() => {
     const numericPrice = parseFloat(priceValue);
     if (!isNaN(numericPrice) && numericPrice > 0) {
@@ -44,6 +48,17 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       setIsValid(false);
     }
   }, [priceValue, cost]);
+  
+  useEffect(() => {
+    // Show warning toast if current price matches next cost (possible data issue)
+    if (possibleDataIssue) {
+      toast({
+        title: "Possible data issue detected",
+        description: "Current price matches next buying price. This might indicate an issue with your Excel data.",
+        variant: "warning"
+      });
+    }
+  }, [possibleDataIssue]);
   
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPriceValue(e.target.value);
@@ -96,6 +111,11 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
             <AlertCircle className="h-3 w-3 text-amber-500" />
           </span>
         )}
+        {possibleDataIssue && (
+          <span title="Current price may be incorrect" aria-label="Data issue">
+            <AlertCircle className="h-3 w-3 text-red-500 ml-1" />
+          </span>
+        )}
       </div>
     );
   }
@@ -130,6 +150,13 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           Change: {priceChangePercent.toFixed(2)}%
         </span>
       </div>
+      
+      {possibleDataIssue && (
+        <div className="text-xs text-red-500 flex items-center">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          Warning: Current price matches next cost value
+        </div>
+      )}
       
       <div className="flex justify-end space-x-2 mt-2">
         <Button variant="outline" size="sm" onClick={onCancel}>

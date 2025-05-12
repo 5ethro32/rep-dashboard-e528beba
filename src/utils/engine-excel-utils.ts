@@ -82,15 +82,29 @@ interface RuleConfig {
   };
 }
 
-// Flexible column mapping - will match case-insensitive and allow variations
+// IMPROVED: More precise column matching - now checks for exact matches first
+// before falling back to partial/fuzzy matches
 const findColumnMatch = (headers: string[], possibleNames: string[]): string | null => {
+  // First try exact matches (case insensitive)
   for (const header of headers) {
     for (const name of possibleNames) {
-      if (header.toLowerCase().includes(name.toLowerCase())) {
+      if (header.toLowerCase() === name.toLowerCase()) {
+        console.log(`Found exact match for ${name}: ${header}`);
         return header;
       }
     }
   }
+  
+  // If no exact match, try partial matches
+  for (const header of headers) {
+    for (const name of possibleNames) {
+      if (header.toLowerCase().includes(name.toLowerCase())) {
+        console.log(`Found partial match for ${name}: ${header}`);
+        return header;
+      }
+    }
+  }
+  
   return null;
 };
 
@@ -98,7 +112,7 @@ const findColumnMatch = (headers: string[], possibleNames: string[]): string | n
 const generateColumnMapping = (headers: string[]) => {
   const mapping: Record<string, string> = {};
   
-  // Define possible variations for each required field
+  // Define possible variations for each required field - IMPROVED: more specific patterns
   const columnVariations = {
     description: ['description', 'desc', 'product', 'item'],
     inStock: ['instock', 'in stock', 'stock', 'quantity', 'qty'],
@@ -108,13 +122,15 @@ const generateColumnMapping = (headers: string[]) => {
     keepRemove: ['keep/remove', 'keep', 'remove'],
     revaUsage: ['revausage', 'usage', 'reva usage', 'monthly usage', 'sales', 'units sold'],
     usageRank: ['usagerank', 'usage rank', 'rank', 'priority', 'group'],
-    flag: ['flag', 'flags', 'note', 'comment'], // Expanded to look for flag column
+    flag: ['flag', 'flags', 'note', 'comment'],
     avgCost: ['avgcost', 'avg cost', 'average cost', 'cost', 'unit cost'],
     avgCostLessThanML: ['avgcost<ml', 'avgcost < ml'],
-    nextCost: ['nextcost', 'next cost', 'next buying price', 'future cost', 'new cost'],
+    // IMPROVED: More specific patterns for nextCost
+    nextCost: ['next buying price', 'nextbuyingprice', 'nextcost', 'next cost', 'futurecost', 'future cost'],
     trend: ['trend', 'downwards', 'upwards'],
-    currentREVAPrice: ['currentrevaprice', 'current reva price', 'price', 'selling price', 'current price', 'reva price'],
-    currentREVAMargin: ['currentrevamargin', 'current reva %', 'margin', 'current margin', 'reva margin', 'current reva margin'],
+    // IMPROVED: More specific patterns for currentREVAPrice
+    currentREVAPrice: ['current reva price', 'currentrevaprice', 'reva price', 'revaprice', 'current price', 'selling price'],
+    currentREVAMargin: ['currentrevamargin', 'current reva %', 'reva margin', 'current reva margin', 'margin %'],
     eth_net: ['eth_net', 'eth net', 'ethnet', 'market low'],
     eth: ['eth', 'eth price'],
     nupharm: ['nupharm', 'nu pharm', 'nupharm price'],
@@ -130,14 +146,55 @@ const generateColumnMapping = (headers: string[]) => {
     }
   }
   
-  // Make sure we don't have the nextCost field for currentREVAPrice - that looks like a bug
-  if (mapping.nextCost && !mapping.currentREVAPrice) {
-    // Try to find a specific "Current REVA Price" column
-    const betterMatch = findColumnMatch(headers, ['Current REVA Price']);
-    if (betterMatch) {
-      mapping.currentREVAPrice = betterMatch;
+  // FIXED: Remove the check that could incorrectly map nextCost to currentREVAPrice
+  // Instead, add validation to ensure they aren't using the same column
+  
+  // ADDED: Validation to ensure currentREVAPrice and nextCost are not using the same column
+  if (mapping.currentREVAPrice && mapping.nextCost && 
+      mapping.currentREVAPrice === mapping.nextCost) {
+    console.error('Error: Current REVA Price and Next Buying Price are mapped to the same column!');
+    console.log('Current column mapping:', mapping);
+    
+    // Force a manual lookup for the specifically named columns
+    const exactCurrentPriceColumn = headers.find(h => 
+      h.toLowerCase() === 'current reva price' || 
+      h.toLowerCase() === 'currentrevaprice'
+    );
+    
+    const exactNextCostColumn = headers.find(h => 
+      h.toLowerCase() === 'next buying price' || 
+      h.toLowerCase() === 'nextbuyingprice'
+    );
+    
+    if (exactCurrentPriceColumn) {
+      mapping.currentREVAPrice = exactCurrentPriceColumn;
+      console.log(`Forced Current REVA Price to use column: ${exactCurrentPriceColumn}`);
+    }
+    
+    if (exactNextCostColumn) {
+      mapping.nextCost = exactNextCostColumn;
+      console.log(`Forced Next Buying Price to use column: ${exactNextCostColumn}`);
+    }
+    
+    // If still have collision, prioritize the most specific column names
+    if (mapping.currentREVAPrice === mapping.nextCost) {
+      // Look for the most specific column names as a last resort
+      for (const header of headers) {
+        if (header.toLowerCase().includes('reva') && header.toLowerCase().includes('price')) {
+          mapping.currentREVAPrice = header;
+          console.log(`Last resort: Set Current REVA Price to use column: ${header}`);
+        } else if (header.toLowerCase().includes('next') && header.toLowerCase().includes('buy')) {
+          mapping.nextCost = header;
+          console.log(`Last resort: Set Next Buying Price to use column: ${header}`);
+        }
+      }
     }
   }
+  
+  // Add detailed debug logging
+  console.log('Final column mapping:');
+  console.log('Current REVA Price mapped to column:', mapping.currentREVAPrice);
+  console.log('Next Buying Price mapped to column:', mapping.nextCost);
   
   return mapping;
 };
@@ -223,13 +280,15 @@ const columnVariations = {
   keepRemove: ['keep/remove', 'keep', 'remove'],
   revaUsage: ['revausage', 'usage', 'reva usage', 'monthly usage', 'sales', 'units sold'],
   usageRank: ['usagerank', 'usage rank', 'rank', 'priority', 'group'],
-  flag: ['flag', 'flags', 'note', 'comment'], // Expanded to look for flag column
+  flag: ['flag', 'flags', 'note', 'comment'],
   avgCost: ['avgcost', 'avg cost', 'average cost', 'cost', 'unit cost'],
   avgCostLessThanML: ['avgcost<ml', 'avgcost < ml'],
-  nextCost: ['nextcost', 'next cost', 'next buying price', 'future cost', 'new cost'],
+  // IMPROVED: More specific patterns for nextCost
+  nextCost: ['next buying price', 'nextbuyingprice', 'nextcost', 'next cost', 'futurecost', 'future cost'],
   trend: ['trend', 'downwards', 'upwards'],
-  currentREVAPrice: ['currentrevaprice', 'current reva price', 'price', 'selling price', 'current price', 'reva price'],
-  currentREVAMargin: ['currentrevamargin', 'current reva %', 'margin', 'current margin', 'reva margin', 'current reva margin'],
+  // IMPROVED: More specific patterns for currentREVAPrice
+  currentREVAPrice: ['current reva price', 'currentrevaprice', 'reva price', 'revaprice', 'current price', 'selling price'],
+  currentREVAMargin: ['currentrevamargin', 'current reva %', 'reva margin', 'current reva margin', 'margin %'],
   eth_net: ['eth_net', 'eth net', 'ethnet', 'market low'],
   eth: ['eth', 'eth price'],
   nupharm: ['nupharm', 'nu pharm', 'nupharm price'],
@@ -239,6 +298,16 @@ const columnVariations = {
 
 // Transform the row data using the dynamic column mapping
 function transformRowWithMapping(row: any, mapping: Record<string, string>): RevaItem {
+  // ADDED: Debug logs to show the exact values being read for important fields
+  const rawCurrentPrice = row[mapping.currentREVAPrice];
+  const rawNextCost = row[mapping.nextCost];
+  const rawAvgCost = row[mapping.avgCost];
+  
+  console.log('Raw values for item:', row[mapping.description]);
+  console.log('  Current REVA Price:', rawCurrentPrice);
+  console.log('  Next Buying Price:', rawNextCost);
+  console.log('  Avg Cost:', rawAvgCost);
+  
   const transformed: RevaItem = {
     description: String(row[mapping.description] || ''),
     inStock: Number(row[mapping.inStock] || 0),
@@ -316,6 +385,11 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
   
   // Set market trend for each item
   transformedData.forEach(item => {
+    // Log the original values to help debug
+    console.log(`Processing item: ${item.description}`);
+    console.log(`  Original currentREVAPrice: ${item.currentREVAPrice}`);
+    console.log(`  Original nextCost: ${item.nextCost}`);
+    
     // Check if Next Buying Price is missing or zero
     const nextCostMissing = !item.nextCost || item.nextCost === 0;
     
@@ -324,6 +398,15 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
     
     // Store the original value (0 or undefined) as displayNextCost for UI
     item.displayNextCost = nextCostMissing ? 0 : item.nextCost;
+    
+    // IMPROVED: Add a check to prevent setting currentREVAPrice to nextCost if they are identical
+    // Add flag if both currentREVAPrice and nextCost are identical but not zero
+    if (item.currentREVAPrice > 0 && item.nextCost > 0 && 
+        Math.abs(item.currentREVAPrice - item.nextCost) < 0.001) {
+      if (!item.flags) item.flags = [];
+      item.flags.push("Current Price matches Next BP");
+      console.log(`  WARNING: Current Price (${item.currentREVAPrice}) matches Next BP (${item.nextCost})`);
+    }
     
     // If Next Buying Price is missing, set it to AvgCost for calculation purposes
     if (nextCostMissing) {
@@ -371,11 +454,23 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
   let proposedRevenue = 0;
   
   processedItems.forEach(item => {
+    // Log margin values for each item to help debug
+    console.log('Margin values for item:', {
+      id: item.id || 'unknown',
+      description: item.description,
+      proposedMargin: item.proposedMargin,
+      currentREVAMargin: item.currentREVAMargin,
+      proposedPrice: item.proposedPrice,
+      nextCost: item.nextCost,
+      calculatedMargin: item.proposedPrice && item.nextCost ? 
+        ((item.proposedPrice - item.nextCost) / item.proposedPrice) * 100 : 0
+    });
+    
     // Fixed: Check if revaUsage and proposedPrice/currentREVAPrice are numbers (including zero)
     if (typeof item.revaUsage === 'number') {
       // Calculate revenue and profit based on proposed prices
       const itemPrice = typeof item.proposedPrice === 'number' ? item.proposedPrice : 
-                        (typeof item.currentREVAPrice === 'number' ? item.currentREVAPrice : 0);
+                      (typeof item.currentREVAPrice === 'number' ? item.currentREVAPrice : 0);
       
       const itemRevenue = itemPrice * item.revaUsage;
       const itemCost = item.avgCost * item.revaUsage;
