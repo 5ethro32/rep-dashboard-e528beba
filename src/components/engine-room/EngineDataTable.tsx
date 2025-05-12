@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,8 @@ interface EngineDataTableProps {
   onPriceChange?: (item: any, newPrice: number) => void;
   onToggleStar?: (itemId: string) => void;
   starredItems?: Set<string>;
+  flagFilter?: string;
+  onFlagFilterChange?: (filter: string) => void;
 }
 
 // Define column configuration outside component to avoid recreation on each render
@@ -96,7 +97,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   onShowPriceDetails,
   onPriceChange,
   onToggleStar,
-  starredItems = new Set()
+  starredItems = new Set(),
+  flagFilter,
+  onFlagFilterChange
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<string>('description');
@@ -108,7 +111,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [filterByRank, setFilterByRank] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
+  const [ruleFilter, setRuleFilter] = useState<string>('all');
   const itemsPerPage = 50; // Increased for larger tables
+
+  // Use external flag filter if provided
+  useEffect(() => {
+    if (flagFilter && flagFilter !== 'all') {
+      setColumnFilters(prev => ({...prev, flags: [flagFilter]}));
+    }
+  }, [flagFilter]);
 
   // Extract unique usage ranks from the data for the dropdown
   const usageRanks = useMemo(() => {
@@ -189,6 +200,19 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return Array.from(allFlags);
   }, [dataWithTml]);
 
+  // Extract unique rules for rule filter
+  const uniqueRules = useMemo(() => {
+    const rules = new Set<string>();
+    if (dataWithTml && dataWithTml.length > 0) {
+      dataWithTml.forEach(item => {
+        if (item.appliedRule && typeof item.appliedRule === 'string' && item.appliedRule.trim()) {
+          rules.add(item.appliedRule.trim());
+        }
+      });
+    }
+    return Array.from(rules).sort();
+  }, [dataWithTml]);
+
   // Calculate price change percentage
   const calculatePriceChangePercentage = (item: any) => {
     const currentPrice = item.currentREVAPrice || 0;
@@ -207,6 +231,10 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       // Match usage rank filter - updated for new filter value
       const matchesRankFilter = !filterByRank || filterByRank === 'all' ? true : 
                                item.usageRank === parseInt(filterByRank, 10);
+
+      // Match rule filter
+      const matchesRuleFilter = ruleFilter === 'all' ? true :
+                              item.appliedRule === ruleFilter;
 
       // Match all column filters
       const matchesColumnFilters = Object.keys(columnFilters).every(field => {
@@ -228,9 +256,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       // Only filter inactive products if the toggle is enabled
       const isActive = !hideInactiveProducts || item.inStock > 0 || item.onOrder > 0 || item.revaUsage > 0;
 
-      return matchesSearch && matchesRankFilter && matchesColumnFilters && isActive;
+      return matchesSearch && matchesRankFilter && matchesRuleFilter && matchesColumnFilters && isActive;
     });
-  }, [dataWithTml, searchQuery, filterByRank, columnFilters, hideInactiveProducts]);
+  }, [dataWithTml, searchQuery, filterByRank, ruleFilter, columnFilters, hideInactiveProducts]);
 
   // Sort the filtered data
   const sortedData = useMemo(() => {
@@ -480,7 +508,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         </span>);
     }
     if (item.shortage) {
-      flags.push(<span key="shortage" className="bg-purple-900/30 text-xs px-2 py-0.5 rounded-md text-purple-300" title="Product has supply shortage">
+      flags.push(<span key="short" className="bg-purple-900/30 text-xs px-2 py-0.5 rounded-md text-purple-300" title="Product has supply shortage">
           Short
         </span>);
     }
@@ -535,15 +563,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       </div>;
   };
 
-  // Render a unified filter bar
+  // Render a unified filter bar with more compact layout
   const renderUnifiedFilterBar = () => {
     return (
       <div className="flex flex-wrap gap-4 items-center mb-4">
-        {/* Search box */}
-        <div className="relative flex-1 min-w-[180px]">
+        {/* Search box - with reduced width */}
+        <div className="relative flex-1 min-w-[150px] max-w-[250px]">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search by description..." 
+            placeholder="Search..." 
             className="pl-8" 
             value={searchQuery} 
             onChange={e => setSearchQuery(e.target.value)} 
@@ -551,12 +579,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         </div>
         
         {/* Rank filter */}
-        <Select value={filterByRank || ''} onValueChange={value => setFilterByRank(value === '' ? null : value)}>
-          <SelectTrigger className="w-[150px]">
+        <Select value={filterByRank || 'all'} onValueChange={value => setFilterByRank(value === 'all' ? null : value)}>
+          <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="All Ranks" />
           </SelectTrigger>
           <SelectContent>
-            {/* Fix: Don't use empty string as a value */}
             <SelectItem value="all">All Ranks</SelectItem>
             {usageRanks.map(rank => (
               <SelectItem key={rank} value={rank.toString()}>
@@ -574,18 +601,37 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
               delete newFilters['flags'];
               return newFilters;
             });
+            if (onFlagFilterChange) onFlagFilterChange('all');
           } else {
             setColumnFilters(prev => ({...prev, flags: [value]}));
+            if (onFlagFilterChange) onFlagFilterChange(value);
           }
         }}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Filter by flag" />
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="All Flags" />
           </SelectTrigger>
           <SelectContent>
-            {/* Fix: Use 'all' instead of empty string */}
-            <SelectItem value="all">All flags</SelectItem>
+            <SelectItem value="all">All Flags</SelectItem>
             {uniqueFlags.map(flag => (
-              <SelectItem key={flag} value={flag}>{flag}</SelectItem>
+              <SelectItem key={flag} value={flag}>
+                {flag === 'HIGH_PRICE' ? 'High Price' : 
+                 flag === 'LOW_MARGIN' ? 'Low Margin' : flag}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {/* Rule filter - NEW */}
+        <Select value={ruleFilter} onValueChange={setRuleFilter}>
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="All Rules" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Rules</SelectItem>
+            {uniqueRules.map(rule => (
+              <SelectItem key={rule} value={rule}>
+                {formatRuleDisplay(rule)}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -598,7 +644,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             onCheckedChange={setHideInactiveProducts}
           />
           <label htmlFor="hideInactive" className="text-sm cursor-pointer">
-            Hide Inactive Products
+            Hide Inactive
           </label>
         </div>
         
@@ -609,16 +655,18 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           onClick={toggleBulkEditMode} 
           className={bulkEditMode ? "bg-primary/20" : ""}
         >
-          {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit Prices"}
+          {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit"}
         </Button>
         
-        {/* Starred items info */}
-        <div className="flex items-center space-x-2">
-          <Star className={`h-4 w-4 ${starredItems.size > 0 ? 'text-yellow-400' : 'text-muted-foreground'}`} />
-          <span className="text-sm">
-            {starredItems.size} items starred
-          </span>
-        </div>
+        {/* Starred items info - more concise */}
+        {starredItems && starredItems.size > 0 && (
+          <div className="flex items-center space-x-2 ml-auto">
+            <Star className="h-4 w-4 text-yellow-400" />
+            <span className="text-sm">
+              {starredItems.size} starred
+            </span>
+          </div>
+        )}
       </div>
     );
   };
@@ -764,7 +812,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                                   handleStartEdit(item);
                                 }}
                               >
-                                <Edit2 className="h-3 w-3" />
+                                <Edit2 className="h-4 w-4" />
                               </Button>
                             )}
                           </div>

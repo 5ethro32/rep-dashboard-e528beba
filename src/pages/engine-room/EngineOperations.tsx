@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/select';
 import EngineDataTable from '@/components/engine-room/EngineDataTable';
 import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer';
-import ExceptionsTable from '@/components/engine-room/ExceptionsTable';
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
 import MetricCard from '@/components/MetricCard';
@@ -43,6 +42,7 @@ const EngineOperationsContent = () => {
   const [showPricingExplainer, setShowPricingExplainer] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
+  const [activeTabFlagFilter, setActiveTabFlagFilter] = useState('all');
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -94,7 +94,7 @@ const EngineOperationsContent = () => {
     };
   };
   
-  // Show item details - this will now be used by both tables
+  // Show item details - used by all tables
   const handleShowItemDetails = (item: any) => {
     setSelectedItem(item);
     setShowPricingExplainer(true);
@@ -113,35 +113,7 @@ const EngineOperationsContent = () => {
     });
   };
   
-  // Get all unique flags from the data for the dropdown
-  const getUniqueFlags = () => {
-    if (!engineData?.items) return [];
-    
-    const flags = new Set<string>();
-    
-    // Add built-in flag types
-    flags.add('SHORT');
-    flags.add('HIGH_PRICE');
-    flags.add('LOW_MARGIN');
-    
-    // Add flags from the data
-    engineData.items.forEach(item => {
-      if (item.flag && typeof item.flag === 'string' && item.flag.trim()) {
-        flags.add(item.flag.trim());
-      }
-      
-      // Add any flags from the flags array
-      if (item.flags && Array.isArray(item.flags)) {
-        item.flags.forEach(flagItem => {
-          if (typeof flagItem === 'string' && flagItem.trim()) {
-            flags.add(flagItem.trim());
-          }
-        });
-      }
-    });
-    
-    return Array.from(flags).sort();
-  };
+  // Get all unique flags from the data for the dropdown (not needed anymore as it's handled inside EngineDataTable)
   
   // Get starred items
   const getStarredItems = () => {
@@ -153,6 +125,21 @@ const EngineOperationsContent = () => {
   const getSubmittedItems = () => {
     if (!engineData?.items) return [];
     return engineData.items.filter(item => item.workflowStatus === 'submitted' && item.priceModified);
+  };
+  
+  // Get flagged items
+  const getFlaggedItems = () => {
+    if (!engineData?.items) return [];
+    // Filter based on active flag filter
+    if (activeTabFlagFilter === 'all') {
+      return engineData.items.filter(item => item.flag1 || item.flag2 || (item.flags && item.flags.length > 0));
+    } else if (activeTabFlagFilter === 'HIGH_PRICE') {
+      return engineData.items.filter(item => item.flag1 || (item.flags && item.flags.includes('HIGH_PRICE')));
+    } else if (activeTabFlagFilter === 'LOW_MARGIN') {
+      return engineData.items.filter(item => item.flag2 || (item.flags && item.flags.includes('LOW_MARGIN')));
+    } else {
+      return engineData.items.filter(item => item.flags && item.flags.includes(activeTabFlagFilter));
+    }
   };
   
   // Handle drag and drop file upload
@@ -322,12 +309,23 @@ const EngineOperationsContent = () => {
         </TabsContent>
         
         <TabsContent value="exceptions" className="space-y-4">
-          <ExceptionsTable 
-            data={engineData.flaggedItems || []} 
+          {/* Subtabs for different exception types */}
+          <Tabs value={activeTabFlagFilter} onValueChange={setActiveTabFlagFilter} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="all">All Exceptions</TabsTrigger>
+              <TabsTrigger value="HIGH_PRICE">High Price</TabsTrigger>
+              <TabsTrigger value="LOW_MARGIN">Low Margin</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <EngineDataTable 
+            data={getFlaggedItems()} 
             onShowPriceDetails={handleShowItemDetails}
             onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
+            flagFilter={activeTabFlagFilter}
+            onFlagFilterChange={setActiveTabFlagFilter}
           />
         </TabsContent>
         
