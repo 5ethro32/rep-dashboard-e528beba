@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuChe
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import PriceEditor from './PriceEditor';
-import CellDetailsPopover from './CellDetailsPopover';
+import ProductDetailDialog from './ProductDetailDialog';
 
 interface EngineDataTableProps {
   data: any[];
@@ -40,6 +40,11 @@ const columns = [{
 }, {
   field: 'avgCost',
   label: 'Avg Cost',
+  format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
+  filterable: false
+}, {
+  field: 'nextBuyingPrice',
+  label: 'Next Price',
   format: (value: number) => `£${value?.toFixed(2) || '0.00'}`,
   filterable: false
 }, {
@@ -75,6 +80,10 @@ const columns = [{
   label: '% Change',
   filterable: false
 }, {
+  field: 'percentToMarketLow',
+  label: '% to Market Low',
+  filterable: false
+}, {
   field: 'proposedMargin',
   label: 'Proposed Margin',
   format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`,
@@ -83,6 +92,10 @@ const columns = [{
   field: 'appliedRule',
   label: 'Rule',
   filterable: true
+}, {
+  field: 'marketTrend',
+  label: 'Trend',
+  filterable: false
 }];
 
 const EngineDataTable: React.FC<EngineDataTableProps> = ({
@@ -103,6 +116,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const itemsPerPage = 50; // Increased for larger tables
+  
+  // New dialog state for optimized details view
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedField, setSelectedField] = useState<string | undefined>(undefined);
 
   // Extract unique usage ranks from the data for the dropdown
   const usageRanks = useMemo(() => {
@@ -118,7 +136,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return Array.from(uniqueRanks).sort((a, b) => a - b);
   }, [data]);
 
-  // We don't need to recalculate TML here anymore, just pass through the existing value
+  // For memoization optimization
   const dataWithTml = useMemo(() => {
     if (!data) return [];
     return data;
@@ -183,13 +201,28 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return Array.from(allFlags);
   }, [dataWithTml]);
 
+  // Handler for opening the details dialog
+  const handleOpenDetails = useCallback((item: any, field?: string) => {
+    setSelectedItem(item);
+    setSelectedField(field);
+    setDetailsDialogOpen(true);
+  }, []);
+
   // Calculate price change percentage
-  const calculatePriceChangePercentage = (item: any) => {
+  const calculatePriceChangePercentage = useCallback((item: any) => {
     const currentPrice = item.currentREVAPrice || 0;
     const proposedPrice = item.proposedPrice || 0;
     if (currentPrice === 0) return 0;
     return (proposedPrice - currentPrice) / currentPrice * 100;
-  };
+  }, []);
+  
+  // Calculate percentage difference to market low
+  const calculatePercentToMarketLow = useCallback((item: any) => {
+    const marketLow = item.marketLow || 0;
+    const proposedPrice = item.proposedPrice || 0;
+    if (marketLow === 0) return 0;
+    return ((proposedPrice - marketLow) / marketLow) * 100;
+  }, []);
 
   // Filter the data based on search query, usage rank filter, column filters, and toggle states
   const filteredData = useMemo(() => {
@@ -239,6 +272,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         const bChange = calculatePriceChangePercentage(b);
         return sortDirection === 'asc' ? aChange - bChange : bChange - aChange;
       }
+      
+      // Handle special case for percent to market low
+      if (sortField === 'percentToMarketLow') {
+        const aPercent = calculatePercentToMarketLow(a);
+        const bPercent = calculatePercentToMarketLow(b);
+        return sortDirection === 'asc' ? aPercent - bPercent : bPercent - aPercent;
+      }
 
       // Handle null/undefined values
       if (fieldA === undefined || fieldA === null) fieldA = sortField.includes('Price') ? 0 : '';
@@ -261,7 +301,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         return sortDirection === 'asc' ? (Number(fieldA) || 0) - (Number(fieldB) || 0) : (Number(fieldB) || 0) - (Number(fieldA) || 0);
       }
     });
-  }, [filteredData, sortField, sortDirection]);
+  }, [filteredData, sortField, sortDirection, calculatePriceChangePercentage, calculatePercentToMarketLow]);
 
   // Paginate the data
   const totalPages = Math.ceil((sortedData?.length || 0) / itemsPerPage);
@@ -371,59 +411,90 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
 
   // Render the column header with sort and filter
   const renderColumnHeader = (column: any) => {
-    return <CellDetailsPopover field={column.field} item={{}} isColumnHeader={true}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center cursor-pointer" onClick={() => handleSort(column.field)}>
-            {column.label}
-            {renderSortIndicator(column.field)}
-          </div>
-          
-          {column.filterable && uniqueValues[column.field]?.length > 0 && <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`} onClick={e => e.stopPropagation()}>
-                  <Filter className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
-                <div className="p-2">
-                  <p className="text-sm font-medium">Filter by {column.label}</p>
-                  <Input placeholder="Search..." className="h-8 mt-2" onChange={e => {
-                // Filter dropdown options, not implemented fully
-              }} />
-                </div>
-                <DropdownMenuSeparator />
-                {uniqueValues[column.field]?.map((value, i) => <DropdownMenuCheckboxItem key={i} checked={columnFilters[column.field]?.includes(value)} onSelect={e => {
-              e.preventDefault();
-              handleFilterChange(column.field, value);
-            }}>
-                    {value !== null && value !== undefined ? typeof value === 'number' ? value.toString() : value : '(Empty)'}
-                  </DropdownMenuCheckboxItem>)}
-              </DropdownMenuContent>
-            </DropdownMenu>}
+    return (
+      <div className="flex items-center justify-between">
+        <div className="flex items-center cursor-pointer" onClick={() => handleSort(column.field)}>
+          {column.label}
+          {renderSortIndicator(column.field)}
         </div>
-      </CellDetailsPopover>;
+        
+        {column.filterable && uniqueValues[column.field]?.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`} 
+                onClick={e => e.stopPropagation()}
+              >
+                <Filter className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
+              <div className="p-2">
+                <p className="text-sm font-medium">Filter by {column.label}</p>
+                <Input 
+                  placeholder="Search..." 
+                  className="h-8 mt-2" 
+                  onChange={e => {
+                    // Filter dropdown options, not implemented fully
+                  }} 
+                />
+              </div>
+              <DropdownMenuSeparator />
+              {uniqueValues[column.field]?.map((value, i) => (
+                <DropdownMenuCheckboxItem 
+                  key={i} 
+                  checked={columnFilters[column.field]?.includes(value)} 
+                  onSelect={e => {
+                    e.preventDefault();
+                    handleFilterChange(column.field, value);
+                  }}
+                >
+                  {value !== null && value !== undefined ? typeof value === 'number' ? value.toString() : value : '(Empty)'}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    );
   };
 
   // Special case for flags column
   const renderFlagsColumnHeader = () => {
-    return <div className="flex items-center justify-between">
+    return (
+      <div className="flex items-center justify-between">
         <span>Flags</span>
-        {uniqueFlags.length > 0 && <DropdownMenu>
+        {uniqueFlags.length > 0 && (
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ml-2 ${columnFilters['flags']?.length ? 'bg-primary/20' : ''}`}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-6 w-6 p-0 ml-2 ${columnFilters['flags']?.length ? 'bg-primary/20' : ''}`}
+              >
                 <Filter className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
-              {uniqueFlags.map((flag, i) => <DropdownMenuCheckboxItem key={i} checked={columnFilters['flags']?.includes(flag)} onSelect={e => {
-            e.preventDefault();
-            handleFilterChange('flags', flag);
-          }}>
+              {uniqueFlags.map((flag, i) => (
+                <DropdownMenuCheckboxItem 
+                  key={i} 
+                  checked={columnFilters['flags']?.includes(flag)} 
+                  onSelect={e => {
+                    e.preventDefault();
+                    handleFilterChange('flags', flag);
+                  }}
+                >
                   {flag}
-                </DropdownMenuCheckboxItem>)}
+                </DropdownMenuCheckboxItem>
+              ))}
             </DropdownMenuContent>
-          </DropdownMenu>}
-      </div>;
+          </DropdownMenu>
+        )}
+      </div>
+    );
   };
 
   // Simplify rule display
@@ -444,26 +515,50 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     if (!item) return null;
     const flags = [];
     if (item.flag1) {
-      flags.push(<span key="high-price" className="bg-red-900/30 text-xs px-1 py-0.5 rounded" title="Price ≥10% above TRUE MARKET LOW">
+      flags.push(
+        <span 
+          key="high-price" 
+          className="bg-red-900/30 text-xs px-1 py-0.5 rounded" 
+          title="Price ≥10% above TRUE MARKET LOW"
+        >
           HIGH_PRICE
-        </span>);
+        </span>
+      );
     }
     if (item.flag2) {
-      flags.push(<span key="low-margin" className="bg-orange-900/30 text-xs px-1 py-0.5 rounded" title="Margin < 3%">
+      flags.push(
+        <span 
+          key="low-margin" 
+          className="bg-orange-900/30 text-xs px-1 py-0.5 rounded" 
+          title="Margin < 3%"
+        >
           LOW_MARGIN
-        </span>);
+        </span>
+      );
     }
     if (item.shortage) {
-      flags.push(<span key="shortage" className="bg-purple-900/30 text-xs px-1 py-0.5 rounded" title="Product has supply shortage">
+      flags.push(
+        <span 
+          key="shortage" 
+          className="bg-purple-900/30 text-xs px-1 py-0.5 rounded" 
+          title="Product has supply shortage"
+        >
           SHORT
-        </span>);
+        </span>
+      );
     }
     if (item.flags && Array.isArray(item.flags)) {
       item.flags.forEach((flag: string, i: number) => {
         if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT') return; // Skip duplicates
-        flags.push(<span key={`flag-${i}`} className="bg-blue-900/30 text-xs px-1 py-0.5 rounded" title={flag}>
+        flags.push(
+          <span 
+            key={`flag-${i}`} 
+            className="bg-blue-900/30 text-xs px-1 py-0.5 rounded" 
+            title={flag}
+          >
             {flag}
-          </span>);
+          </span>
+        );
       });
     }
     return flags.length > 0 ? <div className="flex items-center gap-1">{flags}</div> : null;
@@ -471,31 +566,51 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
 
   // Active filters summary
   const renderActiveFilters = () => {
-    const activeFilters = Object.entries(columnFilters).filter(([_, values]) => values && values.length > 0).map(([field, values]) => {
-      const column = columns.find(col => col.field === field);
-      const label = column ? column.label : field === 'flags' ? 'Flags' : field;
-      return {
-        field,
-        label,
-        values: Array.isArray(values) ? values : [values]
-      };
-    });
+    const activeFilters = Object.entries(columnFilters)
+      .filter(([_, values]) => values && values.length > 0)
+      .map(([field, values]) => {
+        const column = columns.find(col => col.field === field);
+        const label = column ? column.label : field === 'flags' ? 'Flags' : field;
+        return {
+          field,
+          label,
+          values: Array.isArray(values) ? values : [values]
+        };
+      });
+    
     if (activeFilters.length === 0) return null;
-    return <div className="flex flex-wrap items-center gap-2 my-2 bg-gray-900/20 p-2 rounded-md">
+    
+    return (
+      <div className="flex flex-wrap items-center gap-2 my-2 bg-gray-900/20 p-2 rounded-md">
         <span className="text-sm text-muted-foreground">Active filters:</span>
-        {activeFilters.map((filter, i) => <div key={i} className="flex flex-wrap gap-1">
+        {activeFilters.map((filter, i) => (
+          <div key={i} className="flex flex-wrap gap-1">
             <span className="text-sm">{filter.label}:</span>
-            {filter.values.map((value, j) => <span key={j} className="bg-gray-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+            {filter.values.map((value, j) => (
+              <span key={j} className="bg-gray-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
                 {value}
-                <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handleFilterChange(filter.field, value)}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-4 w-4 p-0" 
+                  onClick={() => handleFilterChange(filter.field, value)}
+                >
                   <X className="h-3 w-3" />
                 </Button>
-              </span>)}
-          </div>)}
-        <Button variant="ghost" size="sm" className="h-6 p-1 text-xs" onClick={() => setColumnFilters({})}>
+              </span>
+            ))}
+          </div>
+        ))}
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-6 p-1 text-xs" 
+          onClick={() => setColumnFilters({})}
+        >
           Clear all
         </Button>
-      </div>;
+      </div>
+    );
   };
 
   // Render a unified filter bar
@@ -514,12 +629,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         </div>
         
         {/* Rank filter */}
-        <Select value={filterByRank || ''} onValueChange={value => setFilterByRank(value === '' ? null : value)}>
+        <Select value={filterByRank || 'all'} onValueChange={value => setFilterByRank(value === 'all' ? null : value)}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="All Ranks" />
           </SelectTrigger>
           <SelectContent>
-            {/* Fix: Don't use empty string as a value */}
             <SelectItem value="all">All Ranks</SelectItem>
             {usageRanks.map(rank => (
               <SelectItem key={rank} value={rank.toString()}>
@@ -530,22 +644,24 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         </Select>
         
         {/* Flag filter */}
-        <Select value={columnFilters['flags']?.[0] || 'all'} onValueChange={value => {
-          if (value === 'all') {
-            setColumnFilters(prev => {
-              const newFilters = {...prev};
-              delete newFilters['flags'];
-              return newFilters;
-            });
-          } else {
-            setColumnFilters(prev => ({...prev, flags: [value]}));
-          }
-        }}>
+        <Select 
+          value={columnFilters['flags']?.[0] || 'all'} 
+          onValueChange={value => {
+            if (value === 'all') {
+              setColumnFilters(prev => {
+                const newFilters = {...prev};
+                delete newFilters['flags'];
+                return newFilters;
+              });
+            } else {
+              setColumnFilters(prev => ({...prev, flags: [value]}));
+            }
+          }}
+        >
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Filter by flag" />
           </SelectTrigger>
           <SelectContent>
-            {/* Fix: Use 'all' instead of empty string */}
             <SelectItem value="all">All flags</SelectItem>
             {uniqueFlags.map(flag => (
               <SelectItem key={flag} value={flag}>{flag}</SelectItem>
@@ -616,55 +732,97 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
               {paginatedData.map((item, index) => {
                 // Calculate price change percentage for each item
                 const priceChangePercentage = calculatePriceChangePercentage(item);
+                const percentToMarketLow = calculatePercentToMarketLow(item);
+                
+                // Add the calculated values to the item for sorting
+                item.priceChangePercentage = priceChangePercentage;
+                item.percentToMarketLow = percentToMarketLow;
+                
                 const isEditing = editingItemId === item.id;
                 
                 return (
                   <TableRow 
                     key={index} 
-                    className={`${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
+                    className={`
+                      ${item.flag1 || item.flag2 || (item.flags && item.flags.length > 0) ? 'bg-red-900/20' : ''}
+                      ${item.priceModified ? 'bg-blue-900/20' : ''}
+                    `}
                   >
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.inStock}</TableCell>
-                    <TableCell>{item.revaUsage}</TableCell>
-                    <TableCell>{item.usageRank}</TableCell>
-                    
-                    {/* Avg Cost cell with popover */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="avgCost">
-                        {formatCurrency(item.avgCost)}
-                      </CellDetailsPopover>
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'description')}
+                    >
+                      {item.description}
+                    </TableCell>
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'inStock')}
+                    >
+                      {item.inStock}
+                    </TableCell>
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'revaUsage')}
+                    >
+                      {item.revaUsage}
+                    </TableCell>
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'usageRank')}
+                    >
+                      {item.usageRank}
                     </TableCell>
                     
-                    {/* Market Low cell with popover */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="marketLow">
-                        <div className="flex items-center gap-1">
-                          {formatCurrency(item.marketLow)}
-                          {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
-                          {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
-                        </div>
-                      </CellDetailsPopover>
+                    {/* Avg Cost cell */}
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'avgCost')}
+                    >
+                      {formatCurrency(item.avgCost)}
                     </TableCell>
                     
-                    {/* TML cell with popover - updated to use trueMarketLow */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="trueMarketLow">
-                        {formatCurrency(item.trueMarketLow)}
-                      </CellDetailsPopover>
+                    {/* Next Price cell - NEW */}
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'nextBuyingPrice')}
+                    >
+                      {formatCurrency(item.nextBuyingPrice)}
                     </TableCell>
                     
-                    {/* Current Price cell with popover */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="currentREVAPrice">
-                        <span className="font-medium">{formatCurrency(item.currentREVAPrice)}</span>
-                      </CellDetailsPopover>
+                    {/* Market Low cell */}
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'marketLow')}
+                    >
+                      <div className="flex items-center gap-1">
+                        {formatCurrency(item.marketLow)}
+                        {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
+                        {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
+                      </div>
                     </TableCell>
                     
-                    {/* Current Margin cell with popover */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="currentREVAMargin">
-                        {formatPercentage(item.currentREVAMargin)}
-                      </CellDetailsPopover>
+                    {/* TML cell */}
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'trueMarketLow')}
+                    >
+                      {formatCurrency(item.trueMarketLow)}
+                    </TableCell>
+                    
+                    {/* Current Price cell */}
+                    <TableCell 
+                      className="font-medium cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'currentREVAPrice')}
+                    >
+                      {formatCurrency(item.currentREVAPrice)}
+                    </TableCell>
+                    
+                    {/* Current Margin cell */}
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'currentREVAMargin')}
+                    >
+                      {formatPercentage(item.currentREVAMargin)}
                     </TableCell>
                     
                     {/* Proposed price cell with inline editing */}
@@ -706,41 +864,63 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           </Button>
                         </div>
                       ) : (
-                        <CellDetailsPopover item={item} field="proposedPrice">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
-                            {item.priceModified && <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />}
-                            {onPriceChange && !bulkEditMode && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="ml-2 h-6 w-6 p-0" 
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  handleStartEdit(item);
-                                }}
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </CellDetailsPopover>
+                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleOpenDetails(item, 'proposedPrice')}>
+                          <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
+                          {item.priceModified && <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />}
+                          {onPriceChange && !bulkEditMode && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="ml-2 h-6 w-6 p-0" 
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleStartEdit(item);
+                              }}
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </TableCell>
                     
                     {/* Price change percentage */}
-                    <TableCell className={priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}>
+                    <TableCell 
+                      className={`cursor-pointer ${priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}`}
+                      onClick={() => handleOpenDetails(item, 'priceChangePercentage')}
+                    >
                       {priceChangePercentage.toFixed(2)}%
                     </TableCell>
                     
-                    {/* Proposed Margin with popover */}
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="proposedMargin">
-                        {formatPercentage(item.proposedMargin)}
-                      </CellDetailsPopover>
+                    {/* Percent to market low - NEW */}
+                    <TableCell 
+                      className={`cursor-pointer ${percentToMarketLow > 0 ? 'text-green-400' : percentToMarketLow < 0 ? 'text-red-400' : ''}`}
+                      onClick={() => handleOpenDetails(item, 'percentToMarketLow')}
+                    >
+                      {percentToMarketLow.toFixed(2)}%
                     </TableCell>
                     
-                    <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
+                    {/* Proposed Margin */}
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'proposedMargin')}
+                    >
+                      {formatPercentage(item.proposedMargin)}
+                    </TableCell>
+                    
+                    <TableCell 
+                      className="cursor-pointer"
+                      onClick={() => handleOpenDetails(item, 'appliedRule')}
+                    >
+                      {formatRuleDisplay(item.appliedRule)}
+                    </TableCell>
+                    
+                    {/* Market trend - NEW */}
+                    <TableCell className="cursor-pointer" onClick={() => handleOpenDetails(item, 'marketTrend')}>
+                      {item.marketTrend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
+                      {item.marketTrend === 'down' && <TrendingDown className="h-4 w-4 text-red-500" />}
+                      {!item.marketTrend && "-"}
+                    </TableCell>
                     
                     {/* Flags cell */}
                     <TableCell>
@@ -814,14 +994,21 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   };
 
   return (
-    <TooltipProvider>
+    <>
       <div className="space-y-4">
         {renderUnifiedFilterBar()}
         {renderActiveFilters()}
         {renderDataTable()}
         {renderPagination()}
       </div>
-    </TooltipProvider>
+      
+      <ProductDetailDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        item={selectedItem}
+        field={selectedField}
+      />
+    </>
   );
 };
 

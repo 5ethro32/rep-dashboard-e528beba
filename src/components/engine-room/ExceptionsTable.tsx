@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,7 +25,6 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import PriceEditor from './PriceEditor';
-import CellDetailsPopover from './CellDetailsPopover';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
@@ -45,7 +43,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatCurrency } from '@/utils/rep-performance-utils'; // Import the formatCurrency function
+import { formatCurrency } from '@/utils/rep-performance-utils';
+import ProductDetailDialog from './ProductDetailDialog';
 
 interface ExceptionsTableProps {
   data: any[];
@@ -114,10 +113,22 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   const [viewMode, setViewMode] = useState<'all' | 'flagged' | 'modified'>('all');
   const [showColumnSettings, setShowColumnSettings] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set([
-    'description', 'usageRank', 'avgCost', 'currentREVAPrice', 'proposedPrice', 
-    'priceChangePercentage', 'marketLow', 'trueMarketLow', 'marketTrend', 
+    'description', 'usageRank', 'avgCost', 'currentREVAPrice', 'nextBuyingPrice', 'proposedPrice', 
+    'priceChangePercentage', 'percentToMarketLow', 'marketLow', 'trueMarketLow', 'marketTrend', 
     'flags', 'appliedRule', 'inStock', 'onOrder'
   ]));
+  
+  // New dialog state for details
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedField, setSelectedField] = useState<string | undefined>(undefined);
+  
+  // Handler for opening the details dialog
+  const handleOpenDetails = (item: any, field?: string) => {
+    setSelectedItem(item);
+    setSelectedField(field);
+    setDetailsDialogOpen(true);
+  };
   
   // Get all unique rules from the data
   const uniqueRules = useMemo(() => {
@@ -213,6 +224,18 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
     if (currentPrice === 0) return 0;
     
     return ((proposedPrice - currentPrice) / currentPrice) * 100;
+  };
+  
+  // Calculate percentage to market low
+  const calculatePercentToMarketLow = (item: any) => {
+    if (!item) return 0;
+    
+    const marketLow = item.marketLow || 0;
+    const proposedPrice = item.proposedPrice || 0;
+    
+    if (marketLow === 0) return 0;
+    
+    return ((proposedPrice - marketLow) / marketLow) * 100;
   };
 
   // Handle starting price edit for a specific item
@@ -461,10 +484,12 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                   { id: 'description', label: 'Description' },
                   { id: 'usageRank', label: 'Usage Rank' },
                   { id: 'avgCost', label: 'Avg Cost' },
+                  { id: 'nextBuyingPrice', label: 'Next Price' },
                   { id: 'currentREVAPrice', label: 'Current Price' },
                   { id: 'proposedPrice', label: 'Proposed Price' },
                   { id: 'priceChangePercentage', label: '% Change' },
                   { id: 'marketLow', label: 'Market Low' },
+                  { id: 'percentToMarketLow', label: '% to Market Low' },
                   { id: 'trueMarketLow', label: 'TML' },
                   { id: 'marketTrend', label: 'Trend' },
                   { id: 'flags', label: 'Flags' },
@@ -639,6 +664,17 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     </div>
                   </TableHead>
                 )}
+                {visibleColumns.has('nextBuyingPrice') && (
+                  <TableHead 
+                    className="cursor-pointer"
+                    onClick={() => handleSort('nextBuyingPrice')}
+                  >
+                    <div className="flex items-center">
+                      <span className="font-bold">Next Price</span>
+                      {renderSortIndicator('nextBuyingPrice')}
+                    </div>
+                  </TableHead>
+                )}
                 {visibleColumns.has('currentREVAPrice') && (
                   <TableHead 
                     className="cursor-pointer"
@@ -683,6 +719,17 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     </div>
                   </TableHead>
                 )}
+                {visibleColumns.has('percentToMarketLow') && (
+                  <TableHead 
+                    className="cursor-pointer"
+                    onClick={() => handleSort('percentToMarketLow')}
+                  >
+                    <div className="flex items-center">
+                      % to Market Low
+                      {renderSortIndicator('percentToMarketLow')}
+                    </div>
+                  </TableHead>
+                )}
                 {visibleColumns.has('trueMarketLow') && (
                   <TableHead 
                     className="cursor-pointer"
@@ -706,15 +753,7 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                   </TableHead>
                 )}
                 {visibleColumns.has('flags') && (
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => handleSort('flags')}
-                  >
-                    <div className="flex items-center">
-                      Flags
-                      {renderSortIndicator('flags')}
-                    </div>
-                  </TableHead>
+                  <TableHead>Flags</TableHead>
                 )}
                 {visibleColumns.has('appliedRule') && (
                   <TableHead 
@@ -749,31 +788,34 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                     </div>
                   </TableHead>
                 )}
-                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-10">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={14} className="text-center py-10">
+                  <TableCell colSpan={Object.keys(visibleColumns).length + 2} className="text-center py-10">
                     No exceptions found
                   </TableCell>
                 </TableRow>
               ) : (
                 sortedItems.map((item, index) => {
                   const priceChangePercentage = calculatePriceChangePercentage(item);
+                  const percentToMarketLow = calculatePercentToMarketLow(item);
+                  
                   // Add the percentage to the item for sorting
                   item.priceChangePercentage = priceChangePercentage;
+                  item.percentToMarketLow = percentToMarketLow;
+                  
                   const isEditing = editingItemId === item.id;
                   const isExpanded = expandedRowId === item.id;
                   
                   return (
                     <React.Fragment key={index}>
                       <TableRow 
-                        className={`${item.priceModified ? 'bg-blue-900/20' : ''} ${isExpanded ? 'bg-gray-800/40' : ''} cursor-pointer`}
-                        onClick={() => toggleRowExpansion(item.id)}
+                        className={`${item.priceModified ? 'bg-blue-900/20' : ''} ${isExpanded ? 'bg-gray-800/40' : ''}`}
                       >
-                        <TableCell className="p-2">
+                        <TableCell className="p-2 cursor-pointer" onClick={() => toggleRowExpansion(item.id)}>
                           {isExpanded ? (
                             <ChevronDown className="h-4 w-4" />
                           ) : (
@@ -783,34 +825,32 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
 
                         {/* Only render columns that are visible */}
                         {visibleColumns.has('description') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="description">
-                              {item.description}
-                            </CellDetailsPopover>
+                          <TableCell className="cursor-pointer" onClick={() => handleOpenDetails(item)}>
+                            {item.description}
                           </TableCell>
                         )}
                         
                         {visibleColumns.has('usageRank') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="usageRank">
-                              {item.usageRank}
-                            </CellDetailsPopover>
+                          <TableCell className="cursor-pointer" onClick={() => handleOpenDetails(item, 'usageRank')}>
+                            {item.usageRank}
                           </TableCell>
                         )}
                         
                         {visibleColumns.has('avgCost') && (
-                          <TableCell className="font-medium">
-                            <CellDetailsPopover item={item} field="avgCost">
-                              £{(item.avgCost || 0).toFixed(2)}
-                            </CellDetailsPopover>
+                          <TableCell className="font-medium cursor-pointer" onClick={() => handleOpenDetails(item, 'avgCost')}>
+                            {formatCurrency(item.avgCost || 0)}
+                          </TableCell>
+                        )}
+                        
+                        {visibleColumns.has('nextBuyingPrice') && (
+                          <TableCell className="font-medium cursor-pointer" onClick={() => handleOpenDetails(item, 'nextBuyingPrice')}>
+                            {formatCurrency(item.nextBuyingPrice || 0)}
                           </TableCell>
                         )}
                         
                         {visibleColumns.has('currentREVAPrice') && (
-                          <TableCell className="font-bold">
-                            <CellDetailsPopover item={item} field="currentREVAPrice">
-                              £{(item.currentREVAPrice || 0).toFixed(2)}
-                            </CellDetailsPopover>
+                          <TableCell className="font-bold cursor-pointer" onClick={() => handleOpenDetails(item, 'currentREVAPrice')}>
+                            {formatCurrency(item.currentREVAPrice || 0)}
                           </TableCell>
                         )}
                         
@@ -828,186 +868,263 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
                                 compact={true}
                               />
                             ) : isEditing ? (
-                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                <Input
-                                  type="number"
-                                  value={editingValues[item.id]}
-                                  onChange={(e) => handlePriceInputChange(item, e.target.value)}
-                                  className="w-24 h-8 py-1 px-2"
-                                  autoFocus
+                              <div className="flex items-center gap-2">
+                                <Input 
+                                  type="number" 
+                                  value={editingValues[item.id]} 
+                                  onChange={e => handlePriceInputChange(item, e.target.value)} 
+                                  className="w-24 h-8 py-1 px-2" 
+                                  autoFocus 
                                 />
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
                                   className="h-6 w-6 p-0" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSavePriceEdit(item);
-                                  }}
+                                  onClick={() => handleSavePriceEdit(item)}
                                 >
                                   <CheckCircle className="h-4 w-4 text-green-500" />
                                 </Button>
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="h-6 w-6 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCancelEdit();
-                                  }}
+                                  className="h-6 w-6 p-0" 
+                                  onClick={handleCancelEdit}
                                 >
                                   <X className="h-4 w-4 text-red-500" />
                                 </Button>
                               </div>
                             ) : (
-                              <CellDetailsPopover item={item} field="proposedPrice">
-                                <div className="flex items-center gap-2">
-                                  £{(item.proposedPrice || 0).toFixed(2)}
-                                  {item.priceModified && (
-                                    <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />
-                                  )}
-                                  {onPriceChange && !bulkEditMode && (
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm"
-                                      className="ml-2 h-6 w-6 p-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStartEdit(item);
-                                      }}
-                                    >
-                                      <Edit2 className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </CellDetailsPopover>
+                              <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleOpenDetails(item, 'proposedPrice')}>
+                                <span>{formatCurrency(item.proposedPrice || 0)}</span>
+                                {item.priceModified && <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />}
+                                {onPriceChange && !bulkEditMode && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="ml-auto h-6 w-6 p-0" 
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      handleStartEdit(item);
+                                    }}
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
                             )}
                           </TableCell>
                         )}
                         
                         {/* Price change percentage */}
                         {visibleColumns.has('priceChangePercentage') && (
-                          <TableCell className={priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}>
-                            <CellDetailsPopover item={item} field="priceChangePercentage">
-                              {priceChangePercentage.toFixed(2)}%
-                            </CellDetailsPopover>
+                          <TableCell 
+                            className={`cursor-pointer ${priceChangePercentage > 0 ? 'text-green-400' : priceChangePercentage < 0 ? 'text-red-400' : ''}`}
+                            onClick={() => handleOpenDetails(item, 'priceChangePercentage')}
+                          >
+                            {priceChangePercentage.toFixed(2)}%
                           </TableCell>
                         )}
                         
+                        {/* Market Low */}
                         {visibleColumns.has('marketLow') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="marketLow">
-                              {item.marketLow ? `£${(item.marketLow || 0).toFixed(2)}` : '-'}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {/* TML cell with popover - updated to use trueMarketLow with 2 decimal places */}
-                        {visibleColumns.has('trueMarketLow') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="trueMarketLow">
-                              {item.trueMarketLow ? `£${(item.trueMarketLow || 0).toFixed(2)}` : '-'}
-                            </CellDetailsPopover>
-                          </TableCell>
-                        )}
-                        
-                        {/* Market Trend column */}
-                        {visibleColumns.has('marketTrend') && (
-                          <TableCell>
-                            <div className="flex items-center justify-center">
-                              {item.marketTrend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
-                              {item.marketTrend === 'down' && <TrendingDown className="h-4 w-4 text-red-500" />}
-                              {!item.marketTrend && <span>-</span>}
+                          <TableCell className="cursor-pointer" onClick={() => handleOpenDetails(item, 'marketLow')}>
+                            <div className="flex items-center gap-1">
+                              {formatCurrency(item.marketLow || 0)}
+                              {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
+                              {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
                             </div>
                           </TableCell>
                         )}
                         
-                        {/* Flags column */}
+                        {/* Percentage to Market Low - NEW COLUMN */}
+                        {visibleColumns.has('percentToMarketLow') && (
+                          <TableCell 
+                            className={`cursor-pointer ${percentToMarketLow > 0 ? 'text-green-400' : percentToMarketLow < 0 ? 'text-red-400' : ''}`}
+                            onClick={() => handleOpenDetails(item, 'percentToMarketLow')}
+                          >
+                            {percentToMarketLow.toFixed(2)}%
+                          </TableCell>
+                        )}
+                        
+                        {/* TML */}
+                        {visibleColumns.has('trueMarketLow') && (
+                          <TableCell className="cursor-pointer" onClick={() => handleOpenDetails(item, 'trueMarketLow')}>
+                            {formatCurrency(item.trueMarketLow || 0)}
+                          </TableCell>
+                        )}
+                        
+                        {/* Market Trend */}
+                        {visibleColumns.has('marketTrend') && (
+                          <TableCell className="cursor-pointer" onClick={() => handleOpenDetails(item, 'marketTrend')}>
+                            {item.marketTrend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
+                            {item.marketTrend === 'down' && <TrendingDown className="h-4 w-4 text-red-500" />}
+                            {!item.marketTrend && "-"}
+                          </TableCell>
+                        )}
+                        
+                        {/* Flags cell */}
                         {visibleColumns.has('flags') && (
                           <TableCell>
-                            {getItemFlags(item)}
+                            <div className="flex flex-wrap gap-1">
+                              {item.flag1 && (
+                                <Badge variant="outline" className="text-xs py-0 bg-red-900/30">
+                                  HIGH_PRICE
+                                </Badge>
+                              )}
+                              {item.flag2 && (
+                                <Badge variant="outline" className="text-xs py-0 bg-orange-900/30">
+                                  LOW_MARGIN
+                                </Badge>
+                              )}
+                              {item.shortage && (
+                                <Badge variant="outline" className="text-xs py-0 bg-purple-900/30">
+                                  SHORT
+                                </Badge>
+                              )}
+                              {item.flags && Array.isArray(item.flags) && item.flags.map((flag: string, idx: number) => (
+                                <Badge key={idx} variant="outline" className="text-xs py-0 bg-blue-900/30">
+                                  {flag}
+                                </Badge>
+                              ))}
+                            </div>
                           </TableCell>
                         )}
                         
                         {visibleColumns.has('appliedRule') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="appliedRule">
-                              {simplifyRuleDisplay(item.appliedRule || "")}
-                            </CellDetailsPopover>
+                          <TableCell className="cursor-pointer" onClick={() => handleOpenDetails(item, 'appliedRule')}>
+                            {simplifyRuleDisplay(item.appliedRule || '')}
                           </TableCell>
                         )}
                         
                         {visibleColumns.has('inStock') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="inStock">
-                              {item.inStock}
-                            </CellDetailsPopover>
+                          <TableCell className="cursor-pointer" onClick={() => handleOpenDetails(item, 'inStock')}>
+                            {item.inStock || 0}
                           </TableCell>
                         )}
                         
                         {visibleColumns.has('onOrder') && (
-                          <TableCell>
-                            <CellDetailsPopover item={item} field="onOrder">
-                              {item.onOrder}
-                            </CellDetailsPopover>
+                          <TableCell className="cursor-pointer" onClick={() => handleOpenDetails(item, 'onOrder')}>
+                            {item.onOrder || 0}
                           </TableCell>
                         )}
                         
-                        {/* Star button */}
-                        <TableCell className="p-2" onClick={(e) => e.stopPropagation()}>
-                          {starredItems && starredItems.has(item.id) ? (
-                            <Star 
-                              className="h-4 w-4 text-yellow-500 cursor-pointer" 
-                              onClick={() => onToggleStar && onToggleStar(item.id)} 
-                            />
-                          ) : (
-                            <Star 
-                              className="h-4 w-4 text-gray-400 cursor-pointer" 
-                              onClick={() => onToggleStar && onToggleStar(item.id)} 
-                            />
-                          )}
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => onShowPriceDetails(item)}
+                            >
+                              Details
+                            </Button>
+                            
+                            {onToggleStar && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onToggleStar(item.id);
+                                }}
+                              >
+                                <Star
+                                  className={`h-4 w-4 ${starredItems.has(item.id) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
+                                />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                       
-                      {/* Expanded row with details */}
+                      {/* Expanded row content */}
                       {isExpanded && (
-                        <TableRow className="bg-gray-800/20">
-                          <TableCell colSpan={14} className="p-4">
+                        <TableRow className="bg-gray-800/30">
+                          <TableCell colSpan={Object.keys(visibleColumns).length + 2} className="p-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <div>
-                                <h4 className="font-semibold mb-2">Product Details</h4>
-                                <div className="space-y-2">
-                                  <p><span className="text-muted-foreground">Description:</span> {item.description}</p>
-                                  <p><span className="text-muted-foreground">Usage Rank:</span> {item.usageRank}</p>
-                                  <p><span className="text-muted-foreground">Monthly Usage:</span> {item.revaUsage || 0}</p>
-                                </div>
+                                <h4 className="text-sm font-medium mb-2">Product Details</h4>
+                                <ul className="space-y-1 text-sm">
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">Description:</span>
+                                    <span>{item.description}</span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">In Stock:</span>
+                                    <span>{item.inStock || 0}</span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">On Order:</span>
+                                    <span>{item.onOrder || 0}</span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">Usage:</span>
+                                    <span>{item.revaUsage || 0}</span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">Usage Rank:</span>
+                                    <span>{item.usageRank || 'N/A'}</span>
+                                  </li>
+                                </ul>
                               </div>
                               
                               <div>
-                                <h4 className="font-semibold mb-2">Pricing Details</h4>
-                                <div className="space-y-2">
-                                  <p><span className="text-muted-foreground">Avg Cost:</span> £{(item.avgCost || 0).toFixed(2)}</p>
-                                  <p><span className="text-muted-foreground">Current Price:</span> £{(item.currentREVAPrice || 0).toFixed(2)}</p>
-                                  <p><span className="text-muted-foreground">Proposed Price:</span> £{(item.proposedPrice || 0).toFixed(2)}</p>
-                                  <p><span className="text-muted-foreground">Current Margin:</span> {((item.currentREVAMargin || 0) * 100).toFixed(2)}%</p>
-                                  <p><span className="text-muted-foreground">Proposed Margin:</span> {((item.proposedMargin || 0) * 100).toFixed(2)}%</p>
-                                </div>
+                                <h4 className="text-sm font-medium mb-2">Cost Information</h4>
+                                <ul className="space-y-1 text-sm">
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">Average Cost:</span>
+                                    <span>{formatCurrency(item.avgCost || 0)}</span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">Next Price:</span>
+                                    <span>{formatCurrency(item.nextBuyingPrice || 0)}</span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">Current Price:</span>
+                                    <span>{formatCurrency(item.currentREVAPrice || 0)}</span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">Current Margin:</span>
+                                    <span>{((item.currentREVAMargin || 0) * 100).toFixed(2)}%</span>
+                                  </li>
+                                </ul>
                               </div>
                               
                               <div>
-                                <h4 className="font-semibold mb-2">Market Information</h4>
-                                <div className="space-y-2">
-                                  <p><span className="text-muted-foreground">Market Low:</span> {item.marketLow ? `£${(item.marketLow).toFixed(2)}` : 'N/A'}</p>
-                                  <p><span className="text-muted-foreground">True Market Low:</span> {item.trueMarketLow ? `£${(item.trueMarketLow).toFixed(2)}` : 'N/A'}</p>
-                                  <p><span className="text-muted-foreground">Competitor Prices:</span></p>
-                                  <div className="pl-4 space-y-1 text-sm">
-                                    {item.eth_net !== undefined && <p>ETH NET: £{item.eth_net.toFixed(2)}</p>}
-                                    {item.eth !== undefined && <p>ETH: £{item.eth.toFixed(2)}</p>}
-                                    {item.nupharm !== undefined && <p>Nupharm: £{item.nupharm.toFixed(2)}</p>}
-                                    {item.lexon !== undefined && <p>LEXON: £{item.lexon.toFixed(2)}</p>}
-                                    {item.aah !== undefined && <p>AAH: £{item.aah.toFixed(2)}</p>}
-                                  </div>
-                                </div>
+                                <h4 className="text-sm font-medium mb-2">Market Information</h4>
+                                <ul className="space-y-1 text-sm">
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">Market Low:</span>
+                                    <span>{formatCurrency(item.marketLow || 0)}</span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">True Market Low:</span>
+                                    <span>{formatCurrency(item.trueMarketLow || 0)}</span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">Market Trend:</span>
+                                    <span className="flex items-center">
+                                      {item.marketTrend === 'up' && (
+                                        <>
+                                          <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                                          <span>Up</span>
+                                        </>
+                                      )}
+                                      {item.marketTrend === 'down' && (
+                                        <>
+                                          <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
+                                          <span>Down</span>
+                                        </>
+                                      )}
+                                      {!item.marketTrend && "Stable"}
+                                    </span>
+                                  </li>
+                                  <li className="flex justify-between">
+                                    <span className="text-muted-foreground">% to Market Low:</span>
+                                    <span className={percentToMarketLow > 0 ? 'text-green-400' : 'text-red-400'}>
+                                      {percentToMarketLow.toFixed(2)}%
+                                    </span>
+                                  </li>
+                                </ul>
                               </div>
                             </div>
                           </TableCell>
@@ -1025,10 +1142,8 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Unified Filter Bar */}
+    <>
       {renderUnifiedFilterBar()}
-
       <Tabs defaultValue="high-price" className="w-full">
         <TabsList className="inline-flex">
           <TabsTrigger value="high-price" className="flex-1">High Price ({highPriceItems.length})</TabsTrigger>
@@ -1084,7 +1199,13 @@ const ExceptionsTable: React.FC<ExceptionsTableProps> = ({
           </TabsContent>
         ))}
       </Tabs>
-    </div>
+      <ProductDetailDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        item={selectedItem}
+        field={selectedField}
+      />
+    </>
   );
 };
 
