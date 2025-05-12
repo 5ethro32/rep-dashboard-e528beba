@@ -4,115 +4,41 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import MetricCard from '@/components/MetricCard';
 import DonutChart from '@/components/DonutChart';
-import { formatCurrency } from '@/utils/formatting-utils';
+import { formatCurrency, formatPercentage, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
 
 interface UsageWeightedMetricsProps {
   data: any[];
 }
 
 const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => {
-  // Calculate usage-weighted metrics using correct formulas
-  const calculateMetrics = () => {
-    if (!data || data.length === 0) return {
-      weightedMargin: 0,
-      totalRevenue: 0,
-      totalProfit: 0,
-      usageCount: 0,
-      marginDistribution: [],
-      marginImprovement: 0
-    };
-
-    let totalRevenue = 0;
-    let totalProfit = 0;
-    let totalUsage = 0;
-    let proposedRevenue = 0;
-    let proposedProfit = 0;
-    
-    // For margin distribution
-    const marginBands = [
-      { name: '<5%', value: 0, color: '#ef4444', profit: 0 }, // Red
-      { name: '5-10%', value: 0, color: '#f97316', profit: 0 }, // Orange
-      { name: '10-15%', value: 0, color: '#eab308', profit: 0 }, // Yellow
-      { name: '15-20%', value: 0, color: '#84cc16', profit: 0 }, // Light Green
-      { name: '20%+', value: 0, color: '#22c55e', profit: 0 }  // Green
-    ];
-    
-    data.forEach(item => {
-      // Only process items with valid data
-      if (typeof item.revaUsage === 'number' && typeof item.currentREVAPrice === 'number' && typeof item.avgCost === 'number') {
-        // Calculate revenue: Price × Usage
-        const currentRevenue = item.revaUsage * item.currentREVAPrice;
-        
-        // Calculate profit: (Price - AvgCost) × Usage
-        const currentProfit = item.revaUsage * (item.currentREVAPrice - item.avgCost);
-        
-        // Calculate current margin as (Price - AvgCost) / Price
-        const currentMargin = item.currentREVAPrice > 0 ? 
-          (item.currentREVAPrice - item.avgCost) / item.currentREVAPrice : 0;
-        
-        // Calculate proposed values if available
-        const proposedPrice = item.proposedPrice || item.currentREVAPrice;
-        const proposedItemRevenue = item.revaUsage * proposedPrice;
-        const proposedItemProfit = item.revaUsage * (proposedPrice - item.avgCost);
-        
-        totalRevenue += currentRevenue;
-        totalProfit += currentProfit;
-        totalUsage += item.revaUsage;
-        proposedRevenue += proposedItemRevenue;
-        proposedProfit += proposedItemProfit;
-        
-        // Categorize for margin distribution
-        const margin = currentMargin * 100;
-        if (margin < 5) {
-          marginBands[0].value += 1;
-          marginBands[0].profit += currentProfit;
-        } else if (margin < 10) {
-          marginBands[1].value += 1;
-          marginBands[1].profit += currentProfit;
-        } else if (margin < 15) {
-          marginBands[2].value += 1;
-          marginBands[2].profit += currentProfit;
-        } else if (margin < 20) {
-          marginBands[3].value += 1;
-          marginBands[3].profit += currentProfit;
-        } else {
-          marginBands[4].value += 1;
-          marginBands[4].profit += currentProfit;
-        }
-      }
-    });
-    
-    // Calculate usage-weighted margin as Total Profit ÷ Total Revenue × 100%
-    let weightedMargin = 0;
-    if (totalRevenue > 0) {
-      weightedMargin = (totalProfit / totalRevenue) * 100;
-    }
-    
-    // Calculate proposed weighted margin similarly
-    let proposedWeightedMargin = 0;
-    if (proposedRevenue > 0) {
-      proposedWeightedMargin = (proposedProfit / proposedRevenue) * 100;
-    }
-    
-    const marginImprovement = proposedWeightedMargin - weightedMargin;
-    
-    return {
-      weightedMargin,
-      totalRevenue,
-      totalProfit,
-      proposedWeightedMargin,
-      marginImprovement,
-      usageCount: totalUsage,
-      marginDistribution: marginBands
-    };
-  };
-  
-  const metrics = calculateMetrics();
+  // Use the centralized calculation function
+  const metrics = calculateUsageWeightedMetrics(data);
   
   return (
     <div className="space-y-6 mb-6">
       <div className="flex items-center gap-2 mb-2">
         <h2 className="text-xl font-semibold">Margin Distribution</h2>
+      </div>
+      
+      {/* Summary metrics - add these to give more context */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
+        <MetricCard
+          title="Usage-Weighted Margin"
+          value={metrics.weightedMargin.toFixed(2) + '%'}
+          subtitle={`Based on ${metrics.validItemCount} valid products`}
+        />
+        
+        <MetricCard
+          title="Total Revenue"
+          value={formatCurrency(metrics.totalRevenue)}
+          subtitle={`${metrics.totalUsage.toLocaleString()} total units`}
+        />
+        
+        <MetricCard
+          title="Total Profit"
+          value={formatCurrency(metrics.totalProfit)}
+          subtitle="Sum of (Price - Cost) × Usage"
+        />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
@@ -122,7 +48,7 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => 
             <div className="h-48 relative">
               <DonutChart 
                 data={metrics.marginDistribution}
-                innerValue={data.length > 0 ? data.length.toString() : "0"}
+                innerValue={metrics.validItemCount.toString()}
                 innerLabel="Products"
               />
             </div>
@@ -136,7 +62,8 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({ data }) => 
               <DonutChart 
                 data={metrics.marginDistribution.map(band => ({
                   name: band.name,
-                  value: band.profit > 0 ? (band.profit / metrics.totalProfit) * 100 : 0,
+                  value: band.profit > 0 && metrics.totalProfit > 0 ? 
+                    (band.profit / metrics.totalProfit) * 100 : 0,
                   color: band.color,
                   profit: band.profit
                 }))}

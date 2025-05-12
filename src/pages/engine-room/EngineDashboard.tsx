@@ -8,7 +8,7 @@ import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
 import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUpdated';
-import { formatCurrency } from '@/utils/formatting-utils';
+import { formatCurrency, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
 
 const EngineDashboardContent = () => {
   const {
@@ -114,67 +114,7 @@ const EngineDashboardContent = () => {
   }
 
   // Get usage-weighted metrics with the correct calculation method
-  const getUsageWeightedMetrics = () => {
-    if (!engineData || !engineData.items || engineData.items.length === 0) return {
-      weightedMargin: 0,
-      totalRevenue: 0,
-      totalProfit: 0,
-      usageCount: 0,
-      marginImprovement: 0
-    };
-
-    let totalRevenue = 0;
-    let totalProfit = 0;
-    let totalUsage = 0;
-    let proposedRevenue = 0;
-    let proposedProfit = 0;
-    
-    engineData.items?.forEach(item => {
-      // Only process items with valid data
-      if (typeof item.revaUsage === 'number' && typeof item.currentREVAPrice === 'number' && typeof item.avgCost === 'number') {
-        // Calculate current revenue: Price × Usage
-        const currentRevenue = item.revaUsage * item.currentREVAPrice;
-        
-        // Calculate current profit: (Price - AvgCost) × Usage
-        const currentProfit = item.revaUsage * (item.currentREVAPrice - item.avgCost);
-        
-        // Calculate proposed values if available
-        const proposedPrice = item.proposedPrice || item.currentREVAPrice;
-        const proposedItemRevenue = item.revaUsage * proposedPrice;
-        const proposedItemProfit = item.revaUsage * (proposedPrice - item.avgCost);
-        
-        totalRevenue += currentRevenue;
-        totalProfit += currentProfit;
-        totalUsage += item.revaUsage;
-        proposedRevenue += proposedItemRevenue;
-        proposedProfit += proposedItemProfit;
-      }
-    });
-    
-    // Calculate usage-weighted margin properly as Total Profit ÷ Total Revenue × 100%
-    let weightedMargin = 0;
-    if (totalRevenue > 0) {
-      weightedMargin = (totalProfit / totalRevenue) * 100;
-    }
-    
-    // Calculate proposed weighted margin similarly
-    let proposedWeightedMargin = 0;
-    if (proposedRevenue > 0) {
-      proposedWeightedMargin = (proposedProfit / proposedRevenue) * 100;
-    }
-    
-    const marginImprovement = proposedWeightedMargin - weightedMargin;
-    
-    return {
-      weightedMargin,
-      totalRevenue,
-      totalProfit,
-      usageCount: totalUsage,
-      marginImprovement
-    };
-  };
-  
-  const usageMetrics = getUsageWeightedMetrics();
+  const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -234,7 +174,7 @@ const EngineDashboardContent = () => {
             <MetricCard
               title="Total Revenue (Usage-Weighted)"
               value={formatCurrency(usageMetrics.totalRevenue)}
-              subtitle={`${usageMetrics.usageCount.toLocaleString()} total units`}
+              subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`}
             />
             
             <MetricCard
