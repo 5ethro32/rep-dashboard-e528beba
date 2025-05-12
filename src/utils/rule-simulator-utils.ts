@@ -46,11 +46,11 @@ const determineUsageGroup = (usageRank: number) => {
   return 'group5_6';
 };
 
-// Apply pricing rules to calculate a new price
+// Apply pricing rules to calculate a new price - Updated to match engine-excel-utils.ts logic
 const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Extract needed values
   const cost = Math.max(0, Number(item.avgCost) || 0);
-  const marketLow = Math.max(0, Number(item.trueMarketLow) || 0);
+  const marketLow = Math.max(0, Number(item.trueMarketLow) || Number(item.marketLow) || 0);
   const usageRank = Math.max(1, Math.min(6, Number(item.usageRank) || 1));
   
   // Handle no market price case
@@ -59,65 +59,127 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Determine which usage group this item belongs to
   const usageGroup = determineUsageGroup(usageRank);
   
+  // Get the appropriate markup values based on usage group
+  const groupKey = usageGroup as keyof typeof ruleConfig.rule1.markups.rule1a;
+  
+  // Determine trend (from engine-excel-utils.ts logic)
+  const isDownwardTrend = item.nextCost <= item.avgCost; 
+  
   let newPrice = 0;
   let ruleApplied = 'none';
   
-  // If no market price, fall back to cost-based pricing with appropriate markup
-  if (noMarketPrice) {
-    // Use rule 1b markup by usage group if no market price
-    const markup = ruleConfig.rule1.markups.rule1b[usageGroup as keyof typeof ruleConfig.rule1.markups.rule1b] / 100;
-    newPrice = cost * (1 + markup);
-    ruleApplied = 'rule1b_no_market';
-  } 
-  // Rule 1: Above market low price
-  else if (cost > marketLow) {
-    // Rule 1a: Cost is above market
-    const markup = ruleConfig.rule1.markups.rule1a[usageGroup as keyof typeof ruleConfig.rule1.markups.rule1a] / 100;
-    newPrice = cost * (1 + markup);
-    ruleApplied = 'rule1a';
-  } 
-  else {
-    // Cost is below market low
-    const costToMarketRatio = marketLow > 0 ? cost / marketLow : 0;
+  // Apply rules based on cost vs. market price relationship
+  if (!noMarketPrice) {
+    // We have a market price to work with
     
-    // Rule 1b: If cost is within 5% of market low
-    if (costToMarketRatio >= 0.95) {
-      const markup = ruleConfig.rule1.markups.rule1b[usageGroup as keyof typeof ruleConfig.rule1.markups.rule1b] / 100;
-      newPrice = cost * (1 + markup);
-      ruleApplied = 'rule1b';
+    // Rule 1: AvgCost >= Market Low
+    if (cost >= marketLow) {
+      // Apply Rule 1a or Rule 1b based on market trend
+      if (isDownwardTrend) {
+        // Rule 1a - Downward Trend
+        const markup = 1 + (ruleConfig.rule1.markups.rule1a[groupKey] / 100);
+        newPrice = marketLow * markup;
+        ruleApplied = 'rule1a';
+      } else {
+        // Rule 1b - Upward Trend
+        const mlMarkup = 1 + (ruleConfig.rule1.markups.rule1b[groupKey] / 100);
+        const costMarkup = 1 + (ruleConfig.rule2.markups.rule2a[groupKey] / 100);
+        
+        const mlPrice = marketLow * mlMarkup;
+        const costPrice = cost * costMarkup;
+        
+        newPrice = Math.max(mlPrice, costPrice);
+        ruleApplied = newPrice === mlPrice ? 'rule1b_ml' : 'rule1b_cost';
+      }
     } 
-    // Rule 2a: If cost is between 5-10% below market low
-    else if (costToMarketRatio >= 0.90) {
-      const discount = ruleConfig.rule2.markups.rule2a[usageGroup as keyof typeof ruleConfig.rule2.markups.rule2a] / 100;
-      newPrice = marketLow * (1 - discount);
-      ruleApplied = 'rule2a';
-    } 
-    // Rule 2b: If cost is more than 10% below market low
+    // Rule 2: AvgCost < Market Low
     else {
-      const discount = ruleConfig.rule2.markups.rule2b[usageGroup as keyof typeof ruleConfig.rule2.markups.rule2b] / 100;
-      newPrice = marketLow * (1 - discount);
-      ruleApplied = 'rule2b';
+      // Calculate cost to market ratio
+      const costToMarketRatio = cost / marketLow;
+      
+      // Rule 2a: If cost is within 5-10% of market low
+      if (costToMarketRatio >= 0.90 && costToMarketRatio < 0.95) {
+        if (isDownwardTrend) {
+          // 3%, 4%, or 5% markup depending on group
+          const uplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
+          newPrice = marketLow * uplift;
+          ruleApplied = 'rule2a_downtrend';
+        } else {
+          // Market Low uplift (3%, 4%, or 5%)
+          const mlUplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
+          // Cost markup (12%, 13%, or 14%)
+          const costMarkup = 1 + (ruleConfig.rule2.markups.rule2a[groupKey] / 100);
+          
+          const mlPrice = marketLow * mlUplift;
+          const costPrice = cost * costMarkup;
+          
+          newPrice = Math.max(mlPrice, costPrice);
+          ruleApplied = newPrice === mlPrice ? 'rule2a_ml' : 'rule2a_cost';
+        }
+      } 
+      // Rule 2b: If cost is more than 10% below market low
+      else if (costToMarketRatio < 0.90) {
+        if (isDownwardTrend) {
+          // 3%, 4%, or 5% markup depending on group
+          const uplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
+          newPrice = marketLow * uplift;
+          ruleApplied = 'rule2b_downtrend';
+        } else {
+          // Market Low uplift (3%, 4%, or 5%)
+          const mlUplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
+          // Cost markup (12%, 13%, or 14%)
+          const costMarkup = 1 + (ruleConfig.rule2.markups.rule2b[groupKey] / 100);
+          
+          const mlPrice = marketLow * mlUplift;
+          const costPrice = cost * costMarkup;
+          
+          newPrice = Math.max(mlPrice, costPrice);
+          ruleApplied = newPrice === mlPrice ? 'rule2b_ml' : 'rule2b_cost';
+        }
+      }
+      // Cost is within 5% of market low - use Rule 1b
+      else {
+        const markup = 1 + (ruleConfig.rule1.markups.rule1b[groupKey] / 100);
+        newPrice = cost * markup;
+        ruleApplied = 'rule1b_near_market';
+      }
     }
+  } else {
+    // No market price - use cost-based pricing directly
+    const costMarkup = 1 + (isDownwardTrend ? 
+      ruleConfig.rule2.markups.rule2a[groupKey] : 
+      ruleConfig.rule2.markups.rule2b[groupKey]) / 100;
+    
+    newPrice = cost * costMarkup;
+    ruleApplied = 'cost_based_no_market';
   }
   
-  // Apply margin caps from rule config based on usage group
-  const marginCap = ruleConfig.rule1.marginCaps[usageGroup as keyof typeof ruleConfig.rule1.marginCaps] / 100;
-  const maxPriceByMarginCap = cost / (1 - marginCap);
+  // Apply margin caps based on usage group
+  const marginCap = ruleConfig.rule1.marginCaps[groupKey as keyof typeof ruleConfig.rule1.marginCaps] / 100;
+  const maxPriceByMarginCap = cost > 0 ? cost / (1 - marginCap) : 0;
   
   // Cap the price based on maximum allowed margin
-  if (newPrice > maxPriceByMarginCap) {
+  let marginCapApplied = false;
+  if (newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
     newPrice = maxPriceByMarginCap;
+    marginCapApplied = true;
     ruleApplied += '_capped';
   }
   
-  // Enforce global margin floor
+  // Ensure global margin floor
+  let marginFloorApplied = false;
   const newMargin = newPrice > 0 ? (newPrice - cost) / newPrice : 0;
   const minMargin = ruleConfig.globalMarginFloor / 100;
   
   if (newMargin < minMargin && cost > 0) {
     newPrice = cost / (1 - minMargin);
+    marginFloorApplied = true;
     ruleApplied += '_floor';
   }
+  
+  // Calculate flags based on actual criteria
+  const flag1 = !noMarketPrice && marketLow > 0 && newPrice >= marketLow * 1.10; // Price ≥10% above TRUE MARKET LOW
+  const flag2 = newMargin < 0.05; // Margin < 5%
   
   return {
     originalPrice: item.currentREVAPrice || 0,
@@ -129,7 +191,11 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     marginDiff: newPrice > 0 ? ((newPrice - cost) / newPrice) * 100 - (item.currentREVAMargin || 0) : 0,
     ruleApplied: ruleApplied,
     usageGroup: usageGroup,
-    usageRank: usageRank
+    usageRank: usageRank,
+    flag1: flag1,
+    flag2: flag2,
+    marginCapApplied: marginCapApplied,
+    marginFloorApplied: marginFloorApplied
   };
 };
 
@@ -158,7 +224,11 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
       originalMargin: simulationResult.originalMargin,
       marginDiff: simulationResult.marginDiff,
       ruleApplied: simulationResult.ruleApplied,
-      usageGroup: simulationResult.usageGroup
+      usageGroup: simulationResult.usageGroup,
+      flag1: simulationResult.flag1,
+      flag2: simulationResult.flag2,
+      marginCapApplied: simulationResult.marginCapApplied,
+      marginFloorApplied: simulationResult.marginFloorApplied
     };
   });
   
@@ -220,6 +290,12 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
       : 0;
     const revenueDiff = simulatedGroupMetrics.totalRevenue - originalGroupMetrics.totalRevenue;
     
+    // Count flag occurrences in this group
+    const highPriceFlags = groupItems.filter((item: any) => item.flag1).length;
+    const lowMarginFlags = groupItems.filter((item: any) => item.flag2).length;
+    const marginCapApplied = groupItems.filter((item: any) => item.marginCapApplied).length;
+    const marginFloorApplied = groupItems.filter((item: any) => item.marginFloorApplied).length;
+    
     return {
       name: group.name,
       displayName: group.displayName,
@@ -239,9 +315,21 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
         simulated: simulatedGroupMetrics.totalRevenue,
         diff: revenueDiff
       },
+      flags: {
+        highPrice: highPriceFlags,
+        lowMargin: lowMarginFlags,
+        marginCapApplied: marginCapApplied,
+        marginFloorApplied: marginFloorApplied
+      },
       itemCount: groupItems.length
     };
   });
+  
+  // Count overall flags
+  const highPriceFlags = simulatedItems.filter((item: any) => item.flag1).length;
+  const lowMarginFlags = simulatedItems.filter((item: any) => item.flag2).length;
+  const marginCapApplied = simulatedItems.filter((item: any) => item.marginCapApplied).length;
+  const marginFloorApplied = simulatedItems.filter((item: any) => item.marginFloorApplied).length;
   
   // Return simulation results
   return {
@@ -255,7 +343,11 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
       totalRevenue: simulatedMetrics.totalRevenue,
       totalProfit: simulatedMetrics.totalProfit,
       weightedMargin: simulatedMetrics.weightedMargin,
-      count: simulatedItems.length
+      count: simulatedItems.length,
+      highPriceFlags,
+      lowMarginFlags,
+      marginCapApplied,
+      marginFloorApplied
     },
     changes: {
       revenueDiff,
