@@ -245,32 +245,50 @@ const EngineOperationsContent = () => {
         />
       </div>
 
-      {/* Flag metrics cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* Flag metrics cards - Updated for better insights */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <MetricCard
           title="High Price Flags"
           value={`${metrics.rule1Flags || 0}`}
-          subtitle="Items with prices significantly above market"
+          subtitle={`${metrics.rule1Flags > 0 ? ((metrics.rule1Flags / metrics.totalItems) * 100).toFixed(1) + '% of inventory' : 'No flags'}`}
+          details={`Items priced significantly above market average requiring attention`}
           valueClassName="text-red-400"
           icon={<TrendingUp />}
           iconPosition="right"
+          valueSize="medium"
         />
         
         <MetricCard
           title="Low Margin Flags"
           value={`${metrics.rule2Flags || 0}`}
-          subtitle="Items with margins below threshold"
+          subtitle={`${metrics.rule2Flags > 0 ? ((metrics.rule2Flags / metrics.totalItems) * 100).toFixed(1) + '% of inventory' : 'No flags'}`}
+          details={`Items with margins below threshold needing price adjustment`}
           valueClassName="text-amber-400"
           icon={<TrendingDown />}
           iconPosition="right"
+          valueSize="medium"
         />
-        
+
         <MetricCard
-          title="Items to Review"
-          value={`${modifiedItems.size}`}
-          subtitle="Items with pending price changes"
-          icon={<Tag />}
+          title="Current Margin"
+          value={`${(getPricingImpactMetrics().currentAvgMargin || 0).toFixed(2)}%`}
+          subtitle="Baseline weighted margin"
+          details={`Based on ${engineData.activeItems} active items`}
+          valueClassName="text-blue-400"
+          icon={<Percent />}
           iconPosition="right"
+          valueSize="medium"
+        />
+
+        <MetricCard
+          title="Proposed Margin"
+          value={`${(getPricingImpactMetrics().proposedAvgMargin || 0).toFixed(2)}%`}
+          subtitle={`${metrics.marginLift > 0 ? '+' : ''}${metrics.marginLift.toFixed(2)}% points change`}
+          details={metrics.marginLift > 0 ? 'Improved margin after all changes' : 'Current margin after all changes'}
+          valueClassName={metrics.marginLift > 0 ? "text-emerald-400" : "text-white"}
+          icon={<Percent />}
+          iconPosition="right"
+          valueSize="medium"
         />
       </div>
 
