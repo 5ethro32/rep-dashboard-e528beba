@@ -90,31 +90,31 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
           
           <div className="flex flex-wrap gap-2">
             {modifiedCount > 0 && (
-              <Badge variant="outline" className="bg-finance-red/10 border-finance-red/30 text-finance-red flex items-center gap-1 py-1 px-3">
+              <Badge variant="outline" className="bg-finance-red/10 border-finance-red/30 text-finance-red flex items-center gap-1 py-1.5 px-3">
                 <PenLine className="h-3 w-3" />
                 <span>{modifiedCount} modified</span>
               </Badge>
             )}
             {approvalMetrics.pending > 0 && (
-              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-400 flex items-center gap-1 py-1 px-3">
+              <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-400 flex items-center gap-1 py-1.5 px-3">
                 <AlertCircle className="h-3 w-3" />
                 <span>{approvalMetrics.pending} pending</span>
               </Badge>
             )}
             {approvalMetrics.approved > 0 && (
-              <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400 flex items-center gap-1 py-1 px-3">
+              <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400 flex items-center gap-1 py-1.5 px-3">
                 <CheckCircle className="h-3 w-3" />
                 <span>{approvalMetrics.approved} approved</span>
               </Badge>
             )}
             {approvalMetrics.rejected > 0 && (
-              <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 flex items-center gap-1 py-1 px-3">
+              <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 flex items-center gap-1 py-1.5 px-3">
                 <XCircle className="h-3 w-3" />
                 <span>{approvalMetrics.rejected} rejected</span>
               </Badge>
             )}
             {totalExceptions > 0 && (
-              <Badge variant="outline" className="bg-amber-700/10 border-amber-700/30 text-amber-400 flex items-center gap-1 py-1 px-3">
+              <Badge variant="outline" className="bg-amber-700/10 border-amber-700/30 text-amber-400 flex items-center gap-1 py-1.5 px-3">
                 <AlertTriangle className="h-3 w-3" />
                 <span>{totalExceptions} exceptions</span>
               </Badge>

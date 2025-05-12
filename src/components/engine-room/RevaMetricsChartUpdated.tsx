@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface RevaMetricsChartProps {
@@ -207,12 +207,12 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-start">
         <ToggleGroup 
           type="multiple" 
           value={displayOptions} 
           onValueChange={handleDisplayOptionsChange}
-          className="justify-end"
+          className="justify-start"
         >
           <ToggleGroupItem 
             value="margin" 
@@ -237,7 +237,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         </ToggleGroup>
       </div>
       
-      <div className="w-full h-72 md:h-96">
+      <div className="w-full h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={processedData}
@@ -261,7 +261,6 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               domain={[0, Math.max(maxMargin * 1.1, 30)]}
               tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
               axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-              // Removed axis label
             />
             <YAxis 
               yAxisId="right" 
@@ -270,10 +269,8 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               domain={[0, maxProfit * 1.1]}
               tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
               axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-              // Removed axis label
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
             
             {/* Line for current margin */}
             {displayOptions.includes('margin') && (
@@ -281,7 +278,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
                 yAxisId="left" 
                 type="monotone" 
                 dataKey="currentMargin" 
-                name="Current Margin %" 
+                name="Margin %" 
                 stroke={marginColor} 
                 strokeWidth={3} 
                 dot={{ r: 5, fill: marginColor }} 
@@ -295,7 +292,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
                 yAxisId="right" 
                 type="monotone" 
                 dataKey="currentProfit" 
-                name="Current Profit" 
+                name="Profit" 
                 stroke={profitColor} 
                 strokeWidth={3} 
                 dot={{ r: 5, fill: profitColor }} 
