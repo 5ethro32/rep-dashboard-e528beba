@@ -12,49 +12,50 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, RefreshCw, Sliders } from 'lucide-react';
+import { ChevronDown, RefreshCw, Sliders, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface RuleSimulatorConfigPanelProps {
   onRunSimulation: (config: any) => void;
 }
 
 const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onRunSimulation }) => {
-  // Initial rule configuration
+  // Updated rule configuration to exactly match current implementation in rule-simulator-utils.ts
   const [ruleConfig, setRuleConfig] = useState({
     rule1: {
       marginCaps: {
-        group1_2: 10,
-        group3_4: 20,
-        group5_6: 30
+        group1_2: 10, // Maximum 10% margin cap for groups 1-2
+        group3_4: 20, // Maximum 20% margin cap for groups 3-4
+        group5_6: 30  // Maximum 30% margin cap for groups 5-6
       },
       markups: {
         rule1a: {
-          group1_2: 5,
-          group3_4: 7.5,
-          group5_6: 10
+          group1_2: 5,  // 5% markup
+          group3_4: 7.5, // 7.5% markup
+          group5_6: 10   // 10% markup
         },
         rule1b: {
-          group1_2: 8,
-          group3_4: 12,
-          group5_6: 15
+          group1_2: 8,  // 8% markup
+          group3_4: 12, // 12% markup
+          group5_6: 15  // 15% markup
         }
       }
     },
     rule2: {
       markups: {
         rule2a: {
-          group1_2: 3,
-          group3_4: 5,
-          group5_6: 7
+          group1_2: 3, // 3% discount from Market Low
+          group3_4: 5, // 5% discount from Market Low
+          group5_6: 7  // 7% discount from Market Low
         },
         rule2b: {
-          group1_2: 5,
-          group3_4: 8,
-          group5_6: 10
+          group1_2: 5, // 5% discount from Market Low
+          group3_4: 8, // 8% discount from Market Low
+          group5_6: 10 // 10% discount from Market Low
         }
       }
     },
-    globalMarginFloor: 5 // Minimum margin percentage
+    globalMarginFloor: 5 // 5% minimum margin
   });
 
   // Handle slider changes for rule 1 margin caps
@@ -153,13 +154,35 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
     });
   };
 
+  // Rules tooltips to help explain the differences
+  const ruleTooltips = {
+    rule1a: "Applied when cost is ABOVE market low price. Uses markup over cost.",
+    rule1b: "Applied when cost is BELOW market low price (within 5%). Uses markup over cost.",
+    rule2a: "Applied when cost is 5-10% below market low price. Uses discount from market low.",
+    rule2b: "Applied when cost is more than 10% below market low price. Uses discount from market low."
+  };
+
   return (
     <div className="space-y-6">
       {/* Configuration cards */}
       <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Rule Configuration</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">Rule Configuration</h3>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <p className="text-xs">
+                      This simulator allows you to adjust pricing rule parameters and see the impact on revenue, profit, and margin. The rules are applied based on the relationship between cost and market price.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -179,6 +202,13 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
             </TabsList>
             
             <TabsContent value="rule1" className="space-y-6">
+              {/* Rule explanation */}
+              <div className="text-sm text-muted-foreground mb-4 p-3 bg-gray-800/30 rounded-md">
+                <p><strong>Rule 1:</strong> Applied when cost is equal or higher than market low price, or when no market price is available.</p>
+                <p className="mt-1"><strong>Rule 1a:</strong> Used when cost is above market price.</p>
+                <p className="mt-1"><strong>Rule 1b:</strong> Used when cost is below market price (within 5%).</p>
+              </div>
+              
               {/* Rule 1 Margin Caps */}
               <Collapsible defaultOpen>
                 <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
@@ -241,7 +271,19 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
               {/* Rule 1a Markups */}
               <Collapsible>
                 <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
-                  <span className="text-sm font-medium">Rule 1a: Cost Above Market (Markup %)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Rule 1a: Cost Above Market (Markup %)</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{ruleTooltips.rule1a}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <ChevronDown className="h-4 w-4" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="p-2 space-y-4 mt-2">
@@ -255,7 +297,7 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                       <Slider
                         value={[ruleConfig.rule1.markups.rule1a.group1_2]}
                         min={1}
-                        max={50}
+                        max={30}
                         step={0.5}
                         onValueChange={(value) => handleRule1MarkupChange('rule1a', 'group1_2', value)}
                         className="py-4"
@@ -271,7 +313,7 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                       <Slider
                         value={[ruleConfig.rule1.markups.rule1a.group3_4]}
                         min={1}
-                        max={50}
+                        max={30}
                         step={0.5}
                         onValueChange={(value) => handleRule1MarkupChange('rule1a', 'group3_4', value)}
                         className="py-4"
@@ -287,7 +329,7 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                       <Slider
                         value={[ruleConfig.rule1.markups.rule1a.group5_6]}
                         min={1}
-                        max={50}
+                        max={30}
                         step={0.5}
                         onValueChange={(value) => handleRule1MarkupChange('rule1a', 'group5_6', value)}
                         className="py-4"
@@ -300,7 +342,19 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
               {/* Rule 1b Markups */}
               <Collapsible>
                 <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
-                  <span className="text-sm font-medium">Rule 1b: Cost Below Market (Markup %)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Rule 1b: Cost Near Market (Markup %)</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{ruleTooltips.rule1b}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <ChevronDown className="h-4 w-4" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="p-2 space-y-4 mt-2">
@@ -314,7 +368,7 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                       <Slider
                         value={[ruleConfig.rule1.markups.rule1b.group1_2]}
                         min={1}
-                        max={50}
+                        max={30}
                         step={0.5}
                         onValueChange={(value) => handleRule1MarkupChange('rule1b', 'group1_2', value)}
                         className="py-4"
@@ -330,7 +384,7 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                       <Slider
                         value={[ruleConfig.rule1.markups.rule1b.group3_4]}
                         min={1}
-                        max={50}
+                        max={30}
                         step={0.5}
                         onValueChange={(value) => handleRule1MarkupChange('rule1b', 'group3_4', value)}
                         className="py-4"
@@ -346,7 +400,7 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                       <Slider
                         value={[ruleConfig.rule1.markups.rule1b.group5_6]}
                         min={1}
-                        max={50}
+                        max={30}
                         step={0.5}
                         onValueChange={(value) => handleRule1MarkupChange('rule1b', 'group5_6', value)}
                         className="py-4"
@@ -358,10 +412,29 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
             </TabsContent>
             
             <TabsContent value="rule2" className="space-y-6">
+              {/* Rule explanation */}
+              <div className="text-sm text-muted-foreground mb-4 p-3 bg-gray-800/30 rounded-md">
+                <p><strong>Rule 2:</strong> Applied when cost is lower than market low price.</p>
+                <p className="mt-1"><strong>Rule 2a:</strong> Used when cost is 5-10% below market price.</p>
+                <p className="mt-1"><strong>Rule 2b:</strong> Used when cost is more than 10% below market price.</p>
+              </div>
+              
               {/* Rule 2a Markups */}
               <Collapsible defaultOpen>
                 <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
-                  <span className="text-sm font-medium">Rule 2a: First 5% Below Market (Discount %)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Rule 2a: First 5-10% Below Market (Discount %)</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{ruleTooltips.rule2a}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <ChevronDown className="h-4 w-4" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="p-2 space-y-4 mt-2">
@@ -420,7 +493,19 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
               {/* Rule 2b Markups */}
               <Collapsible>
                 <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
-                  <span className="text-sm font-medium">Rule 2b: More Than 5% Below Market (Discount %)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Rule 2b: More Than 10% Below Market (Discount %)</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">{ruleTooltips.rule2b}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <ChevronDown className="h-4 w-4" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="p-2 space-y-4 mt-2">
@@ -494,7 +579,7 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                     className="py-4"
                   />
                   <p className="text-xs text-muted-foreground mt-2">
-                    Items with margins below this threshold will be flagged for review
+                    Items with margins below this threshold will have their prices adjusted to meet this minimum.
                   </p>
                 </div>
               </div>
