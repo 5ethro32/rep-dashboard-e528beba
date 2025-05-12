@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,6 +17,7 @@ import EngineRoom from "./pages/EngineRoom";
 import EngineDashboard from "./pages/engine-room/EngineDashboard";
 import EngineOperations from "./pages/engine-room/EngineOperations";
 import ApprovalsDashboard from "./pages/engine-room/ApprovalsDashboard";
+import RuleSimulator from "./pages/engine-room/RuleSimulator";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
 
@@ -142,6 +142,7 @@ const AppRoutes = () => {
         <Route path="/engine-room/dashboard" element={<EngineDashboard />} />
         <Route path="/engine-room/engine" element={<EngineOperations />} />
         <Route path="/engine-room/approvals" element={<ApprovalsDashboard />} />
+        <Route path="/engine-room/rule-simulator" element={<RuleSimulator />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

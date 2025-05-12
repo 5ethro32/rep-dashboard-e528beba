@@ -7,7 +7,8 @@ import {
   ClipboardList, 
   UserCircle,
   Home,
-  Bot
+  Bot,
+  Sliders
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -53,6 +54,9 @@ const NavItem = ({ to, icon, label, isActive }: NavItemProps) => {
 export const AppSidebar = () => {
   const location = useLocation();
 
+  // Check if current path contains engine-room to highlight the Engine Room section
+  const isEngineRoomActive = location.pathname.includes('/engine-room');
+
   const navItems = [
     {
       to: "/rep-performance",
@@ -78,6 +82,31 @@ export const AppSidebar = () => {
       to: "/ai-vera",
       icon: <Bot className="h-5 w-5 transition-colors duration-200" />,
       label: "AI Vera"
+    },
+    {
+      to: "/engine-room/dashboard",
+      icon: <Sliders className="h-5 w-5 transition-colors duration-200" />,
+      label: "Engine Room"
+    }
+  ];
+
+  // Engine Room sub navigation items
+  const engineRoomSubItems = [
+    {
+      to: "/engine-room/dashboard",
+      label: "Dashboard"
+    },
+    {
+      to: "/engine-room/engine",
+      label: "Operations"
+    },
+    {
+      to: "/engine-room/approvals",
+      label: "Approvals"
+    },
+    {
+      to: "/engine-room/rule-simulator",
+      label: "Rule Simulator"
     }
   ];
 
@@ -95,9 +124,33 @@ export const AppSidebar = () => {
               to={item.to}
               icon={item.icon}
               label={item.label}
-              isActive={location.pathname === item.to}
+              isActive={
+                item.to.includes('/engine-room') 
+                  ? isEngineRoomActive 
+                  : location.pathname === item.to
+              }
             />
           ))}
+          
+          {/* Render sub-menu items when in Engine Room section */}
+          {isEngineRoomActive && (
+            <div className="mt-2 pl-10 space-y-1">
+              {engineRoomSubItems.map((subItem) => (
+                <NavLink
+                  key={subItem.to}
+                  to={subItem.to}
+                  className={({ isActive }) => cn(
+                    "block px-3 py-1.5 text-sm rounded-md transition-all",
+                    isActive 
+                      ? "bg-gray-800/70 text-finance-red" 
+                      : "text-white/60 hover:bg-gray-800/40 hover:text-white"
+                  )}
+                >
+                  {subItem.label}
+                </NavLink>
+              ))}
+            </div>
+          )}
         </div>
       </SidebarContent>
     </Sidebar>

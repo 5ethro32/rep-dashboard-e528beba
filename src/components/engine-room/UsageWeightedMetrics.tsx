@@ -9,10 +9,12 @@ import { TrendingUp, DollarSign, Percent } from 'lucide-react';
 
 interface UsageWeightedMetricsProps {
   data: any[];
+  showProposed?: boolean;
 }
 
 const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
-  data
+  data,
+  showProposed = false
 }) => {
   // Use the centralized calculation function
   const metrics = calculateUsageWeightedMetrics(data);
@@ -38,6 +40,11 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   const marginChangeClass = hasMarginImprovement ? 'text-green-400' : 'text-red-400';
   const marginChangePrefix = hasMarginImprovement ? '+' : '';
   
+  // Choose whether to show current or proposed metrics
+  const displayRevenue = showProposed ? metrics.proposedRevenue : metrics.totalRevenue;
+  const displayProfit = showProposed ? metrics.proposedProfit : metrics.totalProfit;
+  const displayMargin = showProposed ? metrics.proposedWeightedMargin : metrics.weightedMargin;
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
       <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
@@ -57,22 +64,26 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
         <CardContent className="p-4">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-medium">Profit Contribution by Margin Band</h3>
-            <div className="flex items-center text-xs">
-              <span className="text-muted-foreground mr-1">Margin Change:</span>
-              <span className={marginChangeClass}>
-                {marginChangePrefix}{metrics.marginImprovement.toFixed(2)}%
-              </span>
-            </div>
+            {metrics.marginImprovement !== 0 && showProposed && (
+              <div className="flex items-center text-xs">
+                <span className="text-muted-foreground mr-1">Margin Change:</span>
+                <span className={marginChangeClass}>
+                  {marginChangePrefix}{metrics.marginImprovement.toFixed(2)}%
+                </span>
+              </div>
+            )}
           </div>
           <div className="h-48 relative">
             <DonutChart 
               data={marginDistributionWithColors.map(band => ({
                 name: band.name,
-                value: band.profit > 0 && metrics.totalProfit > 0 ? band.profit / metrics.totalProfit * 100 : 0,
+                value: band.profit > 0 && (showProposed ? metrics.proposedProfit : metrics.totalProfit) > 0 
+                  ? band.profit / (showProposed ? metrics.proposedProfit : metrics.totalProfit) * 100 
+                  : 0,
                 color: band.color,
                 profit: band.profit
               }))} 
-              innerValue={formatCurrency(metrics.totalProfit)} 
+              innerValue={formatCurrency(showProposed ? metrics.proposedProfit : metrics.totalProfit)} 
               innerLabel="Total Profit" 
             />
           </div>
