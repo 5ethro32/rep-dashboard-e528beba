@@ -43,7 +43,58 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     queryFn: () => {
       const cachedData = localStorage.getItem('engineRoomData');
       if (cachedData) {
-        return JSON.parse(cachedData);
+        // IMPORTANT: Force recalculation of metrics when data is loaded from cache
+        // This ensures any fixes to calculation formulas are applied to cached data
+        try {
+          const parsedData = JSON.parse(cachedData);
+          
+          // If data exists, recalculate key margin and profit metrics 
+          // using the CORRECTED formula: (price - cost) / price
+          if (parsedData && parsedData.items && parsedData.items.length > 0) {
+            let totalRevenue = 0;
+            let totalProfit = 0;
+            
+            // Recalculate for each item using the correct formula
+            parsedData.items.forEach((item: any) => {
+              if (item.revaUsage > 0 && item.currentREVAPrice > 0 && !isNaN(item.avgCost)) {
+                const usage = Math.max(0, Number(item.revaUsage) || 0);
+                const price = Math.max(0, Number(item.currentREVAPrice) || 0);
+                const cost = Math.max(0, Number(item.avgCost) || 0);
+                
+                // Use CORRECT formula: revenue = usage * price
+                const revenue = usage * price;
+                
+                // Use CORRECT formula: profit = usage * (price - cost)
+                const profit = usage * (price - cost);
+                
+                totalRevenue += revenue;
+                totalProfit += profit;
+                
+                // Fix item-level margin calculations too
+                if (price > 0) {
+                  // CORRECT margin formula: (price - cost) / price * 100
+                  item.currentREVAMargin = ((price - cost) / price) * 100;
+                }
+              }
+            });
+            
+            // Set the corrected overall margin
+            if (totalRevenue > 0) {
+              parsedData.overallMargin = (totalProfit / totalRevenue) * 100;
+            }
+            
+            console.log('Recalculated metrics from cache:', {
+              totalRevenue,
+              totalProfit,
+              overallMargin: parsedData.overallMargin
+            });
+          }
+          
+          return parsedData;
+        } catch (error) {
+          console.error('Error parsing cached data:', error);
+          return null;
+        }
       }
       return null;
     },
@@ -134,8 +185,10 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       foundItem.proposedPrice = newPrice;
       foundItem.priceModified = true;
       
-      // Recalculate the margin
-      foundItem.proposedMargin = (newPrice - foundItem.avgCost) / newPrice;
+      // IMPORTANT: Fix the margin calculation formula here
+      // Use CORRECT formula: margin = (price - cost) / price
+      const avgCost = Math.max(0, Number(foundItem.avgCost) || 0);
+      foundItem.proposedMargin = newPrice > 0 ? (newPrice - avgCost) / newPrice : 0;
       
       // Update flag2 if margin is below the threshold (5%)
       foundItem.flag2 = foundItem.proposedMargin < 0.05;
@@ -178,8 +231,13 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (flaggedItemIndex >= 0) {
       updatedData.flaggedItems[flaggedItemIndex].proposedPrice = newPrice;
       updatedData.flaggedItems[flaggedItemIndex].priceModified = true;
+      
+      // IMPORTANT: Fix the margin calculation formula here too
+      // Use CORRECT formula: margin = (price - cost) / price
+      const avgCost = Math.max(0, Number(updatedData.flaggedItems[flaggedItemIndex].avgCost) || 0);
       updatedData.flaggedItems[flaggedItemIndex].proposedMargin = 
-        (newPrice - updatedData.flaggedItems[flaggedItemIndex].avgCost) / newPrice;
+        newPrice > 0 ? (newPrice - avgCost) / newPrice : 0;
+        
       updatedData.flaggedItems[flaggedItemIndex].flag2 = 
         updatedData.flaggedItems[flaggedItemIndex].proposedMargin < 0.05;
         
@@ -249,12 +307,19 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Reset all modified items
     updatedData.items = updatedData.items.map((item: any) => {
       if (item.priceModified) {
+        // IMPORTANT: Fix the margin calculation formula here too
+        const avgCost = Math.max(0, Number(item.avgCost) || 0);
+        const calculatedPrice = item.calculatedPrice || item.currentREVAPrice;
+        
+        // Use CORRECT formula: margin = (price - cost) / price
+        const proposedMargin = calculatedPrice > 0 ? (calculatedPrice - avgCost) / calculatedPrice : 0;
+        
         return {
           ...item,
-          proposedPrice: item.calculatedPrice,
-          proposedMargin: (item.calculatedPrice - item.avgCost) / item.calculatedPrice,
+          proposedPrice: calculatedPrice,
+          proposedMargin: proposedMargin,
           priceModified: false,
-          flag2: ((item.calculatedPrice - item.avgCost) / item.calculatedPrice) < 0.03
+          flag2: proposedMargin < 0.05
         };
       }
       return item;

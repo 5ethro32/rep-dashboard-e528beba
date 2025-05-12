@@ -1,15 +1,18 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign } from 'lucide-react';
+import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
 import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUpdated';
 import { formatCurrency, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/components/ui/use-toast';
 
 const EngineDashboardContent = () => {
   const {
@@ -19,8 +22,21 @@ const EngineDashboardContent = () => {
     errorMessage,
     handleFileUpload
   } = useEngineRoom();
+  
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  // Calculate metrics
+  // Add a function to clear cache and force recalculation
+  const handleClearCache = () => {
+    localStorage.removeItem('engineRoomData');
+    queryClient.invalidateQueries({ queryKey: ['engineRoomData'] });
+    toast({
+      title: "Cache cleared",
+      description: "The data cache has been cleared. Please upload your file again to see recalculated metrics."
+    });
+  };
+
+  // Get metrics
   const getMetrics = () => {
     if (!engineData) return {
       totalItems: 0,
@@ -49,6 +65,7 @@ const EngineDashboardContent = () => {
       marginLift: engineData.marginLift || 0
     };
   };
+  
   const metrics = getMetrics();
 
   // Handle drag and drop file upload
@@ -112,6 +129,19 @@ const EngineDashboardContent = () => {
   });
   
   return <div className="container mx-auto px-4 py-6">
+      {/* Add refresh button for clearing cache */}
+      <div className="mb-4 flex justify-end">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleClearCache}
+          className="flex items-center gap-2 text-xs"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Reset Calculations
+        </Button>
+      </div>
+      
       {/* Master container card for all metrics */}
       <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
         <CardContent className="p-6">
@@ -155,7 +185,6 @@ const EngineDashboardContent = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <MetricCard 
               title="Usage-Weighted Margin" 
-              // IMPORTANT: Display the correct positive value without using Math.abs
               value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
               icon={<Percent className="h-5 w-5" />}
               iconPosition="right"
