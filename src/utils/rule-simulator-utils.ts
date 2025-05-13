@@ -177,8 +177,8 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     cost: cost,
     marketLow: marketLow,
     originalMargin: item.currentREVAMargin || 0,
-    newMargin: newPrice > 0 ? ((newPrice - cost) / newPrice) * 100 : 0,
-    marginDiff: newPrice > 0 ? ((newPrice - cost) / newPrice) * 100 - (item.currentREVAMargin || 0) : 0,
+    newMargin: newPrice > 0 ? (newPrice - cost) / newPrice : 0, // Store as decimal, not percentage
+    marginDiff: newPrice > 0 ? ((newPrice - cost) / newPrice) - (item.currentREVAMargin || 0) : 0, // Store difference as decimal
     ruleApplied: ruleApplied,
     usageGroup: usageGroup,
     usageRank: usageRank,

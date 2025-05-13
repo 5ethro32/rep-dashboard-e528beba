@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
+import { formatPercentage } from '@/utils/formatting-utils';
 
 interface EngineDataTableProps {
   data: any[];
@@ -818,11 +819,10 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Current Margin cell with popover - FIXED to display correct percentage */}
+                    {/* Current Margin cell with popover - FIXED to use formatPercentage */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAMargin">
-                        {item.currentREVAMargin !== undefined && item.currentREVAMargin !== null ? 
-                          `${(item.currentREVAMargin * 100).toFixed(2)}%` : '0.00%'}
+                        {formatPercentage(item.currentREVAMargin)}
                       </CellDetailsPopover>
                     </TableCell>
                     
@@ -896,7 +896,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       )}
                     </TableCell>
                     
-                    {/* Proposed margin cell */}
+                    {/* Proposed margin cell - FIXED to use formatPercentage */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="proposedMargin">
                         {formatPercentage(item.proposedMargin)}

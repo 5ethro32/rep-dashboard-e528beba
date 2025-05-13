@@ -18,14 +18,18 @@ export const formatCurrency = (value: number | undefined | null): string => {
 
 /**
  * Format a number as percentage with % symbol
+ * NOTE: This function expects the input value to be in decimal form (e.g., 0.05 for 5%)
+ * and will multiply by 100 before formatting.
  */
 export const formatPercentage = (value: number | undefined | null): string => {
   if (value === undefined || value === null) return '—';
+  // Check if value seems to already be in percentage form (>1)
+  const valueToFormat = value > 1 ? value / 100 : value;
   return new Intl.NumberFormat('en-GB', {
     style: 'percent',
     minimumFractionDigits: 1,
     maximumFractionDigits: 1
-  }).format(value / 100); // Division by 100 to convert percentage value to decimal
+  }).format(valueToFormat);
 };
 
 /**
