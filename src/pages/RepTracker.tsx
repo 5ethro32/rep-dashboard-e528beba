@@ -68,23 +68,23 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     data: previousWeekMetrics
   } = useVisitMetrics(previousWeekDate, selectedUserId);
 
-  // The query to fetch customers now doesn't have a limit and properly sorts by account_name
+  // Modified query to exclude wholesale customers specifically on this page
   const {
     data: customers,
     isLoading: isLoadingCustomers
   } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      console.log('Fetching customers from Supabase...');
+      console.log('Fetching customers from Supabase, excluding wholesale...');
       
       const {
         data: salesData,
         error
       } = await supabase
         .from('sales_data')
-        .select('account_name, account_ref')
+        .select('account_name, account_ref, rep_type')
+        .not('rep_type', 'eq', 'WHOLESALE')
         .order('account_name');
-        // Removed any implicit limit or pagination restrictions
         
       if (error) {
         console.error('Error fetching customers:', error);
@@ -101,7 +101,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
         }
       }, []);
       
-      console.log(`Fetched ${salesData.length} customer records, filtered to ${uniqueCustomers.length} unique customers`);
+      console.log(`Fetched ${salesData.length} customer records, filtered to ${uniqueCustomers.length} unique customers (excluding wholesale)`);
       
       // Sort the unique customers alphabetically to ensure consistent ordering
       uniqueCustomers.sort((a, b) => {
@@ -113,10 +113,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
       const lastCustomers = uniqueCustomers.slice(-3);
       console.log('First few customers:', firstCustomers);
       console.log('Last few customers:', lastCustomers);
-      
-      // Log more detailed information about the customer distribution
-      const totalCount = uniqueCustomers.length;
-      console.log(`Total unique customers: ${totalCount}`);
+      console.log(`Total unique customers (excluding wholesale): ${uniqueCustomers.length}`);
       
       return uniqueCustomers;
     },
