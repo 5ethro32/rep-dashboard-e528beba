@@ -12,7 +12,6 @@ import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUp
 import { formatCurrency, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
-
 const EngineDashboardContent = () => {
   const {
     engineData,
@@ -21,20 +20,23 @@ const EngineDashboardContent = () => {
     errorMessage,
     handleFileUpload
   } = useEngineRoom();
-  
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
 
   // Add a function to clear cache and force recalculation
   const handleClearCache = () => {
     localStorage.removeItem('engineRoomData');
-    queryClient.invalidateQueries({ queryKey: ['engineRoomData'] });
+    queryClient.invalidateQueries({
+      queryKey: ['engineRoomData']
+    });
     toast({
       title: "Cache cleared",
       description: "The data cache has been cleared. Please upload your file again to see recalculated metrics."
     });
   };
-  
+
   // Add a more aggressive cache reset
   const handleForceReset = () => {
     localStorage.removeItem('engineRoomData');
@@ -78,7 +80,6 @@ const EngineDashboardContent = () => {
       marginLift: engineData.marginLift || 0
     };
   };
-  
   const metrics = getMetrics();
 
   // Handle drag and drop file upload
@@ -93,7 +94,6 @@ const EngineDashboardContent = () => {
       handleFileUpload(e.dataTransfer.files[0]);
     }
   };
-  
   if (!engineData) {
     return <div className="container mx-auto px-4 py-6">
         <div onDragOver={handleDragOver} onDrop={handleDrop} className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all mt-4
@@ -133,49 +133,20 @@ const EngineDashboardContent = () => {
 
   // Get usage-weighted metrics with the correct calculation method
   const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
-  
+
   // Calculate revenue and profit improvements for the metric cards
-  const revenueImprovement = usageMetrics.proposedRevenue > 0 && usageMetrics.totalRevenue > 0
-    ? ((usageMetrics.proposedRevenue - usageMetrics.totalRevenue) / usageMetrics.totalRevenue) * 100
-    : 0;
-    
-  const profitImprovement = usageMetrics.proposedProfit > 0 && usageMetrics.totalProfit > 0
-    ? ((usageMetrics.proposedProfit - usageMetrics.totalProfit) / usageMetrics.totalProfit) * 100
-    : 0;
-  
+  const revenueImprovement = usageMetrics.proposedRevenue > 0 && usageMetrics.totalRevenue > 0 ? (usageMetrics.proposedRevenue - usageMetrics.totalRevenue) / usageMetrics.totalRevenue * 100 : 0;
+  const profitImprovement = usageMetrics.proposedProfit > 0 && usageMetrics.totalProfit > 0 ? (usageMetrics.proposedProfit - usageMetrics.totalProfit) / usageMetrics.totalProfit * 100 : 0;
+
   // Log the calculated metrics for debugging
   console.log('EngineDashboard: Calculated usage-weighted metrics:', {
     weightedMargin: usageMetrics.weightedMargin,
     totalRevenue: usageMetrics.totalRevenue,
     totalProfit: usageMetrics.totalProfit
   });
-  
   return <div className="container mx-auto px-4 py-6">
       {/* Add more prominent reset buttons for clearing cache */}
-      <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Engine Room Dashboard</h1>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleClearCache}
-            className="flex items-center gap-2 text-xs"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Reset Calculations
-          </Button>
-          
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={handleForceReset}
-            className="flex items-center gap-2 text-xs"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Force Complete Reset
-          </Button>
-        </div>
-      </div>
+      
       
       {/* Master container card for all metrics */}
       <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
@@ -184,73 +155,31 @@ const EngineDashboardContent = () => {
           
           {/* Primary metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <MetricCard 
-              title="Total Active SKUs" 
-              value={metrics.activeItems.toString()} 
-              subtitle={`${metrics.totalItems} total SKUs`} 
-              icon={<Package className="h-5 w-5" />} 
-              iconPosition="right" 
-            />
+            <MetricCard title="Total Active SKUs" value={metrics.activeItems.toString()} subtitle={`${metrics.totalItems} total SKUs`} icon={<Package className="h-5 w-5" />} iconPosition="right" />
             
-            <MetricCard 
-              title="Overall Margin" 
-              value={`${metrics.overallMargin.toFixed(2)}%`}
-              icon={<Percent className="h-5 w-5" />} 
-              iconPosition="right" 
-            />
+            <MetricCard title="Overall Margin" value={`${metrics.overallMargin.toFixed(2)}%`} icon={<Percent className="h-5 w-5" />} iconPosition="right" />
             
-            <MetricCard 
-              title="Average Cost < Market Low" 
-              value={`${metrics.avgCostLessThanMLCount}`} 
-              subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} 
-              icon={<TrendingUp className="h-5 w-5" />} 
-              iconPosition="right" 
-            />
+            <MetricCard title="Average Cost < Market Low" value={`${metrics.avgCostLessThanMLCount}`} subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} icon={<TrendingUp className="h-5 w-5" />} iconPosition="right" />
             
-            <MetricCard 
-              title="Flagged Items" 
-              value={`${metrics.rule1Flags + metrics.rule2Flags}`} 
-              subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} 
-              icon={<Flag className="h-5 w-5" />} 
-              iconPosition="right" 
-            />
+            <MetricCard title="Flagged Items" value={`${metrics.rule1Flags + metrics.rule2Flags}`} subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} icon={<Flag className="h-5 w-5" />} iconPosition="right" />
           </div>
           
           {/* Margin Analysis Metrics - Now with improvement indicators for all three metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <MetricCard 
-              title="Usage-Weighted Margin" 
-              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
-              icon={<Percent className="h-5 w-5" />}
-              iconPosition="right"
-              change={usageMetrics.marginImprovement !== 0 ? {
-                value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
-                type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
-              } : undefined}
-            />
+            <MetricCard title="Usage-Weighted Margin" value={`${usageMetrics.weightedMargin.toFixed(2)}%`} icon={<Percent className="h-5 w-5" />} iconPosition="right" change={usageMetrics.marginImprovement !== 0 ? {
+            value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
+            type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
+          } : undefined} />
             
-            <MetricCard 
-              title="Total Revenue (Usage-Weighted)" 
-              value={formatCurrency(usageMetrics.totalRevenue)} 
-              subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`}
-              icon={<DollarSign className="h-5 w-5" />}
-              iconPosition="right"
-              change={revenueImprovement !== 0 ? {
-                value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
-                type: revenueImprovement >= 0 ? 'increase' : 'decrease'
-              } : undefined}
-            />
+            <MetricCard title="Total Revenue (Usage-Weighted)" value={formatCurrency(usageMetrics.totalRevenue)} subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`} icon={<DollarSign className="h-5 w-5" />} iconPosition="right" change={revenueImprovement !== 0 ? {
+            value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
+            type: revenueImprovement >= 0 ? 'increase' : 'decrease'
+          } : undefined} />
             
-            <MetricCard 
-              title="Usage-Weighted Profit" 
-              value={formatCurrency(usageMetrics.totalProfit)} 
-              icon={<TrendingUp className="h-5 w-5" />}
-              iconPosition="right"
-              change={profitImprovement !== 0 ? {
-                value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
-                type: profitImprovement >= 0 ? 'increase' : 'decrease'
-              } : undefined}
-            />
+            <MetricCard title="Usage-Weighted Profit" value={formatCurrency(usageMetrics.totalProfit)} icon={<TrendingUp className="h-5 w-5" />} iconPosition="right" change={profitImprovement !== 0 ? {
+            value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
+            type: profitImprovement >= 0 ? 'increase' : 'decrease'
+          } : undefined} />
           </div>
         </CardContent>
       </Card>
