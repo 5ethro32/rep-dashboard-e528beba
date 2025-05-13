@@ -115,70 +115,6 @@ type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>
 
-// Create a toast context to store and manage toasts
-type ToastContextType = {
-  toasts: {
-    id: string;
-    title?: React.ReactNode;
-    description?: React.ReactNode;
-    action?: ToastActionElement;
-    variant?: "default" | "destructive";
-  }[];
-  toast: (props: {
-    title?: React.ReactNode;
-    description?: React.ReactNode;
-    action?: ToastActionElement;
-    variant?: "default" | "destructive";
-  }) => void;
-  dismiss: (id: string) => void;
-}
-
-const ToastContext = React.createContext<ToastContextType | undefined>(undefined);
-
-// Custom hook to generate unique IDs for toasts
-const useId = () => {
-  return React.useId() + "-" + Math.random().toString(36).substr(2, 9);
-};
-
-// ToastProvider component with state management
-const ToastContextProvider = ({ children }: { children: React.ReactNode }) => {
-  const [toasts, setToasts] = React.useState<ToastContextType["toasts"]>([]);
-
-  const toast = React.useCallback(
-    (props: Omit<ToastContextType["toasts"][number], "id">) => {
-      const id = useId();
-      setToasts((prev) => [...prev, { id, ...props }]);
-      return id;
-    },
-    []
-  );
-
-  const dismiss = React.useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
-
-  return (
-    <ToastContext.Provider value={{ toasts, toast, dismiss }}>
-      {children}
-    </ToastContext.Provider>
-  );
-};
-
-// Export the useToast hook that will be available throughout the app
-const useToast = (): {
-  toast: ToastContextType["toast"];
-  dismiss: ToastContextType["dismiss"];
-  toasts: ToastContextType["toasts"];
-} => {
-  const context = React.useContext(ToastContext);
-  
-  if (!context) {
-    throw new Error("useToast must be used within a ToastProvider");
-  }
-  
-  return context;
-};
-
 export {
   type ToastProps,
   type ToastActionElement,
@@ -189,6 +125,4 @@ export {
   ToastDescription,
   ToastClose,
   ToastAction,
-  useToast,
-  ToastContextProvider
 }
