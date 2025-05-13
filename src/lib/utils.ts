@@ -10,14 +10,14 @@ export function cn(...inputs: ClassValue[]) {
  * Format a number as currency
  */
 export function formatCurrency(value: number, options?: Intl.NumberFormatOptions): string {
-  const defaultOptions = { 
+  const defaultOptions: Intl.NumberFormatOptions = { 
     style: 'currency', 
     currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   };
 
-  const mergedOptions = { ...defaultOptions, ...options };
+  const mergedOptions: Intl.NumberFormatOptions = { ...defaultOptions, ...options };
   
   return new Intl.NumberFormat('en-US', mergedOptions).format(value);
 }
@@ -26,13 +26,13 @@ export function formatCurrency(value: number, options?: Intl.NumberFormatOptions
  * Format a number as percentage
  */
 export function formatPercent(value: number, options?: Intl.NumberFormatOptions): string {
-  const defaultOptions = { 
+  const defaultOptions: Intl.NumberFormatOptions = { 
     style: 'percent',
     minimumFractionDigits: 1,
     maximumFractionDigits: 1
   };
 
-  const mergedOptions = { ...defaultOptions, ...options };
+  const mergedOptions: Intl.NumberFormatOptions = { ...defaultOptions, ...options };
   
   return new Intl.NumberFormat('en-US', mergedOptions).format(value / 100);
 }
