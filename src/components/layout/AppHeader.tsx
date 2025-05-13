@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Wrench } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
@@ -138,7 +137,7 @@ const AppHeader = ({
   }, {
     path: '/engine-room/dashboard',
     label: 'Engine Room',
-    icon: <Wrench className="h-4 w-4" />,
+    icon: <Settings className="h-4 w-4" />,
     hasSubNav: true,
     subItems: [{
       path: '/engine-room/dashboard',
@@ -178,8 +177,8 @@ const AppHeader = ({
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>}
             
-            {/* Only show Vera Assistant Button on mobile */}
-            {isMobile && <button className="flex items-center justify-center h-7 w-7 transition-transform duration-200 hover:scale-110 hover:shadow-lg shadow-md" onClick={() => setIsVeraOpen(!isVeraOpen)} aria-label="Open Vera Assistant">
+            {/* Only show Vera Assistant Button on desktop */}
+            {!isMobile && <button className="flex items-center justify-center h-7 w-7 transition-transform duration-200 hover:scale-110 hover:shadow-lg shadow-md" onClick={() => setIsVeraOpen(!isVeraOpen)} aria-label="Open Vera Assistant">
                 <div className="flex items-center justify-center h-6 w-6 bg-gradient-to-r from-finance-red to-rose-700 text-white rounded-none transform rotate-45 shadow-md">
                   <span className="transform -rotate-45 font-bold text-sm">V</span>
                 </div>
@@ -190,8 +189,8 @@ const AppHeader = ({
           </div>
         </div>
         
-        {/* Vera Assistant Dropdown - Only shown when isVeraOpen is true and on mobile */}
-        {isMobile && isVeraOpen && <div className="absolute right-4 top-16 z-50 w-96 overflow-hidden">
+        {/* Vera Assistant Dropdown - Only shown when isVeraOpen is true */}
+        {!isMobile && isVeraOpen && <div className="absolute right-4 top-16 z-50 w-96 overflow-hidden">
             <VeraAssistant onClose={() => setIsVeraOpen(false)} />
           </div>}
         
