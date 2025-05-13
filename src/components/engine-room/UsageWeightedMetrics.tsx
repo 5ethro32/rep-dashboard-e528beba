@@ -6,6 +6,7 @@ import MetricCard from '@/components/MetricCard';
 import DonutChart from '@/components/DonutChart';
 import { formatCurrency, formatPercentage, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
 import { TrendingUp, DollarSign, Percent } from 'lucide-react';
+import { useEngineRoom } from '@/contexts/EngineRoomContext';
 
 interface UsageWeightedMetricsProps {
   data: any[];
@@ -16,8 +17,12 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   data,
   showProposed = false
 }) => {
+  // Get the margin cap setting from context
+  const { applyMarginCap } = useEngineRoom();
+  
   // Use the centralized calculation function
-  const metrics = calculateUsageWeightedMetrics(data);
+  // Pass in uncapped=true if we're showing proposed metrics and margin cap is off
+  const metrics = calculateUsageWeightedMetrics(data, showProposed && !applyMarginCap);
 
   // Define chart colors to match the homepage style - red theme
   const brandColors = [
@@ -46,7 +51,7 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   const displayMargin = showProposed ? metrics.proposedWeightedMargin : metrics.weightedMargin;
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
         <CardContent className="p-4">
           <h3 className="font-medium mb-4">Margin Distribution by Product Count</h3>
