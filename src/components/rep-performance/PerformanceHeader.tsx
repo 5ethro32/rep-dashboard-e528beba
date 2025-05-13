@@ -44,9 +44,20 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
         </h1>
       )}
       <div className={`${hideTitle ? '' : 'mt-4 md:mt-8 text-right'} flex items-center justify-end gap-2 z-40`}>
+        {/* Add separate refresh button */}
+        {onRefresh && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onRefresh} 
+            className="px-3 py-2 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none h-9 w-9"
+          >
+            <RefreshCw className="h-4 w-4 opacity-70" />
+          </Button>
+        )}
+        
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none">
-            <RefreshCw className="h-4 w-4 opacity-70 mr-1" />
             <CalendarIcon className="h-4 w-4 opacity-70" />
             {isMobile ? (
               <span>{selectedMonth}</span>

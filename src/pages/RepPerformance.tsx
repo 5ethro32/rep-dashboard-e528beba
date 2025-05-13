@@ -18,6 +18,7 @@ const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
+  
   const {
     includeRetail,
     setIncludeRetail,
@@ -142,27 +143,83 @@ const RepPerformance = () => {
       may: repData.may.find(r => r.rep === sampleRep)?.profit
     });
   }
-  return <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-      <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={handleMonthSelection} />
+
+  return (
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
+      <PerformanceHeader 
+        selectedMonth={selectedMonth} 
+        setSelectedMonth={handleMonthSelection} 
+        onRefresh={handleRefresh}
+      />
       
-      <PerformanceFilters includeRetail={includeRetail} setIncludeRetail={setIncludeRetail} includeReva={includeReva} setIncludeReva={setIncludeReva} includeWholesale={includeWholesale} setIncludeWholesale={setIncludeWholesale} selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} />
+      <PerformanceFilters 
+        includeRetail={includeRetail} 
+        setIncludeRetail={setIncludeRetail} 
+        includeReva={includeReva} 
+        setIncludeReva={setIncludeReva} 
+        includeWholesale={includeWholesale} 
+        setIncludeWholesale={setIncludeWholesale} 
+        selectedMonth={selectedMonth} 
+        setSelectedMonth={setSelectedMonth} 
+      />
 
       {/* Wrap the SummaryMetrics in a Card */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-8">
         <CardContent className="pt-4 py-[19px]">
-          <SummaryMetrics summary={summary} summaryChanges={summaryChanges} isLoading={isLoading} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} selectedMonth={selectedMonth} />
+          <SummaryMetrics 
+            summary={summary} 
+            summaryChanges={summaryChanges} 
+            isLoading={isLoading} 
+            includeRetail={includeRetail} 
+            includeReva={includeReva} 
+            includeWholesale={includeWholesale} 
+            selectedMonth={selectedMonth} 
+          />
         </CardContent>
       </Card>
       
       <div className="mb-6">
-        <TrendLineChart febSummary={filteredFebSummary} marchSummary={filteredMarSummary} aprilSummary={filteredAprSummary} maySummary={filteredMaySummary} isLoading={isLoading} repDataProp={repData} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} />
+        <TrendLineChart 
+          febSummary={filteredFebSummary} 
+          marchSummary={filteredMarSummary} 
+          aprilSummary={filteredAprSummary} 
+          maySummary={filteredMaySummary} 
+          isLoading={isLoading} 
+          repDataProp={repData} 
+          includeRetail={includeRetail} 
+          includeReva={includeReva} 
+          includeWholesale={includeWholesale} 
+        />
       </div>
 
-      <PerformanceContent tabValues={['overall', 'rep', 'reva', 'wholesale']} getActiveData={getActiveData} sortData={sortData} sortBy={sortBy} sortOrder={sortOrder} handleSort={handleSort} repChanges={repChanges} formatCurrency={formatCurrency} formatPercent={formatPercent} formatNumber={formatNumber} renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
-      const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
-      return <RenderChangeIndicator changeValue={changeValue} size={size === "small" ? "small" : "large"} previousValue={previousValue} />;
-    }} isLoading={isLoading} getFebValue={getFebValue} selectedMonth={selectedMonth} summary={summary} includeRetail={includeRetail} includeReva={includeReva} includeWholesale={includeWholesale} baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary} revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues} wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues} />
-    </div>;
+      <PerformanceContent 
+        tabValues={['overall', 'rep', 'reva', 'wholesale']} 
+        getActiveData={getActiveData} 
+        sortData={sortData} 
+        sortBy={sortBy} 
+        sortOrder={sortOrder} 
+        handleSort={handleSort} 
+        repChanges={repChanges} 
+        formatCurrency={formatCurrency} 
+        formatPercent={formatPercent} 
+        formatNumber={formatNumber} 
+        renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
+          const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
+          return <RenderChangeIndicator changeValue={changeValue} size={size === "small" ? "small" : "large"} previousValue={previousValue} />;
+        }} 
+        isLoading={isLoading} 
+        getFebValue={getFebValue} 
+        selectedMonth={selectedMonth} 
+        summary={summary} 
+        includeRetail={includeRetail} 
+        includeReva={includeReva} 
+        includeWholesale={includeWholesale} 
+        baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary} 
+        revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues} 
+        wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues} 
+      />
+    </div>
+  );
 };
 
 // Add the global window type declaration
@@ -171,4 +228,5 @@ declare global {
     repPerformanceRefresh?: () => Promise<void>;
   }
 }
+
 export default RepPerformance;

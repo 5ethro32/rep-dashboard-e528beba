@@ -1,14 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, ChevronDown, RefreshCw, Wrench } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, ChevronDown, RefreshCw, Wrench, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import VeraAssistant from '@/components/chat/VeraAssistant';
 import { 
   NavigationMenu,
   NavigationMenuContent,
@@ -153,7 +153,8 @@ const AppHeader = ({
   // Check if refresh functionality should be shown
   const showRefresh = onRefresh !== undefined || location.pathname === '/rep-performance' && window.repPerformanceRefresh !== undefined;
   
-  return <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-gray-950/95">
+  return (
+    <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-gray-950/95">
       <div className="container max-w-7xl mx-auto px-4">
         {/* Main header with logo and user profile */}
         <div className="h-16 flex items-center justify-between">
@@ -178,60 +179,110 @@ const AppHeader = ({
             
             {showUserSelector && <UserSelector selectedUserId={selectedUserId || "all"} onSelectUser={handleUserSelection} showAllDataOption={true} />}
             <UserProfileDropdown />
+            
+            {/* Mobile menu toggle */}
+            {isMobile && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsNavOpen(!isNavOpen)} 
+                className="ml-2 text-white/70 hover:text-white"
+              >
+                {isNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
           </div>
         </div>
         
-        {/* Navigation bar - Only on desktop */}
-        {!isMobile && (
-          <div className="border-t border-white/5">
-            <nav className="flex items-center py-1">
+        {/* Navigation bar - Desktop (always visible) and Mobile (collapsible) */}
+        {(!isMobile || isNavOpen) && (
+          <div className={`${isMobile ? 'py-2' : 'border-t border-white/5'}`}>
+            <nav className={`flex ${isMobile ? 'flex-col' : 'items-center'} py-1`}>
               {navItems.map((item) => 
                 item.hasSubNav ? (
                   // Engine Room navigation with hover functionality
                   <div
                     key={item.path}
                     className="relative"
-                    onMouseEnter={() => setIsEngineSubnavHovered(true)}
-                    onMouseLeave={() => setIsEngineSubnavHovered(false)}
+                    onMouseEnter={() => !isMobile && setIsEngineSubnavHovered(true)}
+                    onMouseLeave={() => !isMobile && setIsEngineSubnavHovered(false)}
                   >
-                    <Link 
-                      to={item.path} 
-                      className={cn(
-                        "px-4 py-2 flex items-center gap-2 text-sm font-medium relative", 
-                        isEngineRoomSection ? "text-finance-red" : "text-white/60 hover:text-white"
-                      )}
-                    >
-                      {isEngineRoomSection && (
-                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
-                      )}
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </Link>
-                    
-                    {/* Subnav that appears on hover */}
-                    {isEngineSubnavHovered && (
-                      <div 
-                        className={cn(
-                          "absolute top-full left-0 bg-gray-950/95 backdrop-blur-sm border border-white/10 rounded-md shadow-lg overflow-hidden z-50",
-                          "transition-all duration-200",
-                          "opacity-100 translate-y-0"
+                    {isMobile ? (
+                      // Mobile version - collapsible dropdown
+                      <Collapsible>
+                        <CollapsibleTrigger className="w-full">
+                          <div className={cn(
+                            "px-4 py-2 flex items-center justify-between text-sm font-medium", 
+                            isEngineRoomSection ? "text-finance-red" : "text-white/60"
+                          )}>
+                            <div className="flex items-center gap-2">
+                              {item.icon}
+                              <span>{item.label}</span>
+                            </div>
+                            <ChevronDown className="h-4 w-4" />
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="pl-8 space-y-1 py-1">
+                            {item.subItems?.map(subItem => (
+                              <NavLink 
+                                key={subItem.path}
+                                to={subItem.path} 
+                                className={({isActive}) => 
+                                  cn("block py-2 text-sm", 
+                                    isActive ? "text-finance-red" : "text-white/70 hover:text-white")
+                                }
+                                onClick={() => setIsNavOpen(false)}
+                              >
+                                {subItem.label}
+                              </NavLink>
+                            ))}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ) : (
+                      // Desktop version - hover dropdown
+                      <>
+                        <Link 
+                          to={item.path} 
+                          className={cn(
+                            "px-4 py-2 flex items-center gap-2 text-sm font-medium relative", 
+                            isEngineRoomSection ? "text-finance-red" : "text-white/60 hover:text-white"
+                          )}
+                        >
+                          {isEngineRoomSection && (
+                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                          )}
+                          {item.icon}
+                          <span>{item.label}</span>
+                        </Link>
+                        
+                        {/* Subnav that appears on hover */}
+                        {isEngineSubnavHovered && (
+                          <div 
+                            className={cn(
+                              "absolute top-full left-0 bg-gray-950/95 backdrop-blur-sm border border-white/10 rounded-md shadow-lg overflow-hidden z-50",
+                              "transition-all duration-200",
+                              "opacity-100 translate-y-0"
+                            )}
+                          >
+                            <div className="p-1">
+                              {item.subItems?.map(subItem => (
+                                <NavLink 
+                                  key={subItem.path}
+                                  to={subItem.path} 
+                                  className={({isActive}) => 
+                                    cn("block px-4 py-2 text-sm rounded-sm", 
+                                      isActive ? "bg-white/5 text-finance-red" : "text-white/70 hover:bg-white/5 hover:text-white")
+                                  }
+                                >
+                                  {subItem.label}
+                                </NavLink>
+                              ))}
+                            </div>
+                          </div>
                         )}
-                      >
-                        <div className="p-1">
-                          {item.subItems?.map(subItem => (
-                            <NavLink 
-                              key={subItem.path}
-                              to={subItem.path} 
-                              className={({isActive}) => 
-                                cn("block px-4 py-2 text-sm rounded-sm", 
-                                  isActive ? "bg-white/5 text-finance-red" : "text-white/70 hover:bg-white/5 hover:text-white")
-                              }
-                            >
-                              {subItem.label}
-                            </NavLink>
-                          ))}
-                        </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 ) : (
@@ -240,13 +291,14 @@ const AppHeader = ({
                     key={item.path}
                     to={item.path} 
                     className={({isActive}) => cn(
-                      "px-4 py-2 flex items-center gap-2 text-sm font-medium relative", 
+                      `${isMobile ? 'py-3' : 'px-4 py-2'} flex items-center gap-2 text-sm font-medium relative`, 
                       isActive ? "text-finance-red" : "text-white/60 hover:text-white"
                     )}
+                    onClick={() => isMobile && setIsNavOpen(false)}
                   >
                     {({isActive}) => (
                       <>
-                        {isActive && 
+                        {isActive && !isMobile && 
                           <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
                         }
                         {item.icon}
@@ -260,7 +312,8 @@ const AppHeader = ({
           </div>
         )}
       </div>
-    </header>;
+    </header>
+  );
 };
 
 export default AppHeader;
