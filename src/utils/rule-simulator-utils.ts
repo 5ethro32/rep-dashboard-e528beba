@@ -1,4 +1,3 @@
-
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -30,8 +29,6 @@ export interface RuleConfig {
     };
   };
   globalMarginFloor: number;
-  // Added flag to toggle margin cap application
-  applyMarginCap: boolean;
 }
 
 // Helper function to determine usage group
@@ -41,7 +38,7 @@ const determineUsageGroup = (usageRank: number) => {
   return 'group5_6';
 };
 
-// Apply pricing rules to calculate a new price - Updated to track both capped and uncapped prices
+// Apply pricing rules to calculate a new price - Updated to match engine-excel-utils.ts logic
 const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Extract needed values
   const cost = Math.max(0, Number(item.avgCost) || 0);
@@ -60,7 +57,7 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Determine trend (from engine-excel-utils.ts logic)
   const isDownwardTrend = item.nextCost <= item.avgCost; 
   
-  let candidatePrice = 0;
+  let newPrice = 0;
   let ruleApplied = 'none';
   
   // Apply rules based on cost vs. market price relationship
@@ -73,7 +70,7 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       if (isDownwardTrend) {
         // Rule 1a - Downward Trend
         const markup = 1 + (ruleConfig.rule1.markups.rule1a[groupKey] / 100);
-        candidatePrice = marketLow * markup;
+        newPrice = marketLow * markup;
         ruleApplied = 'rule1a';
       } else {
         // Rule 1b - Upward Trend
@@ -83,8 +80,8 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
         const mlPrice = marketLow * mlMarkup;
         const costPrice = cost * costMarkup;
         
-        candidatePrice = Math.max(mlPrice, costPrice);
-        ruleApplied = candidatePrice === mlPrice ? 'rule1b_ml' : 'rule1b_cost';
+        newPrice = Math.max(mlPrice, costPrice);
+        ruleApplied = newPrice === mlPrice ? 'rule1b_ml' : 'rule1b_cost';
       }
     } 
     // Rule 2: AvgCost < Market Low
@@ -97,7 +94,7 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
         if (isDownwardTrend) {
           // 3%, 4%, or 5% markup depending on group
           const uplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
-          candidatePrice = marketLow * uplift;
+          newPrice = marketLow * uplift;
           ruleApplied = 'rule2_downtrend';
         } else {
           // Market Low uplift (3%, 4%, or 5%)
@@ -108,8 +105,8 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
           const mlPrice = marketLow * mlUplift;
           const costPrice = cost * costMarkup;
           
-          candidatePrice = Math.max(mlPrice, costPrice);
-          ruleApplied = candidatePrice === mlPrice ? 'rule2_ml' : 'rule2_cost';
+          newPrice = Math.max(mlPrice, costPrice);
+          ruleApplied = newPrice === mlPrice ? 'rule2_ml' : 'rule2_cost';
         }
       } 
       // Rule 2b: If cost is more than 10% below market low
@@ -117,7 +114,7 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
         if (isDownwardTrend) {
           // 3%, 4%, or 5% markup depending on group
           const uplift = 1 + (3 + (Math.min(usageRank, 5) - 1) * 1) / 100;
-          candidatePrice = marketLow * uplift;
+          newPrice = marketLow * uplift;
           ruleApplied = 'rule2_downtrend';
         } else {
           // Market Low uplift (3%, 4%, or 5%)
@@ -128,14 +125,14 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
           const mlPrice = marketLow * mlUplift;
           const costPrice = cost * costMarkup;
           
-          candidatePrice = Math.max(mlPrice, costPrice);
-          ruleApplied = candidatePrice === mlPrice ? 'rule2_ml' : 'rule2_cost';
+          newPrice = Math.max(mlPrice, costPrice);
+          ruleApplied = newPrice === mlPrice ? 'rule2_ml' : 'rule2_cost';
         }
       }
       // Cost is within 5% of market low - use Rule 1b
       else {
         const markup = 1 + (ruleConfig.rule1.markups.rule1b[groupKey] / 100);
-        candidatePrice = cost * markup;
+        newPrice = cost * markup;
         ruleApplied = 'rule1b_near_market';
       }
     }
@@ -143,56 +140,45 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     // No market price - use cost-based pricing directly
     const costMarkup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
     
-    candidatePrice = cost * costMarkup;
+    newPrice = cost * costMarkup;
     ruleApplied = 'cost_based_no_market';
   }
   
-  // Store uncapped price and margin
-  const uncappedPrice = candidatePrice;
-  const uncappedMargin = uncappedPrice > 0 ? ((uncappedPrice - cost) / uncappedPrice) * 100 : 0;
+  // Apply margin caps based on usage group
+  const marginCap = ruleConfig.rule1.marginCaps[groupKey as keyof typeof ruleConfig.rule1.marginCaps] / 100;
+  const maxPriceByMarginCap = cost > 0 ? cost / (1 - marginCap) : 0;
   
-  // Variables to track final price and if cap was applied
-  let finalPrice = uncappedPrice;
+  // Cap the price based on maximum allowed margin
   let marginCapApplied = false;
-  
-  // Apply margin caps based on usage group if the flag is enabled
-  if (ruleConfig.applyMarginCap) {
-    const marginCap = ruleConfig.rule1.marginCaps[groupKey as keyof typeof ruleConfig.rule1.marginCaps] / 100;
-    const maxPriceByMarginCap = cost > 0 ? cost / (1 - marginCap) : 0;
-    
-    // Cap the price based on maximum allowed margin
-    if (uncappedPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
-      finalPrice = maxPriceByMarginCap;
-      marginCapApplied = true;
-      ruleApplied += '_capped';
-    }
+  if (newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
+    newPrice = maxPriceByMarginCap;
+    marginCapApplied = true;
+    ruleApplied += '_capped';
   }
   
   // Ensure global margin floor
   let marginFloorApplied = false;
-  const newMargin = finalPrice > 0 ? ((finalPrice - cost) / finalPrice) : 0;
+  const newMargin = newPrice > 0 ? (newPrice - cost) / newPrice : 0;
   const minMargin = ruleConfig.globalMarginFloor / 100;
   
   if (newMargin < minMargin && cost > 0) {
-    finalPrice = cost / (1 - minMargin);
+    newPrice = cost / (1 - minMargin);
     marginFloorApplied = true;
     ruleApplied += '_floor';
   }
   
   // Calculate flags based on actual criteria
-  const flag1 = !noMarketPrice && marketLow > 0 && finalPrice >= marketLow * 1.10; // Price ≥10% above TRUE MARKET LOW
+  const flag1 = !noMarketPrice && marketLow > 0 && newPrice >= marketLow * 1.10; // Price ≥10% above TRUE MARKET LOW
   const flag2 = newMargin < 0.05; // Margin < 5%
   
   return {
     originalPrice: item.currentREVAPrice || 0,
-    newPrice: Math.max(cost, finalPrice), // Never price below cost
-    uncappedPrice: Math.max(cost, uncappedPrice), // Store uncapped price for comparison
+    newPrice: Math.max(cost, newPrice), // Never price below cost
     cost: cost,
     marketLow: marketLow,
     originalMargin: item.currentREVAMargin || 0,
-    newMargin: finalPrice > 0 ? ((finalPrice - cost) / finalPrice) * 100 : 0,
-    uncappedMargin: uncappedMargin,
-    marginDiff: finalPrice > 0 ? ((finalPrice - cost) / finalPrice) * 100 - (item.currentREVAMargin || 0) : 0,
+    newMargin: newPrice > 0 ? ((newPrice - cost) / newPrice) * 100 : 0,
+    marginDiff: newPrice > 0 ? ((newPrice - cost) / newPrice) * 100 - (item.currentREVAMargin || 0) : 0,
     ruleApplied: ruleApplied,
     usageGroup: usageGroup,
     usageRank: usageRank,
@@ -224,8 +210,6 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
       ...item,
       simulatedPrice: simulationResult.newPrice,
       simulatedMargin: simulationResult.newMargin,
-      uncappedPrice: simulationResult.uncappedPrice,
-      uncappedMargin: simulationResult.uncappedMargin,
       originalPrice: simulationResult.originalPrice,
       originalMargin: simulationResult.originalMargin,
       marginDiff: simulationResult.marginDiff,
@@ -238,7 +222,7 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
     };
   });
   
-  // Calculate metrics based on the simulated prices (with cap if applied)
+  // Calculate metrics based on the simulated prices
   const simulatedItemsForMetrics = simulatedItems.map((item: any) => ({
     ...item,
     currentREVAPrice: item.simulatedPrice,
@@ -246,15 +230,6 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
   }));
   
   const simulatedMetrics = calculateUsageWeightedMetrics(simulatedItemsForMetrics);
-  
-  // Calculate metrics based on the uncapped prices
-  const uncappedItemsForMetrics = simulatedItems.map((item: any) => ({
-    ...item,
-    currentREVAPrice: item.uncappedPrice,
-    currentREVAMargin: item.uncappedMargin
-  }));
-  
-  const uncappedMetrics = calculateUsageWeightedMetrics(uncappedItemsForMetrics);
   
   // Calculate differences between baseline and simulated metrics
   const revenueDiff = simulatedMetrics.totalRevenue - baselineMetrics.totalRevenue;
@@ -268,11 +243,6 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
     : 0;
     
   const marginDiff = simulatedMetrics.weightedMargin - baselineMetrics.weightedMargin;
-  
-  // Calculate differences between capped and uncapped metrics
-  const uncappedRevenueDiff = uncappedMetrics.totalRevenue - simulatedMetrics.totalRevenue;
-  const uncappedProfitDiff = uncappedMetrics.totalProfit - simulatedMetrics.totalProfit;
-  const uncappedMarginDiff = uncappedMetrics.weightedMargin - simulatedMetrics.weightedMargin;
   
   // Calculate impact by usage group
   const groupImpact = [
@@ -307,22 +277,12 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
       marginCapApplied,
       marginFloorApplied
     },
-    uncapped: {
-      totalRevenue: uncappedMetrics.totalRevenue,
-      totalProfit: uncappedMetrics.totalProfit,
-      weightedMargin: uncappedMetrics.weightedMargin
-    },
     changes: {
       revenueDiff,
       revenueDiffPercent,
       profitDiff,
       profitDiffPercent,
       marginDiff
-    },
-    uncappedChanges: {
-      revenueDiff: uncappedRevenueDiff,
-      profitDiff: uncappedProfitDiff,
-      marginDiff: uncappedMarginDiff
     },
     config: ruleConfig,
     itemResults: simulatedItems,
