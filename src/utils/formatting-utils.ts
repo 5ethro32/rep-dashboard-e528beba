@@ -1,4 +1,3 @@
-
 import { formatDistanceToNow } from 'date-fns';
 
 // Format numerical values as currency (GBP)
@@ -15,10 +14,11 @@ export const formatCurrency = (value: number | null | undefined, noDecimals = fa
   return formatter.format(value);
 };
 
-// Format values as percentages
+// Format values as percentages - FIXED: now multiplies by 100 to display correctly
 export const formatPercentage = (value: number | null | undefined): string => {
   if (value === null || value === undefined) return '0.00%';
-  return `${value.toFixed(2)}%`;
+  // Multiply by 100 to convert decimal to percentage
+  return `${(value * 100).toFixed(2)}%`;
 };
 
 // Format numbers with appropriate separators
