@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, TrendingUp, TrendingDown, Info, Ban } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, TrendingUp, TrendingDown, Info, Ban, ChevronDown, ChevronUp } from 'lucide-react';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -13,6 +13,7 @@ import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
 import { formatPercentage as utilFormatPercentage } from '@/utils/formatting-utils';
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface EngineDataTableProps {
   data: any[];
@@ -729,7 +730,31 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return flags.length > 0 ? <div className="flex flex-wrap gap-1">{flags}</div> : null;
   };
 
-  // Active filters summary
+  // New helper function to summarize numeric filter values
+  const summarizeNumericFilters = (values: any[]) => {
+    if (!values || values.length === 0) return null;
+    
+    // Check if all values are numbers
+    const allNumbers = values.every(value => !isNaN(Number(value)));
+    if (!allNumbers) return null;
+    
+    // Convert to numbers and sort
+    const numberValues = values.map(v => Number(v)).sort((a, b) => a - b);
+    
+    // If there are too many consecutive numbers, show as range
+    if (numberValues.length > 3) {
+      const min = Math.min(...numberValues);
+      const max = Math.max(...numberValues);
+      // If they form a perfect sequence with no gaps, show as range
+      if (max - min + 1 === numberValues.length) {
+        return `${min} - ${max}`;
+      }
+    }
+    
+    return null; // Default to showing individual values
+  };
+
+  // Active filters summary - completely revised for better UX
   const renderActiveFilters = () => {
     const activeFilters = Object.entries(columnFilters)
       .filter(([field, values]) => {
@@ -748,21 +773,119 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       
     if (activeFilters.length === 0) return null;
     
-    return <div className="flex flex-wrap items-center gap-2 my-2 bg-gray-900/20 p-2 rounded-md">
-        <span className="text-sm text-muted-foreground">Active filters:</span>
-        {activeFilters.map((filter, i) => <div key={i} className="flex flex-wrap gap-1">
-            <span className="text-sm">{filter.label}:</span>
-            {filter.values.map((value, j) => <span key={j} className="bg-gray-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                {value}
-                <Button variant="ghost" size="sm" className="h-4 w-4 p-0" onClick={() => handleFilterChange(filter.field, value)}>
-                  <X className="h-3 w-3" />
-                </Button>
-              </span>)}
-          </div>)}
-        <Button variant="ghost" size="sm" className="h-6 p-1 text-xs" onClick={() => setColumnFilters({})}>
-          Clear all
-        </Button>
-      </div>;
+    return (
+      <div className="my-2 bg-gray-900/20 p-3 rounded-md">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium">Active filters:</h3>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-6 p-1 text-xs" 
+            onClick={() => setColumnFilters({})}
+          >
+            Clear all
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {activeFilters.map((filter, i) => {
+            // Check if it's a numeric filter with many values
+            const numericSummary = summarizeNumericFilters(filter.values);
+            const hasMany = filter.values.length > 3 && !numericSummary;
+            
+            return (
+              <div key={i} className="bg-gray-800/70 rounded-lg p-1.5">
+                {!hasMany ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-medium text-gray-300">{filter.label}:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {numericSummary ? (
+                        <Badge variant="outline" className="bg-gray-700/50 text-gray-200 gap-1 px-1.5 py-0.5 h-5">
+                          {numericSummary}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-3 w-3 p-0 ml-1" 
+                            onClick={() => {
+                              // Clear all values in this range
+                              setColumnFilters(prev => {
+                                const newFilters = {...prev};
+                                delete newFilters[filter.field];
+                                return newFilters;
+                              });
+                            }}
+                          >
+                            <X className="h-2 w-2" />
+                          </Button>
+                        </Badge>
+                      ) : (
+                        filter.values.map((value, j) => (
+                          <Badge key={j} variant="outline" className="bg-gray-700/50 text-gray-200 gap-1 px-1.5 py-0.5 h-5">
+                            {value}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-3 w-3 p-0 ml-1" 
+                              onClick={() => handleFilterChange(filter.field, value)}
+                            >
+                              <X className="h-2 w-2" />
+                            </Button>
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <Collapsible>
+                    <div className="flex items-center">
+                      <span className="text-xs font-medium text-gray-300 mr-1">{filter.label}:</span>
+                      <Badge variant="secondary" className="bg-blue-900/30 text-blue-300 mr-2">
+                        {filter.values.length} selected
+                      </Badge>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-5 w-5 p-0 ml-1" 
+                        onClick={() => {
+                          setColumnFilters(prev => {
+                            const newFilters = {...prev};
+                            delete newFilters[filter.field];
+                            return newFilters;
+                          });
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <CollapsibleContent>
+                      <div className="flex flex-wrap gap-1 mt-1 max-h-20 overflow-y-auto">
+                        {filter.values.map((value, j) => (
+                          <Badge key={j} variant="outline" className="bg-gray-700/50 text-gray-200 gap-1 px-1.5 py-0.5 h-5">
+                            {value}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-3 w-3 p-0 ml-1" 
+                              onClick={() => handleFilterChange(filter.field, value)}
+                            >
+                              <X className="h-2 w-2" />
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   // Render a unified filter bar with more compact layout
