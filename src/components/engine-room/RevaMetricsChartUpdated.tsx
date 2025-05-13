@@ -2,10 +2,42 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { applyPricingRules, RuleConfig } from '@/utils/rule-simulator-utils';
 
 interface RevaMetricsChartProps {
   data: any[];
 }
+
+// Define the default rule config for our chart simulations
+const defaultRuleConfig: RuleConfig = {
+  rule1: {
+    marginCaps: {
+      group1_2: 10, // 10% margin cap for groups 1-2
+      group3_4: 20, // 20% margin cap for groups 3-4
+      group5_6: 30, // 30% margin cap for groups 5-6
+    },
+    markups: {
+      rule1a: {
+        group1_2: 0, // ML + 0%
+        group3_4: 1, // ML + 1%
+        group5_6: 2, // ML + 2%
+      },
+      rule1b: {
+        group1_2: 3, // ML + 3%
+        group3_4: 4, // ML + 4%
+        group5_6: 5, // ML + 5%
+      },
+    },
+  },
+  rule2: {
+    markups: {
+      group1_2: 12, // Cost + 12%
+      group3_4: 13, // Cost + 13%
+      group5_6: 14, // Cost + 14%
+    },
+  },
+  globalMarginFloor: 5, // 5% global margin floor
+};
 
 const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
   // Add toggle state for chart display - modified to have separate rule toggles
@@ -51,15 +83,17 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         let totalUsageWeightedMargin = 0;
         let validMarginItems = 0;
         
-        // For proposed metrics (Rules 1 & 2)
+        // For proposed metrics using real rule simulation
+        let totalRulesAppliedRevenue = 0;
+        let totalRulesAppliedProfit = 0;
+        
+        // For simplified rule calculations (for comparison)
         let totalProposedRevenue = 0;
         let totalProposedProfit = 0;
         let totalProposedRule1Revenue = 0;
         let totalProposedRule1Profit = 0;
         let totalProposedRule2Revenue = 0;
         let totalProposedRule2Profit = 0;
-        let totalCombinedRevenue = 0;
-        let totalCombinedProfit = 0;
 
         groupItems.forEach(item => {
           const usage = Math.max(0, item.revaUsage || 0); // Ensure non-negative usage
@@ -69,7 +103,24 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           // Get proposed price values if available
           const proposedPrice = Math.max(0, item.proposedPrice || price);
           
-          // Calculate proposed prices for rule 1 and rule 2 separately
+          // IMPROVED: Apply the full pricing rules simulation for "After Rules"
+          // Create a clone of the item with the minimum required properties for applyPricingRules
+          const itemForRules = {
+            avgCost: cost,
+            trueMarketLow: Math.max(0, item.trueMarketLow || 0),
+            marketLow: Math.max(0, item.trueMarketLow || item.marketLow || 0),
+            nextCost: Math.max(0, item.nextCost || cost),  // Use nextCost if available, otherwise fallback to avgCost
+            usageRank: Math.max(1, Math.min(6, Number(item.usageRank) || 1)),
+            currentREVAPrice: price,
+            currentREVAMargin: item.currentREVAMargin || 0,
+            noMarketPrice: !item.trueMarketLow && !item.marketLow
+          };
+          
+          // Use the real rule simulation logic for "After Rules"
+          const rulesAppliedResult = applyPricingRules(itemForRules, defaultRuleConfig);
+          const rulesAppliedPrice = rulesAppliedResult.newPrice;
+          
+          // Continue calculating the simplified rules for Rule 1 and Rule 2 lines
           // Rule 1: Cost + 8% margin (simplified)
           const rule1Price = cost * 1.09; // Cost + ~9% markup (equivalent to 8% margin)
           
@@ -77,33 +128,26 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           const tml = Math.max(0, item.trueMarketLow || 0);
           const rule2Price = tml > 0 ? tml * 0.95 : proposedPrice; // 5% below TML
           
-          // Calculate combined price - use whichever rule gives higher profit
-          // This is a simple way of combining the rules - using the better of the two prices
-          const rule1Profit = usage * (rule1Price - cost);
-          const rule2Profit = usage * (rule2Price - cost);
-          const combinedPrice = rule1Profit > rule2Profit ? rule1Price : rule2Price;
-          
           // Only calculate profit if we have valid values
           if (usage > 0 && price > 0) {
             const revenue = usage * price;
-            // CRITICAL FIX: Ensure we're using price - cost (not cost - price)
             const profit = usage * (price - cost);
             
             // Calculate proposed metrics
             const proposedRevenue = usage * proposedPrice;
             const proposedProfit = usage * (proposedPrice - cost);
             
-            // Calculate Rule 1 proposed metrics
+            // Calculate Rule 1 proposed metrics (simplified)
             const proposedRule1Revenue = usage * rule1Price;
             const proposedRule1Profit = usage * (rule1Price - cost);
             
-            // Calculate Rule 2 proposed metrics
+            // Calculate Rule 2 proposed metrics (simplified)
             const proposedRule2Revenue = usage * rule2Price;
             const proposedRule2Profit = usage * (rule2Price - cost);
             
-            // Calculate Combined rules metrics
-            const combinedRevenue = usage * combinedPrice;
-            const combinedProfit = usage * (combinedPrice - cost);
+            // Calculate "After Rules" metrics using the real simulation results
+            const rulesAppliedRevenue = usage * rulesAppliedPrice;
+            const rulesAppliedProfit = usage * (rulesAppliedPrice - cost);
             
             totalUsage += usage;
             totalRevenue += revenue;
@@ -116,12 +160,13 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             totalProposedRule1Profit += proposedRule1Profit;
             totalProposedRule2Revenue += proposedRule2Revenue;
             totalProposedRule2Profit += proposedRule2Profit;
-            totalCombinedRevenue += combinedRevenue;
-            totalCombinedProfit += combinedProfit;
+            
+            // Add totals for the real rules applied
+            totalRulesAppliedRevenue += rulesAppliedRevenue;
+            totalRulesAppliedProfit += rulesAppliedProfit;
             
             // Calculate margin only for valid items
             if (price > 0) {
-              // CRITICAL FIX: Ensure correct formula: (price - cost) / price * 100
               const margin = (price - cost) / price * 100; // Convert to percentage
               totalUsageWeightedMargin += margin * usage;
               validMarginItems += 1;
@@ -140,7 +185,9 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         const proposedMargin = totalProposedRevenue > 0 ? (totalProposedProfit / totalProposedRevenue) * 100 : 0;
         const proposedRule1Margin = totalProposedRule1Revenue > 0 ? (totalProposedRule1Profit / totalProposedRule1Revenue) * 100 : 0;
         const proposedRule2Margin = totalProposedRule2Revenue > 0 ? (totalProposedRule2Profit / totalProposedRule2Revenue) * 100 : 0;
-        const combinedMargin = totalCombinedRevenue > 0 ? (totalCombinedProfit / totalCombinedRevenue) * 100 : 0;
+        
+        // Calculate the real rules applied margin using the proper simulation
+        const rulesAppliedMargin = totalRulesAppliedRevenue > 0 ? (totalRulesAppliedProfit / totalRulesAppliedRevenue) * 100 : 0;
 
         results.push({
           name: `Group ${groupNumber}`,
@@ -154,8 +201,9 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           proposedRule1Margin: proposedRule1Margin,
           proposedRule2Profit: totalProposedRule2Profit,
           proposedRule2Margin: proposedRule2Margin,
-          combinedProfit: totalCombinedProfit,
-          combinedMargin: combinedMargin,
+          // Replace the simplified "combined" with the real rules applied values
+          rulesAppliedProfit: totalRulesAppliedProfit,
+          rulesAppliedMargin: rulesAppliedMargin,
           rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
         });
       }
@@ -170,15 +218,17 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         let totalUsageWeightedMargin = 0;
         let validMarginItems = 0;
         
-        // For proposed metrics
+        // For real rule simulation results
+        let totalRulesAppliedRevenue = 0;
+        let totalRulesAppliedProfit = 0;
+        
+        // For simplified rules
         let totalProposedRevenue = 0;
         let totalProposedProfit = 0;
         let totalProposedRule1Revenue = 0;
         let totalProposedRule1Profit = 0;
         let totalProposedRule2Revenue = 0;
         let totalProposedRule2Profit = 0;
-        let totalCombinedRevenue = 0;
-        let totalCombinedProfit = 0;
 
         remainingItems.forEach(item => {
           const usage = Math.max(0, item.revaUsage || 0); // Ensure non-negative usage
@@ -188,7 +238,24 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           // Get proposed price values if available
           const proposedPrice = Math.max(0, item.proposedPrice || price);
           
-          // Calculate proposed prices for rule 1 and rule 2 separately
+          // IMPROVED: Apply the full pricing rules simulation for "After Rules"
+          // Create a clone of the item with the minimum required properties for applyPricingRules
+          const itemForRules = {
+            avgCost: cost,
+            trueMarketLow: Math.max(0, item.trueMarketLow || 0),
+            marketLow: Math.max(0, item.trueMarketLow || item.marketLow || 0),
+            nextCost: Math.max(0, item.nextCost || cost),  // Use nextCost if available, otherwise fallback to avgCost
+            usageRank: Math.max(1, Math.min(6, Number(item.usageRank) || 1)),
+            currentREVAPrice: price,
+            currentREVAMargin: item.currentREVAMargin || 0,
+            noMarketPrice: !item.trueMarketLow && !item.marketLow
+          };
+          
+          // Use the real rule simulation logic for "After Rules"
+          const rulesAppliedResult = applyPricingRules(itemForRules, defaultRuleConfig);
+          const rulesAppliedPrice = rulesAppliedResult.newPrice;
+          
+          // Continue calculating the simplified rules for Rule 1 and Rule 2 lines
           // Rule 1: Cost + 8% margin (simplified)
           const rule1Price = cost * 1.09; // Cost + ~9% markup (equivalent to 8% margin)
           
@@ -196,32 +263,26 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           const tml = Math.max(0, item.trueMarketLow || 0);
           const rule2Price = tml > 0 ? tml * 0.95 : proposedPrice; // 5% below TML
           
-          // Calculate combined price - use whichever rule gives higher profit
-          const rule1Profit = usage * (rule1Price - cost);
-          const rule2Profit = usage * (rule2Price - cost);
-          const combinedPrice = rule1Profit > rule2Profit ? rule1Price : rule2Price;
-          
           // Only calculate profit if we have valid values
           if (usage > 0 && price > 0) {
             const revenue = usage * price;
-            // CRITICAL FIX: Ensure we're using price - cost (not cost - price)
             const profit = usage * (price - cost);
             
             // Calculate proposed metrics
             const proposedRevenue = usage * proposedPrice;
             const proposedProfit = usage * (proposedPrice - cost);
             
-            // Calculate Rule 1 proposed metrics
+            // Calculate Rule 1 proposed metrics (simplified)
             const proposedRule1Revenue = usage * rule1Price;
             const proposedRule1Profit = usage * (rule1Price - cost);
             
-            // Calculate Rule 2 proposed metrics
+            // Calculate Rule 2 proposed metrics (simplified)
             const proposedRule2Revenue = usage * rule2Price;
             const proposedRule2Profit = usage * (rule2Price - cost);
             
-            // Calculate Combined rules metrics
-            const combinedRevenue = usage * combinedPrice;
-            const combinedProfit = usage * (combinedPrice - cost);
+            // Calculate "After Rules" metrics using the real simulation results
+            const rulesAppliedRevenue = usage * rulesAppliedPrice;
+            const rulesAppliedProfit = usage * (rulesAppliedPrice - cost);
             
             totalUsage += usage;
             totalRevenue += revenue;
@@ -234,12 +295,13 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
             totalProposedRule1Profit += proposedRule1Profit;
             totalProposedRule2Revenue += proposedRule2Revenue;
             totalProposedRule2Profit += proposedRule2Profit;
-            totalCombinedRevenue += combinedRevenue;
-            totalCombinedProfit += combinedProfit;
+            
+            // Add totals for the real rules applied
+            totalRulesAppliedRevenue += rulesAppliedRevenue;
+            totalRulesAppliedProfit += rulesAppliedProfit;
             
             // Calculate margin only for valid items
             if (price > 0) {
-              // CRITICAL FIX: Ensure correct formula: (price - cost) / price * 100
               const margin = (price - cost) / price * 100; // Convert to percentage
               totalUsageWeightedMargin += margin * usage;
               validMarginItems += 1;
@@ -256,7 +318,9 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
         const proposedMargin = totalProposedRevenue > 0 ? (totalProposedProfit / totalProposedRevenue) * 100 : 0;
         const proposedRule1Margin = totalProposedRule1Revenue > 0 ? (totalProposedRule1Profit / totalProposedRule1Revenue) * 100 : 0;
         const proposedRule2Margin = totalProposedRule2Revenue > 0 ? (totalProposedRule2Profit / totalProposedRule2Revenue) * 100 : 0;
-        const combinedMargin = totalCombinedRevenue > 0 ? (totalCombinedProfit / totalCombinedRevenue) * 100 : 0;
+        
+        // Calculate the real rules applied margin using the proper simulation
+        const rulesAppliedMargin = totalRulesAppliedRevenue > 0 ? (totalRulesAppliedProfit / totalRulesAppliedRevenue) * 100 : 0;
 
         results.push({
           name: `Group 6`,
@@ -270,8 +334,9 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           proposedRule1Margin: proposedRule1Margin,
           proposedRule2Profit: totalProposedRule2Profit,
           proposedRule2Margin: proposedRule2Margin,
-          combinedProfit: totalCombinedProfit,
-          combinedMargin: combinedMargin,
+          // Replace the simplified "combined" with the real rules applied values
+          rulesAppliedProfit: totalRulesAppliedProfit,
+          rulesAppliedMargin: rulesAppliedMargin,
           rangeDescription: `SKUs ${rangeStart}-${rangeEnd}`
         });
       }
@@ -350,7 +415,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
       item.proposedProfit || 0,
       item.proposedRule1Profit || 0,
       item.proposedRule2Profit || 0,
-      item.combinedProfit || 0
+      item.rulesAppliedProfit || 0
     ))
   );
   
@@ -361,7 +426,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
       item.proposedMargin || 0,
       item.proposedRule1Margin || 0,
       item.proposedRule2Margin || 0,
-      item.combinedMargin || 0
+      item.rulesAppliedMargin || 0
     ))
   ); 
   
@@ -617,12 +682,12 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               />
             )}
             
-            {/* Rules Applied (previously Combined) */}
+            {/* UPDATED: Changed from combinedMargin/Profit to rulesAppliedMargin/Profit */}
             {showRulesApplied && displayOptions.includes('margin') && (
               <Line 
                 yAxisId="left" 
                 type="monotone" 
-                dataKey="combinedMargin" 
+                dataKey="rulesAppliedMargin" 
                 name="After Rules Margin %" 
                 stroke={rulesAppliedColor} 
                 strokeWidth={2}
@@ -635,7 +700,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
               <Line 
                 yAxisId="right" 
                 type="monotone" 
-                dataKey="combinedProfit" 
+                dataKey="rulesAppliedProfit" 
                 name="After Rules Profit" 
                 stroke={rulesAppliedColor} 
                 strokeWidth={2}
@@ -665,7 +730,7 @@ const RevaMetricsChartUpdated: React.FC<RevaMetricsChartProps> = ({ data }) => {
           {showRulesApplied && (
             <div className="flex items-center gap-1.5">
               <span className="h-2 w-4 bg-[#10B981] rounded-sm"></span>
-              <span>After Rules Applied</span>
+              <span>After Rules Applied (Complete Rule Engine)</span>
             </div>
           )}
         </div>

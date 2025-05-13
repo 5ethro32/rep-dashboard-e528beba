@@ -39,7 +39,7 @@ const determineUsageGroup = (usageRank: number) => {
 };
 
 // Apply pricing rules to calculate a new price - Updated to match engine-excel-utils.ts logic
-const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
+export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Extract needed values
   const cost = Math.max(0, Number(item.avgCost) || 0);
   const marketLow = Math.max(0, Number(item.trueMarketLow) || Number(item.marketLow) || 0);
