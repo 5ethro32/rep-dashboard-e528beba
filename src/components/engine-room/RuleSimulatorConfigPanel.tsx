@@ -207,6 +207,10 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                   <ChevronDown className="h-4 w-4" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="p-2 space-y-4 mt-2">
+                  <div className="bg-amber-900/20 text-amber-200 p-3 rounded-md mb-3 text-xs">
+                    <strong>Note:</strong> Margin caps are only applied to items with an Average Cost of £1.00 or less.
+                    This ensures the cap only affects lower value items.
+                  </div>
                   <div className="space-y-6">
                     {/* Groups 1-2 */}
                     <div className="space-y-2">

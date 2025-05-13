@@ -144,13 +144,13 @@ const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     ruleApplied = 'cost_based_no_market';
   }
   
-  // Apply margin caps based on usage group
+  // Apply margin caps based on usage group, but ONLY for items with avgCost <= 1.00
   const marginCap = ruleConfig.rule1.marginCaps[groupKey as keyof typeof ruleConfig.rule1.marginCaps] / 100;
   const maxPriceByMarginCap = cost > 0 ? cost / (1 - marginCap) : 0;
   
-  // Cap the price based on maximum allowed margin
+  // Cap the price based on maximum allowed margin, but only if cost is £1.00 or less
   let marginCapApplied = false;
-  if (newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
+  if (cost <= 1.00 && newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
     newPrice = maxPriceByMarginCap;
     marginCapApplied = true;
     ruleApplied += '_capped';

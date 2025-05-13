@@ -682,9 +682,8 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         processedItem.appliedRule = `Rule 1b - ${usedPrice} Based (G${group}, Up)`;
       }
       
-      // NEW: Apply margin cap for Rule 1
-      // Calculate the margin with the proposed price
-      if (processedItem.proposedPrice > 0) {
+      // Apply margin cap for Rule 1, but ONLY if avgCost is £1.00 or less
+      if (processedItem.proposedPrice > 0 && processedItem.avgCost <= 1.00) {
         const proposedMargin = (processedItem.proposedPrice - processedItem.avgCost) / processedItem.proposedPrice;
         
         // Get the appropriate margin cap for this group
