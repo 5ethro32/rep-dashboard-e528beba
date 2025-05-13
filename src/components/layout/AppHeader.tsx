@@ -221,7 +221,7 @@ const AppHeader = ({
                     </Link>
                     
                     {/* Subnav that appears on hover */}
-                    {(isEngineSubnavHovered) && (
+                    {isEngineSubnavHovered && (
                       <div 
                         className={cn(
                           "absolute top-full left-0 bg-gray-950/95 backdrop-blur-sm border border-white/10 rounded-md shadow-lg overflow-hidden z-50",
@@ -269,64 +269,6 @@ const AppHeader = ({
                 )
               )}
             </nav>
-          </div>
-        )}
-
-        {/* Alternative implementation for Engine Room subnav - Only show when in Engine Room section AND hovering */}
-        {!isMobile && isEngineRoomSection && isEngineSubnavHovered && (
-          <div className="border-t border-white/5 bg-gray-900/60">
-            <div className="flex px-4 py-1">
-              <NavLink 
-                to="/engine-room/dashboard"
-                className={({ isActive }) => cn(
-                  "px-4 py-1.5 text-sm font-medium relative",
-                  isActive ? "text-finance-red" : "text-white/70 hover:text-white"
-                )}
-              >
-                {({ isActive }) => (
-                  <>
-                    {isActive && (
-                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
-                    )}
-                    Dashboard
-                  </>
-                )}
-              </NavLink>
-              
-              <NavLink 
-                to="/engine-room/engine"
-                className={({ isActive }) => cn(
-                  "px-4 py-1.5 text-sm font-medium relative",
-                  isActive ? "text-finance-red" : "text-white/70 hover:text-white"
-                )}
-              >
-                {({ isActive }) => (
-                  <>
-                    {isActive && (
-                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
-                    )}
-                    Engine
-                  </>
-                )}
-              </NavLink>
-              
-              <NavLink 
-                to="/engine-room/approvals"
-                className={({ isActive }) => cn(
-                  "px-4 py-1.5 text-sm font-medium relative",
-                  isActive ? "text-finance-red" : "text-white/70 hover:text-white"
-                )}
-              >
-                {({ isActive }) => (
-                  <>
-                    {isActive && (
-                      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
-                    )}
-                    Approvals
-                  </>
-                )}
-              </NavLink>
-            </div>
           </div>
         )}
       </div>
