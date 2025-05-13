@@ -31,6 +31,12 @@ export function ImprovedCustomerSelector({
   // Safely handle customers array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
+  useEffect(() => {
+    if (safeCustomers.length > 0) {
+      console.log(`ImprovedCustomerSelector loaded with ${safeCustomers.length} customers`);
+    }
+  }, [safeCustomers.length]);
+  
   // Clear search when selection is made
   useEffect(() => {
     if (!open) {

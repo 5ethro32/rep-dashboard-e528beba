@@ -84,6 +84,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
         .from('sales_data')
         .select('account_name, account_ref')
         .order('account_name');
+        // Removed any implicit limit or pagination restrictions
         
       if (error) {
         console.error('Error fetching customers:', error);
@@ -113,16 +114,9 @@ const RepTracker: React.FC<RepTrackerProps> = ({
       console.log('First few customers:', firstCustomers);
       console.log('Last few customers:', lastCustomers);
       
-      // Log a few customers from later in the alphabet to verify they exist
-      const vCustomers = uniqueCustomers.filter(c => c.account_name.startsWith('V')).slice(0, 3);
-      const wCustomers = uniqueCustomers.filter(c => c.account_name.startsWith('W')).slice(0, 3);
-      const yCustomers = uniqueCustomers.filter(c => c.account_name.startsWith('Y')).slice(0, 3);
-      const zCustomers = uniqueCustomers.filter(c => c.account_name.startsWith('Z')).slice(0, 3);
-      
-      console.log('Sample V customers:', vCustomers);
-      console.log('Sample W customers:', wCustomers);
-      console.log('Sample Y customers:', yCustomers);
-      console.log('Sample Z customers:', zCustomers);
+      // Log more detailed information about the customer distribution
+      const totalCount = uniqueCustomers.length;
+      console.log(`Total unique customers: ${totalCount}`);
       
       return uniqueCustomers;
     },

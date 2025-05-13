@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Virtuoso } from 'react-virtuoso';
 
 interface CustomerCommandProps {
   customers: Array<{ account_name: string; account_ref: string }>;
@@ -91,6 +92,33 @@ export function CustomerCommand({
       }
     }
   };
+
+  // Custom renderer for virtualized customer list items
+  const CustomerItem = React.memo(({ customer, index }: { customer: { account_name: string; account_ref: string }, index: number }) => {
+    const isSelected = selectedCustomer === customer.account_name;
+    
+    return (
+      <button
+        type="button"
+        onClick={(e) => handleSelect(e, customer)}
+        onMouseDown={(e) => e.preventDefault()}
+        className={cn(
+          "flex w-full items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm text-left",
+          "hover:bg-accent hover:text-accent-foreground",
+          "break-all whitespace-normal",
+          isSelected && "bg-accent text-accent-foreground"
+        )}
+      >
+        <Check
+          className={cn(
+            "h-4 w-4 flex-shrink-0",
+            isSelected ? "opacity-100" : "opacity-0"
+          )}
+        />
+        <span className="text-wrap break-all line-clamp-2 overflow-hidden">{customer.account_name}</span>
+      </button>
+    );
+  });
   
   return (
     <div 
@@ -124,41 +152,26 @@ export function CustomerCommand({
         {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {safeCustomers.length})
       </div>
       
-      <ScrollArea 
-        className="max-h-[500px] overflow-y-auto"
-        orientation="vertical"
-      >
+      <div className="relative">
         {filteredCustomers.length === 0 ? (
           <div className="py-6 text-center text-sm">No customer found.</div>
         ) : (
-          <div className="p-1">
-            {filteredCustomers.map((customer) => (
-              customer && customer.account_ref && customer.account_name ? (
-                <button
-                  key={customer.account_ref}
-                  type="button"
-                  onClick={(e) => handleSelect(e, customer)}
-                  onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
-                  className={cn(
-                    "flex w-full items-center gap-2 px-2 py-1.5 text-sm cursor-pointer rounded-sm text-left",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    "break-all whitespace-normal",
-                    selectedCustomer === customer.account_name && "bg-accent text-accent-foreground"
-                  )}
-                >
-                  <Check
-                    className={cn(
-                      "h-4 w-4 flex-shrink-0",
-                      selectedCustomer === customer.account_name ? "opacity-100" : "opacity-0"
-                    )}
+          <div className="h-[50vh] max-h-[500px]">
+            <Virtuoso
+              style={{ height: '100%' }}
+              totalCount={filteredCustomers.length}
+              itemContent={(index) => (
+                <div className="px-1 py-0.5">
+                  <CustomerItem 
+                    customer={filteredCustomers[index]} 
+                    index={index} 
                   />
-                  <span className="text-wrap break-all line-clamp-2 overflow-hidden">{customer.account_name}</span>
-                </button>
-              ) : null
-            ))}
+                </div>
+              )}
+            />
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }
