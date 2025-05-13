@@ -451,13 +451,23 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return `£${(item.nextCost || 0).toFixed(2)}`;
   };
 
-  // Format percentage - FIXED to now multiplies by 100 to match the utility function
+  // Format percentage - Modified to properly handle different cases
   const formatPercentage = (value: number | null | undefined) => {
     if (value === null || value === undefined) {
       return '0.00%';
     }
     // Multiply by 100 to convert decimal to percentage
     return `${(value * 100).toFixed(2)}%`;
+  };
+
+  // Special formatter for current margin only - to avoid double multiplication
+  const formatCurrentMargin = (value: number | null | undefined) => {
+    if (value === null || value === undefined) {
+      return '0.00%';
+    }
+    // Current margin is already stored as percentage value (not decimal)
+    // so we don't multiply by 100
+    return `${value.toFixed(2)}%`;
   };
 
   // Render sort indicator
@@ -944,10 +954,10 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Current Margin cell with popover - FIXED to use formatPercentage */}
+                    {/* Current Margin cell with popover - FIXED to use formatCurrentMargin */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAMargin">
-                        {formatPercentage(item.currentREVAMargin)}
+                        {formatCurrentMargin(item.currentREVAMargin)}
                       </CellDetailsPopover>
                     </TableCell>
                     
