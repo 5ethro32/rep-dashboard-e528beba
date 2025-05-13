@@ -36,6 +36,11 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
         return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
       });
 
+  // Format the customer count with commas for better readability
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
+  };
+
   // Handle keyboard navigation
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (filteredCustomers.length === 0) return;
@@ -129,7 +134,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
           </div>
           
           <div className="text-xs text-muted-foreground px-3 py-1">
-            {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {safeCustomers.length})
+            {formatNumber(filteredCustomers.length)} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {formatNumber(safeCustomers.length)})
           </div>
           
           <ScrollArea className="max-h-64 overflow-auto">

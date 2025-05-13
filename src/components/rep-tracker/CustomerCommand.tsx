@@ -93,6 +93,11 @@ export function CustomerCommand({
     }
   };
 
+  // Format the customer count with commas for better readability
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
+  };
+
   // Custom renderer for virtualized customer list items
   const CustomerItem = React.memo(({ customer, index }: { customer: { account_name: string; account_ref: string }, index: number }) => {
     const isSelected = selectedCustomer === customer.account_name;
@@ -149,7 +154,7 @@ export function CustomerCommand({
       </div>
       
       <div className="text-xs text-muted-foreground px-3 py-1">
-        {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {safeCustomers.length})
+        {formatNumber(filteredCustomers.length)} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {formatNumber(safeCustomers.length)})
       </div>
       
       <div className="relative">

@@ -38,6 +38,11 @@ export function CustomerSelector({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Format the customer count with commas for better readability
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
+  };
+
   // Log the customers received to help debug
   useEffect(() => {
     console.log(`CustomerSelector received ${customers.length} customers`);
@@ -167,7 +172,7 @@ export function CustomerSelector({
             </div>
             
             <div className="text-xs text-muted-foreground px-3 py-1">
-              {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {safeCustomers.length})
+              {formatNumber(filteredCustomers.length)} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {formatNumber(safeCustomers.length)})
             </div>
             
             <div 

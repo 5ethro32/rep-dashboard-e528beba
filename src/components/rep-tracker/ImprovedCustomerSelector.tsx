@@ -135,7 +135,7 @@ export function ImprovedCustomerSelector({
         >
           {isMobile && (
             <div className="fixed top-0 left-0 right-0 bg-black px-4 py-3 flex justify-between items-center z-[1000]">
-              <h3 className="font-semibold text-white">Select Customer ({safeCustomers.length})</h3>
+              <h3 className="font-semibold text-white">Select Customer ({safeCustomers.length.toLocaleString()})</h3>
               <button 
                 onClick={(e) => {
                   e.preventDefault(); // Prevent form submission
