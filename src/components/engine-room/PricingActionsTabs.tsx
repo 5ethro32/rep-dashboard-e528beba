@@ -85,6 +85,9 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
                 <span className="text-sm text-muted-foreground">
                   {fileName}
                 </span>
+                {onUpload && <Button variant="ghost" size="sm" onClick={onUpload} className="flex items-center space-x-1 p-1 h-auto">
+                  <UploadCloud className="h-4 w-4" />
+                </Button>}
               </div>}
           </div>
           
