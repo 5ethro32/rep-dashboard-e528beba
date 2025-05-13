@@ -4,8 +4,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface DataItem {
   name: string;
-  value: number;
+  value: number; // This is the required property that was missing in UsageWeightedMetrics
   color: string;
+  profit?: number; // Making this optional since it's only used in some contexts
+  range?: string; // Making range optional as it's not used directly in rendering
+  count?: number; // Making count optional as it's converted to value
+  revenue?: number; // Adding revenue as optional
 }
 
 interface DonutChartProps {

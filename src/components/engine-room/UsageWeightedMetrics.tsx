@@ -29,10 +29,11 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
     '#fca5a5', // Very light red
   ];
   
-  // Update chart data with new colors
+  // Update chart data with new colors and add the required 'value' property
   const marginDistributionWithColors = metrics.marginDistribution.map((band, index) => ({
     ...band,
-    color: brandColors[index % brandColors.length]
+    color: brandColors[index % brandColors.length],
+    value: band.count // Adding the required 'value' property, using count as the value
   }));
   
   // Determine if there's a significant margin improvement
