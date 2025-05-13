@@ -8,6 +8,7 @@ type ToastProps = {
   description?: React.ReactNode;
   action?: ToastActionElement;
   variant?: 'default' | 'destructive';
+  duration?: number; // Add duration property to match sonner's API
 };
 
 // Create a useToast hook that wraps sonner toast with our API
@@ -18,6 +19,8 @@ export function useToast() {
       const sonnerOptions: ExternalToast = {
         description: props.description,
         action: props.action as any,
+        // Pass duration if provided
+        ...(props.duration !== undefined ? { duration: props.duration } : {}),
         // Map our variant to sonner's style if destructive
         ...(props.variant === 'destructive' ? { style: { backgroundColor: 'var(--destructive)', color: 'var(--destructive-foreground)' } } : {})
       };
@@ -37,6 +40,8 @@ export const toast = (props: ToastProps) => {
   const sonnerOptions: ExternalToast = {
     description: props.description,
     action: props.action as any,
+    // Pass duration if provided
+    ...(props.duration !== undefined ? { duration: props.duration } : {}),
     // Map our variant to sonner's style if destructive
     ...(props.variant === 'destructive' ? { style: { backgroundColor: 'var(--destructive)', color: 'var(--destructive-foreground)' } } : {})
   };
