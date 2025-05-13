@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
 import { formatPercentage } from '@/utils/formatting-utils';
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface EngineDataTableProps {
   data: any[];
@@ -117,7 +118,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const [ruleFilter, setRuleFilter] = useState<string>('all');
-  const itemsPerPage = 50; // Increased for larger tables
+  const [filterDropdownSearch, setFilterDropdownSearch] = useState<Record<string, string>>({});
+  const itemsPerPage = 50;
 
   // Use external flag filter if provided
   useEffect(() => {
@@ -194,6 +196,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return result;
   }, [dataWithTml]);
 
+  // Check if all values for a field are selected
+  const areAllValuesSelected = (field: string) => {
+    const values = uniqueValues[field] || [];
+    const selectedValues = columnFilters[field] || [];
+    return values.length > 0 && selectedValues.length === values.length;
+  };
+
   // Get unique flags and show them in dropdown filter
   const uniqueFlags = useMemo(() => {
     const allFlags = new Set<string>();
@@ -248,17 +257,23 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
 
       // Match usage rank filter - updated for new filter value
       const matchesRankFilter = !filterByRank || filterByRank === 'all' ? true : 
-                               item.usageRank === parseInt(filterByRank, 10);
+                             item.usageRank === parseInt(filterByRank, 10);
 
       // Match rule filter
       const matchesRuleFilter = ruleFilter === 'all' ? true :
-                              item.appliedRule === ruleFilter;
+                            item.appliedRule === ruleFilter;
 
       // Match all column filters
       const matchesColumnFilters = Object.keys(columnFilters).every(field => {
         if (!columnFilters[field] || columnFilters[field].length === 0) {
           return true;
         }
+        
+        // If all values are selected, it's equivalent to no filter
+        if (areAllValuesSelected(field)) {
+          return true;
+        }
+        
         if (field === 'flags') {
           // Special handling for flags which is an array or multiple flags
           if (Array.isArray(item.flags)) {
@@ -331,19 +346,70 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   };
 
   // Handle column filter change
-  const handleFilterChange = (field: string, value: any) => {
+  const handleFilterChange = (field: string, value: any, isSelectAll: boolean = false) => {
     setColumnFilters(prev => {
-      const current = prev[field] || [];
-
-      // Toggle the value in the filter
-      const newFilter = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
-      return {
-        ...prev,
-        [field]: newFilter
-      };
+      if (isSelectAll) {
+        // Toggle between all selected and none selected
+        const allValues = uniqueValues[field] || [];
+        const currentValues = prev[field] || [];
+        
+        // If all values are currently selected or no values are selected, clear the selection
+        // Otherwise, select all values
+        const newFilter = currentValues.length === allValues.length ? [] : [...allValues];
+        
+        return {
+          ...prev,
+          [field]: newFilter
+        };
+      } else {
+        const current = prev[field] || [];
+        const allValues = uniqueValues[field] || [];
+        
+        // If removing a value when all were selected, select all except this one
+        if (current.length === allValues.length && current.includes(value)) {
+          return {
+            ...prev,
+            [field]: current.filter(v => v !== value)
+          };
+        }
+        
+        // Normal toggle behavior
+        const newFilter = current.includes(value) 
+          ? current.filter(v => v !== value) 
+          : [...current, value];
+        
+        return {
+          ...prev,
+          [field]: newFilter
+        };
+      }
     });
+    
     // Reset to first page when filter changes
     setCurrentPage(1);
+  };
+
+  // Handle filter dropdown search
+  const handleFilterSearchChange = (field: string, searchValue: string) => {
+    setFilterDropdownSearch(prev => ({
+      ...prev,
+      [field]: searchValue.toLowerCase()
+    }));
+  };
+
+  // Get filtered dropdown options based on search
+  const getFilteredOptions = (field: string) => {
+    const searchValue = filterDropdownSearch[field] || '';
+    const values = uniqueValues[field] || [];
+    
+    if (!searchValue) {
+      return values;
+    }
+    
+    return values.filter(value => {
+      const stringValue = String(value).toLowerCase();
+      return stringValue.includes(searchValue);
+    });
   };
 
   // Format currency - with null/undefined check and no market price indicator
@@ -470,25 +536,39 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length ? 'bg-primary/20' : ''}`} 
+                className={`h-6 w-6 p-0 ml-2 ${columnFilters[column.field]?.length && !areAllValuesSelected(column.field) ? 'bg-primary/20' : ''}`} 
                 onClick={e => e.stopPropagation()}
               >
                 <Filter className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto">
+            <DropdownMenuContent align="start" className="w-56 max-h-80 overflow-y-auto bg-gray-900 border border-gray-700">
               <div className="p-2">
                 <p className="text-sm font-medium">Filter by {column.label}</p>
                 <Input 
                   placeholder="Search..." 
                   className="h-8 mt-2" 
-                  onChange={e => {
-                    // Filter dropdown options, not implemented fully
-                  }} 
+                  value={filterDropdownSearch[column.field] || ''}
+                  onChange={e => handleFilterSearchChange(column.field, e.target.value)} 
                 />
               </div>
               <DropdownMenuSeparator />
-              {uniqueValues[column.field]?.map((value, i) => (
+              <div className="p-1 border-b border-gray-700">
+                <div 
+                  className="px-2 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-gray-800 rounded-sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleFilterChange(column.field, null, true);
+                  }}
+                >
+                  <Checkbox 
+                    checked={areAllValuesSelected(column.field)} 
+                    className="data-[state=checked]:bg-blue-600" 
+                  />
+                  <span className="text-sm font-medium">Select All</span>
+                </div>
+              </div>
+              {getFilteredOptions(column.field).map((value, i) => (
                 <DropdownMenuCheckboxItem 
                   key={i} 
                   checked={columnFilters[column.field]?.includes(value)} 
@@ -513,17 +593,54 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         <span>Flags</span>
         {uniqueFlags.length > 0 && <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ml-2 ${columnFilters['flags']?.length ? 'bg-primary/20' : ''}`}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`h-6 w-6 p-0 ml-2 ${columnFilters['flags']?.length && !areAllValuesSelected('flags') ? 'bg-primary/20' : ''}`}
+              >
                 <Filter className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              {uniqueFlags.map((flag, i) => <DropdownMenuCheckboxItem key={i} checked={columnFilters['flags']?.includes(flag)} onSelect={e => {
-            e.preventDefault();
-            handleFilterChange('flags', flag);
-          }}>
+            <DropdownMenuContent align="start" className="w-56 bg-gray-900 border border-gray-700">
+              <div className="p-2">
+                <p className="text-sm font-medium">Filter by Flags</p>
+                <Input 
+                  placeholder="Search..." 
+                  className="h-8 mt-2" 
+                  value={filterDropdownSearch['flags'] || ''}
+                  onChange={e => handleFilterSearchChange('flags', e.target.value)} 
+                />
+              </div>
+              <DropdownMenuSeparator />
+              <div className="p-1 border-b border-gray-700">
+                <div 
+                  className="px-2 py-1.5 flex items-center gap-2 cursor-pointer hover:bg-gray-800 rounded-sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleFilterChange('flags', null, true);
+                  }}
+                >
+                  <Checkbox 
+                    checked={areAllValuesSelected('flags')} 
+                    className="data-[state=checked]:bg-blue-600"
+                  />
+                  <span className="text-sm font-medium">Select All</span>
+                </div>
+              </div>
+              {(filterDropdownSearch['flags'] ? uniqueFlags.filter(flag => 
+                flag.toLowerCase().includes(filterDropdownSearch['flags'] || '')) 
+                : uniqueFlags).map((flag, i) => (
+                <DropdownMenuCheckboxItem 
+                  key={i} 
+                  checked={columnFilters['flags']?.includes(flag)} 
+                  onSelect={e => {
+                    e.preventDefault();
+                    handleFilterChange('flags', flag);
+                  }}
+                >
                   {flag}
-                </DropdownMenuCheckboxItem>)}
+                </DropdownMenuCheckboxItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>}
       </div>;
@@ -603,16 +720,23 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
 
   // Active filters summary
   const renderActiveFilters = () => {
-    const activeFilters = Object.entries(columnFilters).filter(([_, values]) => values && values.length > 0).map(([field, values]) => {
-      const column = columns.find(col => col.field === field);
-      const label = column ? column.label : field === 'flags' ? 'Flags' : field;
-      return {
-        field,
-        label,
-        values: Array.isArray(values) ? values : [values]
-      };
-    });
+    const activeFilters = Object.entries(columnFilters)
+      .filter(([field, values]) => {
+        // Only show filter if values exist and not all values are selected
+        return values && Array.isArray(values) && values.length > 0 && !areAllValuesSelected(field);
+      })
+      .map(([field, values]) => {
+        const column = columns.find(col => col.field === field);
+        const label = column ? column.label : field === 'flags' ? 'Flags' : field;
+        return {
+          field,
+          label,
+          values: Array.isArray(values) ? values : [values]
+        };
+      });
+      
     if (activeFilters.length === 0) return null;
+    
     return <div className="flex flex-wrap items-center gap-2 my-2 bg-gray-900/20 p-2 rounded-md">
         <span className="text-sm text-muted-foreground">Active filters:</span>
         {activeFilters.map((filter, i) => <div key={i} className="flex flex-wrap gap-1">
