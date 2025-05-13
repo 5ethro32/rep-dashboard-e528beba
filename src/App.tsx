@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,7 +13,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { EngineRoomProvider } from "./contexts/EngineRoomContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RepTracker from "./pages/RepTracker";
-import AIVera from "./pages/AIVera"; 
 import MyPerformance from "./pages/MyPerformance";
 import EngineRoom from "./pages/EngineRoom"; 
 import EngineDashboard from "./pages/engine-room/EngineDashboard";
@@ -140,7 +140,6 @@ const AppRoutes = () => {
           path="/my-performance" 
           element={<MyPerformanceWithProps />} 
         />
-        <Route path="/ai-vera" element={<AIVera />} />
         
         {/* Engine Room Routes - Wrapped with EngineRoomProvider */}
         <Route path="/engine-room" element={

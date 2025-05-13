@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // MobileNavigation component for bottom navigation on mobile devices
@@ -28,9 +28,9 @@ const MobileNavigation = () => {
       icon: UserCircle,
     },
     {
-      path: '/ai-vera',
-      label: 'Vera',
-      icon: Bot,
+      path: '/engine-room/dashboard',
+      label: 'Engine',
+      icon: Wrench,
     },
   ];
 

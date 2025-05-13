@@ -7,7 +7,6 @@ import {
   ClipboardList, 
   UserCircle,
   Home,
-  Bot,
   Sliders
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -77,11 +76,6 @@ export const AppSidebar = () => {
       to: "/my-performance",
       icon: <UserCircle className="h-5 w-5 transition-colors duration-200" />,
       label: "My Data"
-    },
-    {
-      to: "/ai-vera",
-      icon: <Bot className="h-5 w-5 transition-colors duration-200" />,
-      label: "AI Vera"
     },
     {
       to: "/engine-room/dashboard",

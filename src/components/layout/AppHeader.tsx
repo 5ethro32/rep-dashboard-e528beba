@@ -3,7 +3,7 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Wrench } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, ChevronDown, RefreshCw, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
@@ -50,7 +50,6 @@ const AppHeader = ({
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [isVeraOpen, setIsVeraOpen] = useState(false);
   const [isEngineSubnavHovered, setIsEngineSubnavHovered] = useState(false);
 
   // Check if we're in the Engine Room section
@@ -70,8 +69,6 @@ const AppHeader = ({
         return isMobile ? 'Planner' : 'Rep Planner';
       case '/my-performance':
         return isMobile ? 'My Dashboard' : 'My Dashboard';
-      case '/ai-vera':
-        return isMobile ? 'Vera' : 'AI Vera';
       case '/engine-room/dashboard':
         return isMobile ? 'Engine Dashboard' : 'Engine Room / Dashboard';
       case '/engine-room/engine':
@@ -137,10 +134,6 @@ const AppHeader = ({
     label: 'My Dashboard',
     icon: <UserCircle className="h-4 w-4" />
   }, {
-    path: '/ai-vera',
-    label: 'AI Vera',
-    icon: <Bot className="h-4 w-4" />
-  }, {
     path: '/engine-room/dashboard',
     label: 'Engine Room',
     icon: <Wrench className="h-4 w-4" />,
@@ -187,11 +180,6 @@ const AppHeader = ({
             <UserProfileDropdown />
           </div>
         </div>
-        
-        {/* Vera Assistant Dropdown - Only shown when isVeraOpen is true */}
-        {!isMobile && isVeraOpen && <div className="absolute right-4 top-16 z-50 w-96 overflow-hidden">
-            <VeraAssistant onClose={() => setIsVeraOpen(false)} />
-          </div>}
         
         {/* Navigation bar - Only on desktop */}
         {!isMobile && (
