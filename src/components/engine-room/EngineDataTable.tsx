@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
-import { formatPercentage } from '@/utils/formatting-utils';
+import { formatPercentage as utilFormatPercentage } from '@/utils/formatting-utils';
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface EngineDataTableProps {
@@ -451,12 +451,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return `£${(item.nextCost || 0).toFixed(2)}`;
   };
 
-  // Format percentage - FIXED to not multiply by 100 when displaying since the value already includes the multiplier
+  // Format percentage - FIXED to now multiplies by 100 to match the utility function
   const formatPercentage = (value: number | null | undefined) => {
     if (value === null || value === undefined) {
       return '0.00%';
     }
-    return `${value.toFixed(2)}%`;
+    // Multiply by 100 to convert decimal to percentage
+    return `${(value * 100).toFixed(2)}%`;
   };
 
   // Render sort indicator
