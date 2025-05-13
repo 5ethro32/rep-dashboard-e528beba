@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -22,6 +21,7 @@ import ApprovalsDashboard from "./pages/engine-room/ApprovalsDashboard";
 import RuleSimulator from "./pages/engine-room/RuleSimulator";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
+import { useAuth } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,8 +35,11 @@ const queryClient = new QueryClient({
 const AppRoutes = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
-  const [selectedUserName, setSelectedUserName] = useState<string>("All Data");
+  const { user } = useAuth();
+  
+  // Initialize to null (user's own data) rather than "all"
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string>("My Data");
   const [isLoading, setIsLoading] = useState(false);
   
   const handleSelectUser = (userId: string | null, displayName: string) => {

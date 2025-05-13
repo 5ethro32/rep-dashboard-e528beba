@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,6 +40,16 @@ export default function UserSelector({
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const ALL_DATA_ID = "all";
+
+  // Set initial user selection if not set already
+  useEffect(() => {
+    // If the selectedUserId is "all" but we're on the rep-tracker page,
+    // automatically switch to the user's own data
+    const currentPath = window.location.pathname;
+    if (currentPath === '/rep-tracker' && selectedUserId === ALL_DATA_ID && user) {
+      onSelectUser(user.id, 'My Data');
+    }
+  }, [selectedUserId, user, onSelectUser]);
 
   useEffect(() => {
     const fetchUsers = async () => {
