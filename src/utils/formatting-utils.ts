@@ -39,10 +39,9 @@ export const formatNumber = (value: number | undefined | null): string => {
 /**
  * Calculate usage-weighted metrics using correct formulas
  * @param items Array of items with price, cost and usage data
- * @param uncapped Whether to use uncapped prices if available
  * @returns Object containing calculated metrics
  */
-export const calculateUsageWeightedMetrics = (items: any[], uncapped = false) => {
+export const calculateUsageWeightedMetrics = (items: any[]) => {
   // Initialize result with default values for both current and proposed metrics
   const result = {
     // Current metrics (based on current REVA Price)
@@ -56,16 +55,8 @@ export const calculateUsageWeightedMetrics = (items: any[], uncapped = false) =>
     proposedProfit: 0,
     proposedWeightedMargin: 0,
     
-    // Uncapped metrics (based on prices without margin cap)
-    uncappedRevenue: 0,
-    uncappedProfit: 0, 
-    uncappedWeightedMargin: 0,
-    
     // Comparison metrics
     marginImprovement: 0,
-    marginImprovementUncapped: 0, // Improvement from current to uncapped
-    profitImprovement: 0,
-    profitImprovementUncapped: 0, // Improvement from current to uncapped
     
     // Distribution metrics
     marginDistribution: [
@@ -152,12 +143,7 @@ export const calculateUsageWeightedMetrics = (items: any[], uncapped = false) =>
     result.validItemCount++;
     
     // Calculate proposed values if available
-    // First check if uncapped values should be used if available
-    let proposedPrice = Math.max(0, Number(item.proposedPrice) || 0);
-    if (uncapped && item.uncappedPrice !== undefined) {
-      proposedPrice = Math.max(0, Number(item.uncappedPrice) || 0);
-    }
-    
+    const proposedPrice = Math.max(0, Number(item.proposedPrice) || 0); // Ensure non-negative
     const isValidProposedPrice = proposedPrice > 0;
     
     if (isValidProposedPrice) {
@@ -166,18 +152,6 @@ export const calculateUsageWeightedMetrics = (items: any[], uncapped = false) =>
       
       result.proposedRevenue += proposedRevenue;
       result.proposedProfit += proposedProfit;
-    }
-    
-    // Calculate uncapped values if available
-    if (item.uncappedPrice !== undefined) {
-      const uncappedPrice = Math.max(0, Number(item.uncappedPrice) || 0);
-      if (uncappedPrice > 0) {
-        const uncappedRevenue = usage * uncappedPrice;
-        const uncappedProfit = usage * (uncappedPrice - avgCost);
-        
-        result.uncappedRevenue += uncappedRevenue;
-        result.uncappedProfit += uncappedProfit;
-      }
     }
     
     // Categorize for margin distribution (using current values)
@@ -212,14 +186,6 @@ export const calculateUsageWeightedMetrics = (items: any[], uncapped = false) =>
   if (result.proposedRevenue > 0) {
     result.proposedWeightedMargin = (result.proposedProfit / result.proposedRevenue) * 100;
     result.marginImprovement = result.proposedWeightedMargin - result.weightedMargin;
-    result.profitImprovement = result.proposedProfit - result.totalProfit;
-  }
-  
-  // Calculate usage-weighted margin percentages for uncapped pricing
-  if (result.uncappedRevenue > 0) {
-    result.uncappedWeightedMargin = (result.uncappedProfit / result.uncappedRevenue) * 100;
-    result.marginImprovementUncapped = result.uncappedWeightedMargin - result.weightedMargin;
-    result.profitImprovementUncapped = result.uncappedProfit - result.totalProfit;
   }
   
   // For debugging - print out the actual profit and revenue to verify sign issues
@@ -233,10 +199,6 @@ export const calculateUsageWeightedMetrics = (items: any[], uncapped = false) =>
     proposedProfit: result.proposedProfit,
     proposedWeightedMargin: result.proposedWeightedMargin,
     marginImprovement: result.marginImprovement,
-    uncappedRevenue: result.uncappedRevenue,
-    uncappedProfit: result.uncappedProfit,
-    uncappedWeightedMargin: result.uncappedWeightedMargin,
-    marginImprovementUncapped: result.marginImprovementUncapped,
     itemsWithNegativeMargin: result.itemsWithNegativeMargin,
     totalNegativeProfit: result.totalNegativeProfit
   });

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
@@ -14,7 +13,6 @@ interface EngineRoomContextType {
   uploadProgress: number;
   isUploading: boolean;
   errorMessage: string | null;
-  applyMarginCap: boolean; // New property for margin cap toggle
   handleFileUpload: (file: File) => Promise<void>;
   handlePriceChange: (item: any, newPrice: number) => void;
   handleResetChanges: () => void;
@@ -24,7 +22,6 @@ interface EngineRoomContextType {
   handleRejectItems: (itemIds: string[], comment: string) => void;
   handleExport: () => void;
   setUserRole: (role: 'analyst' | 'manager' | 'admin') => void;
-  setApplyMarginCap: (apply: boolean) => void; // New function to toggle margin cap
   getPendingApprovalCount: () => number;
 }
 
@@ -39,7 +36,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [workflowStatus, setWorkflowStatus] = useState<'draft' | 'submitted' | 'approved' | 'rejected'>('draft');
   const [modifiedItems, setModifiedItems] = useState<Set<string>>(new Set());
   const [userRole, setUserRole] = useState<'analyst' | 'manager' | 'admin'>('manager');
-  const [applyMarginCap, setApplyMarginCap] = useState<boolean>(true); // Default to applying the margin cap
 
   // Get cached data if available
   const { data: engineData, isLoading, error } = useQuery({
@@ -509,7 +505,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     uploadProgress,
     isUploading,
     errorMessage,
-    applyMarginCap,
     handleFileUpload,
     handlePriceChange,
     handleResetChanges,
@@ -519,7 +514,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     handleRejectItems,
     handleExport,
     setUserRole,
-    setApplyMarginCap,
     getPendingApprovalCount
   };
 
