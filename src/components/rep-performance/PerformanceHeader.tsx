@@ -6,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
-import { CalendarIcon, ChevronDown } from 'lucide-react';
+import { CalendarIcon, ChevronDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -46,6 +46,7 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
       <div className={`${hideTitle ? '' : 'mt-4 md:mt-8 text-right'} flex items-center justify-end gap-2 z-40`}>
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none">
+            <RefreshCw className="h-4 w-4 opacity-70 mr-1" />
             <CalendarIcon className="h-4 w-4 opacity-70" />
             {isMobile ? (
               <span>{selectedMonth}</span>
