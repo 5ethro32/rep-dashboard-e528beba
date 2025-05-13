@@ -183,13 +183,6 @@ const AppHeader = ({
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>}
             
-            {/* Only show Vera Assistant Button on desktop */}
-            {!isMobile && <button className="flex items-center justify-center h-7 w-7 transition-transform duration-200 hover:scale-110 hover:shadow-lg shadow-md" onClick={() => setIsVeraOpen(!isVeraOpen)} aria-label="Open Vera Assistant">
-                <div className="flex items-center justify-center h-6 w-6 bg-gradient-to-r from-finance-red to-rose-700 text-white rounded-none transform rotate-45 shadow-md">
-                  <span className="transform -rotate-45 font-bold text-sm">V</span>
-                </div>
-              </button>}
-            
             {showUserSelector && <UserSelector selectedUserId={selectedUserId || "all"} onSelectUser={handleUserSelection} showAllDataOption={true} />}
             <UserProfileDropdown />
           </div>
@@ -228,12 +221,12 @@ const AppHeader = ({
                     </Link>
                     
                     {/* Subnav that appears on hover */}
-                    {(isEngineSubnavHovered || isEngineRoomSection) && (
+                    {(isEngineSubnavHovered) && (
                       <div 
                         className={cn(
                           "absolute top-full left-0 bg-gray-950/95 backdrop-blur-sm border border-white/10 rounded-md shadow-lg overflow-hidden z-50",
                           "transition-all duration-200",
-                          isEngineSubnavHovered || isEngineRoomSection ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+                          "opacity-100 translate-y-0"
                         )}
                       >
                         <div className="p-1">
@@ -279,8 +272,8 @@ const AppHeader = ({
           </div>
         )}
 
-        {/* Alternative implementation for Engine Room subnav - Only show when in Engine Room section */}
-        {!isMobile && isEngineRoomSection && (
+        {/* Alternative implementation for Engine Room subnav - Only show when in Engine Room section AND hovering */}
+        {!isMobile && isEngineRoomSection && isEngineSubnavHovered && (
           <div className="border-t border-white/5 bg-gray-900/60">
             <div className="flex px-4 py-1">
               <NavLink 
