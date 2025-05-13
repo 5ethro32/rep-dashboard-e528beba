@@ -1,223 +1,145 @@
 
-/**
- * Utility functions for formatting values in the application
- */
+import { formatDistanceToNow } from 'date-fns';
 
-/**
- * Format a number as currency with pound symbol
- */
-export const formatCurrency = (value: number | undefined | null): string => {
-  if (value === undefined || value === null) return '—';
-  return new Intl.NumberFormat('en-GB', {
+// Format numerical values as currency (GBP)
+export const formatCurrency = (value: number | null | undefined, noDecimals = false): string => {
+  if (value === null || value === undefined) return '£0';
+  
+  const formatter = new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
+    minimumFractionDigits: noDecimals ? 0 : 2,
+    maximumFractionDigits: noDecimals ? 0 : 2,
+  });
+  
+  return formatter.format(value);
 };
 
-/**
- * Format a number as percentage with % symbol
- * NOTE: This function expects the input value to be in decimal form (e.g., 0.05 for 5%)
- * and will multiply by 100 before formatting.
- */
-export const formatPercentage = (value: number | undefined | null): string => {
-  if (value === undefined || value === null) return '—';
-  // Check if value seems to already be in percentage form (>1)
-  const valueToFormat = value > 1 ? value / 100 : value;
-  return new Intl.NumberFormat('en-GB', {
-    style: 'percent',
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1
-  }).format(valueToFormat);
+// Format values as percentages
+export const formatPercentage = (value: number | null | undefined): string => {
+  if (value === null || value === undefined) return '0.00%';
+  return `${value.toFixed(2)}%`;
 };
 
-/**
- * Format a number with thousand separators
- */
-export const formatNumber = (value: number | undefined | null): string => {
-  if (value === undefined || value === null) return '—';
-  return new Intl.NumberFormat('en-GB').format(value);
+// Format numbers with appropriate separators
+export const formatNumber = (value: number | null | undefined): string => {
+  if (value === null || value === undefined) return '0';
+  return value.toLocaleString('en-GB');
 };
 
-/**
- * Calculate usage-weighted metrics using correct formulas
- * @param items Array of items with price, cost and usage data
- * @returns Object containing calculated metrics
- */
-export const calculateUsageWeightedMetrics = (items: any[]) => {
-  // Initialize result with default values for both current and proposed metrics
-  const result = {
-    // Current metrics (based on current REVA Price)
-    totalRevenue: 0,
-    totalProfit: 0,
-    totalUsage: 0,
-    weightedMargin: 0,
-    
-    // Proposed metrics (based on proposed Price)
-    proposedRevenue: 0,
-    proposedProfit: 0,
-    proposedWeightedMargin: 0,
-    
-    // Comparison metrics
-    marginImprovement: 0,
-    
-    // Distribution metrics
-    marginDistribution: [
-      { name: '<5%', value: 0, color: '#ef4444', profit: 0 }, // Red
-      { name: '5-10%', value: 0, color: '#f97316', profit: 0 }, // Orange
-      { name: '10-15%', value: 0, color: '#eab308', profit: 0 }, // Yellow
-      { name: '15-20%', value: 0, color: '#84cc16', profit: 0 }, // Light Green
-      { name: '20%+', value: 0, color: '#22c55e', profit: 0 }  // Green
-    ],
-    validItemCount: 0,
-    
-    // Debug information for troubleshooting
-    itemsWithNegativeMargin: 0,
-    totalNegativeProfit: 0
-  };
-  
-  if (!items || items.length === 0) {
-    return result;
-  }
+// Format elapsed time in a readable format
+export const formatElapsedTime = (date: Date | string): string => {
+  const dateToUse = typeof date === 'string' ? new Date(date) : date;
+  return formatDistanceToNow(dateToUse, { addSuffix: true });
+};
 
-  // For debugging purposes
-  console.log(`Processing ${items.length} items for usage-weighted metrics`);
+// Calculate usage-weighted margin and other metrics
+export const calculateUsageWeightedMetrics = (data: any[]) => {
+  let totalUsage = 0;
+  let totalRevenue = 0;
+  let totalProfit = 0;
+  let totalUsageWeightedMargin = 0;
+  let validItemCount = 0;
   
-  // Track items with negative margins for debugging
-  const negativeMarginItems: any[] = [];
+  // For proposed price calculations
+  let proposedRevenue = 0;
+  let proposedProfit = 0;
   
-  // Process each item with validation to ensure no negative values
-  items.forEach((item, index) => {
-    // Basic data validation - ensure we have all required fields with valid numeric values
-    const usage = Math.max(0, Number(item.revaUsage) || 0); // Ensure non-negative usage
-    const currentPrice = Math.max(0, Number(item.currentREVAPrice) || 0); // Ensure non-negative price
-    const avgCost = Math.max(0, Number(item.avgCost) || 0); // Ensure non-negative cost
+  // Create margin bands for distribution
+  const marginBands = [
+    { name: 'Negative', range: 'Below 0%', count: 0, revenue: 0, profit: 0, color: '#ef4444' },
+    { name: 'Very Low', range: '0-5%', count: 0, revenue: 0, profit: 0, color: '#f97316' },
+    { name: 'Low', range: '5-10%', count: 0, revenue: 0, profit: 0, color: '#eab308' },
+    { name: 'Medium', range: '10-20%', count: 0, revenue: 0, profit: 0, color: '#84cc16' },
+    { name: 'High', range: '20-30%', count: 0, revenue: 0, profit: 0, color: '#22c55e' },
+    { name: 'Very High', range: 'Above 30%', count: 0, revenue: 0, profit: 0, color: '#14b8a6' }
+  ];
+
+  data.forEach(item => {
+    // Skip items with no usage data
+    if (!item.revaUsage || item.revaUsage <= 0) return;
     
-    const isValidUsage = usage > 0;
-    const isValidPrice = currentPrice > 0;
-    const isValidCost = !isNaN(avgCost);
+    validItemCount++;
+    totalUsage += item.revaUsage;
     
-    // Skip items with invalid data
-    if (!isValidUsage || !isValidPrice || !isValidCost) {
-      // For debugging
-      if (index < 5) {
-        console.log(`Skipping item due to invalid data: ${JSON.stringify({
-          id: item.id,
-          description: item.description,
-          usage,
-          currentPrice,
-          avgCost,
-          isValidUsage,
-          isValidPrice,
-          isValidCost
-        })}`);
-      }
-      return;
-    }
+    // Calculate revenue and profit based on current price
+    const price = item.currentREVAPrice || 0;
+    const cost = item.avgCost || 0;
+    const revenue = price * item.revaUsage;
+    const profit = revenue - (cost * item.revaUsage); // Correct profit calculation
     
-    // CRITICAL FIX: Ensure we're using price - cost (not cost - price)
-    // Calculate current revenue and profit with CORRECT formula
-    const currentRevenue = usage * currentPrice;
-    const currentProfit = usage * (currentPrice - avgCost); // IMPORTANT: price - cost is correct
+    totalRevenue += revenue;
+    totalProfit += profit;
     
-    // Current margin as percentage - always ensure it's based on price division
-    const currentMargin = currentPrice > 0 ? ((currentPrice - avgCost) / currentPrice) * 100 : 0;
-    
-    // Track negative margin items for debugging
-    if (currentMargin < 0) {
-      if (negativeMarginItems.length < 10) {
-        negativeMarginItems.push({
-          description: item.description,
-          usage,
-          currentPrice,
-          avgCost,
-          currentMargin,
-          impact: currentProfit
-        });
-      }
-      result.itemsWithNegativeMargin++;
-      result.totalNegativeProfit += currentProfit;
-    }
-    
-    // Accumulate totals for current pricing
-    result.totalRevenue += currentRevenue;
-    result.totalProfit += currentProfit;
-    result.totalUsage += usage;
-    result.validItemCount++;
-    
-    // Calculate proposed values if available
-    const proposedPrice = Math.max(0, Number(item.proposedPrice) || 0); // Ensure non-negative
-    const isValidProposedPrice = proposedPrice > 0;
-    
-    if (isValidProposedPrice) {
-      const proposedRevenue = usage * proposedPrice;
-      const proposedProfit = usage * (proposedPrice - avgCost); // IMPORTANT: price - cost is correct
+    // Calculate proposed revenue and profit if available
+    if (item.proposedPrice) {
+      const proposedPriceValue = item.proposedPrice || price;
+      const propRevenue = proposedPriceValue * item.revaUsage;
+      const propProfit = propRevenue - (cost * item.revaUsage); // Correct profit calculation
       
-      result.proposedRevenue += proposedRevenue;
-      result.proposedProfit += proposedProfit;
+      proposedRevenue += propRevenue;
+      proposedProfit += propProfit;
     }
-    
-    // Categorize for margin distribution (using current values)
-    // Use absolute value for margin percentage to categorize
-    const marginForDistribution = Math.max(0, currentMargin); // Only use positive margins for distribution
-    
-    if (marginForDistribution < 5) {
-      result.marginDistribution[0].value += 1;
-      result.marginDistribution[0].profit += currentProfit;
-    } else if (marginForDistribution < 10) {
-      result.marginDistribution[1].value += 1;
-      result.marginDistribution[1].profit += currentProfit;
-    } else if (marginForDistribution < 15) {
-      result.marginDistribution[2].value += 1;
-      result.marginDistribution[2].profit += currentProfit;
-    } else if (marginForDistribution < 20) {
-      result.marginDistribution[3].value += 1;
-      result.marginDistribution[3].profit += currentProfit;
-    } else {
-      result.marginDistribution[4].value += 1;
-      result.marginDistribution[4].profit += currentProfit;
-    }
-  });
-  
-  // Calculate usage-weighted margin percentages for current pricing
-  if (result.totalRevenue > 0) {
-    // CRITICAL: This is the correct formula for margin percentage
-    result.weightedMargin = (result.totalProfit / result.totalRevenue) * 100;
-  }
-  
-  // Calculate usage-weighted margin percentages for proposed pricing
-  if (result.proposedRevenue > 0) {
-    result.proposedWeightedMargin = (result.proposedProfit / result.proposedRevenue) * 100;
-    result.marginImprovement = result.proposedWeightedMargin - result.weightedMargin;
-  }
-  
-  // For debugging - print out the actual profit and revenue to verify sign issues
-  console.log('Usage-weighted metrics calculation results:', {
-    validItemCount: result.validItemCount,
-    totalUsage: result.totalUsage,
-    totalRevenue: result.totalRevenue,
-    totalProfit: result.totalProfit,
-    weightedMargin: result.weightedMargin,
-    proposedRevenue: result.proposedRevenue,
-    proposedProfit: result.proposedProfit,
-    proposedWeightedMargin: result.proposedWeightedMargin,
-    marginImprovement: result.marginImprovement,
-    itemsWithNegativeMargin: result.itemsWithNegativeMargin,
-    totalNegativeProfit: result.totalNegativeProfit
-  });
 
-  // Log information about negative margin items
-  if (negativeMarginItems.length > 0) {
-    console.log('Sample of items with negative margins that may be affecting overall metrics:', 
-      negativeMarginItems);
+    // Calculate margin and add to margin band
+    let margin = 0;
+    if (price > 0) {
+      margin = ((price - cost) / price) * 100; // Correct margin calculation as percentage
+      
+      // Assign to margin band
+      if (margin < 0) {
+        marginBands[0].count++;
+        marginBands[0].revenue += revenue;
+        marginBands[0].profit += profit;
+      } else if (margin < 5) {
+        marginBands[1].count++;
+        marginBands[1].revenue += revenue;
+        marginBands[1].profit += profit;
+      } else if (margin < 10) {
+        marginBands[2].count++;
+        marginBands[2].revenue += revenue;
+        marginBands[2].profit += profit;
+      } else if (margin < 20) {
+        marginBands[3].count++;
+        marginBands[3].revenue += revenue;
+        marginBands[3].profit += profit;
+      } else if (margin < 30) {
+        marginBands[4].count++;
+        marginBands[4].revenue += revenue;
+        marginBands[4].profit += profit;
+      } else {
+        marginBands[5].count++;
+        marginBands[5].revenue += revenue;
+        marginBands[5].profit += profit;
+      }
+    }
+  });
+  
+  // Calculate usage-weighted margin
+  let weightedMargin = 0;
+  if (totalRevenue > 0) {
+    weightedMargin = (totalProfit / totalRevenue) * 100; // Calculate as percentage
+  }
+
+  // Calculate proposed margin
+  let proposedWeightedMargin = 0;
+  if (proposedRevenue > 0) {
+    proposedWeightedMargin = (proposedProfit / proposedRevenue) * 100; // Calculate as percentage
   }
   
-  // Convert margin distribution values to percentages
-  result.marginDistribution = result.marginDistribution.map(band => ({
-    ...band,
-    value: result.validItemCount > 0 ? (band.value / result.validItemCount) * 100 : 0
-  }));
+  // Calculate margin improvement
+  const marginImprovement = proposedWeightedMargin - weightedMargin;
   
-  return result;
+  return {
+    weightedMargin,
+    proposedWeightedMargin,
+    marginImprovement,
+    totalRevenue,
+    totalProfit,
+    proposedRevenue,
+    proposedProfit,
+    validItemCount,
+    totalUsage,
+    marginDistribution: marginBands
+  };
 };
