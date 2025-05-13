@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
@@ -46,12 +45,6 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
     }
     
     return value;
-  };
-
-  // Special formatter for currentREVAMargin that doesn't multiply by 100
-  const formatCurrentMargin = (value: number): React.ReactNode => {
-    if (value === null || value === undefined) return 'N/A';
-    return `${value.toFixed(2)}%`;
   };
 
   // Find which competitor has the lowest price (for TML display)
@@ -159,8 +152,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
       case "currentREVAMargin":
         displayLabel = null; // Remove duplicate header
         displayItems = [
-          // Use special formatter for current margin to avoid double multiplication
-          { label: "Current Margin", value: formatCurrentMargin(item.currentREVAMargin) },
+          { label: "Current Margin", value: formatPercentage(item.currentREVAMargin) },
           { label: "Target Margin", value: item.targetMargin ? formatPercentage(item.targetMargin) : '15.0%' }
         ];
         break;
@@ -179,8 +171,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         // Fix margin values by explicitly using the values from the item
         displayItems = [
           { label: "Proposed Margin", value: formatPercentage(item.proposedMargin) },
-          // Use special formatter for current margin to avoid double multiplication
-          { label: "Current Margin", value: formatCurrentMargin(item.currentREVAMargin) },
+          { label: "Current Margin", value: item.currentREVAMargin ? formatPercentage(item.currentREVAMargin) : 'N/A' },
           { label: "Target Margin", value: item.targetMargin ? formatPercentage(item.targetMargin) : '15.0%' }
         ];
         
