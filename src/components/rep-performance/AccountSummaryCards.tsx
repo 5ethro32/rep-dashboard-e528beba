@@ -242,7 +242,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
         </CardContent>
       </Card>
       
-      {/* Decreasing Spend Accounts */}
+      {/* Decreasing Spend Accounts - Updated text color to white for better contrast */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
@@ -250,8 +250,8 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
             Decreasing Spend Accounts
           </div>
           <div className="flex items-center mb-1">
-            <div className="text-2xl md:text-3xl font-bold text-[#ea384c]">{formatNumber(accountsTrendData.decreasing)}</div>
-            <Badge variant="destructive" className="ml-2 text-xs font-medium bg-[#ea384c]/20 text-[#ea384c] hover:bg-[#ea384c]/20">
+            <div className="text-2xl md:text-3xl font-bold text-white">{formatNumber(accountsTrendData.decreasing)}</div>
+            <Badge variant="destructive" className="ml-2 text-xs font-medium bg-[#ea384c]/20 text-white hover:bg-[#ea384c]/20">
               {previousMonthData.length > 0 
                 ? `${((accountsTrendData.decreasing / previousMonthData.length) * 100).toFixed(1)}%` 
                 : '0%'}
