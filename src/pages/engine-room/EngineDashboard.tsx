@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -151,9 +150,6 @@ const EngineDashboardContent = () => {
     totalProfit: usageMetrics.totalProfit
   });
   
-  // Create a consistent clarification note for all metric cards
-  const improvementNote = "% change with proposed pricing";
-  
   return <div className="container mx-auto px-4 py-6">
       {/* Add more prominent reset buttons for clearing cache */}
       <div className="mb-6 flex justify-between items-center">
@@ -231,7 +227,6 @@ const EngineDashboardContent = () => {
                 value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
                 type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
-              details={usageMetrics.marginImprovement !== 0 ? improvementNote : undefined}
             />
             
             <MetricCard 
@@ -244,7 +239,6 @@ const EngineDashboardContent = () => {
                 value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
                 type: revenueImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
-              details={revenueImprovement !== 0 ? improvementNote : undefined}
             />
             
             <MetricCard 
@@ -256,7 +250,6 @@ const EngineDashboardContent = () => {
                 value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
                 type: profitImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
-              details={profitImprovement !== 0 ? improvementNote : undefined}
             />
           </div>
         </CardContent>
