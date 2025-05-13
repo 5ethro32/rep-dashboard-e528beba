@@ -8,7 +8,7 @@ import {
   UserCircle,
   Home,
   Bot,
-  Sliders
+  Wrench
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -85,7 +85,7 @@ export const AppSidebar = () => {
     },
     {
       to: "/engine-room/dashboard",
-      icon: <Sliders className="h-5 w-5 transition-colors duration-200" />,
+      icon: <Wrench className="h-5 w-5 transition-colors duration-200" />,
       label: "Engine Room"
     }
   ];
