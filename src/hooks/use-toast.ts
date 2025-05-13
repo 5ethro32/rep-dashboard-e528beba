@@ -1,6 +1,6 @@
 
 import { type ToastActionElement } from '@/components/ui/toast';
-import { toast as sonnerToast } from 'sonner';
+import { toast as sonnerToast, type ExternalToast } from 'sonner';
 
 // Types for toast
 type ToastProps = {
@@ -14,11 +14,15 @@ type ToastProps = {
 export function useToast() {
   return {
     toast: (props: ToastProps) => {
-      return sonnerToast(props.title as string, {
+      // Convert shadcn/ui toast props to sonner toast props
+      const sonnerOptions: ExternalToast = {
         description: props.description,
-        action: props.action,
-        variant: props.variant,
-      });
+        action: props.action as any,
+        // Map our variant to sonner's style if destructive
+        ...(props.variant === 'destructive' ? { style: { backgroundColor: 'var(--destructive)', color: 'var(--destructive-foreground)' } } : {})
+      };
+      
+      return sonnerToast(props.title as string, sonnerOptions);
     },
     dismiss: sonnerToast.dismiss,
     // This is mocked to maintain compatibility with components
@@ -27,5 +31,15 @@ export function useToast() {
   };
 }
 
-// Export the toast function from sonner directly
-export const toast = sonnerToast;
+// Create a direct toast function for convenience
+// This matches the old API but uses sonner under the hood
+export const toast = (props: ToastProps) => {
+  const sonnerOptions: ExternalToast = {
+    description: props.description,
+    action: props.action as any,
+    // Map our variant to sonner's style if destructive
+    ...(props.variant === 'destructive' ? { style: { backgroundColor: 'var(--destructive)', color: 'var(--destructive-foreground)' } } : {})
+  };
+  
+  return sonnerToast(props.title as string, sonnerOptions);
+};

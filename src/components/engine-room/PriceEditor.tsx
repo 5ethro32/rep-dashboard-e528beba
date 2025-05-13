@@ -55,7 +55,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       toast({
         title: "Possible data issue detected",
         description: "Current price matches next buying price. This might indicate an issue with your Excel data.",
-        variant: "destructive" // Changed from "warning" to "destructive" as it's one of the allowed variants
+        variant: "destructive" 
       });
     }
   }, [possibleDataIssue]);
