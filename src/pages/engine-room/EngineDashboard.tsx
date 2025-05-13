@@ -6,6 +6,8 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
@@ -20,7 +22,9 @@ const EngineDashboardContent = () => {
     isUploading,
     uploadProgress,
     errorMessage,
-    handleFileUpload
+    handleFileUpload,
+    applyMarginCap,
+    setApplyMarginCap
   } = useEngineRoom();
   
   const queryClient = useQueryClient();
@@ -48,6 +52,17 @@ const EngineDashboardContent = () => {
     setTimeout(() => {
       window.location.reload();
     }, 1500);
+  };
+
+  // Toggle margin cap application
+  const handleToggleMarginCap = (checked: boolean) => {
+    setApplyMarginCap(checked);
+    toast({
+      title: checked ? "Margin Cap Applied" : "Margin Cap Removed",
+      description: checked 
+        ? "Price calculations now include margin caps (10%, 20%, 30% by usage group)" 
+        : "Price calculations now exclude margin caps for maximum profit"
+    });
   };
 
   // Get metrics
@@ -133,13 +148,18 @@ const EngineDashboardContent = () => {
   }
 
   // Get usage-weighted metrics with the correct calculation method
+  // Get metrics with and without margin cap for comparison
   const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
+  const uncappedMetrics = calculateUsageWeightedMetrics(engineData.items || [], true);
   
   // Log the calculated metrics for debugging
   console.log('EngineDashboard: Calculated usage-weighted metrics:', {
     weightedMargin: usageMetrics.weightedMargin,
     totalRevenue: usageMetrics.totalRevenue,
-    totalProfit: usageMetrics.totalProfit
+    totalProfit: usageMetrics.totalProfit,
+    uncappedWeightedMargin: uncappedMetrics.weightedMargin,
+    uncappedRevenue: uncappedMetrics.totalRevenue, 
+    uncappedProfit: uncappedMetrics.totalProfit
   });
   
   return <div className="container mx-auto px-4 py-6">
@@ -147,6 +167,18 @@ const EngineDashboardContent = () => {
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-2xl font-bold">Engine Room Dashboard</h1>
         <div className="flex gap-2">
+          {/* Add margin cap toggle */}
+          <div className="flex items-center space-x-2 mr-4 bg-gray-800 p-2 rounded-md">
+            <Switch 
+              id="margin-cap" 
+              checked={applyMarginCap} 
+              onCheckedChange={handleToggleMarginCap} 
+            />
+            <Label htmlFor="margin-cap" className="text-xs">
+              {applyMarginCap ? "Margin Cap ON" : "Margin Cap OFF"}
+            </Label>
+          </div>
+          
           <Button 
             variant="outline" 
             size="sm" 
@@ -208,8 +240,8 @@ const EngineDashboardContent = () => {
             />
           </div>
           
-          {/* Margin Analysis Metrics - Now integrated into the main dashboard card */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {/* Margin Analysis Metrics - Now showing both current and proposed with/without cap */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
             <MetricCard 
               title="Usage-Weighted Margin" 
               value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
@@ -236,6 +268,53 @@ const EngineDashboardContent = () => {
               iconPosition="right"
             />
           </div>
+          
+          {/* Comparison metrics for capped vs. uncapped */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Card className="border border-white/10 bg-gray-900/40 shadow-md">
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2 text-sm text-gray-300">Profit Comparison: {applyMarginCap ? "With" : "Without"} Margin Cap</h3>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-xs text-gray-400">Current</p>
+                    <p className="text-lg font-medium">{formatCurrency(usageMetrics.totalProfit)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Without Cap</p>
+                    <p className="text-lg font-medium">{formatCurrency(uncappedMetrics.totalProfit)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Difference</p>
+                    <p className={`text-lg font-medium ${uncappedMetrics.totalProfit > usageMetrics.totalProfit ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatCurrency(uncappedMetrics.totalProfit - usageMetrics.totalProfit)}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border border-white/10 bg-gray-900/40 shadow-md">
+              <CardContent className="p-4">
+                <h3 className="font-semibold mb-2 text-sm text-gray-300">Margin Comparison: {applyMarginCap ? "With" : "Without"} Margin Cap</h3>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-xs text-gray-400">Current</p>
+                    <p className="text-lg font-medium">{usageMetrics.weightedMargin.toFixed(2)}%</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Without Cap</p>
+                    <p className="text-lg font-medium">{uncappedMetrics.weightedMargin.toFixed(2)}%</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Difference</p>
+                    <p className={`text-lg font-medium ${uncappedMetrics.weightedMargin > usageMetrics.weightedMargin ? 'text-green-400' : 'text-red-400'}`}>
+                      {(uncappedMetrics.weightedMargin - usageMetrics.weightedMargin).toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </CardContent>
       </Card>
 
@@ -249,8 +328,18 @@ const EngineDashboardContent = () => {
         </Card>
       </div>
 
-      {/* Margin Distribution Charts - Now rendered separately */}
-      <UsageWeightedMetrics data={engineData.items || []} />
+      {/* Margin Distribution Charts - Now showing both current and proposed */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-2">Current Metrics</h3>
+        <UsageWeightedMetrics data={engineData.items || []} showProposed={false} />
+      </div>
+      
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold mb-2">
+          {applyMarginCap ? "Proposed Metrics (With Margin Cap)" : "Proposed Metrics (Without Margin Cap)"}
+        </h3>
+        <UsageWeightedMetrics data={engineData.items || []} showProposed={true} />
+      </div>
 
       {/* Market Trend Analysis */}
       <MarketTrendAnalysis data={engineData.items || []} />
