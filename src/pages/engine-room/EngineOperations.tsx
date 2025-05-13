@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -43,6 +44,7 @@ const EngineOperationsContent = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
   const [activeTabFlagFilter, setActiveTabFlagFilter] = useState('all');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -156,6 +158,18 @@ const EngineOperationsContent = () => {
       handleFileUpload(e.dataTransfer.files[0]);
     }
   };
+  
+  // Handler for clicking on the upload area to open file picker
+  const handleClickUpload = () => {
+    fileInputRef.current?.click();
+  };
+  
+  // Handler for file input change
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileUpload(e.target.files[0]);
+    }
+  };
 
   if (!engineData) {
     return (
@@ -163,9 +177,18 @@ const EngineOperationsContent = () => {
         <div 
           onDragOver={handleDragOver}
           onDrop={handleDrop}
+          onClick={handleClickUpload}
           className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all mt-4
             ${isUploading ? "pointer-events-none" : "border-gray-700 hover:border-primary/50"}`}
         >
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            className="hidden"
+            accept=".xlsx,.csv"
+            onChange={handleFileInputChange}
+          />
+
           <div className="flex flex-col items-center justify-center space-y-4">
             <UploadCloud className="h-12 w-12 text-gray-400" />
             <div className="space-y-1">

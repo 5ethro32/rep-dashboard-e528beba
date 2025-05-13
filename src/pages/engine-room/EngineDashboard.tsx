@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -12,6 +12,7 @@ import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUp
 import { formatCurrency, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
+
 const EngineDashboardContent = () => {
   const {
     engineData,
@@ -21,9 +22,8 @@ const EngineDashboardContent = () => {
     handleFileUpload
   } = useEngineRoom();
   const queryClient = useQueryClient();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Add a function to clear cache and force recalculation
   const handleClearCache = () => {
@@ -94,10 +94,36 @@ const EngineDashboardContent = () => {
       handleFileUpload(e.dataTransfer.files[0]);
     }
   };
+  
+  // Handler for clicking upload area
+  const handleClickUpload = () => {
+    fileInputRef.current?.click();
+  };
+  
+  // Handle file selection from input
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileUpload(e.target.files[0]);
+    }
+  };
+  
   if (!engineData) {
     return <div className="container mx-auto px-4 py-6">
-        <div onDragOver={handleDragOver} onDrop={handleDrop} className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all mt-4
-            ${isUploading ? "pointer-events-none" : "border-gray-700 hover:border-primary/50"}`}>
+        <div 
+          onDragOver={handleDragOver} 
+          onDrop={handleDrop}
+          onClick={handleClickUpload}
+          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all mt-4
+            ${isUploading ? "pointer-events-none" : "border-gray-700 hover:border-primary/50"}`}
+        >
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            className="hidden"
+            accept=".xlsx,.csv"
+            onChange={handleFileInputChange}
+          />
+        
           <div className="flex flex-col items-center justify-center space-y-4">
             <UploadCloud className="h-12 w-12 text-gray-400" />
             <div className="space-y-1">

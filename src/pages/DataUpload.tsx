@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, Upload, AlertCircle, FileSpreadsheet, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ const DataUpload: React.FC = () => {
   const [previewData, setPreviewData] = useState<any[] | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -77,6 +78,18 @@ const DataUpload: React.FC = () => {
     } finally {
       setIsUploading(false);
     }
+  };
+  
+  // Handle file selection directly from the file input
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      handleFileUpload(event);
+    }
+  };
+  
+  // Handle click on the drop zone to open the file dialog
+  const handleClickUpload = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -156,14 +169,26 @@ const DataUpload: React.FC = () => {
                 <label htmlFor="excel-file" className="text-sm font-medium text-gray-300">
                   Excel File
                 </label>
-                <Input
-                  id="excel-file"
-                  type="file"
-                  accept=".xlsx, .xls"
-                  className="cursor-pointer bg-gray-800/50 border-gray-700 text-white"
-                  onChange={handleFileUpload}
-                  disabled={isUploading}
-                />
+                <div 
+                  onClick={handleClickUpload} 
+                  className="cursor-pointer bg-gray-800/50 border border-gray-700 rounded-md p-2 text-center hover:bg-gray-700/50 transition-colors"
+                >
+                  <Input
+                    id="excel-file"
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx, .xls"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                  />
+                  <div className="flex flex-col items-center justify-center py-4">
+                    <Upload className="h-8 w-8 mb-2 text-gray-400" />
+                    <p className="text-sm text-white">Click to browse or drag files here</p>
+                    <p className="text-xs text-gray-400 mt-1">Accept Excel files (.xlsx, .xls)</p>
+                  </div>
+                </div>
+                
                 <p className="text-xs text-gray-400">
                   Your Excel file should include columns for: Rep, Spend, Profit, Margin, Packs.
                 </p>
@@ -268,7 +293,7 @@ const DataUpload: React.FC = () => {
             <Button 
               className="w-full bg-finance-red hover:bg-red-700 mt-4" 
               disabled={isUploading}
-              onClick={() => document.getElementById('excel-file')?.click()}
+              onClick={handleClickUpload}
             >
               {isUploading ? (
                 <>
