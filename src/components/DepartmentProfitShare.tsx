@@ -3,6 +3,7 @@ import React from 'react';
 import DonutChart from './DonutChart';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface DepartmentProfitShareProps {
   retailProfit: number;
@@ -77,19 +78,6 @@ const DepartmentProfitShare: React.FC<DepartmentProfitShareProps> = ({
     maximumFractionDigits: 0
   });
   
-  // Split the legend items into left and right sides for desktop
-  const splitLegendItems = () => {
-    if (isMobile) return { leftItems: chartData, rightItems: [] };
-    
-    const midPoint = Math.ceil(chartData.length / 2);
-    return {
-      leftItems: chartData.slice(0, midPoint),
-      rightItems: chartData.slice(midPoint)
-    };
-  };
-
-  const { leftItems, rightItems } = splitLegendItems();
-  
   // Render a legend item
   const renderLegendItem = (item: any, index: number) => (
     <div key={index} className="flex items-center text-2xs md:text-xs py-1">
@@ -116,16 +104,20 @@ const DepartmentProfitShare: React.FC<DepartmentProfitShareProps> = ({
         </div>
       ) : (
         <div className="flex-1 flex flex-col h-full">
-          {/* Desktop layout - side-by-side */}
+          {/* Desktop layout - all legend items on left */}
           {!isMobile && (
             <div className="flex h-full">
-              {/* Left side legend */}
-              <div className="w-1/4 pr-2 flex flex-col justify-center">
-                {leftItems.map((item, index) => renderLegendItem(item, index))}
+              {/* Left side legend - now contains all items */}
+              <div className="w-1/3 pr-2 flex flex-col justify-center">
+                <ScrollArea className="h-full">
+                  <div className="pr-2 space-y-1">
+                    {chartData.map((item, index) => renderLegendItem(item, index))}
+                  </div>
+                </ScrollArea>
               </div>
               
-              {/* Center chart */}
-              <div className="w-1/2">
+              {/* Right side chart */}
+              <div className="w-2/3">
                 <div className="h-full">
                   <DonutChart 
                     data={chartData}
@@ -133,11 +125,6 @@ const DepartmentProfitShare: React.FC<DepartmentProfitShareProps> = ({
                     innerLabel="Total Profit"
                   />
                 </div>
-              </div>
-              
-              {/* Right side legend */}
-              <div className="w-1/4 pl-2 flex flex-col justify-center">
-                {rightItems.map((item, index) => renderLegendItem(item, index))}
               </div>
             </div>
           )}

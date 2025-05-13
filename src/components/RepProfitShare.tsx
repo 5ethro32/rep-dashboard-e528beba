@@ -110,20 +110,6 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
       .join('');
   };
 
-  // Split the legend items into left and right sides for desktop
-  // This creates a more balanced visual presentation
-  const splitLegendItems = () => {
-    if (isMobile) return { leftItems: dataToUse, rightItems: [] };
-    
-    const midPoint = Math.ceil(dataToUse.length / 2);
-    return {
-      leftItems: dataToUse.slice(0, midPoint),
-      rightItems: dataToUse.slice(midPoint)
-    };
-  };
-
-  const { leftItems, rightItems } = splitLegendItems();
-  
   // Render a legend item - shared function for both layouts
   const renderLegendItem = (item: any, index: number) => (
     <div key={index} className="flex items-center text-2xs md:text-xs py-1">
@@ -155,16 +141,20 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
         </div>
       ) : (
         <div className="flex-1 flex flex-col h-full">
-          {/* Desktop layout - side-by-side */}
+          {/* Desktop layout - all legend items on left */}
           {!isMobile && (
             <div className="flex h-full">
-              {/* Left side legend */}
-              <div className="w-1/4 pr-2 flex flex-col justify-center">
-                {leftItems.map((item, index) => renderLegendItem(item, index))}
+              {/* Left side legend - now contains all items */}
+              <div className="w-1/3 pr-2 flex flex-col justify-center">
+                <ScrollArea className="h-full">
+                  <div className="pr-2 space-y-1">
+                    {dataToUse.map((item, index) => renderLegendItem(item, index))}
+                  </div>
+                </ScrollArea>
               </div>
               
-              {/* Center chart */}
-              <div className="w-1/2">
+              {/* Right side chart */}
+              <div className="w-2/3">
                 <div className="h-full">
                   <DonutChart 
                     data={dataToUse}
@@ -172,11 +162,6 @@ const RepProfitShare: React.FC<RepProfitShareProps> = ({
                     innerLabel="Total Profit"
                   />
                 </div>
-              </div>
-              
-              {/* Right side legend */}
-              <div className="w-1/4 pl-2 flex flex-col justify-center">
-                {rightItems.map((item, index) => renderLegendItem(item, index))}
               </div>
             </div>
           )}
