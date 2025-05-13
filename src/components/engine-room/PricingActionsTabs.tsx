@@ -1,11 +1,9 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Send, Download, Save, RotateCcw, Info, AlertTriangle, FileText, PenLine, CheckCircle, XCircle, UploadCloud } from 'lucide-react';
-
 interface PricingActionsTabsProps {
   modifiedCount: number;
   totalExceptions: number;
@@ -30,7 +28,6 @@ interface PricingActionsTabsProps {
     profitDelta: number;
   };
 }
-
 const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
   modifiedCount,
   totalExceptions,
@@ -65,7 +62,6 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
         return 'bg-gray-700';
     }
   };
-  
   const getStatusText = () => {
     switch (workflowStatus) {
       case 'draft':
@@ -80,48 +76,30 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
         return 'Draft';
     }
   };
-  
-  return (
-    <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg w-full">
+  return <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg w-full">
       <CardContent className="p-4 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
-            {fileName && (
-              <div className="flex items-center space-x-2">
+            {fileName && <div className="flex items-center space-x-2">
                 <FileText className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
                   {fileName}
                 </span>
-              </div>
-            )}
+              </div>}
           </div>
           
           <div className="flex items-center space-x-2">
-            <h3 className="text-lg font-medium">Pricing Actions</h3>
-            <div className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor()}`}>
-              {getStatusText()}
-            </div>
+            
+            
           </div>
           
           <div className="flex items-center space-x-3">
-            {onUpload && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={onUpload}
-                className="flex items-center space-x-1"
-              >
+            {onUpload && <Button variant="outline" size="sm" onClick={onUpload} className="flex items-center space-x-1">
                 <UploadCloud className="h-4 w-4 mr-1" />
                 <span>New Upload</span>
-              </Button>
-            )}
+              </Button>}
             
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={onExport}
-              className="flex items-center space-x-1"
-            >
+            <Button variant="secondary" size="sm" onClick={onExport} className="flex items-center space-x-1">
               <Download className="h-4 w-4 mr-1" />
               <span>Export Data</span>
             </Button>
@@ -129,36 +107,26 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
         </div>
         
         <div className="flex flex-wrap gap-2">
-          {modifiedCount > 0 && (
-            <Badge variant="outline" className="bg-finance-red/10 border-finance-red/30 text-finance-red flex items-center gap-1 py-1.5 px-3 rounded-full">
+          {modifiedCount > 0 && <Badge variant="outline" className="bg-finance-red/10 border-finance-red/30 text-finance-red flex items-center gap-1 py-1.5 px-3 rounded-full">
               <PenLine className="h-3 w-3" />
               <span>{modifiedCount} modified</span>
-            </Badge>
-          )}
-          {approvalMetrics.pending > 0 && (
-            <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
+            </Badge>}
+          {approvalMetrics.pending > 0 && <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
               <AlertCircle className="h-3 w-3" />
               <span>{approvalMetrics.pending} pending</span>
-            </Badge>
-          )}
-          {approvalMetrics.approved > 0 && (
-            <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
+            </Badge>}
+          {approvalMetrics.approved > 0 && <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
               <CheckCircle className="h-3 w-3" />
               <span>{approvalMetrics.approved} approved</span>
-            </Badge>
-          )}
-          {approvalMetrics.rejected > 0 && (
-            <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
+            </Badge>}
+          {approvalMetrics.rejected > 0 && <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
               <XCircle className="h-3 w-3" />
               <span>{approvalMetrics.rejected} rejected</span>
-            </Badge>
-          )}
-          {totalExceptions > 0 && (
-            <Badge variant="outline" className="bg-amber-700/10 border-amber-700/30 text-amber-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
+            </Badge>}
+          {totalExceptions > 0 && <Badge variant="outline" className="bg-amber-700/10 border-amber-700/30 text-amber-400 flex items-center gap-1 py-1.5 px-3 rounded-full">
               <AlertTriangle className="h-3 w-3" />
               <span>{totalExceptions} exceptions</span>
-            </Badge>
-          )}
+            </Badge>}
         </div>
         
         <div className="flex flex-wrap gap-2">
@@ -178,8 +146,7 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
           </Button>
         </div>
         
-        {workflowStatus === 'rejected' && (
-          <div className="mt-2 p-3 bg-red-900/20 rounded-md border border-red-900/40">
+        {workflowStatus === 'rejected' && <div className="mt-2 p-3 bg-red-900/20 rounded-md border border-red-900/40">
             <div className="flex items-start space-x-2">
               <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
               <div>
@@ -189,11 +156,9 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
                 </p>
               </div>
             </div>
-          </div>
-        )}
+          </div>}
         
-        {approvalMetrics.pending > 0 && (
-          <div className="mt-2 p-3 bg-amber-900/20 rounded-md border border-amber-900/40">
+        {approvalMetrics.pending > 0 && <div className="mt-2 p-3 bg-amber-900/20 rounded-md border border-amber-900/40">
             <div className="flex items-start space-x-2">
               <AlertCircle className="h-5 w-5 text-amber-400 mt-0.5" />
               <div>
@@ -203,11 +168,8 @@ const PricingActionsTabs: React.FC<PricingActionsTabsProps> = ({
                 </p>
               </div>
             </div>
-          </div>
-        )}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default PricingActionsTabs;
