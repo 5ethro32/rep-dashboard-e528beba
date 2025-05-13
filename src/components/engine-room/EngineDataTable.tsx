@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
-import { formatPercentage } from '@/utils/formatting-utils';
 
 interface EngineDataTableProps {
   data: any[];
@@ -787,14 +786,14 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Next Buying Price cell with popover - Updated to handle missing values */}
+                    {/* Next Buying Price cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="nextCost">
                         {formatNextBuyingPrice(item)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Market Low cell with popover - Updated to handle no market price */}
+                    {/* Market Low cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="marketLow">
                         <div className="flex items-center gap-1">
@@ -805,7 +804,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* TML cell with popover - explicitly use trueMarketLow field type for consistency */}
+                    {/* TML cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="trueMarketLow">
                         {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
@@ -819,7 +818,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Current Margin cell with popover - FIXED to use formatPercentage */}
+                    {/* Current Margin cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAMargin">
                         {formatPercentage(item.currentREVAMargin)}
@@ -896,14 +895,14 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       )}
                     </TableCell>
                     
-                    {/* Proposed margin cell - FIXED to use formatPercentage */}
+                    {/* Proposed margin cell - Use local formatPercentage instead of imported one */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="proposedMargin">
                         {formatPercentage(item.proposedMargin)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* NEW: TML Percentage cell */}
+                    {/* TML Percentage cell */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="tmlPercentage">
                         {formatTMLPercentage(item.tmlPercentage)}
