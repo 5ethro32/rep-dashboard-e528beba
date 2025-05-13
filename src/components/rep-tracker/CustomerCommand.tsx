@@ -25,12 +25,12 @@ export function CustomerCommand({
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   
-  // Ensure customers is always a valid array and log its state
+  // Ensure customers is always a valid array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
   useEffect(() => {
     console.log(`CustomerCommand received ${safeCustomers.length} customers`);
-    // Log some details about customers that start with later letters
+    // Log some details about customers that start with later letters for debugging
     const vCustomers = safeCustomers.filter(c => c.account_name.toLowerCase().startsWith('v')).length;
     const wCustomers = safeCustomers.filter(c => c.account_name.toLowerCase().startsWith('w')).length;
     const yCustomers = safeCustomers.filter(c => c.account_name.toLowerCase().startsWith('y')).length;
@@ -156,7 +156,7 @@ export function CustomerCommand({
         {filteredCustomers.length === 0 ? (
           <div className="py-6 text-center text-sm">No customer found.</div>
         ) : (
-          <div className="h-[50vh] max-h-[500px]">
+          <div className="h-[60vh] max-h-[600px]">
             <Virtuoso
               style={{ height: '100%' }}
               totalCount={filteredCustomers.length}

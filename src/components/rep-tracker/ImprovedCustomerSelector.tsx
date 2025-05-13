@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { CustomerCommand } from './CustomerCommand';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from '@/components/ui/use-toast';
 
 interface ImprovedCustomerSelectorProps {
   customers: Array<{ account_name: string; account_ref: string }>;
@@ -34,6 +35,9 @@ export function ImprovedCustomerSelector({
   useEffect(() => {
     if (safeCustomers.length > 0) {
       console.log(`ImprovedCustomerSelector loaded with ${safeCustomers.length} customers`);
+      if (safeCustomers.length > 1000) {
+        console.log(`Large customer dataset: ${safeCustomers.length} customers available`);
+      }
     }
   }, [safeCustomers.length]);
   
@@ -75,8 +79,22 @@ export function ImprovedCustomerSelector({
       // Call the onSelect prop with the selected customer
       onSelect(ref, name);
       setOpen(false);
+      
+      // Show a success toast for large datasets to confirm selection
+      if (safeCustomers.length > 500) {
+        toast({
+          title: "Customer Selected",
+          description: `${name} has been selected.`,
+          duration: 2000,
+        });
+      }
     } catch (error) {
       console.error('Error selecting customer:', error);
+      toast({
+        title: "Selection Error",
+        description: "There was an error selecting this customer. Please try again.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -117,7 +135,7 @@ export function ImprovedCustomerSelector({
         >
           {isMobile && (
             <div className="fixed top-0 left-0 right-0 bg-black px-4 py-3 flex justify-between items-center z-[1000]">
-              <h3 className="font-semibold text-white">Select Customer</h3>
+              <h3 className="font-semibold text-white">Select Customer ({safeCustomers.length})</h3>
               <button 
                 onClick={(e) => {
                   e.preventDefault(); // Prevent form submission

@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Virtuoso } from 'react-virtuoso';
 
 interface Customer {
   account_ref: string;
@@ -94,6 +95,38 @@ export function CustomerSelector({
     }
   };
 
+  // Custom renderer for the virtualized list
+  const CustomerItem = React.memo(({ customer, index }: { customer: Customer, index: number }) => {
+    const isSelected = selectedCustomer === customer.account_name;
+    
+    return (
+      <div
+        key={customer.account_ref}
+        onClick={(e) => handleCustomerSelect(e, customer)}
+        className={cn(
+          "flex w-full cursor-pointer items-center justify-start px-3 py-2 text-sm",
+          "hover:bg-accent hover:text-accent-foreground",
+          isSelected && "bg-accent text-accent-foreground"
+        )}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            handleCustomerSelect(e as unknown as React.MouseEvent, customer);
+          }
+        }}
+      >
+        <Check
+          className={cn(
+            "mr-2 h-4 w-4",
+            isSelected ? "opacity-100" : "opacity-0"
+          )}
+        />
+        <span>{customer.account_name}</span>
+      </div>
+    );
+  });
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -139,46 +172,24 @@ export function CustomerSelector({
             
             <div 
               ref={listRef}
-              className="max-h-[400px] overflow-y-auto"
+              className="max-h-[500px]"
               style={{ 
                 overflowY: 'auto',
                 WebkitOverflowScrolling: 'touch'
               }}
             >
               {filteredCustomers.length > 0 ? (
-                <div className="py-1">
-                  {filteredCustomers.map((customer) => {
-                    if (!customer || !customer.account_ref || !customer.account_name) return null;
-                    
-                    const isSelected = selectedCustomer === customer.account_name;
-                    
-                    return (
-                      <div
-                        key={customer.account_ref}
-                        onClick={(e) => handleCustomerSelect(e, customer)}
-                        className={cn(
-                          "flex w-full cursor-pointer items-center justify-start px-3 py-2 text-sm",
-                          "hover:bg-accent hover:text-accent-foreground",
-                          isSelected && "bg-accent text-accent-foreground"
-                        )}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            handleCustomerSelect(e as unknown as React.MouseEvent, customer);
-                          }
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            isSelected ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        <span>{customer.account_name}</span>
-                      </div>
-                    );
-                  })}
+                <div className="h-[400px]">
+                  <Virtuoso
+                    style={{ height: '100%' }}
+                    totalCount={filteredCustomers.length}
+                    itemContent={(index) => (
+                      <CustomerItem 
+                        customer={filteredCustomers[index]} 
+                        index={index} 
+                      />
+                    )}
+                  />
                 </div>
               ) : (
                 <div className="py-6 text-center text-sm">No customers found.</div>

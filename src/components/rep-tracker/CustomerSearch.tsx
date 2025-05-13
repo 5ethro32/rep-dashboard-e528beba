@@ -27,7 +27,7 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
   // Ensure customers is always an array
   const safeCustomers = Array.isArray(customers) ? customers : [];
   
-  // Filter customers based on search query
+  // Filter customers based on search query - no slice limitation
   const filteredCustomers = !searchQuery 
     ? safeCustomers 
     : safeCustomers.filter(customer => {
@@ -35,7 +35,6 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
         if (!customer.account_name || typeof customer.account_name !== 'string') return false;
         return customer.account_name.toLowerCase().includes(searchQuery.toLowerCase());
       });
-  // Removed the .slice(0, 100) limitation to show all matching customers
 
   // Handle keyboard navigation
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -90,6 +89,16 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
   useEffect(() => {
     itemsRef.current = itemsRef.current.slice(0, filteredCustomers.length);
   }, [filteredCustomers.length]);
+  
+  // Debug log for large customer sets
+  useEffect(() => {
+    if (safeCustomers.length > 0) {
+      console.log(`CustomerSearch: ${safeCustomers.length} customers loaded`);
+    }
+    if (filteredCustomers.length !== safeCustomers.length) {
+      console.log(`CustomerSearch: ${filteredCustomers.length} customers after filtering`);
+    }
+  }, [safeCustomers.length, filteredCustomers.length]);
 
   return (
     <div className="relative w-full">
@@ -119,7 +128,11 @@ export function CustomerSearch({ customers, selectedCustomer, onSelect }: Custom
             />
           </div>
           
-          <ScrollArea className="max-h-64">
+          <div className="text-xs text-muted-foreground px-3 py-1">
+            {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} {searchQuery ? 'found' : 'available'} (total: {safeCustomers.length})
+          </div>
+          
+          <ScrollArea className="max-h-64 overflow-auto">
             {filteredCustomers.length > 0 ? (
               <div className="py-1">
                 {filteredCustomers.map((customer, index) => (
