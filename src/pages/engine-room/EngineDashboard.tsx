@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -135,6 +134,15 @@ const EngineDashboardContent = () => {
   // Get usage-weighted metrics with the correct calculation method
   const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
   
+  // Calculate revenue and profit improvements for the metric cards
+  const revenueImprovement = usageMetrics.proposedRevenue > 0 && usageMetrics.totalRevenue > 0
+    ? ((usageMetrics.proposedRevenue - usageMetrics.totalRevenue) / usageMetrics.totalRevenue) * 100
+    : 0;
+    
+  const profitImprovement = usageMetrics.proposedProfit > 0 && usageMetrics.totalProfit > 0
+    ? ((usageMetrics.proposedProfit - usageMetrics.totalProfit) / usageMetrics.totalProfit) * 100
+    : 0;
+  
   // Log the calculated metrics for debugging
   console.log('EngineDashboard: Calculated usage-weighted metrics:', {
     weightedMargin: usageMetrics.weightedMargin,
@@ -208,7 +216,7 @@ const EngineDashboardContent = () => {
             />
           </div>
           
-          {/* Margin Analysis Metrics - Now integrated into the main dashboard card */}
+          {/* Margin Analysis Metrics - Now with improvement indicators for all three metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <MetricCard 
               title="Usage-Weighted Margin" 
@@ -227,6 +235,10 @@ const EngineDashboardContent = () => {
               subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`}
               icon={<DollarSign className="h-5 w-5" />}
               iconPosition="right"
+              change={revenueImprovement !== 0 ? {
+                value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
+                type: revenueImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
             />
             
             <MetricCard 
@@ -234,6 +246,10 @@ const EngineDashboardContent = () => {
               value={formatCurrency(usageMetrics.totalProfit)} 
               icon={<TrendingUp className="h-5 w-5" />}
               iconPosition="right"
+              change={profitImprovement !== 0 ? {
+                value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
+                type: profitImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
             />
           </div>
         </CardContent>

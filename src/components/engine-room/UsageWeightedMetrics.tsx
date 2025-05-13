@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import MetricCard from '@/components/MetricCard';
 import DonutChart from '@/components/DonutChart';
 import { formatCurrency, formatPercentage, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
-import { TrendingUp, DollarSign, Percent } from 'lucide-react';
+import { TrendingUp, DollarSign, Percent, Flag, TrendingDown } from 'lucide-react';
 
 interface UsageWeightedMetricsProps {
   data: any[];
@@ -36,10 +36,24 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
     value: band.count // Adding the required 'value' property, using count as the value
   }));
   
-  // Determine if there's a significant margin improvement
+  // Determine if there's margin improvement and other metrics improvements
   const hasMarginImprovement = metrics.marginImprovement > 0;
   const marginChangeClass = hasMarginImprovement ? 'text-green-400' : 'text-red-400';
   const marginChangePrefix = hasMarginImprovement ? '+' : '';
+  
+  // Calculate revenue improvement (if proposed is available)
+  const revenueImprovement = showProposed ? 
+    ((metrics.proposedRevenue - metrics.totalRevenue) / metrics.totalRevenue) * 100 : 0;
+  const hasRevenueImprovement = revenueImprovement > 0;
+  const revenueChangeClass = hasRevenueImprovement ? 'text-green-400' : 'text-red-400';
+  const revenueChangePrefix = hasRevenueImprovement ? '+' : '';
+  
+  // Calculate profit improvement (if proposed is available)
+  const profitImprovement = showProposed ? 
+    ((metrics.proposedProfit - metrics.totalProfit) / metrics.totalProfit) * 100 : 0;
+  const hasProfitImprovement = profitImprovement > 0;
+  const profitChangeClass = hasProfitImprovement ? 'text-green-400' : 'text-red-400';
+  const profitChangePrefix = hasProfitImprovement ? '+' : '';
   
   // Choose whether to show current or proposed metrics
   const displayRevenue = showProposed ? metrics.proposedRevenue : metrics.totalRevenue;
