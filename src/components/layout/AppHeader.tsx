@@ -3,7 +3,7 @@ import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
 import UserSelector from '@/components/rep-tracker/UserSelector';
-import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Settings } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, UserCircle, Bot, ChevronDown, RefreshCw, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,11 @@ import {
   NavigationMenuTrigger,
   NavigationMenuLink
 } from '@/components/ui/navigation-menu';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +51,7 @@ const AppHeader = ({
   const isMobile = useIsMobile();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isVeraOpen, setIsVeraOpen] = useState(false);
+  const [isEngineSubnavHovered, setIsEngineSubnavHovered] = useState(false);
 
   // Check if we're in the Engine Room section
   const isEngineRoomSection = location.pathname.startsWith('/engine-room');
@@ -137,7 +143,7 @@ const AppHeader = ({
   }, {
     path: '/engine-room/dashboard',
     label: 'Engine Room',
-    icon: <Settings className="h-4 w-4" />,
+    icon: <Wrench className="h-4 w-4" />,
     hasSubNav: true,
     subItems: [{
       path: '/engine-room/dashboard',
@@ -200,50 +206,53 @@ const AppHeader = ({
             <nav className="flex items-center py-1">
               {navItems.map((item) => 
                 item.hasSubNav ? (
-                  // Engine Room navigation with NavigationMenu for better hover/click handling
-                  <NavigationMenu key={item.path} className="relative">
-                    <NavigationMenuList>
-                      <NavigationMenuItem>
-                        <Link to={item.path} className="hidden" aria-hidden={true} />
-                        <NavigationMenuTrigger 
-                          className={cn(
-                            "px-4 py-2 flex items-center gap-2 text-sm font-medium bg-transparent hover:bg-transparent focus:bg-transparent",
-                            isEngineRoomSection ? "text-finance-red" : "text-white/60 hover:text-white"
-                          )}
-                          onClick={() => {
-                            // Navigate to dashboard when clicked directly
-                            window.location.href = item.path;
-                          }}
-                        >
-                          {isEngineRoomSection && (
-                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
-                          )}
-                          {item.icon}
-                          <span>{item.label}</span>
-                        </NavigationMenuTrigger>
-                        
-                        <NavigationMenuContent 
-                          className="absolute top-full left-0 w-40 bg-gray-950/95 backdrop-blur-sm border border-white/10 rounded-md shadow-lg overflow-hidden"
-                        >
-                          <div className="p-1">
-                            {item.subItems?.map(subItem => (
-                              <NavigationMenuLink key={subItem.path} asChild>
-                                <NavLink 
-                                  to={subItem.path} 
-                                  className={({isActive}) => 
-                                    cn("block px-4 py-2 text-sm rounded-sm", 
-                                      isActive ? "bg-white/5 text-finance-red" : "text-white/70 hover:bg-white/5 hover:text-white")
-                                  }
-                                >
-                                  {subItem.label}
-                                </NavLink>
-                              </NavigationMenuLink>
-                            ))}
-                          </div>
-                        </NavigationMenuContent>
-                      </NavigationMenuItem>
-                    </NavigationMenuList>
-                  </NavigationMenu>
+                  // Engine Room navigation with hover functionality
+                  <div
+                    key={item.path}
+                    className="relative"
+                    onMouseEnter={() => setIsEngineSubnavHovered(true)}
+                    onMouseLeave={() => setIsEngineSubnavHovered(false)}
+                  >
+                    <Link 
+                      to={item.path} 
+                      className={cn(
+                        "px-4 py-2 flex items-center gap-2 text-sm font-medium relative", 
+                        isEngineRoomSection ? "text-finance-red" : "text-white/60 hover:text-white"
+                      )}
+                    >
+                      {isEngineRoomSection && (
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                      )}
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </Link>
+                    
+                    {/* Subnav that appears on hover */}
+                    {(isEngineSubnavHovered || isEngineRoomSection) && (
+                      <div 
+                        className={cn(
+                          "absolute top-full left-0 bg-gray-950/95 backdrop-blur-sm border border-white/10 rounded-md shadow-lg overflow-hidden z-50",
+                          "transition-all duration-200",
+                          isEngineSubnavHovered || isEngineRoomSection ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+                        )}
+                      >
+                        <div className="p-1">
+                          {item.subItems?.map(subItem => (
+                            <NavLink 
+                              key={subItem.path}
+                              to={subItem.path} 
+                              className={({isActive}) => 
+                                cn("block px-4 py-2 text-sm rounded-sm", 
+                                  isActive ? "bg-white/5 text-finance-red" : "text-white/70 hover:bg-white/5 hover:text-white")
+                              }
+                            >
+                              {subItem.label}
+                            </NavLink>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   // Regular navigation links
                   <NavLink 
@@ -270,7 +279,7 @@ const AppHeader = ({
           </div>
         )}
 
-        {/* Alternative implementation for Engine Room subnav */}
+        {/* Alternative implementation for Engine Room subnav - Only show when in Engine Room section */}
         {!isMobile && isEngineRoomSection && (
           <div className="border-t border-white/5 bg-gray-900/60">
             <div className="flex px-4 py-1">
