@@ -1,3 +1,4 @@
+
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -250,7 +251,119 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
     { name: "Group 3-4", displayName: "Medium Usage", usageRanks: [3, 4] },
     { name: "Group 5-6", displayName: "High Usage", usageRanks: [5, 6] }
   ].map(group => {
-    // ... keep existing code (group impact calculation)
+    // Filter items for this usage group
+    const groupItems = simulatedItems.filter(item => {
+      const usageRank = item.usageRank || 1;
+      return group.usageRanks.includes(usageRank);
+    });
+    
+    // Calculate baseline metrics for this group
+    const groupBaseItems = itemsCopy.filter(item => {
+      const usageRank = item.usageRank || 1;
+      return group.usageRanks.includes(usageRank);
+    });
+    
+    // Calculate baseline revenue and profit for this group
+    let baseRevenue = 0;
+    let baseProfit = 0;
+    let baseMargin = 0;
+    let baseMarginNum = 0;
+    let baseMarginDenom = 0;
+    
+    groupBaseItems.forEach(item => {
+      const usage = Math.max(0, item.revaUsage || 0);
+      const price = Math.max(0, item.currentREVAPrice || 0);
+      const cost = Math.max(0, item.avgCost || 0);
+      
+      if (usage > 0 && price > 0) {
+        const itemRevenue = usage * price;
+        const itemProfit = usage * (price - cost);
+        
+        baseRevenue += itemRevenue;
+        baseProfit += itemProfit;
+        
+        // For weighted margin calculation
+        baseMarginNum += (price - cost) * usage;
+        baseMarginDenom += price * usage;
+      }
+    });
+    
+    // Calculate weighted margin for this group
+    baseMargin = baseMarginDenom > 0 ? (baseMarginNum / baseMarginDenom) * 100 : 0;
+    
+    // Calculate simulated metrics for this group
+    let simRevenue = 0;
+    let simProfit = 0;
+    let simMargin = 0;
+    let simMarginNum = 0;
+    let simMarginDenom = 0;
+    let highPriceFlags = 0;
+    let lowMarginFlags = 0;
+    let marginCapApplied = 0;
+    let marginFloorApplied = 0;
+    
+    groupItems.forEach(item => {
+      const usage = Math.max(0, item.revaUsage || 0);
+      const price = Math.max(0, item.simulatedPrice || 0);
+      const cost = Math.max(0, item.avgCost || 0);
+      
+      if (usage > 0 && price > 0) {
+        const itemRevenue = usage * price;
+        const itemProfit = usage * (price - cost);
+        
+        simRevenue += itemRevenue;
+        simProfit += itemProfit;
+        
+        // For weighted margin calculation
+        simMarginNum += (price - cost) * usage;
+        simMarginDenom += price * usage;
+      }
+      
+      // Count flags
+      if (item.flag1) highPriceFlags++;
+      if (item.flag2) lowMarginFlags++;
+      if (item.marginCapApplied) marginCapApplied++;
+      if (item.marginFloorApplied) marginFloorApplied++;
+    });
+    
+    // Calculate weighted margin for this group
+    simMargin = simMarginDenom > 0 ? (simMarginNum / simMarginDenom) * 100 : 0;
+    
+    // Calculate differences for this group
+    const revenueDiff = simRevenue - baseRevenue;
+    const revenueDiffPercent = baseRevenue > 0 ? (revenueDiff / baseRevenue) * 100 : 0;
+    
+    const profitDiff = simProfit - baseProfit;
+    const profitDiffPercent = baseProfit > 0 ? (profitDiff / baseProfit) * 100 : 0;
+    
+    const marginDiff = simMargin - baseMargin;
+    
+    return {
+      name: group.name,
+      displayName: group.displayName,
+      itemCount: groupItems.length,
+      baseline: {
+        revenue: baseRevenue,
+        profit: baseProfit,
+        margin: baseMargin
+      },
+      simulated: {
+        revenue: simRevenue,
+        profit: simProfit,
+        margin: simMargin,
+        highPriceFlags,
+        lowMarginFlags,
+        marginCapApplied,
+        marginFloorApplied
+      },
+      changes: {
+        revenueDiff,
+        revenueDiffPercent,
+        profitDiff,
+        profitDiffPercent,
+        marginDiff
+      }
+    };
   });
   
   // Count overall flags
