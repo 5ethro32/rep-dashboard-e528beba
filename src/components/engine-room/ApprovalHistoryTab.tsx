@@ -201,61 +201,61 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
             <TableHeader className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur-sm">
               <TableRow>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('description')}>
-                  <div className="flex items-center pl-1">
+                  <div className="flex items-center pl-1 py-3">
                     Description
                     {renderSortIndicator('description')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('currentREVAPrice')}>
-                  <div className="flex items-center pl-1">
+                  <div className="flex items-center pl-1 py-3">
                     Current Price
                     {renderSortIndicator('currentREVAPrice')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('proposedPrice')}>
-                  <div className="flex items-center pl-1">
+                  <div className="flex items-center pl-1 py-3">
                     Proposed Price
                     {renderSortIndicator('proposedPrice')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('priceChangePercentage')}>
-                  <div className="flex items-center pl-1">
+                  <div className="flex items-center pl-1 py-3">
                     Change
                     {renderSortIndicator('priceChangePercentage')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('proposedMargin')}>
-                  <div className="flex items-center pl-1">
+                  <div className="flex items-center pl-1 py-3">
                     Margin
                     {renderSortIndicator('proposedMargin')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('usageRank')}>
-                  <div className="flex items-center pl-1">
+                  <div className="flex items-center pl-1 py-3">
                     Usage Rank
                     {renderSortIndicator('usageRank')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('workflowStatus')}>
-                  <div className="flex items-center pl-1">
+                  <div className="flex items-center pl-1 py-3">
                     Status
                     {renderSortIndicator('workflowStatus')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('submittedBy')}>
-                  <div className="flex items-center pl-1">
+                  <div className="flex items-center pl-1 py-3">
                     Submitted By
                     {renderSortIndicator('submittedBy')}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('reviewDate')}>
-                  <div className="flex items-center pl-1">
+                  <div className="flex items-center pl-1 py-3">
                     Review Date
                     {renderSortIndicator('reviewDate')}
                   </div>
                 </TableHead>
                 <TableHead>
-                  <div className="pl-1">Comments</div>
+                  <div className="pl-1 py-3">Comments</div>
                 </TableHead>
                 <TableHead></TableHead>
               </TableRow>
