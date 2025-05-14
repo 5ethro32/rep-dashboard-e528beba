@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
@@ -341,6 +342,7 @@ const EngineOperationsContent = () => {
           <EngineDataTable 
             data={engineData.items || []} 
             onShowPriceDetails={handleShowItemDetails}
+            onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
           />
@@ -359,6 +361,7 @@ const EngineOperationsContent = () => {
           <EngineDataTable 
             data={getFlaggedItems()} 
             onShowPriceDetails={handleShowItemDetails}
+            onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
             flagFilter={activeTabFlagFilter}
@@ -370,6 +373,7 @@ const EngineOperationsContent = () => {
           <EngineDataTable 
             data={getSubmittedItems()} 
             onShowPriceDetails={handleShowItemDetails}
+            onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
           />
@@ -379,6 +383,7 @@ const EngineOperationsContent = () => {
           <EngineDataTable 
             data={getStarredItems()} 
             onShowPriceDetails={handleShowItemDetails}
+            onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
           />
