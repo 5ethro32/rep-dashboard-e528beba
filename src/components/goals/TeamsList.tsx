@@ -24,7 +24,7 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
-  // Simplified mutation without complex type parameters
+  // Remove all explicit typing from useMutation to avoid the infinite type instantiation
   const addMemberMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTeam) return null;
@@ -75,6 +75,7 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
     }
   });
 
+  // Let TypeScript infer types for deleteTeamMutation as well
   const deleteTeamMutation = useMutation({
     mutationFn: async (teamId: string) => {
       const { error } = await supabase
