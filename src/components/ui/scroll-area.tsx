@@ -4,34 +4,24 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 
 import { cn } from "@/lib/utils"
 
-interface ScrollAreaProps extends 
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
-  orientation?: "vertical" | "horizontal" | "both";
-  viewportRef?: React.RefObject<HTMLDivElement>;
-  hideScrollbar?: boolean;
-}
-
 const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  ScrollAreaProps
->(({ className, children, orientation = "vertical", viewportRef, hideScrollbar = false, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
+    orientation?: "vertical" | "horizontal" | "both"
+  }
+>(({ className, children, orientation = "vertical", ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn("relative overflow-hidden", className)}
     {...props}
   >
-    <ScrollAreaPrimitive.Viewport 
-      ref={viewportRef} 
-      className={cn(
-        "h-full w-full rounded-[inherit] [&>div]:h-full",
-        hideScrollbar && "scrollbar-hide"
-      )}>
+    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
       {children}
     </ScrollAreaPrimitive.Viewport>
-    {!hideScrollbar && (orientation === "vertical" || orientation === "both") ? (
+    {orientation === "vertical" || orientation === "both" ? (
       <ScrollBar orientation="vertical" />
     ) : null}
-    {!hideScrollbar && (orientation === "horizontal" || orientation === "both") ? (
+    {orientation === "horizontal" || orientation === "both" ? (
       <ScrollBar orientation="horizontal" />
     ) : null}
     <ScrollAreaPrimitive.Corner />
@@ -52,12 +42,11 @@ const ScrollBar = React.forwardRef<
         "h-full w-2.5 border-l border-l-transparent p-[1px]",
       orientation === "horizontal" &&
         "h-2.5 flex-col border-t border-t-transparent p-[1px]",
-      "transition-all duration-150 opacity-80 hover:opacity-100",
       className
     )}
     {...props}
   >
-    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border/70 hover:bg-border/90 transition-colors duration-150" />
+    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ))
 ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName

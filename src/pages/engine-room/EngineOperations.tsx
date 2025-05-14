@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
@@ -45,14 +46,6 @@ const EngineOperationsContent = () => {
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
   const [activeTabFlagFilter, setActiveTabFlagFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const exceptionsHeaderRef = useRef<HTMLDivElement>(null);
-  const exceptionsBodyRef = useRef<HTMLDivElement>(null);
-  const submittedHeaderRef = useRef<HTMLDivElement>(null);
-  const submittedBodyRef = useRef<HTMLDivElement>(null);
-  const starredHeaderRef = useRef<HTMLDivElement>(null);
-  const starredBodyRef = useRef<HTMLDivElement>(null);
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -352,8 +345,6 @@ const EngineOperationsContent = () => {
             onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
-            headerRef={headerRef}
-            bodyRef={bodyRef}
           />
         </TabsContent>
         
@@ -375,8 +366,6 @@ const EngineOperationsContent = () => {
             starredItems={starredItems}
             flagFilter={activeTabFlagFilter}
             onFlagFilterChange={setActiveTabFlagFilter}
-            headerRef={exceptionsHeaderRef}
-            bodyRef={exceptionsBodyRef}
           />
         </TabsContent>
         
@@ -387,8 +376,6 @@ const EngineOperationsContent = () => {
             onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
-            headerRef={submittedHeaderRef}
-            bodyRef={submittedBodyRef}
           />
         </TabsContent>
         
@@ -399,8 +386,6 @@ const EngineOperationsContent = () => {
             onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
-            headerRef={starredHeaderRef}
-            bodyRef={starredBodyRef}
           />
         </TabsContent>
         

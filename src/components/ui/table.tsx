@@ -3,17 +3,11 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
-  headerRef?: React.RefObject<HTMLDivElement>;
-  bodyRef?: React.RefObject<HTMLDivElement>;
-  showScrollbar?: boolean;
-}
-
 const Table = React.forwardRef<
   HTMLTableElement,
-  TableProps
->(({ className, headerRef, bodyRef, showScrollbar = true, ...props }, ref) => (
-  <div className={cn("w-full", showScrollbar ? "overflow-auto" : "overflow-hidden")}>
+  React.HTMLAttributes<HTMLTableElement>
+>(({ className, ...props }, ref) => (
+  <div className="w-full overflow-auto">
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
@@ -29,10 +23,7 @@ const TableHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <thead 
     ref={ref} 
-    className={cn(
-      "bg-background/95 backdrop-blur-sm border-b z-50",
-      className
-    )} 
+    className={cn("[&_tr]:border-b sticky top-0 bg-background z-20", className)} 
     {...props} 
   />
 ))
@@ -92,7 +83,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-6 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 bg-background/95 backdrop-blur-sm z-40",
+      "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 sticky top-0 bg-background z-10",
       className
     )}
     {...props}
@@ -106,7 +97,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("px-6 py-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
     {...props}
   />
 ))

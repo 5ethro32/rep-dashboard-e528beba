@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,16 @@ import CellDetailsPopover from './CellDetailsPopover';
 import { formatPercentage as utilFormatPercentage } from '@/utils/formatting-utils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+interface EngineDataTableProps {
+  data: any[];
+  onShowPriceDetails: (item: any) => void;
+  onPriceChange?: (item: any, newPrice: number) => void;
+  onToggleStar?: (itemId: string) => void;
+  starredItems?: Set<string>;
+  flagFilter?: string;
+  onFlagFilterChange?: (filter: string) => void;
+}
 
 // Define column configuration outside component to avoid recreation on each render
 const columns = [{
@@ -89,39 +100,6 @@ const columns = [{
   filterable: true
 }];
 
-// Define column width configuration to ensure alignment
-const columnWidths = {
-  description: 'w-[180px] min-w-[180px]',
-  inStock: 'w-[80px] min-w-[80px]',
-  revaUsage: 'w-[80px] min-w-[80px]',
-  usageRank: 'w-[80px] min-w-[80px]',
-  avgCost: 'w-[100px] min-w-[100px]',
-  nextCost: 'w-[100px] min-w-[100px]',
-  marketLow: 'w-[100px] min-w-[100px]',
-  trueMarketLow: 'w-[100px] min-w-[100px]',
-  currentREVAPrice: 'w-[120px] min-w-[120px]',
-  currentREVAMargin: 'w-[120px] min-w-[120px]',
-  proposedPrice: 'w-[120px] min-w-[120px]',
-  priceChangePercentage: 'w-[100px] min-w-[100px]',
-  proposedMargin: 'w-[120px] min-w-[120px]',
-  tmlPercentage: 'w-[100px] min-w-[100px]',
-  appliedRule: 'w-[80px] min-w-[80px]',
-  flags: 'w-[150px] min-w-[150px]',
-  actions: 'w-[100px] min-w-[100px]'
-};
-
-interface EngineDataTableProps {
-  data: any[];
-  onShowPriceDetails: (item: any) => void;
-  onPriceChange?: (item: any, newPrice: number) => void;
-  onToggleStar?: (itemId: string) => void;
-  starredItems?: Set<string>;
-  flagFilter?: string;
-  onFlagFilterChange?: (filter: string) => void;
-  headerRef?: React.RefObject<HTMLDivElement>;
-  bodyRef?: React.RefObject<HTMLDivElement>;
-}
-
 const EngineDataTable: React.FC<EngineDataTableProps> = ({
   data,
   onShowPriceDetails,
@@ -129,9 +107,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   onToggleStar,
   starredItems = new Set(),
   flagFilter,
-  onFlagFilterChange,
-  headerRef,
-  bodyRef
+  onFlagFilterChange
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<string>('description');
@@ -945,143 +921,59 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     );
   };
 
-  // Effect to sync horizontal scrolling between header and body
-  useEffect(() => {
-    if (headerRef?.current && bodyRef?.current) {
-      const headerElement = headerRef.current;
-      const bodyElement = bodyRef.current;
-
-      const handleBodyScroll = () => {
-        if (headerElement && bodyElement) {
-          headerElement.scrollLeft = bodyElement.scrollLeft;
-        }
-      };
-
-      // Add scroll event listener to the body container
-      bodyElement.addEventListener('scroll', handleBodyScroll);
-      
-      // Clean up
-      return () => {
-        bodyElement.removeEventListener('scroll', handleBodyScroll);
-      };
-    }
-  }, [headerRef, bodyRef]);
-
   const renderDataTable = () => {
     return (
       <div className="rounded-md border overflow-hidden">
-        {/* Table Header - fixed for vertical scrolling, synchronized for horizontal scrolling */}
-        <div 
-          ref={headerRef} 
-          className="overflow-hidden" 
-          style={{ 
-            overflow: 'hidden', 
-            position: 'sticky', 
-            top: 0, 
-            zIndex: 50, 
-            backgroundColor: 'var(--background)',
-            width: '100%'
-          }}
-        >
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                <th key="description" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.description}`}>
-                  {renderColumnHeader(columns[0])}
-                </th>
-                <th key="inStock" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.inStock}`}>
-                  {renderColumnHeader(columns[1])}
-                </th>
-                <th key="revaUsage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.revaUsage}`}>
-                  {renderColumnHeader(columns[2])}
-                </th>
-                <th key="usageRank" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.usageRank}`}>
-                  {renderColumnHeader(columns[3])}
-                </th>
-                <th key="avgCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.avgCost}`}>
-                  {renderColumnHeader(columns[4])}
-                </th>
-                <th key="nextCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.nextCost}`}>
-                  {renderColumnHeader(columns[5])}
-                </th>
-                <th key="marketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.marketLow}`}>
-                  {renderColumnHeader(columns[6])}
-                </th>
-                <th key="trueMarketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.trueMarketLow}`}>
-                  {renderColumnHeader(columns[7])}
-                </th>
-                <th key="currentREVAPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAPrice}`}>
-                  {renderColumnHeader(columns[8])}
-                </th>
-                <th key="currentREVAMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAMargin}`}>
-                  {renderColumnHeader(columns[9])}
-                </th>
-                <th key="proposedPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedPrice}`}>
-                  {renderColumnHeader(columns[10])}
-                </th>
-                <th key="priceChangePercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.priceChangePercentage}`}>
-                  {renderColumnHeader(columns[11])}
-                </th>
-                <th key="proposedMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedMargin}`}>
-                  {renderColumnHeader(columns[12])}
-                </th>
-                <th key="tmlPercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.tmlPercentage}`}>
-                  {renderColumnHeader(columns[13])}
-                </th>
-                <th key="appliedRule" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.appliedRule}`}>
-                  {renderColumnHeader(columns[14])}
-                </th>
-                <th className={`bg-gray-900/70 ${columnWidths.flags}`}>
+        <ScrollArea className="h-[600px]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {columns.map(column => (
+                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
+                    {renderColumnHeader(column)}
+                  </TableHead>
+                ))}
+                <TableHead className="bg-gray-900/70">
                   {renderFlagsColumnHeader()}
-                </th>
-                <th className={`bg-gray-900/70 ${columnWidths.actions}`}>Actions</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
-        
-        {/* Table Body - scrollable */}
-        <div 
-          ref={bodyRef} 
-          className="overflow-auto h-[600px]"
-          style={{ overflowX: 'auto', overflowY: 'auto' }}
-        >
-          <table className="w-full text-sm">
-            <tbody>
+                </TableHead>
+                <TableHead className="bg-gray-900/70">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {paginatedData.length === 0 && (
-                <tr>
-                  <td colSpan={columns.length + 2} className="text-center py-10">
+                <TableRow>
+                  <TableCell colSpan={columns.length + 2} className="text-center py-10">
                     No items found matching your search criteria
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
               {paginatedData.map((item, index) => {
                 const priceChangePercentage = calculatePriceChangePercentage(item);
                 const isEditingThisItem = editingItemId === item.id;
                 
                 return (
-                  <tr 
+                  <TableRow 
                     key={index} 
-                    className={`${item.noMarketPrice ? 'bg-blue-900/10' : ''} ${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''} border-b hover:bg-muted/50`}
+                    className={`${item.noMarketPrice ? 'bg-blue-900/10' : ''} ${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
                   >
-                    <td className={`p-4 ${columnWidths.description}`}>{item.description}</td>
-                    <td className={`p-4 ${columnWidths.inStock}`}>{item.inStock}</td>
-                    <td className={`p-4 ${columnWidths.revaUsage}`}>{item.revaUsage}</td>
-                    <td className={`p-4 ${columnWidths.usageRank}`}>{item.usageRank}</td>
+                    <TableCell>{item.description}</TableCell>
+                    <TableCell>{item.inStock}</TableCell>
+                    <TableCell>{item.revaUsage}</TableCell>
+                    <TableCell>{item.usageRank}</TableCell>
                     
-                    <td className={`p-4 ${columnWidths.avgCost}`}>
+                    <TableCell>
                       <CellDetailsPopover item={item} field="avgCost">
                         {formatCurrency(item.avgCost)}
                       </CellDetailsPopover>
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.nextCost}`}>
+                    <TableCell>
                       <CellDetailsPopover item={item} field="nextCost">
                         {formatNextBuyingPrice(item)}
                       </CellDetailsPopover>
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.marketLow}`}>
+                    <TableCell>
                       <CellDetailsPopover item={item} field="marketLow">
                         <div className="flex items-center gap-1">
                           {formatCurrency(item.marketLow, item.noMarketPrice)}
@@ -1089,27 +981,27 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
                         </div>
                       </CellDetailsPopover>
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.trueMarketLow}`}>
+                    <TableCell>
                       <CellDetailsPopover item={item} field="trueMarketLow">
                         {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
                       </CellDetailsPopover>
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.currentREVAPrice}`}>
+                    <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAPrice">
                         <span className="font-medium">{formatCurrency(item.currentREVAPrice)}</span>
                       </CellDetailsPopover>
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.currentREVAMargin}`}>
+                    <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAMargin">
                         {formatCurrentMargin(item.currentREVAMargin)}
                       </CellDetailsPopover>
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.proposedPrice}`}>
+                    <TableCell>
                       {/* Price editing */}
                       {bulkEditMode ? (
                         // Bulk edit mode - all cells show editor
@@ -1165,33 +1057,33 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           </div>
                         </CellDetailsPopover>
                       )}
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.priceChangePercentage}`}>
+                    <TableCell>
                       {priceChangePercentage !== 0 && (
                         <span className={priceChangePercentage > 0 ? "text-green-400" : "text-red-400"}>
                           {priceChangePercentage > 0 ? "+" : ""}{priceChangePercentage.toFixed(2)}%
                         </span>
                       )}
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.proposedMargin}`}>
+                    <TableCell>
                       <CellDetailsPopover item={item} field="proposedMargin">
                         {formatPercentage(item.proposedMargin)}
                       </CellDetailsPopover>
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.tmlPercentage}`}>
+                    <TableCell>
                       <CellDetailsPopover item={item} field="tmlPercentage">
                         {formatTMLPercentage(item.tmlPercentage)}
                       </CellDetailsPopover>
-                    </td>
+                    </TableCell>
                     
-                    <td className={`p-4 ${columnWidths.appliedRule}`}>{formatRuleDisplay(item.appliedRule)}</td>
+                    <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
                     
-                    <td className={`p-4 ${columnWidths.flags}`}>{renderFlags(item)}</td>
+                    <TableCell>{renderFlags(item)}</TableCell>
                     
-                    <td className={`p-4 ${columnWidths.actions}`}>
+                    <TableCell>
                       <div className="flex items-center space-x-1">
                         <Button 
                           variant="ghost" 
@@ -1230,13 +1122,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           </Button>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </ScrollArea>
       </div>
     );
   };
@@ -1279,7 +1171,31 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         
         {renderDataTable()}
         
-        {renderPagination()}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between py-2">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, sortedData.length)} of {sortedData.length} items
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                Previous
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );
