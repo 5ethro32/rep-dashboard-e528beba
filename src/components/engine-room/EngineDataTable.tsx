@@ -497,11 +497,16 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     }
   };
 
-  // Handle price edit save
+  // Handle price edit save - Updated to ensure the change is properly marked
   const handleSavePriceEdit = (item: any) => {
     if (onPriceChange && editingValues[item.id] !== undefined) {
-      onPriceChange(item, editingValues[item.id]);
+      const newPrice = editingValues[item.id];
+      // Only trigger change if the price is actually different
+      if (newPrice !== item.proposedPrice) {
+        onPriceChange(item, newPrice);
+      }
     }
+    
     // Reset editing state for this item
     setEditingItemId(null);
     const newEditingValues = {
@@ -517,11 +522,19 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     // Keep the editingValues intact, just stop editing
   };
 
-  // Toggle bulk edit mode
+  // Toggle bulk edit mode - Modified to ensure changes are preserved
   const toggleBulkEditMode = () => {
-    setBulkEditMode(!bulkEditMode);
-    // Clear all edits when toggling bulk mode
-    setEditingValues({});
+    // When exiting bulk edit mode, we don't need to clear anything
+    // as we want changes to persist when toggling the mode
+    if (bulkEditMode) {
+      // Just exit bulk edit mode, preserving all changes
+      setBulkEditMode(false);
+    } else {
+      // Enter bulk edit mode
+      setBulkEditMode(true);
+    }
+    // We no longer clear editing state to preserve any changes
+    // Only clear active editing item
     setEditingItemId(null);
   };
 
@@ -820,7 +833,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       ) : (
                         filter.values.map((value, j) => (
                           <Badge key={j} variant="outline" className="bg-gray-700/50 text-gray-200 gap-1 px-1.5 py-0.5 h-5">
-                            {value}
+                            {value !== null && value !== undefined ? typeof value === 'number' ? value.toString() : value : '(Empty)'}
                             <Button 
                               variant="ghost" 
                               size="sm" 
