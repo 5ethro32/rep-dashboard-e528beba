@@ -24,7 +24,7 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
-  // Fix by removing the complex type inference
+  // Simplified mutation without complex type parameters
   const addMemberMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTeam) return null;
