@@ -631,13 +631,12 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       lowestPrice = Math.min(lowestPrice, processedItem.aah);
     }
 
-    // FIXED: Don't use avgCost as fallback when no competitor prices are available
-    // Instead, set TML to 0 and flag it
+    // MODIFIED: Always set trueMarketLow to the lowest competitor price when available
     if (!hasAnyCompetitorPrice || lowestPrice === Infinity) {
-      processedItem.trueMarketLow = 0; // Set to 0 instead of avgCost
-      processedItem.noMarketPrice = true; // Explicit flag for easier detection
+      processedItem.trueMarketLow = 0;
+      processedItem.noMarketPrice = true; // Only set noMarketPrice when NO competitor prices are available
       
-      // Flag as "No Market Price Available"
+      // Flag as "No Market Price Available" - only when truly no prices available
       if (!processedItem.flags) processedItem.flags = [];
       if (!processedItem.flags.includes('No Market Price Available')) {
         processedItem.flags.push('No Market Price Available');
@@ -647,10 +646,9 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.noMarketPrice = false;
     }
     
-    if (processedItem.marketLow === undefined || processedItem.marketLow === null) {
-      // If ETH NET not available, use TML as fallback for Market Low
-      // But only if TML is actually available (not 0)
-      processedItem.marketLow = processedItem.noMarketPrice ? 0 : processedItem.trueMarketLow;
+    // MODIFIED: If Market Low (ETH_NET) is missing but TML is available, use TML as Market Low
+    if ((processedItem.marketLow === undefined || processedItem.marketLow === null) && !processedItem.noMarketPrice) {
+      processedItem.marketLow = processedItem.trueMarketLow;
     }
     
     // Get group for rule application
