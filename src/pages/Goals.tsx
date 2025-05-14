@@ -15,6 +15,7 @@ import GoalsList from '@/components/goals/GoalsList';
 import CreateGoalForm from '@/components/goals/CreateGoalForm';
 import GoalTrackingComponent from '@/components/goals/GoalTrackingComponent';
 import Leaderboard from '@/components/goals/Leaderboard';
+import { Team } from '@/types/goals.types';
 
 const Goals = () => {
   const { user } = useAuth();
@@ -42,7 +43,7 @@ const Goals = () => {
         throw new Error(error.message);
       }
       
-      return data || [];
+      return data as unknown as Team[];
     }
   });
 
@@ -132,22 +133,22 @@ const Goals = () => {
             
             <TabsContent value="teams" className="mt-4">
               {showCreateTeamForm && <CreateTeamForm onSuccess={() => setShowCreateTeamForm(false)} />}
-              <TeamsList teams={teams} onSelectTeam={handleTeamSelect} />
+              <TeamsList teams={teams as Team[]} onSelectTeam={handleTeamSelect} />
             </TabsContent>
             
             <TabsContent value="goals" className="mt-4">
               {showCreateGoalForm && (
                 <CreateGoalForm 
                   onSuccess={() => setShowCreateGoalForm(false)}
-                  teams={teams}
+                  teams={teams as Team[]}
                   selectedTeam={selectedTeam}
                 />
               )}
-              <GoalsList goals={goals} teams={teams} selectedTeam={selectedTeam} />
+              <GoalsList goals={goals} teams={teams as Team[]} selectedTeam={selectedTeam} />
             </TabsContent>
             
             <TabsContent value="leaderboard" className="mt-4">
-              <Leaderboard teams={teams} goals={goals} />
+              <Leaderboard teams={teams as Team[]} goals={goals} />
             </TabsContent>
           </Tabs>
         </CardContent>
