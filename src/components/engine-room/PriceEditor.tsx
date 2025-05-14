@@ -71,8 +71,19 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   const handleSave = () => {
     const numericPrice = parseFloat(priceValue);
     if (isValid && numericPrice > 0) {
-      // Call the onSave prop with the parsed numeric price
+      // Ensure we're calling onSave with the parsed numeric value
       onSave(numericPrice);
+      // Toast notification for user feedback
+      toast({
+        title: "Price updated",
+        description: `Price has been updated to £${numericPrice.toFixed(2)}`
+      });
+    } else {
+      toast({
+        title: "Invalid price",
+        description: "Please enter a valid price greater than zero",
+        variant: "destructive"
+      });
     }
   };
   
@@ -104,7 +115,14 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
         <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={onCancel} title="Cancel">
           <X className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleSave} disabled={!isValid} title="Save">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-7 w-7 p-0" 
+          onClick={handleSave} 
+          disabled={!isValid} 
+          title="Save"
+        >
           <Check className="h-3 w-3" />
         </Button>
         {isPriceDecrease && (
@@ -164,7 +182,12 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           <X className="h-3 w-3 mr-1" />
           Cancel
         </Button>
-        <Button variant="default" size="sm" onClick={handleSave} disabled={!isValid}>
+        <Button 
+          variant="default" 
+          size="sm" 
+          onClick={handleSave} 
+          disabled={!isValid}
+        >
           <Check className="h-3 w-3 mr-1" />
           Save
         </Button>

@@ -172,9 +172,11 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [queryClient, toast]);
 
-  // Handle price change - updated to use consistent flag handling for noMarketPrice
+  // Handle price change - updated to ensure changes are properly saved
   const handlePriceChange = useCallback((item: any, newPrice: number) => {
     if (!engineData) return;
+    
+    console.log('Price change triggered for item:', item.id, 'New price:', newPrice);
     
     // Deep clone the data to avoid modifying the cache directly
     const updatedData = JSON.parse(JSON.stringify(engineData));
@@ -290,6 +292,8 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       newSet.add(item.id);
       return newSet;
     });
+    
+    console.log('Price updated successfully for item:', item.id);
     
     toast({
       title: "Price updated",
