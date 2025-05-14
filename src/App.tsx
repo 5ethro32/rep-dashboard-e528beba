@@ -22,6 +22,7 @@ import RuleSimulator from "./pages/engine-room/RuleSimulator";
 import AppLayout from "./components/layout/AppLayout";
 import { useIsMobile } from "./hooks/use-mobile";
 import { useAuth } from "./contexts/AuthContext";
+import Goals from "./pages/Goals";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -140,6 +141,7 @@ const AppRoutes = () => {
           path="/my-performance" 
           element={<MyPerformanceWithProps />} 
         />
+        <Route path="/goals" element={<Goals />} />
         
         {/* Engine Room Routes - Wrapped with EngineRoomProvider */}
         <Route path="/engine-room" element={
