@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { 
@@ -498,8 +497,8 @@ const EngineOperationsContent = () => {
                           <div>{new Date().toLocaleDateString()}</div>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-4 gap-4 p-3 text-sm">
-                          <div colSpan={4} className="text-center text-muted-foreground">No team activity recorded</div>
+                        <div className="p-3 text-center text-muted-foreground text-sm">
+                          No team activity recorded
                         </div>
                       )}
                     </div>
