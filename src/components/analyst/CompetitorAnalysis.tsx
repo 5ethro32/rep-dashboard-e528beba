@@ -9,6 +9,19 @@ import { useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Generate simulated historical price data - moved before usage
+const generateHistoricalPrices = (basePrice, trend) => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+  let currentPrice = basePrice * (1 - (trend / 100) * 2); // Start from an earlier price point
+  
+  return months.map(month => {
+    const price = currentPrice;
+    // Add a trend component plus a small random fluctuation
+    currentPrice = currentPrice * (1 + (trend / 100) * 0.5 + (Math.random() - 0.5) * 0.01);
+    return { month, price: parseFloat(price.toFixed(2)) };
+  });
+};
+
 const CompetitorAnalysis: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('pricing');
   const { engineData, isLoading } = useEngineRoom();
@@ -102,19 +115,6 @@ const CompetitorAnalysis: React.FC = () => {
     
     return result;
   }, [engineData?.items]);
-
-  // Generate simulated historical price data
-  const generateHistoricalPrices = (basePrice, trend) => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
-    let currentPrice = basePrice * (1 - (trend / 100) * 2); // Start from an earlier price point
-    
-    return months.map(month => {
-      const price = currentPrice;
-      // Add a trend component plus a small random fluctuation
-      currentPrice = currentPrice * (1 + (trend / 100) * 0.5 + (Math.random() - 0.5) * 0.01);
-      return { month, price: parseFloat(price.toFixed(2)) };
-    });
-  };
 
   // Calculate competitive rating based on how often a competitor provides the lowest price
   const calculateCompetitiveRating = (competitorName, items) => {
