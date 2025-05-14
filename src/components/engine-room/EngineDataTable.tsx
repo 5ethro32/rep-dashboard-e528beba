@@ -505,7 +505,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
 
   const renderColumnHeader = (column: any) => {
     return (
-      <div className="flex items-center justify-between px-1.5">
+      <div className="flex items-center justify-between">
         <div 
           className="flex items-center cursor-pointer" 
           onClick={() => handleSort(column.field)}
@@ -572,10 +572,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   };
 
   const renderFlagsColumnHeader = () => {
-    return <div className="flex items-center justify-between px-1.5">
+    return <div className="flex items-center justify-between">
         <span>Flags</span>
-        {uniqueFlags.length > 0 && 
-          <DropdownMenu>
+        {uniqueFlags.length > 0 && <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
@@ -987,55 +986,55 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           <table className="w-full text-sm">
             <thead>
               <tr>
-                <th key="description" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.description} px-1.5`}>
+                <th key="description" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.description}`}>
                   {renderColumnHeader(columns[0])}
                 </th>
-                <th key="inStock" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.inStock} px-1.5`}>
+                <th key="inStock" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.inStock}`}>
                   {renderColumnHeader(columns[1])}
                 </th>
-                <th key="revaUsage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.revaUsage} px-1.5`}>
+                <th key="revaUsage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.revaUsage}`}>
                   {renderColumnHeader(columns[2])}
                 </th>
-                <th key="usageRank" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.usageRank} px-1.5`}>
+                <th key="usageRank" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.usageRank}`}>
                   {renderColumnHeader(columns[3])}
                 </th>
-                <th key="avgCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.avgCost} px-1.5`}>
+                <th key="avgCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.avgCost}`}>
                   {renderColumnHeader(columns[4])}
                 </th>
-                <th key="nextCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.nextCost} px-1.5`}>
+                <th key="nextCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.nextCost}`}>
                   {renderColumnHeader(columns[5])}
                 </th>
-                <th key="marketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.marketLow} px-1.5`}>
+                <th key="marketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.marketLow}`}>
                   {renderColumnHeader(columns[6])}
                 </th>
-                <th key="trueMarketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.trueMarketLow} px-1.5`}>
+                <th key="trueMarketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.trueMarketLow}`}>
                   {renderColumnHeader(columns[7])}
                 </th>
-                <th key="currentREVAPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAPrice} px-1.5`}>
+                <th key="currentREVAPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAPrice}`}>
                   {renderColumnHeader(columns[8])}
                 </th>
-                <th key="currentREVAMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAMargin} px-1.5`}>
+                <th key="currentREVAMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAMargin}`}>
                   {renderColumnHeader(columns[9])}
                 </th>
-                <th key="proposedPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedPrice} px-1.5`}>
+                <th key="proposedPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedPrice}`}>
                   {renderColumnHeader(columns[10])}
                 </th>
-                <th key="priceChangePercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.priceChangePercentage} px-1.5`}>
+                <th key="priceChangePercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.priceChangePercentage}`}>
                   {renderColumnHeader(columns[11])}
                 </th>
-                <th key="proposedMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedMargin} px-1.5`}>
+                <th key="proposedMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedMargin}`}>
                   {renderColumnHeader(columns[12])}
                 </th>
-                <th key="tmlPercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.tmlPercentage} px-1.5`}>
+                <th key="tmlPercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.tmlPercentage}`}>
                   {renderColumnHeader(columns[13])}
                 </th>
-                <th key="appliedRule" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.appliedRule} px-1.5`}>
+                <th key="appliedRule" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.appliedRule}`}>
                   {renderColumnHeader(columns[14])}
                 </th>
-                <th className={`bg-gray-900/70 ${columnWidths.flags} px-1.5`}>
+                <th className={`bg-gray-900/70 ${columnWidths.flags}`}>
                   {renderFlagsColumnHeader()}
                 </th>
-                <th className={`bg-gray-900/70 ${columnWidths.actions} px-1.5`}>Actions</th>
+                <th className={`bg-gray-900/70 ${columnWidths.actions}`}>Actions</th>
               </tr>
             </thead>
           </table>

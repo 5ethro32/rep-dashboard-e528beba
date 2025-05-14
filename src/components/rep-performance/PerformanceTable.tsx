@@ -98,49 +98,37 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                     onClick={() => onSort('rep')}
                     className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors sticky left-0 z-20 bg-gray-900/90 backdrop-blur-sm border-r border-white/5"
                   >
-                    <div className="flex items-center pl-1">
-                      Rep {sortBy === 'rep' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </div>
+                    Rep {sortBy === 'rep' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
                     onClick={() => onSort('spend')}
                     className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors min-w-[120px]"
                   >
-                    <div className="flex items-center pl-1">
-                      Spend {sortBy === 'spend' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </div>
+                    Spend {sortBy === 'spend' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
                     onClick={() => onSort('profit')}
                     className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors min-w-[120px]"
                   >
-                    <div className="flex items-center pl-1">
-                      Profit {sortBy === 'profit' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </div>
+                    Profit {sortBy === 'profit' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
                     onClick={() => onSort('margin')}
                     className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors min-w-[100px]"
                   >
-                    <div className="flex items-center pl-1">
-                      Margin {sortBy === 'margin' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </div>
+                    Margin {sortBy === 'margin' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
                     onClick={() => onSort('activeAccounts')}
                     className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors min-w-[140px]"
                   >
-                    <div className="flex items-center pl-1">
-                      Accounts {sortBy === 'activeAccounts' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </div>
+                    Accounts {sortBy === 'activeAccounts' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                   <TableHead 
                     onClick={() => onSort('packs')}
                     className="px-3 md:px-6 py-2 md:py-3 text-left text-2xs md:text-xs font-medium text-finance-gray uppercase cursor-pointer hover:bg-white/5 transition-colors min-w-[100px]"
                   >
-                    <div className="flex items-center pl-1">
-                      Packs {sortBy === 'packs' && (sortOrder === 'asc' ? '↑' : '↓')}
-                    </div>
+                    Packs {sortBy === 'packs' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </TableHead>
                 </TableRow>
               </TableHeader>
