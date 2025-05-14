@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,13 +23,8 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
-  // Fix the infinite type instantiation by fully specifying the generic types
-  const addMemberMutation = useMutation<
-    void,       // TData - return type of mutationFn
-    Error,      // TError - error type
-    void,       // TVariables - argument type to mutationFn 
-    unknown     // TContext - context used for the onMutate
-  >({
+  // Fix the type instantiation error by providing explicit types and simplifying the mutation
+  const addMemberMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTeam) return;
       
