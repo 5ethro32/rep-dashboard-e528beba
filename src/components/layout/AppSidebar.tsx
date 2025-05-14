@@ -7,8 +7,7 @@ import {
   ClipboardList, 
   UserCircle,
   Home,
-  Sliders,
-  Trophy
+  Sliders
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -77,11 +76,6 @@ export const AppSidebar = () => {
       to: "/my-performance",
       icon: <UserCircle className="h-5 w-5 transition-colors duration-200" />,
       label: "My Data"
-    },
-    {
-      to: "/goals",
-      icon: <Trophy className="h-5 w-5 transition-colors duration-200" />,
-      label: "Goals"
     },
     {
       to: "/engine-room/dashboard",

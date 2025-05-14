@@ -89,53 +89,6 @@ export type Database = {
           },
         ]
       }
-      goals: {
-        Row: {
-          active: boolean | null
-          created_at: string | null
-          current_quantity: number | null
-          end_date: string | null
-          id: string
-          name: string
-          price: number
-          product_name: string
-          target_quantity: number
-          team_id: string
-        }
-        Insert: {
-          active?: boolean | null
-          created_at?: string | null
-          current_quantity?: number | null
-          end_date?: string | null
-          id?: string
-          name: string
-          price: number
-          product_name: string
-          target_quantity: number
-          team_id: string
-        }
-        Update: {
-          active?: boolean | null
-          created_at?: string | null
-          current_quantity?: number | null
-          end_date?: string | null
-          id?: string
-          name?: string
-          price?: number
-          product_name?: string
-          target_quantity?: number
-          team_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "goals_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       May_Data: {
         Row: {
           "Account Name": string | null
@@ -436,56 +389,6 @@ export type Database = {
           Rep?: string
           Spend?: number | null
           "Sub-Rep"?: string | null
-        }
-        Relationships: []
-      }
-      team_members: {
-        Row: {
-          created_at: string | null
-          id: string
-          team_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          team_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          team_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_members_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      teams: {
-        Row: {
-          active: boolean | null
-          created_at: string | null
-          id: string
-          name: string
-        }
-        Insert: {
-          active?: boolean | null
-          created_at?: string | null
-          id?: string
-          name: string
-        }
-        Update: {
-          active?: boolean | null
-          created_at?: string | null
-          id?: string
-          name?: string
         }
         Relationships: []
       }
