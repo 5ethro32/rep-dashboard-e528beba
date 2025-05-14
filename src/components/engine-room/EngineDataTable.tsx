@@ -987,55 +987,55 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           <table className="w-full text-sm">
             <thead>
               <tr>
-                <th key="description" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.description} px-1.5 py-3`}>
+                <th key="description" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.description} px-1.5`}>
                   {renderColumnHeader(columns[0])}
                 </th>
-                <th key="inStock" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.inStock} px-1.5 py-3`}>
+                <th key="inStock" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.inStock} px-1.5`}>
                   {renderColumnHeader(columns[1])}
                 </th>
-                <th key="revaUsage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.revaUsage} px-1.5 py-3`}>
+                <th key="revaUsage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.revaUsage} px-1.5`}>
                   {renderColumnHeader(columns[2])}
                 </th>
-                <th key="usageRank" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.usageRank} px-1.5 py-3`}>
+                <th key="usageRank" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.usageRank} px-1.5`}>
                   {renderColumnHeader(columns[3])}
                 </th>
-                <th key="avgCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.avgCost} px-1.5 py-3`}>
+                <th key="avgCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.avgCost} px-1.5`}>
                   {renderColumnHeader(columns[4])}
                 </th>
-                <th key="nextCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.nextCost} px-1.5 py-3`}>
+                <th key="nextCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.nextCost} px-1.5`}>
                   {renderColumnHeader(columns[5])}
                 </th>
-                <th key="marketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.marketLow} px-1.5 py-3`}>
+                <th key="marketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.marketLow} px-1.5`}>
                   {renderColumnHeader(columns[6])}
                 </th>
-                <th key="trueMarketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.trueMarketLow} px-1.5 py-3`}>
+                <th key="trueMarketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.trueMarketLow} px-1.5`}>
                   {renderColumnHeader(columns[7])}
                 </th>
-                <th key="currentREVAPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAPrice} px-1.5 py-3`}>
+                <th key="currentREVAPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAPrice} px-1.5`}>
                   {renderColumnHeader(columns[8])}
                 </th>
-                <th key="currentREVAMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAMargin} px-1.5 py-3`}>
+                <th key="currentREVAMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAMargin} px-1.5`}>
                   {renderColumnHeader(columns[9])}
                 </th>
-                <th key="proposedPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedPrice} px-1.5 py-3`}>
+                <th key="proposedPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedPrice} px-1.5`}>
                   {renderColumnHeader(columns[10])}
                 </th>
-                <th key="priceChangePercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.priceChangePercentage} px-1.5 py-3`}>
+                <th key="priceChangePercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.priceChangePercentage} px-1.5`}>
                   {renderColumnHeader(columns[11])}
                 </th>
-                <th key="proposedMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedMargin} px-1.5 py-3`}>
+                <th key="proposedMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedMargin} px-1.5`}>
                   {renderColumnHeader(columns[12])}
                 </th>
-                <th key="tmlPercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.tmlPercentage} px-1.5 py-3`}>
+                <th key="tmlPercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.tmlPercentage} px-1.5`}>
                   {renderColumnHeader(columns[13])}
                 </th>
-                <th key="appliedRule" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.appliedRule} px-1.5 py-3`}>
+                <th key="appliedRule" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.appliedRule} px-1.5`}>
                   {renderColumnHeader(columns[14])}
                 </th>
-                <th className={`bg-gray-900/70 ${columnWidths.flags} px-1.5 py-3`}>
+                <th className={`bg-gray-900/70 ${columnWidths.flags} px-1.5`}>
                   {renderFlagsColumnHeader()}
                 </th>
-                <th className={`bg-gray-900/70 ${columnWidths.actions} px-1.5 py-3`}>Actions</th>
+                <th className={`bg-gray-900/70 ${columnWidths.actions} px-1.5`}>Actions</th>
               </tr>
             </thead>
           </table>
