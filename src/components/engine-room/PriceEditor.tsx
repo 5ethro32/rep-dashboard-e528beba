@@ -73,6 +73,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       if (autoSaveOnExit) {
         const numericPrice = parseFloat(priceValue);
         if (isValid && numericPrice > 0 && numericPrice !== initialPrice) {
+          console.log("Auto-saving price on exit:", numericPrice);
           onSave(numericPrice);
         }
       }

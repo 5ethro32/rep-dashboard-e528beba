@@ -114,12 +114,12 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
+  const [bulkEditChanges, setBulkEditChanges] = useState<Record<string, number>>({});
   const [filterByRank, setFilterByRank] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const [ruleFilter, setRuleFilter] = useState<string>('all');
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<Record<string, string>>({});
-  const [bulkEditChanges, setBulkEditChanges] = useState<Record<string, number>>({});
   const itemsPerPage = 50;
 
   useEffect(() => {
@@ -406,12 +406,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
+  // Start editing for a specific item
   const handleStartEdit = (item: any) => {
-    // Ensure we're setting the correct item ID to trigger edit mode
+    console.log("Starting edit for item:", item.id);
     setEditingItemId(item.id);
   };
 
+  // Save price edit for individual items
   const handleSavePriceEdit = (item: any, newPrice: number) => {
+    console.log("Saving price edit for item:", item.id, "New price:", newPrice);
     if (onPriceChange) {
       if (newPrice !== item.proposedPrice) {
         onPriceChange(item, newPrice);
@@ -420,11 +423,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     setEditingItemId(null);
   };
 
+  // Cancel editing for an item
   const handleCancelEdit = () => {
+    console.log("Canceling edit");
     setEditingItemId(null);
   };
 
+  // Handle price changes in bulk edit mode
   const handleBulkPriceChange = (item: any, newPrice: number) => {
+    console.log("Bulk edit price change:", item.id, "New price:", newPrice);
     setBulkEditChanges(prev => ({
       ...prev,
       [item.id]: newPrice
@@ -435,23 +442,23 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     }
   };
 
+  // Toggle bulk edit mode
   const toggleBulkEditMode = () => {
     if (bulkEditMode) {
+      console.log("Exiting bulk edit mode and saving changes");
       // When exiting bulk edit mode, save any pending changes
       Object.entries(bulkEditChanges).forEach(([itemId, newPrice]) => {
         const item = data.find(i => i.id === itemId);
         if (item && onPriceChange && newPrice !== item.proposedPrice) {
+          console.log(`Saving bulk change for item ${itemId}: ${newPrice}`);
           onPriceChange(item, newPrice);
         }
       });
 
       // Clear bulk edit changes
       setBulkEditChanges({});
-      
-      toast({
-        title: "Bulk edit mode exited",
-        description: "All price changes have been saved."
-      });
+    } else {
+      console.log("Entering bulk edit mode");
     }
     
     setBulkEditMode(!bulkEditMode);
@@ -888,7 +895,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           onClick={toggleBulkEditMode} 
           className={bulkEditMode ? "bg-primary/20" : ""}
         >
-          {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit"}
+          {bulkEditMode ? "Save & Exit Bulk Edit" : "Bulk Edit"}
         </Button>
         
         {starredItems && starredItems.size > 0 && (
@@ -1009,12 +1016,12 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                         <CellDetailsPopover item={item} field="proposedPrice">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
-                            {item.priceModified && <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />}
-                            {onPriceChange && !bulkEditMode && (
+                            {item.priceModified && <CheckCircle className="h-3 w-3 text-blue-400" />}
+                            {onPriceChange && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="ml-2 h-6 w-6 p-0"
+                                className="ml-auto h-6 w-6 p-0"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleStartEdit(item);
@@ -1134,8 +1141,104 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        {renderUnifiedFilterBar()}
+        <div className="flex flex-wrap gap-4 items-center mb-4">
+          <div className="relative flex-1 min-w-[150px] max-w-[250px]">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search..." 
+              className="pl-8" 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+            />
+          </div>
+          
+          <Select value={filterByRank || 'all'} onValueChange={value => setFilterByRank(value === 'all' ? null : value)}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="All Ranks" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Ranks</SelectItem>
+              {usageRanks.map(rank => (
+                <SelectItem key={rank} value={rank.toString()}>
+                  Rank {rank}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Select value={columnFilters['flags']?.[0] || 'all'} onValueChange={value => {
+            if (value === 'all') {
+              setColumnFilters(prev => {
+                const newFilters = {...prev};
+                delete newFilters['flags'];
+                return newFilters;
+              });
+              if (onFlagFilterChange) onFlagFilterChange('all');
+            } else {
+              setColumnFilters(prev => ({...prev, flags: [value]}));
+              if (onFlagFilterChange) onFlagFilterChange(value);
+            }
+          }}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="All Flags" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Flags</SelectItem>
+              {uniqueFlags.map(flag => (
+                <SelectItem key={flag} value={flag}>
+                  {flag === 'HIGH_PRICE' ? 'High Price' : 
+                   flag === 'LOW_MARGIN' ? 'Low Margin' : flag}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Select value={ruleFilter} onValueChange={setRuleFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="All Rules" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Rules</SelectItem>
+              {uniqueRules.map(rule => (
+                <SelectItem key={rule} value={rule}>
+                  {formatRuleDisplay(rule)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="hideInactive" 
+              checked={hideInactiveProducts}
+              onCheckedChange={setHideInactiveProducts}
+            />
+            <label htmlFor="hideInactive" className="text-sm cursor-pointer">
+              Hide Inactive
+            </label>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={toggleBulkEditMode} 
+            className={bulkEditMode ? "bg-primary/20" : ""}
+          >
+            {bulkEditMode ? "Save & Exit Bulk Edit" : "Bulk Edit"}
+          </Button>
+          
+          {starredItems && starredItems.size > 0 && (
+            <div className="flex items-center space-x-2 ml-auto">
+              <Star className="h-4 w-4 text-yellow-400" />
+              <span className="text-sm">
+                {starredItems.size} starred
+              </span>
+            </div>
+          )}
+        </div>
+        
         {renderActiveFilters()}
+        
         {renderDataTable()}
         
         {totalPages > 1 && (

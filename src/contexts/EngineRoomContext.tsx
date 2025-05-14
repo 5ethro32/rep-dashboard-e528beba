@@ -345,9 +345,11 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   }, [engineData, queryClient, toast]);
 
-  // Handle save changes - Updated to properly persist changes
+  // Handle save changes - Fixed to properly persist all changes
   const handleSaveChanges = useCallback(() => {
     if (!engineData) return;
+    
+    console.log('Saving all price changes...');
     
     // Deep clone the data to avoid modifying the cache directly
     const updatedData = JSON.parse(JSON.stringify(engineData));
@@ -355,6 +357,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Update to 'saved' state for all modified items
     updatedData.items = updatedData.items.map((item: any) => {
       if (item.priceModified) {
+        console.log(`Saving item ${item.id}: ${item.description} with price ${item.proposedPrice}`);
         return {
           ...item,
           calculatedPrice: item.proposedPrice, // Update calculated price to match the new proposed price
@@ -378,6 +381,8 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       title: "Changes saved",
       description: `Saved changes to ${modifiedItems.size} items`
     });
+    
+    console.log(`Saved changes to ${modifiedItems.size} items`);
   }, [engineData, modifiedItems.size, queryClient, toast]);
 
   // Handle submit for approval
