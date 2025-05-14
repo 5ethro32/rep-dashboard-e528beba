@@ -24,7 +24,7 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
-  // Simplified mutation without explicit generic types to avoid infinite type instantiation
+  // Fix: Remove explicit generic type parameters to avoid infinite type instantiation
   const addMemberMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTeam) return null;
@@ -75,6 +75,7 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
     }
   });
 
+  // Also fix the deleteTeamMutation to follow the same pattern
   const deleteTeamMutation = useMutation({
     mutationFn: async (teamId: string) => {
       const { error } = await supabase
