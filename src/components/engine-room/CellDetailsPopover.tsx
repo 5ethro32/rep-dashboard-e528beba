@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
+import { formatCurrency, formatPercentage, formatMarketPrice } from '@/utils/formatting-utils';
 
 export interface CellDetailItem {
   label: string;
@@ -68,7 +67,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
     let lowest = { name: '', value: Number.MAX_VALUE };
     
     for (const comp of competitors) {
-      if (comp.value && typeof comp.value === 'number' && comp.value < lowest.value) {
+      if (comp.value && typeof comp.value === 'number' && comp.value > 0 && comp.value < lowest.value) {
         lowest = comp;
       }
     }
@@ -200,12 +199,23 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
       case "trueMarketLow":
         displayLabel = null; // Remove duplicate header
         const lowestCompetitorForTml = findLowestPriceCompetitor(item);
-        displayItems = [
-          { 
-            label: lowestCompetitorForTml ? `${lowestCompetitorForTml} (Lowest)` : "True Market Low", 
-            value: formatValue(item.trueMarketLow) 
-          }
-        ];
+        
+        // Check if we truly have no market price
+        const hasNoMarketPrice = item.noMarketPrice === true || 
+                               (!item.trueMarketLow && !lowestCompetitorForTml);
+        
+        if (hasNoMarketPrice) {
+          displayItems = [
+            { label: "True Market Low", value: "No Market Price Available" }
+          ];
+        } else {
+          displayItems = [
+            { 
+              label: lowestCompetitorForTml ? `${lowestCompetitorForTml} (Lowest)` : "True Market Low", 
+              value: formatValue(item.trueMarketLow) 
+            }
+          ];
+        }
         break;
       default:
         // For column headers or unspecified fields, use defaults

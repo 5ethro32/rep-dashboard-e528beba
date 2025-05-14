@@ -1,5 +1,4 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -41,6 +40,18 @@ const EngineOperationsContent = () => {
     handleExport,
     getPendingApprovalCount
   } = useEngineRoom();
+  
+  // Add useEffect to clear localStorage on first load
+  useEffect(() => {
+    // Only clear the data if we're coming to this page directly
+    // This ensures that stale data doesn't persist between sessions
+    const needsReset = !sessionStorage.getItem('engineRoomInitialized');
+    if (needsReset) {
+      localStorage.removeItem('engineRoomData');
+      sessionStorage.setItem('engineRoomInitialized', 'true');
+    }
+  }, []);
+  
   const [showPricingExplainer, setShowPricingExplainer] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
@@ -166,6 +177,8 @@ const EngineOperationsContent = () => {
   // Handler for file input change
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
+      // Clear any existing data before uploading new file
+      localStorage.removeItem('engineRoomData'); 
       handleFileUpload(e.target.files[0]);
     }
   };

@@ -143,3 +143,19 @@ export const calculateUsageWeightedMetrics = (data: any[]) => {
     marginDistribution: marginBands
   };
 };
+
+// New function to ensure TML displays properly
+export const formatMarketPrice = (value: number | null | undefined, noMarketPrice?: boolean): string => {
+  // If there's no market price available, return a specific string
+  if (noMarketPrice === true) {
+    return 'No Market Price';
+  }
+  
+  // If value is 0, null, or undefined, check if it's truly because there's no market price
+  if (value === 0 || value === null || value === undefined) {
+    return noMarketPrice === false ? '£0.00' : 'No Market Price';
+  }
+  
+  // Otherwise format as currency
+  return formatCurrency(value);
+};
