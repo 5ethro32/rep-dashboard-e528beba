@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTeams } from '@/hooks/useTeams';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { UserPlus, Users, Trash } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface TeamsListProps {
   teams: Team[];
@@ -19,12 +20,13 @@ interface TeamsListProps {
 
 const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const { user } = useAuth();
+  const { deleteTeam } = useTeams();
   const queryClient = useQueryClient();
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
-  // Fix: Remove explicit generic type parameters to avoid infinite type instantiation
+  // Simplified mutation without explicit type parameters
   const addMemberMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTeam) return null;
@@ -75,33 +77,6 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
     }
   });
 
-  // Also fix the deleteTeamMutation to follow the same pattern
-  const deleteTeamMutation = useMutation({
-    mutationFn: async (teamId: string) => {
-      const { error } = await supabase
-        .from('teams')
-        .delete()
-        .eq('id', teamId);
-
-      if (error) throw new Error(error.message);
-      return { success: true };
-    },
-    onSuccess: () => {
-      toast({
-        title: "Team deleted",
-        description: "The team has been deleted successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-    },
-    onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Failed to delete team",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
-      });
-    }
-  });
-
   const openAddMemberDialog = (team: Team) => {
     setSelectedTeam(team);
     setShowAddMemberDialog(true);
@@ -114,7 +89,7 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
 
   const handleDelete = (teamId: string) => {
     if (window.confirm('Are you sure you want to delete this team?')) {
-      deleteTeamMutation.mutate(teamId);
+      deleteTeam.mutate(teamId);
     }
   };
 
