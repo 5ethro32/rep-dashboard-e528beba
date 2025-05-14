@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
@@ -83,6 +84,11 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               parsedData.overallMargin = (totalProfit / totalRevenue) * 100;
             }
             
+            // Initialize changeHistory if it doesn't exist
+            if (!parsedData.changeHistory) {
+              parsedData.changeHistory = [];
+            }
+            
             console.log('Recalculated metrics from cache:', {
               totalRevenue,
               totalProfit,
@@ -100,6 +106,88 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     },
     staleTime: Infinity // Don't refetch automatically
   });
+
+  // Function to recalculate metrics based on current prices
+  const recalculateEngineMetrics = useCallback((data: any) => {
+    if (!data || !data.items || data.items.length === 0) return data;
+    
+    console.log('Recalculating engine metrics...');
+    
+    let totalRevenue = 0;
+    let totalProfit = 0;
+    let currentRevenue = 0;
+    let currentProfit = 0;
+    let currentTotalMargin = 0;
+    let proposedTotalMargin = 0;
+    let totalUsage = 0;
+    let rule1Flags = 0;
+    let rule2Flags = 0;
+    
+    // Recalculate for each item
+    data.items.forEach((item: any) => {
+      if (item.revaUsage > 0) {
+        const usage = Math.max(0, Number(item.revaUsage) || 0);
+        const currentPrice = Math.max(0, Number(item.currentREVAPrice) || 0);
+        const proposedPrice = Math.max(0, Number(item.proposedPrice) || currentPrice);
+        const cost = Math.max(0, Number(item.avgCost) || 0);
+        
+        // Calculate current metrics
+        const curRevenue = usage * currentPrice;
+        const curProfit = usage * (currentPrice - cost);
+        const curMargin = currentPrice > 0 ? (currentPrice - cost) / currentPrice : 0;
+        
+        // Calculate proposed metrics
+        const propRevenue = usage * proposedPrice;
+        const propProfit = usage * (proposedPrice - cost);
+        const propMargin = proposedPrice > 0 ? (proposedPrice - cost) / proposedPrice : 0;
+        
+        // Update totals
+        currentRevenue += curRevenue;
+        currentProfit += curProfit;
+        totalRevenue += propRevenue;
+        totalProfit += propProfit;
+        
+        // Update weighted margins
+        currentTotalMargin += curMargin * usage;
+        proposedTotalMargin += propMargin * usage;
+        totalUsage += usage;
+        
+        // Count flags
+        if (item.flag1) rule1Flags++;
+        if (item.flag2) rule2Flags++;
+      }
+    });
+    
+    // Calculate overall margins
+    const currentAvgMargin = totalUsage > 0 ? (currentTotalMargin / totalUsage) * 100 : 0;
+    const proposedAvgMargin = totalUsage > 0 ? (proposedTotalMargin / totalUsage) * 100 : 0;
+    
+    // Update metrics in the data object
+    data.currentRevenue = currentRevenue;
+    data.currentProfit = currentProfit;
+    data.currentAvgMargin = currentAvgMargin;
+    data.totalRevenue = totalRevenue;
+    data.totalProfit = totalProfit;
+    data.proposedAvgMargin = proposedAvgMargin;
+    data.overallMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+    data.rule1Flags = rule1Flags;
+    data.rule2Flags = rule2Flags;
+    data.profitDelta = totalProfit - currentProfit;
+    data.marginLift = proposedAvgMargin - currentAvgMargin;
+    
+    console.log('Metrics recalculated:', {
+      currentRevenue,
+      totalRevenue,
+      currentProfit,
+      totalProfit,
+      currentAvgMargin,
+      proposedAvgMargin,
+      profitDelta: data.profitDelta,
+      marginLift: data.marginLift
+    });
+    
+    return data;
+  }, []);
 
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.csv')) {
@@ -126,6 +214,9 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Process the file
       const processedData = await processEngineExcelFile(file);
       
+      // Initialize changeHistory array
+      processedData.changeHistory = [];
+      
       // Add workflow related fields to the processed data
       processedData.items = processedData.items.map((item: any) => ({
         ...item,
@@ -138,8 +229,11 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setWorkflowStatus('draft');
       setModifiedItems(new Set());
       
+      // Calculate initial metrics
+      const dataWithMetrics = recalculateEngineMetrics(processedData);
+      
       // Update cache and trigger UI update
-      localStorage.setItem('engineRoomData', JSON.stringify(processedData));
+      localStorage.setItem('engineRoomData', JSON.stringify(dataWithMetrics));
       await queryClient.invalidateQueries({ queryKey: ['engineRoomData'] });
       
       clearInterval(progressInterval);
@@ -147,7 +241,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       
       toast({
         title: "File processed successfully",
-        description: `Processed ${processedData.totalItems} items with ${processedData.flaggedItems.length} exceptions.`
+        description: `Processed ${dataWithMetrics.totalItems} items with ${dataWithMetrics.flaggedItems.length} exceptions.`
       });
 
       setTimeout(() => {
@@ -170,9 +264,9 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [queryClient, toast]);
+  }, [queryClient, toast, recalculateEngineMetrics]);
 
-  // Handle price change - updated to ensure changes are properly saved
+  // Handle price change - updated to ensure changes are properly saved and metrics recalculated
   const handlePriceChange = useCallback((item: any, newPrice: number) => {
     if (!engineData) return;
     
@@ -184,6 +278,9 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Find and update the item in the main items array
     const foundItem = updatedData.items.find((i: any) => i.id === item.id);
     if (foundItem) {
+      // Store the old price for change tracking
+      const oldPrice = foundItem.proposedPrice || foundItem.currentREVAPrice;
+      
       foundItem.proposedPrice = newPrice;
       foundItem.priceModified = true;
       
@@ -283,9 +380,12 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     }
     
+    // Recalculate all metrics
+    const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
+    
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
+    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     // Track modified items
     setModifiedItems(prev => {
@@ -300,7 +400,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       title: "Price updated",
       description: `Updated price for ${item.description} to £${newPrice.toFixed(2)}`,
     });
-  }, [engineData, queryClient, toast]);
+  }, [engineData, queryClient, toast, recalculateEngineMetrics]);
 
   // Handle reset changes
   const handleResetChanges = useCallback(() => {
@@ -333,9 +433,12 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Also update flagged items
     updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
     
+    // Recalculate all metrics
+    const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
+    
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
+    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     // Clear modified items
     setModifiedItems(new Set());
@@ -344,9 +447,9 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       title: "Changes reset",
       description: "All price changes have been reset to calculated values"
     });
-  }, [engineData, queryClient, toast]);
+  }, [engineData, queryClient, toast, recalculateEngineMetrics]);
 
-  // Handle save changes - Fixed to properly persist all changes
+  // Handle save changes - Fixed to properly persist all changes and update metrics
   const handleSaveChanges = useCallback(() => {
     if (!engineData) return;
     
@@ -371,9 +474,25 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Update flagged items as well
     updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
     
+    // Add entry to changeHistory
+    if (!updatedData.changeHistory) {
+      updatedData.changeHistory = [];
+    }
+    
+    // Add a new change history entry
+    updatedData.changeHistory.push({
+      user: updatedData.currentUser || 'Current User',
+      action: 'Price Updates',
+      itemCount: modifiedItems.size,
+      date: new Date().toISOString(),
+    });
+    
+    // Recalculate all metrics after changes
+    const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
+    
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
+    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     // Clear modified items
     setModifiedItems(new Set());
@@ -384,9 +503,15 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
     
     console.log(`Saved changes to ${modifiedItems.size} items`);
-  }, [engineData, modifiedItems.size, queryClient, toast]);
+    console.log('Updated metrics:', {
+      currentAvgMargin: dataWithUpdatedMetrics.currentAvgMargin,
+      proposedAvgMargin: dataWithUpdatedMetrics.proposedAvgMargin,
+      marginLift: dataWithUpdatedMetrics.marginLift,
+      profitDelta: dataWithUpdatedMetrics.profitDelta
+    });
+  }, [engineData, modifiedItems.size, queryClient, toast, recalculateEngineMetrics]);
 
-  // Handle submit for approval
+  // Handle submit for approval - Updated to track in change history
   const handleSubmitForApproval = useCallback(() => {
     if (!engineData) return;
     
@@ -403,7 +528,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           ...item,
           workflowStatus: 'submitted',
           submissionDate: new Date().toISOString(),
-          submittedBy: 'Current User' // This would be the actual user in a real implementation
+          submittedBy: updatedData.currentUser || 'Current User' // Track the actual user
         };
       }
       return item;
@@ -412,15 +537,31 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Update flagged items as well
     updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
     
+    // Add entry to changeHistory
+    if (!updatedData.changeHistory) {
+      updatedData.changeHistory = [];
+    }
+    
+    // Add a new change history entry for the submission
+    updatedData.changeHistory.push({
+      user: updatedData.currentUser || 'Current User',
+      action: 'Submitted for Approval',
+      itemCount: modifiedItems.size,
+      date: new Date().toISOString(),
+    });
+    
+    // Recalculate metrics
+    const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
+    
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
+    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     toast({
       title: "Submitted for approval",
       description: `${modifiedItems.size} price changes have been submitted for approval`
     });
-  }, [engineData, modifiedItems.size, queryClient, toast]);
+  }, [engineData, modifiedItems.size, queryClient, toast, recalculateEngineMetrics]);
 
   // Handle approve items
   const handleApproveItems = useCallback((itemIds: string[], comment?: string) => {
@@ -436,7 +577,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           ...item,
           workflowStatus: 'approved',
           reviewDate: new Date().toISOString(),
-          reviewer: 'Manager', // This would be the actual reviewer in a real implementation
+          reviewer: updatedData.currentUser || 'Manager', // This would be the actual reviewer in a real implementation
           reviewComments: comment || 'Approved'
         };
       }
@@ -446,15 +587,31 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Update flagged items as well
     updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
     
+    // Add entry to changeHistory
+    if (!updatedData.changeHistory) {
+      updatedData.changeHistory = [];
+    }
+    
+    // Add a new change history entry
+    updatedData.changeHistory.push({
+      user: updatedData.currentUser || 'Manager',
+      action: 'Approved Items',
+      itemCount: itemIds.length,
+      date: new Date().toISOString(),
+    });
+    
+    // Recalculate metrics
+    const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
+    
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
+    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     toast({
       title: "Items approved",
       description: `Approved ${itemIds.length} price changes`
     });
-  }, [engineData, queryClient, toast]);
+  }, [engineData, queryClient, toast, recalculateEngineMetrics]);
 
   // Handle reject items
   const handleRejectItems = useCallback((itemIds: string[], comment: string) => {
@@ -470,7 +627,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           ...item,
           workflowStatus: 'rejected',
           reviewDate: new Date().toISOString(),
-          reviewer: 'Manager', // This would be the actual reviewer in a real implementation
+          reviewer: updatedData.currentUser || 'Manager', // This would be the actual reviewer in a real implementation
           reviewComments: comment
         };
       }
@@ -484,22 +641,38 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           ...item,
           workflowStatus: 'rejected',
           reviewDate: new Date().toISOString(),
-          reviewer: 'Manager',
+          reviewer: updatedData.currentUser || 'Manager',
           reviewComments: comment
         };
       }
       return item;
     });
     
+    // Add entry to changeHistory
+    if (!updatedData.changeHistory) {
+      updatedData.changeHistory = [];
+    }
+    
+    // Add a new change history entry
+    updatedData.changeHistory.push({
+      user: updatedData.currentUser || 'Manager',
+      action: 'Rejected Items',
+      itemCount: itemIds.length,
+      date: new Date().toISOString(),
+    });
+    
+    // Recalculate metrics
+    const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
+    
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
+    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     toast({
       title: "Items rejected",
       description: `Rejected ${itemIds.length} price changes with comment`
     });
-  }, [engineData, queryClient, toast]);
+  }, [engineData, queryClient, toast, recalculateEngineMetrics]);
 
   // Handle export data
   const handleExport = useCallback(() => {
@@ -581,3 +754,4 @@ export const useEngineRoom = () => {
   }
   return context;
 };
+
