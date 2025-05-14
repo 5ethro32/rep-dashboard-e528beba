@@ -76,6 +76,12 @@ const Analyst = () => {
     { name: 'Jun', value: 16.1, avg: 15.1 },
   ];
 
+  // Define chart configuration
+  const chartConfig = {
+    margin: { label: 'Margin %', color: '#f87171' },
+    count: { label: 'Products', color: '#60a5fa' }
+  };
+
   if (isLoading) {
     return (
       <div className="container p-4 md:p-6 space-y-6">
@@ -158,36 +164,38 @@ const Analyst = () => {
               </CardHeader>
               <CardContent>
                 <div className="h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={marginData}
-                      margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
-                      barCategoryGap={5}
-                    >
-                      <XAxis 
-                        dataKey="name" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
-                        angle={-45}
-                        textAnchor="end"
-                      />
-                      <YAxis 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
-                        tickFormatter={(value) => `${value}`}
-                      />
-                      <ChartTooltip 
-                        content={<ChartTooltipContent />}
-                      />
-                      <Bar dataKey="count" fill="#8884d8" shape={<Rectangle radius={[4, 4, 0, 0]} />}>
-                        {marginData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <ChartContainer config={chartConfig}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={marginData}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
+                        barCategoryGap={5}
+                      >
+                        <XAxis 
+                          dataKey="name" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                        />
+                        <YAxis 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
+                          tickFormatter={(value) => `${value}`}
+                        />
+                        <ChartTooltip 
+                          content={<ChartTooltipContent />}
+                        />
+                        <Bar dataKey="count" fill="#8884d8" shape={<Rectangle radius={[4, 4, 0, 0]} />}>
+                          {marginData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </div>
               </CardContent>
             </Card>

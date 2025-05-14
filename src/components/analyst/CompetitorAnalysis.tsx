@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { ChartContainer } from '@/components/ui/chart';
 
 // Define the data structure
 interface CompetitorData {
@@ -103,6 +104,23 @@ const CompetitorAnalysis: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('pricing');
   const trendData = prepareTrendData(competitors);
 
+  // Define chart configurations for each tab
+  const chartConfigs = {
+    pricing: {
+      price: { label: 'Price', color: '#ef4444' }
+    },
+    trends: {
+      'Your Company': { label: 'Your Company', color: '#ef4444' },
+      CompPharma: { label: 'CompPharma', color: '#60a5fa' },
+      MediCorp: { label: 'MediCorp', color: '#4ade80' },
+      PharmaTech: { label: 'PharmaTech', color: '#f97316' },
+      GeneriMed: { label: 'GeneriMed', color: '#8b5cf6' }
+    },
+    market: {
+      marketShare: { label: 'Market Share', color: '#ef4444' }
+    }
+  };
+
   // Custom tooltip formatter for recharts
   const formatTooltipValue = (value: number | string) => {
     if (typeof value === 'number') {
@@ -129,23 +147,25 @@ const CompetitorAnalysis: React.FC = () => {
           
           <TabsContent value="pricing" className="pt-2">
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={competitors} layout="vertical" margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                  <XAxis type="number" domain={['dataMin - 5', 'dataMax + 5']} tickFormatter={(value) => `$${value}`} />
-                  <YAxis dataKey="name" type="category" tick={{ fill: '#ccc' }} width={100} />
-                  <Tooltip 
-                    formatter={(value: number | string) => {
-                      if (typeof value === 'number') {
-                        return [`$${value.toFixed(2)}`, 'Price'];
-                      }
-                      return [value, 'Price'];
-                    }}
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '6px' }} 
-                  />
-                  <Bar dataKey="price" fill="#ef4444" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <ChartContainer config={chartConfigs.pricing}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={competitors} layout="vertical" margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                    <XAxis type="number" domain={['dataMin - 5', 'dataMax + 5']} tickFormatter={(value) => `$${value}`} />
+                    <YAxis dataKey="name" type="category" tick={{ fill: '#ccc' }} width={100} />
+                    <Tooltip 
+                      formatter={(value: number | string) => {
+                        if (typeof value === 'number') {
+                          return [`$${value.toFixed(2)}`, 'Price'];
+                        }
+                        return [value, 'Price'];
+                      }}
+                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '6px' }} 
+                    />
+                    <Bar dataKey="price" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
             </div>
             
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
@@ -168,61 +188,65 @@ const CompetitorAnalysis: React.FC = () => {
           
           <TabsContent value="trends" className="pt-2">
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                  <XAxis dataKey="month" tick={{ fill: '#ccc' }} />
-                  <YAxis domain={['dataMin - 5', 'dataMax + 5']} tickFormatter={(value) => `$${value}`} tick={{ fill: '#ccc' }} />
-                  <Tooltip 
-                    formatter={(value: number | string) => {
-                      if (typeof value === 'number') {
-                        return [`$${value.toFixed(2)}`, ''];
-                      }
-                      return [value, ''];
-                    }}
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '6px' }} 
-                  />
-                  <Legend />
-                  {competitors.map((comp, index) => (
-                    <Line 
-                      key={comp.name}
-                      type="monotone" 
-                      dataKey={comp.name} 
-                      stroke={comp.name === 'Your Company' ? '#ef4444' : `hsl(${(index * 50) % 360}, 70%, 50%)`}
-                      strokeWidth={comp.name === 'Your Company' ? 3 : 2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 6 }}
+              <ChartContainer config={chartConfigs.trends}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                    <XAxis dataKey="month" tick={{ fill: '#ccc' }} />
+                    <YAxis domain={['dataMin - 5', 'dataMax + 5']} tickFormatter={(value) => `$${value}`} tick={{ fill: '#ccc' }} />
+                    <Tooltip 
+                      formatter={(value: number | string) => {
+                        if (typeof value === 'number') {
+                          return [`$${value.toFixed(2)}`, ''];
+                        }
+                        return [value, ''];
+                      }}
+                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '6px' }} 
                     />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
+                    <Legend />
+                    {competitors.map((comp, index) => (
+                      <Line 
+                        key={comp.name}
+                        type="monotone" 
+                        dataKey={comp.name} 
+                        stroke={comp.name === 'Your Company' ? '#ef4444' : `hsl(${(index * 50) % 360}, 70%, 50%)`}
+                        strokeWidth={comp.name === 'Your Company' ? 3 : 2}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
             </div>
           </TabsContent>
           
           <TabsContent value="market" className="pt-2">
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={competitors} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                  <XAxis dataKey="name" tick={{ fill: '#ccc' }} />
-                  <YAxis tickFormatter={(value) => `${value}%`} tick={{ fill: '#ccc' }} />
-                  <Tooltip 
-                    formatter={(value: number | string) => {
-                      if (typeof value === 'number') {
-                        return [`${value.toFixed(1)}%`, 'Market Share'];
-                      }
-                      return [value, 'Market Share'];
-                    }}
-                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '6px' }} 
-                  />
-                  <Bar 
-                    dataKey="marketShare" 
-                    fill="#ef4444" 
-                    radius={[4, 4, 0, 0]} 
-                    fillOpacity={0.8} 
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <ChartContainer config={chartConfigs.market}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={competitors} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                    <XAxis dataKey="name" tick={{ fill: '#ccc' }} />
+                    <YAxis tickFormatter={(value) => `${value}%`} tick={{ fill: '#ccc' }} />
+                    <Tooltip 
+                      formatter={(value: number | string) => {
+                        if (typeof value === 'number') {
+                          return [`${value.toFixed(1)}%`, 'Market Share'];
+                        }
+                        return [value, 'Market Share'];
+                      }}
+                      contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '6px' }} 
+                    />
+                    <Bar 
+                      dataKey="marketShare" 
+                      fill="#ef4444" 
+                      radius={[4, 4, 0, 0]} 
+                      fillOpacity={0.8} 
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
             </div>
           </TabsContent>
         </Tabs>
