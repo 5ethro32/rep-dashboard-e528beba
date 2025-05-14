@@ -10,7 +10,7 @@ interface PriceEditorProps {
   currentPrice?: number;
   calculatedPrice?: number;
   cost?: number;
-  onSave: (newPrice: number) => void;
+  onSave: ((newPrice: number) => void) | ((item: any, newPrice: number) => void);
   onCancel: () => void;
   compact?: boolean;
   autoSaveOnExit?: boolean; // Added to support auto-saving when exiting bulk edit
@@ -94,11 +94,11 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
         const numericPrice = parseFloat(priceValue);
         if (isValid && numericPrice > 0 && numericPrice !== effectiveInitialPrice) {
           console.log("Auto-saving price on exit:", numericPrice);
-          onSave(numericPrice);
+          handleSave();
         }
       }
     };
-  }, [autoSaveOnExit, priceValue, isValid, effectiveInitialPrice, onSave]);
+  }, [autoSaveOnExit, priceValue, isValid, effectiveInitialPrice]);
   
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPriceValue(e.target.value);
@@ -111,11 +111,11 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   const handleSave = () => {
     const numericPrice = parseFloat(priceValue);
     if (isValid && numericPrice > 0) {
-      // Handle both direct usage and item-based usage
+      // Handle both direct usage and item-based usage with proper TypeScript handling
       if (item) {
-        onSave(item, numericPrice);
+        (onSave as (item: any, newPrice: number) => void)(item, numericPrice);
       } else {
-        onSave(numericPrice);
+        (onSave as (newPrice: number) => void)(numericPrice);
       }
       // Toast notification moved to the parent component to prevent multiple notifications
     } else {
