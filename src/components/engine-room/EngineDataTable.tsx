@@ -112,9 +112,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [sortField, setSortField] = useState<string>('description');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
-  const [bulkEditChanges, setBulkEditChanges] = useState<Record<string, number>>({});
   const [filterByRank, setFilterByRank] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
@@ -404,65 +402,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderSortIndicator = (field: string) => {
     if (field !== sortField) return null;
     return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
-  };
-
-  // Start editing for a specific item
-  const handleStartEdit = (item: any) => {
-    console.log("Starting edit for item:", item.id);
-    setEditingItemId(item.id);
-  };
-
-  // Save price edit for individual items
-  const handleSavePriceEdit = (item: any, newPrice: number) => {
-    console.log("Saving price edit for item:", item.id, "New price:", newPrice);
-    if (onPriceChange) {
-      if (newPrice !== item.proposedPrice) {
-        onPriceChange(item, newPrice);
-      }
-    }
-    setEditingItemId(null);
-  };
-
-  // Cancel editing for an item
-  const handleCancelEdit = () => {
-    console.log("Canceling edit");
-    setEditingItemId(null);
-  };
-
-  // Handle price changes in bulk edit mode
-  const handleBulkPriceChange = (item: any, newPrice: number) => {
-    console.log("Bulk edit price change:", item.id, "New price:", newPrice);
-    setBulkEditChanges(prev => ({
-      ...prev,
-      [item.id]: newPrice
-    }));
-    
-    if (onPriceChange && newPrice !== item.proposedPrice) {
-      onPriceChange(item, newPrice);
-    }
-  };
-
-  // Toggle bulk edit mode
-  const toggleBulkEditMode = () => {
-    if (bulkEditMode) {
-      console.log("Exiting bulk edit mode and saving changes");
-      // When exiting bulk edit mode, save any pending changes
-      Object.entries(bulkEditChanges).forEach(([itemId, newPrice]) => {
-        const item = data.find(i => i.id === itemId);
-        if (item && onPriceChange && newPrice !== item.proposedPrice) {
-          console.log(`Saving bulk change for item ${itemId}: ${newPrice}`);
-          onPriceChange(item, newPrice);
-        }
-      });
-
-      // Clear bulk edit changes
-      setBulkEditChanges({});
-    } else {
-      console.log("Entering bulk edit mode");
-    }
-    
-    setBulkEditMode(!bulkEditMode);
-    setEditingItemId(null); // Exit individual edit mode when toggling bulk edit
   };
 
   const toggleHideInactiveProducts = () => {
@@ -889,14 +828,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           </label>
         </div>
         
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={toggleBulkEditMode} 
-          className={bulkEditMode ? "bg-primary/20" : ""}
-        >
-          {bulkEditMode ? "Save & Exit Bulk Edit" : "Bulk Edit"}
-        </Button>
+        {/* Remove the bulk edit toggle button */}
         
         {starredItems && starredItems.size > 0 && (
           <div className="flex items-center space-x-2 ml-auto">
@@ -938,7 +870,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
               )}
               {paginatedData.map((item, index) => {
                 const priceChangePercentage = calculatePriceChangePercentage(item);
-                const isEditing = editingItemId === item.id;
                 
                 return (
                   <TableRow 
@@ -991,48 +922,13 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                     </TableCell>
                     
                     <TableCell>
-                      {isEditing ? (
-                        <PriceEditor
-                          initialPrice={item.proposedPrice || 0}
-                          currentPrice={item.currentREVAPrice || 0}
-                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
-                          cost={item.avgCost || 0}
-                          onSave={(newPrice) => handleSavePriceEdit(item, newPrice)}
-                          onCancel={handleCancelEdit}
-                          compact={true}
-                        />
-                      ) : bulkEditMode ? (
-                        <PriceEditor
-                          initialPrice={bulkEditChanges[item.id] || item.proposedPrice || 0}
-                          currentPrice={item.currentREVAPrice || 0}
-                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
-                          cost={item.avgCost || 0}
-                          onSave={(newPrice) => handleBulkPriceChange(item, newPrice)}
-                          onCancel={() => {}} // No-op for cancel in bulk mode
-                          compact={true}
-                          autoSaveOnExit={true} // Add auto-save on unmount for bulk edit cells
-                        />
-                      ) : (
-                        <CellDetailsPopover item={item} field="proposedPrice">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
-                            {item.priceModified && <CheckCircle className="h-3 w-3 text-blue-400" />}
-                            {onPriceChange && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="ml-auto h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStartEdit(item);
-                                }}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </CellDetailsPopover>
-                      )}
+                      {/* Replace editor with simple display */}
+                      <CellDetailsPopover item={item} field="proposedPrice">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
+                          {item.priceModified && <CheckCircle className="h-3 w-3 text-blue-400" />}
+                        </div>
+                      </CellDetailsPopover>
                     </TableCell>
                     
                     <TableCell>
@@ -1069,19 +965,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                         >
                           <Info className="h-4 w-4" />
                         </Button>
-                        {!isEditing && onPriceChange && !bulkEditMode && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartEdit(item);
-                            }}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                        )}
                         {onToggleStar && (
                           <Button 
                             variant="ghost" 
@@ -1218,14 +1101,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             </label>
           </div>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={toggleBulkEditMode} 
-            className={bulkEditMode ? "bg-primary/20" : ""}
-          >
-            {bulkEditMode ? "Save & Exit Bulk Edit" : "Bulk Edit"}
-          </Button>
+          {/* Remove the bulk edit toggle button */}
           
           {starredItems && starredItems.size > 0 && (
             <div className="flex items-center space-x-2 ml-auto">
