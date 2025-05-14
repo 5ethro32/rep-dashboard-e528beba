@@ -1,8 +1,8 @@
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 import { processEngineExcelFile } from '@/utils/engine-excel-utils';
+import { loadFromIndexedDB, clearStoredData } from '@/utils/storage-utils';
 
 interface EngineRoomContextType {
   engineData: any;
@@ -24,6 +24,7 @@ interface EngineRoomContextType {
   handleExport: () => void;
   setUserRole: (role: 'analyst' | 'manager' | 'admin') => void;
   getPendingApprovalCount: () => number;
+  clearCache: () => Promise<void>;
 }
 
 const EngineRoomContext = createContext<EngineRoomContextType | undefined>(undefined);
@@ -38,69 +39,123 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [modifiedItems, setModifiedItems] = useState<Set<string>>(new Set());
   const [userRole, setUserRole] = useState<'analyst' | 'manager' | 'admin'>('manager');
 
-  // Get cached data if available
+  // Listen for progress events from web worker
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'progress') {
+        setUploadProgress(event.data.progress);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
+  // Get cached data if available - now using IndexedDB with localStorage fallback
   const { data: engineData, isLoading, error } = useQuery({
     queryKey: ['engineRoomData'],
-    queryFn: () => {
-      const cachedData = localStorage.getItem('engineRoomData');
-      if (cachedData) {
-        // IMPORTANT: Force recalculation of metrics when data is loaded from cache
-        // This ensures any fixes to calculation formulas are applied to cached data
-        try {
-          const parsedData = JSON.parse(cachedData);
-          
-          // If data exists, recalculate key margin and profit metrics 
-          // using the CORRECTED formula: (price - cost) / price
-          if (parsedData && parsedData.items && parsedData.items.length > 0) {
-            let totalRevenue = 0;
-            let totalProfit = 0;
-            
-            // Recalculate for each item using the correct formula
-            parsedData.items.forEach((item: any) => {
-              if (item.revaUsage > 0 && item.currentREVAPrice > 0 && !isNaN(item.avgCost)) {
-                const usage = Math.max(0, Number(item.revaUsage) || 0);
-                const price = Math.max(0, Number(item.currentREVAPrice) || 0);
-                const cost = Math.max(0, Number(item.avgCost) || 0);
-                
-                // Use CORRECT formula: revenue = usage * price
-                const revenue = usage * price;
-                
-                // Use CORRECT formula: profit = usage * (price - cost)
-                const profit = usage * (price - cost);
-                
-                totalRevenue += revenue;
-                totalProfit += profit;
-                
-                // Fix item-level margin calculations too
-                if (price > 0) {
-                  // CORRECT margin formula: (price - cost) / price * 100
-                  item.currentREVAMargin = ((price - cost) / price) * 100;
-                }
-              }
-            });
-            
-            // Set the corrected overall margin
-            if (totalRevenue > 0) {
-              parsedData.overallMargin = (totalProfit / totalRevenue) * 100;
-            }
-            
-            console.log('Recalculated metrics from cache:', {
-              totalRevenue,
-              totalProfit,
-              overallMargin: parsedData.overallMargin
-            });
-          }
-          
-          return parsedData;
-        } catch (error) {
-          console.error('Error parsing cached data:', error);
-          return null;
+    queryFn: async () => {
+      try {
+        // Try to load from IndexedDB first
+        const data = await loadFromIndexedDB('engineRoom', 'engineRoomData');
+        
+        if (data) {
+          console.log('Loaded data from IndexedDB');
+          return recalculateMetrics(data);
         }
+        
+        // Fallback to localStorage if IndexedDB doesn't have data
+        const cachedData = localStorage.getItem('engineRoomData');
+        if (cachedData) {
+          console.log('Loaded data from localStorage');
+          try {
+            const parsedData = JSON.parse(cachedData);
+            return recalculateMetrics(parsedData);
+          } catch (error) {
+            console.error('Error parsing cached data:', error);
+            return null;
+          }
+        }
+        
+        return null;
+      } catch (error) {
+        console.error('Error loading cached data:', error);
+        return null;
       }
-      return null;
     },
     staleTime: Infinity // Don't refetch automatically
   });
+  
+  // Function to recalculate metrics from cached data
+  const recalculateMetrics = (parsedData: any) => {
+    // If data exists, recalculate key margin and profit metrics 
+    // using the CORRECTED formula: (price - cost) / price
+    if (parsedData && parsedData.items && parsedData.items.length > 0) {
+      let totalRevenue = 0;
+      let totalProfit = 0;
+      
+      // Recalculate for each item using the correct formula
+      parsedData.items.forEach((item: any) => {
+        if (item.revaUsage > 0 && item.currentREVAPrice > 0 && !isNaN(item.avgCost)) {
+          const usage = Math.max(0, Number(item.revaUsage) || 0);
+          const price = Math.max(0, Number(item.currentREVAPrice) || 0);
+          const cost = Math.max(0, Number(item.avgCost) || 0);
+          
+          // Use CORRECT formula: revenue = usage * price
+          const revenue = usage * price;
+          
+          // Use CORRECT formula: profit = usage * (price - cost)
+          const profit = usage * (price - cost);
+          
+          totalRevenue += revenue;
+          totalProfit += profit;
+          
+          // Fix item-level margin calculations too
+          if (price > 0) {
+            // CORRECT margin formula: (price - cost) / price * 100
+            item.currentREVAMargin = ((price - cost) / price) * 100;
+          }
+        }
+      });
+      
+      // Set the corrected overall margin
+      if (totalRevenue > 0) {
+        parsedData.overallMargin = (totalProfit / totalRevenue) * 100;
+      }
+      
+      console.log('Recalculated metrics from cache:', {
+        totalRevenue,
+        totalProfit,
+        overallMargin: parsedData.overallMargin
+      });
+    }
+    
+    return parsedData;
+  };
+
+  // Clear cache function - added for user control
+  const clearCache = useCallback(async () => {
+    try {
+      await clearStoredData('engineRoom', 'engineRoomData');
+      await queryClient.invalidateQueries({ queryKey: ['engineRoomData'] });
+      
+      toast({
+        title: "Cache cleared",
+        description: "All pricing data has been cleared. You can now upload a new file."
+      });
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      
+      toast({
+        title: "Error clearing cache",
+        description: "There was a problem clearing the cached data. Please try reloading the page.",
+        variant: "destructive"
+      });
+    }
+  }, [queryClient, toast]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.csv')) {
@@ -115,16 +170,21 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setErrorMessage(null);
     try {
       setIsUploading(true);
+      setUploadProgress(5); // Start progress at 5%
       
-      // Simulate progress
+      // Clear existing data before processing new file
+      await clearStoredData('engineRoom', 'engineRoomData');
+      
+      // Set up progress update - if web worker doesn't update, we'll show incremental progress anyway
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
-          const newProgress = prev + Math.random() * 15;
-          return newProgress >= 95 ? 95 : newProgress;
+          // Don't override actual web worker progress updates
+          const newProgress = prev + (Math.random() * 2);
+          return newProgress >= 90 ? 90 : newProgress;
         });
-      }, 200);
+      }, 300);
 
-      // Process the file
+      // Process the file - the function now uses web workers and handles progress internally
       const processedData = await processEngineExcelFile(file);
       
       // Add workflow related fields to the processed data
@@ -140,7 +200,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setModifiedItems(new Set());
       
       // Update cache and trigger UI update
-      localStorage.setItem('engineRoomData', JSON.stringify(processedData));
       await queryClient.invalidateQueries({ queryKey: ['engineRoomData'] });
       
       clearInterval(progressInterval);
@@ -171,7 +230,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setIsUploading(false);
       setUploadProgress(0);
     }
-  }, [queryClient, toast]);
+  }, [queryClient, toast, clearStoredData]);
 
   // Handle price change - updated to track who made the change and when
   const handlePriceChange = useCallback((item: any, newPrice: number) => {
@@ -569,7 +628,8 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     handleRejectItems,
     handleExport,
     setUserRole,
-    getPendingApprovalCount
+    getPendingApprovalCount,
+    clearCache
   };
 
   return (

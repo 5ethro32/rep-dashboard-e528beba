@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
-import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
+import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,8 @@ const EngineOperationsContent = () => {
     handleSaveChanges,
     handleSubmitForApproval,
     handleExport,
-    getPendingApprovalCount
+    getPendingApprovalCount,
+    clearCache
   } = useEngineRoom();
   
   // Add useEffect to clear localStorage on first load
@@ -57,6 +58,7 @@ const EngineOperationsContent = () => {
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
   const [activeTabFlagFilter, setActiveTabFlagFilter] = useState('all');
   const [selectedChangeRationale, setSelectedChangeRationale] = useState<string>('');
+  const [uploadAttempted, setUploadAttempted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate metrics for the summary cards
@@ -172,6 +174,7 @@ const EngineOperationsContent = () => {
     e.stopPropagation();
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setUploadAttempted(true);
       handleFileUpload(e.dataTransfer.files[0]);
     }
   };
@@ -184,8 +187,8 @@ const EngineOperationsContent = () => {
   // Handler for file input change
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
+      setUploadAttempted(true);
       // Clear any existing data before uploading new file
-      localStorage.removeItem('engineRoomData'); 
       handleFileUpload(e.target.files[0]);
     }
   };
@@ -217,6 +220,19 @@ const EngineOperationsContent = () => {
   if (!engineData) {
     return (
       <div className="container mx-auto px-4 py-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-semibold">Engine Room Operations</h2>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={clearCache}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Clear Cache
+          </Button>
+        </div>
+        
         <div 
           onDragOver={handleDragOver}
           onDrop={handleDrop}
@@ -255,6 +271,20 @@ const EngineOperationsContent = () => {
           )}
         </div>
         
+        {uploadAttempted && isUploading && uploadProgress === 0 && (
+          <Alert className="mt-4">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            <AlertDescription>
+              File upload appears to be stuck. Please try again with a smaller file or <button 
+                onClick={clearCache} 
+                className="underline font-medium"
+              >
+                clear the cache
+              </button> and reload the page.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {errorMessage && (
           <Alert variant="destructive" className="mt-4">
             <div className="flex items-start">
@@ -287,6 +317,20 @@ const EngineOperationsContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
+      {/* Header with title and clear cache button */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-semibold">Engine Room Operations</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={clearCache}
+          className="flex items-center gap-1"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Clear Cache
+        </Button>
+      </div>
+      
       {/* Pricing actions card with upload and export buttons */}
       <div className="mb-6">
         <PricingActionsTabs
@@ -298,7 +342,7 @@ const EngineOperationsContent = () => {
           onReset={handleResetChanges}
           onExport={handleExport}
           onUpload={() => {
-            localStorage.removeItem('engineRoomData');
+            clearCache();
             window.location.reload();
           }}
           fileName={engineData.fileName || "REVA Pricing Data"}
