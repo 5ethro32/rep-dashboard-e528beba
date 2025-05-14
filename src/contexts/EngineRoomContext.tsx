@@ -192,8 +192,8 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const avgCost = Math.max(0, Number(foundItem.avgCost) || 0);
       foundItem.proposedMargin = newPrice > 0 ? (newPrice - avgCost) / newPrice : 0;
       
-      // Update flag2 if margin is below the threshold (5%)
-      foundItem.flag2 = foundItem.proposedMargin < 0.05;
+      // Update flag2 if margin is at or below 0% (changed from < 5%)
+      foundItem.flag2 = foundItem.proposedMargin <= 0;
 
       // Add flag for significant price decrease (>5%)
       if (foundItem.currentREVAPrice > 0 && newPrice < foundItem.currentREVAPrice) {
@@ -240,8 +240,9 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       updatedData.flaggedItems[flaggedItemIndex].proposedMargin = 
         newPrice > 0 ? (newPrice - avgCost) / newPrice : 0;
         
+      // Update flag2 if margin is at or below 0% (changed from < 5%)
       updatedData.flaggedItems[flaggedItemIndex].flag2 = 
-        updatedData.flaggedItems[flaggedItemIndex].proposedMargin < 0.05;
+        updatedData.flaggedItems[flaggedItemIndex].proposedMargin <= 0;
         
       // Add flag for significant price decrease in flagged items as well
       if (updatedData.flaggedItems[flaggedItemIndex].currentREVAPrice > 0 && 
@@ -323,7 +324,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           proposedPrice: calculatedPrice,
           proposedMargin: proposedMargin,
           priceModified: false,
-          flag2: proposedMargin < 0.05
+          flag2: proposedMargin <= 0  // Updated from < 0.05 to <= 0
         };
       }
       return item;

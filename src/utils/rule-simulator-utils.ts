@@ -170,7 +170,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   
   // Calculate flags based on actual criteria
   const flag1 = !noMarketPrice && marketLow > 0 && newPrice >= marketLow * 1.10; // Price ≥10% above TRUE MARKET LOW
-  const flag2 = newMargin < 0.05; // Margin < 5%
+  const flag2 = newMargin <= 0; // UPDATED: Margin <= 0% (changed from < 5%)
   
   return {
     originalPrice: item.currentREVAPrice || 0,

@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -31,7 +30,7 @@ interface RevaItem {
   proposedPrice?: number;
   proposedMargin?: number;
   flag1?: boolean; // Price ≥10% above TRUE MARKET LOW
-  flag2?: boolean; // Margin < 5% (updated from 3%)
+  flag2?: boolean; // Margin at or below 0%
   // New properties for price editing and workflow
   calculatedPrice?: number;
   priceModified?: boolean;
@@ -780,8 +779,8 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.proposedMargin = 0;
     }
     
-    // FIXED: Set the flag2 (low margin) based on margin value - margin less than 5%
-    processedItem.flag2 = processedItem.proposedMargin < 0.05;
+    // UPDATED: Set the flag2 (low margin) based on margin value - margin at or below 0%
+    processedItem.flag2 = processedItem.proposedMargin <= 0;
     
     // Apply flag logic - Price ≥10% above TRUE MARKET LOW requires a manual review
     // But only if we have a valid TML
@@ -796,7 +795,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       processedItem.flag1 = false;
     }
     
-    // Margin < 5% flag (updated from 3%)
+    // Update the LOW_MARGIN flag description to reflect the new threshold (0% instead of 5%)
     if (processedItem.flag2) {
       if (!processedItem.flags) processedItem.flags = [];
       if (!processedItem.flags.includes('LOW_MARGIN')) {
