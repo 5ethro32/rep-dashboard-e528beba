@@ -47,6 +47,12 @@ const EngineOperationsContent = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const exceptionsHeaderRef = useRef<HTMLDivElement>(null);
+  const exceptionsBodyRef = useRef<HTMLDivElement>(null);
+  const submittedHeaderRef = useRef<HTMLDivElement>(null);
+  const submittedBodyRef = useRef<HTMLDivElement>(null);
+  const starredHeaderRef = useRef<HTMLDivElement>(null);
+  const starredBodyRef = useRef<HTMLDivElement>(null);
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -369,6 +375,8 @@ const EngineOperationsContent = () => {
             starredItems={starredItems}
             flagFilter={activeTabFlagFilter}
             onFlagFilterChange={setActiveTabFlagFilter}
+            headerRef={exceptionsHeaderRef}
+            bodyRef={exceptionsBodyRef}
           />
         </TabsContent>
         
@@ -379,6 +387,8 @@ const EngineOperationsContent = () => {
             onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
+            headerRef={submittedHeaderRef}
+            bodyRef={submittedBodyRef}
           />
         </TabsContent>
         
@@ -389,6 +399,8 @@ const EngineOperationsContent = () => {
             onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
+            headerRef={starredHeaderRef}
+            bodyRef={starredBodyRef}
           />
         </TabsContent>
         

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -118,6 +118,8 @@ interface EngineDataTableProps {
   starredItems?: Set<string>;
   flagFilter?: string;
   onFlagFilterChange?: (filter: string) => void;
+  headerRef?: React.RefObject<HTMLDivElement>;
+  bodyRef?: React.RefObject<HTMLDivElement>;
 }
 
 const EngineDataTable: React.FC<EngineDataTableProps> = ({
@@ -127,7 +129,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   onToggleStar,
   starredItems = new Set(),
   flagFilter,
-  onFlagFilterChange
+  onFlagFilterChange,
+  headerRef,
+  bodyRef
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<string>('description');
@@ -945,65 +949,67 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return (
       <div className="rounded-md border overflow-hidden">
         {/* Table Header - outside the scroll area */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead key="description" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.description}`}>
-                {renderColumnHeader(columns[0])}
-              </TableHead>
-              <TableHead key="inStock" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.inStock}`}>
-                {renderColumnHeader(columns[1])}
-              </TableHead>
-              <TableHead key="revaUsage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.revaUsage}`}>
-                {renderColumnHeader(columns[2])}
-              </TableHead>
-              <TableHead key="usageRank" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.usageRank}`}>
-                {renderColumnHeader(columns[3])}
-              </TableHead>
-              <TableHead key="avgCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.avgCost}`}>
-                {renderColumnHeader(columns[4])}
-              </TableHead>
-              <TableHead key="nextCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.nextCost}`}>
-                {renderColumnHeader(columns[5])}
-              </TableHead>
-              <TableHead key="marketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.marketLow}`}>
-                {renderColumnHeader(columns[6])}
-              </TableHead>
-              <TableHead key="trueMarketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.trueMarketLow}`}>
-                {renderColumnHeader(columns[7])}
-              </TableHead>
-              <TableHead key="currentREVAPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAPrice}`}>
-                {renderColumnHeader(columns[8])}
-              </TableHead>
-              <TableHead key="currentREVAMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAMargin}`}>
-                {renderColumnHeader(columns[9])}
-              </TableHead>
-              <TableHead key="proposedPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedPrice}`}>
-                {renderColumnHeader(columns[10])}
-              </TableHead>
-              <TableHead key="priceChangePercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.priceChangePercentage}`}>
-                {renderColumnHeader(columns[11])}
-              </TableHead>
-              <TableHead key="proposedMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedMargin}`}>
-                {renderColumnHeader(columns[12])}
-              </TableHead>
-              <TableHead key="tmlPercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.tmlPercentage}`}>
-                {renderColumnHeader(columns[13])}
-              </TableHead>
-              <TableHead key="appliedRule" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.appliedRule}`}>
-                {renderColumnHeader(columns[14])}
-              </TableHead>
-              <TableHead className={`bg-gray-900/70 ${columnWidths.flags}`}>
-                {renderFlagsColumnHeader()}
-              </TableHead>
-              <TableHead className={`bg-gray-900/70 ${columnWidths.actions}`}>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-        </Table>
+        <div ref={headerRef} className="overflow-hidden">
+          <Table headerRef={headerRef} bodyRef={bodyRef}>
+            <TableHeader>
+              <TableRow>
+                <TableHead key="description" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.description}`}>
+                  {renderColumnHeader(columns[0])}
+                </TableHead>
+                <TableHead key="inStock" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.inStock}`}>
+                  {renderColumnHeader(columns[1])}
+                </TableHead>
+                <TableHead key="revaUsage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.revaUsage}`}>
+                  {renderColumnHeader(columns[2])}
+                </TableHead>
+                <TableHead key="usageRank" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.usageRank}`}>
+                  {renderColumnHeader(columns[3])}
+                </TableHead>
+                <TableHead key="avgCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.avgCost}`}>
+                  {renderColumnHeader(columns[4])}
+                </TableHead>
+                <TableHead key="nextCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.nextCost}`}>
+                  {renderColumnHeader(columns[5])}
+                </TableHead>
+                <TableHead key="marketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.marketLow}`}>
+                  {renderColumnHeader(columns[6])}
+                </TableHead>
+                <TableHead key="trueMarketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.trueMarketLow}`}>
+                  {renderColumnHeader(columns[7])}
+                </TableHead>
+                <TableHead key="currentREVAPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAPrice}`}>
+                  {renderColumnHeader(columns[8])}
+                </TableHead>
+                <TableHead key="currentREVAMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAMargin}`}>
+                  {renderColumnHeader(columns[9])}
+                </TableHead>
+                <TableHead key="proposedPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedPrice}`}>
+                  {renderColumnHeader(columns[10])}
+                </TableHead>
+                <TableHead key="priceChangePercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.priceChangePercentage}`}>
+                  {renderColumnHeader(columns[11])}
+                </TableHead>
+                <TableHead key="proposedMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedMargin}`}>
+                  {renderColumnHeader(columns[12])}
+                </TableHead>
+                <TableHead key="tmlPercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.tmlPercentage}`}>
+                  {renderColumnHeader(columns[13])}
+                </TableHead>
+                <TableHead key="appliedRule" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.appliedRule}`}>
+                  {renderColumnHeader(columns[14])}
+                </TableHead>
+                <TableHead className={`bg-gray-900/70 ${columnWidths.flags}`}>
+                  {renderFlagsColumnHeader()}
+                </TableHead>
+                <TableHead className={`bg-gray-900/70 ${columnWidths.actions}`}>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+          </Table>
+        </div>
         
         {/* Table Body - inside scroll area */}
-        <ScrollArea className="h-[600px]">
-          <Table>
+        <ScrollArea className="h-[600px]" viewportRef={bodyRef}>
+          <Table headerRef={headerRef} bodyRef={bodyRef}>
             <TableBody>
               {paginatedData.length === 0 && (
                 <TableRow>
