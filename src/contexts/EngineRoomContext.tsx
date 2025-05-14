@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,6 +24,20 @@ interface EngineRoomContextType {
   handleExport: () => void;
   setUserRole: (role: 'analyst' | 'manager' | 'admin') => void;
   getPendingApprovalCount: () => number;
+}
+
+// Add interface for audit trail entry
+interface AuditTrailEntry {
+  timestamp: string;
+  itemId: string;
+  itemDescription: string;
+  oldPrice: number;
+  newPrice: number;
+  oldMargin: number;
+  newMargin: number;
+  impactOnProfit: number;
+  impactOnMargin: number;
+  user: string;
 }
 
 const EngineRoomContext = createContext<EngineRoomContextType | undefined>(undefined);
@@ -88,6 +103,11 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               totalProfit,
               overallMargin: parsedData.overallMargin
             });
+          }
+          
+          // Initialize audit trail if it doesn't exist
+          if (!parsedData.auditTrail) {
+            parsedData.auditTrail = [];
           }
           
           return parsedData;
@@ -172,11 +192,83 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [queryClient, toast]);
 
-  // Handle price change - updated to ensure changes are properly saved
+  // Function to recalculate aggregate metrics after price changes
+  const recalculateAggregateMetrics = (data: any): any => {
+    if (!data || !data.items || data.items.length === 0) return data;
+    
+    console.log('Recalculating aggregate metrics...');
+    
+    let currentRevenue = 0;
+    let currentProfit = 0;
+    let proposedRevenue = 0;
+    let proposedProfit = 0;
+    
+    // Calculate totals for all items
+    data.items.forEach((item: any) => {
+      if (item.revaUsage > 0) {
+        const usage = Math.max(0, Number(item.revaUsage) || 0);
+        const currentPrice = Math.max(0, Number(item.currentREVAPrice) || 0);
+        const proposedPrice = Math.max(0, Number(item.proposedPrice) || currentPrice);
+        const avgCost = Math.max(0, Number(item.avgCost) || 0);
+        
+        // Current metrics
+        const itemCurrentRevenue = usage * currentPrice;
+        const itemCurrentProfit = usage * (currentPrice - avgCost);
+        
+        // Proposed metrics
+        const itemProposedRevenue = usage * proposedPrice;
+        const itemProposedProfit = usage * (proposedPrice - avgCost);
+        
+        currentRevenue += itemCurrentRevenue;
+        currentProfit += itemCurrentProfit;
+        proposedRevenue += itemProposedRevenue;
+        proposedProfit += itemProposedProfit;
+      }
+    });
+    
+    // Calculate margins
+    const currentAvgMargin = currentRevenue > 0 ? (currentProfit / currentRevenue) * 100 : 0;
+    const proposedAvgMargin = proposedRevenue > 0 ? (proposedProfit / proposedRevenue) * 100 : 0;
+    
+    // Calculate impact
+    const profitDelta = proposedProfit - currentProfit;
+    const marginLift = proposedAvgMargin - currentAvgMargin;
+    
+    // Update the data object with new metrics
+    const updatedData = {
+      ...data,
+      currentRevenue,
+      currentProfit,
+      proposedRevenue,
+      proposedProfit,
+      currentAvgMargin,
+      proposedAvgMargin,
+      profitDelta,
+      marginLift,
+      totalRevenue: proposedRevenue,
+      totalProfit: proposedProfit,
+      overallMargin: proposedAvgMargin
+    };
+    
+    console.log('Updated metrics:', {
+      currentAvgMargin,
+      proposedAvgMargin,
+      profitDelta,
+      marginLift
+    });
+    
+    return updatedData;
+  };
+
+  // Handle price change - updated to ensure changes are properly saved and metrics are recalculated
   const handlePriceChange = useCallback((item: any, newPrice: number) => {
     if (!engineData) return;
     
     console.log('Price change triggered for item:', item.id, 'New price:', newPrice);
+    
+    // Store original values for audit trail
+    const oldPrice = item.proposedPrice || item.currentREVAPrice;
+    const oldMargin = item.proposedMargin || item.currentREVAMargin;
     
     // Deep clone the data to avoid modifying the cache directly
     const updatedData = JSON.parse(JSON.stringify(engineData));
@@ -200,10 +292,10 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const decreasePercent = ((foundItem.currentREVAPrice - newPrice) / foundItem.currentREVAPrice) * 100;
         if (decreasePercent > 5) {
           if (!foundItem.flags) foundItem.flags = [];
-          const existingDecreaseFlags = foundItem.flags.filter(f => f.startsWith('PRICE_DECREASE_'));
+          const existingDecreaseFlags = foundItem.flags.filter((f: string) => f.startsWith('PRICE_DECREASE_'));
           if (existingDecreaseFlags.length > 0) {
             // Remove existing price decrease flags
-            foundItem.flags = foundItem.flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
+            foundItem.flags = foundItem.flags.filter((f: string) => !f.startsWith('PRICE_DECREASE_'));
           }
           foundItem.flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
         }
@@ -222,7 +314,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         } else {
           // Remove HIGH_PRICE flag if it exists
           if (foundItem.flags) {
-            foundItem.flags = foundItem.flags.filter(f => f !== 'HIGH_PRICE');
+            foundItem.flags = foundItem.flags.filter((f: string) => f !== 'HIGH_PRICE');
           }
         }
       }
@@ -252,10 +344,10 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           if (!updatedData.flaggedItems[flaggedItemIndex].flags) {
             updatedData.flaggedItems[flaggedItemIndex].flags = [];
           }
-          const existingDecreaseFlags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => f.startsWith('PRICE_DECREASE_'));
+          const existingDecreaseFlags = updatedData.flaggedItems[flaggedItemIndex].flags.filter((f: string) => f.startsWith('PRICE_DECREASE_'));
           if (existingDecreaseFlags.length > 0) {
             // Remove existing price decrease flags
-            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
+            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter((f: string) => !f.startsWith('PRICE_DECREASE_'));
           }
           updatedData.flaggedItems[flaggedItemIndex].flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
         }
@@ -276,15 +368,44 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         } else {
           // Remove HIGH_PRICE flag if it exists
           if (updatedData.flaggedItems[flaggedItemIndex].flags) {
-            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => f !== 'HIGH_PRICE');
+            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter((f: string) => f !== 'HIGH_PRICE');
           }
         }
       }
     }
     
-    // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
+    // Recalculate aggregate metrics after price change
+    const recalculatedData = recalculateAggregateMetrics(updatedData);
+    
+    // Calculate the impact for the audit trail
+    const newMargin = foundItem ? foundItem.proposedMargin : 0;
+    const impactOnProfit = recalculatedData.profitDelta || 0;
+    const impactOnMargin = recalculatedData.marginLift || 0;
+    
+    // Add entry to audit trail
+    if (!recalculatedData.auditTrail) {
+      recalculatedData.auditTrail = [];
+    }
+    
+    const auditEntry: AuditTrailEntry = {
+      timestamp: new Date().toISOString(),
+      itemId: item.id,
+      itemDescription: item.description,
+      oldPrice: oldPrice,
+      newPrice: newPrice,
+      oldMargin: oldMargin,
+      newMargin: newMargin,
+      impactOnProfit: impactOnProfit,
+      impactOnMargin: impactOnMargin,
+      user: 'Current User' // This would come from auth context in a real app
+    };
+    
+    recalculatedData.auditTrail.push(auditEntry);
+    console.log('Added to audit trail:', auditEntry);
+    
+    // Update the local storage and query cache with recalculated data
+    localStorage.setItem('engineRoomData', JSON.stringify(recalculatedData));
+    queryClient.setQueryData(['engineRoomData'], recalculatedData);
     
     // Track modified items
     setModifiedItems(prev => {
@@ -301,7 +422,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   }, [engineData, queryClient, toast]);
 
-  // Handle reset changes
+  // Handle reset changes - updated to recalculate metrics
   const handleResetChanges = useCallback(() => {
     if (!engineData) return;
     
@@ -332,9 +453,31 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Also update flagged items
     updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
     
+    // Recalculate aggregate metrics after reset
+    const recalculatedData = recalculateAggregateMetrics(updatedData);
+    
+    // Add audit trail entry for reset action
+    if (!recalculatedData.auditTrail) {
+      recalculatedData.auditTrail = [];
+    }
+    
+    recalculatedData.auditTrail.push({
+      timestamp: new Date().toISOString(),
+      itemId: 'ALL',
+      itemDescription: 'All Items',
+      oldPrice: 0,
+      newPrice: 0,
+      oldMargin: 0,
+      newMargin: 0,
+      impactOnProfit: recalculatedData.profitDelta || 0,
+      impactOnMargin: recalculatedData.marginLift || 0,
+      user: 'Current User',
+      action: 'RESET_ALL'
+    });
+    
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
+    localStorage.setItem('engineRoomData', JSON.stringify(recalculatedData));
+    queryClient.setQueryData(['engineRoomData'], recalculatedData);
     
     // Clear modified items
     setModifiedItems(new Set());
@@ -370,9 +513,31 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     // Update flagged items as well
     updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
     
+    // Recalculate metrics for the updated data
+    const recalculatedData = recalculateAggregateMetrics(updatedData);
+    
+    // Add audit trail entry for save action
+    if (!recalculatedData.auditTrail) {
+      recalculatedData.auditTrail = [];
+    }
+    
+    recalculatedData.auditTrail.push({
+      timestamp: new Date().toISOString(),
+      itemId: 'ALL',
+      itemDescription: 'All Items',
+      oldPrice: 0,
+      newPrice: 0,
+      oldMargin: 0,
+      newMargin: 0,
+      impactOnProfit: recalculatedData.profitDelta || 0,
+      impactOnMargin: recalculatedData.marginLift || 0,
+      user: 'Current User',
+      action: 'SAVE_ALL'
+    });
+    
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-    queryClient.setQueryData(['engineRoomData'], updatedData);
+    localStorage.setItem('engineRoomData', JSON.stringify(recalculatedData));
+    queryClient.setQueryData(['engineRoomData'], recalculatedData);
     
     // Clear modified items
     setModifiedItems(new Set());
