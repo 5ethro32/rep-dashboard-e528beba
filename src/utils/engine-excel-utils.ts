@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -610,31 +611,31 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     let lowestPrice = Infinity;
 
     // Check each competitor price and track if any are available
-    if (processedItem.eth_net !== undefined && !isNaN(processedItem.eth_net)) {
+    if (processedItem.eth_net !== undefined && !isNaN(processedItem.eth_net) && processedItem.eth_net > 0) {
       hasAnyCompetitorPrice = true;
       lowestPrice = Math.min(lowestPrice, processedItem.eth_net);
     }
-    if (processedItem.eth !== undefined && !isNaN(processedItem.eth)) {
+    if (processedItem.eth !== undefined && !isNaN(processedItem.eth) && processedItem.eth > 0) {
       hasAnyCompetitorPrice = true;
       lowestPrice = Math.min(lowestPrice, processedItem.eth);
     }
-    if (processedItem.nupharm !== undefined && !isNaN(processedItem.nupharm)) {
+    if (processedItem.nupharm !== undefined && !isNaN(processedItem.nupharm) && processedItem.nupharm > 0) {
       hasAnyCompetitorPrice = true;
       lowestPrice = Math.min(lowestPrice, processedItem.nupharm);
     }
-    if (processedItem.lexon !== undefined && !isNaN(processedItem.lexon)) {
+    if (processedItem.lexon !== undefined && !isNaN(processedItem.lexon) && processedItem.lexon > 0) {
       hasAnyCompetitorPrice = true;
       lowestPrice = Math.min(lowestPrice, processedItem.lexon);
     }
-    if (processedItem.aah !== undefined && !isNaN(processedItem.aah)) {
+    if (processedItem.aah !== undefined && !isNaN(processedItem.aah) && processedItem.aah > 0) {
       hasAnyCompetitorPrice = true;
       lowestPrice = Math.min(lowestPrice, processedItem.aah);
     }
 
-    // MODIFIED: Always set trueMarketLow to the lowest competitor price when available
+    // FIXED: Only set noMarketPrice to true when NO valid competitor prices > 0 are available
     if (!hasAnyCompetitorPrice || lowestPrice === Infinity) {
       processedItem.trueMarketLow = 0;
-      processedItem.noMarketPrice = true; // Only set noMarketPrice when NO competitor prices are available
+      processedItem.noMarketPrice = true;
       
       // Flag as "No Market Price Available" - only when truly no prices available
       if (!processedItem.flags) processedItem.flags = [];
@@ -642,12 +643,18 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         processedItem.flags.push('No Market Price Available');
       }
     } else {
+      // FIXED: Ensure we set trueMarketLow and explicitly set noMarketPrice to false
       processedItem.trueMarketLow = lowestPrice;
       processedItem.noMarketPrice = false;
+      
+      // Remove "No Market Price Available" flag if it was previously set
+      if (processedItem.flags && processedItem.flags.includes('No Market Price Available')) {
+        processedItem.flags = processedItem.flags.filter(flag => flag !== 'No Market Price Available');
+      }
     }
     
     // MODIFIED: If Market Low (ETH_NET) is missing but TML is available, use TML as Market Low
-    if ((processedItem.marketLow === undefined || processedItem.marketLow === null) && !processedItem.noMarketPrice) {
+    if ((processedItem.marketLow === undefined || processedItem.marketLow === 0) && !processedItem.noMarketPrice) {
       processedItem.marketLow = processedItem.trueMarketLow;
     }
     
