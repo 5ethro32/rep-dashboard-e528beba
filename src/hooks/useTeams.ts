@@ -1,8 +1,7 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Team } from '@/types/goals.types';
+import { Team, TeamMember } from '@/types/goals.types';
 
 export function useTeams() {
   const queryClient = useQueryClient();
@@ -13,7 +12,7 @@ export function useTeams() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('teams')
-        .select('*, team_members(user_id, profiles(first_name, last_name))')
+        .select('*, team_members(user_id)')
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -25,7 +24,21 @@ export function useTeams() {
         throw new Error(error.message);
       }
       
-      return data as Team[];
+      // Transform the returned data to match our Team interface
+      const typedTeams = data.map(team => ({
+        id: team.id,
+        name: team.name,
+        created_at: team.created_at,
+        active: team.active,
+        team_members: team.team_members ? team.team_members.map((member: any) => ({
+          id: member.id || '',
+          team_id: team.id,
+          user_id: member.user_id,
+          created_at: member.created_at || new Date().toISOString()
+        })) : []
+      })) as Team[];
+      
+      return typedTeams;
     }
   });
 

@@ -24,6 +24,7 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
+  // Remove the infinite type instantiation by explicitly typing the function
   const addMemberMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTeam) return;
