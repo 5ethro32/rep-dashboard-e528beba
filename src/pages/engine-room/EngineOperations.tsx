@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
@@ -46,6 +45,8 @@ const EngineOperationsContent = () => {
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
   const [activeTabFlagFilter, setActiveTabFlagFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   // Calculate metrics for the summary cards
   const getMetrics = () => {
@@ -345,6 +346,8 @@ const EngineOperationsContent = () => {
             onPriceChange={handlePriceChange}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
+            headerRef={headerRef}
+            bodyRef={bodyRef}
           />
         </TabsContent>
         
