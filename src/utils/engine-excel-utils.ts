@@ -47,6 +47,14 @@ interface RevaItem {
   marginCapApplied?: boolean; // Added to track if margin cap was applied
 }
 
+// Add change history record type
+interface ChangeHistoryRecord {
+  user: string;
+  action: string;
+  itemCount: number;
+  date: string;
+}
+
 interface ProcessedEngineData {
   fileName: string;
   totalItems: number;
@@ -68,6 +76,10 @@ interface ProcessedEngineData {
   flaggedItems: RevaItem[];
   chartData: any[];
   ruleConfig: RuleConfig;
+  // Add the change history property
+  changeHistory?: ChangeHistoryRecord[];
+  // Add optional property for current user
+  currentUser?: string;
 }
 
 interface RuleConfig {
@@ -258,6 +270,11 @@ export const processEngineExcelFile = async (file: File): Promise<ProcessedEngin
         
         // Process the data into required structure for the engine room
         const processedData = processRawData(transformedData, file.name);
+        
+        // Initialize changeHistory if it doesn't exist
+        if (!processedData.changeHistory) {
+          processedData.changeHistory = [];
+        }
         
         // Store the data in localStorage for persistence
         localStorage.setItem('engineRoomData', JSON.stringify(processedData));
@@ -567,7 +584,9 @@ const processRawData = (transformedData: RevaItem[], fileName: string): Processe
     items: processedItems,
     flaggedItems,
     chartData,
-    ruleConfig: defaultRuleConfig
+    ruleConfig: defaultRuleConfig,
+    // Initialize an empty change history array
+    changeHistory: []
   };
 };
 
