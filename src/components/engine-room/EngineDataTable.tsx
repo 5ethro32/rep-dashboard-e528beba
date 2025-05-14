@@ -407,6 +407,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   };
 
   const handleStartEdit = (item: any) => {
+    // Ensure we're setting the correct item ID to trigger edit mode
     setEditingItemId(item.id);
   };
 
@@ -435,7 +436,18 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   };
 
   const toggleBulkEditMode = () => {
-    if (bulkEditMode && onPriceChange) {
+    if (bulkEditMode) {
+      // When exiting bulk edit mode, save any pending changes
+      Object.entries(bulkEditChanges).forEach(([itemId, newPrice]) => {
+        const item = data.find(i => i.id === itemId);
+        if (item && onPriceChange && newPrice !== item.proposedPrice) {
+          onPriceChange(item, newPrice);
+        }
+      });
+
+      // Clear bulk edit changes
+      setBulkEditChanges({});
+      
       toast({
         title: "Bulk edit mode exited",
         description: "All price changes have been saved."
@@ -443,7 +455,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     }
     
     setBulkEditMode(!bulkEditMode);
-    setEditingItemId(null);
+    setEditingItemId(null); // Exit individual edit mode when toggling bulk edit
   };
 
   const toggleHideInactiveProducts = () => {
@@ -989,8 +1001,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                           calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
                           cost={item.avgCost || 0}
                           onSave={(newPrice) => handleBulkPriceChange(item, newPrice)}
-                          onCancel={() => {}}
+                          onCancel={() => {}} // No-op for cancel in bulk mode
                           compact={true}
+                          autoSaveOnExit={true} // Add auto-save on unmount for bulk edit cells
                         />
                       ) : (
                         <CellDetailsPopover item={item} field="proposedPrice">
@@ -1002,7 +1015,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                                 variant="ghost"
                                 size="sm"
                                 className="ml-2 h-6 w-6 p-0"
-                                onClick={e => {
+                                onClick={(e) => {
                                   e.stopPropagation();
                                   handleStartEdit(item);
                                 }}
@@ -1054,7 +1067,10 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                             variant="ghost" 
                             size="icon" 
                             className="h-6 w-6" 
-                            onClick={() => handleStartEdit(item)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEdit(item);
+                            }}
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>

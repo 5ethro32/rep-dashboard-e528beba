@@ -13,6 +13,7 @@ interface PriceEditorProps {
   onSave: (newPrice: number) => void;
   onCancel: () => void;
   compact?: boolean;
+  autoSaveOnExit?: boolean; // Added to support auto-saving when exiting bulk edit
 }
 
 const PriceEditor: React.FC<PriceEditorProps> = ({
@@ -22,7 +23,8 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   cost,
   onSave,
   onCancel,
-  compact = false
+  compact = false,
+  autoSaveOnExit = false
 }) => {
   const [priceValue, setPriceValue] = useState<string>(initialPrice.toFixed(2));
   const [margin, setMargin] = useState<number>(0);
@@ -59,6 +61,23 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       });
     }
   }, [possibleDataIssue]);
+
+  // Added effect to handle changes to initialPrice from parent
+  useEffect(() => {
+    setPriceValue(initialPrice.toFixed(2));
+  }, [initialPrice]);
+
+  // Handle component unmount with autoSaveOnExit
+  useEffect(() => {
+    return () => {
+      if (autoSaveOnExit) {
+        const numericPrice = parseFloat(priceValue);
+        if (isValid && numericPrice > 0 && numericPrice !== initialPrice) {
+          onSave(numericPrice);
+        }
+      }
+    };
+  }, [autoSaveOnExit, priceValue, isValid, initialPrice, onSave]);
   
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPriceValue(e.target.value);

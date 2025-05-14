@@ -345,13 +345,40 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   }, [engineData, queryClient, toast]);
 
-  // Handle save changes
+  // Handle save changes - Updated to properly persist changes
   const handleSaveChanges = useCallback(() => {
+    if (!engineData) return;
+    
+    // Deep clone the data to avoid modifying the cache directly
+    const updatedData = JSON.parse(JSON.stringify(engineData));
+    
+    // Update to 'saved' state for all modified items
+    updatedData.items = updatedData.items.map((item: any) => {
+      if (item.priceModified) {
+        return {
+          ...item,
+          calculatedPrice: item.proposedPrice, // Update calculated price to match the new proposed price
+          priceModified: false, // Reset modification flag since we're saving the changes
+        };
+      }
+      return item;
+    });
+    
+    // Update flagged items as well
+    updatedData.flaggedItems = updatedData.items.filter((item: any) => item.flag1 || item.flag2);
+    
+    // Update the local storage and query cache
+    localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
+    queryClient.setQueryData(['engineRoomData'], updatedData);
+    
+    // Clear modified items
+    setModifiedItems(new Set());
+    
     toast({
       title: "Changes saved",
       description: `Saved changes to ${modifiedItems.size} items`
     });
-  }, [modifiedItems.size, toast]);
+  }, [engineData, modifiedItems.size, queryClient, toast]);
 
   // Handle submit for approval
   const handleSubmitForApproval = useCallback(() => {
