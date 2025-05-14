@@ -1,3 +1,4 @@
+
 import React, { useMemo, useRef } from 'react';
 import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
@@ -90,7 +91,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
         <div className="relative">
           {/* Header table */}
           <div ref={headerRef} className="overflow-hidden">
-            <Table headerRef={headerRef} bodyRef={bodyRef}>
+            <Table headerRef={headerRef} bodyRef={bodyRef} showScrollbar={false}>
               <TableHeader>
                 <TableRow className="bg-black/20 hover:bg-black/30">
                   <TableHead 
@@ -135,8 +136,8 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
           </div>
 
           {/* Body table with scrolling */}
-          <ScrollArea orientation="both" viewportRef={bodyRef}>
-            <Table>
+          <ScrollArea orientation="both" viewportRef={bodyRef} hideScrollbar={false}>
+            <Table showScrollbar={false}>
               <TableBody>
                 {isLoading ? (
                   <TableRow>

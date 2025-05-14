@@ -6,13 +6,14 @@ import { cn } from "@/lib/utils"
 interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
   headerRef?: React.RefObject<HTMLDivElement>;
   bodyRef?: React.RefObject<HTMLDivElement>;
+  showScrollbar?: boolean;
 }
 
 const Table = React.forwardRef<
   HTMLTableElement,
   TableProps
->(({ className, headerRef, bodyRef, ...props }, ref) => (
-  <div className="w-full overflow-auto">
+>(({ className, headerRef, bodyRef, showScrollbar = true, ...props }, ref) => (
+  <div className={cn("w-full", showScrollbar ? "overflow-auto" : "overflow-hidden")}>
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}

@@ -197,7 +197,7 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
       <div className="relative">
         {/* Header table with fixed position */}
         <div ref={headerRef} className="overflow-hidden">
-          <Table headerRef={headerRef} bodyRef={bodyRef}>
+          <Table headerRef={headerRef} bodyRef={bodyRef} showScrollbar={false}>
             <TableHeader className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur-sm">
               <TableRow>
                 <TableHead className="cursor-pointer" onClick={() => handleSort('description')}>
@@ -262,8 +262,8 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
         </div>
         
         {/* Body table with scrolling */}
-        <ScrollArea orientation="both" viewportRef={bodyRef}>
-          <Table>
+        <ScrollArea orientation="both" viewportRef={bodyRef} hideScrollbar={false}>
+          <Table showScrollbar={false}>
             <TableBody>
               {items.length === 0 ? (
                 <TableRow>
