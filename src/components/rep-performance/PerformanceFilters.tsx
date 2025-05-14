@@ -80,7 +80,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
             size="sm" 
             onClick={onRefresh} 
             disabled={isLoading}
-            className="px-3 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none h-9"
+            className="flex items-center justify-center px-3 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none h-9"
           >
             <RefreshCw className={`h-4 w-4 opacity-70 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
