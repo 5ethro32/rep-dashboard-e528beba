@@ -71,6 +71,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   const handleSave = () => {
     const numericPrice = parseFloat(priceValue);
     if (isValid && numericPrice > 0) {
+      // Call the onSave prop with the parsed numeric price
       onSave(numericPrice);
     }
   };
