@@ -1008,7 +1008,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         </div>
         
         {/* Table Body - inside scroll area */}
-        <ScrollArea className="h-[600px]" viewportRef={bodyRef}>
+        <ScrollArea className="h-[600px]" orientation="both" viewportRef={bodyRef}>
           <Table headerRef={headerRef} bodyRef={bodyRef}>
             <TableBody>
               {paginatedData.length === 0 && (
