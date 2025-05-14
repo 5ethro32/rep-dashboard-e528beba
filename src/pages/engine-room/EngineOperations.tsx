@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
@@ -47,7 +46,7 @@ const EngineOperationsContent = () => {
   const [activeTabFlagFilter, setActiveTabFlagFilter] = useState('all');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate metrics for the summary cards
+  // Get metrics for the summary cards
   const getMetrics = () => {
     if (!engineData) return {
       totalItems: 0,
@@ -410,7 +409,7 @@ const EngineOperationsContent = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Pricing rule explainer dialog - used by both tables now */}
+      {/* Pricing rule explainer dialog */}
       {showPricingExplainer && selectedItem && (
         <PricingRuleExplainer
           item={selectedItem}

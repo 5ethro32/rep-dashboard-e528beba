@@ -67,18 +67,18 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
     setPriceValue(initialPrice.toFixed(2));
   }, [initialPrice]);
 
-  // Handle component unmount with autoSaveOnExit
+  // Handle component unmount with autoSaveOnExit - FIXED to actually call onSave
   useEffect(() => {
     return () => {
       if (autoSaveOnExit) {
         const numericPrice = parseFloat(priceValue);
-        if (isValid && numericPrice > 0 && numericPrice !== initialPrice) {
+        if (isValid && numericPrice > 0 && numericPrice !== currentPrice) {
           console.log("Auto-saving price on exit:", numericPrice);
           onSave(numericPrice);
         }
       }
     };
-  }, [autoSaveOnExit, priceValue, isValid, initialPrice, onSave]);
+  }, [autoSaveOnExit, priceValue, isValid, currentPrice, onSave]);
   
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPriceValue(e.target.value);
