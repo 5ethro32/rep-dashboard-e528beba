@@ -198,12 +198,6 @@ export default function UserSelector({
     }
   };
 
-  // Handle item selection with explicit event handling for both mouse and touch events
-  const handleUserItemClick = (userId: string | null, displayName: string) => {
-    console.log(`User selection: ${displayName} (${userId})`);
-    onSelectUser(userId, displayName);
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -214,7 +208,7 @@ export default function UserSelector({
           {getTriggerContent()}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56" sideOffset={5}>
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>User Selection</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
@@ -222,12 +216,8 @@ export default function UserSelector({
           {showAllDataOption && (
             <>
               <DropdownMenuItem 
-                onClick={() => handleUserItemClick(ALL_DATA_ID, 'All Data')}
-                className="cursor-pointer focus:bg-accent active:bg-accent touch-action-manipulation"
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  handleUserItemClick(ALL_DATA_ID, 'All Data');
-                }}
+                onClick={() => onSelectUser(ALL_DATA_ID, 'All Data')}
+                className="cursor-pointer"
               >
                 <Users className="mr-2 h-4 w-4" />
                 <span>All Data</span>
@@ -241,12 +231,8 @@ export default function UserSelector({
           
           {/* Always show "My Data" option */}
           <DropdownMenuItem 
-            onClick={() => handleUserItemClick(user?.id || null, 'My Data')}
-            className="cursor-pointer focus:bg-accent active:bg-accent touch-action-manipulation"
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              handleUserItemClick(user?.id || null, 'My Data');
-            }}
+            onClick={() => onSelectUser(user?.id || null, 'My Data')}
+            className="cursor-pointer"
           >
             <User className="mr-2 h-4 w-4" />
             <span>My Data</span>
@@ -275,18 +261,11 @@ export default function UserSelector({
               .map(otherUser => (
                 <DropdownMenuItem
                   key={otherUser.id}
-                  onClick={() => handleUserItemClick(
+                  onClick={() => onSelectUser(
                     otherUser.id, 
                     getUserDisplayName(otherUser.id)
                   )}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    handleUserItemClick(
-                      otherUser.id, 
-                      getUserDisplayName(otherUser.id)
-                    );
-                  }}
-                  className="cursor-pointer focus:bg-accent active:bg-accent touch-action-manipulation"
+                  className="cursor-pointer"
                 >
                   <Users className="mr-2 h-4 w-4" />
                   <span>{getUserDisplayName(otherUser.id)}</span>
