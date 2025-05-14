@@ -219,7 +219,7 @@ const CompetitorAnalysis: React.FC = () => {
                     dataKey="marketShare" 
                     fill="#ef4444" 
                     radius={[4, 4, 0, 0]} 
-                    fillOpacity={(data: any) => data.name === 'Your Company' ? 1 : 0.6}
+                    fillOpacity={0.8} 
                   />
                 </BarChart>
               </ResponsiveContainer>

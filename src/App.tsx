@@ -43,24 +43,78 @@ const App = () => {
                 <Outlet />
               </ProtectedRoute>
             }>
-              <Route element={<AppLayout />}>
-                <Route path="/" element={<RepPerformance />} />
-                <Route path="/rep-performance" element={<RepPerformance />} />
-                <Route path="/account-performance" element={<AccountPerformance />} />
-                <Route path="/my-performance" element={<MyPerformance />} />
-                <Route path="/ai-vera" element={<AIVera />} />
-                <Route path="/rep-tracker" element={<RepTracker />} />
-                <Route path="/data-upload" element={<DataUpload />} />
-                
-                <Route path="/engine-room" element={<EngineRoom />} />
-                <Route path="/engine-room/dashboard" element={<EngineDashboard />} />
-                <Route path="/engine-room/rule-simulator" element={<RuleSimulator />} />
-                <Route path="/engine-room/approvals" element={<ApprovalsDashboard />} />
-                <Route path="/engine-room/operations" element={<EngineOperations />} />
-                <Route path="/engine-room/analyst" element={<Analyst />} />
-                
-                <Route path="*" element={<NotFound />} />
-              </Route>
+              <Route path="/" element={
+                <AppLayout>
+                  <RepPerformance />
+                </AppLayout>
+              } />
+              <Route path="/rep-performance" element={
+                <AppLayout>
+                  <RepPerformance />
+                </AppLayout>
+              } />
+              <Route path="/account-performance" element={
+                <AppLayout>
+                  <AccountPerformance />
+                </AppLayout>
+              } />
+              <Route path="/my-performance" element={
+                <AppLayout>
+                  <MyPerformance />
+                </AppLayout>
+              } />
+              <Route path="/ai-vera" element={
+                <AppLayout>
+                  <AIVera />
+                </AppLayout>
+              } />
+              <Route path="/rep-tracker" element={
+                <AppLayout>
+                  <RepTracker />
+                </AppLayout>
+              } />
+              <Route path="/data-upload" element={
+                <AppLayout>
+                  <DataUpload />
+                </AppLayout>
+              } />
+              
+              <Route path="/engine-room" element={
+                <AppLayout>
+                  <EngineRoom />
+                </AppLayout>
+              } />
+              <Route path="/engine-room/dashboard" element={
+                <AppLayout>
+                  <EngineDashboard />
+                </AppLayout>
+              } />
+              <Route path="/engine-room/rule-simulator" element={
+                <AppLayout>
+                  <RuleSimulator />
+                </AppLayout>
+              } />
+              <Route path="/engine-room/approvals" element={
+                <AppLayout>
+                  <ApprovalsDashboard />
+                </AppLayout>
+              } />
+              <Route path="/engine-room/operations" element={
+                <AppLayout>
+                  <EngineOperations />
+                </AppLayout>
+              } />
+              <Route path="/engine-room/analyst" element={
+                <AppLayout>
+                  <Analyst />
+                </AppLayout>
+              } />
+              
+              <Route path="*" element={
+                <AppLayout>
+                  <NotFound />
+                </AppLayout>
+              } />
             </Route>
           </Routes>
         </Router>
