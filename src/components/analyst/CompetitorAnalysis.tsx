@@ -22,6 +22,64 @@ const generateHistoricalPrices = (basePrice, trend) => {
   });
 };
 
+// Calculate competitive rating based on how often a competitor provides the lowest price
+// Moved before usage to fix the ReferenceError
+const calculateCompetitiveRating = (competitorName, items) => {
+  if (!items || items.length === 0) return { overall: 0, pricing: 0, availability: 0, consistency: 0 };
+  
+  let pricingScore = 0;
+  let availabilityScore = 0;
+  let consistencyScore = 0;
+  
+  // Count relevant items
+  let relevantItems = 0;
+  
+  items.forEach(item => {
+    if (!item.noMarketPrice) {
+      relevantItems++;
+      
+      // Check pricing
+      const price = competitorName === 'Your Company' ? (item.proposedPrice || item.currentREVAPrice) :
+                    competitorName === 'ETH' ? item.eth :
+                    competitorName === 'NuPharm' ? item.nupharm :
+                    competitorName === 'Lexon' ? item.lexon :
+                    item.aah;
+      
+      // If this competitor has a price for this item
+      if (price && price > 0) {
+        availabilityScore++; // They have the product
+        
+        // If they have the lowest price
+        if (price === item.trueMarketLow) {
+          pricingScore++;
+        }
+        
+        // Consistency - how close to market low
+        if (item.trueMarketLow > 0) {
+          const ratio = price / item.trueMarketLow;
+          // Score higher for consistently being within 5% of lowest price
+          if (ratio <= 1.05) consistencyScore++;
+        }
+      }
+    }
+  });
+  
+  // Normalize scores to 0-100 scale
+  const normalizedPricing = relevantItems > 0 ? (pricingScore / relevantItems) * 100 : 0;
+  const normalizedAvailability = relevantItems > 0 ? (availabilityScore / relevantItems) * 100 : 0;
+  const normalizedConsistency = availabilityScore > 0 ? (consistencyScore / availabilityScore) * 100 : 0;
+  
+  // Overall score is weighted average
+  const overall = (normalizedPricing * 0.5) + (normalizedAvailability * 0.3) + (normalizedConsistency * 0.2);
+  
+  return {
+    overall: Math.round(overall),
+    pricing: Math.round(normalizedPricing),
+    availability: Math.round(normalizedAvailability),
+    consistency: Math.round(normalizedConsistency)
+  };
+};
+
 const CompetitorAnalysis: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('pricing');
   const { engineData, isLoading } = useEngineRoom();
@@ -115,63 +173,6 @@ const CompetitorAnalysis: React.FC = () => {
     
     return result;
   }, [engineData?.items]);
-
-  // Calculate competitive rating based on how often a competitor provides the lowest price
-  const calculateCompetitiveRating = (competitorName, items) => {
-    if (!items || items.length === 0) return { overall: 0, pricing: 0, availability: 0, consistency: 0 };
-    
-    let pricingScore = 0;
-    let availabilityScore = 0;
-    let consistencyScore = 0;
-    
-    // Count relevant items
-    let relevantItems = 0;
-    
-    items.forEach(item => {
-      if (!item.noMarketPrice) {
-        relevantItems++;
-        
-        // Check pricing
-        const price = competitorName === 'Your Company' ? (item.proposedPrice || item.currentREVAPrice) :
-                      competitorName === 'ETH' ? item.eth :
-                      competitorName === 'NuPharm' ? item.nupharm :
-                      competitorName === 'Lexon' ? item.lexon :
-                      item.aah;
-        
-        // If this competitor has a price for this item
-        if (price && price > 0) {
-          availabilityScore++; // They have the product
-          
-          // If they have the lowest price
-          if (price === item.trueMarketLow) {
-            pricingScore++;
-          }
-          
-          // Consistency - how close to market low
-          if (item.trueMarketLow > 0) {
-            const ratio = price / item.trueMarketLow;
-            // Score higher for consistently being within 5% of lowest price
-            if (ratio <= 1.05) consistencyScore++;
-          }
-        }
-      }
-    });
-    
-    // Normalize scores to 0-100 scale
-    const normalizedPricing = relevantItems > 0 ? (pricingScore / relevantItems) * 100 : 0;
-    const normalizedAvailability = relevantItems > 0 ? (availabilityScore / relevantItems) * 100 : 0;
-    const normalizedConsistency = availabilityScore > 0 ? (consistencyScore / availabilityScore) * 100 : 0;
-    
-    // Overall score is weighted average
-    const overall = (normalizedPricing * 0.5) + (normalizedAvailability * 0.3) + (normalizedConsistency * 0.2);
-    
-    return {
-      overall: Math.round(overall),
-      pricing: Math.round(normalizedPricing),
-      availability: Math.round(normalizedAvailability),
-      consistency: Math.round(normalizedConsistency)
-    };
-  };
 
   // Prepare data for price trend chart
   const trendData = useMemo(() => {
