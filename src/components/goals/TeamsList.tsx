@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,10 +24,10 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
-  // Fix the type instantiation error by providing explicit types and simplifying the mutation
+  // Completely rewrite the mutation without generic type parameters
   const addMemberMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedTeam) return;
+      if (!selectedTeam) return null;
       
       // 1. Get the user by email
       const { data: userData, error: userError } = await supabase
@@ -53,6 +54,8 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
         }
         throw new Error(memberError.message);
       }
+      
+      return { success: true };
     },
     onSuccess: () => {
       toast({
@@ -80,6 +83,7 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
         .eq('id', teamId);
 
       if (error) throw new Error(error.message);
+      return { success: true };
     },
     onSuccess: () => {
       toast({
