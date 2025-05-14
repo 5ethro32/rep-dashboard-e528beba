@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { toast } from "@/components/ui/use-toast";
 import PriceEditor from './PriceEditor';
 import CellDetailsPopover from './CellDetailsPopover';
 import { formatPercentage as utilFormatPercentage } from '@/utils/formatting-utils';
@@ -50,7 +51,6 @@ const columns = [{
 }, {
   field: 'nextCost',
   label: 'Next BP', 
-  // Don't use simple format here - we'll use a custom formatter
   filterable: false
 }, {
   field: 'marketLow',
@@ -90,7 +90,7 @@ const columns = [{
   format: (value: number) => `${(value * 100)?.toFixed(2) || '0.00'}%`,
   filterable: false
 }, {
-  field: 'tmlPercentage', // New field for TML percentage
+  field: 'tmlPercentage',
   label: '% vs TML',
   filterable: false
 }, {
@@ -113,23 +113,21 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingValues, setEditingValues] = useState<Record<string, number>>({});
   const [bulkEditMode, setBulkEditMode] = useState<boolean>(false);
   const [filterByRank, setFilterByRank] = useState<string | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, any>>({});
   const [hideInactiveProducts, setHideInactiveProducts] = useState(false);
   const [ruleFilter, setRuleFilter] = useState<string>('all');
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<Record<string, string>>({});
+  const [bulkEditChanges, setBulkEditChanges] = useState<Record<string, number>>({});
   const itemsPerPage = 50;
 
-  // Use external flag filter if provided
   useEffect(() => {
     if (flagFilter && flagFilter !== 'all') {
       setColumnFilters(prev => ({...prev, flags: [flagFilter]}));
     }
   }, [flagFilter]);
 
-  // Extract unique usage ranks from the data for the dropdown
   const usageRanks = useMemo(() => {
     if (!data || data.length === 0) return [];
     
@@ -143,16 +141,12 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return Array.from(uniqueRanks).sort((a, b) => a - b);
   }, [data]);
 
-  // We don't need to recalculate TML here anymore, just pass through the existing value
   const dataWithTml = useMemo(() => {
     if (!data) return [];
     
-    // Calculate the TML percentage for each item
     return data.map(item => {
       const proposedPrice = item.proposedPrice || 0;
       const tml = item.trueMarketLow || 0;
-      
-      // Add tmlPercentage field - avoid division by zero
       const tmlPercentage = tml > 0 ? ((proposedPrice - tml) / tml) * 100 : 0;
       
       return {
@@ -162,18 +156,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     });
   }, [data]);
 
-  // Get unique values for each column to use in filters
   const uniqueValues = useMemo(() => {
     const values: Record<string, Set<any>> = {};
 
-    // Initialize sets for each filterable column
     columns.forEach(column => {
       if (column.filterable) {
         values[column.field] = new Set();
       }
     });
 
-    // Collect unique values
     if (dataWithTml && dataWithTml.length > 0) {
       dataWithTml.forEach(item => {
         columns.forEach(column => {
@@ -184,7 +175,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       });
     }
 
-    // Convert sets to sorted arrays
     const result: Record<string, any[]> = {};
     Object.keys(values).forEach(key => {
       result[key] = Array.from(values[key]).sort((a, b) => {
@@ -197,29 +187,22 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return result;
   }, [dataWithTml]);
 
-  // Check if all values for a field are selected
   const areAllValuesSelected = (field: string) => {
     const values = uniqueValues[field] || [];
     const selectedValues = columnFilters[field] || [];
     return values.length > 0 && selectedValues.length === values.length;
   };
 
-  // Get unique flags and show them in dropdown filter
   const uniqueFlags = useMemo(() => {
     const allFlags = new Set<string>();
     if (dataWithTml && dataWithTml.length > 0) {
       dataWithTml.forEach(item => {
-        // Get flags from the flags array
         if (item.flags && Array.isArray(item.flags)) {
           item.flags.forEach((flag: string) => allFlags.add(flag));
         }
-        
-        // Get flag from the flag field
         if (item.flag && typeof item.flag === 'string' && item.flag.trim()) {
           allFlags.add(item.flag.trim());
         }
-        
-        // Add built-in flags
         if (item.flag1) allFlags.add('HIGH_PRICE');
         if (item.flag2) allFlags.add('LOW_MARGIN');
         if (item.shortage) allFlags.add('SHORT');
@@ -228,7 +211,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return Array.from(allFlags);
   }, [dataWithTml]);
 
-  // Extract unique rules for rule filter
   const uniqueRules = useMemo(() => {
     const rules = new Set<string>();
     if (dataWithTml && dataWithTml.length > 0) {
@@ -241,7 +223,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return Array.from(rules).sort();
   }, [dataWithTml]);
 
-  // Calculate price change percentage
   const calculatePriceChangePercentage = (item: any) => {
     const currentPrice = item.currentREVAPrice || 0;
     const proposedPrice = item.proposedPrice || 0;
@@ -249,74 +230,51 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return (proposedPrice - currentPrice) / currentPrice * 100;
   };
 
-  // Filter the data based on search query, usage rank filter, column filters, and toggle states
   const filteredData = useMemo(() => {
     if (!dataWithTml) return [];
     return dataWithTml.filter(item => {
-      // Match search query
       const matchesSearch = item.description?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
-
-      // Match usage rank filter - updated for new filter value
-      const matchesRankFilter = !filterByRank || filterByRank === 'all' ? true : 
-                             item.usageRank === parseInt(filterByRank, 10);
-
-      // Match rule filter
-      const matchesRuleFilter = ruleFilter === 'all' ? true :
-                            item.appliedRule === ruleFilter;
-
-      // Match all column filters
+      const matchesRankFilter = !filterByRank || filterByRank === 'all' ? true : item.usageRank === parseInt(filterByRank, 10);
+      const matchesRuleFilter = ruleFilter === 'all' ? true : item.appliedRule === ruleFilter;
       const matchesColumnFilters = Object.keys(columnFilters).every(field => {
         if (!columnFilters[field] || columnFilters[field].length === 0) {
           return true;
         }
-        
-        // If all values are selected, it's equivalent to no filter
         if (areAllValuesSelected(field)) {
           return true;
         }
-        
         if (field === 'flags') {
-          // Special handling for flags which is an array or multiple flags
           if (Array.isArray(item.flags)) {
             return columnFilters[field].some((flag: string) => item.flags.includes(flag) || flag === 'HIGH_PRICE' && item.flag1 || flag === 'LOW_MARGIN' && item.flag2 || flag === 'SHORT' && item.shortage);
           } else {
-            // Handle legacy flag1/flag2/shortage properties
             return columnFilters[field].some((flag: string) => flag === 'HIGH_PRICE' && item.flag1 || flag === 'LOW_MARGIN' && item.flag2 || flag === 'SHORT' && item.shortage);
           }
         }
         return columnFilters[field].includes(item[field]);
       });
-
-      // Only filter inactive products if the toggle is enabled
       const isActive = !hideInactiveProducts || item.inStock > 0 || item.onOrder > 0 || item.revaUsage > 0;
-
       return matchesSearch && matchesRankFilter && matchesRuleFilter && matchesColumnFilters && isActive;
     });
   }, [dataWithTml, searchQuery, filterByRank, ruleFilter, columnFilters, hideInactiveProducts]);
 
-  // Sort the filtered data
   const sortedData = useMemo(() => {
     if (!filteredData) return [];
     return [...filteredData].sort((a, b) => {
       let fieldA = a[sortField];
       let fieldB = b[sortField];
 
-      // Handle special case for price change percentage
       if (sortField === 'priceChangePercentage') {
         const aChange = calculatePriceChangePercentage(a);
         const bChange = calculatePriceChangePercentage(b);
         return sortDirection === 'asc' ? aChange - bChange : bChange - aChange;
       }
 
-      // Handle null/undefined values
       if (fieldA === undefined || fieldA === null) fieldA = sortField.includes('Price') ? 0 : '';
       if (fieldB === undefined || fieldB === null) fieldB = sortField.includes('Price') ? 0 : '';
 
-      // Fix: Type-check before using string methods
       if (typeof fieldA === 'string' && typeof fieldB === 'string') {
         return sortDirection === 'asc' ? fieldA.localeCompare(fieldB) : fieldB.localeCompare(fieldA);
       } else {
-        // Convert to strings if comparing mixed types
         if (typeof fieldA !== typeof fieldB) {
           if (typeof fieldA === 'string') {
             return sortDirection === 'asc' ? fieldA.localeCompare(String(fieldB)) : String(fieldB).localeCompare(fieldA);
@@ -324,19 +282,15 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             return sortDirection === 'asc' ? String(fieldA).localeCompare(fieldB) : fieldB.localeCompare(String(fieldA));
           }
         }
-
-        // Use numeric comparison for numbers or convert to string
         return sortDirection === 'asc' ? (Number(fieldA) || 0) - (Number(fieldB) || 0) : (Number(fieldB) || 0) - (Number(fieldA) || 0);
       }
     });
   }, [filteredData, sortField, sortDirection]);
 
-  // Paginate the data
   const totalPages = Math.ceil((sortedData?.length || 0) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = sortedData && sortedData.length > 0 ? sortedData.slice(startIndex, startIndex + itemsPerPage) : [];
 
-  // Handle sort click
   const handleSort = (field: string) => {
     if (field === sortField) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -346,18 +300,12 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     }
   };
 
-  // Handle column filter change
   const handleFilterChange = (field: string, value: any, isSelectAll: boolean = false) => {
     setColumnFilters(prev => {
       if (isSelectAll) {
-        // Toggle between all selected and none selected
         const allValues = uniqueValues[field] || [];
         const currentValues = prev[field] || [];
-        
-        // If all values are currently selected or no values are selected, clear the selection
-        // Otherwise, select all values
         const newFilter = currentValues.length === allValues.length ? [] : [...allValues];
-        
         return {
           ...prev,
           [field]: newFilter
@@ -365,32 +313,24 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       } else {
         const current = prev[field] || [];
         const allValues = uniqueValues[field] || [];
-        
-        // If removing a value when all were selected, select all except this one
         if (current.length === allValues.length && current.includes(value)) {
           return {
             ...prev,
             [field]: current.filter(v => v !== value)
           };
         }
-        
-        // Normal toggle behavior
         const newFilter = current.includes(value) 
           ? current.filter(v => v !== value) 
           : [...current, value];
-        
         return {
           ...prev,
           [field]: newFilter
         };
       }
     });
-    
-    // Reset to first page when filter changes
     setCurrentPage(1);
   };
 
-  // Handle filter dropdown search
   const handleFilterSearchChange = (field: string, searchValue: string) => {
     setFilterDropdownSearch(prev => ({
       ...prev,
@@ -398,7 +338,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     }));
   };
 
-  // Get filtered dropdown options based on search
   const getFilteredOptions = (field: string) => {
     const searchValue = filterDropdownSearch[field] || '';
     const values = uniqueValues[field] || [];
@@ -413,7 +352,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     });
   };
 
-  // Format currency - with null/undefined check and no market price indicator
   const formatCurrency = (value: number | null | undefined, noMarketPrice?: boolean) => {
     if (noMarketPrice || value === 0) {
       return <span className="text-gray-400 italic">£0.00</span>;
@@ -424,7 +362,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return `£${value.toFixed(2)}`;
   };
 
-  // Format TML percentage - new function
   const formatTMLPercentage = (percentage: number | null | undefined) => {
     if (percentage === null || percentage === undefined) {
       return '0.00%';
@@ -432,7 +369,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     
     const formattedValue = percentage.toFixed(2) + '%';
     
-    // Add color based on value - higher percentages might indicate potential issues
     if (percentage > 15) {
       return <span className="text-red-400">{formattedValue}</span>;
     } else if (percentage > 5) {
@@ -444,7 +380,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return formattedValue;
   };
 
-  // Format next buying price - new method
   const formatNextBuyingPrice = (item: any) => {
     if (item.nextCostMissing) {
       return <span className="text-blue-400 italic">£0.00</span>;
@@ -452,98 +387,69 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return `£${(item.nextCost || 0).toFixed(2)}`;
   };
 
-  // Format percentage - Modified to properly handle different cases
   const formatPercentage = (value: number | null | undefined) => {
     if (value === null || value === undefined) {
       return '0.00%';
     }
-    // Multiply by 100 to convert decimal to percentage
     return `${(value * 100).toFixed(2)}%`;
   };
 
-  // Special formatter for current margin only - to avoid double multiplication
   const formatCurrentMargin = (value: number | null | undefined) => {
     if (value === null || value === undefined) {
       return '0.00%';
     }
-    // Current margin is already stored as percentage value (not decimal)
-    // so we don't multiply by 100
     return `${value.toFixed(2)}%`;
   };
 
-  // Render sort indicator
   const renderSortIndicator = (field: string) => {
     if (field !== sortField) return null;
     return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
   };
 
-  // Handle starting price edit for a specific item
   const handleStartEdit = (item: any) => {
     setEditingItemId(item.id);
-    setEditingValues({
-      ...editingValues,
-      [item.id]: item.proposedPrice || 0
-    });
   };
 
-  // Handle price change input
-  const handlePriceInputChange = (item: any, value: string) => {
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue)) {
-      setEditingValues({
-        ...editingValues,
-        [item.id]: numValue
-      });
-    }
-  };
-
-  // Handle price edit save - Updated to ensure the change is properly marked
-  const handleSavePriceEdit = (item: any) => {
-    if (onPriceChange && editingValues[item.id] !== undefined) {
-      const newPrice = editingValues[item.id];
-      // Only trigger change if the price is actually different
+  const handleSavePriceEdit = (item: any, newPrice: number) => {
+    if (onPriceChange) {
       if (newPrice !== item.proposedPrice) {
         onPriceChange(item, newPrice);
       }
     }
-    
-    // Reset editing state for this item
     setEditingItemId(null);
-    const newEditingValues = {
-      ...editingValues
-    };
-    delete newEditingValues[item.id];
-    setEditingValues(newEditingValues);
   };
 
-  // Handle cancel price edit
   const handleCancelEdit = () => {
     setEditingItemId(null);
-    // Keep the editingValues intact, just stop editing
   };
 
-  // Toggle bulk edit mode - Modified to ensure changes are preserved
-  const toggleBulkEditMode = () => {
-    // When exiting bulk edit mode, we don't need to clear anything
-    // as we want changes to persist when toggling the mode
-    if (bulkEditMode) {
-      // Just exit bulk edit mode, preserving all changes
-      setBulkEditMode(false);
-    } else {
-      // Enter bulk edit mode
-      setBulkEditMode(true);
+  const handleBulkPriceChange = (item: any, newPrice: number) => {
+    setBulkEditChanges(prev => ({
+      ...prev,
+      [item.id]: newPrice
+    }));
+    
+    if (onPriceChange && newPrice !== item.proposedPrice) {
+      onPriceChange(item, newPrice);
     }
-    // We no longer clear editing state to preserve any changes
-    // Only clear active editing item
+  };
+
+  const toggleBulkEditMode = () => {
+    if (bulkEditMode && onPriceChange) {
+      toast({
+        title: "Bulk edit mode exited",
+        description: "All price changes have been saved."
+      });
+    }
+    
+    setBulkEditMode(!bulkEditMode);
     setEditingItemId(null);
   };
 
-  // Toggle the hide inactive products filter
   const toggleHideInactiveProducts = () => {
     setHideInactiveProducts(!hideInactiveProducts);
   };
 
-  // Render the column header with sort and filter
   const renderColumnHeader = (column: any) => {
     return (
       <div className="flex items-center justify-between">
@@ -612,7 +518,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     );
   };
 
-  // Special case for flags column
   const renderFlagsColumnHeader = () => {
     return <div className="flex items-center justify-between">
         <span>Flags</span>
@@ -671,11 +576,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       </div>;
   };
 
-  // Simplify rule display
   const formatRuleDisplay = (rule: string) => {
     if (!rule) return '';
 
-    // Check if the rule follows the pattern "Grp X-Y" and convert to [X.Y]
     const rulePattern = /Grp\s*(\d+)-(\d+)/i;
     const match = rule.match(rulePattern);
     if (match) {
@@ -684,7 +587,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return rule;
   };
 
-  // Render flags for an item - Updated to use nicer formatting with enhanced visibility for No Market Price
   const renderFlags = (item: any) => {
     if (!item) return null;
     const flags = [];
@@ -709,7 +611,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       </span>);
     }
     
-    // Enhanced visibility for No Market Price
     if (item.noMarketPrice || (item.flags && item.flags.includes('No Market Price Available'))) {
       flags.push(<span key="no-market-price" className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300 flex items-center gap-1" title="No Market Price Available">
         <Ban className="h-3 w-3" /> No MP
@@ -718,10 +619,8 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     
     if (item.flags && Array.isArray(item.flags)) {
       item.flags.forEach((flag: string, i: number) => {
-        // Skip duplicates or already handled flags
         if (flag === 'HIGH_PRICE' || flag === 'LOW_MARGIN' || flag === 'SHORT' || flag === 'No Market Price Available') return;
         
-        // Special handling for price decrease flags
         if (flag.startsWith('PRICE_DECREASE_')) {
           const percentage = flag.replace('PRICE_DECREASE_', '');
           flags.push(
@@ -743,35 +642,28 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     return flags.length > 0 ? <div className="flex flex-wrap gap-1">{flags}</div> : null;
   };
 
-  // New helper function to summarize numeric filter values
   const summarizeNumericFilters = (values: any[]) => {
     if (!values || values.length === 0) return null;
     
-    // Check if all values are numbers
     const allNumbers = values.every(value => !isNaN(Number(value)));
     if (!allNumbers) return null;
     
-    // Convert to numbers and sort
     const numberValues = values.map(v => Number(v)).sort((a, b) => a - b);
     
-    // If there are too many consecutive numbers, show as range
     if (numberValues.length > 3) {
       const min = Math.min(...numberValues);
       const max = Math.max(...numberValues);
-      // If they form a perfect sequence with no gaps, show as range
       if (max - min + 1 === numberValues.length) {
         return `${min} - ${max}`;
       }
     }
     
-    return null; // Default to showing individual values
+    return null;
   };
 
-  // Active filters summary - completely revised for better UX
   const renderActiveFilters = () => {
     const activeFilters = Object.entries(columnFilters)
       .filter(([field, values]) => {
-        // Only show filter if values exist and not all values are selected
         return values && Array.isArray(values) && values.length > 0 && !areAllValuesSelected(field);
       })
       .map(([field, values]) => {
@@ -801,7 +693,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         </div>
         <div className="flex flex-wrap gap-2">
           {activeFilters.map((filter, i) => {
-            // Check if it's a numeric filter with many values
             const numericSummary = summarizeNumericFilters(filter.values);
             const hasMany = filter.values.length > 3 && !numericSummary;
             
@@ -819,7 +710,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                             size="sm" 
                             className="h-3 w-3 p-0 ml-1" 
                             onClick={() => {
-                              // Clear all values in this range
                               setColumnFilters(prev => {
                                 const newFilters = {...prev};
                                 delete newFilters[filter.field];
@@ -901,11 +791,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     );
   };
 
-  // Render a unified filter bar with more compact layout
   const renderUnifiedFilterBar = () => {
     return (
       <div className="flex flex-wrap gap-4 items-center mb-4">
-        {/* Search box - with reduced width */}
         <div className="relative flex-1 min-w-[150px] max-w-[250px]">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input 
@@ -916,7 +804,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           />
         </div>
         
-        {/* Rank filter */}
         <Select value={filterByRank || 'all'} onValueChange={value => setFilterByRank(value === 'all' ? null : value)}>
           <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="All Ranks" />
@@ -931,7 +818,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           </SelectContent>
         </Select>
         
-        {/* Flag filter */}
         <Select value={columnFilters['flags']?.[0] || 'all'} onValueChange={value => {
           if (value === 'all') {
             setColumnFilters(prev => {
@@ -959,7 +845,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           </SelectContent>
         </Select>
         
-        {/* Rule filter - NEW */}
         <Select value={ruleFilter} onValueChange={setRuleFilter}>
           <SelectTrigger className="w-[130px]">
             <SelectValue placeholder="All Rules" />
@@ -974,7 +859,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           </SelectContent>
         </Select>
         
-        {/* Hide Inactive toggle */}
         <div className="flex items-center space-x-2">
           <Switch 
             id="hideInactive" 
@@ -986,7 +870,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           </label>
         </div>
         
-        {/* Bulk Edit toggle */}
         <Button 
           variant="outline" 
           size="sm" 
@@ -996,7 +879,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           {bulkEditMode ? "Exit Bulk Edit" : "Bulk Edit"}
         </Button>
         
-        {/* Starred items info - more concise */}
         {starredItems && starredItems.size > 0 && (
           <div className="flex items-center space-x-2 ml-auto">
             <Star className="h-4 w-4 text-yellow-400" />
@@ -1009,7 +891,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     );
   };
 
-  // Render the data table with rows - Now used for one combined table
   const renderDataTable = () => {
     return (
       <div className="rounded-md border overflow-hidden">
@@ -1037,7 +918,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                 </TableRow>
               )}
               {paginatedData.map((item, index) => {
-                // Calculate price change percentage for each item
                 const priceChangePercentage = calculatePriceChangePercentage(item);
                 const isEditing = editingItemId === item.id;
                 
@@ -1051,21 +931,18 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                     <TableCell>{item.revaUsage}</TableCell>
                     <TableCell>{item.usageRank}</TableCell>
                     
-                    {/* Avg Cost cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="avgCost">
                         {formatCurrency(item.avgCost)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Next Buying Price cell with popover - Updated to handle missing values */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="nextCost">
                         {formatNextBuyingPrice(item)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Market Low cell with popover - Updated to handle no market price */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="marketLow">
                         <div className="flex items-center gap-1">
@@ -1076,75 +953,55 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* TML cell with popover - explicitly use trueMarketLow field type for consistency */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="trueMarketLow">
                         {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Current Price cell with popover */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAPrice">
                         <span className="font-medium">{formatCurrency(item.currentREVAPrice)}</span>
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Current Margin cell with popover - FIXED to use formatCurrentMargin */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="currentREVAMargin">
                         {formatCurrentMargin(item.currentREVAMargin)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Proposed price cell with inline editing */}
                     <TableCell>
-                      {bulkEditMode && !item.priceModified ? (
-                        <PriceEditor 
-                          initialPrice={item.proposedPrice || 0} 
-                          currentPrice={item.currentREVAPrice || 0} 
-                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0} 
-                          cost={item.avgCost || 0} 
-                          onSave={newPrice => onPriceChange && onPriceChange(item, newPrice)} 
-                          onCancel={() => {}} 
-                          compact={true} 
+                      {isEditing ? (
+                        <PriceEditor
+                          initialPrice={item.proposedPrice || 0}
+                          currentPrice={item.currentREVAPrice || 0}
+                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
+                          cost={item.avgCost || 0}
+                          onSave={(newPrice) => handleSavePriceEdit(item, newPrice)}
+                          onCancel={handleCancelEdit}
+                          compact={true}
                         />
-                      ) : isEditing ? (
-                        <div className="flex items-center gap-2">
-                          <Input 
-                            type="number" 
-                            value={editingValues[item.id]} 
-                            onChange={e => handlePriceInputChange(item, e.target.value)} 
-                            className="w-24 h-8 py-1 px-2" 
-                            autoFocus 
-                          />
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0" 
-                            onClick={() => handleSavePriceEdit(item)}
-                          >
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0" 
-                            onClick={handleCancelEdit}
-                          >
-                            <X className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </div>
+                      ) : bulkEditMode ? (
+                        <PriceEditor
+                          initialPrice={bulkEditChanges[item.id] || item.proposedPrice || 0}
+                          currentPrice={item.currentREVAPrice || 0}
+                          calculatedPrice={item.calculatedPrice || item.proposedPrice || 0}
+                          cost={item.avgCost || 0}
+                          onSave={(newPrice) => handleBulkPriceChange(item, newPrice)}
+                          onCancel={() => {}}
+                          compact={true}
+                        />
                       ) : (
                         <CellDetailsPopover item={item} field="proposedPrice">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
                             {item.priceModified && <CheckCircle className="h-3 w-3 ml-2 text-blue-400" />}
                             {onPriceChange && !bulkEditMode && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="ml-2 h-6 w-6 p-0" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="ml-2 h-6 w-6 p-0"
                                 onClick={e => {
                                   e.stopPropagation();
                                   handleStartEdit(item);
@@ -1158,7 +1015,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       )}
                     </TableCell>
                     
-                    {/* Price change percentage cell */}
                     <TableCell>
                       {priceChangePercentage !== 0 && (
                         <span className={priceChangePercentage > 0 ? "text-green-400" : "text-red-400"}>
@@ -1167,27 +1023,22 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       )}
                     </TableCell>
                     
-                    {/* Proposed margin cell - FIXED to use formatPercentage */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="proposedMargin">
                         {formatPercentage(item.proposedMargin)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* NEW: TML Percentage cell */}
                     <TableCell>
                       <CellDetailsPopover item={item} field="tmlPercentage">
                         {formatTMLPercentage(item.tmlPercentage)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    {/* Applied rule cell */}
                     <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
                     
-                    {/* Flags cell */}
                     <TableCell>{renderFlags(item)}</TableCell>
                     
-                    {/* Actions cell */}
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Button 
@@ -1198,7 +1049,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                         >
                           <Info className="h-4 w-4" />
                         </Button>
-                        {!isEditing && onPriceChange && (
+                        {!isEditing && onPriceChange && !bulkEditMode && (
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -1235,7 +1086,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     );
   };
 
-  // Pagination controls
   const renderPagination = () => {
     if (totalPages <= 1) return null;
     
@@ -1272,7 +1122,6 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         {renderActiveFilters()}
         {renderDataTable()}
         
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between py-2">
             <div className="text-sm text-muted-foreground">

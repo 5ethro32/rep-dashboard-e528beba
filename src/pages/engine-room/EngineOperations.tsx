@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { toast } from "@/components/ui/use-toast";
 import EngineDataTable from '@/components/engine-room/EngineDataTable';
 import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer';
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
@@ -114,7 +115,21 @@ const EngineOperationsContent = () => {
     });
   };
   
-  // Get all unique flags from the data for the dropdown (not needed anymore as it's handled inside EngineDataTable)
+  // Enhanced price change handler with toast notification
+  const handleItemPriceChange = (item: any, newPrice: number) => {
+    if (onPriceChange) {
+      // Only trigger change if the price is actually different
+      if (newPrice !== item.proposedPrice) {
+        handlePriceChange(item, newPrice);
+        
+        // Show toast notification for user feedback
+        toast({
+          title: "Price updated",
+          description: `Price for ${item.description.substring(0, 30)}... updated to £${newPrice.toFixed(2)}`
+        });
+      }
+    }
+  };
   
   // Get starred items
   const getStarredItems = () => {
@@ -342,7 +357,7 @@ const EngineOperationsContent = () => {
           <EngineDataTable 
             data={engineData.items || []} 
             onShowPriceDetails={handleShowItemDetails}
-            onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
+            onPriceChange={userRole !== 'manager' ? handleItemPriceChange : undefined}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
           />
@@ -361,7 +376,7 @@ const EngineOperationsContent = () => {
           <EngineDataTable 
             data={getFlaggedItems()} 
             onShowPriceDetails={handleShowItemDetails}
-            onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
+            onPriceChange={userRole !== 'manager' ? handleItemPriceChange : undefined}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
             flagFilter={activeTabFlagFilter}
@@ -383,7 +398,7 @@ const EngineOperationsContent = () => {
           <EngineDataTable 
             data={getStarredItems()} 
             onShowPriceDetails={handleShowItemDetails}
-            onPriceChange={userRole !== 'manager' ? handlePriceChange : undefined}
+            onPriceChange={userRole !== 'manager' ? handleItemPriceChange : undefined}
             onToggleStar={handleToggleStar}
             starredItems={starredItems}
           />

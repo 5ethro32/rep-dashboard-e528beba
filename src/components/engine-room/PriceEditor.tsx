@@ -73,11 +73,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
     if (isValid && numericPrice > 0) {
       // Ensure we're calling onSave with the parsed numeric value
       onSave(numericPrice);
-      // Toast notification for user feedback
-      toast({
-        title: "Price updated",
-        description: `Price has been updated to £${numericPrice.toFixed(2)}`
-      });
+      // Toast notification moved to the parent component to prevent multiple notifications
     } else {
       toast({
         title: "Invalid price",
