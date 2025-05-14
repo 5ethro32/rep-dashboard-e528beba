@@ -323,7 +323,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           ...item,
           proposedPrice: calculatedPrice,
           proposedMargin: proposedMargin,
-          priceModified: false,
+          priceModified: false, // Reset modification flag since we're saving the changes
           flag2: proposedMargin <= 0  // Updated from < 0.05 to <= 0
         };
       }
@@ -506,12 +506,25 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (!engineData) return;
     
     try {
-      // Assuming exportPricingData is imported
-      const result = { exportedCount: engineData.items.length, fileName: `REVA_Pricing_${new Date().toISOString().substring(0, 10)}.xlsx` };
-      
-      toast({
-        title: "Export complete",
-        description: `Exported ${result.exportedCount} items to ${result.fileName}`
+      // Import the exportPricingData function from our utility
+      import('@/utils/pricing-export-utils').then(({ exportPricingData }) => {
+        // Call the export function with the engineData items
+        const result = exportPricingData(engineData.items, {
+          includeWorkflowStatus: true,
+          fileName: `REVA_Pricing_${new Date().toISOString().substring(0, 10)}.xlsx`
+        });
+        
+        toast({
+          title: "Export complete",
+          description: `Exported ${result.exportedCount} items to ${result.fileName}`
+        });
+      }).catch(error => {
+        console.error('Error loading export utility:', error);
+        toast({
+          title: "Export failed",
+          description: "Could not load the export utility",
+          variant: "destructive"
+        });
       });
     } catch (error) {
       console.error('Error exporting data:', error);
