@@ -1,191 +1,69 @@
 
-import React, { useState, useCallback } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
-import RepPerformance from "./pages/RepPerformance";
-import AccountPerformance from "./pages/AccountPerformance";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
-import { AuthProvider } from "./contexts/AuthContext";
-import { EngineRoomProvider } from "./contexts/EngineRoomContext";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
-import RepTracker from "./pages/RepTracker";
-import MyPerformance from "./pages/MyPerformance";
-import EngineRoom from "./pages/EngineRoom"; 
-import EngineDashboard from "./pages/engine-room/EngineDashboard";
-import EngineOperations from "./pages/engine-room/EngineOperations";
-import ApprovalsDashboard from "./pages/engine-room/ApprovalsDashboard";
-import RuleSimulator from "./pages/engine-room/RuleSimulator";
-import AppLayout from "./components/layout/AppLayout";
-import { useIsMobile } from "./hooks/use-mobile";
-import { useAuth } from "./contexts/AuthContext";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import AppLayout from './components/layout/AppLayout';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import NotFound from './pages/NotFound';
+import Auth from './pages/Auth';
+import RepPerformance from './pages/RepPerformance';
+import AccountPerformance from './pages/AccountPerformance';
+import MyPerformance from './pages/MyPerformance';
+import AIVera from './pages/AIVera';
+import RepTracker from './pages/RepTracker';
+import DataUpload from './pages/DataUpload';
+import EngineRoom from './pages/EngineRoom';
+import EngineDashboard from './pages/engine-room/EngineDashboard';
+import RuleSimulator from './pages/engine-room/RuleSimulator';
+import ApprovalsDashboard from './pages/engine-room/ApprovalsDashboard';
+import EngineOperations from './pages/engine-room/EngineOperations';
+import Analyst from './pages/engine-room/Analyst'; // Import the new Analyst page
+
+import { EngineRoomProvider } from './contexts/EngineRoomContext';
+import { Toaster } from '@/components/ui/toaster';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5000,
+      retry: 1,
     },
   },
 });
 
-const AppRoutes = () => {
-  const isMobile = useIsMobile();
-  const location = useLocation();
-  const { user } = useAuth();
-  
-  // Initialize to null (user's own data) rather than "all"
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState<string>("My Data");
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const handleSelectUser = (userId: string | null, displayName: string) => {
-    console.log(`App.tsx: User selection changed to ${displayName} (${userId})`);
-    setSelectedUserId(userId);
-    setSelectedUserName(displayName);
-  };
-
-  // Global refresh handler that can be used by all components
-  const handleGlobalRefresh = useCallback(async () => {
-    console.log("Global refresh triggered in App.tsx");
-    setIsLoading(true);
-    
-    try {
-      // Invalidate all queries to trigger a refetch
-      await queryClient.invalidateQueries();
-      console.log("All queries invalidated");
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-    } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1000); // Ensure loading indicator shows for at least 1 second
-    }
-  }, [queryClient]);
-
-  // Create wrapper components that handle refreshing for each page
-  const RepPerformanceWithRefresh = () => {
-    return (
-      <RepPerformance />
-    );
-  };
-  
-  // Create a wrapper component that will pass props to AccountPerformance
-  const AccountPerformanceWithProps = () => {
-    return (
-      <AccountPerformance 
-        selectedUserId={selectedUserId} 
-        selectedUserName={selectedUserName}
-      />
-    );
-  };
-  
-  // Create a wrapper component that will pass props to RepTracker
-  const RepTrackerWithProps = () => {
-    return (
-      <RepTracker 
-        selectedUserId={selectedUserId} 
-        selectedUserName={selectedUserName}
-      />
-    );
-  };
-
-  // Create a wrapper component that will pass props to MyPerformance
-  const MyPerformanceWithProps = () => {
-    return (
-      <MyPerformance 
-        selectedUserId={selectedUserId} 
-        selectedUserName={selectedUserName}
-      />
-    );
-  };
-  
-  // Determine if we should disable the global refresh for certain routes
-  // where page-specific refresh is preferred
-  const disableGlobalRefresh = location.pathname === '/rep-performance';
-
+const App = () => {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/rep-performance" replace />} />
-      <Route path="/auth" element={<Auth />} />
-      
-      {/* Main Layout Routes */}
-      <Route element={
-        <ProtectedRoute>
-          <AppLayout 
-            showChatInterface={!isMobile}
-            selectedUserId={selectedUserId}
-            onSelectUser={handleSelectUser}
-            showUserSelector={true}
-            onRefresh={disableGlobalRefresh ? undefined : handleGlobalRefresh}
-            isLoading={isLoading}
-          >
-            <Outlet />
-          </AppLayout>
-        </ProtectedRoute>
-      }>
-        <Route path="/rep-performance" element={<RepPerformanceWithRefresh />} />
-        <Route 
-          path="/account-performance" 
-          element={<AccountPerformanceWithProps />} 
-        />
-        <Route 
-          path="/rep-tracker" 
-          element={<RepTrackerWithProps />} 
-        />
-        <Route 
-          path="/my-performance" 
-          element={<MyPerformanceWithProps />} 
-        />
-        
-        {/* Engine Room Routes - Wrapped with EngineRoomProvider */}
-        <Route path="/engine-room" element={
-          <EngineRoomProvider>
-            <Navigate to="/engine-room/dashboard" replace />
-          </EngineRoomProvider>
-        } />
-        <Route path="/engine-room/dashboard" element={
-          <EngineRoomProvider>
-            <EngineDashboard />
-          </EngineRoomProvider>
-        } />
-        <Route path="/engine-room/engine" element={
-          <EngineRoomProvider>
-            <EngineOperations />
-          </EngineRoomProvider>
-        } />
-        <Route path="/engine-room/approvals" element={
-          <EngineRoomProvider>
-            <ApprovalsDashboard />
-          </EngineRoomProvider>
-        } />
-        <Route path="/engine-room/rule-simulator" element={
-          <EngineRoomProvider>
-            <RuleSimulator />
-          </EngineRoomProvider>
-        } />
-      </Route>
-
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <QueryClientProvider client={queryClient}>
+      <EngineRoomProvider>
+        <Router>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<RepPerformance />} />
+                <Route path="/rep-performance" element={<RepPerformance />} />
+                <Route path="/account-performance" element={<AccountPerformance />} />
+                <Route path="/my-performance" element={<MyPerformance />} />
+                <Route path="/ai-vera" element={<AIVera />} />
+                <Route path="/rep-tracker" element={<RepTracker />} />
+                <Route path="/data-upload" element={<DataUpload />} />
+                
+                <Route path="/engine-room" element={<EngineRoom />} />
+                <Route path="/engine-room/dashboard" element={<EngineDashboard />} />
+                <Route path="/engine-room/rule-simulator" element={<RuleSimulator />} />
+                <Route path="/engine-room/approvals" element={<ApprovalsDashboard />} />
+                <Route path="/engine-room/operations" element={<EngineOperations />} />
+                <Route path="/engine-room/analyst" element={<Analyst />} /> {/* Add the Analyst route */}
+                
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Route>
+          </Routes>
+        </Router>
+        <Toaster />
+      </EngineRoomProvider>
+    </QueryClientProvider>
   );
 };
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
 
 export default App;
