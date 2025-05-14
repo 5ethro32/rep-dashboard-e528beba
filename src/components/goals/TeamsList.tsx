@@ -26,10 +26,13 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
-  // Simplified mutation without explicit type parameters
+  // Completely restructured mutation to avoid type recursion
   const addMemberMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedTeam) return null;
+      // Early return if no team selected
+      if (!selectedTeam) {
+        return;
+      }
       
       // 1. Get the user by email
       const { data: userData, error: userError } = await supabase
@@ -56,8 +59,6 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
         }
         throw new Error(memberError.message);
       }
-      
-      return { success: true };
     },
     onSuccess: () => {
       toast({
