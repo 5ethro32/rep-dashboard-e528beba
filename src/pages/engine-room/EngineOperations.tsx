@@ -1,6 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
-import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
+import { 
+  UploadCloud, 
+  FileText, 
+  Download, 
+  Filter, 
+  Star, 
+  Package, 
+  Info, 
+  AlertTriangle, 
+  TrendingUp, 
+  Percent, 
+  DollarSign, 
+  BarChart2, 
+  ShoppingCart, 
+  Tag, 
+  TrendingDown,
+  History
+} from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -348,7 +365,10 @@ const EngineOperationsContent = () => {
             Starred
             <Badge variant="secondary" className="bg-yellow-500 text-white rounded-full">{starredItems.size}</Badge>
           </TabsTrigger>
-          <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
+          <TabsTrigger key="changes" value="changes" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Changes
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="all-items" className="space-y-4">
@@ -402,13 +422,77 @@ const EngineOperationsContent = () => {
           />
         </TabsContent>
         
-        <TabsContent value="configuration" className="space-y-4">
-          <ConfigurationPanel 
-            currentConfig={engineData.ruleConfig || {}} 
-            onConfigChange={(newConfig) => {
-              console.log("Updated rule config:", newConfig);
-            }}
-          />
+        <TabsContent value="changes" className="space-y-4">
+          <div className="bg-card rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <History className="h-5 w-5 text-muted-foreground" />
+              Pricing Changes History
+            </h2>
+            
+            <div className="space-y-6">
+              <div className="border-b pb-4">
+                <h3 className="font-medium text-md mb-2">Recent Changes</h3>
+                {engineData && engineData.items && engineData.items.filter(item => item.priceModified).length > 0 ? (
+                  <div className="space-y-3">
+                    {engineData.items
+                      .filter(item => item.priceModified)
+                      .slice(0, 5)
+                      .map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center p-2 rounded bg-muted/50">
+                          <div>
+                            <p className="font-medium">{item.description}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Price changed from £{item.currentREVAPrice?.toFixed(2)} to £{item.proposedPrice?.toFixed(2)}
+                            </p>
+                          </div>
+                          <Badge variant={item.proposedPrice > item.currentREVAPrice ? "default" : "destructive"}>
+                            {item.proposedPrice > item.currentREVAPrice ? '+' : ''}
+                            {((item.proposedPrice - item.currentREVAPrice) / item.currentREVAPrice * 100).toFixed(1)}%
+                          </Badge>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground italic">No recent price changes found</p>
+                )}
+              </div>
+              
+              <div>
+                <h3 className="font-medium text-md mb-2">Team Activity</h3>
+                <div className="border rounded-md">
+                  <div className="grid grid-cols-4 gap-4 p-3 border-b bg-muted/50 font-medium text-sm">
+                    <div>User</div>
+                    <div>Action</div>
+                    <div>Items</div>
+                    <div>Date</div>
+                  </div>
+                  <div className="divide-y">
+                    <div className="grid grid-cols-4 gap-4 p-3 text-sm">
+                      <div>John Smith</div>
+                      <div>Price Updates</div>
+                      <div>23 items</div>
+                      <div>May 12, 2025</div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4 p-3 text-sm">
+                      <div>Sarah Johnson</div>
+                      <div>Approvals</div>
+                      <div>15 items</div>
+                      <div>May 10, 2025</div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4 p-3 text-sm">
+                      <div>Mike Davies</div>
+                      <div>Rule Changes</div>
+                      <div>2 rules</div>
+                      <div>May 8, 2025</div>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  This view shows all colleague activity related to pricing changes
+                </p>
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
