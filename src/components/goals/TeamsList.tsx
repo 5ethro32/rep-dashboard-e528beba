@@ -24,6 +24,7 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
+  // Simplified mutation without explicit generic types to avoid infinite type instantiation
   const addMemberMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTeam) return null;
