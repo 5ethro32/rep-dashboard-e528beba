@@ -148,8 +148,7 @@ const RepPerformance = () => {
     <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
       <PerformanceHeader 
         selectedMonth={selectedMonth} 
-        setSelectedMonth={handleMonthSelection} 
-        onRefresh={handleRefresh}
+        setSelectedMonth={handleMonthSelection}
       />
       
       <PerformanceFilters 
@@ -160,7 +159,9 @@ const RepPerformance = () => {
         includeWholesale={includeWholesale} 
         setIncludeWholesale={setIncludeWholesale} 
         selectedMonth={selectedMonth} 
-        setSelectedMonth={setSelectedMonth} 
+        setSelectedMonth={handleMonthSelection}
+        onRefresh={handleRefresh}
+        isLoading={isLoading}
       />
 
       {/* Wrap the SummaryMetrics in a Card */}

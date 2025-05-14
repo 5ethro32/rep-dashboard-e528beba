@@ -1,13 +1,5 @@
 
 import React from 'react';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem
-} from "@/components/ui/dropdown-menu";
-import { CalendarIcon, ChevronDown, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PerformanceHeaderProps {
@@ -43,56 +35,6 @@ const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-700">Dashboard</span>
         </h1>
       )}
-      <div className={`${hideTitle ? '' : 'mt-4 md:mt-8 text-right'} flex items-center justify-end gap-2 z-40`}>
-        {/* Add separate refresh button */}
-        {onRefresh && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={onRefresh} 
-            className="px-3 py-2 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none h-9 w-9"
-          >
-            <RefreshCw className="h-4 w-4 opacity-70" />
-          </Button>
-        )}
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none">
-            <CalendarIcon className="h-4 w-4 opacity-70" />
-            {isMobile ? (
-              <span>{selectedMonth}</span>
-            ) : (
-              <span>Month: {selectedMonth}</span>
-            )}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-gray-950/95 backdrop-blur-sm border border-white/5 z-50">
-            <DropdownMenuItem 
-              className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
-              onClick={() => setSelectedMonth('May')}
-            >
-              May 2025
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
-              onClick={() => setSelectedMonth('April')}
-            >
-              April 2025
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
-              onClick={() => setSelectedMonth('March')}
-            >
-              March 2025
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
-              onClick={() => setSelectedMonth('February')}
-            >
-              February 2025
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
     </header>
   );
 };
