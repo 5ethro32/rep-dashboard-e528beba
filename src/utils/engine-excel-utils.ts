@@ -1,5 +1,4 @@
 import * as XLSX from 'xlsx';
-import { saveToIndexedDB, loadFromIndexedDB } from './storage-utils';
 
 // Define the types of the data
 interface RevaItem {
@@ -207,227 +206,74 @@ const generateColumnMapping = (headers: string[]) => {
   return mapping;
 };
 
-// Updated to use web workers and IndexedDB for better performance
 export const processEngineExcelFile = async (file: File): Promise<ProcessedEngineData> => {
   return new Promise((resolve, reject) => {
-    try {
-      // First check if we have a worker
-      if (window.Worker) {
-        const reader = new FileReader();
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
         
-        reader.onload = async (e) => {
-          try {
-            const arrayBuffer = e.target?.result as ArrayBuffer;
-            if (!arrayBuffer) {
-              throw new Error('Failed to read file');
-            }
-            
-            // Create a new worker
-            const worker = new Worker(new URL('../workers/excel-processing.worker.ts', import.meta.url), { type: 'module' });
-            
-            worker.onmessage = async (event) => {
-              const { type, progress, rawData, error, fileName, totalRows } = event.data;
-              
-              switch (type) {
-                case 'progress':
-                  // You can use this to update the UI with progress information
-                  // For example, with a central event system or a callback
-                  console.log(`Processing: ${progress}%`);
-                  // If you have access to the upload progress setter, you could call it here
-                  // setUploadProgress(progress);
-                  break;
-                
-                case 'error':
-                  worker.terminate();
-                  reject(new Error(error || 'Unknown error in worker'));
-                  break;
-                
-                case 'data':
-                  try {
-                    console.log(`Processing ${totalRows} rows from ${fileName}`);
-                    
-                    // Extract headers from first row
-                    const headers = Object.keys(rawData[0] as object);
-                    const columnMapping = generateColumnMapping(headers);
-                    
-                    console.log('Column mapping:', columnMapping);
-                    
-                    // Check for minimum required columns - removed usageRank from required fields
-                    const requiredFields = [
-                      'description', 'revaUsage', 'avgCost', 
-                      'nextCost', 'currentREVAPrice'
-                    ];
-                    
-                    const missingFields = requiredFields.filter(field => !columnMapping[field]);
-                    
-                    if (missingFields.length > 0) {
-                      const missingFieldsMessage = missingFields.map(field => {
-                        const variants = columnVariations[field as keyof typeof columnVariations].join(', ');
-                        return `${field} (looking for columns like: ${variants})`;
-                      }).join(', ');
-                      
-                      throw new Error(`Missing required columns: ${missingFieldsMessage}. Please ensure your file includes these fields or rename columns accordingly.`);
-                    }
-                    
-                    // Process in chunks to avoid UI blocking
-                    const chunkSize = 100; // Process 100 items at a time
-                    const chunks = [];
-                    
-                    for (let i = 0; i < rawData.length; i += chunkSize) {
-                      chunks.push(rawData.slice(i, i + chunkSize));
-                    }
-                    
-                    let processedChunks: any[] = [];
-                    let currentChunk = 0;
-                    
-                    const processNextChunk = async () => {
-                      if (currentChunk >= chunks.length) {
-                        // All chunks processed, finalize
-                        const transformedData = processedChunks.flat();
-                        
-                        // Process the data into required structure for the engine room
-                        const processedData = processRawData(transformedData, fileName);
-                        
-                        // Store the data in IndexedDB for persistence
-                        await saveToIndexedDB('engineRoom', 'engineRoomData', processedData);
-                        
-                        worker.terminate();
-                        resolve(processedData);
-                        return;
-                      }
-                      
-                      // Process this chunk
-                      const chunk = chunks[currentChunk];
-                      const transformedChunk = chunk.map((row: any) => 
-                        transformRowWithMapping(row, columnMapping)
-                      );
-                      
-                      processedChunks.push(transformedChunk);
-                      currentChunk++;
-                      
-                      // Update progress based on chunks
-                      const chunkProgress = 80 + (currentChunk / chunks.length) * 20;
-                      console.log(`Processing chunk ${currentChunk}/${chunks.length} - ${Math.round(chunkProgress)}%`);
-                      
-                      // Continue with next chunk in a non-blocking way
-                      setTimeout(processNextChunk, 0);
-                    };
-                    
-                    // Start processing chunks
-                    processNextChunk();
-                  } catch (error) {
-                    worker.terminate();
-                    reject(error);
-                  }
-                  break;
-              }
-            };
-            
-            // Start the worker to process the file
-            worker.postMessage({ 
-              action: 'process', 
-              data: new Uint8Array(arrayBuffer),
-              file: {
-                name: file.name,
-                size: file.size,
-                type: file.type
-              }
-            });
-            
-          } catch (error) {
-            console.error('Excel processing error:', error);
-            reject(new Error(error instanceof Error ? error.message : 'Invalid Excel file format. Please ensure your file follows the required structure.'));
-          }
-        };
-        
-        reader.onerror = () => {
-          reject(new Error('Error reading the file. Please try again.'));
-        };
-        
-        reader.readAsArrayBuffer(file);
-      } else {
-        // Fallback if web workers aren't supported
-        const reader = new FileReader();
-        
-        reader.onload = (e) => {
-          try {
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
-            const workbook = XLSX.read(data, { type: 'array' });
-            
-            // Get the first sheet
-            const sheetNames = workbook.SheetNames;
-            if (sheetNames.length === 0) {
-              throw new Error('Excel file has no sheets');
-            }
+        // Get the first sheet
+        const sheetNames = workbook.SheetNames;
+        if (sheetNames.length === 0) {
+          throw new Error('Excel file has no sheets');
+        }
 
-            // Extract raw data from the first sheet
-            const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
-            if (rawData.length === 0) {
-              throw new Error('Excel sheet is empty. Please upload a file with data.');
-            }
-            
-            console.log('Processing REVA file:', file.name);
-            
-            // Extract headers from first row
-            const headers = Object.keys(rawData[0] as object);
-            const columnMapping = generateColumnMapping(headers);
-            
-            console.log('Column mapping:', columnMapping);
-            
-            // Check for minimum required columns - removed usageRank from required fields
-            const requiredFields = [
-              'description', 'revaUsage', 'avgCost', 
-              'nextCost', 'currentREVAPrice'
-            ];
-            
-            const missingFields = requiredFields.filter(field => !columnMapping[field]);
-            
-            if (missingFields.length > 0) {
-              const missingFieldsMessage = missingFields.map(field => {
-                const variants = columnVariations[field as keyof typeof columnVariations].join(', ');
-                return `${field} (looking for columns like: ${variants})`;
-              }).join(', ');
-              
-              throw new Error(`Missing required columns: ${missingFieldsMessage}. Please ensure your file includes these fields or rename columns accordingly.`);
-            }
-            
-            // Process the data using the dynamic column mapping
-            const transformedData = rawData.map((row: any) => transformRowWithMapping(row, columnMapping));
-            
-            // Process the data into required structure for the engine room
-            const processedData = processRawData(transformedData, file.name);
-            
-            // Store the data in IndexedDB for persistence
-            saveToIndexedDB('engineRoom', 'engineRoomData', processedData)
-              .then(() => resolve(processedData))
-              .catch((dbError) => {
-                console.error('Error saving to IndexedDB, falling back to localStorage:', dbError);
-                // Fallback to localStorage if IndexedDB fails
-                try {
-                  localStorage.setItem('engineRoomData', JSON.stringify(processedData));
-                  resolve(processedData);
-                } catch (localStorageError) {
-                  console.error('Fatal storage error:', localStorageError);
-                  reject(new Error('Failed to store data. The dataset may be too large for your browser.'));
-                }
-              });
-            
-          } catch (error) {
-            console.error('Excel processing error:', error);
-            reject(new Error(error instanceof Error ? error.message : 'Invalid Excel file format. Please ensure your file follows the required structure.'));
-          }
-        };
+        // Extract raw data from the first sheet
+        const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
+        if (rawData.length === 0) {
+          throw new Error('Excel sheet is empty. Please upload a file with data.');
+        }
         
-        reader.onerror = () => {
-          reject(new Error('Error reading the file. Please try again.'));
-        };
+        console.log('Processing REVA file:', file.name);
+        console.log('Raw data headers:', Object.keys(rawData[0] as object));
         
-        reader.readAsArrayBuffer(file);
+        // Extract headers from first row
+        const headers = Object.keys(rawData[0] as object);
+        const columnMapping = generateColumnMapping(headers);
+        
+        console.log('Column mapping:', columnMapping);
+        
+        // Check for minimum required columns - removed usageRank from required fields
+        const requiredFields = [
+          'description', 'revaUsage', 'avgCost', 
+          'nextCost', 'currentREVAPrice'
+        ];
+        
+        const missingFields = requiredFields.filter(field => !columnMapping[field]);
+        
+        if (missingFields.length > 0) {
+          const missingFieldsMessage = missingFields.map(field => {
+            const variants = columnVariations[field as keyof typeof columnVariations].join(', ');
+            return `${field} (looking for columns like: ${variants})`;
+          }).join(', ');
+          
+          throw new Error(`Missing required columns: ${missingFieldsMessage}. Please ensure your file includes these fields or rename columns accordingly.`);
+        }
+        
+        // Process the data using the dynamic column mapping
+        const transformedData = rawData.map((row: any) => transformRowWithMapping(row, columnMapping));
+        
+        // Process the data into required structure for the engine room
+        const processedData = processRawData(transformedData, file.name);
+        
+        // Store the data in localStorage for persistence
+        localStorage.setItem('engineRoomData', JSON.stringify(processedData));
+        
+        resolve(processedData);
+      } catch (error) {
+        console.error('Excel processing error:', error);
+        reject(new Error(error instanceof Error ? error.message : 'Invalid Excel file format. Please ensure your file follows the required structure.'));
       }
-    } catch (error) {
-      console.error('General Excel processing error:', error);
-      reject(new Error('An unexpected error occurred. Please try again with a different file.'));
-    }
+    };
+    
+    reader.onerror = () => {
+      reject(new Error('Error reading the file. Please try again.'));
+    };
+    
+    reader.readAsArrayBuffer(file);
   });
 };
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
-import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown, RefreshCw } from 'lucide-react';
+import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -38,8 +38,7 @@ const EngineOperationsContent = () => {
     handleSaveChanges,
     handleSubmitForApproval,
     handleExport,
-    getPendingApprovalCount,
-    clearCache
+    getPendingApprovalCount
   } = useEngineRoom();
   
   // Add useEffect to clear localStorage on first load
@@ -57,8 +56,6 @@ const EngineOperationsContent = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
   const [activeTabFlagFilter, setActiveTabFlagFilter] = useState('all');
-  const [selectedChangeRationale, setSelectedChangeRationale] = useState<string>('');
-  const [uploadAttempted, setUploadAttempted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate metrics for the summary cards
@@ -142,12 +139,6 @@ const EngineOperationsContent = () => {
     return engineData.items.filter(item => item.workflowStatus === 'submitted' && item.priceModified);
   };
   
-  // Get changed items (items that have been modified)
-  const getChangedItems = () => {
-    if (!engineData?.items) return [];
-    return engineData.items.filter(item => item.priceModified);
-  };
-  
   // Get flagged items
   const getFlaggedItems = () => {
     if (!engineData?.items) return [];
@@ -174,7 +165,6 @@ const EngineOperationsContent = () => {
     e.stopPropagation();
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setUploadAttempted(true);
       handleFileUpload(e.dataTransfer.files[0]);
     }
   };
@@ -187,52 +177,15 @@ const EngineOperationsContent = () => {
   // Handler for file input change
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setUploadAttempted(true);
       // Clear any existing data before uploading new file
+      localStorage.removeItem('engineRoomData'); 
       handleFileUpload(e.target.files[0]);
     }
-  };
-
-  // Handle change rationale selection
-  const handleChangeRationale = (itemId: string, rationale: string) => {
-    if (!engineData) return;
-    
-    // Deep clone the data
-    const updatedData = JSON.parse(JSON.stringify(engineData));
-    
-    // Find and update the item
-    const foundItem = updatedData.items.find((i: any) => i.id === itemId);
-    if (foundItem) {
-      foundItem.changeRationale = rationale;
-      
-      // Update local storage and query cache
-      localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
-      // This would be better to do through the context, but for simplicity we'll do it directly
-      // in a real app this would be handled through a context method
-    }
-    
-    toast({
-      title: "Rationale updated",
-      description: `Updated change rationale for ${foundItem?.description || 'item'}`
-    });
   };
 
   if (!engineData) {
     return (
       <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">Engine Room Operations</h2>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={clearCache}
-            className="flex items-center gap-1"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Clear Cache
-          </Button>
-        </div>
-        
         <div 
           onDragOver={handleDragOver}
           onDrop={handleDrop}
@@ -271,20 +224,6 @@ const EngineOperationsContent = () => {
           )}
         </div>
         
-        {uploadAttempted && isUploading && uploadProgress === 0 && (
-          <Alert className="mt-4">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            <AlertDescription>
-              File upload appears to be stuck. Please try again with a smaller file or <button 
-                onClick={clearCache} 
-                className="underline font-medium"
-              >
-                clear the cache
-              </button> and reload the page.
-            </AlertDescription>
-          </Alert>
-        )}
-        
         {errorMessage && (
           <Alert variant="destructive" className="mt-4">
             <div className="flex items-start">
@@ -317,20 +256,6 @@ const EngineOperationsContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Header with title and clear cache button */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Engine Room Operations</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={clearCache}
-          className="flex items-center gap-1"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Clear Cache
-        </Button>
-      </div>
-      
       {/* Pricing actions card with upload and export buttons */}
       <div className="mb-6">
         <PricingActionsTabs
@@ -342,7 +267,7 @@ const EngineOperationsContent = () => {
           onReset={handleResetChanges}
           onExport={handleExport}
           onUpload={() => {
-            clearCache();
+            localStorage.removeItem('engineRoomData');
             window.location.reload();
           }}
           fileName={engineData.fileName || "REVA Pricing Data"}
@@ -423,10 +348,7 @@ const EngineOperationsContent = () => {
             Starred
             <Badge variant="secondary" className="bg-yellow-500 text-white rounded-full">{starredItems.size}</Badge>
           </TabsTrigger>
-          <TabsTrigger key="changed" value="changed" className="flex gap-2">
-            Changed
-            <Badge variant="secondary" className="bg-green-500 text-white rounded-full">{modifiedItems.size}</Badge>
-          </TabsTrigger>
+          <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all-items" className="space-y-4">
@@ -480,53 +402,12 @@ const EngineOperationsContent = () => {
           />
         </TabsContent>
         
-        <TabsContent value="changed" className="space-y-4">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold">Modified Prices</h3>
-            <p className="text-sm text-muted-foreground">Review and select a change rationale for each modified item</p>
-          </div>
-          
-          <EngineDataTable 
-            data={getChangedItems()} 
-            onShowPriceDetails={handleShowItemDetails}
-            onPriceChange={handlePriceChange}
-            onToggleStar={handleToggleStar}
-            starredItems={starredItems}
-            extraColumns={[
-              {
-                id: 'changeRationale',
-                header: 'Change Rationale',
-                cell: (row) => (
-                  <Select
-                    value={row.changeRationale || ''}
-                    onValueChange={(value) => handleChangeRationale(row.id, value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select reason" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PIP_ISSUE">PIP Issue</SelectItem>
-                      <SelectItem value="INCORRECT_NP">Incorrect NP</SelectItem>
-                      <SelectItem value="MARKET_DATA_HIGH">Market Data High</SelectItem>
-                      <SelectItem value="MARKET_DATA_LOW">Market Data Low</SelectItem>
-                      <SelectItem value="TCF">TCF</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )
-              },
-              {
-                id: 'changedBy',
-                header: 'Changed By',
-                cell: (row) => (
-                  <div className="text-sm">
-                    {row.changedBy || 'Current User'}
-                    <div className="text-xs text-muted-foreground">
-                      {row.changedDate ? new Date(row.changedDate).toLocaleString() : new Date().toLocaleString()}
-                    </div>
-                  </div>
-                )
-              }
-            ]}
+        <TabsContent value="configuration" className="space-y-4">
+          <ConfigurationPanel 
+            currentConfig={engineData.ruleConfig || {}} 
+            onConfigChange={(newConfig) => {
+              console.log("Updated rule config:", newConfig);
+            }}
           />
         </TabsContent>
       </Tabs>

@@ -7,7 +7,7 @@ const EngineRoom: React.FC = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    navigate('/engine-room/engine');
+    navigate('/engine-room/operations');
   }, [navigate]);
   
   return null;
