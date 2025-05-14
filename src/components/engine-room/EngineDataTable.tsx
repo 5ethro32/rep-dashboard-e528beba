@@ -16,16 +16,6 @@ import { formatPercentage as utilFormatPercentage } from '@/utils/formatting-uti
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-interface EngineDataTableProps {
-  data: any[];
-  onShowPriceDetails: (item: any) => void;
-  onPriceChange?: (item: any, newPrice: number) => void;
-  onToggleStar?: (itemId: string) => void;
-  starredItems?: Set<string>;
-  flagFilter?: string;
-  onFlagFilterChange?: (filter: string) => void;
-}
-
 // Define column configuration outside component to avoid recreation on each render
 const columns = [{
   field: 'description',
@@ -98,6 +88,37 @@ const columns = [{
   label: 'Rule',
   filterable: true
 }];
+
+// Define column width configuration to ensure alignment
+const columnWidths = {
+  description: 'w-[180px] min-w-[180px]',
+  inStock: 'w-[80px] min-w-[80px]',
+  revaUsage: 'w-[80px] min-w-[80px]',
+  usageRank: 'w-[80px] min-w-[80px]',
+  avgCost: 'w-[100px] min-w-[100px]',
+  nextCost: 'w-[100px] min-w-[100px]',
+  marketLow: 'w-[100px] min-w-[100px]',
+  trueMarketLow: 'w-[100px] min-w-[100px]',
+  currentREVAPrice: 'w-[120px] min-w-[120px]',
+  currentREVAMargin: 'w-[120px] min-w-[120px]',
+  proposedPrice: 'w-[120px] min-w-[120px]',
+  priceChangePercentage: 'w-[100px] min-w-[100px]',
+  proposedMargin: 'w-[120px] min-w-[120px]',
+  tmlPercentage: 'w-[100px] min-w-[100px]',
+  appliedRule: 'w-[80px] min-w-[80px]',
+  flags: 'w-[150px] min-w-[150px]',
+  actions: 'w-[100px] min-w-[100px]'
+};
+
+interface EngineDataTableProps {
+  data: any[];
+  onShowPriceDetails: (item: any) => void;
+  onPriceChange?: (item: any, newPrice: number) => void;
+  onToggleStar?: (itemId: string) => void;
+  starredItems?: Set<string>;
+  flagFilter?: string;
+  onFlagFilterChange?: (filter: string) => void;
+}
 
 const EngineDataTable: React.FC<EngineDataTableProps> = ({
   data,
@@ -927,15 +948,55 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
         <Table>
           <TableHeader>
             <TableRow>
-              {columns.map(column => (
-                <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
-                  {renderColumnHeader(column)}
-                </TableHead>
-              ))}
-              <TableHead className="bg-gray-900/70">
+              <TableHead key="description" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.description}`}>
+                {renderColumnHeader(columns[0])}
+              </TableHead>
+              <TableHead key="inStock" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.inStock}`}>
+                {renderColumnHeader(columns[1])}
+              </TableHead>
+              <TableHead key="revaUsage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.revaUsage}`}>
+                {renderColumnHeader(columns[2])}
+              </TableHead>
+              <TableHead key="usageRank" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.usageRank}`}>
+                {renderColumnHeader(columns[3])}
+              </TableHead>
+              <TableHead key="avgCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.avgCost}`}>
+                {renderColumnHeader(columns[4])}
+              </TableHead>
+              <TableHead key="nextCost" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.nextCost}`}>
+                {renderColumnHeader(columns[5])}
+              </TableHead>
+              <TableHead key="marketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.marketLow}`}>
+                {renderColumnHeader(columns[6])}
+              </TableHead>
+              <TableHead key="trueMarketLow" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.trueMarketLow}`}>
+                {renderColumnHeader(columns[7])}
+              </TableHead>
+              <TableHead key="currentREVAPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAPrice}`}>
+                {renderColumnHeader(columns[8])}
+              </TableHead>
+              <TableHead key="currentREVAMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.currentREVAMargin}`}>
+                {renderColumnHeader(columns[9])}
+              </TableHead>
+              <TableHead key="proposedPrice" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedPrice}`}>
+                {renderColumnHeader(columns[10])}
+              </TableHead>
+              <TableHead key="priceChangePercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.priceChangePercentage}`}>
+                {renderColumnHeader(columns[11])}
+              </TableHead>
+              <TableHead key="proposedMargin" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.proposedMargin}`}>
+                {renderColumnHeader(columns[12])}
+              </TableHead>
+              <TableHead key="tmlPercentage" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.tmlPercentage}`}>
+                {renderColumnHeader(columns[13])}
+              </TableHead>
+              <TableHead key="appliedRule" className={`cursor-pointer bg-gray-900/70 hover:bg-gray-900/90 ${columnWidths.appliedRule}`}>
+                {renderColumnHeader(columns[14])}
+              </TableHead>
+              <TableHead className={`bg-gray-900/70 ${columnWidths.flags}`}>
                 {renderFlagsColumnHeader()}
               </TableHead>
-              <TableHead className="bg-gray-900/70">Actions</TableHead>
+              <TableHead className={`bg-gray-900/70 ${columnWidths.actions}`}>Actions</TableHead>
             </TableRow>
           </TableHeader>
         </Table>
@@ -960,24 +1021,24 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                     key={index} 
                     className={`${item.noMarketPrice ? 'bg-blue-900/10' : ''} ${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
                   >
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.inStock}</TableCell>
-                    <TableCell>{item.revaUsage}</TableCell>
-                    <TableCell>{item.usageRank}</TableCell>
+                    <TableCell className={columnWidths.description}>{item.description}</TableCell>
+                    <TableCell className={columnWidths.inStock}>{item.inStock}</TableCell>
+                    <TableCell className={columnWidths.revaUsage}>{item.revaUsage}</TableCell>
+                    <TableCell className={columnWidths.usageRank}>{item.usageRank}</TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.avgCost}>
                       <CellDetailsPopover item={item} field="avgCost">
                         {formatCurrency(item.avgCost)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.nextCost}>
                       <CellDetailsPopover item={item} field="nextCost">
                         {formatNextBuyingPrice(item)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.marketLow}>
                       <CellDetailsPopover item={item} field="marketLow">
                         <div className="flex items-center gap-1">
                           {formatCurrency(item.marketLow, item.noMarketPrice)}
@@ -987,25 +1048,25 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.trueMarketLow}>
                       <CellDetailsPopover item={item} field="trueMarketLow">
                         {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.currentREVAPrice}>
                       <CellDetailsPopover item={item} field="currentREVAPrice">
                         <span className="font-medium">{formatCurrency(item.currentREVAPrice)}</span>
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.currentREVAMargin}>
                       <CellDetailsPopover item={item} field="currentREVAMargin">
                         {formatCurrentMargin(item.currentREVAMargin)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.proposedPrice}>
                       {/* Price editing */}
                       {bulkEditMode ? (
                         // Bulk edit mode - all cells show editor
@@ -1063,7 +1124,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       )}
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.priceChangePercentage}>
                       {priceChangePercentage !== 0 && (
                         <span className={priceChangePercentage > 0 ? "text-green-400" : "text-red-400"}>
                           {priceChangePercentage > 0 ? "+" : ""}{priceChangePercentage.toFixed(2)}%
@@ -1071,23 +1132,23 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       )}
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.proposedMargin}>
                       <CellDetailsPopover item={item} field="proposedMargin">
                         {formatPercentage(item.proposedMargin)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.tmlPercentage}>
                       <CellDetailsPopover item={item} field="tmlPercentage">
                         {formatTMLPercentage(item.tmlPercentage)}
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
+                    <TableCell className={columnWidths.appliedRule}>{formatRuleDisplay(item.appliedRule)}</TableCell>
                     
-                    <TableCell>{renderFlags(item)}</TableCell>
+                    <TableCell className={columnWidths.flags}>{renderFlags(item)}</TableCell>
                     
-                    <TableCell>
+                    <TableCell className={columnWidths.actions}>
                       <div className="flex items-center space-x-1">
                         <Button 
                           variant="ghost" 
