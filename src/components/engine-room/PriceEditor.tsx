@@ -6,14 +6,16 @@ import { Check, X, RotateCcw, AlertCircle } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface PriceEditorProps {
-  initialPrice: number;
-  currentPrice: number;
-  calculatedPrice: number;
-  cost: number;
+  initialPrice?: number;
+  currentPrice?: number;
+  calculatedPrice?: number;
+  cost?: number;
   onSave: (newPrice: number) => void;
   onCancel: () => void;
   compact?: boolean;
   autoSaveOnExit?: boolean; // Added to support auto-saving when exiting bulk edit
+  // New prop to support the EngineDataTable integration
+  item?: any;
 }
 
 const PriceEditor: React.FC<PriceEditorProps> = ({
@@ -24,32 +26,50 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   onSave,
   onCancel,
   compact = false,
-  autoSaveOnExit = false
+  autoSaveOnExit = false,
+  item
 }) => {
-  const [priceValue, setPriceValue] = useState<string>(initialPrice.toFixed(2));
+  // Handle case when used with item prop (for backward compatibility with EngineDataTable)
+  const effectiveInitialPrice = item ? 
+    (item.proposedPrice || item.currentREVAPrice || 0) : 
+    (initialPrice || 0);
+  
+  const effectiveCurrentPrice = item ? 
+    (item.currentREVAPrice || 0) : 
+    (currentPrice || 0);
+  
+  const effectiveCalculatedPrice = item ? 
+    (item.calculatedPrice || item.currentREVAPrice || 0) : 
+    (calculatedPrice || 0);
+  
+  const effectiveCost = item ? 
+    (item.avgCost || 0) : 
+    (cost || 0);
+
+  const [priceValue, setPriceValue] = useState<string>(effectiveInitialPrice.toFixed(2));
   const [margin, setMargin] = useState<number>(0);
   const [isValid, setIsValid] = useState<boolean>(true);
   
   // Calculate price change percentage
-  const priceChangePercent = calculatedPrice !== currentPrice ? 
-    ((calculatedPrice - currentPrice) / currentPrice) * 100 : 0;
+  const priceChangePercent = effectiveCalculatedPrice !== effectiveCurrentPrice ? 
+    ((effectiveCalculatedPrice - effectiveCurrentPrice) / effectiveCurrentPrice) * 100 : 0;
   
   // Determine if this is a price decrease
   const isPriceDecrease = priceChangePercent < 0;
     
   // Check for possible data issues where current price matches cost
-  const possibleDataIssue = Math.abs(currentPrice - cost) < 0.001 && currentPrice > 0;
+  const possibleDataIssue = Math.abs(effectiveCurrentPrice - effectiveCost) < 0.001 && effectiveCurrentPrice > 0;
   
   useEffect(() => {
     const numericPrice = parseFloat(priceValue);
     if (!isNaN(numericPrice) && numericPrice > 0) {
-      const calculatedMargin = (numericPrice - cost) / numericPrice;
+      const calculatedMargin = (numericPrice - effectiveCost) / numericPrice;
       setMargin(calculatedMargin * 100);
       setIsValid(true);
     } else {
       setIsValid(false);
     }
-  }, [priceValue, cost]);
+  }, [priceValue, effectiveCost]);
   
   useEffect(() => {
     // Show warning toast if current price matches next cost (possible data issue)
@@ -64,35 +84,39 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
 
   // Added effect to handle changes to initialPrice from parent
   useEffect(() => {
-    setPriceValue(initialPrice.toFixed(2));
-  }, [initialPrice]);
+    setPriceValue(effectiveInitialPrice.toFixed(2));
+  }, [effectiveInitialPrice]);
 
   // Handle component unmount with autoSaveOnExit
   useEffect(() => {
     return () => {
       if (autoSaveOnExit) {
         const numericPrice = parseFloat(priceValue);
-        if (isValid && numericPrice > 0 && numericPrice !== initialPrice) {
+        if (isValid && numericPrice > 0 && numericPrice !== effectiveInitialPrice) {
           console.log("Auto-saving price on exit:", numericPrice);
           onSave(numericPrice);
         }
       }
     };
-  }, [autoSaveOnExit, priceValue, isValid, initialPrice, onSave]);
+  }, [autoSaveOnExit, priceValue, isValid, effectiveInitialPrice, onSave]);
   
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPriceValue(e.target.value);
   };
   
   const handleReset = () => {
-    setPriceValue(calculatedPrice.toFixed(2));
+    setPriceValue(effectiveCalculatedPrice.toFixed(2));
   };
   
   const handleSave = () => {
     const numericPrice = parseFloat(priceValue);
     if (isValid && numericPrice > 0) {
-      // Ensure we're calling onSave with the parsed numeric value
-      onSave(numericPrice);
+      // Handle both direct usage and item-based usage
+      if (item) {
+        onSave(item, numericPrice);
+      } else {
+        onSave(numericPrice);
+      }
       // Toast notification moved to the parent component to prevent multiple notifications
     } else {
       toast({
@@ -173,14 +197,14 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       </div>
       
       <div className="flex justify-between items-center text-xs text-muted-foreground">
-        <span>Current: £{currentPrice.toFixed(2)}</span>
+        <span>Current: £{effectiveCurrentPrice.toFixed(2)}</span>
         <span className={getMarginClass()}>
           Margin: {isValid ? margin.toFixed(2) : "0.00"}%
         </span>
       </div>
       
       <div className="flex justify-between items-center text-xs text-muted-foreground">
-        <span>Calculated: £{calculatedPrice.toFixed(2)}</span>
+        <span>Calculated: £{effectiveCalculatedPrice.toFixed(2)}</span>
         <span className={getPriceChangeClass()}>
           Change: {priceChangePercent.toFixed(2)}%
         </span>

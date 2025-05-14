@@ -227,7 +227,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                 <TableCell className="text-right">
                   <CellDetailsPopover
                     label={`£${Number(item.avgCost).toFixed(2)}`}
-                    details={{
+                    content={{
                       "Average Cost": `£${Number(item.avgCost).toFixed(2)}`,
                       "Next Buy Price": item.nextBuyingPrice ? `£${Number(item.nextBuyingPrice).toFixed(2)}` : "N/A"
                     }}
@@ -236,7 +236,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                 <TableCell className="text-right">
                   <CellDetailsPopover
                     label={`£${Number(item.currentREVAPrice).toFixed(2)}`}
-                    details={{
+                    content={{
                       "REVA Price": `£${Number(item.currentREVAPrice).toFixed(2)}`,
                       "ETH": item.ETH ? `£${Number(item.ETH).toFixed(2)}` : "N/A",
                       "AAH": item.AAH ? `£${Number(item.AAH).toFixed(2)}` : "N/A",
@@ -252,7 +252,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                 <TableCell className="text-right">
                   <PriceEditor
                     item={item}
-                    onPriceChange={onPriceChange}
+                    onSave={onPriceChange}
+                    onCancel={() => {}}
+                    compact={true}
                   />
                 </TableCell>
                 <TableCell className={`text-right ${Number(item.proposedMargin) < 0 ? 'text-red-500' : ''}`}>
