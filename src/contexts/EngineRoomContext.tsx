@@ -200,10 +200,10 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const decreasePercent = ((foundItem.currentREVAPrice - newPrice) / foundItem.currentREVAPrice) * 100;
         if (decreasePercent > 5) {
           if (!foundItem.flags) foundItem.flags = [];
-          const existingDecreaseFlags = foundItem.flags.filter((f: string) => f.startsWith('PRICE_DECREASE_'));
+          const existingDecreaseFlags = foundItem.flags.filter(f => f.startsWith('PRICE_DECREASE_'));
           if (existingDecreaseFlags.length > 0) {
             // Remove existing price decrease flags
-            foundItem.flags = foundItem.flags.filter((f: string) => !f.startsWith('PRICE_DECREASE_'));
+            foundItem.flags = foundItem.flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
           }
           foundItem.flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
         }
@@ -222,7 +222,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         } else {
           // Remove HIGH_PRICE flag if it exists
           if (foundItem.flags) {
-            foundItem.flags = foundItem.flags.filter((f: string) => f !== 'HIGH_PRICE');
+            foundItem.flags = foundItem.flags.filter(f => f !== 'HIGH_PRICE');
           }
         }
       }
@@ -283,7 +283,6 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
     
     // Update the local storage and query cache
-    console.log('Saving updated data to localStorage and query cache');
     localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
     queryClient.setQueryData(['engineRoomData'], updatedData);
     
