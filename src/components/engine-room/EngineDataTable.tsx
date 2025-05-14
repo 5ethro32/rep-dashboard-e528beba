@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -924,21 +923,26 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderDataTable = () => {
     return (
       <div className="rounded-md border overflow-hidden">
+        {/* Table Header - outside the scroll area */}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map(column => (
+                <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
+                  {renderColumnHeader(column)}
+                </TableHead>
+              ))}
+              <TableHead className="bg-gray-900/70">
+                {renderFlagsColumnHeader()}
+              </TableHead>
+              <TableHead className="bg-gray-900/70">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+        </Table>
+        
+        {/* Table Body - inside scroll area */}
         <ScrollArea className="h-[600px]">
           <Table>
-            <TableHeader>
-              <TableRow>
-                {columns.map(column => (
-                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
-                    {renderColumnHeader(column)}
-                  </TableHead>
-                ))}
-                <TableHead className="bg-gray-900/70">
-                  {renderFlagsColumnHeader()}
-                </TableHead>
-                <TableHead className="bg-gray-900/70">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
             <TableBody>
               {paginatedData.length === 0 && (
                 <TableRow>
