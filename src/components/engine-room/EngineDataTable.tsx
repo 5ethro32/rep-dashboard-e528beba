@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -296,42 +297,57 @@ const EngineDataTable = ({
                   <TableCell>
                     <CellDetailsPopover 
                       value={formatCurrency(item.avgCost)} 
-                      details={`Average cost for ${item.description}`}
+                      items={[
+                        { label: "Average Cost", value: formatCurrency(item.avgCost) },
+                        { label: "Last Purchase", value: item.lastPurchase ? formatCurrency(item.lastPurchase) : 'N/A' }
+                      ]}
                     />
                   </TableCell>
                   <TableCell>
                     <CellDetailsPopover 
                       value={formatCurrency(item.nextBuyingPrice)} 
-                      details={`Next buying price for ${item.description}`}
+                      items={[
+                        { label: "Next Buying Price", value: formatCurrency(item.nextBuyingPrice) },
+                        { label: "Current Cost", value: item.avgCost ? formatCurrency(item.avgCost) : 'N/A' }
+                      ]}
                     />
                   </TableCell>
                   <TableCell>
                     <CellDetailsPopover 
                       value={formatCurrency(item.currentREVAPrice)} 
-                      details={`Current price for ${item.description}`}
+                      items={[
+                        { label: "Current Price", value: formatCurrency(item.currentREVAPrice) },
+                        { label: "Previous Price", value: item.previousPrice ? formatCurrency(item.previousPrice) : 'N/A' }
+                      ]}
                     />
                   </TableCell>
                   <TableCell>
                     {editingItemId === item.id ? (
                       <PriceEditor
-                        currentPrice={editingPrice || item.proposedPrice || item.currentREVAPrice}
+                        initialPrice={editingPrice || item.proposedPrice || item.currentREVAPrice}
+                        currentPrice={item.currentREVAPrice}
+                        calculatedPrice={item.proposedPrice || item.currentREVAPrice}
+                        cost={item.nextBuyingPrice || item.avgCost}
                         onSave={handlePriceSave}
                         onCancel={handlePriceCancel}
-                        onChange={setEditingPrice}
                       />
                     ) : (
                       <CellDetailsPopover 
                         value={formatCurrency(item.proposedPrice || item.currentREVAPrice)} 
-                        details={`Proposed price for ${item.description}`}
-                        highlight={item.priceModified}
+                        items={[
+                          { label: "Proposed Price", value: formatCurrency(item.proposedPrice || item.currentREVAPrice) },
+                          { label: "Current Price", value: formatCurrency(item.currentREVAPrice) }
+                        ]}
                       />
                     )}
                   </TableCell>
                   <TableCell>
                     <CellDetailsPopover 
                       value={formatPercentage(item.proposedMargin)} 
-                      details={`Proposed margin for ${item.description}`}
-                      highlight={item.marginModified}
+                      items={[
+                        { label: "Proposed Margin", value: formatPercentage(item.proposedMargin) },
+                        { label: "Current Margin", value: formatPercentage(item.currentREVAMargin) }
+                      ]}
                     />
                   </TableCell>
                   <TableCell>
