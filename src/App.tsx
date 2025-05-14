@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import NotFound from './pages/NotFound';
@@ -15,7 +15,7 @@ import EngineDashboard from './pages/engine-room/EngineDashboard';
 import RuleSimulator from './pages/engine-room/RuleSimulator';
 import ApprovalsDashboard from './pages/engine-room/ApprovalsDashboard';
 import EngineOperations from './pages/engine-room/EngineOperations';
-import Analyst from './pages/engine-room/Analyst'; // Import the new Analyst page
+import Analyst from './pages/engine-room/Analyst';
 
 import { EngineRoomProvider } from './contexts/EngineRoomContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -38,7 +38,11 @@ const App = () => {
           <Routes>
             <Route path="/auth" element={<Auth />} />
             
-            <Route element={<ProtectedRoute />}>
+            <Route element={
+              <ProtectedRoute>
+                <Outlet />
+              </ProtectedRoute>
+            }>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<RepPerformance />} />
                 <Route path="/rep-performance" element={<RepPerformance />} />
@@ -53,7 +57,7 @@ const App = () => {
                 <Route path="/engine-room/rule-simulator" element={<RuleSimulator />} />
                 <Route path="/engine-room/approvals" element={<ApprovalsDashboard />} />
                 <Route path="/engine-room/operations" element={<EngineOperations />} />
-                <Route path="/engine-room/analyst" element={<Analyst />} /> {/* Add the Analyst route */}
+                <Route path="/engine-room/analyst" element={<Analyst />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Route>

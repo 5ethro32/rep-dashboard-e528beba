@@ -1,235 +1,233 @@
 
-import React, { useMemo } from 'react';
-import { useEngineRoom } from '@/contexts/EngineRoomContext';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { ChartContainer } from '@/components/ui/chart';
-import LineChart from '@/components/LineChart';
-import MetricCard from '@/components/MetricCard';
-import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
-import { Grid2X2, TrendingUp, TrendingDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
+
+// Define the data structure
+interface CompetitorData {
+  name: string;
+  price: number;
+  marketShare: number;
+  priceChange: number;
+  historicalPrices: { month: string; price: number }[];
+}
+
+const competitors: CompetitorData[] = [
+  {
+    name: 'Your Company',
+    price: 78.50,
+    marketShare: 32,
+    priceChange: 2.3,
+    historicalPrices: [
+      { month: 'Jan', price: 74.20 },
+      { month: 'Feb', price: 75.10 },
+      { month: 'Mar', price: 76.50 },
+      { month: 'Apr', price: 77.20 },
+      { month: 'May', price: 78.50 }
+    ]
+  },
+  {
+    name: 'CompPharma',
+    price: 81.20,
+    marketShare: 28,
+    priceChange: 1.5,
+    historicalPrices: [
+      { month: 'Jan', price: 79.00 },
+      { month: 'Feb', price: 79.50 },
+      { month: 'Mar', price: 80.10 },
+      { month: 'Apr', price: 80.70 },
+      { month: 'May', price: 81.20 }
+    ]
+  },
+  {
+    name: 'MediCorp',
+    price: 72.80,
+    marketShare: 18,
+    priceChange: -0.8,
+    historicalPrices: [
+      { month: 'Jan', price: 74.00 },
+      { month: 'Feb', price: 73.70 },
+      { month: 'Mar', price: 73.20 },
+      { month: 'Apr', price: 73.00 },
+      { month: 'May', price: 72.80 }
+    ]
+  },
+  {
+    name: 'PharmaTech',
+    price: 85.30,
+    marketShare: 12,
+    priceChange: 3.1,
+    historicalPrices: [
+      { month: 'Jan', price: 81.00 },
+      { month: 'Feb', price: 82.40 },
+      { month: 'Mar', price: 83.50 },
+      { month: 'Apr', price: 84.20 },
+      { month: 'May', price: 85.30 }
+    ]
+  },
+  {
+    name: 'GeneriMed',
+    price: 64.90,
+    marketShare: 10,
+    priceChange: -1.2,
+    historicalPrices: [
+      { month: 'Jan', price: 66.50 },
+      { month: 'Feb', price: 66.00 },
+      { month: 'Mar', price: 65.50 },
+      { month: 'Apr', price: 65.20 },
+      { month: 'May', price: 64.90 }
+    ]
+  }
+];
+
+// Prepare data for price trend chart
+const prepareTrendData = (competitors: CompetitorData[]) => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+  return months.map(month => {
+    const dataPoint: Record<string, string | number> = { month };
+    
+    competitors.forEach(comp => {
+      const monthData = comp.historicalPrices.find(h => h.month === month);
+      if (monthData) {
+        dataPoint[comp.name] = monthData.price;
+      }
+    });
+    
+    return dataPoint;
+  });
+};
 
 const CompetitorAnalysis: React.FC = () => {
-  const { engineData } = useEngineRoom();
+  const [selectedTab, setSelectedTab] = useState('pricing');
+  const trendData = prepareTrendData(competitors);
 
-  // Calculated market stats
-  const marketStats = useMemo(() => {
-    if (!engineData?.items) {
-      return { aboveMarket: 0, atMarket: 0, belowMarket: 0, totalItems: 0, averagePriceDiff: 0 };
+  // Custom tooltip formatter for recharts
+  const formatTooltipValue = (value: number | string) => {
+    if (typeof value === 'number') {
+      return `$${value.toFixed(2)}`;
     }
-
-    let aboveMarket = 0;
-    let atMarket = 0;
-    let belowMarket = 0;
-    let totalPriceDiff = 0;
-    let validItems = 0;
-
-    engineData.items.forEach(item => {
-      if (!item.noMarketPrice && item.trueMarketLow > 0) {
-        validItems++;
-        const currentPrice = item.proposedPrice || item.currentREVAPrice;
-        const priceDiff = ((currentPrice - item.trueMarketLow) / item.trueMarketLow) * 100;
-        totalPriceDiff += priceDiff;
-
-        if (priceDiff < -5) {
-          belowMarket++;
-        } else if (priceDiff > 5) {
-          aboveMarket++;
-        } else {
-          atMarket++;
-        }
-      }
-    });
-
-    return {
-      aboveMarket,
-      atMarket,
-      belowMarket,
-      totalItems: validItems,
-      averagePriceDiff: validItems > 0 ? totalPriceDiff / validItems : 0
-    };
-  }, [engineData]);
-
-  // Category price gap data
-  const categoryPriceData = useMemo(() => {
-    if (!engineData?.items) return [];
-    
-    // Group items by category
-    const categories: Record<string, {count: number, totalGap: number}> = {};
-    
-    engineData.items.forEach(item => {
-      if (!item.noMarketPrice && item.trueMarketLow > 0 && item.category) {
-        const currentPrice = item.proposedPrice || item.currentREVAPrice;
-        const priceDiff = ((currentPrice - item.trueMarketLow) / item.trueMarketLow) * 100;
-        
-        if (!categories[item.category]) {
-          categories[item.category] = { count: 0, totalGap: 0 };
-        }
-        
-        categories[item.category].count++;
-        categories[item.category].totalGap += priceDiff;
-      }
-    });
-    
-    return Object.entries(categories)
-      .map(([name, data]) => ({
-        name,
-        value: data.count > 0 ? data.totalGap / data.count : 0,
-        count: data.count
-      }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
-  }, [engineData]);
-
-  // Market price trend data (simulated)
-  const priceTrendData = [
-    { name: 'Jan', value: 100, avg: 100 },
-    { name: 'Feb', value: 101.2, avg: 100.5 },
-    { name: 'Mar', value: 102.7, avg: 101.3 },
-    { name: 'Apr', value: 103.5, avg: 102.4 },
-    { name: 'May', value: 105.2, avg: 103.6 },
-    { name: 'Jun', value: 106.8, avg: 104.9 },
-  ];
+    return value;
+  };
 
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <MetricCard
-          title="Average Price Gap"
-          value={formatPercentage(marketStats.averagePriceDiff / 100)}
-          subtitle="Vs. competitive market prices"
-          icon={<Grid2X2 />}
-          change={marketStats.averagePriceDiff > 0 ? 
-            { value: "Above Market", type: "increase" } : 
-            { value: "Below Market", type: "decrease" }}
-        />
-        
-        <MetricCard
-          title="Above Market Pricing"
-          value={`${marketStats.aboveMarket} Products`}
-          subtitle={`${marketStats.totalItems > 0 ? ((marketStats.aboveMarket / marketStats.totalItems) * 100).toFixed(1) : 0}% of portfolio`}
-          icon={<TrendingUp />}
-        />
-        
-        <MetricCard
-          title="Below Market Pricing"
-          value={`${marketStats.belowMarket} Products`}
-          subtitle={`${marketStats.totalItems > 0 ? ((marketStats.belowMarket / marketStats.totalItems) * 100).toFixed(1) : 0}% of portfolio`}
-          icon={<TrendingDown />}
-        />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Category Price Gaps</CardTitle>
-            <CardDescription>Avg. price difference vs. market by category</CardDescription>
-          </CardHeader>
-          <CardContent>
+    <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-finance-red" />
+          Competitor Analysis
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
+          <TabsList className="bg-gray-800/50">
+            <TabsTrigger value="pricing">Pricing Comparison</TabsTrigger>
+            <TabsTrigger value="trends">Price Trends</TabsTrigger>
+            <TabsTrigger value="market">Market Share</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="pricing" className="pt-2">
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={categoryPriceData}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <XAxis 
-                    type="number" 
-                    domain={[-20, 20]}
-                    tickFormatter={(value) => `${value}%`}
-                    tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
-                  />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name"
-                    width={80}
-                    tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 12 }}
-                  />
+                <BarChart data={competitors} layout="vertical" margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis type="number" domain={['dataMin - 5', 'dataMax + 5']} tickFormatter={(value) => `$${value}`} />
+                  <YAxis dataKey="name" type="category" tick={{ fill: '#ccc' }} width={100} />
                   <Tooltip 
-                    formatter={(value) => [`${value.toFixed(1)}%`, 'Gap vs. Market']}
-                    contentStyle={{ backgroundColor: '#1A1F2C', borderColor: 'rgba(255,255,255,0.1)' }}
+                    formatter={(value: number | string) => {
+                      if (typeof value === 'number') {
+                        return [`$${value.toFixed(2)}`, 'Price'];
+                      }
+                      return [value, 'Price'];
+                    }}
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '6px' }} 
                   />
-                  <Bar 
-                    dataKey="value" 
-                    fill="#8884d8"
-                    minPointSize={2}
-                    barSize={20}
-                  >
-                    {categoryPriceData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.value >= 0 ? '#ef4444' : '#34d399'} 
-                      />
-                    ))}
-                    <LabelList 
-                      dataKey="value" 
-                      position="right"
-                      formatter={(value) => `${value.toFixed(1)}%`} 
-                      style={{ fill: 'rgba(255,255,255,0.8)', fontSize: 12 }}
-                    />
-                  </Bar>
+                  <Bar dataKey="price" fill="#ef4444" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Market Price Index Trend</CardTitle>
-            <CardDescription>Relative price index (base 100)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <LineChart
-                data={priceTrendData}
-                color="#ef4444"
-                avgColor="#60a5fa"
-                yAxisFormatter={(value) => value.toString()}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Competitor Price Intelligence</CardTitle>
-          <CardDescription>Insights from market data analysis</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="bg-gray-800/50 border-white/5">
-              <CardHeader className="p-4">
-                <CardTitle className="text-sm font-medium">Observed Market Patterns</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 text-sm text-white/80">
-                <ul className="space-y-2">
-                  <li>• Competitor A has increased prices by an average of 3.5% across their portfolio</li>
-                  <li>• Market prices for Category X have seen greater volatility than other categories</li>
-                  <li>• Seasonal pricing patterns indicate potential increases in Q3</li>
-                  <li>• New market entrants are pricing 8-12% below established products</li>
-                </ul>
-              </CardContent>
-            </Card>
             
-            <Card className="bg-gray-800/50 border-white/5">
-              <CardHeader className="p-4">
-                <CardTitle className="text-sm font-medium">Key Intelligence Findings</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 text-sm text-white/80">
-                <ul className="space-y-2">
-                  <li>• Price elasticity is decreasing in high-volume categories</li>
-                  <li>• Competitors appear to be testing higher margins on specialty products</li>
-                  <li>• Market leaders are maintaining stable prices despite cost increases</li>
-                  <li>• Significant price gaps emerging in growth segments</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </CardContent>
-      </Card>
-    </>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+              {competitors.map((comp) => (
+                <div key={comp.name} className={`p-3 rounded-lg ${comp.name === 'Your Company' ? 'bg-finance-red/20 border border-finance-red/30' : 'bg-gray-800/50'}`}>
+                  <div className="text-sm font-medium mb-1">{comp.name}</div>
+                  <div className="text-lg font-bold">${comp.price.toFixed(2)}</div>
+                  <div className={`text-xs flex items-center mt-1 ${comp.priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {comp.priceChange >= 0 ? (
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                    ) : (
+                      <ArrowDownRight className="h-3 w-3 mr-1" />
+                    )}
+                    {Math.abs(comp.priceChange).toFixed(1)}% {comp.priceChange >= 0 ? 'increase' : 'decrease'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="trends" className="pt-2">
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis dataKey="month" tick={{ fill: '#ccc' }} />
+                  <YAxis domain={['dataMin - 5', 'dataMax + 5']} tickFormatter={(value) => `$${value}`} tick={{ fill: '#ccc' }} />
+                  <Tooltip 
+                    formatter={(value: number | string) => {
+                      if (typeof value === 'number') {
+                        return [`$${value.toFixed(2)}`, ''];
+                      }
+                      return [value, ''];
+                    }}
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '6px' }} 
+                  />
+                  <Legend />
+                  {competitors.map((comp, index) => (
+                    <Line 
+                      key={comp.name}
+                      type="monotone" 
+                      dataKey={comp.name} 
+                      stroke={comp.name === 'Your Company' ? '#ef4444' : `hsl(${(index * 50) % 360}, 70%, 50%)`}
+                      strokeWidth={comp.name === 'Your Company' ? 3 : 2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="market" className="pt-2">
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={competitors} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis dataKey="name" tick={{ fill: '#ccc' }} />
+                  <YAxis tickFormatter={(value) => `${value}%`} tick={{ fill: '#ccc' }} />
+                  <Tooltip 
+                    formatter={(value: number | string) => {
+                      if (typeof value === 'number') {
+                        return [`${value.toFixed(1)}%`, 'Market Share'];
+                      }
+                      return [value, 'Market Share'];
+                    }}
+                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '6px' }} 
+                  />
+                  <Bar 
+                    dataKey="marketShare" 
+                    fill="#ef4444" 
+                    radius={[4, 4, 0, 0]} 
+                    fillOpacity={(data: any) => data.name === 'Your Company' ? 1 : 0.6}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
