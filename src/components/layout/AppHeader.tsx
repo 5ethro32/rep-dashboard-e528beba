@@ -16,7 +16,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   NavigationMenuLink
-} from '@/components/ui/navigation-menu';
+} from "@/components/ui/navigation-menu";
 import {
   Collapsible,
   CollapsibleContent,
@@ -70,7 +70,7 @@ const AppHeader = ({
       case '/my-performance':
         return isMobile ? 'My Dashboard' : 'My Dashboard';
       case '/engine-room/dashboard':
-        return isMobile ? 'Engine Dashboard' : 'Engine Room / Dashboard';
+        return isMobile ? 'Engine' : 'Engine Room / Dashboard';
       case '/engine-room/engine':
         return isMobile ? 'Engine' : 'Engine Room / Engine';
       case '/engine-room/approvals':
