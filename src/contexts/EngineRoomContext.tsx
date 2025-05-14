@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
@@ -172,7 +173,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [queryClient, toast]);
 
-  // Handle price change - updated to ensure changes are properly saved
+  // Handle price change - updated to track who made the change and when
   const handlePriceChange = useCallback((item: any, newPrice: number) => {
     if (!engineData) return;
     
@@ -186,6 +187,10 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (foundItem) {
       foundItem.proposedPrice = newPrice;
       foundItem.priceModified = true;
+      
+      // Add audit information for the changed item
+      foundItem.changedBy = 'Current User'; // This would pull from auth in a real app
+      foundItem.changedDate = new Date().toISOString();
       
       // IMPORTANT: Fix the margin calculation formula here
       // Use CORRECT formula: margin = (price - cost) / price

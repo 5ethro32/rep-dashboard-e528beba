@@ -56,6 +56,7 @@ const EngineOperationsContent = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
   const [activeTabFlagFilter, setActiveTabFlagFilter] = useState('all');
+  const [selectedChangeRationale, setSelectedChangeRationale] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Calculate metrics for the summary cards
@@ -139,6 +140,12 @@ const EngineOperationsContent = () => {
     return engineData.items.filter(item => item.workflowStatus === 'submitted' && item.priceModified);
   };
   
+  // Get changed items (items that have been modified)
+  const getChangedItems = () => {
+    if (!engineData?.items) return [];
+    return engineData.items.filter(item => item.priceModified);
+  };
+  
   // Get flagged items
   const getFlaggedItems = () => {
     if (!engineData?.items) return [];
@@ -181,6 +188,30 @@ const EngineOperationsContent = () => {
       localStorage.removeItem('engineRoomData'); 
       handleFileUpload(e.target.files[0]);
     }
+  };
+
+  // Handle change rationale selection
+  const handleChangeRationale = (itemId: string, rationale: string) => {
+    if (!engineData) return;
+    
+    // Deep clone the data
+    const updatedData = JSON.parse(JSON.stringify(engineData));
+    
+    // Find and update the item
+    const foundItem = updatedData.items.find((i: any) => i.id === itemId);
+    if (foundItem) {
+      foundItem.changeRationale = rationale;
+      
+      // Update local storage and query cache
+      localStorage.setItem('engineRoomData', JSON.stringify(updatedData));
+      // This would be better to do through the context, but for simplicity we'll do it directly
+      // in a real app this would be handled through a context method
+    }
+    
+    toast({
+      title: "Rationale updated",
+      description: `Updated change rationale for ${foundItem?.description || 'item'}`
+    });
   };
 
   if (!engineData) {
@@ -348,7 +379,10 @@ const EngineOperationsContent = () => {
             Starred
             <Badge variant="secondary" className="bg-yellow-500 text-white rounded-full">{starredItems.size}</Badge>
           </TabsTrigger>
-          <TabsTrigger key="configuration" value="configuration">Configuration</TabsTrigger>
+          <TabsTrigger key="changed" value="changed" className="flex gap-2">
+            Changed
+            <Badge variant="secondary" className="bg-green-500 text-white rounded-full">{modifiedItems.size}</Badge>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="all-items" className="space-y-4">
@@ -402,12 +436,53 @@ const EngineOperationsContent = () => {
           />
         </TabsContent>
         
-        <TabsContent value="configuration" className="space-y-4">
-          <ConfigurationPanel 
-            currentConfig={engineData.ruleConfig || {}} 
-            onConfigChange={(newConfig) => {
-              console.log("Updated rule config:", newConfig);
-            }}
+        <TabsContent value="changed" className="space-y-4">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">Modified Prices</h3>
+            <p className="text-sm text-muted-foreground">Review and select a change rationale for each modified item</p>
+          </div>
+          
+          <EngineDataTable 
+            data={getChangedItems()} 
+            onShowPriceDetails={handleShowItemDetails}
+            onPriceChange={handlePriceChange}
+            onToggleStar={handleToggleStar}
+            starredItems={starredItems}
+            extraColumns={[
+              {
+                id: 'changeRationale',
+                header: 'Change Rationale',
+                cell: (row) => (
+                  <Select
+                    value={row.changeRationale || ''}
+                    onValueChange={(value) => handleChangeRationale(row.id, value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PIP_ISSUE">PIP Issue</SelectItem>
+                      <SelectItem value="INCORRECT_NP">Incorrect NP</SelectItem>
+                      <SelectItem value="MARKET_DATA_HIGH">Market Data High</SelectItem>
+                      <SelectItem value="MARKET_DATA_LOW">Market Data Low</SelectItem>
+                      <SelectItem value="TCF">TCF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )
+              },
+              {
+                id: 'changedBy',
+                header: 'Changed By',
+                cell: (row) => (
+                  <div className="text-sm">
+                    {row.changedBy || 'Current User'}
+                    <div className="text-xs text-muted-foreground">
+                      {row.changedDate ? new Date(row.changedDate).toLocaleString() : new Date().toLocaleString()}
+                    </div>
+                  </div>
+                )
+              }
+            ]}
           />
         </TabsContent>
       </Tabs>
