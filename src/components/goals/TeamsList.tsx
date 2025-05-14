@@ -24,8 +24,13 @@ const TeamsList = ({ teams, onSelectTeam }: TeamsListProps) => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [memberEmail, setMemberEmail] = useState('');
 
-  // Fix the infinite type instantiation by using a type annotation for the entire mutation object
-  const addMemberMutation = useMutation<void, Error, void, unknown>({
+  // Fix the infinite type instantiation by fully specifying the generic types
+  const addMemberMutation = useMutation<
+    void,       // TData - return type of mutationFn
+    Error,      // TError - error type
+    void,       // TVariables - argument type to mutationFn 
+    unknown     // TContext - context used for the onMutate
+  >({
     mutationFn: async () => {
       if (!selectedTeam) return;
       
