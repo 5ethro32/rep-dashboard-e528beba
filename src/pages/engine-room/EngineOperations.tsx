@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { UploadCloud, FileText, Download, Filter, Star, Package, Info, AlertTriangle, TrendingUp, Percent, DollarSign, BarChart2, ShoppingCart, Tag, TrendingDown } from 'lucide-react';
@@ -117,7 +118,7 @@ const EngineOperationsContent = () => {
   
   // Enhanced price change handler with toast notification
   const handleItemPriceChange = (item: any, newPrice: number) => {
-    if (onPriceChange) {
+    if (handlePriceChange) {
       // Only trigger change if the price is actually different
       if (newPrice !== item.proposedPrice) {
         handlePriceChange(item, newPrice);
