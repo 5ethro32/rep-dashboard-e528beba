@@ -2,19 +2,47 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useEffect, useRef } from "react"
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm table-fixed", className)}
-      {...props}
-    />
-  </div>
-))
+  React.HTMLAttributes<HTMLTableElement> & { 
+    headerRef?: React.RefObject<HTMLDivElement>;
+    bodyRef?: React.RefObject<HTMLDivElement>;
+  }
+>(({ className, headerRef, bodyRef, ...props }, ref) => {
+  // Effect to sync horizontal scrolling between header and body
+  useEffect(() => {
+    if (headerRef?.current && bodyRef?.current) {
+      const headerElement = headerRef.current;
+      const bodyElement = bodyRef.current;
+
+      const handleBodyScroll = () => {
+        if (headerElement && bodyElement) {
+          headerElement.scrollLeft = bodyElement.scrollLeft;
+        }
+      };
+
+      // Add scroll event listener to the body container
+      bodyElement.addEventListener('scroll', handleBodyScroll);
+      
+      // Clean up
+      return () => {
+        bodyElement.removeEventListener('scroll', handleBodyScroll);
+      };
+    }
+  }, [headerRef, bodyRef]);
+
+  return (
+    <div className="w-full overflow-auto">
+      <table
+        ref={ref}
+        className={cn("w-full caption-bottom text-sm table-fixed", className)}
+        {...props}
+      />
+    </div>
+  )
+})
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<
