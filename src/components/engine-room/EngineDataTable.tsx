@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -924,19 +923,19 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderDataTable = () => {
     return (
       <div className="rounded-md border overflow-hidden">
-        <ScrollArea className="h-[600px]">
+        <div className="h-[600px] overflow-y-auto relative">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-gray-900/95 backdrop-blur-sm">
               <TableRow>
                 {columns.map(column => (
-                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
+                  <TableHead key={column.field} className="cursor-pointer bg-gray-900/95 sticky top-0 z-30 hover:bg-gray-900/90">
                     {renderColumnHeader(column)}
                   </TableHead>
                 ))}
-                <TableHead className="bg-gray-900/70">
+                <TableHead className="bg-gray-900/95 sticky top-0 z-30">
                   {renderFlagsColumnHeader()}
                 </TableHead>
-                <TableHead className="bg-gray-900/70">Actions</TableHead>
+                <TableHead className="bg-gray-900/95 sticky top-0 z-30">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1128,7 +1127,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
               })}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
       </div>
     );
   };
