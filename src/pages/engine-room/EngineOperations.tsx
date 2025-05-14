@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { 
@@ -443,6 +444,8 @@ const EngineOperationsContent = () => {
                             <p className="font-medium">{item.description}</p>
                             <p className="text-sm text-muted-foreground">
                               Price changed from £{item.currentREVAPrice?.toFixed(2)} to £{item.proposedPrice?.toFixed(2)}
+                              {item.submittedBy && <span> by {item.submittedBy}</span>}
+                              {item.submissionDate && <span> on {new Date(item.submissionDate).toLocaleDateString()}</span>}
                             </p>
                           </div>
                           <Badge variant={item.proposedPrice > item.currentREVAPrice ? "default" : "destructive"}>
@@ -459,34 +462,49 @@ const EngineOperationsContent = () => {
               
               <div>
                 <h3 className="font-medium text-md mb-2">Team Activity</h3>
-                <div className="border rounded-md">
-                  <div className="grid grid-cols-4 gap-4 p-3 border-b bg-muted/50 font-medium text-sm">
-                    <div>User</div>
-                    <div>Action</div>
-                    <div>Items</div>
-                    <div>Date</div>
-                  </div>
-                  <div className="divide-y">
-                    <div className="grid grid-cols-4 gap-4 p-3 text-sm">
-                      <div>John Smith</div>
-                      <div>Price Updates</div>
-                      <div>23 items</div>
-                      <div>May 12, 2025</div>
+                {engineData && engineData.changeHistory && engineData.changeHistory.length > 0 ? (
+                  <div className="border rounded-md">
+                    <div className="grid grid-cols-4 gap-4 p-3 border-b bg-muted/50 font-medium text-sm">
+                      <div>User</div>
+                      <div>Action</div>
+                      <div>Items</div>
+                      <div>Date</div>
                     </div>
-                    <div className="grid grid-cols-4 gap-4 p-3 text-sm">
-                      <div>Sarah Johnson</div>
-                      <div>Approvals</div>
-                      <div>15 items</div>
-                      <div>May 10, 2025</div>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4 p-3 text-sm">
-                      <div>Mike Davies</div>
-                      <div>Rule Changes</div>
-                      <div>2 rules</div>
-                      <div>May 8, 2025</div>
+                    <div className="divide-y">
+                      {engineData.changeHistory.map((change, idx) => (
+                        <div key={idx} className="grid grid-cols-4 gap-4 p-3 text-sm">
+                          <div>{change.user || "Unknown user"}</div>
+                          <div>{change.action || "Price Updates"}</div>
+                          <div>{change.itemCount || 0} items</div>
+                          <div>{change.date ? new Date(change.date).toLocaleDateString() : "Unknown date"}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="border rounded-md">
+                    <div className="grid grid-cols-4 gap-4 p-3 border-b bg-muted/50 font-medium text-sm">
+                      <div>User</div>
+                      <div>Action</div>
+                      <div>Items</div>
+                      <div>Date</div>
+                    </div>
+                    <div className="divide-y">
+                      {engineData && engineData.items && engineData.items.filter(item => item.priceModified).length > 0 ? (
+                        <div className="grid grid-cols-4 gap-4 p-3 text-sm">
+                          <div>{engineData.currentUser || "Current User"}</div>
+                          <div>Price Updates</div>
+                          <div>{engineData.items.filter(item => item.priceModified).length} items</div>
+                          <div>{new Date().toLocaleDateString()}</div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-4 gap-4 p-3 text-sm">
+                          <div colSpan={4} className="text-center text-muted-foreground">No team activity recorded</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground mt-2">
                   This view shows all colleague activity related to pricing changes
                 </p>
