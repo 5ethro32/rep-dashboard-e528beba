@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -11,30 +10,17 @@ interface RevaMetricsChartProps {
 // Define the default rule config for our chart simulations
 const defaultRuleConfig: RuleConfig = {
   rule1: {
+    marketLowUplift: 3, // Standard 3% uplift for ML
+    costMarkup: 12, // Standard 12% markup for cost
     marginCaps: {
       group1_2: 10, // 10% margin cap for groups 1-2
       group3_4: 20, // 20% margin cap for groups 3-4
       group5_6: 30, // 30% margin cap for groups 5-6
-    },
-    markups: {
-      rule1a: {
-        group1_2: 0, // ML + 0%
-        group3_4: 1, // ML + 1%
-        group5_6: 2, // ML + 2%
-      },
-      rule1b: {
-        group1_2: 3, // ML + 3%
-        group3_4: 4, // ML + 4%
-        group5_6: 5, // ML + 5%
-      },
-    },
+    }
   },
   rule2: {
-    markups: {
-      group1_2: 12, // Cost + 12%
-      group3_4: 13, // Cost + 13%
-      group5_6: 14, // Cost + 14%
-    },
+    marketLowUplift: 3, // Standard 3% uplift for ML
+    costMarkup: 12, // Standard 12% markup for cost
   },
   globalMarginFloor: 5, // 5% global margin floor
 };
