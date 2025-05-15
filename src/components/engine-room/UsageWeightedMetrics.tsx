@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import MetricCard from '@/components/MetricCard';
@@ -18,6 +18,14 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
 }) => {
   // Use the centralized calculation function
   const metrics = calculateUsageWeightedMetrics(data);
+
+  useEffect(() => {
+    console.log('UsageWeightedMetrics: Received metrics', {
+      weightedMargin: metrics.weightedMargin,
+      proposedWeightedMargin: metrics.proposedWeightedMargin,
+      marginImprovement: metrics.marginImprovement
+    });
+  }, [metrics]);
 
   // Define chart colors to match the homepage style - red theme
   const brandColors = [
@@ -42,14 +50,14 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   const marginChangePrefix = hasMarginImprovement ? '+' : '';
   
   // Calculate revenue improvement (if proposed is available)
-  const revenueImprovement = showProposed ? 
+  const revenueImprovement = showProposed && metrics.totalRevenue > 0 ? 
     ((metrics.proposedRevenue - metrics.totalRevenue) / metrics.totalRevenue) * 100 : 0;
   const hasRevenueImprovement = revenueImprovement > 0;
   const revenueChangeClass = hasRevenueImprovement ? 'text-green-400' : 'text-red-400';
   const revenueChangePrefix = hasRevenueImprovement ? '+' : '';
   
   // Calculate profit improvement (if proposed is available)
-  const profitImprovement = showProposed ? 
+  const profitImprovement = showProposed && metrics.totalProfit > 0 ? 
     ((metrics.proposedProfit - metrics.totalProfit) / metrics.totalProfit) * 100 : 0;
   const hasProfitImprovement = profitImprovement > 0;
   const profitChangeClass = hasProfitImprovement ? 'text-green-400' : 'text-red-400';
@@ -109,3 +117,4 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
 };
 
 export default UsageWeightedMetrics;
+

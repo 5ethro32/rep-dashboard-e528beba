@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -160,9 +161,19 @@ const EngineDashboardContent = () => {
   // Get usage-weighted metrics with the correct calculation method
   const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
 
+  useEffect(() => {
+    console.log('EngineDashboard: usageMetrics calculated', {
+      weightedMargin: usageMetrics.weightedMargin,
+      proposedWeightedMargin: usageMetrics.proposedWeightedMargin,
+      marginImprovement: usageMetrics.marginImprovement
+    });
+  }, [usageMetrics]);
+
   // Calculate revenue and profit improvements for the metric cards
-  const revenueImprovement = usageMetrics.proposedRevenue > 0 && usageMetrics.totalRevenue > 0 ? (usageMetrics.proposedRevenue - usageMetrics.totalRevenue) / usageMetrics.totalRevenue * 100 : 0;
-  const profitImprovement = usageMetrics.proposedProfit > 0 && usageMetrics.totalProfit > 0 ? (usageMetrics.proposedProfit - usageMetrics.totalProfit) / usageMetrics.totalProfit * 100 : 0;
+  const revenueImprovement = usageMetrics.proposedRevenue > 0 && usageMetrics.totalRevenue > 0 ? 
+    (usageMetrics.proposedRevenue - usageMetrics.totalRevenue) / usageMetrics.totalRevenue * 100 : 0;
+  const profitImprovement = usageMetrics.proposedProfit > 0 && usageMetrics.totalProfit > 0 ? 
+    (usageMetrics.proposedProfit - usageMetrics.totalProfit) / usageMetrics.totalProfit * 100 : 0;
 
   // Log the calculated metrics for debugging
   console.log('EngineDashboard: Calculated usage-weighted metrics:', {
@@ -233,3 +244,4 @@ const EngineDashboard = () => <EngineRoomProvider>
     <EngineDashboardContent />
   </EngineRoomProvider>;
 export default EngineDashboard;
+

@@ -7,6 +7,7 @@ const EngineRoom: React.FC = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
+    console.log('EngineRoom: Redirecting to engine-room/operations');
     navigate('/engine-room/operations');
   }, [navigate]);
   
@@ -14,3 +15,4 @@ const EngineRoom: React.FC = () => {
 };
 
 export default EngineRoom;
+
