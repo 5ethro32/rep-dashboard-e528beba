@@ -116,8 +116,9 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
         console.log(`Zero cost item with upward trend - taking MAX: ${newPrice} (${ruleApplied})`);
       }
       
-      // FAILSAFE: Ensure we never return zero price when we have a market price
-      if (newPrice <= 0 && marketLow > 0) {
+      // CRITICAL FAILSAFE: Ensure we never return zero price when we have a market price
+      // If we somehow still have zero price, use the market price directly with minimum markup
+      if (newPrice <= 0) {
         newPrice = marketLow * 1.05; // Default 5% markup as absolute failsafe
         ruleApplied += '_failsafe';
         console.log(`FAILSAFE activated - zero price prevented, using: ${newPrice}`);
