@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -924,9 +923,9 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderDataTable = () => {
     return (
       <div className="rounded-md border overflow-hidden">
-        <ScrollArea className="h-[600px]">
+        <div className="h-[600px] overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-30">
               <TableRow>
                 {columns.map(column => (
                   <TableHead key={column.field} className="cursor-pointer bg-gray-900/70 hover:bg-gray-900/90">
@@ -1128,7 +1127,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
               })}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
       </div>
     );
   };
