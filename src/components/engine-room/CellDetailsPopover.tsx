@@ -1,6 +1,6 @@
 import React from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { formatCurrency, formatPercentage, formatMarketPrice } from '@/utils/formatting-utils';
+import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
 
 export interface CellDetailItem {
   label: string;
