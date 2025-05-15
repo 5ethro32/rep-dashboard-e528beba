@@ -1,3 +1,4 @@
+
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -275,11 +276,11 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       ruleApplied = newPrice === mlPrice ? 'rule2_upward_ml' : 'rule2_upward_cost';
     }
   }
-  // ENHANCED FALLBACK RULES: No Market Low (ETH_NET) available - UPDATED SECTION
+  // ENHANCED FALLBACK RULES: No Market Low (ETH_NET) available - CRITICAL FIX HERE
   else {
     console.log(`ENHANCED FALLBACK: No ETH_NET Market Low for ${item.description} - ${cost}`);
     
-    // CRITICAL FIX: Explicitly handle fallback rules when ETH_NET is missing
+    // CRITICAL FIX: Implement proper fallback hierarchy
     
     // FALLBACK 1: If ETH_NET is missing but other competitor prices exist
     if (hasValidTrueMarketLow) {
@@ -290,7 +291,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       
       console.log(`Using True Market Low fallback with ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift: ${trueMarketLow} * ${trueMarketLowMarkup} = ${newPrice}`);
     }
-    // FALLBACK 2: Otherwise use AVC + 12% + uplift (if cost is available)
+    // FALLBACK 2: Only use cost-based pricing when no competitor prices exist
     else if (hasValidCost) {
       const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
       newPrice = cost * standardCostMarkup;

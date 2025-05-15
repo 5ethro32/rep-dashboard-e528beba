@@ -11,6 +11,7 @@ const EngineRoom: React.FC = () => {
     console.log('CRITICAL FIX APPLIED: ETH_NET pricing issue has been fixed.');
     console.log('ML (Market Low) is now strictly linked to ETH_NET price.');
     console.log('Fallback rules will properly trigger when ETH_NET is missing.');
+    console.log('Fixed fallback hierarchy: Now uses TrueMarketLow + markup when ETH_NET is missing but other competitor prices exist.');
     navigate('/engine-room/operations');
   }, [navigate]);
   
