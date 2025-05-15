@@ -1,4 +1,3 @@
-
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -39,7 +38,7 @@ const determineUsageGroup = (usageRank: number) => {
   return 'group5_6';
 };
 
-// Apply pricing rules to calculate a new price - Updated to match engine-excel-utils.ts logic
+// Apply pricing rules to calculate a new price - Updated to handle zero cost edge case
 export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Extract needed values
   const cost = Math.max(0, Number(item.avgCost) || 0);
@@ -61,12 +60,29 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   let newPrice = 0;
   let ruleApplied = 'none';
   
+  // Special handling for zero cost items
+  const isZeroCost = cost === 0;
+  
   // Apply rules based on cost vs. market price relationship
   if (!noMarketPrice) {
     // We have a market price to work with
     
+    // Special case for zero cost items - always use market-based pricing
+    if (isZeroCost) {
+      if (isDownwardTrend) {
+        // For downward trend with zero cost - use Market Low with appropriate markup (Rule 1a)
+        const markup = 1 + (ruleConfig.rule1.markups.rule1a[groupKey] / 100);
+        newPrice = marketLow * markup;
+        ruleApplied = 'rule1a_zero_cost';
+      } else {
+        // For upward trend with zero cost - use Market Low with appropriate markup (Rule 1b)
+        const markup = 1 + (ruleConfig.rule1.markups.rule1b[groupKey] / 100);
+        newPrice = marketLow * markup;
+        ruleApplied = 'rule1b_zero_cost';
+      }
+    }
     // Rule 1: AvgCost >= Market Low
-    if (cost >= marketLow) {
+    else if (cost >= marketLow) {
       // Apply Rule 1a or Rule 1b based on market trend
       if (isDownwardTrend) {
         // Rule 1a - Downward Trend
@@ -138,11 +154,25 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       }
     }
   } else {
-    // No market price - use cost-based pricing directly
-    const costMarkup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
-    
-    newPrice = cost * costMarkup;
-    ruleApplied = 'cost_based_no_market';
+    // No market price - use cost-based pricing directly or handle zero cost
+    if (isZeroCost) {
+      // For zero cost with no market price, use next buying price if available
+      if (item.nextCost > 0) {
+        const costMarkup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
+        newPrice = item.nextCost * costMarkup;
+        ruleApplied = 'next_cost_based_zero_cost';
+      } else {
+        // If no market price and no next cost, default to a base price
+        // This ensures we don't end up with a zero price
+        newPrice = 1.00; // Default base price of £1.00
+        ruleApplied = 'default_base_price_zero_cost';
+      }
+    } else {
+      // Standard cost-based pricing for non-zero cost items
+      const costMarkup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
+      newPrice = cost * costMarkup;
+      ruleApplied = 'cost_based_no_market';
+    }
   }
   
   // Apply margin caps based on usage group, but ONLY for items with avgCost <= 1.00
@@ -151,7 +181,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   
   // Cap the price based on maximum allowed margin, but only if cost is £1.00 or less
   let marginCapApplied = false;
-  if (cost <= 1.00 && newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
+  if (cost <= 1.00 && cost > 0 && newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
     newPrice = maxPriceByMarginCap;
     marginCapApplied = true;
     ruleApplied += '_capped';
