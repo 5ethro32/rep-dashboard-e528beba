@@ -81,20 +81,46 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     if (!noMarketPrice && marketLow > 0) {
       console.log(`Market price available for zero cost item: ${marketLow}`);
       
-      // Use rule1a/rule1b markups based on trend, but applied to market low directly
-      const rule1aMarkup = 1 + (ruleConfig.rule1.markups.rule1a[groupKey] / 100);
-      const rule1bMarkup = 1 + (ruleConfig.rule1.markups.rule1b[groupKey] / 100);
+      // Get the specific markup values from the config for both rule1a and rule1b
+      const rule1aMarkupPercent = ruleConfig.rule1.markups.rule1a[groupKey];
+      const rule1bMarkupPercent = ruleConfig.rule1.markups.rule1b[groupKey];
       
+      const rule1aMarkup = 1 + (rule1aMarkupPercent / 100);
+      const rule1bMarkup = 1 + (rule1bMarkupPercent / 100);
+      
+      console.log(`Rule1a markup: ${rule1aMarkupPercent}% (${rule1aMarkup})`);
+      console.log(`Rule1b markup: ${rule1bMarkupPercent}% (${rule1bMarkup})`);
+      
+      // For zero cost items with market price - ALWAYS USE RULE 1B logic for upward trends
       if (isDownwardTrend) {
         // Use Market Low with rule1a markup
         newPrice = marketLow * rule1aMarkup;
         ruleApplied = 'zero_cost_market_rule1a';
         console.log(`Zero cost item with downward trend: ${marketLow} * ${rule1aMarkup} = ${newPrice}`);
       } else {
-        // Use Market Low with rule1b markup
-        newPrice = marketLow * rule1bMarkup;
-        ruleApplied = 'zero_cost_market_rule1b';
-        console.log(`Zero cost item with upward trend: ${marketLow} * ${rule1bMarkup} = ${newPrice}`);
+        // For upward trend, we need to compute BOTH options from Rule1b and take the MAX
+        const mlPrice = marketLow * rule1bMarkup;
+        
+        // For cost-based part of Rule1b, since cost=0, use the rule2 markup on nextCost
+        // This ensures we don't get a zero price for the cost-based calculation
+        const rule2Markup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
+        const costPrice = nextCost > 0 ? nextCost * rule2Markup : 0;
+        
+        console.log(`Zero cost item Rule1b calculations:
+          - Market-based: ${marketLow} * ${rule1bMarkup} = ${mlPrice}
+          - Cost-based: ${nextCost} * ${rule2Markup} = ${costPrice}`);
+        
+        // Take maximum of the two prices
+        newPrice = Math.max(mlPrice, costPrice);
+        ruleApplied = newPrice === mlPrice ? 'zero_cost_market_rule1b_ml' : 'zero_cost_market_rule1b_cost';
+        console.log(`Zero cost item with upward trend - taking MAX: ${newPrice} (${ruleApplied})`);
+      }
+      
+      // FAILSAFE: Ensure we never return zero price when we have a market price
+      if (newPrice <= 0 && marketLow > 0) {
+        newPrice = marketLow * 1.05; // Default 5% markup as absolute failsafe
+        ruleApplied += '_failsafe';
+        console.log(`FAILSAFE activated - zero price prevented, using: ${newPrice}`);
       }
     } 
     // No market price but we have next cost
@@ -217,7 +243,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     const marginCap = ruleConfig.rule1.marginCaps[groupKey as keyof typeof ruleConfig.rule1.marginCaps] / 100;
     const maxPriceByMarginCap = cost / (1 - marginCap);
     
-    let marginCapApplied = false;
     if (newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
       newPrice = maxPriceByMarginCap;
       marginCapApplied = true;
