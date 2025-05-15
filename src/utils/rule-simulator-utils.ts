@@ -1,3 +1,4 @@
+
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -38,12 +39,13 @@ const determineUsageGroup = (usageRank: number) => {
   return 'group5_6';
 };
 
-// Apply pricing rules to calculate a new price - Updated to handle zero cost edge case
+// Apply pricing rules to calculate a new price - Updated with enhanced zero-cost handling
 export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Extract needed values
   const cost = Math.max(0, Number(item.avgCost) || 0);
   const marketLow = Math.max(0, Number(item.trueMarketLow) || Number(item.marketLow) || 0);
   const usageRank = Math.max(1, Math.min(6, Number(item.usageRank) || 1));
+  const nextCost = Math.max(0, Number(item.nextCost) || 0);
   
   // Handle no market price case
   const noMarketPrice = item.noMarketPrice || !marketLow || marketLow <= 0;
@@ -55,7 +57,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   const groupKey = usageGroup as keyof typeof ruleConfig.rule1.markups.rule1a;
   
   // Determine trend (from engine-excel-utils.ts logic)
-  const isDownwardTrend = item.nextCost <= item.avgCost; 
+  const isDownwardTrend = nextCost <= cost; 
   
   let newPrice = 0;
   let ruleApplied = 'none';
@@ -63,22 +65,37 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Special handling for zero cost items
   const isZeroCost = cost === 0;
   
+  // Debug logging to help identify issues
+  console.log('Processing item:', item.description, {
+    cost, marketLow, nextCost, usageRank, noMarketPrice, isZeroCost, isDownwardTrend
+  });
+  
   // Apply rules based on cost vs. market price relationship
   if (!noMarketPrice) {
     // We have a market price to work with
     
     // Special case for zero cost items - always use market-based pricing
     if (isZeroCost) {
+      // Use a safe markup calculation that won't result in zero
+      const rule1aMarkup = 1 + (ruleConfig.rule1.markups.rule1a[groupKey] / 100);
+      const rule1bMarkup = 1 + (ruleConfig.rule1.markups.rule1b[groupKey] / 100);
+      
       if (isDownwardTrend) {
         // For downward trend with zero cost - use Market Low with appropriate markup (Rule 1a)
-        const markup = 1 + (ruleConfig.rule1.markups.rule1a[groupKey] / 100);
-        newPrice = marketLow * markup;
+        newPrice = marketLow * rule1aMarkup;
         ruleApplied = 'rule1a_zero_cost';
       } else {
         // For upward trend with zero cost - use Market Low with appropriate markup (Rule 1b)
-        const markup = 1 + (ruleConfig.rule1.markups.rule1b[groupKey] / 100);
-        newPrice = marketLow * markup;
+        newPrice = marketLow * rule1bMarkup;
         ruleApplied = 'rule1b_zero_cost';
+      }
+      
+      // Double-check we didn't end up with zero
+      if (newPrice <= 0 && marketLow > 0) {
+        console.warn(`Zero price detected for ${item.description} despite market price of ${marketLow}`);
+        // Fallback to direct market price with minimum markup
+        newPrice = marketLow * 1.05; // Apply a 5% minimum markup
+        ruleApplied += '_fallback';
       }
     }
     // Rule 1: AvgCost >= Market Low
@@ -157,10 +174,11 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     // No market price - use cost-based pricing directly or handle zero cost
     if (isZeroCost) {
       // For zero cost with no market price, use next buying price if available
-      if (item.nextCost > 0) {
+      if (nextCost > 0) {
         const costMarkup = 1 + (ruleConfig.rule2.markups[groupKey] / 100);
-        newPrice = item.nextCost * costMarkup;
+        newPrice = nextCost * costMarkup;
         ruleApplied = 'next_cost_based_zero_cost';
+        console.log(`Zero cost item using next cost: ${nextCost} with markup: ${costMarkup} = ${newPrice}`);
       } else {
         // If no market price and no next cost, default to a base price
         // This ensures we don't end up with a zero price
@@ -196,6 +214,47 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     newPrice = cost / (1 - minMargin);
     marginFloorApplied = true;
     ruleApplied += '_floor';
+  }
+  
+  // CRITICAL: Special handling for Rule 1b with zero cost and Market Low markup
+  // This addresses the specific case seen in the screenshot where the rule is correctly identified
+  // but the price is still coming out as zero
+  if (isZeroCost && ruleApplied.includes('rule1b') && marketLow > 0) {
+    // For zero cost items with Rule 1b, ensure a non-zero price by using market low with appropriate markup
+    const mlMarkup = 1 + (ruleConfig.rule1.markups.rule1b[groupKey] / 100);
+    newPrice = marketLow * mlMarkup;
+    
+    // Log this special case
+    console.log(`Special zero-cost handling applied to ${item.description}: ${marketLow} * ${mlMarkup} = ${newPrice}`);
+    
+    // Make sure this overrides any zero values
+    if (newPrice <= 0) {
+      newPrice = marketLow * 1.05; // Fallback to 5% markup as a safety
+    }
+  }
+  
+  // Final check for zero price despite having non-zero inputs
+  if (newPrice <= 0) {
+    // Log critical error - we should never have zero price at this point
+    console.error(`CRITICAL: Zero price calculated for ${item.description} despite inputs:`, {
+      cost, marketLow, nextCost, rule: ruleApplied
+    });
+    
+    // Emergency fallback - better than returning zero
+    if (marketLow > 0) {
+      newPrice = marketLow * 1.05;
+      ruleApplied += '_emergency_fallback';
+    } else if (nextCost > 0) {
+      newPrice = nextCost * 1.15;
+      ruleApplied += '_emergency_fallback_nextcost';
+    } else if (item.currentREVAPrice > 0) {
+      newPrice = item.currentREVAPrice;
+      ruleApplied += '_emergency_fallback_currentprice';
+    } else {
+      // Absolute last resort
+      newPrice = 1.00;
+      ruleApplied += '_emergency_minimum';
+    }
   }
   
   // Calculate flags based on actual criteria
