@@ -42,60 +42,65 @@ const getUsageBasedCompetitorMarkup = (usageRank: number): number => {
   return 5; // 5% uplift for ranks 5-6
 };
 
+// NEW: Helper function to treat zero values as null/undefined
+const treatZeroAsNull = (value: number | undefined | null): number | null => {
+  if (value === undefined || value === null || value === 0) {
+    return null;
+  }
+  return value;
+};
+
 // Apply pricing rules to calculate a new price - Updated to match new rule structure
 export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
-  // Extract needed values
-  const cost = Math.max(0, Number(item.avgCost) || 0);
-  const nextCost = Math.max(0, Number(item.nextCost) || 0);
+  // Extract needed values - treating zeros as nulls
+  const rawCost = Number(item.avgCost) || 0;
+  const rawNextCost = Number(item.nextCost) || 0;
   const usageRank = Math.max(1, Math.min(6, Number(item.usageRank) || 1));
   
+  // NEW: Apply zero-as-null logic to cost fields
+  const cost = treatZeroAsNull(rawCost) !== null ? rawCost : 0;
+  const nextCost = treatZeroAsNull(rawNextCost) !== null ? rawNextCost : 0;
+  const hasValidCost = treatZeroAsNull(cost) !== null;
+  
   // Determine market low - prioritize ETH_NET but fallback to true market low
-  let marketLow = Number(item.eth_net) || 0;
+  const rawMarketLow = Number(item.eth_net) || 0;
+  
+  // NEW: Apply zero-as-null logic to market low
+  const marketLow = treatZeroAsNull(rawMarketLow) !== null ? rawMarketLow : 0;
+  const hasValidMarketLow = treatZeroAsNull(marketLow) !== null;
   
   // Determine true market low (minimum of all competitor prices)
   let trueMarketLow = Infinity;
   let hasAnyCompetitorPrice = false;
   
   // Check each competitor price and track if any are available
+  // NEW: Treat zeros as nulls for competitor prices
   const competitorPrices = [
-    Number(item.eth_net) || 0,
-    Number(item.eth) || 0,
-    Number(item.nupharm) || 0,
-    Number(item.lexon) || 0,
-    Number(item.aah) || 0
-  ];
+    treatZeroAsNull(Number(item.eth_net) || 0),
+    treatZeroAsNull(Number(item.eth) || 0),
+    treatZeroAsNull(Number(item.nupharm) || 0),
+    treatZeroAsNull(Number(item.lexon) || 0),
+    treatZeroAsNull(Number(item.aah) || 0)
+  ].filter(price => price !== null) as number[];
   
-  // Filter out zero prices and collect valid competitor prices
-  const validCompetitorPrices = competitorPrices.filter(price => price > 0);
-  
-  for (const price of validCompetitorPrices) {
-    trueMarketLow = Math.min(trueMarketLow, price);
+  // Find the minimum valid competitor price
+  if (competitorPrices.length > 0) {
     hasAnyCompetitorPrice = true;
+    trueMarketLow = Math.min(...competitorPrices);
   }
   
   // Set true market low if valid competitor prices exist
-  if (hasAnyCompetitorPrice) {
-    // If ETH_NET (marketLow) is missing but true market low is available, use that
-    if (marketLow <= 0) {
-      marketLow = trueMarketLow;
-    }
-    // Set the true market low value
-    trueMarketLow = trueMarketLow !== Infinity ? trueMarketLow : 0;
-  } else {
-    // No competitor prices available
-    trueMarketLow = 0;
-    marketLow = 0;
-  }
+  const hasValidTrueMarketLow = hasAnyCompetitorPrice && trueMarketLow !== Infinity;
   
   // Flag if no market price is available
-  const noMarketPrice = marketLow <= 0;
+  const noMarketPrice = !hasValidMarketLow;
   
   // Determine which usage group this item belongs to
   const usageGroup = determineUsageGroup(usageRank);
   
   // Determine if next buying price is lower than or equal to avg cost (downward trend)
-  // Also treat as downward if next cost is missing
-  const isDownwardTrend = nextCost <= cost || nextCost === 0;
+  // Also treat as downward if next cost is missing or zero
+  const isDownwardTrend = !hasValidCost || !nextCost || nextCost <= cost;
   
   // Get usage-based uplift percentage based on usage rank
   const usageUplift = getUsageBasedUplift(usageRank) / 100; // Convert to decimal (0%, 1%, or 2%)
@@ -104,12 +109,13 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   const competitorMarkupPercent = getUsageBasedCompetitorMarkup(usageRank);
   const competitorMarkup = 1 + (competitorMarkupPercent / 100);
   
-  // Special handling for zero cost items
-  const isZeroCost = cost === 0;
+  // Special handling for zero/null cost items
+  const isZeroCost = !hasValidCost;
   
   // Debug logging to help identify issues
   console.log('Processing item:', item.description, {
     cost, marketLow, trueMarketLow, nextCost, usageRank, noMarketPrice, isZeroCost, isDownwardTrend,
+    hasValidCost, hasValidMarketLow, hasValidTrueMarketLow,
     usageUplift: usageUplift * 100 + '%',
     competitorMarkup: competitorMarkupPercent + '%',
     currentPrice: item.currentREVAPrice,
@@ -119,7 +125,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     lexon: item.lexon,
     aah: item.aah,
     competitorPrices,
-    validCompetitorPrices
   });
   
   let newPrice = 0;
@@ -127,37 +132,37 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   let marginCapApplied = false;
   let marginFloorApplied = false;
   
-  // ZERO COST ITEM HANDLING - Priority order for calculation
+  // ZERO/NULL COST ITEM HANDLING - Priority order for calculation
   if (isZeroCost) {
-    console.log(`ZERO COST ITEM DETECTED: ${item.description}`);
+    console.log(`ZERO/NULL COST ITEM DETECTED: ${item.description}`);
     
     // Define standard markups - we'll need these multiple times
     const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
     const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
     
     // If market low is available, use it with standard markup
-    if (marketLow > 0) {
+    if (hasValidMarketLow) {
       newPrice = marketLow * standardMLMarkup;
       ruleApplied = 'zero_cost_market';
       
       console.log(`Set zero cost item price based on market low (${marketLow}) * ${standardMLMarkup} = ${newPrice}`);
     }
     // If market low isn't available but trueMarketLow is (other competitor prices), use that
-    else if (trueMarketLow > 0 && trueMarketLow !== Infinity) {
+    else if (hasValidTrueMarketLow) {
       newPrice = trueMarketLow * competitorMarkup; // Use usage-based competitor markup
       ruleApplied = `zero_cost_true_market_low_plus_${competitorMarkupPercent}`;
       
-      console.log(`Set zero cost item price based on true market low (${trueMarketLow}) * ${competitorMarkup} = ${newPrice}`);
+      console.log(`Using True Market Low fallback with ${competitorMarkupPercent}% markup: ${trueMarketLow} * ${competitorMarkup} = ${newPrice}`);
     }
     // No market price but we have next cost
-    else if (nextCost > 0) {
+    else if (treatZeroAsNull(nextCost) !== null) {
       newPrice = nextCost * standardCostMarkup;
       ruleApplied = 'zero_cost_nextcost';
       
       console.log(`Set zero cost item price based on next cost (${nextCost}) * ${standardCostMarkup} = ${newPrice}`);
     }
     // No market price and no next cost, but we have current price
-    else if (item.currentREVAPrice > 0) {
+    else if (treatZeroAsNull(item.currentREVAPrice) !== null) {
       newPrice = item.currentREVAPrice;
       ruleApplied = 'zero_cost_currentprice';
       
@@ -172,7 +177,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
   }
   // RULE 1: AVC < ML - Average Cost is less than Market Low
-  else if (!noMarketPrice && cost < marketLow) {
+  else if (hasValidMarketLow && hasValidCost && cost < marketLow) {
     console.log(`RULE 1: AVC < ML - ${cost} < ${marketLow}`);
     
     // Standard markup for market low (3% + usage uplift)
@@ -217,7 +222,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
   }
   // RULE 2: AVC ≥ ML - Average Cost is greater than or equal to Market Low
-  else if (!noMarketPrice && cost >= marketLow) {
+  else if (hasValidMarketLow && hasValidCost && cost >= marketLow) {
     console.log(`RULE 2: AVC ≥ ML - ${cost} ≥ ${marketLow}`);
     
     // Standard markup for market low (3% + usage uplift)
@@ -254,7 +259,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     console.log(`ENHANCED FALLBACK: No Market Low - ${cost}`);
     
     // First check if we have trueMarketLow (from other competitors)
-    if (trueMarketLow > 0 && trueMarketLow !== Infinity) {
+    if (hasValidTrueMarketLow) {
       // Use True Market Low with usage-based competitor markup
       newPrice = trueMarketLow * competitorMarkup;
       ruleApplied = `fallback_true_market_low_plus_${competitorMarkupPercent}`;
@@ -262,12 +267,34 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       console.log(`Using True Market Low fallback with ${competitorMarkupPercent}% markup: ${trueMarketLow} * ${competitorMarkup} = ${newPrice}`);
     }
     // Otherwise use AVC + 12% + uplift
-    else {
+    else if (hasValidCost) {
       const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
       newPrice = cost * standardCostMarkup;
       ruleApplied = 'fallback_cost_based';
       
       console.log(`Using AVC fallback: ${cost} * ${standardCostMarkup} = ${newPrice}`);
+    }
+    // No valid cost, try next cost
+    else if (treatZeroAsNull(nextCost) !== null) {
+      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
+      newPrice = nextCost * standardCostMarkup;
+      ruleApplied = 'fallback_nextcost_based';
+      
+      console.log(`Using Next Cost fallback: ${nextCost} * ${standardCostMarkup} = ${newPrice}`);
+    }
+    // No cost or next cost, use current price
+    else if (treatZeroAsNull(item.currentREVAPrice) !== null) {
+      newPrice = item.currentREVAPrice;
+      ruleApplied = 'fallback_current_price';
+      
+      console.log(`Using Current Price fallback: ${item.currentREVAPrice}`);
+    }
+    // Absolute fallback - minimum price
+    else {
+      newPrice = 0.01;
+      ruleApplied = 'fallback_minimum';
+      
+      console.log(`Using minimum price fallback: ${newPrice}`);
     }
   }
   
@@ -276,20 +303,20 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     console.log(`WARNING: Zero or negative price calculated for ${item.description}. Applying emergency fallbacks.`);
     
     // Emergency fallback - better than returning zero
-    if (marketLow > 0) {
+    if (hasValidMarketLow) {
       newPrice = marketLow * 1.05;
       ruleApplied += '_emergency_fallback';
       console.log(`Emergency fallback to market price: ${newPrice}`);
-    } else if (trueMarketLow > 0 && trueMarketLow !== Infinity) {
+    } else if (hasValidTrueMarketLow) {
       // Try true market low if regular market low isn't available
       newPrice = trueMarketLow * competitorMarkup;
       ruleApplied += '_emergency_fallback_competitor_markup';
       console.log(`Emergency fallback to true market price with ${competitorMarkupPercent}% markup: ${newPrice}`);
-    } else if (nextCost > 0) {
+    } else if (treatZeroAsNull(nextCost) !== null) {
       newPrice = nextCost * 1.15;
       ruleApplied += '_emergency_fallback_nextcost';
       console.log(`Emergency fallback to next cost: ${newPrice}`);
-    } else if (item.currentREVAPrice > 0) {
+    } else if (treatZeroAsNull(item.currentREVAPrice) !== null) {
       newPrice = item.currentREVAPrice;
       ruleApplied += '_emergency_fallback_currentprice';
       console.log(`Emergency fallback to current price: ${newPrice}`);
@@ -302,7 +329,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   }
   
   // Apply global margin floor if configured
-  if (!isZeroCost && cost > 0 && ruleConfig.globalMarginFloor > 0) {
+  if (!isZeroCost && treatZeroAsNull(cost) !== null && cost > 0 && ruleConfig.globalMarginFloor > 0) {
     const newMargin = newPrice > 0 ? (newPrice - cost) / newPrice : 0;
     const minMargin = ruleConfig.globalMarginFloor / 100;
     
@@ -321,10 +348,10 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   }
   
   // Calculate margin for the item
-  const newMargin = newPrice > 0 ? (newPrice - cost) / newPrice : 0;
+  const newMargin = newPrice > 0 && hasValidCost ? (newPrice - cost) / newPrice : 0;
   
   // Calculate flags based on actual criteria
-  const flag1 = !noMarketPrice && trueMarketLow > 0 && newPrice >= trueMarketLow * 1.10; // Price ≥10% above TRUE MARKET LOW
+  const flag1 = hasValidTrueMarketLow && newPrice >= trueMarketLow * 1.10; // Price ≥10% above TRUE MARKET LOW
   const flag2 = newMargin <= 0; // Margin <= 0%
   
   console.log(`Final price for ${item.description}: ${newPrice}, Rule Applied: ${ruleApplied}`);
