@@ -1,4 +1,3 @@
-
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -100,7 +99,13 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   console.log('Processing item:', item.description, {
     cost, marketLow, trueMarketLow, nextCost, usageRank, noMarketPrice, isZeroCost, isDownwardTrend,
     usageUplift: usageUplift * 100 + '%',
-    currentPrice: item.currentREVAPrice
+    currentPrice: item.currentREVAPrice,
+    eth_net: item.eth_net,
+    eth: item.eth,
+    nupharm: item.nupharm,
+    lexon: item.lexon,
+    aah: item.aah,
+    competitorPrices
   });
   
   let newPrice = 0;
@@ -108,33 +113,37 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   let marginCapApplied = false;
   let marginFloorApplied = false;
   
-  // IMPROVED ZERO COST ITEM HANDLING
+  // ZERO COST ITEM HANDLING - Priority order for calculation
   if (isZeroCost) {
     console.log(`ZERO COST ITEM DETECTED: ${item.description}`);
     
-    // If market price is available, use it
-    if (!noMarketPrice) {
-      console.log(`Market price available for zero cost item: ${marketLow}`);
-      
-      // Standard markup for market low (3% + usage uplift)
-      const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
+    // Define standard markups - we'll need these multiple times
+    const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
+    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
+    
+    // If market low is available, use it with standard markup
+    if (marketLow > 0) {
       newPrice = marketLow * standardMLMarkup;
       ruleApplied = 'zero_cost_market';
       
-      console.log(`Set zero cost item price based on market: ${newPrice}`);
+      console.log(`Set zero cost item price based on market low (${marketLow}) * ${standardMLMarkup} = ${newPrice}`);
+    }
+    // If market low isn't available but trueMarketLow is (other competitor prices), use that
+    else if (trueMarketLow > 0 && trueMarketLow !== Infinity) {
+      newPrice = trueMarketLow * standardMLMarkup;
+      ruleApplied = 'zero_cost_true_market_low';
+      
+      console.log(`Set zero cost item price based on true market low (${trueMarketLow}) * ${standardMLMarkup} = ${newPrice}`);
     }
     // No market price but we have next cost
     else if (nextCost > 0) {
-      // Apply standard rule2 markup to next cost (12%)
-      const costMarkup = 1 + (ruleConfig.rule1.costMarkup / 100) + usageUplift;
-      newPrice = nextCost * costMarkup;
+      newPrice = nextCost * standardCostMarkup;
       ruleApplied = 'zero_cost_nextcost';
       
-      console.log(`Set zero cost item price based on next cost: ${newPrice}`);
+      console.log(`Set zero cost item price based on next cost (${nextCost}) * ${standardCostMarkup} = ${newPrice}`);
     }
     // No market price and no next cost, but we have current price
     else if (item.currentREVAPrice > 0) {
-      // Use current price directly
       newPrice = item.currentREVAPrice;
       ruleApplied = 'zero_cost_currentprice';
       
@@ -230,19 +239,39 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   else {
     console.log(`FALLBACK: No Market Low - ${cost}`);
     
-    // Use AVC + 12% + uplift
-    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
-    newPrice = cost * standardCostMarkup;
-    ruleApplied = 'fallback_cost_based';
+    // First check if we have trueMarketLow (from other competitors)
+    if (trueMarketLow > 0 && trueMarketLow !== Infinity) {
+      // Use True Market Low with standard markup
+      const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
+      newPrice = trueMarketLow * standardMLMarkup;
+      ruleApplied = 'fallback_true_market_low';
+      
+      console.log(`Using True Market Low fallback: ${trueMarketLow} * ${standardMLMarkup} = ${newPrice}`);
+    }
+    // Otherwise use AVC + 12% + uplift
+    else {
+      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
+      newPrice = cost * standardCostMarkup;
+      ruleApplied = 'fallback_cost_based';
+      
+      console.log(`Using AVC fallback: ${cost} * ${standardCostMarkup} = ${newPrice}`);
+    }
   }
   
   // Ensure we never have zero or negative price
   if (newPrice <= 0) {
+    console.log(`WARNING: Zero or negative price calculated for ${item.description}. Applying emergency fallbacks.`);
+    
     // Emergency fallback - better than returning zero
     if (marketLow > 0) {
       newPrice = marketLow * 1.05;
       ruleApplied += '_emergency_fallback';
       console.log(`Emergency fallback to market price: ${newPrice}`);
+    } else if (trueMarketLow > 0 && trueMarketLow !== Infinity) {
+      // Try true market low if regular market low isn't available
+      newPrice = trueMarketLow * 1.05;
+      ruleApplied += '_emergency_fallback_true_market';
+      console.log(`Emergency fallback to true market price: ${newPrice}`);
     } else if (nextCost > 0) {
       newPrice = nextCost * 1.15;
       ruleApplied += '_emergency_fallback_nextcost';
