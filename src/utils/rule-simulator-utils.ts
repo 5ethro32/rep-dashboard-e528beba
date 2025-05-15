@@ -146,8 +146,10 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       console.log(`Zero cost item with no price reference - using minimum price: ${newPrice}`);
     }
     
-    // For zero cost items, we skip margin caps completely
-    console.log(`Final price for zero cost item ${item.description}: ${newPrice}`);
+    // CRITICAL: For zero cost items, we NEVER apply margin caps - set to false explicitly
+    marginCapApplied = false;
+    
+    console.log(`Final price for zero cost item ${item.description}: ${newPrice}, marginCapApplied: ${marginCapApplied}`);
   }
   // NORMAL PRICING RULES - For non-zero cost items
   else if (!noMarketPrice) {
@@ -248,6 +250,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       newPrice = maxPriceByMarginCap;
       marginCapApplied = true;
       ruleApplied += '_capped';
+      console.log(`Margin cap applied for ${item.description}: maxPrice=${maxPriceByMarginCap}, cap=${marginCap}`);
     }
   }
   
