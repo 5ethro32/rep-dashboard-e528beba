@@ -61,6 +61,8 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   
   let newPrice = 0;
   let ruleApplied = 'none';
+  let marginCapApplied = false;
+  let marginFloorApplied = false;
   
   // Special handling for zero cost items
   const isZeroCost = cost === 0;
@@ -224,7 +226,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   }
   
   // Ensure global margin floor for non-zero cost items
-  let marginFloorApplied = false;
   if (!isZeroCost && cost > 0) {
     const newMargin = newPrice > 0 ? (newPrice - cost) / newPrice : 0;
     const minMargin = ruleConfig.globalMarginFloor / 100;
