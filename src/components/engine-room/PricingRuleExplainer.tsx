@@ -52,25 +52,40 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
   
   // Get rule description
   const getRuleDescription = () => {
-    const ruleType = item.appliedRule?.charAt(0) || '';
-    const ruleVariant = item.appliedRule?.charAt(1) || '';
-    const usageGroup = item.appliedRule?.includes('1-2') 
+    // Extract rule number (1 or 2) and variation (a or b) from the appliedRule
+    const ruleApplied = item.ruleApplied || '';
+    const isRule1 = ruleApplied.startsWith('rule1');
+    const isDownwardTrend = ruleApplied.includes('downward');
+    
+    // Determine usage group based on usageRank
+    const usageRank = item.usageRank || 1;
+    const usageGroup = usageRank <= 2 
       ? 'Fast moving (rank 1-2)'
-      : item.appliedRule?.includes('3-4')
+      : usageRank <= 4
         ? 'Medium moving (rank 3-4)'
         : 'Slow moving (rank 5-6)';
     
-    if (ruleType === '1') {
+    // Get usage-based uplift percentage
+    const usageUplift = usageRank <= 2 ? 0 : usageRank <= 4 ? 1 : 2;
+    
+    // Standard uplifts and markup percentages
+    const standardMLUplift = 3; // Standard 3% uplift for Market Low
+    const standardCostMarkup = 12; // Standard 12% markup for cost
+    
+    if (isRule1) {
       return (
         <>
           <p className="text-sm mb-2">
-            <strong>Rule 1 ({ruleVariant}):</strong> Applied when Average Cost is less than Market Low
+            <strong>Rule 1{isDownwardTrend ? 'a' : 'b'}:</strong> Applied when Average Cost is less than Market Low
           </p>
           <p className="text-sm mb-2">
-            <strong>Usage Group:</strong> {usageGroup}
+            <strong>Usage Group:</strong> {usageGroup} ({usageUplift}% additional uplift)
+          </p>
+          <p className="text-sm mb-2">
+            <strong>Market Low Uplift:</strong> {standardMLUplift}% standard + {usageUplift}% usage-based
           </p>
           <p className="text-sm">
-            <strong>Cost Trend:</strong> {item.trend === 'TrendDown' ? 'Downward' : 'Flat/Upward'}
+            <strong>Cost Trend:</strong> {isDownwardTrend ? 'Downward' : 'Flat/Upward'}
           </p>
         </>
       );
@@ -78,13 +93,19 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
       return (
         <>
           <p className="text-sm mb-2">
-            <strong>Rule 2 ({ruleVariant}):</strong> Applied when Average Cost is greater than or equal to Market Low
+            <strong>Rule 2{isDownwardTrend ? 'a' : 'b'}:</strong> Applied when Average Cost is greater than or equal to Market Low
           </p>
           <p className="text-sm mb-2">
-            <strong>Usage Group:</strong> {usageGroup}
+            <strong>Usage Group:</strong> {usageGroup} ({usageUplift}% additional uplift)
+          </p>
+          <p className="text-sm mb-2">
+            <strong>Market Low Uplift:</strong> {standardMLUplift}% standard + {usageUplift}% usage-based
+          </p>
+          <p className="text-sm mb-2">
+            <strong>Cost Markup:</strong> {standardCostMarkup}% standard + {usageUplift}% usage-based
           </p>
           <p className="text-sm">
-            <strong>Cost Trend:</strong> {item.trend === 'TrendDown' ? 'Downward' : 'Flat/Upward'}
+            <strong>Cost Trend:</strong> {isDownwardTrend ? 'Downward' : 'Flat/Upward'}
           </p>
         </>
       );
@@ -93,49 +114,33 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
   
   // Get calculation steps based on the actual rule applied
   const getCalculationSteps = () => {
-    const ruleType = item.appliedRule?.charAt(0) || '';
-    const group = item.usageRank || 1;
-    const isDownwardTrend = item.trend === 'TrendDown';
+    const ruleApplied = item.ruleApplied || '';
+    const isRule1 = ruleApplied.startsWith('rule1');
+    const isDownwardTrend = ruleApplied.includes('downward');
+    const usageRank = item.usageRank || 1;
     
-    // Helper function to determine uplift percentage based on group and rule
-    const getUpliftPercentage = (isRule1: boolean, isDownTrend: boolean, groupNum: number) => {
-      if (isRule1) {
-        if (isDownTrend) {
-          // Rule 1a
-          if (groupNum <= 2) return 0;
-          if (groupNum <= 4) return 1;
-          return 2;
-        } else {
-          // Rule 1b
-          if (groupNum <= 2) return 3;
-          if (groupNum <= 4) return 4;
-          return 5;
-        }
-      } else {
-        // Rule 2 has same uplifts for both trends
-        if (groupNum <= 2) return 3;
-        if (groupNum <= 4) return 4;
-        return 5;
-      }
-    };
+    // Get usage-based uplift percentage (0%, 1%, or 2%)
+    const usageUplift = usageRank <= 2 ? 0 : usageRank <= 4 ? 1 : 2;
     
-    // Helper function to get cost markup percentage
-    const getCostMarkupPercentage = (groupNum: number) => {
-      if (groupNum <= 2) return 12;
-      if (groupNum <= 4) return 13;
-      return 14;
-    };
+    // Standard uplifts and markup percentages aligned with rule-simulator-utils.ts
+    const standardMLUplift = 3; // Standard 3% uplift for Market Low
+    const standardCostMarkup = 12; // Standard 12% markup for cost
     
-    if (ruleType === '1') {
-      // Rule 1 calculation steps
-      const upliftPercentage = getUpliftPercentage(true, isDownwardTrend, group);
-      const upliftMultiplier = 1 + (upliftPercentage / 100);
-      
-      const costMarkupPercentage = getCostMarkupPercentage(group);
-      const costMarkupMultiplier = 1 + (costMarkupPercentage / 100);
-      
+    // Calculate the total uplift percentages
+    const mlUpliftPercentage = standardMLUplift + usageUplift;
+    const costMarkupPercentage = standardCostMarkup + usageUplift;
+    
+    // Calculate the multipliers
+    const mlUpliftMultiplier = 1 + (mlUpliftPercentage / 100);
+    const costMarkupMultiplier = 1 + (costMarkupPercentage / 100);
+    
+    // Format rule name for display (1a, 1b, 2a, 2b)
+    const ruleDisplay = `Rule ${isRule1 ? '1' : '2'}${isDownwardTrend ? 'a' : 'b'}`;
+    
+    if (isRule1) {
+      // Rule 1: AVC < ML
       if (isDownwardTrend) {
-        // Rule 1a - Market Low + uplift
+        // Rule 1a - Market Low + usage-based uplift
         return (
           <div className="space-y-4">
             <div className="px-5 py-4 rounded-lg bg-slate-900/50 border border-slate-700/40">
@@ -148,8 +153,8 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Determine pricing based on usage rank and trend:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    <div>Usage Rank: {group}, Trend: {isDownwardTrend ? 'Downward' : 'Upward'}</div>
-                    <div>Applied Rule: Rule 1a (Market Low + {upliftPercentage}%)</div>
+                    <div>Usage Rank: {usageRank}, Trend: Downward</div>
+                    <div>Applied Rule: {ruleDisplay} (Market Low + {usageUplift}% usage-based uplift)</div>
                   </div>
                 </li>
                 
@@ -159,7 +164,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Calculate proposed price:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    Market Low × (1 + {upliftPercentage}%) = {formatCurrency(item.marketLow)} × {upliftMultiplier.toFixed(2)} = {formatCurrency(item.marketLow * upliftMultiplier)}
+                    Market Low × (1 + {usageUplift}%) = {formatCurrency(item.marketLow)} × {(1 + usageUplift/100).toFixed(2)} = {formatCurrency(item.marketLow * (1 + usageUplift/100))}
                   </div>
                 </li>
                 
@@ -169,7 +174,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Ensure price is not lower than current price:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    max(calculated price, current price) = max({formatCurrency(item.marketLow * upliftMultiplier)}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(item.marketLow * upliftMultiplier, item.currentREVAPrice))}
+                    max(calculated price, current price) = max({formatCurrency(item.marketLow * (1 + usageUplift/100))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(item.marketLow * (1 + usageUplift/100), item.currentREVAPrice))}
                   </div>
                 </li>
                 
@@ -206,7 +211,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
         );
       } else {
         // Rule 1b - Higher of Market Low + uplift or Cost + markup
-        const mlPrice = item.marketLow * upliftMultiplier;
+        const mlPrice = item.marketLow * mlUpliftMultiplier;
         const costPrice = item.avgCost * costMarkupMultiplier;
         
         return (
@@ -221,8 +226,8 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Determine pricing based on usage rank and trend:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    <div>Usage Rank: {group}, Trend: {isDownwardTrend ? 'Downward' : 'Upward'}</div>
-                    <div>Applied Rule: Rule 1b (Higher of Market Low + {upliftPercentage}% or Average Cost + {costMarkupPercentage}%)</div>
+                    <div>Usage Rank: {usageRank}, Trend: Upward</div>
+                    <div>Applied Rule: {ruleDisplay} (Higher of Market Low + {mlUpliftPercentage}% or Average Cost + {costMarkupPercentage}%)</div>
                   </div>
                 </li>
                 
@@ -232,7 +237,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Calculate Market Low price:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    Market Low × (1 + {upliftPercentage}%) = {formatCurrency(item.marketLow)} × {upliftMultiplier.toFixed(2)} = {formatCurrency(mlPrice)}
+                    Market Low × (1 + {mlUpliftPercentage}%) = {formatCurrency(item.marketLow)} × {mlUpliftMultiplier.toFixed(2)} = {formatCurrency(mlPrice)}
                   </div>
                 </li>
                 
@@ -262,7 +267,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Ensure price is not lower than current price:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    max(calculated price, current price) = max({formatCurrency(Math.max(mlPrice, costPrice))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(item.proposedPrice)}
+                    max(calculated price, current price) = max({formatCurrency(Math.max(mlPrice, costPrice))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(Math.max(mlPrice, costPrice), item.currentREVAPrice))}
                   </div>
                 </li>
                 
@@ -299,15 +304,12 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
         );
       }
     } else {
-      // Rule 2 calculation steps
-      const upliftPercentage = getUpliftPercentage(false, isDownwardTrend, group);
-      const upliftMultiplier = 1 + (upliftPercentage / 100);
-      
-      const costMarkupPercentage = getCostMarkupPercentage(group);
-      const costMarkupMultiplier = 1 + (costMarkupPercentage / 100);
-      
+      // Rule 2: AVC ≥ ML
       if (isDownwardTrend) {
-        // Rule 2a - Market Low + uplift
+        // Rule 2a - Lower of Market Low + uplift or Cost + markup
+        const mlPrice = item.marketLow * mlUpliftMultiplier;
+        const costPrice = item.avgCost * costMarkupMultiplier;
+        
         return (
           <div className="space-y-4">
             <div className="px-5 py-4 rounded-lg bg-slate-900/50 border border-slate-700/40">
@@ -320,34 +322,54 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Determine pricing based on usage rank and trend:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    <div>Usage Rank: {group}, Trend: {isDownwardTrend ? 'Downward' : 'Upward'}</div>
-                    <div>Applied Rule: Rule 2a (Market Low + {upliftPercentage}%)</div>
+                    <div>Usage Rank: {usageRank}, Trend: Downward</div>
+                    <div>Applied Rule: {ruleDisplay} (Lower of Market Low + {mlUpliftPercentage}% or Average Cost + {costMarkupPercentage}%)</div>
                   </div>
                 </li>
                 
                 <li className="pl-2">
                   <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">2</div>
-                    <span>Calculate proposed price:</span>
+                    <span>Calculate Market Low price:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    Market Low × (1 + {upliftPercentage}%) = {formatCurrency(item.marketLow)} × {upliftMultiplier.toFixed(2)} = {formatCurrency(item.marketLow * upliftMultiplier)}
+                    Market Low × (1 + {mlUpliftPercentage}%) = {formatCurrency(item.marketLow)} × {mlUpliftMultiplier.toFixed(2)} = {formatCurrency(mlPrice)}
                   </div>
                 </li>
                 
                 <li className="pl-2">
                   <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">3</div>
-                    <span>Ensure price is not lower than current price:</span>
+                    <span>Calculate Cost-based price:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    max(calculated price, current price) = max({formatCurrency(item.marketLow * upliftMultiplier)}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(item.marketLow * upliftMultiplier, item.currentREVAPrice))}
+                    avgCost × (1 + {costMarkupPercentage}%) = {formatCurrency(item.avgCost)} × {costMarkupMultiplier.toFixed(2)} = {formatCurrency(costPrice)}
                   </div>
                 </li>
                 
                 <li className="pl-2">
                   <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
                     <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">4</div>
+                    <span>Take lower of the two prices:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    min(ML price, Cost price) = min({formatCurrency(mlPrice)}, {formatCurrency(costPrice)}) = {formatCurrency(Math.min(mlPrice, costPrice))}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">5</div>
+                    <span>Ensure price is not lower than current price:</span>
+                  </div>
+                  <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
+                    max(calculated price, current price) = max({formatCurrency(Math.min(mlPrice, costPrice))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(Math.min(mlPrice, costPrice), item.currentREVAPrice))}
+                  </div>
+                </li>
+                
+                <li className="pl-2">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-800/70 text-white text-xs">6</div>
                     <span>Calculate margin:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
@@ -378,7 +400,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
         );
       } else {
         // Rule 2b - Higher of Market Low + uplift or Cost + markup
-        const mlPrice = item.marketLow * upliftMultiplier;
+        const mlPrice = item.marketLow * mlUpliftMultiplier;
         const costPrice = item.avgCost * costMarkupMultiplier;
         
         return (
@@ -393,8 +415,8 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Determine pricing based on usage rank and trend:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    <div>Usage Rank: {group}, Trend: {isDownwardTrend ? 'Downward' : 'Upward'}</div>
-                    <div>Applied Rule: Rule 2b (Higher of Market Low + {upliftPercentage}% or Average Cost + {costMarkupPercentage}%)</div>
+                    <div>Usage Rank: {usageRank}, Trend: Upward</div>
+                    <div>Applied Rule: {ruleDisplay} (Higher of Market Low + {mlUpliftPercentage}% or Average Cost + {costMarkupPercentage}%)</div>
                   </div>
                 </li>
                 
@@ -404,7 +426,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Calculate Market Low price:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    Market Low × (1 + {upliftPercentage}%) = {formatCurrency(item.marketLow)} × {upliftMultiplier.toFixed(2)} = {formatCurrency(mlPrice)}
+                    Market Low × (1 + {mlUpliftPercentage}%) = {formatCurrency(item.marketLow)} × {mlUpliftMultiplier.toFixed(2)} = {formatCurrency(mlPrice)}
                   </div>
                 </li>
                 
@@ -434,7 +456,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <span>Ensure price is not lower than current price:</span>
                   </div>
                   <div className="ml-8 mt-1 bg-gray-800/50 p-3 rounded text-sm font-mono">
-                    max(calculated price, current price) = max({formatCurrency(Math.max(mlPrice, costPrice))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(item.proposedPrice)}
+                    max(calculated price, current price) = max({formatCurrency(Math.max(mlPrice, costPrice))}, {formatCurrency(item.currentREVAPrice)}) = {formatCurrency(Math.max(Math.max(mlPrice, costPrice), item.currentREVAPrice))}
                   </div>
                 </li>
                 
@@ -576,7 +598,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
                     <p className="text-sm text-muted-foreground mb-1">Next Cost</p>
                     <div className="flex items-center space-x-2">
                       <p className="text-lg font-semibold">{formatCurrency(item.nextCost || item.nextBuyingPrice)}</p>
-                      {item.trend === 'TrendDown' ? (
+                      {(item.ruleApplied || '').includes('downward') ? (
                         <TrendingDown className="h-4 w-4 text-green-500" />
                       ) : (
                         <TrendingUp className="h-4 w-4 text-red-500" />
@@ -604,7 +626,7 @@ const PricingRuleExplainer: React.FC<PricingRuleExplainerProps> = ({
               <CardContent className="pt-6">
                 <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
                   <span className="w-2 h-6 bg-blue-500 rounded-sm"></span>
-                  Applied Rule: {item.appliedRule}
+                  Applied Rule: {item.ruleApplied}
                 </h3>
                 {getRuleDescription()}
               </CardContent>
