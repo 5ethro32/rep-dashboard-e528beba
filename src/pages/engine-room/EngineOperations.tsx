@@ -124,17 +124,19 @@ const EngineOperationsContent = () => {
       weightedMargin: calculatedMetrics.weightedMargin,
       proposedWeightedMargin: calculatedMetrics.proposedWeightedMargin,
       marginImprovement: calculatedMetrics.marginImprovement,
+      businessMargin: calculatedMetrics.businessMargin,
+      proposedBusinessMargin: calculatedMetrics.proposedBusinessMargin,
       totalProfit: calculatedMetrics.totalProfit,
       proposedProfit: calculatedMetrics.proposedProfit
     });
 
-    // Return values directly from the calculated metrics
+    // Return values focusing on business margin instead of weighted margin
     return {
-      currentAvgMargin: calculatedMetrics.weightedMargin || 0,
-      proposedAvgMargin: calculatedMetrics.proposedWeightedMargin || 0,
+      currentAvgMargin: calculatedMetrics.businessMargin || 0,
+      proposedAvgMargin: calculatedMetrics.proposedBusinessMargin || 0,
       currentProfit: calculatedMetrics.totalProfit || 0,
       proposedProfit: calculatedMetrics.proposedProfit || 0,
-      marginLift: calculatedMetrics.marginImprovement || 0,
+      marginLift: calculatedMetrics.businessMarginImprovement || 0,
       profitDelta: calculatedMetrics.proposedProfit > 0 && calculatedMetrics.totalProfit > 0 ? 
                     ((calculatedMetrics.proposedProfit - calculatedMetrics.totalProfit) / calculatedMetrics.totalProfit) * 100 : 0
     };
@@ -312,7 +314,7 @@ const EngineOperationsContent = () => {
         />
       </div>
 
-      {/* Flag metrics cards - Updated for better insights */}
+      {/* Flag metrics cards - Updated to show Total Business Margin */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <MetricCard
           title="High Price Flags"
@@ -337,9 +339,9 @@ const EngineOperationsContent = () => {
         />
 
         <MetricCard
-          title="Current Margin"
+          title="Current Business Margin"
           value={`${(getPricingImpactMetrics().currentAvgMargin || 0).toFixed(2)}%`}
-          subtitle="Baseline weighted margin"
+          subtitle="Total Profit ÷ Total Revenue"
           details={`Based on ${engineData.activeItems} active items`}
           valueClassName="text-blue-400"
           icon={<Percent />}
@@ -348,7 +350,7 @@ const EngineOperationsContent = () => {
         />
 
         <MetricCard
-          title="Proposed Margin"
+          title="Proposed Business Margin"
           value={`${(getPricingImpactMetrics().proposedAvgMargin || 0).toFixed(2)}%`}
           subtitle={`${getPricingImpactMetrics().marginLift > 0 ? '+' : ''}${getPricingImpactMetrics().marginLift.toFixed(2)}% points change`}
           details={getPricingImpactMetrics().marginLift > 0 ? 'Improved margin after all changes' : 'Current margin after all changes'}

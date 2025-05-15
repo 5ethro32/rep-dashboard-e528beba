@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -220,19 +219,26 @@ const EngineDashboardContent = () => {
       {/* Master container card for all metrics */}
       <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
         <CardContent className="p-6">
-          {/* Primary metrics */}
+          {/* Primary metrics - Updated to have 4 cards with Usage-Weighted Margin replacing Overall Margin */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <MetricCard title="Total Active SKUs" value={metrics.activeItems.toString()} subtitle={`${metrics.totalItems} total SKUs`} icon={<Package className="h-5 w-5" />} iconPosition="right" />
             
-            <MetricCard title="Overall Margin" value={`${metrics.overallMargin.toFixed(2)}%`} icon={<Percent className="h-5 w-5" />} iconPosition="right" />
+            <MetricCard 
+              title="Usage-Weighted Margin" 
+              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
+              icon={<Percent className="h-5 w-5" />} 
+              iconPosition="right"
+              subtitle="Weighted by usage volume"
+              details="Average margin across products"
+            />
             
             <MetricCard title="Average Cost < Market Low" value={`${metrics.avgCostLessThanMLCount}`} subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} icon={<TrendingUp className="h-5 w-5" />} iconPosition="right" />
             
             <MetricCard title="Flagged Items" value={`${metrics.rule1Flags + metrics.rule2Flags}`} subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} icon={<Flag className="h-5 w-5" />} iconPosition="right" />
           </div>
           
-          {/* Business Margin and Analysis Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {/* Business Margin and Analysis Metrics - Updated to have 3 cards, removing Usage-Weighted Margin */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
             <MetricCard 
               title="Total Business Margin" 
               value={`${usageMetrics.businessMargin.toFixed(2)}%`} 
@@ -243,19 +249,6 @@ const EngineDashboardContent = () => {
               change={usageMetrics.businessMarginImprovement !== 0 ? {
                 value: `${usageMetrics.businessMarginImprovement > 0 ? '+' : ''}${usageMetrics.businessMarginImprovement.toFixed(2)}%`,
                 type: usageMetrics.businessMarginImprovement >= 0 ? 'increase' : 'decrease'
-              } : undefined}
-            />
-            
-            <MetricCard 
-              title="Usage-Weighted Margin" 
-              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
-              icon={<Percent className="h-5 w-5" />} 
-              iconPosition="right"
-              subtitle="Weighted by usage volume"
-              details="Average margin across products"
-              change={usageMetrics.marginImprovement !== 0 ? {
-                value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
-                type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
             />
             
