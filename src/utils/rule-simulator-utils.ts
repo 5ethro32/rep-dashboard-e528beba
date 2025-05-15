@@ -1,4 +1,3 @@
-
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -284,9 +283,9 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       newPrice = item.currentREVAPrice;
       ruleApplied += '_emergency_fallback_currentprice';
     } else {
-      // Absolute last resort
-      newPrice = 1.00;
-      ruleApplied += '_emergency_minimum';
+      // Absolute last resort - set a minimum price of £0.01
+      newPrice = 0.01;
+      ruleApplied += '_minimum_price_enforced';
     }
   }
   

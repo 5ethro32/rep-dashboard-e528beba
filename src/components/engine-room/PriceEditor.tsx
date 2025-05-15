@@ -26,7 +26,13 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   compact = false,
   autoSaveOnExit = false
 }) => {
-  const [priceValue, setPriceValue] = useState<string>(initialPrice.toFixed(2));
+  // Set a minimum price to prevent £0.00 prices
+  const MIN_VALID_PRICE = 0.01;
+  
+  // Initialize with initialPrice, but ensure it's at least MIN_VALID_PRICE
+  const [priceValue, setPriceValue] = useState<string>(
+    Math.max(initialPrice, MIN_VALID_PRICE).toFixed(2)
+  );
   const [margin, setMargin] = useState<number>(0);
   const [isValid, setIsValid] = useState<boolean>(true);
   
@@ -42,14 +48,14 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   
   useEffect(() => {
     const numericPrice = parseFloat(priceValue);
-    if (!isNaN(numericPrice) && numericPrice > 0) {
+    if (!isNaN(numericPrice) && numericPrice >= MIN_VALID_PRICE) {
       const calculatedMargin = (numericPrice - cost) / numericPrice;
       setMargin(calculatedMargin * 100);
       setIsValid(true);
     } else {
       setIsValid(false);
     }
-  }, [priceValue, cost]);
+  }, [priceValue, cost, MIN_VALID_PRICE]);
   
   useEffect(() => {
     // Show warning toast if current price matches next cost (possible data issue)
@@ -63,41 +69,43 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   }, [possibleDataIssue]);
 
   // Added effect to handle changes to initialPrice from parent
+  // Ensure the price is never below MIN_VALID_PRICE
   useEffect(() => {
-    setPriceValue(initialPrice.toFixed(2));
-  }, [initialPrice]);
+    setPriceValue(Math.max(initialPrice, MIN_VALID_PRICE).toFixed(2));
+  }, [initialPrice, MIN_VALID_PRICE]);
 
   // Handle component unmount with autoSaveOnExit
   useEffect(() => {
     return () => {
       if (autoSaveOnExit) {
         const numericPrice = parseFloat(priceValue);
-        if (isValid && numericPrice > 0 && numericPrice !== initialPrice) {
+        if (isValid && numericPrice >= MIN_VALID_PRICE && numericPrice !== initialPrice) {
           console.log("Auto-saving price on exit:", numericPrice);
           onSave(numericPrice);
         }
       }
     };
-  }, [autoSaveOnExit, priceValue, isValid, initialPrice, onSave]);
+  }, [autoSaveOnExit, priceValue, isValid, initialPrice, onSave, MIN_VALID_PRICE]);
   
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPriceValue(e.target.value);
   };
   
   const handleReset = () => {
-    setPriceValue(calculatedPrice.toFixed(2));
+    // Ensure the reset price is never below MIN_VALID_PRICE
+    setPriceValue(Math.max(calculatedPrice, MIN_VALID_PRICE).toFixed(2));
   };
   
   const handleSave = () => {
     const numericPrice = parseFloat(priceValue);
-    if (isValid && numericPrice > 0) {
+    if (isValid && numericPrice >= MIN_VALID_PRICE) {
       // Ensure we're calling onSave with the parsed numeric value
       onSave(numericPrice);
       // Toast notification moved to the parent component to prevent multiple notifications
     } else {
       toast({
         title: "Invalid price",
-        description: "Please enter a valid price greater than zero",
+        description: `Please enter a valid price of at least £${MIN_VALID_PRICE.toFixed(2)}`,
         variant: "destructive"
       });
     }
