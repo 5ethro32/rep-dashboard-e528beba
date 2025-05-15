@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
@@ -82,6 +83,9 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
     let displayLabel = null; // Default to null to avoid duplicate headers
     let displayItems: CellDetailItem[] = [];
     
+    // Check if the item is a zero-cost item
+    const isZeroCostItem = item.zeroCostItem === true || item.avgCost === 0;
+    
     // Handle specific fields with custom popover content
     switch (field) {
       case "avgCost":
@@ -90,6 +94,14 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
           { label: "Average Cost", value: formatValue(item.avgCost) },
           { label: "Last Purchase", value: item.lastPurchase ? formatValue(item.lastPurchase) : 'N/A' }
         ];
+        
+        // Add zero cost flag information if applicable
+        if (isZeroCostItem) {
+          displayItems.push({ 
+            label: "Zero Cost Item", 
+            value: "Special pricing rules apply" 
+          });
+        }
         break;
       case "marketLow":
         // Remove the redundant header by setting displayLabel to null
@@ -165,23 +177,53 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         break;
       case "proposedPrice":
         displayLabel = null; // Remove duplicate header
+        
+        // Base details for proposed price
         displayItems = [
           { label: "Proposed Price", value: formatValue(item.proposedPrice) },
           { label: "Calculated Price", value: item.calculatedPrice ? formatValue(item.calculatedPrice) : formatValue(item.proposedPrice) },
           { label: "Current Price", value: item.currentREVAPrice ? formatValue(item.currentREVAPrice) : 'N/A' },
-          { label: "Next Buying Price", value: item.nextCostMissing ? "£0.00 (Missing)" : formatValue(item.nextCost) },
-          { label: "Applied Rule", value: item.appliedRule || 'N/A' }
+          { label: "Next Buying Price", value: item.nextCostMissing ? "£0.00 (Missing)" : formatValue(item.nextCost) }
         ];
+        
+        // Enhanced rule display for zero cost items
+        if (isZeroCostItem) {
+          displayItems.push({ 
+            label: "Margin Cap", 
+            value: "Not Applied (Zero Cost)" 
+          });
+          
+          displayItems.push({ 
+            label: "Zero Cost Note", 
+            value: "Market-based pricing applied" 
+          });
+        }
+        
+        // Add applied rule as the last item
+        displayItems.push({ 
+          label: "Applied Rule", 
+          value: item.appliedRule || 'N/A' 
+        });
+        
         break;
       case "proposedMargin":
         displayLabel = null; // Remove duplicate header
-        // Fix margin values by explicitly using the values from the item
+        
+        // Base details for margins
         displayItems = [
           { label: "Proposed Margin", value: formatPercentage(item.proposedMargin) },
           // Use special formatter for current margin to avoid double multiplication
           { label: "Current Margin", value: formatCurrentMargin(item.currentREVAMargin) },
           { label: "Target Margin", value: item.targetMargin ? formatPercentage(item.targetMargin) : '15.0%' }
         ];
+        
+        // Add zero cost information if applicable
+        if (isZeroCostItem) {
+          displayItems.push({ 
+            label: "Zero Cost Item", 
+            value: "Margin is calculated on a £0 cost basis" 
+          });
+        }
         
         // For debugging - add this to help identify why margin values might be wrong
         console.log("Margin values for item:", {
