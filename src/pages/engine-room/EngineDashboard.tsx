@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -25,6 +25,25 @@ const EngineDashboardContent = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [usageMetrics, setUsageMetrics] = useState({
+    weightedMargin: 0,
+    proposedWeightedMargin: 0,
+    marginImprovement: 0,
+    totalRevenue: 0,
+    proposedRevenue: 0,
+    totalProfit: 0,
+    proposedProfit: 0,
+    totalUsage: 0
+  });
+  const [isMounted, setIsMounted] = useState(true);
+
+  // Set mounted state
+  useEffect(() => {
+    setIsMounted(true);
+    return () => {
+      setIsMounted(false);
+    };
+  }, []);
 
   // Add a function to clear cache and force recalculation
   const handleClearCache = () => {
@@ -82,6 +101,25 @@ const EngineDashboardContent = () => {
     };
   };
   const metrics = getMetrics();
+  
+  // Calculate usage-weighted metrics safely
+  useEffect(() => {
+    if (engineData?.items && engineData.items.length > 0 && isMounted) {
+      try {
+        const calculatedMetrics = calculateUsageWeightedMetrics(engineData.items || []);
+        if (isMounted) {
+          setUsageMetrics(calculatedMetrics);
+          console.log('EngineDashboard: usageMetrics calculated', {
+            weightedMargin: calculatedMetrics.weightedMargin,
+            proposedWeightedMargin: calculatedMetrics.proposedWeightedMargin,
+            marginImprovement: calculatedMetrics.marginImprovement
+          });
+        }
+      } catch (error) {
+        console.error('Error calculating usage metrics:', error);
+      }
+    }
+  }, [engineData?.items, isMounted]);
 
   // Handle drag and drop file upload
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -158,17 +196,6 @@ const EngineDashboardContent = () => {
       </div>;
   }
 
-  // Get usage-weighted metrics with the correct calculation method
-  const usageMetrics = calculateUsageWeightedMetrics(engineData.items || []);
-
-  useEffect(() => {
-    console.log('EngineDashboard: usageMetrics calculated', {
-      weightedMargin: usageMetrics.weightedMargin,
-      proposedWeightedMargin: usageMetrics.proposedWeightedMargin,
-      marginImprovement: usageMetrics.marginImprovement
-    });
-  }, [usageMetrics]);
-
   // Calculate revenue and profit improvements for the metric cards
   const revenueImprovement = usageMetrics.proposedRevenue > 0 && usageMetrics.totalRevenue > 0 ? 
     (usageMetrics.proposedRevenue - usageMetrics.totalRevenue) / usageMetrics.totalRevenue * 100 : 0;
@@ -244,4 +271,3 @@ const EngineDashboard = () => <EngineRoomProvider>
     <EngineDashboardContent />
   </EngineRoomProvider>;
 export default EngineDashboard;
-
