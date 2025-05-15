@@ -35,6 +35,13 @@ const getUsageBasedUplift = (usageRank: number): number => {
   return 2; // 2% uplift for ranks 5-6
 };
 
+// Helper function to get the usage-based competitor markup percentage
+const getUsageBasedCompetitorMarkup = (usageRank: number): number => {
+  if (usageRank <= 2) return 3; // 3% uplift for ranks 1-2
+  if (usageRank <= 4) return 4; // 4% uplift for ranks 3-4
+  return 5; // 5% uplift for ranks 5-6
+};
+
 // Apply pricing rules to calculate a new price - Updated to match new rule structure
 export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Extract needed values
@@ -58,11 +65,12 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     Number(item.aah) || 0
   ];
   
-  for (const price of competitorPrices) {
-    if (price > 0) {
-      trueMarketLow = Math.min(trueMarketLow, price);
-      hasAnyCompetitorPrice = true;
-    }
+  // Filter out zero prices and collect valid competitor prices
+  const validCompetitorPrices = competitorPrices.filter(price => price > 0);
+  
+  for (const price of validCompetitorPrices) {
+    trueMarketLow = Math.min(trueMarketLow, price);
+    hasAnyCompetitorPrice = true;
   }
   
   // Set true market low if valid competitor prices exist
@@ -92,6 +100,10 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Get usage-based uplift percentage based on usage rank
   const usageUplift = getUsageBasedUplift(usageRank) / 100; // Convert to decimal (0%, 1%, or 2%)
   
+  // Get usage-based competitor markup for when no market low is available
+  const competitorMarkupPercent = getUsageBasedCompetitorMarkup(usageRank);
+  const competitorMarkup = 1 + (competitorMarkupPercent / 100);
+  
   // Special handling for zero cost items
   const isZeroCost = cost === 0;
   
@@ -99,13 +111,15 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   console.log('Processing item:', item.description, {
     cost, marketLow, trueMarketLow, nextCost, usageRank, noMarketPrice, isZeroCost, isDownwardTrend,
     usageUplift: usageUplift * 100 + '%',
+    competitorMarkup: competitorMarkupPercent + '%',
     currentPrice: item.currentREVAPrice,
     eth_net: item.eth_net,
     eth: item.eth,
     nupharm: item.nupharm,
     lexon: item.lexon,
     aah: item.aah,
-    competitorPrices
+    competitorPrices,
+    validCompetitorPrices
   });
   
   let newPrice = 0;
@@ -130,10 +144,10 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     // If market low isn't available but trueMarketLow is (other competitor prices), use that
     else if (trueMarketLow > 0 && trueMarketLow !== Infinity) {
-      newPrice = trueMarketLow * standardMLMarkup;
-      ruleApplied = 'zero_cost_true_market_low';
+      newPrice = trueMarketLow * competitorMarkup; // Use usage-based competitor markup
+      ruleApplied = `zero_cost_true_market_low_plus_${competitorMarkupPercent}`;
       
-      console.log(`Set zero cost item price based on true market low (${trueMarketLow}) * ${standardMLMarkup} = ${newPrice}`);
+      console.log(`Set zero cost item price based on true market low (${trueMarketLow}) * ${competitorMarkup} = ${newPrice}`);
     }
     // No market price but we have next cost
     else if (nextCost > 0) {
@@ -235,18 +249,17 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       ruleApplied = newPrice === mlPrice ? 'rule2_upward_ml' : 'rule2_upward_cost';
     }
   }
-  // FALLBACKS: No Market Low (ML) available
+  // ENHANCED FALLBACK: No Market Low (ML) available - use competitor price if available
   else {
-    console.log(`FALLBACK: No Market Low - ${cost}`);
+    console.log(`ENHANCED FALLBACK: No Market Low - ${cost}`);
     
     // First check if we have trueMarketLow (from other competitors)
     if (trueMarketLow > 0 && trueMarketLow !== Infinity) {
-      // Use True Market Low with standard markup
-      const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
-      newPrice = trueMarketLow * standardMLMarkup;
-      ruleApplied = 'fallback_true_market_low';
+      // Use True Market Low with usage-based competitor markup
+      newPrice = trueMarketLow * competitorMarkup;
+      ruleApplied = `fallback_true_market_low_plus_${competitorMarkupPercent}`;
       
-      console.log(`Using True Market Low fallback: ${trueMarketLow} * ${standardMLMarkup} = ${newPrice}`);
+      console.log(`Using True Market Low fallback with ${competitorMarkupPercent}% markup: ${trueMarketLow} * ${competitorMarkup} = ${newPrice}`);
     }
     // Otherwise use AVC + 12% + uplift
     else {
@@ -269,9 +282,9 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       console.log(`Emergency fallback to market price: ${newPrice}`);
     } else if (trueMarketLow > 0 && trueMarketLow !== Infinity) {
       // Try true market low if regular market low isn't available
-      newPrice = trueMarketLow * 1.05;
-      ruleApplied += '_emergency_fallback_true_market';
-      console.log(`Emergency fallback to true market price: ${newPrice}`);
+      newPrice = trueMarketLow * competitorMarkup;
+      ruleApplied += '_emergency_fallback_competitor_markup';
+      console.log(`Emergency fallback to true market price with ${competitorMarkupPercent}% markup: ${newPrice}`);
     } else if (nextCost > 0) {
       newPrice = nextCost * 1.15;
       ruleApplied += '_emergency_fallback_nextcost';
