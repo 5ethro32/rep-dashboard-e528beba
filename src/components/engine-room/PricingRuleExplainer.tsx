@@ -103,10 +103,11 @@ const PricingRuleExplainer = ({ open, onClose, item }: PricingRuleExplainerProps
     }
     
     if (ruleString.includes('zero_cost')) {
+      // Fix: changed the 'market' string to 'ml' to match the possible values from extractMethod
       if (ruleString.includes('true_market_low')) {
         return 'True Market Low + 3% + Uplift';
       }
-      return method === 'market' ? 'ML + 3% + Uplift' : 'Cost + 12% + Uplift';
+      return method === 'ml' ? 'ML + 3% + Uplift' : 'Cost + 12% + Uplift';
     }
     
     // Rule 1 downward
@@ -774,4 +775,3 @@ const PricingRuleExplainer = ({ open, onClose, item }: PricingRuleExplainerProps
 };
 
 export default PricingRuleExplainer;
-
