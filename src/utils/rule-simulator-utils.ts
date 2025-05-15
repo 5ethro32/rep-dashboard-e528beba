@@ -1,3 +1,4 @@
+
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -310,8 +311,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     flag1: flag1,
     flag2: flag2,
     marginCapApplied: marginCapApplied,
-    marginFloorApplied: marginFloorApplied,
-    zeroCostItem: isZeroCost // Add a new flag to explicitly identify zero cost items
+    marginFloorApplied: marginFloorApplied
   };
 };
 
@@ -344,8 +344,7 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
       flag1: simulationResult.flag1,
       flag2: simulationResult.flag2,
       marginCapApplied: simulationResult.marginCapApplied,
-      marginFloorApplied: simulationResult.marginFloorApplied,
-      zeroCostItem: simulationResult.zeroCostItem // Add a new flag to explicitly identify zero cost items
+      marginFloorApplied: simulationResult.marginFloorApplied
     };
   });
   
