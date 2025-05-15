@@ -40,10 +40,10 @@ const RuleSimulator = () => {
   // Handle running the simulation
   const handleRunSimulation = (ruleConfig: any) => {
     try {
-      // Add informational toast about price floor removal
+      // Display rule structure toast to help users understand the changes
       toast({
-        title: "Below-cost pricing enabled",
-        description: "The price floor rule has been removed. Prices can now be set below cost.",
+        title: "Updated Pricing Rules Applied",
+        description: "Average Cost (AVC) vs Market Low (ML) determines which rule applies. Usage-based uplifts (0-2%) automatically applied based on rank.",
         duration: 5000
       });
       
@@ -121,6 +121,22 @@ const RuleSimulator = () => {
           </Button>
         )}
       </div>
+      
+      {/* Rule structure explanation card */}
+      <Card className="mb-6 bg-blue-950/30 border-blue-800/50">
+        <CardContent className="p-4 text-sm">
+          <h3 className="font-semibold mb-2 flex items-center gap-2">
+            <Info className="h-4 w-4" />
+            New Pricing Rule Structure
+          </h3>
+          <div className="space-y-2">
+            <p><strong>Rule 1 (AVC &lt; ML):</strong> Applied when Average Cost is below Market Low</p>
+            <p><strong>Rule 2 (AVC ≥ ML):</strong> Applied when Average Cost is equal to or above Market Low</p>
+            <p><strong>Usage-based Uplift:</strong> 0% for Ranks 1-2, 1% for Ranks 3-4, 2% for Ranks 5-6</p>
+            <p><strong>Margin Caps:</strong> Only applied to items with AVC ≤ £1.00</p>
+          </div>
+        </CardContent>
+      </Card>
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">

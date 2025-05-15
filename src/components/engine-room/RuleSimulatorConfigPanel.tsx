@@ -20,52 +20,38 @@ interface RuleSimulatorConfigPanelProps {
 }
 
 const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onRunSimulation }) => {
-  // Updated rule configuration to match actual implementation in engine-excel-utils.ts
+  // Updated rule configuration to match the new structure
   const [ruleConfig, setRuleConfig] = useState({
-    rule1: {
-      // Rule 1a and 1b (when Cost vs Market Low)
-      group1_2: { trend_down: 1.00, trend_flat_up: 1.03 }, // Rule 1a: ML + 0%, Rule 1b: ML + 3%
-      group3_4: { trend_down: 1.01, trend_flat_up: 1.04 }, // Rule 1a: ML + 1%, Rule 1b: ML + 4%
-      group5_6: { trend_down: 1.02, trend_flat_up: 1.05 }, // Rule 1a: ML + 2%, Rule 1b: ML + 5%
-      marginCaps: {
-        group1_2: 10, // 10% margin cap for groups 1-2
-        group3_4: 20, // 20% margin cap for groups 3-4
-        group5_6: 30  // 30% margin cap for groups 5-6
-      }
+    // For Rule 1 (AVC < ML)
+    marketLowUplift: 3, // ML + 3%
+    costMarkup: 12, // Cost + 12%
+    
+    // Usage-based uplift is now handled directly in the simulator
+    
+    // Margin caps (for items ≤ £1.00 AVC)
+    marginCaps: {
+      group1_2: 10, // 10% margin cap for groups 1-2
+      group3_4: 20, // 20% margin cap for groups 3-4
+      group5_6: 30  // 30% margin cap for groups 5-6
     },
-    rule2: {
-      // For Rule 2 cost-based pricing (single rule now)
-      group1_2: 12, // Cost + 12%
-      group3_4: 13, // Cost + 13%
-      group5_6: 14  // Cost + 14%
-    },
-    globalMarginFloor: 5 // 5% minimum margin
+    
+    // Global minimum margin
+    globalMarginFloor: 0 // 0% minimum margin (disabled by default)
   });
 
-  // Handle Market Low percentage changes for Rule 1
-  const handleRule1MLPercentChange = (trend: 'trend_down' | 'trend_flat_up', group: string, value: number[]) => {
-    const groupKey = group as 'group1_2' | 'group3_4' | 'group5_6';
+  // Handle market low uplift percentage change
+  const handleMarketLowUpliftChange = (value: number[]) => {
     setRuleConfig(prev => ({
       ...prev,
-      rule1: {
-        ...prev.rule1,
-        [groupKey]: {
-          ...prev.rule1[groupKey],
-          [trend]: 1 + (value[0] / 100) // Convert percentage to multiplier
-        }
-      }
+      marketLowUplift: value[0]
     }));
   };
 
-  // Handle cost markup percentage changes for Rule 2 (simplified)
-  const handleRule2MarkupChange = (group: string, value: number[]) => {
-    const groupKey = group as 'group1_2' | 'group3_4' | 'group5_6';
+  // Handle cost markup percentage change
+  const handleCostMarkupChange = (value: number[]) => {
     setRuleConfig(prev => ({
       ...prev,
-      rule2: {
-        ...prev.rule2,
-        [groupKey]: value[0] // Keep as percentage
-      }
+      costMarkup: value[0]
     }));
   };
 
@@ -73,12 +59,9 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
   const handleMarginCapChange = (group: string, value: number[]) => {
     setRuleConfig(prev => ({
       ...prev,
-      rule1: {
-        ...prev.rule1,
-        marginCaps: {
-          ...prev.rule1.marginCaps,
-          [group]: value[0]
-        }
+      marginCaps: {
+        ...prev.marginCaps,
+        [group]: value[0]
       }
     }));
   };
@@ -91,33 +74,25 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
     }));
   };
 
-  // Reset configuration to defaults based on engine-excel-utils.ts
+  // Reset configuration to defaults
   const handleResetConfig = () => {
     setRuleConfig({
-      rule1: {
-        group1_2: { trend_down: 1.00, trend_flat_up: 1.03 },
-        group3_4: { trend_down: 1.01, trend_flat_up: 1.04 },
-        group5_6: { trend_down: 1.02, trend_flat_up: 1.05 },
-        marginCaps: {
-          group1_2: 10,
-          group3_4: 20,
-          group5_6: 30
-        }
+      marketLowUplift: 3,
+      costMarkup: 12,
+      marginCaps: {
+        group1_2: 10,
+        group3_4: 20,
+        group5_6: 30
       },
-      rule2: {
-        group1_2: 12,
-        group3_4: 13,
-        group5_6: 14
-      },
-      globalMarginFloor: 5
+      globalMarginFloor: 0
     });
   };
 
   // Rules tooltips to help explain the differences
   const ruleTooltips = {
-    rule1a: "Applied when cost is ABOVE or EQUAL TO market low price. Uses Market Low price plus a percentage based on usage group.",
-    rule1b: "Applied when cost is BELOW market low price (within 5%). Uses Market Low price plus a percentage based on usage group.",
-    rule2: "Applied for cost-based pricing when no market price is available or in other scenarios where cost-based pricing is needed."
+    rule1: "Applied when Average Cost (AVC) is LESS THAN Market Low (ML).",
+    rule2: "Applied when Average Cost (AVC) is GREATER THAN OR EQUAL TO Market Low (ML).",
+    uplift: "Usage-based uplift depends on Usage Rank: Ranks 1-2: 0%, Ranks 3-4: 1%, Ranks 5-6: 2%"
   };
 
   // Prepare config for simulation (convert to format expected by the simulation engine)
@@ -125,29 +100,16 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
     return {
       rule1: {
         marginCaps: {
-          group1_2: ruleConfig.rule1.marginCaps.group1_2,
-          group3_4: ruleConfig.rule1.marginCaps.group3_4,
-          group5_6: ruleConfig.rule1.marginCaps.group5_6,
+          group1_2: ruleConfig.marginCaps.group1_2,
+          group3_4: ruleConfig.marginCaps.group3_4,
+          group5_6: ruleConfig.marginCaps.group5_6,
         },
-        markups: {
-          rule1a: {
-            group1_2: Math.round((ruleConfig.rule1.group1_2.trend_down - 1) * 100),
-            group3_4: Math.round((ruleConfig.rule1.group3_4.trend_down - 1) * 100),
-            group5_6: Math.round((ruleConfig.rule1.group5_6.trend_down - 1) * 100),
-          },
-          rule1b: {
-            group1_2: Math.round((ruleConfig.rule1.group1_2.trend_flat_up - 1) * 100),
-            group3_4: Math.round((ruleConfig.rule1.group3_4.trend_flat_up - 1) * 100),
-            group5_6: Math.round((ruleConfig.rule1.group5_6.trend_flat_up - 1) * 100),
-          }
-        }
+        marketLowUplift: ruleConfig.marketLowUplift,
+        costMarkup: ruleConfig.costMarkup
       },
       rule2: {
-        markups: {
-          group1_2: ruleConfig.rule2.group1_2,
-          group3_4: ruleConfig.rule2.group3_4,
-          group5_6: ruleConfig.rule2.group5_6,
-        }
+        marketLowUplift: ruleConfig.marketLowUplift,
+        costMarkup: ruleConfig.costMarkup
       },
       globalMarginFloor: ruleConfig.globalMarginFloor
     };
@@ -168,7 +130,8 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                   </TooltipTrigger>
                   <TooltipContent className="max-w-sm">
                     <p className="text-xs">
-                      This simulator allows you to adjust pricing rule parameters according to REVA's actual pricing algorithm. Rules are applied based on the relationship between cost and market price.
+                      This simulator allows you to adjust pricing rule parameters according to REVA's pricing algorithm.
+                      Rules are applied based on the relationship between Average Cost (AVC) and Market Low (ML).
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -185,308 +148,67 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
             </Button>
           </div>
           
-          <Tabs defaultValue="rule1">
+          <Tabs defaultValue="general">
             <TabsList className="mb-4">
-              <TabsTrigger value="rule1">Rule 1: Market Price Rules</TabsTrigger>
-              <TabsTrigger value="rule2">Rule 2: Cost-Based Rules</TabsTrigger>
               <TabsTrigger value="general">General Settings</TabsTrigger>
+              <TabsTrigger value="margincaps">Margin Caps</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="rule1" className="space-y-6">
-              {/* Rule explanation */}
-              <div className="text-sm text-muted-foreground mb-4 p-3 bg-gray-800/30 rounded-md">
-                <p><strong>Rule 1:</strong> Applied when comparing cost to market low price.</p>
-                <p className="mt-1"><strong>Rule 1a:</strong> Used when cost is above or equal to market price. Applies percentage markup to Market Low.</p>
-                <p className="mt-1"><strong>Rule 1b:</strong> Used when cost is below market price (within 5%). Applies percentage markup to Market Low.</p>
-              </div>
-              
-              {/* Rule 1 Margin Caps */}
-              <Collapsible defaultOpen>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
-                  <span className="text-sm font-medium">Margin Caps by Group</span>
-                  <ChevronDown className="h-4 w-4" />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="p-2 space-y-4 mt-2">
-                  <div className="bg-amber-900/20 text-amber-200 p-3 rounded-md mb-3 text-xs">
-                    <strong>Note:</strong> Margin caps are only applied to items with an Average Cost of £1.00 or less.
-                    This ensures the cap only affects lower value items.
-                  </div>
-                  <div className="space-y-6">
-                    {/* Groups 1-2 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 1-2: {ruleConfig.rule1.marginCaps.group1_2}%</Label>
-                        <span className="text-xs text-muted-foreground">Low Usage</span>
-                      </div>
-                      <Slider
-                        value={[ruleConfig.rule1.marginCaps.group1_2]}
-                        min={5}
-                        max={50}
-                        step={1}
-                        onValueChange={(value) => handleMarginCapChange('group1_2', value)}
-                        className="py-4"
-                      />
-                    </div>
-                    
-                    {/* Groups 3-4 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 3-4: {ruleConfig.rule1.marginCaps.group3_4}%</Label>
-                        <span className="text-xs text-muted-foreground">Medium Usage</span>
-                      </div>
-                      <Slider
-                        value={[ruleConfig.rule1.marginCaps.group3_4]}
-                        min={5}
-                        max={50}
-                        step={1}
-                        onValueChange={(value) => handleMarginCapChange('group3_4', value)}
-                        className="py-4"
-                      />
-                    </div>
-                    
-                    {/* Groups 5-6 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 5-6: {ruleConfig.rule1.marginCaps.group5_6}%</Label>
-                        <span className="text-xs text-muted-foreground">High Usage</span>
-                      </div>
-                      <Slider
-                        value={[ruleConfig.rule1.marginCaps.group5_6]}
-                        min={5}
-                        max={50}
-                        step={1}
-                        onValueChange={(value) => handleMarginCapChange('group5_6', value)}
-                        className="py-4"
-                      />
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-
-              {/* Rule 1a Market Low Markup for TrendDown */}
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Rule 1a: Cost Above Market, Trend Down (ML Markup %)</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">{ruleTooltips.rule1a}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <ChevronDown className="h-4 w-4" />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="p-2 space-y-4 mt-2">
-                  <div className="space-y-6">
-                    {/* Groups 1-2 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 1-2: {Math.round((ruleConfig.rule1.group1_2.trend_down - 1) * 100)}%</Label>
-                        <span className="text-xs text-muted-foreground">Low Usage</span>
-                      </div>
-                      <Slider
-                        value={[Math.round((ruleConfig.rule1.group1_2.trend_down - 1) * 100)]}
-                        min={0}
-                        max={10}
-                        step={1}
-                        onValueChange={(value) => handleRule1MLPercentChange('trend_down', 'group1_2', value)}
-                        className="py-4"
-                      />
-                    </div>
-                    
-                    {/* Groups 3-4 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 3-4: {Math.round((ruleConfig.rule1.group3_4.trend_down - 1) * 100)}%</Label>
-                        <span className="text-xs text-muted-foreground">Medium Usage</span>
-                      </div>
-                      <Slider
-                        value={[Math.round((ruleConfig.rule1.group3_4.trend_down - 1) * 100)]}
-                        min={0}
-                        max={10}
-                        step={1}
-                        onValueChange={(value) => handleRule1MLPercentChange('trend_down', 'group3_4', value)}
-                        className="py-4"
-                      />
-                    </div>
-                    
-                    {/* Groups 5-6 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 5-6: {Math.round((ruleConfig.rule1.group5_6.trend_down - 1) * 100)}%</Label>
-                        <span className="text-xs text-muted-foreground">High Usage</span>
-                      </div>
-                      <Slider
-                        value={[Math.round((ruleConfig.rule1.group5_6.trend_down - 1) * 100)]}
-                        min={0}
-                        max={10}
-                        step={1}
-                        onValueChange={(value) => handleRule1MLPercentChange('trend_down', 'group5_6', value)}
-                        className="py-4"
-                      />
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-
-              {/* Rule 1b Market Low Markup for TrendFlatUp */}
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Rule 1b: Cost Below Market, Trend Flat/Up (ML Markup %)</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">{ruleTooltips.rule1b}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <ChevronDown className="h-4 w-4" />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="p-2 space-y-4 mt-2">
-                  <div className="space-y-6">
-                    {/* Groups 1-2 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 1-2: {Math.round((ruleConfig.rule1.group1_2.trend_flat_up - 1) * 100)}%</Label>
-                        <span className="text-xs text-muted-foreground">Low Usage</span>
-                      </div>
-                      <Slider
-                        value={[Math.round((ruleConfig.rule1.group1_2.trend_flat_up - 1) * 100)]}
-                        min={0}
-                        max={10}
-                        step={1}
-                        onValueChange={(value) => handleRule1MLPercentChange('trend_flat_up', 'group1_2', value)}
-                        className="py-4"
-                      />
-                    </div>
-                    
-                    {/* Groups 3-4 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 3-4: {Math.round((ruleConfig.rule1.group3_4.trend_flat_up - 1) * 100)}%</Label>
-                        <span className="text-xs text-muted-foreground">Medium Usage</span>
-                      </div>
-                      <Slider
-                        value={[Math.round((ruleConfig.rule1.group3_4.trend_flat_up - 1) * 100)]}
-                        min={0}
-                        max={10}
-                        step={1}
-                        onValueChange={(value) => handleRule1MLPercentChange('trend_flat_up', 'group3_4', value)}
-                        className="py-4"
-                      />
-                    </div>
-                    
-                    {/* Groups 5-6 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 5-6: {Math.round((ruleConfig.rule1.group5_6.trend_flat_up - 1) * 100)}%</Label>
-                        <span className="text-xs text-muted-foreground">High Usage</span>
-                      </div>
-                      <Slider
-                        value={[Math.round((ruleConfig.rule1.group5_6.trend_flat_up - 1) * 100)]}
-                        min={0}
-                        max={10}
-                        step={1}
-                        onValueChange={(value) => handleRule1MLPercentChange('trend_flat_up', 'group5_6', value)}
-                        className="py-4"
-                      />
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </TabsContent>
-            
-            <TabsContent value="rule2" className="space-y-6">
-              {/* Rule explanation - Updated to match actual rule logic */}
-              <div className="text-sm text-muted-foreground mb-4 p-3 bg-gray-800/30 rounded-md">
-                <p><strong>Rule 2:</strong> Applied for cost-based pricing when needed.</p>
-                <p className="mt-1">These markups are applied directly to the cost when necessary, like when no market price is available.</p>
-                <p className="mt-1">The same markup is used for both Trend Down and Trend Flat/Up scenarios.</p>
-              </div>
-              
-              {/* Rule 2 Cost Markups - Simplified to a single rule */}
-              <Collapsible defaultOpen>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-2 bg-gray-800/50 rounded-md">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Rule 2: Cost-Based Pricing (Cost Markup %)</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">{ruleTooltips.rule2}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <ChevronDown className="h-4 w-4" />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="p-2 space-y-4 mt-2">
-                  <div className="space-y-6">
-                    {/* Groups 1-2 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 1-2: {ruleConfig.rule2.group1_2}%</Label>
-                        <span className="text-xs text-muted-foreground">Low Usage</span>
-                      </div>
-                      <Slider
-                        value={[ruleConfig.rule2.group1_2]}
-                        min={5}
-                        max={30}
-                        step={1}
-                        onValueChange={(value) => handleRule2MarkupChange('group1_2', value)}
-                        className="py-4"
-                      />
-                    </div>
-                    
-                    {/* Groups 3-4 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 3-4: {ruleConfig.rule2.group3_4}%</Label>
-                        <span className="text-xs text-muted-foreground">Medium Usage</span>
-                      </div>
-                      <Slider
-                        value={[ruleConfig.rule2.group3_4]}
-                        min={5}
-                        max={30}
-                        step={1}
-                        onValueChange={(value) => handleRule2MarkupChange('group3_4', value)}
-                        className="py-4"
-                      />
-                    </div>
-                    
-                    {/* Groups 5-6 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <Label>Groups 5-6: {ruleConfig.rule2.group5_6}%</Label>
-                        <span className="text-xs text-muted-foreground">High Usage</span>
-                      </div>
-                      <Slider
-                        value={[ruleConfig.rule2.group5_6]}
-                        min={5}
-                        max={30}
-                        step={1}
-                        onValueChange={(value) => handleRule2MarkupChange('group5_6', value)}
-                        className="py-4"
-                      />
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </TabsContent>
-            
             <TabsContent value="general" className="space-y-6">
+              <div className="text-sm text-muted-foreground mb-4 p-3 bg-gray-800/30 rounded-md space-y-2">
+                <p><strong>Rule 1:</strong> Applied when Average Cost is less than Market Low.</p>
+                <p><strong>Rule 2:</strong> Applied when Average Cost is greater than or equal to Market Low.</p>
+                <p><strong>Usage-based Uplift:</strong> Automatically applied based on usage rank:
+                  <ul className="list-disc pl-5 mt-1">
+                    <li>Ranks 1-2: 0% uplift</li>
+                    <li>Ranks 3-4: 1% uplift</li>
+                    <li>Ranks 5-6: 2% uplift</li>
+                  </ul>
+                </p>
+              </div>
+              
+              {/* Market Low Uplift */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Market Low Uplift</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>ML Uplift: {ruleConfig.marketLowUplift}%</Label>
+                  </div>
+                  <Slider
+                    value={[ruleConfig.marketLowUplift]}
+                    min={0}
+                    max={10}
+                    step={1}
+                    onValueChange={handleMarketLowUpliftChange}
+                    className="py-4"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Standard percentage uplift applied to Market Low (ML). Default: 3%.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Cost Markup */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Cost Markup</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Cost Markup: {ruleConfig.costMarkup}%</Label>
+                  </div>
+                  <Slider
+                    value={[ruleConfig.costMarkup]}
+                    min={5}
+                    max={30}
+                    step={1}
+                    onValueChange={handleCostMarkupChange}
+                    className="py-4"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Standard percentage markup applied to Average Cost (AVC). Default: 12%.
+                  </p>
+                </div>
+              </div>
+              
               {/* Global Minimum Margin */}
               <div className="space-y-4">
                 <h4 className="text-sm font-medium">Global Minimum Margin</h4>
@@ -504,7 +226,65 @@ const RuleSimulatorConfigPanel: React.FC<RuleSimulatorConfigPanelProps> = ({ onR
                   />
                   <p className="text-xs text-muted-foreground mt-2">
                     Items with margins below this threshold will have their prices adjusted to meet this minimum.
+                    Set to 0% to disable this feature.
                   </p>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="margincaps" className="space-y-6">
+              <div className="bg-amber-900/20 text-amber-200 p-3 rounded-md mb-3 text-xs">
+                <strong>Note:</strong> Margin caps are only applied to items with an Average Cost of £1.00 or less.
+                This ensures the cap only affects lower value items.
+              </div>
+              
+              <div className="space-y-6">
+                {/* Groups 1-2 */}
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Groups 1-2: {ruleConfig.marginCaps.group1_2}%</Label>
+                    <span className="text-xs text-muted-foreground">Low Usage</span>
+                  </div>
+                  <Slider
+                    value={[ruleConfig.marginCaps.group1_2]}
+                    min={5}
+                    max={50}
+                    step={1}
+                    onValueChange={(value) => handleMarginCapChange('group1_2', value)}
+                    className="py-4"
+                  />
+                </div>
+                
+                {/* Groups 3-4 */}
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Groups 3-4: {ruleConfig.marginCaps.group3_4}%</Label>
+                    <span className="text-xs text-muted-foreground">Medium Usage</span>
+                  </div>
+                  <Slider
+                    value={[ruleConfig.marginCaps.group3_4]}
+                    min={5}
+                    max={50}
+                    step={1}
+                    onValueChange={(value) => handleMarginCapChange('group3_4', value)}
+                    className="py-4"
+                  />
+                </div>
+                
+                {/* Groups 5-6 */}
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <Label>Groups 5-6: {ruleConfig.marginCaps.group5_6}%</Label>
+                    <span className="text-xs text-muted-foreground">High Usage</span>
+                  </div>
+                  <Slider
+                    value={[ruleConfig.marginCaps.group5_6]}
+                    min={5}
+                    max={50}
+                    step={1}
+                    onValueChange={(value) => handleMarginCapChange('group5_6', value)}
+                    className="py-4"
+                  />
                 </div>
               </div>
             </TabsContent>
