@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, TrendingUp, TrendingDown, Info, Ban, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -924,7 +922,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderDataTable = () => {
     return (
       <div className="rounded-md border overflow-hidden">
-        <ScrollArea className="h-[600px]">
+        <div className="h-[600px] overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -1128,7 +1126,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
               })}
             </TableBody>
           </Table>
-        </ScrollArea>
+        </div>
       </div>
     );
   };
