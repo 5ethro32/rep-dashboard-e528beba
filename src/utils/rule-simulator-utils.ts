@@ -1,3 +1,4 @@
+
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -42,7 +43,7 @@ const getUsageBasedCompetitorMarkup = (usageRank: number): number => {
   return 5; // 5% uplift for ranks 5-6
 };
 
-// NEW: Helper function to treat zero values as null/undefined
+// Helper function to treat zero values as null/undefined
 const treatZeroAsNull = (value: number | undefined | null): number | null => {
   if (value === undefined || value === null || value === 0) {
     return null;
@@ -57,7 +58,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   const rawNextCost = Number(item.nextCost) || 0;
   const usageRank = Math.max(1, Math.min(6, Number(item.usageRank) || 1));
   
-  // NEW: Apply zero-as-null logic to cost fields
+  // Apply zero-as-null logic to cost fields
   const cost = treatZeroAsNull(rawCost) !== null ? rawCost : 0;
   const nextCost = treatZeroAsNull(rawNextCost) !== null ? rawNextCost : 0;
   const hasValidCost = treatZeroAsNull(cost) !== null;
@@ -65,7 +66,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Determine market low - prioritize ETH_NET but fallback to true market low
   const rawMarketLow = Number(item.eth_net) || 0;
   
-  // NEW: Apply zero-as-null logic to market low
+  // Apply zero-as-null logic to market low
   const marketLow = treatZeroAsNull(rawMarketLow) !== null ? rawMarketLow : 0;
   const hasValidMarketLow = treatZeroAsNull(marketLow) !== null;
   
@@ -74,7 +75,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   let hasAnyCompetitorPrice = false;
   
   // Check each competitor price and track if any are available
-  // NEW: Treat zeros as nulls for competitor prices
+  // Treat zeros as nulls for competitor prices
   const competitorPrices = [
     treatZeroAsNull(Number(item.eth_net) || 0),
     treatZeroAsNull(Number(item.eth) || 0),
@@ -206,7 +207,8 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     
     // Apply margin cap for items with cost ≤ £1.00
-    if (cost <= 1.00) {
+    // FIXED: Only apply margin cap when cost is greater than 0
+    if (cost <= 1.00 && cost > 0) {
       // Get the appropriate margin cap percentage for this usage group
       const marginCapKey = usageGroup as keyof typeof ruleConfig.rule1.marginCaps;
       const marginCap = ruleConfig.rule1.marginCaps[marginCapKey] / 100; // Convert to decimal
@@ -214,11 +216,16 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       // Calculate max price based on margin cap
       const maxPriceByMarginCap = cost / (1 - marginCap);
       
+      console.log(`Margin cap check: Cost=${cost}, Cap=${marginCap}, MaxPrice=${maxPriceByMarginCap}, CurrentPrice=${newPrice}`);
+      
       if (newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
+        console.log(`Applying margin cap: Reducing price from ${newPrice} to ${maxPriceByMarginCap}`);
         newPrice = maxPriceByMarginCap;
         marginCapApplied = true;
         ruleApplied += '_capped';
       }
+    } else if (cost <= 0) {
+      console.log(`Skipping margin cap for zero-cost item: ${item.description}`);
     }
   }
   // RULE 2: AVC ≥ ML - Average Cost is greater than or equal to Market Low
