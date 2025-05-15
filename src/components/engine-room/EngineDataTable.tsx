@@ -603,8 +603,16 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
       </div>;
   };
 
-  const formatRuleDisplay = (rule: string) => {
+  const formatRuleDisplay = (rule: string, item: any) => {
     if (!rule) return '';
+
+    // Check if this is a zero-cost item
+    const isZeroCostItem = item.zeroCostItem === true || item.avgCost === 0;
+
+    // For zero-cost items, show special text instead of margin cap info
+    if (isZeroCostItem && rule.includes("Margin Cap")) {
+      return rule.replace(/Margin Cap.+?(?=\]|$)/, "Zero Cost Pricing");
+    }
 
     const rulePattern = /Grp\s*(\d+)-(\d+)/i;
     const match = rule.match(rulePattern);
@@ -1077,7 +1085,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
                       </CellDetailsPopover>
                     </TableCell>
                     
-                    <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
+                    <TableCell>{formatRuleDisplay(item.appliedRule, item)}</TableCell>
                     
                     <TableCell>{renderFlags(item)}</TableCell>
                     
