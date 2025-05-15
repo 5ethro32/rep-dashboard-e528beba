@@ -174,7 +174,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   
   return {
     originalPrice: item.currentREVAPrice || 0,
-    newPrice: Math.max(cost, newPrice), // Never price below cost
+    newPrice: newPrice, // MODIFIED: Removed Math.max(cost, newPrice) to allow pricing below cost
     cost: cost,
     marketLow: marketLow,
     originalMargin: item.currentREVAMargin || 0,

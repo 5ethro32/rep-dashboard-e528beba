@@ -40,6 +40,13 @@ const RuleSimulator = () => {
   // Handle running the simulation
   const handleRunSimulation = (ruleConfig: any) => {
     try {
+      // Add informational toast about price floor removal
+      toast({
+        title: "Below-cost pricing enabled",
+        description: "The price floor rule has been removed. Prices can now be set below cost.",
+        duration: 5000
+      });
+      
       const result = simulateRuleChanges(engineData.items, ruleConfig);
       setSimulationResult(result);
       setActiveTab('results');
