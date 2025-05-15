@@ -350,9 +350,9 @@ const EngineOperationsContent = () => {
         <MetricCard
           title="Proposed Margin"
           value={`${(getPricingImpactMetrics().proposedAvgMargin || 0).toFixed(2)}%`}
-          subtitle={`${metrics.marginLift > 0 ? '+' : ''}${metrics.marginLift.toFixed(2)}% points change`}
-          details={metrics.marginLift > 0 ? 'Improved margin after all changes' : 'Current margin after all changes'}
-          valueClassName={metrics.marginLift > 0 ? "text-emerald-400" : "text-white"}
+          subtitle={`${getPricingImpactMetrics().marginLift > 0 ? '+' : ''}${getPricingImpactMetrics().marginLift.toFixed(2)}% points change`}
+          details={getPricingImpactMetrics().marginLift > 0 ? 'Improved margin after all changes' : 'Current margin after all changes'}
+          valueClassName={getPricingImpactMetrics().marginLift > 0 ? "text-emerald-400" : "text-white"}
           icon={<Percent />}
           iconPosition="right"
           valueSize="medium"
