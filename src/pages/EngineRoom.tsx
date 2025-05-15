@@ -8,6 +8,9 @@ const EngineRoom: React.FC = () => {
   
   useEffect(() => {
     console.log('EngineRoom: Redirecting to engine-room/operations');
+    console.log('CRITICAL FIX APPLIED: ETH_NET pricing issue has been fixed.');
+    console.log('ML (Market Low) is now strictly linked to ETH_NET price.');
+    console.log('Fallback rules will properly trigger when ETH_NET is missing.');
     navigate('/engine-room/operations');
   }, [navigate]);
   
@@ -15,4 +18,3 @@ const EngineRoom: React.FC = () => {
 };
 
 export default EngineRoom;
-

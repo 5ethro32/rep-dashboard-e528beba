@@ -62,16 +62,16 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   const nextCost = treatZeroAsNull(rawNextCost) !== null ? rawNextCost : 0;
   const hasValidCost = treatZeroAsNull(cost) !== null;
   
-  // Determine market low - prioritize ETH_NET but fallback to true market low
+  // CRITICAL FIX: Properly handle ETH_NET as the Market Low
+  // This is the key change - only use ETH_NET as Market Low, don't substitute others
   const rawMarketLow = Number(item.eth_net) || 0;
   
   // Apply zero-as-null logic to market low
   const marketLow = treatZeroAsNull(rawMarketLow) !== null ? rawMarketLow : 0;
   const hasValidMarketLow = treatZeroAsNull(marketLow) !== null;
   
-  // UPDATED: Determine true market low (minimum of all competitor prices)
+  // Determine true market low (minimum of all competitor prices)
   // Using explicit check of each competitor price and finding the minimum
-  // This ensures the fallback rule works correctly when ETH_NET is missing
   const competitorPrices = [
     treatZeroAsNull(Number(item.eth_net) || 0),
     treatZeroAsNull(Number(item.eth) || 0),
@@ -92,8 +92,11 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Set true market low if valid competitor prices exist
   const hasValidTrueMarketLow = hasAnyCompetitorPrice && trueMarketLow !== Infinity;
   
-  // Flag if no market price is available - UPDATED to check for true market low as well
-  const noMarketPrice = !hasValidMarketLow && !hasValidTrueMarketLow;
+  // Flag if no market price is available - specifically for ETH_NET
+  const noMarketPrice = !hasValidMarketLow;
+  
+  // Flag if we have at least one competitor price (for fallback rules)
+  const hasAnyMarketPrice = hasValidTrueMarketLow;
   
   // Determine which usage group this item belongs to
   const usageGroup = determineUsageGroup(usageRank);
@@ -112,10 +115,20 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Special handling for zero/null cost items
   const isZeroCost = !hasValidCost;
   
-  // Debug logging to help identify issues
+  // Enhanced debug logging to help identify issues
   console.log('Processing item:', item.description, {
-    cost, marketLow, trueMarketLow, nextCost, usageRank, noMarketPrice, isZeroCost, isDownwardTrend,
-    hasValidCost, hasValidMarketLow, hasValidTrueMarketLow,
+    cost, 
+    marketLow, 
+    trueMarketLow, 
+    nextCost, 
+    usageRank, 
+    noMarketPrice, 
+    hasAnyMarketPrice,
+    isZeroCost, 
+    isDownwardTrend,
+    hasValidCost, 
+    hasValidMarketLow, 
+    hasValidTrueMarketLow,
     usageUplift: usageUplift * 100 + '%',
     competitorMarkup: competitorMarkupPercent + '%',
     currentPrice: item.currentREVAPrice,
@@ -264,9 +277,11 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   }
   // ENHANCED FALLBACK RULES: No Market Low (ETH_NET) available - UPDATED SECTION
   else {
-    console.log(`ENHANCED FALLBACK: No ETH_NET Market Low - ${cost}`);
+    console.log(`ENHANCED FALLBACK: No ETH_NET Market Low for ${item.description} - ${cost}`);
     
-    // UPDATED RULE: If ETH_NET is missing but other competitor prices exist
+    // CRITICAL FIX: Explicitly handle fallback rules when ETH_NET is missing
+    
+    // FALLBACK 1: If ETH_NET is missing but other competitor prices exist
     if (hasValidTrueMarketLow) {
       // Use standard ML markup (3% + usage uplift) for true market low
       const trueMarketLowMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
@@ -275,7 +290,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       
       console.log(`Using True Market Low fallback with ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift: ${trueMarketLow} * ${trueMarketLowMarkup} = ${newPrice}`);
     }
-    // Otherwise use AVC + 12% + uplift (if cost is available)
+    // FALLBACK 2: Otherwise use AVC + 12% + uplift (if cost is available)
     else if (hasValidCost) {
       const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
       newPrice = cost * standardCostMarkup;

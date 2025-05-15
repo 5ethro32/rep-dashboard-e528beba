@@ -621,7 +621,9 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     // Initialize the marginCapApplied flag as false
     processedItem.marginCapApplied = false;
     
-    // Calculate Market Low (ML) - Directly use ETH NET column if available
+    // FIXED: Only set Market Low (ML) to ETH NET price, not TML
+    // This is the critical fix: Market Low should ONLY be set to ETH_NET
+    // When ETH_NET is missing, Market Low should remain undefined/null
     processedItem.marketLow = processedItem.eth_net;
     
     // Calculate True Market Low (TML) - Lowest price across all competitors including ETH NET
@@ -650,7 +652,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       lowestPrice = Math.min(lowestPrice, processedItem.aah);
     }
 
-    // FIXED: Only set noMarketPrice to true when NO valid competitor prices > 0 are available
+    // Set trueMarketLow and noMarketPrice flag
     if (!hasAnyCompetitorPrice || lowestPrice === Infinity) {
       processedItem.trueMarketLow = 0;
       processedItem.noMarketPrice = true;
@@ -661,7 +663,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         processedItem.flags.push('No Market Price Available');
       }
     } else {
-      // FIXED: Ensure we set trueMarketLow and explicitly set noMarketPrice to false
+      // Set trueMarketLow and explicitly set noMarketPrice to false
       processedItem.trueMarketLow = lowestPrice;
       processedItem.noMarketPrice = false;
       
@@ -671,10 +673,11 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       }
     }
     
-    // MODIFIED: If Market Low (ETH_NET) is missing but TML is available, use TML as Market Low
-    if ((processedItem.marketLow === undefined || processedItem.marketLow === 0) && !processedItem.noMarketPrice) {
-      processedItem.marketLow = processedItem.trueMarketLow;
-    }
+    // CRITICAL FIX: Removed the code that was setting Market Low to True Market Low when ETH_NET was missing
+    // This was the root cause of the issue, as it was preventing the fallback rules from being triggered
+    
+    // Debug logging to track ML/TML values
+    console.log(`Product: ${processedItem.description}, ETH_NET: ${processedItem.eth_net}, Market Low: ${processedItem.marketLow}, True Market Low: ${processedItem.trueMarketLow}, No Market Price: ${processedItem.noMarketPrice}`);
     
     // Get group for rule application
     const group = processedItem.usageRank || 6; // Default to group 6 if missing
