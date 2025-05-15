@@ -99,7 +99,8 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Debug logging to help identify issues
   console.log('Processing item:', item.description, {
     cost, marketLow, trueMarketLow, nextCost, usageRank, noMarketPrice, isZeroCost, isDownwardTrend,
-    usageUplift: usageUplift * 100 + '%'
+    usageUplift: usageUplift * 100 + '%',
+    currentPrice: item.currentREVAPrice
   });
   
   let newPrice = 0;
@@ -107,9 +108,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   let marginCapApplied = false;
   let marginFloorApplied = false;
   
-  // UPDATED RULE STRUCTURE
-  
-  // Special handling for zero cost items
+  // IMPROVED ZERO COST ITEM HANDLING
   if (isZeroCost) {
     console.log(`ZERO COST ITEM DETECTED: ${item.description}`);
     
@@ -121,6 +120,8 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
       newPrice = marketLow * standardMLMarkup;
       ruleApplied = 'zero_cost_market';
+      
+      console.log(`Set zero cost item price based on market: ${newPrice}`);
     }
     // No market price but we have next cost
     else if (nextCost > 0) {
@@ -128,17 +129,23 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       const costMarkup = 1 + (ruleConfig.rule1.costMarkup / 100) + usageUplift;
       newPrice = nextCost * costMarkup;
       ruleApplied = 'zero_cost_nextcost';
+      
+      console.log(`Set zero cost item price based on next cost: ${newPrice}`);
     }
     // No market price and no next cost, but we have current price
     else if (item.currentREVAPrice > 0) {
       // Use current price directly
       newPrice = item.currentREVAPrice;
       ruleApplied = 'zero_cost_currentprice';
+      
+      console.log(`Set zero cost item price based on current price: ${newPrice}`);
     }
     // Absolute fallback - minimum price
     else {
       newPrice = 0.01; // Minimum price
       ruleApplied = 'zero_cost_minimum';
+      
+      console.log(`Set zero cost item to minimum price: ${newPrice}`);
     }
   }
   // RULE 1: AVC < ML - Average Cost is less than Market Low
@@ -235,16 +242,20 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     if (marketLow > 0) {
       newPrice = marketLow * 1.05;
       ruleApplied += '_emergency_fallback';
+      console.log(`Emergency fallback to market price: ${newPrice}`);
     } else if (nextCost > 0) {
       newPrice = nextCost * 1.15;
       ruleApplied += '_emergency_fallback_nextcost';
+      console.log(`Emergency fallback to next cost: ${newPrice}`);
     } else if (item.currentREVAPrice > 0) {
       newPrice = item.currentREVAPrice;
       ruleApplied += '_emergency_fallback_currentprice';
+      console.log(`Emergency fallback to current price: ${newPrice}`);
     } else {
       // Absolute last resort - set a minimum price of £0.01
       newPrice = 0.01;
       ruleApplied += '_minimum_price_enforced';
+      console.log(`Emergency minimum price enforced: ${newPrice}`);
     }
   }
   
@@ -260,12 +271,21 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
   }
   
+  // Final sanity check - never return zero price
+  if (newPrice <= 0) {
+    console.log(`WARNING: Price still zero after all rules for ${item.description}. Setting minimum price.`);
+    newPrice = 0.01;
+    ruleApplied += '_final_minimum_enforced';
+  }
+  
   // Calculate margin for the item
   const newMargin = newPrice > 0 ? (newPrice - cost) / newPrice : 0;
   
   // Calculate flags based on actual criteria
   const flag1 = !noMarketPrice && trueMarketLow > 0 && newPrice >= trueMarketLow * 1.10; // Price ≥10% above TRUE MARKET LOW
   const flag2 = newMargin <= 0; // Margin <= 0%
+  
+  console.log(`Final price for ${item.description}: ${newPrice}, Rule Applied: ${ruleApplied}`);
   
   return {
     originalPrice: item.currentREVAPrice || 0,
