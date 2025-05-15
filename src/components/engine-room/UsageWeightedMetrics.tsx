@@ -16,16 +16,35 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   data,
   showProposed = false
 }) => {
-  // Use the centralized calculation function
-  const metrics = calculateUsageWeightedMetrics(data);
+  // Use the centralized calculation function with error handling
+  let metrics;
+  try {
+    metrics = calculateUsageWeightedMetrics(data);
+  } catch (error) {
+    console.error('Error calculating usage-weighted metrics:', error);
+    // Provide fallback values if calculation fails
+    metrics = {
+      weightedMargin: 0,
+      proposedWeightedMargin: 0,
+      marginImprovement: 0,
+      totalRevenue: 0,
+      totalProfit: 0,
+      proposedRevenue: 0,
+      proposedProfit: 0,
+      validItemCount: 0,
+      totalUsage: 0,
+      marginDistribution: []
+    };
+  }
 
   useEffect(() => {
     console.log('UsageWeightedMetrics: Received metrics', {
       weightedMargin: metrics.weightedMargin,
       proposedWeightedMargin: metrics.proposedWeightedMargin,
-      marginImprovement: metrics.marginImprovement
+      marginImprovement: metrics.marginImprovement,
+      itemCount: data?.length || 0
     });
-  }, [metrics]);
+  }, [metrics, data?.length]);
 
   // Define chart colors to match the homepage style - red theme
   const brandColors = [

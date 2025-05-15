@@ -62,6 +62,22 @@ export const calculateUsageWeightedMetrics = (data: any[]) => {
     { name: 'Very High', range: 'Above 30%', count: 0, revenue: 0, profit: 0, color: '#14b8a6' }
   ];
 
+  if (!Array.isArray(data)) {
+    console.error('calculateUsageWeightedMetrics: Invalid input data - not an array', data);
+    return {
+      weightedMargin: 0,
+      proposedWeightedMargin: 0,
+      marginImprovement: 0,
+      totalRevenue: 0,
+      totalProfit: 0,
+      proposedRevenue: 0,
+      proposedProfit: 0,
+      validItemCount: 0,
+      totalUsage: 0,
+      marginDistribution: marginBands
+    };
+  }
+
   console.log('calculateUsageWeightedMetrics: Processing data with', data.length, 'items');
 
   data.forEach(item => {
@@ -152,7 +168,11 @@ export const calculateUsageWeightedMetrics = (data: any[]) => {
     proposedWeightedMargin,
     marginImprovement,
     totalRevenue,
-    totalProfit
+    totalProfit,
+    proposedRevenue,
+    proposedProfit,
+    validItemCount,
+    totalUsage
   });
   
   return {

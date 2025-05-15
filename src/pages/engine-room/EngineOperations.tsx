@@ -38,6 +38,7 @@ import PricingRuleExplainer from '@/components/engine-room/PricingRuleExplainer'
 import ConfigurationPanel from '@/components/engine-room/ConfigurationPanel';
 import PricingActionsTabs from '@/components/engine-room/PricingActionsTabs';
 import MetricCard from '@/components/MetricCard';
+import { calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
 
 const EngineOperationsContent = () => {
   const {
@@ -104,9 +105,9 @@ const EngineOperationsContent = () => {
   
   const metrics = getMetrics();
   
-  // Get pricing impact metrics
+  // Get pricing impact metrics - UPDATED to use the same calculation method as dashboard
   const getPricingImpactMetrics = () => {
-    if (!engineData) return {
+    if (!engineData || !engineData.items) return {
       currentAvgMargin: 0,
       proposedAvgMargin: 0,
       currentProfit: 0,
@@ -115,13 +116,27 @@ const EngineOperationsContent = () => {
       profitDelta: 0
     };
 
+    // Use the centralized calculation function for consistent results
+    const calculatedMetrics = calculateUsageWeightedMetrics(engineData.items || []);
+    
+    // Log the calculated values to help with debugging
+    console.log('EngineOperations: Calculated metrics', {
+      weightedMargin: calculatedMetrics.weightedMargin,
+      proposedWeightedMargin: calculatedMetrics.proposedWeightedMargin,
+      marginImprovement: calculatedMetrics.marginImprovement,
+      totalProfit: calculatedMetrics.totalProfit,
+      proposedProfit: calculatedMetrics.proposedProfit
+    });
+
+    // Return values directly from the calculated metrics
     return {
-      currentAvgMargin: engineData.currentAvgMargin || 0,
-      proposedAvgMargin: engineData.proposedAvgMargin || 0,
-      currentProfit: engineData.currentProfit || 0,
-      proposedProfit: engineData.proposedProfit || 0,
-      marginLift: metrics.marginLift || 0,
-      profitDelta: metrics.profitDelta || 0
+      currentAvgMargin: calculatedMetrics.weightedMargin || 0,
+      proposedAvgMargin: calculatedMetrics.proposedWeightedMargin || 0,
+      currentProfit: calculatedMetrics.totalProfit || 0,
+      proposedProfit: calculatedMetrics.proposedProfit || 0,
+      marginLift: calculatedMetrics.marginImprovement || 0,
+      profitDelta: calculatedMetrics.proposedProfit > 0 && calculatedMetrics.totalProfit > 0 ? 
+                    ((calculatedMetrics.proposedProfit - calculatedMetrics.totalProfit) / calculatedMetrics.totalProfit) * 100 : 0
     };
   };
   
