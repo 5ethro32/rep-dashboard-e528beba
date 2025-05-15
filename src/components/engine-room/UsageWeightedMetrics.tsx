@@ -27,6 +27,9 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
       weightedMargin: 0,
       proposedWeightedMargin: 0,
       marginImprovement: 0,
+      businessMargin: 0,
+      proposedBusinessMargin: 0,
+      businessMarginImprovement: 0,
       totalRevenue: 0,
       totalProfit: 0,
       proposedRevenue: 0,
@@ -42,6 +45,9 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
       weightedMargin: metrics.weightedMargin,
       proposedWeightedMargin: metrics.proposedWeightedMargin,
       marginImprovement: metrics.marginImprovement,
+      businessMargin: metrics.businessMargin,
+      proposedBusinessMargin: metrics.proposedBusinessMargin,
+      businessMarginImprovement: metrics.businessMarginImprovement,
       itemCount: data?.length || 0
     });
   }, [metrics, data?.length]);
@@ -68,6 +74,11 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   const marginChangeClass = hasMarginImprovement ? 'text-green-400' : 'text-red-400';
   const marginChangePrefix = hasMarginImprovement ? '+' : '';
   
+  // Determine if there's business margin improvement
+  const hasBusinessMarginImprovement = metrics.businessMarginImprovement > 0;
+  const businessMarginChangeClass = hasBusinessMarginImprovement ? 'text-green-400' : 'text-red-400';
+  const businessMarginChangePrefix = hasBusinessMarginImprovement ? '+' : '';
+  
   // Calculate revenue improvement (if proposed is available)
   const revenueImprovement = showProposed && metrics.totalRevenue > 0 ? 
     ((metrics.proposedRevenue - metrics.totalRevenue) / metrics.totalRevenue) * 100 : 0;
@@ -86,9 +97,49 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
   const displayRevenue = showProposed ? metrics.proposedRevenue : metrics.totalRevenue;
   const displayProfit = showProposed ? metrics.proposedProfit : metrics.totalProfit;
   const displayMargin = showProposed ? metrics.proposedWeightedMargin : metrics.weightedMargin;
+  const displayBusinessMargin = showProposed ? metrics.proposedBusinessMargin : metrics.businessMargin;
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+      <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg mb-6 col-span-1 md:col-span-2">
+        <CardContent className="p-5">
+          <h3 className="font-medium mb-4">Margin Analysis</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="border border-white/10 bg-gray-800/40 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <h4 className="text-sm text-gray-400 mb-2">Total Business Margin</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-2xl font-bold">{displayBusinessMargin.toFixed(2)}%</div>
+                  {showProposed && (
+                    <div className={`text-sm ${businessMarginChangeClass}`}>
+                      {businessMarginChangePrefix}{metrics.businessMarginImprovement.toFixed(2)}%
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400">Total Profit ÷ Total Revenue</p>
+                <p className="text-xs text-gray-400 mt-1">Best measure of overall financial performance</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border border-white/10 bg-gray-800/40 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <h4 className="text-sm text-gray-400 mb-2">Usage-Weighted Average Margin</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-2xl font-bold">{displayMargin.toFixed(2)}%</div>
+                  {showProposed && (
+                    <div className={`text-sm ${marginChangeClass}`}>
+                      {marginChangePrefix}{metrics.marginImprovement.toFixed(2)}%
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400">Average of product margins, weighted by usage</p>
+                <p className="text-xs text-gray-400 mt-1">Reflects typical margin on products sold</p>
+              </CardContent>
+            </Card>
+          </div>
+        </CardContent>
+      </Card>
+    
       <Card className="border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg h-64">
         <CardContent className="p-4">
           <h3 className="font-medium mb-4">Margin Distribution by Product Count</h3>
@@ -136,4 +187,3 @@ const UsageWeightedMetrics: React.FC<UsageWeightedMetricsProps> = ({
 };
 
 export default UsageWeightedMetrics;
-

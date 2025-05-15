@@ -29,6 +29,9 @@ const EngineDashboardContent = () => {
     weightedMargin: 0,
     proposedWeightedMargin: 0,
     marginImprovement: 0,
+    businessMargin: 0,
+    proposedBusinessMargin: 0,
+    businessMarginImprovement: 0,
     totalRevenue: 0,
     proposedRevenue: 0,
     totalProfit: 0,
@@ -112,7 +115,10 @@ const EngineDashboardContent = () => {
           console.log('EngineDashboard: usageMetrics calculated', {
             weightedMargin: calculatedMetrics.weightedMargin,
             proposedWeightedMargin: calculatedMetrics.proposedWeightedMargin,
-            marginImprovement: calculatedMetrics.marginImprovement
+            marginImprovement: calculatedMetrics.marginImprovement,
+            businessMargin: calculatedMetrics.businessMargin,
+            proposedBusinessMargin: calculatedMetrics.proposedBusinessMargin,
+            businessMarginImprovement: calculatedMetrics.businessMarginImprovement
           });
         }
       } catch (error) {
@@ -205,18 +211,15 @@ const EngineDashboardContent = () => {
   // Log the calculated metrics for debugging
   console.log('EngineDashboard: Calculated usage-weighted metrics:', {
     weightedMargin: usageMetrics.weightedMargin,
+    businessMargin: usageMetrics.businessMargin,
     totalRevenue: usageMetrics.totalRevenue,
     totalProfit: usageMetrics.totalProfit
   });
+  
   return <div className="container mx-auto px-4 py-6">
-      {/* Add more prominent reset buttons for clearing cache */}
-      
-      
       {/* Master container card for all metrics */}
       <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
         <CardContent className="p-6">
-          
-          
           {/* Primary metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <MetricCard title="Total Active SKUs" value={metrics.activeItems.toString()} subtitle={`${metrics.totalItems} total SKUs`} icon={<Package className="h-5 w-5" />} iconPosition="right" />
@@ -228,22 +231,56 @@ const EngineDashboardContent = () => {
             <MetricCard title="Flagged Items" value={`${metrics.rule1Flags + metrics.rule2Flags}`} subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} icon={<Flag className="h-5 w-5" />} iconPosition="right" />
           </div>
           
-          {/* Margin Analysis Metrics - Now with improvement indicators for all three metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <MetricCard title="Usage-Weighted Margin" value={`${usageMetrics.weightedMargin.toFixed(2)}%`} icon={<Percent className="h-5 w-5" />} iconPosition="right" change={usageMetrics.marginImprovement !== 0 ? {
-            value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
-            type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined} />
+          {/* Business Margin and Analysis Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <MetricCard 
+              title="Total Business Margin" 
+              value={`${usageMetrics.businessMargin.toFixed(2)}%`} 
+              icon={<Percent className="h-5 w-5" />} 
+              iconPosition="right" 
+              subtitle="Total Profit ÷ Total Revenue"
+              details="Best measure of overall financial performance"
+              change={usageMetrics.businessMarginImprovement !== 0 ? {
+                value: `${usageMetrics.businessMarginImprovement > 0 ? '+' : ''}${usageMetrics.businessMarginImprovement.toFixed(2)}%`,
+                type: usageMetrics.businessMarginImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+            />
             
-            <MetricCard title="Total Revenue (Usage-Weighted)" value={formatCurrency(usageMetrics.totalRevenue)} subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`} icon={<DollarSign className="h-5 w-5" />} iconPosition="right" change={revenueImprovement !== 0 ? {
-            value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
-            type: revenueImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined} />
+            <MetricCard 
+              title="Usage-Weighted Margin" 
+              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
+              icon={<Percent className="h-5 w-5" />} 
+              iconPosition="right"
+              subtitle="Weighted by usage volume"
+              details="Average margin across products"
+              change={usageMetrics.marginImprovement !== 0 ? {
+                value: `${usageMetrics.marginImprovement > 0 ? '+' : ''}${usageMetrics.marginImprovement.toFixed(2)}%`,
+                type: usageMetrics.marginImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+            />
             
-            <MetricCard title="Usage-Weighted Profit" value={formatCurrency(usageMetrics.totalProfit)} icon={<TrendingUp className="h-5 w-5" />} iconPosition="right" change={profitImprovement !== 0 ? {
-            value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
-            type: profitImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined} />
+            <MetricCard 
+              title="Total Revenue" 
+              value={formatCurrency(usageMetrics.totalRevenue)} 
+              subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`} 
+              icon={<DollarSign className="h-5 w-5" />} 
+              iconPosition="right" 
+              change={revenueImprovement !== 0 ? {
+                value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
+                type: revenueImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+            />
+            
+            <MetricCard 
+              title="Total Profit" 
+              value={formatCurrency(usageMetrics.totalProfit)} 
+              icon={<TrendingUp className="h-5 w-5" />} 
+              iconPosition="right" 
+              change={profitImprovement !== 0 ? {
+                value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
+                type: profitImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+            />
           </div>
         </CardContent>
       </Card>
@@ -258,8 +295,8 @@ const EngineDashboardContent = () => {
         </Card>
       </div>
 
-      {/* Margin Distribution Charts - Now rendered separately */}
-      <UsageWeightedMetrics data={engineData.items || []} />
+      {/* Margin Distribution Charts with business margin - Using the updated component */}
+      <UsageWeightedMetrics data={engineData.items || []} showProposed={true} />
 
       {/* Market Trend Analysis */}
       <MarketTrendAnalysis data={engineData.items || []} />

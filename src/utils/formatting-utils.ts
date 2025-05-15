@@ -1,184 +1,101 @@
-
-import { formatDistanceToNow } from 'date-fns';
-
-// Format numerical values as currency (GBP)
-export const formatCurrency = (value: number | null | undefined, noDecimals = false): string => {
-  if (value === null || value === undefined) return '£0';
-  
-  const formatter = new Intl.NumberFormat('en-GB', {
+export const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
-    minimumFractionDigits: noDecimals ? 0 : 2,
-    maximumFractionDigits: noDecimals ? 0 : 2,
-  });
-  
-  return formatter.format(value);
+  }).format(value);
 };
 
-// Format values as percentages
-export const formatPercentage = (value: number | null | undefined): string => {
-  if (value === null || value === undefined) return '0.00%';
-  
-  // If value is already in percentage form (e.g., 25 instead of 0.25)
-  // we don't need to multiply by 100
-  const isAlreadyPercentage = value > 1 && value <= 100;
-  const percentValue = isAlreadyPercentage ? value : value * 100;
-  
-  return `${percentValue.toFixed(2)}%`;
+export const formatPercentage = (value: number) => {
+  return `${value.toFixed(2)}%`;
 };
 
-// Format numbers with appropriate separators
-export const formatNumber = (value: number | null | undefined): string => {
-  if (value === null || value === undefined) return '0';
-  return value.toLocaleString('en-GB');
-};
-
-// Format elapsed time in a readable format
-export const formatElapsedTime = (date: Date | string): string => {
-  const dateToUse = typeof date === 'string' ? new Date(date) : date;
-  return formatDistanceToNow(dateToUse, { addSuffix: true });
-};
-
-// Calculate usage-weighted margin and other metrics
 export const calculateUsageWeightedMetrics = (data: any[]) => {
+  // Initialize counters and accumulators
   let totalUsage = 0;
+  let weightedMarginSum = 0;
+  let proposedWeightedMarginSum = 0;
   let totalRevenue = 0;
   let totalProfit = 0;
-  let totalUsageWeightedMargin = 0;
-  let validItemCount = 0;
-  
-  // For proposed price calculations
   let proposedRevenue = 0;
   let proposedProfit = 0;
-  let proposedUsageWeightedMargin = 0;
+  let validItemCount = 0;
   
-  // Create margin bands for distribution
+  // Initialize margin distribution bands
   const marginBands = [
-    { name: 'Negative', range: 'Below 0%', count: 0, revenue: 0, profit: 0, color: '#ef4444' },
-    { name: 'Very Low', range: '0-5%', count: 0, revenue: 0, profit: 0, color: '#f97316' },
-    { name: 'Low', range: '5-10%', count: 0, revenue: 0, profit: 0, color: '#eab308' },
-    { name: 'Medium', range: '10-20%', count: 0, revenue: 0, profit: 0, color: '#84cc16' },
-    { name: 'High', range: '20-30%', count: 0, revenue: 0, profit: 0, color: '#22c55e' },
-    { name: 'Very High', range: 'Above 30%', count: 0, revenue: 0, profit: 0, color: '#14b8a6' }
+    { name: "Negative (<0%)", min: -Infinity, max: 0, count: 0, items: [], profit: 0 },
+    { name: "Very Low (0-5%)", min: 0, max: 5, count: 0, items: [], profit: 0 },
+    { name: "Low (5-10%)", min: 5, max: 10, count: 0, items: [], profit: 0 },
+    { name: "Medium (10-20%)", min: 10, max: 20, count: 0, items: [], profit: 0 },
+    { name: "High (20-30%)", min: 20, max: 30, count: 0, items: [], profit: 0 },
+    { name: "Very High (>30%)", min: 30, max: Infinity, count: 0, items: [], profit: 0 },
   ];
 
-  if (!Array.isArray(data)) {
-    console.error('calculateUsageWeightedMetrics: Invalid input data - not an array', data);
-    return {
-      weightedMargin: 0,
-      proposedWeightedMargin: 0,
-      marginImprovement: 0,
-      totalRevenue: 0,
-      totalProfit: 0,
-      proposedRevenue: 0,
-      proposedProfit: 0,
-      validItemCount: 0,
-      totalUsage: 0,
-      marginDistribution: marginBands
-    };
-  }
-
-  console.log('calculateUsageWeightedMetrics: Processing data with', data.length, 'items');
-
+  // Process each item in the data array
   data.forEach(item => {
-    // Skip items with no usage data
-    if (!item.revaUsage || item.revaUsage <= 0) return;
+    // Skip items without valid usage data
+    if (!item.revaUsage || isNaN(item.revaUsage) || item.revaUsage <= 0) {
+      return;
+    }
     
+    const usage = Number(item.revaUsage);
+    const currentPrice = Number(item.currentREVAPrice) || 0;
+    const proposedPrice = Number(item.proposedPrice) || currentPrice;
+    const cost = Number(item.avgCost) || 0;
+    
+    // Skip items with invalid price or cost
+    if (currentPrice <= 0 || isNaN(cost)) {
+      return;
+    }
+    
+    // Calculate current margins and revenue
+    const currentMargin = currentPrice > 0 ? ((currentPrice - cost) / currentPrice) * 100 : 0;
+    const currentRevenue = usage * currentPrice;
+    const currentProfit = usage * (currentPrice - cost);
+    
+    // Calculate proposed margins and revenue
+    const proposedMargin = proposedPrice > 0 ? ((proposedPrice - cost) / proposedPrice) * 100 : 0;
+    const proposedItemRevenue = usage * proposedPrice;
+    const proposedItemProfit = usage * (proposedPrice - cost);
+    
+    // Add to totals
+    totalUsage += usage;
+    weightedMarginSum += currentMargin * usage;
+    proposedWeightedMarginSum += proposedMargin * usage;
+    totalRevenue += currentRevenue;
+    totalProfit += currentProfit;
+    proposedRevenue += proposedItemRevenue;
+    proposedProfit += proposedItemProfit;
     validItemCount++;
-    totalUsage += item.revaUsage;
     
-    // Calculate revenue and profit based on current price
-    const price = item.currentREVAPrice || 0;
-    const cost = item.avgCost || 0;
-    const revenue = price * item.revaUsage;
-    const profit = revenue - (cost * item.revaUsage); // Correct profit calculation
-    
-    totalRevenue += revenue;
-    totalProfit += profit;
-    
-    // Calculate margin as a percentage (price - cost) / price * 100
-    // This ensures margin is stored as percentage (25%) not decimal (0.25)
-    let margin = 0;
-    if (price > 0) {
-      margin = ((price - cost) / price) * 100;
-      totalUsageWeightedMargin += margin * item.revaUsage;
-    }
-    
-    // Calculate proposed revenue, profit, and margin if available
-    if (item.proposedPrice) {
-      const proposedPriceValue = item.proposedPrice || price;
-      const propRevenue = proposedPriceValue * item.revaUsage;
-      const propProfit = propRevenue - (cost * item.revaUsage);
-      
-      proposedRevenue += propRevenue;
-      proposedProfit += propProfit;
-      
-      // Calculate proposed margin as percentage 
-      if (proposedPriceValue > 0) {
-        const propMargin = ((proposedPriceValue - cost) / proposedPriceValue) * 100;
-        proposedUsageWeightedMargin += propMargin * item.revaUsage;
+    // Categorize into margin bands
+    marginBands.forEach(band => {
+      if (currentMargin >= band.min && currentMargin < band.max) {
+        band.count++;
+        band.items.push(item);
+        band.profit += currentProfit;
       }
-    }
-
-    // Assign to margin band - using percentage values (0-100) not decimals (0-1)
-    if (margin < 0) {
-      marginBands[0].count++;
-      marginBands[0].revenue += revenue;
-      marginBands[0].profit += profit;
-    } else if (margin < 5) {
-      marginBands[1].count++;
-      marginBands[1].revenue += revenue;
-      marginBands[1].profit += profit;
-    } else if (margin < 10) {
-      marginBands[2].count++;
-      marginBands[2].revenue += revenue;
-      marginBands[2].profit += profit;
-    } else if (margin < 20) {
-      marginBands[3].count++;
-      marginBands[3].revenue += revenue;
-      marginBands[3].profit += profit;
-    } else if (margin < 30) {
-      marginBands[4].count++;
-      marginBands[4].revenue += revenue;
-      marginBands[4].profit += profit;
-    } else {
-      marginBands[5].count++;
-      marginBands[5].revenue += revenue;
-      marginBands[5].profit += profit;
-    }
+    });
   });
   
-  // Calculate usage-weighted margin - already in percentage form (0-100)
-  let weightedMargin = 0;
-  if (totalUsage > 0) {
-    weightedMargin = totalUsageWeightedMargin / totalUsage;
-  }
-
-  // Calculate proposed margin - already in percentage form (0-100)
-  let proposedWeightedMargin = 0;
-  if (totalUsage > 0) {
-    proposedWeightedMargin = proposedUsageWeightedMargin / totalUsage;
-  }
+  // Calculate weighted average margins
+  const weightedMargin = totalUsage > 0 ? weightedMarginSum / totalUsage : 0;
+  const proposedWeightedMargin = totalUsage > 0 ? proposedWeightedMarginSum / totalUsage : 0;
   
-  // Calculate margin improvement - already in percentage points
+  // Calculate business margins (total profit / total revenue)
+  const businessMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+  const proposedBusinessMargin = proposedRevenue > 0 ? (proposedProfit / proposedRevenue) * 100 : 0;
+  const businessMarginImprovement = proposedBusinessMargin - businessMargin;
+
+  // Calculate margin improvement
   const marginImprovement = proposedWeightedMargin - weightedMargin;
-  
-  console.log('calculateUsageWeightedMetrics: Calculated values', {
-    weightedMargin,
-    proposedWeightedMargin,
-    marginImprovement,
-    totalRevenue,
-    totalProfit,
-    proposedRevenue,
-    proposedProfit,
-    validItemCount,
-    totalUsage
-  });
   
   return {
     weightedMargin,
     proposedWeightedMargin,
     marginImprovement,
+    businessMargin,
+    proposedBusinessMargin,
+    businessMarginImprovement,
     totalRevenue,
     totalProfit,
     proposedRevenue,
@@ -188,20 +105,3 @@ export const calculateUsageWeightedMetrics = (data: any[]) => {
     marginDistribution: marginBands
   };
 };
-
-// New function to ensure TML displays properly
-export const formatMarketPrice = (value: number | null | undefined, noMarketPrice?: boolean): string => {
-  // If there's no market price available, return a specific string
-  if (noMarketPrice === true) {
-    return 'No Market Price';
-  }
-  
-  // If value is 0, null, or undefined, check if it's truly because there's no market price
-  if (value === 0 || value === null || value === undefined) {
-    return noMarketPrice === false ? '£0.00' : 'No Market Price';
-  }
-  
-  // Otherwise format as currency
-  return formatCurrency(value);
-};
-
