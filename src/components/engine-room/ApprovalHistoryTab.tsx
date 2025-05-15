@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -190,111 +189,113 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
 
   const renderApprovalTable = (items: any[]) => {
     return (
-      <Table>
-        <TableHeader className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur-sm">
-          <TableRow>
-            <TableHead className="cursor-pointer" onClick={() => handleSort('description')}>
-              <div className="flex items-center">
-                Description
-                {renderSortIndicator('description')}
-              </div>
-            </TableHead>
-            <TableHead className="cursor-pointer" onClick={() => handleSort('currentREVAPrice')}>
-              <div className="flex items-center">
-                Current Price
-                {renderSortIndicator('currentREVAPrice')}
-              </div>
-            </TableHead>
-            <TableHead className="cursor-pointer" onClick={() => handleSort('proposedPrice')}>
-              <div className="flex items-center">
-                Proposed Price
-                {renderSortIndicator('proposedPrice')}
-              </div>
-            </TableHead>
-            <TableHead className="cursor-pointer" onClick={() => handleSort('priceChangePercentage')}>
-              <div className="flex items-center">
-                Change
-                {renderSortIndicator('priceChangePercentage')}
-              </div>
-            </TableHead>
-            <TableHead className="cursor-pointer" onClick={() => handleSort('proposedMargin')}>
-              <div className="flex items-center">
-                Margin
-                {renderSortIndicator('proposedMargin')}
-              </div>
-            </TableHead>
-            <TableHead className="cursor-pointer" onClick={() => handleSort('usageRank')}>
-              <div className="flex items-center">
-                Usage Rank
-                {renderSortIndicator('usageRank')}
-              </div>
-            </TableHead>
-            <TableHead className="cursor-pointer" onClick={() => handleSort('workflowStatus')}>
-              <div className="flex items-center">
-                Status
-                {renderSortIndicator('workflowStatus')}
-              </div>
-            </TableHead>
-            <TableHead className="cursor-pointer" onClick={() => handleSort('submittedBy')}>
-              <div className="flex items-center">
-                Submitted By
-                {renderSortIndicator('submittedBy')}
-              </div>
-            </TableHead>
-            <TableHead className="cursor-pointer" onClick={() => handleSort('reviewDate')}>
-              <div className="flex items-center">
-                Review Date
-                {renderSortIndicator('reviewDate')}
-              </div>
-            </TableHead>
-            <TableHead>Comments</TableHead>
-            <TableHead></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.length === 0 ? (
+      <div className="overflow-y-auto">
+        <Table>
+          <TableHeader className="sticky top-0 z-30 bg-gray-950 backdrop-blur-sm">
             <TableRow>
-              <TableCell colSpan={11} className="text-center py-10">
-                No approval history items found
-              </TableCell>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('description')}>
+                <div className="flex items-center">
+                  Description
+                  {renderSortIndicator('description')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('currentREVAPrice')}>
+                <div className="flex items-center">
+                  Current Price
+                  {renderSortIndicator('currentREVAPrice')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('proposedPrice')}>
+                <div className="flex items-center">
+                  Proposed Price
+                  {renderSortIndicator('proposedPrice')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('priceChangePercentage')}>
+                <div className="flex items-center">
+                  Change
+                  {renderSortIndicator('priceChangePercentage')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('proposedMargin')}>
+                <div className="flex items-center">
+                  Margin
+                  {renderSortIndicator('proposedMargin')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('usageRank')}>
+                <div className="flex items-center">
+                  Usage Rank
+                  {renderSortIndicator('usageRank')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('workflowStatus')}>
+                <div className="flex items-center">
+                  Status
+                  {renderSortIndicator('workflowStatus')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('submittedBy')}>
+                <div className="flex items-center">
+                  Submitted By
+                  {renderSortIndicator('submittedBy')}
+                </div>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('reviewDate')}>
+                <div className="flex items-center">
+                  Review Date
+                  {renderSortIndicator('reviewDate')}
+                </div>
+              </TableHead>
+              <TableHead>Comments</TableHead>
+              <TableHead></TableHead>
             </TableRow>
-          ) : (
-            items.map((item, index) => {
-              // Calculate price change percentage for each item
-              const priceChangePercentage = calculatePriceChangePercentage(item);
-              
-              return (
-                <TableRow key={index} className="hover:bg-gray-800/40">
-                  <TableCell className="font-medium">{item.description || 'Unknown'}</TableCell>
-                  <TableCell>{item.currentREVAPrice ? `£${item.currentREVAPrice.toFixed(2)}` : 'N/A'}</TableCell>
-                  <TableCell>{item.proposedPrice ? `£${item.proposedPrice.toFixed(2)}` : 'N/A'}</TableCell>
-                  <TableCell>{formatPriceChange(item)}</TableCell>
-                  <TableCell>{formatPercentage(item.proposedMargin)}</TableCell>
-                  <TableCell>{item.usageRank || 'N/A'}</TableCell>
-                  <TableCell>{renderStatusBadge(item.workflowStatus)}</TableCell>
-                  <TableCell>{item.submittedBy || 'System'}</TableCell>
-                  <TableCell>
-                    {item.reviewDate 
-                      ? new Date(item.reviewDate).toLocaleDateString() 
-                      : 'Not reviewed'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[200px] truncate">
-                      {item.reviewComments || '-'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Star 
-                      className={`h-4 w-4 cursor-pointer ${starredItems.has(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400 hover:text-gray-300'}`}
-                      onClick={(e) => handleToggleStar(e, item.id)}
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {items.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={11} className="text-center py-10">
+                  No approval history items found
+                </TableCell>
+              </TableRow>
+            ) : (
+              items.map((item, index) => {
+                // Calculate price change percentage for each item
+                const priceChangePercentage = calculatePriceChangePercentage(item);
+                
+                return (
+                  <TableRow key={index} className="hover:bg-gray-800/40">
+                    <TableCell className="font-medium">{item.description || 'Unknown'}</TableCell>
+                    <TableCell>{item.currentREVAPrice ? `£${item.currentREVAPrice.toFixed(2)}` : 'N/A'}</TableCell>
+                    <TableCell>{item.proposedPrice ? `£${item.proposedPrice.toFixed(2)}` : 'N/A'}</TableCell>
+                    <TableCell>{formatPriceChange(item)}</TableCell>
+                    <TableCell>{formatPercentage(item.proposedMargin)}</TableCell>
+                    <TableCell>{item.usageRank || 'N/A'}</TableCell>
+                    <TableCell>{renderStatusBadge(item.workflowStatus)}</TableCell>
+                    <TableCell>{item.submittedBy || 'System'}</TableCell>
+                    <TableCell>
+                      {item.reviewDate 
+                        ? new Date(item.reviewDate).toLocaleDateString() 
+                        : 'Not reviewed'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[200px] truncate">
+                        {item.reviewComments || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Star 
+                        className={`h-4 w-4 cursor-pointer ${starredItems.has(item.id) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400 hover:text-gray-300'}`}
+                        onClick={(e) => handleToggleStar(e, item.id)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
     );
   };
 
@@ -303,8 +304,8 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
     if (filterByRank) {
       // If filtering by rank, don't group
       return (
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+          <div className="overflow-x-auto max-h-[600px]">
             {renderApprovalTable(paginatedData)}
           </div>
         </Card>
@@ -316,8 +317,8 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
         {Object.keys(groupedByRank).sort((a, b) => Number(a) - Number(b)).map((rank) => (
           <div key={rank} className="space-y-2">
             <h3 className="text-lg font-medium">Usage Rank {rank} ({groupedByRank[rank].length} items)</h3>
-            <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg overflow-hidden">
-              <div className="overflow-x-auto">
+            <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+              <div className="overflow-x-auto max-h-[500px]">
                 {renderApprovalTable(groupedByRank[rank].slice(0, itemsPerPage))}
               </div>
             </Card>
@@ -394,8 +395,8 @@ const ApprovalHistoryTab: React.FC<ApprovalHistoryTabProps> = ({
       </div>
       
       {filterByRank ? (
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+          <div className="overflow-x-auto max-h-[600px]">
             {renderApprovalTable(paginatedData)}
           </div>
         </Card>
