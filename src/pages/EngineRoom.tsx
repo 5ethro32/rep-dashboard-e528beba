@@ -12,8 +12,9 @@ const EngineRoom: React.FC = () => {
     console.log('EngineRoom: Redirecting to engine-room/operations');
     console.log('CRITICAL FIX APPLIED: ETH_NET pricing issue has been fixed.');
     console.log('ML (Market Low) is now strictly linked to ETH_NET price.');
-    console.log('Fallback rules will properly trigger when ETH_NET is missing.');
-    console.log('Fixed fallback hierarchy: Now uses TrueMarketLow + markup when ETH_NET is missing but other competitor prices exist.');
+    console.log('NEW RULE IMPLEMENTED: Products with no Market Low (ETH_NET) now follow specific pricing logic.');
+    console.log('When ETH_NET is missing but other competitor prices exist, uses TrueMarketLow + 3% + usage uplift.');
+    console.log('When no competitor prices exist at all, uses AVC + 12% + usage uplift.');
     console.log('CRITICAL FIX APPLIED: Rule 1b and 2b calculation corrected.');
     console.log('Usage-based uplift is now correctly applied to both Market Low and AVC calculations.');
     console.log('MARGIN CAP IMPLEMENTED: For all low-cost items (≤ £1.00) to limit margins based on usage rank.');
@@ -22,7 +23,7 @@ const EngineRoom: React.FC = () => {
     // Show toast notification about the fix with more details
     toast({
       title: "Pricing Engine Updates",
-      description: "1) Fixed Symbicort pricing with proper competitive price detection. 2) Corrected Rule 1b/2b uplift application. 3) Added margin caps for low-cost items.",
+      description: "1) Implemented new rule for missing Market Low prices. 2) Fixed Symbicort pricing with proper competitive price detection. 3) Corrected Rule 1b/2b uplift application.",
       duration: 7000
     });
     

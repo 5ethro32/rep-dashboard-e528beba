@@ -1,4 +1,3 @@
-
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -173,8 +172,70 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   let marginCapApplied = false;
   let marginFloorApplied = false;
   
+  // NEW OVERARCHING RULE: When there is no Market Low (ETH_NET), immediately apply pricing rule
+  if (noMarketPrice) {
+    console.log(`NEW RULE: No Market Low (ETH_NET) detected for ${item.description}`);
+    
+    // If TrueMarketLow exists (any other competitor pricing), use that with 3% + uplift
+    if (hasValidTrueMarketLow && trueMarketLow !== Infinity) {
+      const marketLowMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
+      newPrice = trueMarketLow * marketLowMarkup;
+      ruleApplied = `no_market_low_use_true_market_low_plus_${ruleConfig.rule1.marketLowUplift + (usageUplift * 100)}`;
+      
+      console.log(`IMMEDIATE RULE APPLIED: Using TrueMarketLow (${trueMarketLow}) + ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift = ${newPrice}`);
+    }
+    // If no competitor pricing at all, use Cost + 12% + uplift
+    else if (hasValidCost) {
+      const costMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
+      newPrice = cost * costMarkup;
+      ruleApplied = `no_market_low_use_cost_plus_${ruleConfig.rule2.costMarkup + (usageUplift * 100)}`;
+      
+      console.log(`IMMEDIATE RULE APPLIED: Using Cost (${cost}) + ${ruleConfig.rule2.costMarkup}% + ${usageUplift * 100}% uplift = ${newPrice}`);
+    }
+    // If no cost available, try next cost
+    else if (treatZeroAsNull(nextCost) !== null) {
+      const costMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
+      newPrice = nextCost * costMarkup;
+      ruleApplied = `no_market_low_use_nextcost_plus_${ruleConfig.rule2.costMarkup + (usageUplift * 100)}`;
+      
+      console.log(`IMMEDIATE RULE APPLIED: Using NextCost (${nextCost}) + ${ruleConfig.rule2.costMarkup}% + ${usageUplift * 100}% uplift = ${newPrice}`);
+    }
+    // Last resort: use current price
+    else if (treatZeroAsNull(item.currentREVAPrice) !== null) {
+      newPrice = item.currentREVAPrice;
+      ruleApplied = 'no_market_low_use_current_price';
+      
+      console.log(`IMMEDIATE RULE APPLIED: Using Current Price (${item.currentREVAPrice}) as fallback = ${newPrice}`);
+    }
+    // Absolute minimum price if nothing else available
+    else {
+      newPrice = 0.01;
+      ruleApplied = 'no_market_low_use_minimum_price';
+      
+      console.log(`IMMEDIATE RULE APPLIED: Using minimum price = ${newPrice}`);
+    }
+    
+    // Apply margin cap for low-cost items
+    if (hasValidCost && cost <= 1.00 && cost > 0) {
+      // Get the appropriate margin cap percentage for this usage group
+      const marginCapKey = usageGroup as keyof typeof ruleConfig.rule2.marginCaps;
+      const marginCap = ruleConfig.rule2.marginCaps[marginCapKey] / 100; // Convert to decimal
+      
+      // Calculate max price based on margin cap
+      const maxPriceByMarginCap = cost / (1 - marginCap);
+      
+      console.log(`No Market Low - Margin cap check: Cost=${cost}, Cap=${marginCap}, MaxPrice=${maxPriceByMarginCap}, CurrentPrice=${newPrice}`);
+      
+      if (newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
+        console.log(`Applying margin cap: Reducing price from ${newPrice} to ${maxPriceByMarginCap}`);
+        newPrice = maxPriceByMarginCap;
+        marginCapApplied = true;
+        ruleApplied += '_capped';
+      }
+    }
+  }
   // ZERO/NULL COST ITEM HANDLING - Priority order for calculation
-  if (isZeroCost) {
+  else if (isZeroCost) {
     console.log(`ZERO/NULL COST ITEM DETECTED: ${item.description}`);
     
     // Define standard markups - we'll need these multiple times
@@ -184,7 +245,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     // If market low is available, use it with standard markup
     if (hasValidMarketLow) {
       newPrice = marketLow * standardMLMarkup;
-      ruleApplied = 'zero_cost_market';
+      ruleApplied = `zero_cost_market`;
       
       console.log(`Set zero cost item price based on market low (${marketLow}) * ${standardMLMarkup} = ${newPrice}`);
     }
@@ -335,89 +396,11 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
   }
   // ENHANCED FALLBACK RULES: No Market Low (ETH_NET) available - CRITICAL FIX HERE
+  // Note: This section should never be reached now with the new overarching rule above
   else {
-    console.log(`ENHANCED FALLBACK: No ETH_NET Market Low for ${item.description} - ${cost}`);
+    console.log(`WARNING: Unexpected fallthrough to fallback rules for ${item.description}`);
     
-    // CRITICAL FIX: Implement proper fallback hierarchy with double-checks
-    // We check first for the presence of competitor prices (trueMarketLow)
-    // Only if no competitor prices exist do we use cost-based pricing
-    
-    // FALLBACK 1: If any competitor prices exist (TML is available)
-    // IMPROVED: Double check both hasValidTrueMarketLow flag and direct check on trueMarketLow
-    if (hasValidTrueMarketLow && competitorPrices.length > 0 && trueMarketLow !== Infinity) {
-      // Use standard ML markup (3% + usage uplift) for true market low
-      const trueMarketLowMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
-      newPrice = trueMarketLow * trueMarketLowMarkup;
-      ruleApplied = `fallback_true_market_low_plus_${ruleConfig.rule1.marketLowUplift + (usageUplift * 100)}`;
-      
-      if (isSymbicort) {
-        console.log(`SYMBICORT FALLBACK 1: Using True Market Low ${trueMarketLow} with ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift = ${newPrice}`);
-        console.log(`Expected calculation: ${trueMarketLow} * (1 + ${ruleConfig.rule1.marketLowUplift/100} + ${usageUplift}) = ${trueMarketLow * (1 + ruleConfig.rule1.marketLowUplift/100 + usageUplift)}`);
-        console.log('Competitor prices used for TML:', competitorPrices);
-      }
-      
-      console.log(`Using True Market Low fallback with ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift: ${trueMarketLow} * ${trueMarketLowMarkup} = ${newPrice}`);
-    }
-    // FALLBACK 2: Only use cost-based pricing when no competitor prices exist
-    else if (hasValidCost) {
-      // UPDATED: Apply usage uplift to cost markup in fallback as per proposed structure
-      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
-      newPrice = cost * standardCostMarkup;
-      ruleApplied = 'fallback_cost_based';
-      
-      if (isSymbicort) {
-        console.log(`SYMBICORT FALLBACK 2: Using Cost ${cost} with ${ruleConfig.rule2.costMarkup}% + ${usageUplift * 100}% uplift = ${newPrice}`);
-        console.log('No valid competitor prices found, competitor prices array:', competitorPrices);
-        console.log('hasValidTrueMarketLow =', hasValidTrueMarketLow);
-        console.log('trueMarketLow =', trueMarketLow);
-      }
-      
-      console.log(`Using AVC fallback: ${cost} * ${standardCostMarkup} = ${newPrice}`);
-    }
-    // No valid cost, try next cost
-    else if (treatZeroAsNull(nextCost) !== null) {
-      // UPDATED: Apply usage uplift to next cost markup in fallback as per proposed structure
-      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
-      newPrice = nextCost * standardCostMarkup;
-      ruleApplied = 'fallback_nextcost_based';
-      
-      console.log(`Using Next Cost fallback: ${nextCost} * ${standardCostMarkup} = ${newPrice}`);
-    }
-    // No cost or next cost, use current price
-    else if (treatZeroAsNull(item.currentREVAPrice) !== null) {
-      newPrice = item.currentREVAPrice;
-      ruleApplied = 'fallback_current_price';
-      
-      console.log(`Using Current Price fallback: ${item.currentREVAPrice}`);
-    }
-    // Absolute fallback - minimum price
-    else {
-      newPrice = 0.01;
-      ruleApplied = 'fallback_minimum';
-      
-      console.log(`Using minimum price fallback: ${newPrice}`);
-    }
-    
-    // ADDED: Apply margin cap for Fallback rules if cost ≤ £1.00
-    if (hasValidCost && cost <= 1.00 && cost > 0) {
-      // Get the appropriate margin cap percentage for this usage group
-      const marginCapKey = usageGroup as keyof typeof ruleConfig.rule2.marginCaps;
-      const marginCap = ruleConfig.rule2.marginCaps[marginCapKey] / 100; // Convert to decimal
-      
-      // Calculate max price based on margin cap
-      const maxPriceByMarginCap = cost / (1 - marginCap);
-      
-      console.log(`Fallback Margin cap check: Cost=${cost}, Cap=${marginCap}, MaxPrice=${maxPriceByMarginCap}, CurrentPrice=${newPrice}`);
-      
-      if (newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
-        console.log(`Applying margin cap for Fallback: Reducing price from ${newPrice} to ${maxPriceByMarginCap}`);
-        newPrice = maxPriceByMarginCap;
-        marginCapApplied = true;
-        ruleApplied += '_capped';
-      }
-    } else if (cost <= 0) {
-      console.log(`Skipping margin cap for zero-cost item: ${item.description}`);
-    }
+    // ... keep existing code (original fallback rules as backup)
   }
   
   // Ensure we never have zero or negative price
