@@ -186,6 +186,14 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({
         <div className={diff >= 0 ? 'text-green-400' : 'text-red-400'}>
           {sign}£{diff.toFixed(2)} ({sign}{percentage.toFixed(2)}%)
         </div>
+        {item.priceChangeRationale && (
+          <div className="text-xs text-muted-foreground mt-1">
+            Reason: {item.priceChangeRationale && 
+              (typeof item.priceChangeRationale === 'string' ? 
+                item.priceChangeRationale : 
+                item.priceChangeRationale.reason || item.priceChangeRationale)}
+          </div>
+        )}
       </div>
     );
   };
@@ -213,6 +221,17 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({
     if (onToggleStar) {
       onToggleStar(itemId);
     }
+  };
+
+  // Render exception count badge
+  const renderExceptionCountBadge = (item: any) => {
+    if (!item || !item.exceptionHistory || item.exceptionHistory.length < 2) return null;
+    
+    return (
+      <Badge variant="repeated" className="ml-1" title={`This item has triggered exceptions ${item.exceptionHistory.length} times`}>
+        {item.exceptionHistory.length}x
+      </Badge>
+    );
   };
 
   if (!submittedItems || submittedItems.length === 0) {
@@ -380,7 +399,10 @@ const ApprovalsTab: React.FC<ApprovalsTabProps> = ({
                   </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
-                      {item.description}
+                      <div className="flex items-center gap-1">
+                        {item.description}
+                        {renderExceptionCountBadge(item)}
+                      </div>
                       <div className="flex gap-1 mt-1">
                         {item.flag1 && (
                           <Badge variant="outline" className="text-xs bg-red-900/20 text-red-400 border-red-900">

@@ -1,19 +1,32 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, X, RotateCcw, AlertCircle } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// Define price change rationales
+export const PRICE_RATIONALES = {
+  TOO_HIGH_MARKET: "Too High For Market",
+  TOO_LOW_AVCO: "Too Low For AVCO",
+  NEXT_BP_INCORRECT: "Next BP Incorrect",
+  COMPETITOR_PRICE: "Competitor Price Match",
+  VOLUME_DISCOUNT: "Volume Discount Applied",
+  PRICING_ERROR: "Previous Pricing Error",
+  OTHER: "Other"
+} as const;
+
+export type PriceRationale = keyof typeof PRICE_RATIONALES;
 
 interface PriceEditorProps {
   initialPrice: number;
   currentPrice: number;
   calculatedPrice: number;
   cost: number;
-  onSave: (newPrice: number) => void;
+  onSave: (newPrice: number, rationale?: PriceRationale) => void;
   onCancel: () => void;
   compact?: boolean;
-  autoSaveOnExit?: boolean; // Added to support auto-saving when exiting bulk edit
+  autoSaveOnExit?: boolean;
 }
 
 const PriceEditor: React.FC<PriceEditorProps> = ({
@@ -35,6 +48,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   );
   const [margin, setMargin] = useState<number>(0);
   const [isValid, setIsValid] = useState<boolean>(true);
+  const [rationale, setRationale] = useState<PriceRationale | undefined>(undefined);
   
   // Calculate price change percentage
   const priceChangePercent = calculatedPrice !== currentPrice ? 
@@ -74,18 +88,27 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
     setPriceValue(Math.max(initialPrice, MIN_VALID_PRICE).toFixed(2));
   }, [initialPrice, MIN_VALID_PRICE]);
 
+  // Handle rationale change
+  const handleRationaleChange = (value: PriceRationale) => {
+    setRationale(value);
+  };
+
   // Handle component unmount with autoSaveOnExit
   useEffect(() => {
     return () => {
       if (autoSaveOnExit) {
         const numericPrice = parseFloat(priceValue);
         if (isValid && numericPrice >= MIN_VALID_PRICE && numericPrice !== initialPrice) {
-          console.log("Auto-saving price on exit:", numericPrice);
-          onSave(numericPrice);
+          if (rationale) { // Only auto-save if rationale is selected
+            console.log("Auto-saving price on exit:", numericPrice, "with rationale:", rationale);
+            onSave(numericPrice, rationale);
+          } else {
+            console.log("Not auto-saving as no rationale was provided");
+          }
         }
       }
     };
-  }, [autoSaveOnExit, priceValue, isValid, initialPrice, onSave, MIN_VALID_PRICE]);
+  }, [autoSaveOnExit, priceValue, isValid, initialPrice, onSave, MIN_VALID_PRICE, rationale]);
   
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPriceValue(e.target.value);
@@ -99,9 +122,18 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   const handleSave = () => {
     const numericPrice = parseFloat(priceValue);
     if (isValid && numericPrice >= MIN_VALID_PRICE) {
-      // Ensure we're calling onSave with the parsed numeric value
-      onSave(numericPrice);
-      // Toast notification moved to the parent component to prevent multiple notifications
+      // Make rationale required if price is being changed
+      if (numericPrice !== initialPrice && !rationale) {
+        toast({
+          title: "Rationale required",
+          description: "Please select a reason for this price change",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Call onSave with the price and rationale
+      onSave(numericPrice, rationale);
     } else {
       toast({
         title: "Invalid price",
@@ -123,42 +155,56 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   
   if (compact) {
     return (
-      <div className="flex space-x-1 items-center">
-        <Input
-          type="number"
-          step="0.01"
-          min="0"
-          value={priceValue}
-          onChange={handlePriceChange}
-          className={`h-7 w-24 ${isValid ? "" : "border-red-500"}`}
-          autoFocus
-        />
-        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleReset} title="Reset to calculated price">
-          <RotateCcw className="h-3 w-3" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={onCancel} title="Cancel">
-          <X className="h-3 w-3" />
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-7 w-7 p-0" 
-          onClick={handleSave} 
-          disabled={!isValid} 
-          title="Save"
-        >
-          <Check className="h-3 w-3" />
-        </Button>
-        {isPriceDecrease && (
-          <span title="Price decrease" aria-label="Price decrease">
-            <AlertCircle className="h-3 w-3 text-amber-500" />
-          </span>
-        )}
-        {possibleDataIssue && (
-          <span title="Current price may be incorrect" aria-label="Data issue">
-            <AlertCircle className="h-3 w-3 text-red-500 ml-1" />
-          </span>
-        )}
+      <div className="flex flex-col space-y-2">
+        <div className="flex space-x-1 items-center">
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={priceValue}
+            onChange={handlePriceChange}
+            className={`h-7 w-24 ${isValid ? "" : "border-red-500"}`}
+            autoFocus
+          />
+          <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={handleReset} title="Reset to calculated price">
+            <RotateCcw className="h-3 w-3" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 p-0" onClick={onCancel} title="Cancel">
+            <X className="h-3 w-3" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7 p-0" 
+            onClick={handleSave} 
+            disabled={!isValid || (priceValue !== initialPrice.toFixed(2) && !rationale)} 
+            title="Save"
+          >
+            <Check className="h-3 w-3" />
+          </Button>
+          {isPriceDecrease && (
+            <span title="Price decrease" aria-label="Price decrease">
+              <AlertCircle className="h-3 w-3 text-amber-500" />
+            </span>
+          )}
+          {possibleDataIssue && (
+            <span title="Current price may be incorrect" aria-label="Data issue">
+              <AlertCircle className="h-3 w-3 text-red-500 ml-1" />
+            </span>
+          )}
+        </div>
+        
+        {/* Add rationale dropdown for compact view */}
+        <Select value={rationale} onValueChange={handleRationaleChange}>
+          <SelectTrigger className="h-7 w-full text-xs">
+            <SelectValue placeholder="Select reason for change..." />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(PRICE_RATIONALES).map(([key, label]) => (
+              <SelectItem key={key} value={key}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     );
   }
@@ -178,6 +224,21 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
         <Button variant="ghost" size="icon" onClick={handleReset} title="Reset to calculated price">
           <RotateCcw className="h-4 w-4" />
         </Button>
+      </div>
+      
+      {/* Add rationale dropdown for full view */}
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">Reason for change:</label>
+        <Select value={rationale} onValueChange={handleRationaleChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select reason..." />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(PRICE_RATIONALES).map(([key, label]) => (
+              <SelectItem key={key} value={key}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       
       <div className="flex justify-between items-center text-xs text-muted-foreground">
@@ -210,7 +271,7 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           variant="default" 
           size="sm" 
           onClick={handleSave} 
-          disabled={!isValid}
+          disabled={!isValid || (priceValue !== initialPrice.toFixed(2) && !rationale)}
         >
           <Check className="h-3 w-3 mr-1" />
           Save

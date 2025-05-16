@@ -1,8 +1,10 @@
-
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 import { processEngineExcelFile } from '@/utils/engine-excel-utils';
+
+// Import PriceRationale type
+import { PriceRationale, PRICE_RATIONALES } from '@/components/engine-room/PriceEditor';
 
 interface EngineRoomContextType {
   engineData: any;
@@ -15,7 +17,7 @@ interface EngineRoomContextType {
   isUploading: boolean;
   errorMessage: string | null;
   handleFileUpload: (file: File) => Promise<void>;
-  handlePriceChange: (item: any, newPrice: number) => void;
+  handlePriceChange: (item: any, newPrice: number, rationale?: PriceRationale) => void;
   handleResetChanges: () => void;
   handleSaveChanges: () => void;
   handleSubmitForApproval: () => void;
@@ -266,11 +268,11 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [queryClient, toast, recalculateEngineMetrics]);
 
-  // Handle price change - updated to ensure changes are properly saved and metrics recalculated
-  const handlePriceChange = useCallback((item: any, newPrice: number) => {
+  // Updated handlePriceChange to include rationale
+  const handlePriceChange = useCallback((item: any, newPrice: number, rationale?: PriceRationale) => {
     if (!engineData) return;
     
-    console.log('Price change triggered for item:', item.id, 'New price:', newPrice);
+    console.log('Price change triggered for item:', item.id, 'New price:', newPrice, 'Rationale:', rationale);
     
     // Deep clone the data to avoid modifying the cache directly
     const updatedData = JSON.parse(JSON.stringify(engineData));
@@ -281,8 +283,36 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Store the old price for change tracking
       const oldPrice = foundItem.proposedPrice || foundItem.currentREVAPrice;
       
+      // Update price and tracking information
       foundItem.proposedPrice = newPrice;
       foundItem.priceModified = true;
+      
+      // Add rationale if provided
+      if (rationale) {
+        foundItem.priceChangeRationale = rationale;
+        foundItem.priceChangeRationaleDescription = PRICE_RATIONALES[rationale];
+      }
+      
+      // Track exception history to identify repeat offenders
+      // Initialize exception history array if it doesn't exist
+      if (!foundItem.exceptionHistory) foundItem.exceptionHistory = [];
+      
+      // Check if the item is flagged
+      const isFlagged = foundItem.flag1 || foundItem.flag2;
+      const hasFlag = foundItem.flags && foundItem.flags.length > 0;
+      
+      // If the item is flagged, add an entry to the exception history
+      if (isFlagged || hasFlag) {
+        foundItem.exceptionHistory.push({
+          date: new Date().toISOString(),
+          flags: foundItem.flags || [],
+          flag1: foundItem.flag1,
+          flag2: foundItem.flag2,
+          price: newPrice,
+          oldPrice: oldPrice,
+          rationale: rationale
+        });
+      }
       
       // IMPORTANT: Fix the margin calculation formula here
       // Use CORRECT formula: margin = (price - cost) / price
@@ -325,56 +355,76 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     }
     
-    // Also update in flagged items if present
-    const flaggedItemIndex = updatedData.flaggedItems.findIndex((i: any) => i.id === item.id);
+    // Also update in flagged items if present - same pattern as above
+    const flaggedItemIndex = updatedData.flaggedItems?.findIndex((i: any) => i.id === item.id);
     if (flaggedItemIndex >= 0) {
-      updatedData.flaggedItems[flaggedItemIndex].proposedPrice = newPrice;
-      updatedData.flaggedItems[flaggedItemIndex].priceModified = true;
+      const flaggedItem = updatedData.flaggedItems[flaggedItemIndex];
+      flaggedItem.proposedPrice = newPrice;
+      flaggedItem.priceModified = true;
       
-      // IMPORTANT: Fix the margin calculation formula here too
+      // Add rationale if provided
+      if (rationale) {
+        flaggedItem.priceChangeRationale = rationale;
+        flaggedItem.priceChangeRationaleDescription = PRICE_RATIONALES[rationale];
+      }
+      
+      // Track exception history for flagged items as well
+      if (!flaggedItem.exceptionHistory) flaggedItem.exceptionHistory = [];
+      
+      // If the item is already flagged, that's an exception worth tracking
+      flaggedItem.exceptionHistory.push({
+        date: new Date().toISOString(),
+        flags: flaggedItem.flags || [],
+        flag1: flaggedItem.flag1,
+        flag2: flaggedItem.flag2,
+        price: newPrice,
+        oldPrice: flaggedItem.proposedPrice || flaggedItem.currentREVAPrice,
+        rationale: rationale
+      });
+      
+      // IMPORTANT: Fix the margin calculation formula here
       // Use CORRECT formula: margin = (price - cost) / price
-      const avgCost = Math.max(0, Number(updatedData.flaggedItems[flaggedItemIndex].avgCost) || 0);
-      updatedData.flaggedItems[flaggedItemIndex].proposedMargin = 
+      const avgCost = Math.max(0, Number(flaggedItem.avgCost) || 0);
+      flaggedItem.proposedMargin = 
         newPrice > 0 ? (newPrice - avgCost) / newPrice : 0;
         
       // Update flag2 if margin is at or below 0% (changed from < 5%)
-      updatedData.flaggedItems[flaggedItemIndex].flag2 = 
-        updatedData.flaggedItems[flaggedItemIndex].proposedMargin <= 0;
+      flaggedItem.flag2 = flaggedItem.proposedMargin <= 0;
         
       // Add flag for significant price decrease in flagged items as well
-      if (updatedData.flaggedItems[flaggedItemIndex].currentREVAPrice > 0 && 
-          newPrice < updatedData.flaggedItems[flaggedItemIndex].currentREVAPrice) {
-        const decreasePercent = ((updatedData.flaggedItems[flaggedItemIndex].currentREVAPrice - newPrice) / 
-                               updatedData.flaggedItems[flaggedItemIndex].currentREVAPrice) * 100;
+      if (flaggedItem.currentREVAPrice > 0 && 
+          newPrice < flaggedItem.currentREVAPrice) {
+        const decreasePercent = ((flaggedItem.currentREVAPrice - newPrice) / 
+                               flaggedItem.currentREVAPrice) * 100;
         if (decreasePercent > 5) {
-          if (!updatedData.flaggedItems[flaggedItemIndex].flags) {
-            updatedData.flaggedItems[flaggedItemIndex].flags = [];
+          if (!flaggedItem.flags) {
+            flaggedItem.flags = [];
           }
-          const existingDecreaseFlags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => f.startsWith('PRICE_DECREASE_'));
+          const existingDecreaseFlags = flaggedItem.flags.filter(f => f.startsWith('PRICE_DECREASE_'));
           if (existingDecreaseFlags.length > 0) {
             // Remove existing price decrease flags
-            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
+            flaggedItem.flags = flaggedItem.flags.filter(f => !f.startsWith('PRICE_DECREASE_'));
           }
-          updatedData.flaggedItems[flaggedItemIndex].flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
+          flaggedItem.flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
         }
       }
       
       // Update HIGH_PRICE flag for flagged items only if TML is valid
-      if (!updatedData.flaggedItems[flaggedItemIndex].noMarketPrice && 
-          updatedData.flaggedItems[flaggedItemIndex].trueMarketLow && 
-          updatedData.flaggedItems[flaggedItemIndex].trueMarketLow > 0) {
-        const isHighPrice = newPrice >= updatedData.flaggedItems[flaggedItemIndex].trueMarketLow * 1.10;
-        updatedData.flaggedItems[flaggedItemIndex].flag1 = isHighPrice;
+      if (!flaggedItem.noMarketPrice && 
+          flaggedItem.trueMarketLow && 
+          flaggedItem.trueMarketLow > 0) {
+        const isHighPrice = newPrice >= flaggedItem.trueMarketLow * 1.10;
+        flaggedItem.flag1 = isHighPrice;
         
         if (isHighPrice) {
-          if (!updatedData.flaggedItems[flaggedItemIndex].flags) updatedData.flaggedItems[flaggedItemIndex].flags = [];
-          if (!updatedData.flaggedItems[flaggedItemIndex].flags.includes('HIGH_PRICE')) {
-            updatedData.flaggedItems[flaggedItemIndex].flags.push('HIGH_PRICE');
+          if (!flaggedItem.flags) flaggedItem.flags = [];
+          if (!flaggedItem.flags.includes('HIGH_PRICE')) {
+            flaggedItem.flags.push('HIGH_PRICE');
           }
         } else {
           // Remove HIGH_PRICE flag if it exists
-          if (updatedData.flaggedItems[flaggedItemIndex].flags) {
-            updatedData.flaggedItems[flaggedItemIndex].flags = updatedData.flaggedItems[flaggedItemIndex].flags.filter(f => f !== 'HIGH_PRICE');
+          if (flaggedItem.flags) {
+            flaggedItem.flags = flaggedItem.flags.filter(f => f !== 'HIGH_PRICE');
           }
         }
       }
@@ -398,7 +448,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     
     toast({
       title: "Price updated",
-      description: `Updated price for ${item.description} to £${newPrice.toFixed(2)}`,
+      description: `Updated price for ${item.description} to £${newPrice.toFixed(2)}${rationale ? ` (${PRICE_RATIONALES[rationale]})` : ''}`,
     });
   }, [engineData, queryClient, toast, recalculateEngineMetrics]);
 
@@ -674,7 +724,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   }, [engineData, queryClient, toast, recalculateEngineMetrics]);
 
-  // Handle export data
+  // Update handleExport to include rationale in the export
   const handleExport = useCallback(() => {
     if (!engineData) return;
     
@@ -684,6 +734,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         // Call the export function with the engineData items
         const result = exportPricingData(engineData.items, {
           includeWorkflowStatus: true,
+          includeRationales: true, // Add this option to include rationales in export
           fileName: `REVA_Pricing_${new Date().toISOString().substring(0, 10)}.xlsx`
         });
         
@@ -754,4 +805,3 @@ export const useEngineRoom = () => {
   }
   return context;
 };
-
