@@ -1,7 +1,9 @@
+
 import React from "react";
 import {
   createBrowserRouter,
   RouterProvider,
+  Outlet,
 } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
@@ -21,7 +23,7 @@ import PricingAnalytics from "@/pages/engine-room/PricingAnalytics";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <AppLayout />,
+    element: <AppLayout><Outlet /></AppLayout>,
     children: [
       { path: "/", element: <Dashboard /> },
       { path: "/rep-performance", element: <RepPerformance /> },
