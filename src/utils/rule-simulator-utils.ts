@@ -174,7 +174,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     
     // Define standard markups - we'll need these multiple times
     const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
-    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
+    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
     
     // If market low is available, use it with standard markup
     if (hasValidMarketLow) {
@@ -232,21 +232,12 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     else {
       // Set price to higher of:
       // - ML + 3% + uplift
-      // - AVC + 12% (NO UPLIFT) - FIXED: Removed uplift from AVC calculation
+      // - AVC + 12%
       const mlPrice = marketLow * standardMLMarkup;
       
-      // CRITICAL FIX FOR RULE 1b: Cost markup (12%) - NO USAGE UPLIFT
-      // This is the specific fix for Alfuzosin Tabs 2.5mg / 60
+      // Cost markup (12%)
       const costMarkup = 1 + (ruleConfig.rule1.costMarkup / 100);
       const costPrice = cost * costMarkup;
-      
-      // Debug for Alfuzosin case
-      if (item.description && item.description.includes("Alfuzosin Tabs 2.5mg / 60")) {
-        console.log('ALFUZOSIN DEBUGGING:');
-        console.log('ML calculation:', marketLow, '*', standardMLMarkup, '=', mlPrice);
-        console.log('Cost calculation:', cost, '*', costMarkup, '=', costPrice);
-        console.log('Should pick higher of:', mlPrice, 'vs', costPrice);
-      }
       
       newPrice = Math.max(mlPrice, costPrice);
       ruleApplied = newPrice === mlPrice ? 'rule1_upward_ml' : 'rule1_upward_cost';
@@ -279,22 +270,22 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     console.log(`RULE 2: AVC ≥ ML - ${cost} ≥ ${marketLow}`);
     
     // Standard markup for market low (3% + usage uplift)
-    const standardMLMarkup = 1 + (ruleConfig.rule2.marketLowUplift / 100) + usageUplift;
+    const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
     
-    // Standard markup for cost (12%) - FIXED: Removed the usage uplift from cost markup
-    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
+    // Standard markup for cost (12% + usage uplift)
+    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
     
-    // ML price with standard markup (includes uplift)
+    // ML price with standard markup
     const mlPrice = marketLow * standardMLMarkup;
     
-    // Cost price with standard markup (no uplift)
+    // Cost price with standard markup
     const costPrice = cost * standardCostMarkup;
     
     // For downward trends (NBP ≤ AVC)
     if (isDownwardTrend) {
       // Set price to lower of:
       // - ML + 3% + uplift
-      // - AVC + 12% (NO UPLIFT)
+      // - AVC + 12% + uplift
       newPrice = Math.min(mlPrice, costPrice);
       ruleApplied = newPrice === mlPrice ? 'rule2_downward_ml' : 'rule2_downward_cost';
     } 
@@ -302,7 +293,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     else {
       // Set price to higher of:
       // - ML + 3% + uplift
-      // - AVC + 12% (NO UPLIFT)
+      // - AVC + 12% + uplift
       newPrice = Math.max(mlPrice, costPrice);
       ruleApplied = newPrice === mlPrice ? 'rule2_upward_ml' : 'rule2_upward_cost';
     }
@@ -333,7 +324,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     // FALLBACK 2: Only use cost-based pricing when no competitor prices exist
     else if (hasValidCost) {
-      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
+      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
       newPrice = cost * standardCostMarkup;
       ruleApplied = 'fallback_cost_based';
       
@@ -348,7 +339,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     // No valid cost, try next cost
     else if (treatZeroAsNull(nextCost) !== null) {
-      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
+      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
       newPrice = nextCost * standardCostMarkup;
       ruleApplied = 'fallback_nextcost_based';
       
