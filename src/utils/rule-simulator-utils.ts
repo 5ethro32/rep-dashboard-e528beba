@@ -1,3 +1,4 @@
+
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -234,9 +235,18 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       // - AVC + 12% (NO UPLIFT) - FIXED: Removed uplift from AVC calculation
       const mlPrice = marketLow * standardMLMarkup;
       
-      // Cost markup (12%) - FIXED: No usage uplift applied here
+      // CRITICAL FIX FOR RULE 1b: Cost markup (12%) - NO USAGE UPLIFT
+      // This is the specific fix for Alfuzosin Tabs 2.5mg / 60
       const costMarkup = 1 + (ruleConfig.rule1.costMarkup / 100);
       const costPrice = cost * costMarkup;
+      
+      // Debug for Alfuzosin case
+      if (item.description && item.description.includes("Alfuzosin Tabs 2.5mg / 60")) {
+        console.log('ALFUZOSIN DEBUGGING:');
+        console.log('ML calculation:', marketLow, '*', standardMLMarkup, '=', mlPrice);
+        console.log('Cost calculation:', cost, '*', costMarkup, '=', costPrice);
+        console.log('Should pick higher of:', mlPrice, 'vs', costPrice);
+      }
       
       newPrice = Math.max(mlPrice, costPrice);
       ruleApplied = newPrice === mlPrice ? 'rule1_upward_ml' : 'rule1_upward_cost';
