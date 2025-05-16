@@ -51,6 +51,16 @@ const RuleSimulator = () => {
       setSimulationResult(result);
       setActiveTab('results');
       
+      // Add a specific toast message if we detected zero-cost margin cap items
+      if (result.simulated.zeroCostMarginCapSkipped > 0) {
+        toast({
+          title: "Zero-cost items detected",
+          description: `${result.simulated.zeroCostMarginCapSkipped} items with zero cost had margin caps skipped to preserve pricing.`,
+          variant: "info",
+          duration: 7000
+        });
+      }
+      
       toast({
         title: "Simulation complete",
         description: "Rule simulation has been processed successfully."
@@ -122,7 +132,7 @@ const RuleSimulator = () => {
         )}
       </div>
       
-      {/* Rule structure explanation card - Updated to include margin caps */}
+      {/* Rule structure explanation card - Updated to include margin caps and zero-cost handling */}
       <Card className="mb-6 bg-blue-950/30 border-blue-800/50">
         <CardContent className="p-4 text-sm">
           <h3 className="font-semibold mb-2 flex items-center gap-2">
@@ -134,6 +144,7 @@ const RuleSimulator = () => {
             <p><strong>Rule 2 (AVC ≥ ML):</strong> Applied when Average Cost is equal to or above Market Low</p>
             <p><strong>Usage-based Uplift:</strong> 0% for Ranks 1-2, 1% for Ranks 3-4, 2% for Ranks 5-6</p>
             <p><strong>Margin Caps for Low-Cost Items (≤ £1):</strong> Rank 1-2: 10% cap, Rank 3-4: 20% cap, Rank 5-6: 30% cap</p>
+            <p><strong>Zero-Cost Handling:</strong> Margin caps are skipped for zero-cost items to prevent £0.00 pricing</p>
           </div>
         </CardContent>
       </Card>

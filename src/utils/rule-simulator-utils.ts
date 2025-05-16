@@ -1,3 +1,4 @@
+
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -307,7 +308,8 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     
     // Apply margin cap for low-cost items (≤ £1.00)
-    if (newPrice > 0 && cost <= 1.00) {
+    // FIX: Add a check to skip margin cap calculation when cost is zero
+    if (newPrice > 0 && cost <= 1.00 && cost > 0.00) { // CRITICAL FIX: Added "cost > 0.00" condition
       const proposedMargin = (newPrice - cost) / newPrice;
       const marginCap = usageRank <= 2 ? ruleConfig.rule1.marginCaps.group1_2 : 
                         usageRank <= 4 ? ruleConfig.rule1.marginCaps.group3_4 : 
@@ -323,6 +325,14 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
         ruleApplied = `${ruleApplied}_margin_cap_${marginCap * 100}`;
         
         console.log(`RULE APPLIED: Margin cap of ${marginCap * 100}% applied, new price: ${newPrice}`);
+      }
+    } else if (newPrice > 0 && cost <= 1.00 && cost <= 0.00) { // Add specific logging for zero-cost items
+      console.log(`MARGIN CAP SKIPPED: Zero-cost item (${item.description}) - cap not applied to prevent zeroing out price`);
+      
+      // Add specific flag for this case
+      if (!item.flags) item.flags = [];
+      if (!item.flags.includes('ZERO_COST_MARGIN_CAP_SKIPPED')) {
+        item.flags.push('ZERO_COST_MARGIN_CAP_SKIPPED');
       }
     }
   }
@@ -358,7 +368,8 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     
     // Apply margin cap for low-cost items (≤ £1.00)
-    if (newPrice > 0 && cost <= 1.00) {
+    // FIX: Add a check to skip margin cap calculation when cost is zero
+    if (newPrice > 0 && cost <= 1.00 && cost > 0.00) { // CRITICAL FIX: Added "cost > 0.00" condition
       const proposedMargin = (newPrice - cost) / newPrice;
       const marginCap = usageRank <= 2 ? ruleConfig.rule2.marginCaps.group1_2 : 
                         usageRank <= 4 ? ruleConfig.rule2.marginCaps.group3_4 : 
@@ -374,6 +385,14 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
         ruleApplied = `${ruleApplied}_margin_cap_${marginCap * 100}`;
         
         console.log(`RULE APPLIED: Margin cap of ${marginCap * 100}% applied, new price: ${newPrice}`);
+      }
+    } else if (newPrice > 0 && cost <= 1.00 && cost <= 0.00) { // Add specific logging for zero-cost items
+      console.log(`MARGIN CAP SKIPPED: Zero-cost item (${item.description}) - cap not applied to prevent zeroing out price`);
+      
+      // Add specific flag for this case
+      if (!item.flags) item.flags = [];
+      if (!item.flags.includes('ZERO_COST_MARGIN_CAP_SKIPPED')) {
+        item.flags.push('ZERO_COST_MARGIN_CAP_SKIPPED');
       }
     }
   }
@@ -496,7 +515,9 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     hasTrueMarketLow: hasValidTrueMarketLow,
     // Add additional diagnostic info for debugging
     competitorPricesCount: competitorPrices.length,
-    competitorPrices: competitorPrices.length > 0 ? competitorPrices : null
+    competitorPrices: competitorPrices.length > 0 ? competitorPrices : null,
+    // Add the new flag for zero-cost items where margin cap was skipped
+    zeroCostMarginCapSkipped: cost <= 0.00 && (hasValidMarketLow || hasValidTrueMarketLow)
   };
 };
 
@@ -529,7 +550,8 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
       flag1: simulationResult.flag1,
       flag2: simulationResult.flag2,
       marginCapApplied: simulationResult.marginCapApplied,
-      marginFloorApplied: simulationResult.marginFloorApplied
+      marginFloorApplied: simulationResult.marginFloorApplied,
+      zeroCostMarginCapSkipped: simulationResult.zeroCostMarginCapSkipped
     };
   });
   
@@ -611,6 +633,7 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
     let lowMarginFlags = 0;
     let marginCapApplied = 0;
     let marginFloorApplied = 0;
+    let zeroCostMarginCapSkipped = 0;
     
     groupItems.forEach(item => {
       const usage = Math.max(0, item.revaUsage || 0);
@@ -634,6 +657,7 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
       if (item.flag2) lowMarginFlags++;
       if (item.marginCapApplied) marginCapApplied++;
       if (item.marginFloorApplied) marginFloorApplied++;
+      if (item.zeroCostMarginCapSkipped) zeroCostMarginCapSkipped++;
     });
     
     // Calculate weighted margin for this group
@@ -664,7 +688,8 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
         highPriceFlags,
         lowMarginFlags,
         marginCapApplied,
-        marginFloorApplied
+        marginFloorApplied,
+        zeroCostMarginCapSkipped
       },
       changes: {
         revenueDiff,
@@ -681,6 +706,7 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
   const lowMarginFlags = simulatedItems.filter((item: any) => item.flag2).length;
   const marginCapApplied = simulatedItems.filter((item: any) => item.marginCapApplied).length;
   const marginFloorApplied = simulatedItems.filter((item: any) => item.marginFloorApplied).length;
+  const zeroCostMarginCapSkipped = simulatedItems.filter((item: any) => item.zeroCostMarginCapSkipped).length;
   
   // Return simulation results
   return {
@@ -698,7 +724,8 @@ export const simulateRuleChanges = (items: any[], ruleConfig: RuleConfig) => {
       highPriceFlags,
       lowMarginFlags,
       marginCapApplied,
-      marginFloorApplied
+      marginFloorApplied,
+      zeroCostMarginCapSkipped
     },
     changes: {
       revenueDiff,
