@@ -1,4 +1,3 @@
-
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -174,7 +173,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     
     // Define standard markups - we'll need these multiple times
     const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
-    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
+    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
     
     // If market low is available, use it with standard markup
     if (hasValidMarketLow) {
@@ -232,10 +231,10 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     else {
       // Set price to higher of:
       // - ML + 3% + uplift
-      // - AVC + 12%
+      // - AVC + 12% (NO UPLIFT) - FIXED: Removed uplift from AVC calculation
       const mlPrice = marketLow * standardMLMarkup;
       
-      // Cost markup (12%)
+      // Cost markup (12%) - FIXED: No usage uplift applied here
       const costMarkup = 1 + (ruleConfig.rule1.costMarkup / 100);
       const costPrice = cost * costMarkup;
       
@@ -270,22 +269,22 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     console.log(`RULE 2: AVC ≥ ML - ${cost} ≥ ${marketLow}`);
     
     // Standard markup for market low (3% + usage uplift)
-    const standardMLMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
+    const standardMLMarkup = 1 + (ruleConfig.rule2.marketLowUplift / 100) + usageUplift;
     
-    // Standard markup for cost (12% + usage uplift)
-    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
+    // Standard markup for cost (12%) - FIXED: Removed the usage uplift from cost markup
+    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
     
-    // ML price with standard markup
+    // ML price with standard markup (includes uplift)
     const mlPrice = marketLow * standardMLMarkup;
     
-    // Cost price with standard markup
+    // Cost price with standard markup (no uplift)
     const costPrice = cost * standardCostMarkup;
     
     // For downward trends (NBP ≤ AVC)
     if (isDownwardTrend) {
       // Set price to lower of:
       // - ML + 3% + uplift
-      // - AVC + 12% + uplift
+      // - AVC + 12% (NO UPLIFT)
       newPrice = Math.min(mlPrice, costPrice);
       ruleApplied = newPrice === mlPrice ? 'rule2_downward_ml' : 'rule2_downward_cost';
     } 
@@ -293,7 +292,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     else {
       // Set price to higher of:
       // - ML + 3% + uplift
-      // - AVC + 12% + uplift
+      // - AVC + 12% (NO UPLIFT)
       newPrice = Math.max(mlPrice, costPrice);
       ruleApplied = newPrice === mlPrice ? 'rule2_upward_ml' : 'rule2_upward_cost';
     }
@@ -324,7 +323,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     // FALLBACK 2: Only use cost-based pricing when no competitor prices exist
     else if (hasValidCost) {
-      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
+      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
       newPrice = cost * standardCostMarkup;
       ruleApplied = 'fallback_cost_based';
       
@@ -339,7 +338,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     // No valid cost, try next cost
     else if (treatZeroAsNull(nextCost) !== null) {
-      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
+      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
       newPrice = nextCost * standardCostMarkup;
       ruleApplied = 'fallback_nextcost_based';
       

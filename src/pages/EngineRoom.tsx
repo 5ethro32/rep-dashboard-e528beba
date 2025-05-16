@@ -14,12 +14,14 @@ const EngineRoom: React.FC = () => {
     console.log('ML (Market Low) is now strictly linked to ETH_NET price.');
     console.log('Fallback rules will properly trigger when ETH_NET is missing.');
     console.log('Fixed fallback hierarchy: Now uses TrueMarketLow + markup when ETH_NET is missing but other competitor prices exist.');
+    console.log('CRITICAL FIX APPLIED: Rule 1b and 2b calculation corrected.');
+    console.log('Usage-based uplift is now correctly applied only to Market Low calculations, not AVC calculations.');
     
     // Show toast notification about the fix with more details
     toast({
-      title: "Pricing Engine Update",
-      description: "Fixed Symbicort pricing issue: Now correctly identifies all competitor prices and applies TrueMarketLow + standard markup when ETH_NET is missing.",
-      duration: 5000
+      title: "Pricing Engine Updates",
+      description: "1) Fixed Symbicort pricing issue with proper competitive price detection. 2) Corrected Rule 1b/2b uplift inconsistency - uplift now applied correctly.",
+      duration: 7000
     });
     
     navigate('/engine-room/operations');
