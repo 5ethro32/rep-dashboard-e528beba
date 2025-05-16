@@ -627,33 +627,10 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     processedItem.marketLow = processedItem.eth_net;
     
     // Calculate True Market Low (TML) - Lowest price across all competitors including ETH NET
-    let hasAnyCompetitorPrice = false;
-    let lowestPrice = Infinity;
-
-    // Check each competitor price and track if any are available
-    if (processedItem.eth_net !== undefined && !isNaN(processedItem.eth_net) && processedItem.eth_net > 0) {
-      hasAnyCompetitorPrice = true;
-      lowestPrice = Math.min(lowestPrice, processedItem.eth_net);
-    }
-    if (processedItem.eth !== undefined && !isNaN(processedItem.eth) && processedItem.eth > 0) {
-      hasAnyCompetitorPrice = true;
-      lowestPrice = Math.min(lowestPrice, processedItem.eth);
-    }
-    if (processedItem.nupharm !== undefined && !isNaN(processedItem.nupharm) && processedItem.nupharm > 0) {
-      hasAnyCompetitorPrice = true;
-      lowestPrice = Math.min(lowestPrice, processedItem.nupharm);
-    }
-    if (processedItem.lexon !== undefined && !isNaN(processedItem.lexon) && processedItem.lexon > 0) {
-      hasAnyCompetitorPrice = true;
-      lowestPrice = Math.min(lowestPrice, processedItem.lexon);
-    }
-    if (processedItem.aah !== undefined && !isNaN(processedItem.aah) && processedItem.aah > 0) {
-      hasAnyCompetitorPrice = true;
-      lowestPrice = Math.min(lowestPrice, processedItem.aah);
-    }
-
+    const { trueMarketLow, hasValidTrueMarketLow } = findTrueMarketLow(processedItem);
+    
     // Set trueMarketLow and noMarketPrice flag
-    if (!hasAnyCompetitorPrice || lowestPrice === Infinity) {
+    if (!hasValidTrueMarketLow) {
       processedItem.trueMarketLow = 0;
       processedItem.noMarketPrice = true;
       
@@ -664,7 +641,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       }
     } else {
       // Set trueMarketLow and explicitly set noMarketPrice to false
-      processedItem.trueMarketLow = lowestPrice;
+      processedItem.trueMarketLow = trueMarketLow;
       processedItem.noMarketPrice = false;
       
       // Remove "No Market Price Available" flag if it was previously set
@@ -673,8 +650,21 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       }
     }
     
-    // CRITICAL FIX: Removed the code that was setting Market Low to True Market Low when ETH_NET was missing
-    // This was the root cause of the issue, as it was preventing the fallback rules from being triggered
+    // Always log the Diltiazem products for troubleshooting
+    const isDiltiazem = processedItem.description && processedItem.description.includes("Diltiazem");
+    if (isDiltiazem) {
+      console.log('---------------------------------------------');
+      console.log('DILTIAZEM PRODUCT DETECTED:', processedItem.description);
+      console.log('ETH_NET:', processedItem.eth_net);
+      console.log('Market Low (ML):', processedItem.marketLow);
+      console.log('True Market Low (TML):', processedItem.trueMarketLow);
+      console.log('Has Valid TML:', hasValidTrueMarketLow);
+      console.log('No Market Price flag:', processedItem.noMarketPrice);
+      console.log('Average Cost:', processedItem.avgCost);
+      console.log('Next Cost:', processedItem.nextCost);
+      console.log('Usage Rank:', processedItem.usageRank);
+      console.log('---------------------------------------------');
+    }
     
     // Debug logging to track ML/TML values
     console.log(`Product: ${processedItem.description}, ETH_NET: ${processedItem.eth_net}, Market Low: ${processedItem.marketLow}, True Market Low: ${processedItem.trueMarketLow}, No Market Price: ${processedItem.noMarketPrice}`);
@@ -733,11 +723,11 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         }
       }
     } 
-    // RULE 2 - AvgCost >= Market Low OR No Market Price
+    // RULE 2 - AvgCost >= Market Low OR No ETH_NET Market Low
     else {
       const isDownwardTrend = processedItem.trend === 'TrendDown';
       
-      // Check if we have valid market price data first
+      // Check if we have valid ETH_NET market price data first
       if (!processedItem.noMarketPrice && processedItem.marketLow > 0) {
         if (isDownwardTrend) {
           // Rule 2a - Downward Trend: Market Low + Uplift
@@ -764,14 +754,49 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
           const usedPrice = processedItem.proposedPrice === mlPrice ? "ML" : "Cost";
           processedItem.appliedRule = `Rule 2b - ${usedPrice} Based (G${group}, Up)`;
         }
-      } else {
-        // NO MARKET PRICE - Use cost-based pricing directly
+      } 
+      // NO ETH_NET MARKET PRICE - Check if we have a valid True Market Low instead
+      else if (hasValidTrueMarketLow) {
+        // NEW RULE: When ETH_NET is missing but True Market Low exists
+        // Apply appropriate markup to True Market Low
+        
+        // Get usage-based uplift percentage 
+        const usageRank = processedItem.usageRank || 6;
+        
+        if (isDiltiazem) {
+          console.log('Using TRUE MARKET LOW PRICING for Diltiazem');
+        }
+        
+        // Calculate price using True Market Low + competitor markup
+        const result = calculatePriceWithTrueMarketLow(
+          processedItem, 
+          processedItem.description || 'unknown', 
+          processedItem.avgCost, 
+          trueMarketLow, 
+          usageRank
+        );
+        
+        processedItem.proposedPrice = result.price;
+        processedItem.appliedRule = result.rule;
+        
+        if (isDiltiazem) {
+          console.log('Calculated price using TML:', processedItem.proposedPrice);
+          console.log('Applied rule:', processedItem.appliedRule);
+        }
+      }
+      // FALLBACK - No Market Price and No True Market Low - Use cost-based pricing
+      else {
+        // Pure cost-based pricing as last resort
         const costMarkup = isDownwardTrend ? 
           groupConfig.rule2.trend_down : 
           groupConfig.rule2.trend_flat_up; // 12%, 13%, or 14% based on group
         
         processedItem.proposedPrice = processedItem.avgCost * costMarkup;
         processedItem.appliedRule = `Cost + ${((costMarkup - 1) * 100).toFixed(0)}% (G${group}, No MP)`;
+        
+        if (isDiltiazem) {
+          console.log('Using Cost-based pricing (last resort) for Diltiazem:', processedItem.proposedPrice);
+        }
       }
     }
     
@@ -855,4 +880,114 @@ function getGroupConfig(group: number, ruleConfig: RuleConfig) {
       marginCap: ruleConfig.rule1.marginCaps.group5_6 
     };
   }
+}
+
+// Helper function to validate if a price is valid (non-zero positive number)
+function isValidPrice(price: any): boolean {
+  // Convert to number if it's a string or any other type
+  const numPrice = Number(price);
+  // Check if it's a valid positive number
+  return !isNaN(numPrice) && numPrice > 0;
+}
+
+// Helper function to treat zero values as null/undefined
+function treatZeroAsNull(value: number | undefined | null): number | null {
+  if (value === undefined || value === null || value === 0) {
+    return null;
+  }
+  return value;
+}
+
+// Helper function to get the usage-based uplift percentage
+function getUsageBasedUplift(usageRank: number): number {
+  if (usageRank <= 2) return 0; // 0% uplift for ranks 1-2
+  if (usageRank <= 4) return 1; // 1% uplift for ranks 3-4
+  return 2; // 2% uplift for ranks 5-6
+}
+
+// Helper function to get the usage-based competitor markup percentage
+function getUsageBasedCompetitorMarkup(usageRank: number): number {
+  if (usageRank <= 2) return 3; // 3% uplift for ranks 1-2
+  if (usageRank <= 4) return 4; // 4% uplift for ranks 3-4
+  return 5; // 5% uplift for ranks 5-6
+}
+
+/**
+ * Find the true market low from all competitor prices
+ * @param item The product item with pricing data
+ * @returns Object with trueMarketLow value and whether it's valid
+ */
+function findTrueMarketLow(item: any): {trueMarketLow: number, hasValidTrueMarketLow: boolean} {
+  const competitorPrices = [];
+  
+  // Check each competitor price and add only valid prices
+  if (isValidPrice(item.eth_net)) {
+    competitorPrices.push(Number(item.eth_net));
+  }
+  
+  if (isValidPrice(item.eth)) {
+    competitorPrices.push(Number(item.eth));
+  }
+  
+  if (isValidPrice(item.nupharm)) {
+    competitorPrices.push(Number(item.nupharm));
+  }
+  
+  if (isValidPrice(item.lexon)) {
+    competitorPrices.push(Number(item.lexon));
+  }
+  
+  if (isValidPrice(item.aah)) {
+    competitorPrices.push(Number(item.aah));
+  }
+  
+  // Find the minimum valid competitor price
+  let trueMarketLow = Infinity;
+  let hasValidTrueMarketLow = false;
+  
+  if (competitorPrices.length > 0) {
+    hasValidTrueMarketLow = true;
+    trueMarketLow = Math.min(...competitorPrices);
+  }
+  
+  return { trueMarketLow, hasValidTrueMarketLow };
+}
+
+/**
+ * Calculate price based on pricing rules when no ETH_NET market low exists but other competitor prices do
+ * @param item The product item with pricing data
+ * @param description Product description for logging
+ * @param cost Product cost
+ * @param trueMarketLow The calculated true market low from all competitor prices
+ * @param usageRank Product usage rank
+ * @returns Calculated price based on TML + appropriate uplift
+ */
+function calculatePriceWithTrueMarketLow(item: any, description: string, cost: number, trueMarketLow: number, usageRank: number): {price: number, rule: string} {
+  // Always log the Diltiazem products for troubleshooting
+  const isDiltiazem = description && description.includes("Diltiazem");
+  if (isDiltiazem) {
+    console.log('DILTIAZEM PRODUCT DETECTED in calculatePriceWithTrueMarketLow:', description);
+    console.log('TrueMarketLow value:', trueMarketLow, 'Cost:', cost, 'Usage Rank:', usageRank);
+  }
+  
+  // Get usage-based uplift percentage
+  const usageUplift = getUsageBasedUplift(usageRank) / 100; // Convert to decimal (0%, 1%, or 2%)
+  
+  // Get competitor markup (3%, 4%, or 5% based on usage rank)
+  const competitorMarkupPercent = getUsageBasedCompetitorMarkup(usageRank);
+  
+  // Apply standard markup (3%) plus usage-based uplift to TrueMarketLow
+  const marketLowMarkup = 1 + (competitorMarkupPercent / 100);
+  const calculatedPrice = trueMarketLow * marketLowMarkup;
+  
+  // For debugging especially for Diltiazem products
+  if (isDiltiazem) {
+    console.log(`Using TrueMarketLow pricing rule for ${description}`);
+    console.log(`TrueMarketLow: ${trueMarketLow}, Markup: ${competitorMarkupPercent}%, Final Price: ${calculatedPrice}`);
+  }
+  
+  return {
+    price: calculatedPrice, 
+    rule: `true_market_low_plus_${competitorMarkupPercent}`
+  };
 }
