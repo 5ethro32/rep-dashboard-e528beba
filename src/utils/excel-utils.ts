@@ -423,3 +423,119 @@ const generatePlaceholderRepChanges = (reps: RepData[]): RepChanges => {
   
   return changes;
 };
+
+// Helper function to validate if a price is valid (non-zero positive number)
+function isValidPrice(price: any): boolean {
+  // Convert to number if it's a string or any other type
+  const numPrice = Number(price);
+  // Check if it's a valid positive number
+  return !isNaN(numPrice) && numPrice > 0;
+}
+
+// Helper function to treat zero values as null/undefined
+function treatZeroAsNull(value: number | undefined | null): number | null {
+  if (value === undefined || value === null || value === 0) {
+    return null;
+  }
+  return value;
+}
+
+// Helper function to get the usage-based uplift percentage
+function getUsageBasedUplift(usageRank: number): number {
+  if (usageRank <= 2) return 0; // 0% uplift for ranks 1-2
+  if (usageRank <= 4) return 1; // 1% uplift for ranks 3-4
+  return 2; // 2% uplift for ranks 5-6
+}
+
+// Helper function to get the usage-based competitor markup percentage
+function getUsageBasedCompetitorMarkup(usageRank: number): number {
+  if (usageRank <= 2) return 3; // 3% uplift for ranks 1-2
+  if (usageRank <= 4) return 4; // 4% uplift for ranks 3-4
+  return 5; // 5% uplift for ranks 5-6
+}
+
+// New function to properly handle pricing rules consistently with rule-simulator-utils.ts
+// This function should be used in any place where pricing calculations are performed
+
+/**
+ * Calculate price based on pricing rules when no ETH_NET market low exists but other competitor prices do
+ * @param item The product item with pricing data
+ * @param description Product description for logging
+ * @param cost Product cost
+ * @param trueMarketLow The calculated true market low from all competitor prices
+ * @param usageRank Product usage rank
+ * @returns Calculated price based on TML + appropriate uplift
+ */
+function calculatePriceWithTrueMarketLow(item: any, description: string, cost: number, trueMarketLow: number, usageRank: number): {price: number, rule: string} {
+  // Always log the Diltiazem products for troubleshooting
+  const isDiltiazem = description && description.includes("Diltiazem");
+  if (isDiltiazem) {
+    console.log('DILTIAZEM PRODUCT DETECTED in calculatePriceWithTrueMarketLow:', description);
+    console.log('TrueMarketLow value:', trueMarketLow, 'Cost:', cost, 'Usage Rank:', usageRank);
+  }
+  
+  // Get usage-based uplift percentage
+  const usageUplift = getUsageBasedUplift(usageRank) / 100; // Convert to decimal (0%, 1%, or 2%)
+  
+  // Get competitor markup (3%, 4%, or 5% based on usage rank)
+  const competitorMarkupPercent = getUsageBasedCompetitorMarkup(usageRank);
+  
+  // Apply standard markup (3%) plus usage-based uplift to TrueMarketLow
+  const marketLowMarkup = 1 + (competitorMarkupPercent / 100);
+  const calculatedPrice = trueMarketLow * marketLowMarkup;
+  
+  // For debugging especially for Diltiazem products
+  if (isDiltiazem) {
+    console.log(`Using TrueMarketLow pricing rule for ${description}`);
+    console.log(`TrueMarketLow: ${trueMarketLow}, Markup: ${competitorMarkupPercent}%, Final Price: ${calculatedPrice}`);
+  }
+  
+  return {
+    price: calculatedPrice, 
+    rule: `true_market_low_plus_${competitorMarkupPercent}`
+  };
+}
+
+/**
+ * Find the true market low from all competitor prices
+ * @param item The product item with pricing data
+ * @returns Object with trueMarketLow value and whether it's valid
+ */
+function findTrueMarketLow(item: any): {trueMarketLow: number, hasValidTrueMarketLow: boolean} {
+  const competitorPrices = [];
+  
+  // Check each competitor price and add only valid prices
+  if (isValidPrice(item.eth_net)) {
+    competitorPrices.push(Number(item.eth_net));
+  }
+  
+  if (isValidPrice(item.eth)) {
+    competitorPrices.push(Number(item.eth));
+  }
+  
+  if (isValidPrice(item.nupharm)) {
+    competitorPrices.push(Number(item.nupharm));
+  }
+  
+  if (isValidPrice(item.lexon)) {
+    competitorPrices.push(Number(item.lexon));
+  }
+  
+  if (isValidPrice(item.aah)) {
+    competitorPrices.push(Number(item.aah));
+  }
+  
+  // Find the minimum valid competitor price
+  let trueMarketLow = Infinity;
+  let hasValidTrueMarketLow = false;
+  
+  if (competitorPrices.length > 0) {
+    hasValidTrueMarketLow = true;
+    trueMarketLow = Math.min(...competitorPrices);
+  }
+  
+  return { trueMarketLow, hasValidTrueMarketLow };
+}
+
+// These functions should be called wherever price calculations are performed in the engine-room components
+// This ensures that the "No Market Low but TML exists" rule is properly implemented anywhere it's needed

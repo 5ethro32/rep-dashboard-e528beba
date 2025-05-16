@@ -1,4 +1,3 @@
-
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -49,7 +48,6 @@ const getUsageBasedCompetitorMarkup = (usageRank: number): number => {
 };
 
 // Helper function to validate if a price is valid (non-zero positive number)
-// This is a new helper function to make the price validation more robust
 const isValidPrice = (price: any): boolean => {
   // Convert to number if it's a string or any other type
   const numPrice = Number(price);
