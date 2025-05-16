@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
+import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw, Trash2, ChevronLeft } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import MetricCard from '@/components/MetricCard';
@@ -12,6 +12,71 @@ import RevaMetricsChartUpdated from '@/components/engine-room/RevaMetricsChartUp
 import { formatCurrency, calculateUsageWeightedMetrics } from '@/utils/formatting-utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
+
+// Micro component for donut chart to use on card backs
+const MicroDonutChart = ({ percentage, color = '#10b981' }) => {
+  const radius = 40;
+  const strokeWidth = 12;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="flex items-center justify-center h-full">
+      <div className="relative flex items-center justify-center">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle
+            className="text-gray-800"
+            strokeWidth={strokeWidth}
+            stroke="currentColor"
+            fill="transparent"
+            r={radius}
+            cx="50"
+            cy="50"
+          />
+          <circle
+            className="text-primary"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            stroke={color}
+            fill="transparent"
+            r={radius}
+            cx="50"
+            cy="50"
+            transform="rotate(-90 50 50)"
+          />
+        </svg>
+        <div className="absolute text-xl font-bold text-white">
+          {percentage.toFixed(1)}%
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Micro bar chart component for card backs
+const MicroBarChart = ({ data, title }) => {
+  const max = Math.max(...data.map(d => d.value));
+  
+  return (
+    <div className="flex flex-col h-full">
+      <div className="text-sm font-medium mb-2">{title}</div>
+      <div className="flex-1 flex items-end space-x-1">
+        {data.map((item, i) => (
+          <div key={i} className="flex flex-col items-center flex-1">
+            <div className="w-full bg-gray-800 rounded-t overflow-hidden" style={{ 
+              height: `${(item.value / max * 100)}%`,
+              minHeight: '10%',
+              backgroundColor: item.color || '#10b981'
+            }}></div>
+            <div className="text-[10px] mt-1 text-white/60">{item.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const EngineDashboardContent = () => {
   const {
@@ -126,6 +191,32 @@ const EngineDashboardContent = () => {
     }
   }, [engineData?.items, isMounted]);
 
+  // Functions for generating back content
+  const generateSKUChartData = () => {
+    return [
+      { label: 'Active', value: metrics.activeItems, color: '#10b981' },
+      { label: 'Inactive', value: metrics.totalItems - metrics.activeItems, color: '#6b7280' }
+    ];
+  };
+
+  const generateMarginDistribution = () => {
+    // Simple mock data for margin distribution
+    return [
+      { label: '<0%', value: 5, color: '#ef4444' },
+      { label: '0-5%', value: 15, color: '#f97316' },
+      { label: '5-10%', value: 30, color: '#eab308' },
+      { label: '10-15%', value: 25, color: '#84cc16' },
+      { label: '>15%', value: 25, color: '#10b981' },
+    ];
+  };
+
+  const generateFlagDistribution = () => {
+    return [
+      { label: 'Rule 1', value: metrics.rule1Flags, color: '#f97316' },
+      { label: 'Rule 2', value: metrics.rule2Flags, color: '#84cc16' }
+    ];
+  };
+
   // Handle drag and drop file upload
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -221,7 +312,20 @@ const EngineDashboardContent = () => {
         <CardContent className="p-6">
           {/* Primary metrics - Updated to have 4 cards with Usage-Weighted Margin replacing Overall Margin */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <MetricCard title="Total Active SKUs" value={metrics.activeItems.toString()} subtitle={`${metrics.totalItems} total SKUs`} icon={<Package className="h-5 w-5" />} iconPosition="right" />
+            <MetricCard 
+              title="Total Active SKUs" 
+              value={metrics.activeItems.toString()} 
+              subtitle={`${metrics.totalItems} total SKUs`} 
+              icon={<Package className="h-5 w-5" />} 
+              iconPosition="right" 
+              flippable={true}
+              backContent={
+                <MicroBarChart 
+                  data={generateSKUChartData()} 
+                  title="Active vs Total SKUs"
+                />
+              }
+            />
             
             <MetricCard 
               title="Usage-Weighted Margin" 
@@ -230,11 +334,52 @@ const EngineDashboardContent = () => {
               iconPosition="right"
               subtitle="Weighted by usage volume"
               details="Average margin across products"
+              flippable={true}
+              backContent={
+                <MicroDonutChart 
+                  percentage={usageMetrics.weightedMargin}
+                  color="#84cc16"
+                />
+              }
             />
             
-            <MetricCard title="Average Cost < Market Low" value={`${metrics.avgCostLessThanMLCount}`} subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} icon={<TrendingUp className="h-5 w-5" />} iconPosition="right" />
+            <MetricCard 
+              title="Average Cost < Market Low" 
+              value={`${metrics.avgCostLessThanMLCount}`} 
+              subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} 
+              icon={<TrendingUp className="h-5 w-5" />} 
+              iconPosition="right" 
+              flippable={true}
+              backContent={
+                <div className="flex flex-col h-full justify-center">
+                  <div className="text-sm mb-2">Percentage of Products</div>
+                  <div className="w-full bg-gray-800 rounded-full h-4 mb-2">
+                    <div 
+                      className="bg-blue-500 h-4 rounded-full" 
+                      style={{width: `${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}%`}}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-white/60">
+                    Products where your Average Cost is lower than Market Low price
+                  </div>
+                </div>
+              }
+            />
             
-            <MetricCard title="Flagged Items" value={`${metrics.rule1Flags + metrics.rule2Flags}`} subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} icon={<Flag className="h-5 w-5" />} iconPosition="right" />
+            <MetricCard 
+              title="Flagged Items" 
+              value={`${metrics.rule1Flags + metrics.rule2Flags}`} 
+              subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} 
+              icon={<Flag className="h-5 w-5" />} 
+              iconPosition="right" 
+              flippable={true}
+              backContent={
+                <MicroBarChart 
+                  data={generateFlagDistribution()}
+                  title="Flag Distribution" 
+                />
+              }
+            />
           </div>
           
           {/* Business Margin and Analysis Metrics - Updated to have 3 cards, removing Usage-Weighted Margin */}
@@ -250,6 +395,27 @@ const EngineDashboardContent = () => {
                 value: `${usageMetrics.businessMarginImprovement > 0 ? '+' : ''}${usageMetrics.businessMarginImprovement.toFixed(2)}%`,
                 type: usageMetrics.businessMarginImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
+              flippable={true}
+              backContent={
+                <div className="flex flex-col h-full justify-between">
+                  <div className="text-sm mb-2">Business vs. Weighted Margin</div>
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                      <div className="text-center">
+                        <div className="text-lg font-bold">{usageMetrics.businessMargin.toFixed(2)}%</div>
+                        <div className="text-xs text-white/60">Business</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-bold">{usageMetrics.weightedMargin.toFixed(2)}%</div>
+                        <div className="text-xs text-white/60">Weighted</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-white/60 mt-2">
+                    Business margin reflects actual financial performance while weighted margin shows average across products.
+                  </div>
+                </div>
+              }
             />
             
             <MetricCard 
@@ -262,6 +428,37 @@ const EngineDashboardContent = () => {
                 value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
                 type: revenueImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
+              flippable={true}
+              backContent={
+                <div className="flex flex-col h-full justify-between">
+                  <div className="text-sm mb-2">Revenue Analysis</div>
+                  <div className="flex-1 flex items-center justify-center">
+                    {usageMetrics.proposedRevenue > 0 ? (
+                      <div className="w-full">
+                        <div className="mb-1 text-xs">Current</div>
+                        <div className="w-full bg-gray-800 rounded-full h-4 mb-3">
+                          <div className="bg-blue-600 h-4 rounded-full w-full"></div>
+                        </div>
+                        <div className="mb-1 text-xs">Proposed</div>
+                        <div className="w-full bg-gray-800 rounded-full h-4">
+                          <div 
+                            className="bg-green-500 h-4 rounded-full" 
+                            style={{ width: `${(usageMetrics.proposedRevenue / usageMetrics.totalRevenue * 100).toFixed(0)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center">No proposal data available</div>
+                    )}
+                  </div>
+                  <div className="text-xs text-white/60 mt-2">
+                    {usageMetrics.proposedRevenue > 0 ? 
+                      `Potential ${revenueImprovement > 0 ? 'increase' : 'decrease'} of ${Math.abs(revenueImprovement).toFixed(2)}%` :
+                      'Upload data with proposals to see potential revenue changes'
+                    }
+                  </div>
+                </div>
+              }
             />
             
             <MetricCard 
@@ -273,6 +470,37 @@ const EngineDashboardContent = () => {
                 value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
                 type: profitImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
+              flippable={true}
+              backContent={
+                <div className="flex flex-col h-full justify-between">
+                  <div className="text-sm mb-2">Profit Analysis</div>
+                  <div className="flex-1 flex items-center justify-center">
+                    {usageMetrics.proposedProfit > 0 ? (
+                      <div className="w-full">
+                        <div className="mb-1 text-xs">Current</div>
+                        <div className="w-full bg-gray-800 rounded-full h-4 mb-3">
+                          <div className="bg-blue-600 h-4 rounded-full w-full"></div>
+                        </div>
+                        <div className="mb-1 text-xs">Proposed</div>
+                        <div className="w-full bg-gray-800 rounded-full h-4">
+                          <div 
+                            className="bg-green-500 h-4 rounded-full" 
+                            style={{ width: `${(usageMetrics.proposedProfit / usageMetrics.totalProfit * 100).toFixed(0)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center">No proposal data available</div>
+                    )}
+                  </div>
+                  <div className="text-xs text-white/60 mt-2">
+                    {usageMetrics.proposedProfit > 0 ? 
+                      `Potential ${profitImprovement > 0 ? 'increase' : 'decrease'} of ${Math.abs(profitImprovement).toFixed(2)}%` :
+                      'Upload data with proposals to see potential profit changes'
+                    }
+                  </div>
+                </div>
+              }
             />
           </div>
         </CardContent>
