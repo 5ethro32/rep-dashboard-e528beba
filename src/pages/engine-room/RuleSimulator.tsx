@@ -56,7 +56,7 @@ const RuleSimulator = () => {
         toast({
           title: "Zero-cost items detected",
           description: `${result.simulated.zeroCostMarginCapSkipped} items with zero cost had margin caps skipped to preserve pricing.`,
-          variant: "info",
+          variant: "default", // Changed from "info" to "default"
           duration: 7000
         });
       }
