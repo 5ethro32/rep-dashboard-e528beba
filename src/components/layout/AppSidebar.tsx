@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   BarChartHorizontal,
@@ -20,7 +21,7 @@ interface NavItemProps {
   Icon: React.ComponentType<any>;
 }
 
-// Update the navigation items to include all Engine Room links
+// Update the navigation items to include all Engine Room links - Changed "Engine Operations" to "Operations"
 const navigation = [
   { name: "Dashboard", href: "/", Icon: LayoutDashboard },
   { name: "Rep Performance", href: "/rep-performance", Icon: Users },
@@ -29,7 +30,7 @@ const navigation = [
   { name: "Rep Planner", href: "/rep-tracker", Icon: CalendarDays },
   { name: "Engine Room", href: "/engine-room", Icon: Cpu },
   { name: "Engine Dashboard", href: "/engine-room/dashboard", Icon: LayoutDashboard },
-  { name: "Engine Operations", href: "/engine-room/operations", Icon: ClipboardList },
+  { name: "Operations", href: "/engine-room/operations", Icon: ClipboardList },
   { name: "Rule Simulator", href: "/engine-room/simulator", Icon: FlaskConical },
   { name: "Approvals", href: "/engine-room/approvals", Icon: CheckSquare },
   { name: "Pricing Analytics", href: "/engine-room/analytics", Icon: TrendingUp },

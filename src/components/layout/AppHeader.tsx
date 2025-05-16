@@ -55,7 +55,7 @@ const AppHeader = ({
   // Check if we're in the Engine Room section
   const isEngineRoomSection = location.pathname.startsWith('/engine-room');
   const isEngineDashboard = location.pathname === '/engine-room/dashboard';
-  const isEngineOperations = location.pathname === '/engine-room/engine';
+  const isEngineOperations = location.pathname === '/engine-room/operations';
   const isEngineApprovals = location.pathname === '/engine-room/approvals';
 
   // Function to get the current page title based on the URL path
@@ -71,8 +71,8 @@ const AppHeader = ({
         return isMobile ? 'My Dashboard' : 'My Dashboard';
       case '/engine-room/dashboard':
         return isMobile ? 'Engine' : 'Engine Room / Dashboard';
-      case '/engine-room/engine':
-        return isMobile ? 'Engine' : 'Engine Room / Engine';
+      case '/engine-room/operations':
+        return isMobile ? 'Operations' : 'Engine Room / Operations';
       case '/engine-room/approvals':
         return isMobile ? 'Approvals' : 'Engine Room / Approvals';
       case '/engine-room':
@@ -142,8 +142,8 @@ const AppHeader = ({
       path: '/engine-room/dashboard',
       label: 'Dashboard'
     }, {
-      path: '/engine-room/engine',
-      label: 'Engine'
+      path: '/engine-room/operations',
+      label: 'Operations'
     }, {
       path: '/engine-room/approvals',
       label: 'Approvals'
