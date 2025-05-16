@@ -2,9 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign, RefreshCw, Trash2, ChevronLeft } from 'lucide-react';
+import { Info, UploadCloud, Package, TrendingUp, Percent, Flag, DollarSign } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
 import MetricCard from '@/components/MetricCard';
 import UsageWeightedMetrics from '@/components/engine-room/UsageWeightedMetrics';
 import MarketTrendAnalysis from '@/components/engine-room/MarketTrendAnalysis';
@@ -319,12 +318,6 @@ const EngineDashboardContent = () => {
               icon={<Package className="h-5 w-5" />} 
               iconPosition="right" 
               flippable={true}
-              backContent={
-                <MicroBarChart 
-                  data={generateSKUChartData()} 
-                  title="Active vs Total SKUs"
-                />
-              }
             />
             
             <MetricCard 
@@ -335,12 +328,6 @@ const EngineDashboardContent = () => {
               subtitle="Weighted by usage volume"
               details="Average margin across products"
               flippable={true}
-              backContent={
-                <MicroDonutChart 
-                  percentage={usageMetrics.weightedMargin}
-                  color="#84cc16"
-                />
-              }
             />
             
             <MetricCard 
@@ -350,20 +337,6 @@ const EngineDashboardContent = () => {
               icon={<TrendingUp className="h-5 w-5" />} 
               iconPosition="right" 
               flippable={true}
-              backContent={
-                <div className="flex flex-col h-full justify-center">
-                  <div className="text-sm mb-2">Percentage of Products</div>
-                  <div className="w-full bg-gray-800 rounded-full h-4 mb-2">
-                    <div 
-                      className="bg-blue-500 h-4 rounded-full" 
-                      style={{width: `${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}%`}}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-white/60">
-                    Products where your Average Cost is lower than Market Low price
-                  </div>
-                </div>
-              }
             />
             
             <MetricCard 
@@ -373,12 +346,6 @@ const EngineDashboardContent = () => {
               icon={<Flag className="h-5 w-5" />} 
               iconPosition="right" 
               flippable={true}
-              backContent={
-                <MicroBarChart 
-                  data={generateFlagDistribution()}
-                  title="Flag Distribution" 
-                />
-              }
             />
           </div>
           
@@ -396,26 +363,6 @@ const EngineDashboardContent = () => {
                 type: usageMetrics.businessMarginImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
               flippable={true}
-              backContent={
-                <div className="flex flex-col h-full justify-between">
-                  <div className="text-sm mb-2">Business vs. Weighted Margin</div>
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="grid grid-cols-2 gap-4 w-full">
-                      <div className="text-center">
-                        <div className="text-lg font-bold">{usageMetrics.businessMargin.toFixed(2)}%</div>
-                        <div className="text-xs text-white/60">Business</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold">{usageMetrics.weightedMargin.toFixed(2)}%</div>
-                        <div className="text-xs text-white/60">Weighted</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-xs text-white/60 mt-2">
-                    Business margin reflects actual financial performance while weighted margin shows average across products.
-                  </div>
-                </div>
-              }
             />
             
             <MetricCard 
@@ -429,36 +376,6 @@ const EngineDashboardContent = () => {
                 type: revenueImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
               flippable={true}
-              backContent={
-                <div className="flex flex-col h-full justify-between">
-                  <div className="text-sm mb-2">Revenue Analysis</div>
-                  <div className="flex-1 flex items-center justify-center">
-                    {usageMetrics.proposedRevenue > 0 ? (
-                      <div className="w-full">
-                        <div className="mb-1 text-xs">Current</div>
-                        <div className="w-full bg-gray-800 rounded-full h-4 mb-3">
-                          <div className="bg-blue-600 h-4 rounded-full w-full"></div>
-                        </div>
-                        <div className="mb-1 text-xs">Proposed</div>
-                        <div className="w-full bg-gray-800 rounded-full h-4">
-                          <div 
-                            className="bg-green-500 h-4 rounded-full" 
-                            style={{ width: `${(usageMetrics.proposedRevenue / usageMetrics.totalRevenue * 100).toFixed(0)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center">No proposal data available</div>
-                    )}
-                  </div>
-                  <div className="text-xs text-white/60 mt-2">
-                    {usageMetrics.proposedRevenue > 0 ? 
-                      `Potential ${revenueImprovement > 0 ? 'increase' : 'decrease'} of ${Math.abs(revenueImprovement).toFixed(2)}%` :
-                      'Upload data with proposals to see potential revenue changes'
-                    }
-                  </div>
-                </div>
-              }
             />
             
             <MetricCard 
@@ -471,36 +388,6 @@ const EngineDashboardContent = () => {
                 type: profitImprovement >= 0 ? 'increase' : 'decrease'
               } : undefined}
               flippable={true}
-              backContent={
-                <div className="flex flex-col h-full justify-between">
-                  <div className="text-sm mb-2">Profit Analysis</div>
-                  <div className="flex-1 flex items-center justify-center">
-                    {usageMetrics.proposedProfit > 0 ? (
-                      <div className="w-full">
-                        <div className="mb-1 text-xs">Current</div>
-                        <div className="w-full bg-gray-800 rounded-full h-4 mb-3">
-                          <div className="bg-blue-600 h-4 rounded-full w-full"></div>
-                        </div>
-                        <div className="mb-1 text-xs">Proposed</div>
-                        <div className="w-full bg-gray-800 rounded-full h-4">
-                          <div 
-                            className="bg-green-500 h-4 rounded-full" 
-                            style={{ width: `${(usageMetrics.proposedProfit / usageMetrics.totalProfit * 100).toFixed(0)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center">No proposal data available</div>
-                    )}
-                  </div>
-                  <div className="text-xs text-white/60 mt-2">
-                    {usageMetrics.proposedProfit > 0 ? 
-                      `Potential ${profitImprovement > 0 ? 'increase' : 'decrease'} of ${Math.abs(profitImprovement).toFixed(2)}%` :
-                      'Upload data with proposals to see potential profit changes'
-                    }
-                  </div>
-                </div>
-              }
             />
           </div>
         </CardContent>

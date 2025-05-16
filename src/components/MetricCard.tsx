@@ -177,7 +177,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           )}
         </CardContent>
 
-        {/* Back of card - only rendered if flippable */}
+        {/* Back of card - blank for now */}
         {flippable && (
           <CardContent 
             className="p-4 md:p-5 absolute top-0 left-0 w-full h-full backface-hidden rotate-y-180 flex flex-col"
@@ -190,12 +190,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
               {title} Details
             </div>
             
-            <div className="flex-grow">
-              {backContent || (
-                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                  No additional details available
-                </div>
-              )}
+            <div className="flex-grow flex items-center justify-center">
+              <div className="text-sm text-muted-foreground">
+                Additional insights coming soon
+              </div>
             </div>
             
             <div className="text-xs text-white/40 text-center mt-2">
