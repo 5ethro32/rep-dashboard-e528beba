@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   BarChartHorizontal,
@@ -28,6 +29,7 @@ const navigation = [
   { name: "My Performance", href: "/my-performance", Icon: BarChartHorizontal },
   { name: "Rep Planner", href: "/rep-tracker", Icon: CalendarDays },
   { name: "REVA Engine", href: "/engine-room/engine", Icon: Cpu },
+  { name: "Engine Dashboard", href: "/engine-room/dashboard", Icon: LayoutDashboard }, // Updated href
   { name: "Operations", href: "/engine-room/operations", Icon: ClipboardList },
   { name: "Rule Simulator", href: "/engine-room/simulator", Icon: FlaskConical },
   { name: "Approvals", href: "/engine-room/approvals", Icon: CheckSquare },

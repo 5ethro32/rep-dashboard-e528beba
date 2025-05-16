@@ -40,6 +40,7 @@ const router = createBrowserRouter([
       { path: "/engine-room", element: <EngineRoom /> },
       { path: "/engine-room/operations", element: <EngineOperations /> },
       { path: "/engine-room/engine", element: <EngineDashboard /> },
+      { path: "/engine-room/dashboard", element: <EngineDashboard /> }, // Added this route
       { path: "/engine-room/approvals", element: <ApprovalsDashboard /> },
       { path: "/engine-room/simulator", element: <RuleSimulator /> },
       { path: "/engine-room/analytics", element: <PricingAnalytics /> },

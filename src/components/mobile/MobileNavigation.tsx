@@ -28,7 +28,7 @@ const MobileNavigation = () => {
       icon: UserCircle,
     },
     {
-      path: '/engine-room/dashboard',
+      path: '/engine-room/dashboard', // Updated path to match the route definition
       label: 'Engine',
       icon: Wrench,
     },
