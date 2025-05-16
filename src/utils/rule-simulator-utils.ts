@@ -116,6 +116,29 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Special handling for zero/null cost items
   const isZeroCost = !hasValidCost;
   
+  // Special debug for Symbicort product
+  const isSymbicort = item.description && item.description.includes("Symbicort");
+  if (isSymbicort) {
+    console.log('SYMBICORT PRODUCT DETECTED:', item.description);
+    console.log('Raw pricing data:', {
+      eth_net: item.eth_net,
+      eth: item.eth,
+      nupharm: item.nupharm,
+      lexon: item.lexon,
+      aah: item.aah,
+      avgCost: item.avgCost,
+    });
+    console.log('Processed flags:', {
+      hasValidMarketLow,
+      hasValidTrueMarketLow,
+      trueMarketLow,
+      noMarketPrice,
+      hasAnyMarketPrice,
+      usageRank,
+      usageUplift: usageUplift * 100 + '%',
+    });
+  }
+  
   // Enhanced debug logging to help identify issues
   console.log('Processing item:', item.description, {
     cost, 
@@ -281,13 +304,20 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     console.log(`ENHANCED FALLBACK: No ETH_NET Market Low for ${item.description} - ${cost}`);
     
     // CRITICAL FIX: Implement proper fallback hierarchy
+    // We check first for the presence of competitors prices (trueMarketLow)
+    // Only if no competitor prices exist do we use cost-based pricing
     
-    // FALLBACK 1: If ETH_NET is missing but other competitor prices exist
+    // FALLBACK 1: If any competitor prices exist (TML is available)
     if (hasValidTrueMarketLow) {
       // Use standard ML markup (3% + usage uplift) for true market low
       const trueMarketLowMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
       newPrice = trueMarketLow * trueMarketLowMarkup;
       ruleApplied = `fallback_true_market_low_plus_${ruleConfig.rule1.marketLowUplift + (usageUplift * 100)}`;
+      
+      if (isSymbicort) {
+        console.log(`SYMBICORT FALLBACK 1: Using True Market Low ${trueMarketLow} with ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift = ${newPrice}`);
+        console.log(`Expected calculation: ${trueMarketLow} * (1 + ${ruleConfig.rule1.marketLowUplift/100} + ${usageUplift}) = ${trueMarketLow * (1 + ruleConfig.rule1.marketLowUplift/100 + usageUplift)}`);
+      }
       
       console.log(`Using True Market Low fallback with ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift: ${trueMarketLow} * ${trueMarketLowMarkup} = ${newPrice}`);
     }
@@ -296,6 +326,10 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
       newPrice = cost * standardCostMarkup;
       ruleApplied = 'fallback_cost_based';
+      
+      if (isSymbicort) {
+        console.log(`SYMBICORT FALLBACK 2: Using Cost ${cost} with ${ruleConfig.rule2.costMarkup}% + ${usageUplift * 100}% uplift = ${newPrice}`);
+      }
       
       console.log(`Using AVC fallback: ${cost} * ${standardCostMarkup} = ${newPrice}`);
     }
