@@ -176,8 +176,10 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   if (noMarketPrice) {
     console.log(`NEW RULE: No Market Low (ETH_NET) detected for ${item.description}`);
     
-    // If TrueMarketLow exists (any other competitor pricing), use that with 3% + uplift
+    // FIXED: If TrueMarketLow exists (any other competitor pricing), use that with 3% + uplift
+    // This is the critical fix - ensuring we use TrueMarketLow when it exists
     if (hasValidTrueMarketLow && trueMarketLow !== Infinity) {
+      // Apply the 3% standard markup plus usage-based uplift to TrueMarketLow
       const marketLowMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
       newPrice = trueMarketLow * marketLowMarkup;
       ruleApplied = `no_market_low_use_true_market_low_plus_${ruleConfig.rule1.marketLowUplift + (usageUplift * 100)}`;

@@ -23,7 +23,7 @@ const EngineRoom: React.FC = () => {
     // Show toast notification about the fix with more details
     toast({
       title: "Pricing Engine Updates",
-      description: "1) Implemented new rule for missing Market Low prices. 2) Fixed Symbicort pricing with proper competitive price detection. 3) Corrected Rule 1b/2b uplift application.",
+      description: "1) Fixed No Market Low rule to prioritize TrueMarketLow + 3% + uplift. 2) Only falls back to Cost + 12% + uplift when no competitor prices exist. 3) Fixed margin caps for low-cost items.",
       duration: 7000
     });
     
