@@ -245,7 +245,22 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   
   // ... keep existing code (final sanity check)
   
-  // ... keep existing code (calculate margin and flags for the item)
+  // Fix: Add missing variable declarations for newMargin, flag1, and flag2
+  let newMargin = 0;
+  let flag1 = false;
+  let flag2 = false;
+  
+  // Calculate margin if we have a valid newPrice and cost
+  if (newPrice > 0 && cost > 0) {
+    newMargin = (newPrice - cost) / newPrice;
+    
+    // Set flags based on price and margin thresholds
+    // Flag 1: Price is significantly higher than market
+    flag1 = hasValidMarketLow && (newPrice > marketLow * 1.10);
+    
+    // Flag 2: Margin is below threshold (e.g., 10%)
+    flag2 = newMargin < 0.10;
+  }
   
   return {
     originalPrice: item.currentREVAPrice || 0,
