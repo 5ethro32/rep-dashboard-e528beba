@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -698,8 +699,9 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         processedItem.appliedRule = `Rule 1b - ${usedPrice} Based (G${group}, Up)`;
       }
       
-      // Apply margin cap for Rule 1, but ONLY if avgCost is £1.00 or less
-      if (processedItem.proposedPrice > 0 && processedItem.avgCost <= 1.00) {
+      // Apply margin cap for Rule 1, but ONLY if avgCost is £1.00 or less and GREATER than zero
+      // FIXED: Added condition to check avgCost > 0 to prevent zeroing out prices for zero-cost items
+      if (processedItem.proposedPrice > 0 && processedItem.avgCost <= 1.00 && processedItem.avgCost > 0) {
         const proposedMargin = (processedItem.proposedPrice - processedItem.avgCost) / processedItem.proposedPrice;
         
         // Get the appropriate margin cap for this group
@@ -720,6 +722,16 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
           if (!processedItem.flags.includes('MARGIN_CAP_APPLIED')) {
             processedItem.flags.push('MARGIN_CAP_APPLIED');
           }
+        }
+      }
+      // NEW: Add specific handling for zero-cost items to skip margin cap
+      else if (processedItem.proposedPrice > 0 && processedItem.avgCost <= 1.00 && processedItem.avgCost <= 0) {
+        console.log(`MARGIN CAP SKIPPED: Zero-cost item (${processedItem.description}) - cap not applied to prevent zeroing out price`);
+        
+        // Add specific flag for this case
+        if (!processedItem.flags) processedItem.flags = [];
+        if (!processedItem.flags.includes('ZERO_COST_MARGIN_CAP_SKIPPED')) {
+          processedItem.flags.push('ZERO_COST_MARGIN_CAP_SKIPPED');
         }
       }
     } 
