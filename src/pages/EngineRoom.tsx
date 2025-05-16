@@ -15,10 +15,10 @@ const EngineRoom: React.FC = () => {
     console.log('Fallback rules will properly trigger when ETH_NET is missing.');
     console.log('Fixed fallback hierarchy: Now uses TrueMarketLow + markup when ETH_NET is missing but other competitor prices exist.');
     
-    // Show toast notification about the fix with more details
+    // Show toast notification about the fix
     toast({
       title: "Pricing Engine Update",
-      description: "Fixed Symbicort pricing issue: Now correctly identifies all competitor prices and applies TrueMarketLow + standard markup when ETH_NET is missing.",
+      description: "Fixed Symbicort pricing issue: Now correctly applies TrueMarketLow + markup when ETH_NET is missing but other competitor prices exist.",
       duration: 5000
     });
     
