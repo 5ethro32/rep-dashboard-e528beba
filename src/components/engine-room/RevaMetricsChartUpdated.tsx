@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -21,6 +22,11 @@ const defaultRuleConfig: RuleConfig = {
   rule2: {
     marketLowUplift: 3, // Standard 3% uplift for ML
     costMarkup: 12, // Standard 12% markup for cost
+    marginCaps: {
+      group1_2: 10, // 10% margin cap for groups 1-2
+      group3_4: 20, // 20% margin cap for groups 3-4
+      group5_6: 30, // 30% margin cap for groups 5-6
+    }
   },
   globalMarginFloor: 5, // 5% global margin floor
 };
