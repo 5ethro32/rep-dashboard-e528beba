@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   BarChartHorizontal,
@@ -21,19 +20,18 @@ interface NavItemProps {
   Icon: React.ComponentType<any>;
 }
 
-// Update the navigation items to include Pricing Analytics
+// Update the navigation items to include all Engine Room links
 const navigation = [
   { name: "Dashboard", href: "/", Icon: LayoutDashboard },
   { name: "Rep Performance", href: "/rep-performance", Icon: Users },
   { name: "Account Performance", href: "/account-performance", Icon: Building2 },
   { name: "My Performance", href: "/my-performance", Icon: BarChartHorizontal },
   { name: "Rep Planner", href: "/rep-tracker", Icon: CalendarDays },
-  { name: "REVA Engine", href: "/engine-room/engine", Icon: Cpu },
-  { name: "Engine Dashboard", href: "/engine-room/dashboard", Icon: LayoutDashboard }, // Updated href
-  { name: "Operations", href: "/engine-room/operations", Icon: ClipboardList },
+  { name: "Engine Room", href: "/engine-room", Icon: Cpu },
+  { name: "Engine Dashboard", href: "/engine-room/dashboard", Icon: LayoutDashboard },
+  { name: "Engine Operations", href: "/engine-room/operations", Icon: ClipboardList },
   { name: "Rule Simulator", href: "/engine-room/simulator", Icon: FlaskConical },
   { name: "Approvals", href: "/engine-room/approvals", Icon: CheckSquare },
-  // Add the new navigation item
   { name: "Pricing Analytics", href: "/engine-room/analytics", Icon: TrendingUp },
   { name: "AI Vera", href: "/ai-vera", Icon: Bot },
 ];
