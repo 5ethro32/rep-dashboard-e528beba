@@ -71,27 +71,25 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   const marketLow = treatZeroAsNull(rawMarketLow) !== null ? rawMarketLow : 0;
   const hasValidMarketLow = treatZeroAsNull(marketLow) !== null;
   
-  // Determine true market low (minimum of all competitor prices)
+  // CRITICAL FIX: Improved determination of true market low (minimum of all competitor prices)
   // Using explicit check of each competitor price and finding the minimum
-  const competitorPrices = [
-    treatZeroAsNull(Number(item.eth_net) || 0),
-    treatZeroAsNull(Number(item.eth) || 0),
-    treatZeroAsNull(Number(item.nupharm) || 0),
-    treatZeroAsNull(Number(item.lexon) || 0),
-    treatZeroAsNull(Number(item.aah) || 0)
-  ].filter(price => price !== null) as number[];
+  const competitorPrices = [];
+  
+  // Add each competitor price explicitly only if it's valid (> 0)
+  if (item.eth_net > 0) competitorPrices.push(item.eth_net);
+  if (item.eth > 0) competitorPrices.push(item.eth);
+  if (item.nupharm > 0) competitorPrices.push(item.nupharm);
+  if (item.lexon > 0) competitorPrices.push(item.lexon);
+  if (item.aah > 0) competitorPrices.push(item.aah);
   
   // Find the minimum valid competitor price
   let trueMarketLow = Infinity;
-  let hasAnyCompetitorPrice = false;
+  let hasValidTrueMarketLow = false;
   
   if (competitorPrices.length > 0) {
-    hasAnyCompetitorPrice = true;
+    hasValidTrueMarketLow = true;
     trueMarketLow = Math.min(...competitorPrices);
   }
-  
-  // Set true market low if valid competitor prices exist
-  const hasValidTrueMarketLow = hasAnyCompetitorPrice && trueMarketLow !== Infinity;
   
   // Flag if no market price is available - specifically for ETH_NET
   const noMarketPrice = !hasValidMarketLow;
@@ -128,6 +126,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       aah: item.aah,
       avgCost: item.avgCost,
     });
+    console.log('Competitor prices array:', competitorPrices);
     console.log('Processed flags:', {
       hasValidMarketLow,
       hasValidTrueMarketLow,
@@ -303,12 +302,13 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   else {
     console.log(`ENHANCED FALLBACK: No ETH_NET Market Low for ${item.description} - ${cost}`);
     
-    // CRITICAL FIX: Implement proper fallback hierarchy
-    // We check first for the presence of competitors prices (trueMarketLow)
+    // CRITICAL FIX: Implement proper fallback hierarchy with double-checks
+    // We check first for the presence of competitor prices (trueMarketLow)
     // Only if no competitor prices exist do we use cost-based pricing
     
     // FALLBACK 1: If any competitor prices exist (TML is available)
-    if (hasValidTrueMarketLow) {
+    // IMPROVED: Double check both hasValidTrueMarketLow flag and direct check on trueMarketLow
+    if (hasValidTrueMarketLow && competitorPrices.length > 0 && trueMarketLow !== Infinity) {
       // Use standard ML markup (3% + usage uplift) for true market low
       const trueMarketLowMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
       newPrice = trueMarketLow * trueMarketLowMarkup;
@@ -317,6 +317,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       if (isSymbicort) {
         console.log(`SYMBICORT FALLBACK 1: Using True Market Low ${trueMarketLow} with ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift = ${newPrice}`);
         console.log(`Expected calculation: ${trueMarketLow} * (1 + ${ruleConfig.rule1.marketLowUplift/100} + ${usageUplift}) = ${trueMarketLow * (1 + ruleConfig.rule1.marketLowUplift/100 + usageUplift)}`);
+        console.log('Competitor prices used for TML:', competitorPrices);
       }
       
       console.log(`Using True Market Low fallback with ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift: ${trueMarketLow} * ${trueMarketLowMarkup} = ${newPrice}`);
@@ -329,6 +330,9 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       
       if (isSymbicort) {
         console.log(`SYMBICORT FALLBACK 2: Using Cost ${cost} with ${ruleConfig.rule2.costMarkup}% + ${usageUplift * 100}% uplift = ${newPrice}`);
+        console.log('No valid competitor prices found, competitor prices array:', competitorPrices);
+        console.log('hasValidTrueMarketLow =', hasValidTrueMarketLow);
+        console.log('trueMarketLow =', trueMarketLow);
       }
       
       console.log(`Using AVC fallback: ${cost} * ${standardCostMarkup} = ${newPrice}`);
