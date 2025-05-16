@@ -499,7 +499,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   }, [engineData, queryClient, toast, recalculateEngineMetrics]);
 
-  // Handle save changes - Fixed to properly persist all changes and update metrics
+  // Handle save changes - Updated to properly preserve price changes and rationales
   const handleSaveChanges = useCallback(() => {
     if (!engineData) return;
     
@@ -515,7 +515,10 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return {
           ...item,
           calculatedPrice: item.proposedPrice, // Update calculated price to match the new proposed price
+          currentREVAPrice: item.proposedPrice, // Also update the currentREVAPrice to persist the change
           priceModified: false, // Reset modification flag since we're saving the changes
+          // Preserve the rationale information
+          // We don't clear priceChangeRationale because we want to keep track of why this price was changed
         };
       }
       return item;
