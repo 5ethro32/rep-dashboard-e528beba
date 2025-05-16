@@ -7,6 +7,7 @@ export interface PricingExportOptions {
   includeExceptionsOnly?: boolean;
   includeWorkflowStatus?: boolean;
   includePriceHistory?: boolean;
+  includeRationales?: boolean;
   fileName?: string;
 }
 
@@ -44,6 +45,11 @@ export const exportPricingData = (
       'Flag 2': item.flag2 ? 'Yes' : 'No',
       'Edited': item.priceModified ? 'Yes' : 'No'
     };
+    
+    // Add rationale information if requested and available
+    if (options.includeRationales && item.priceChangeRationale) {
+      baseItem['Change Rationale'] = item.priceChangeRationaleDescription || item.priceChangeRationale || '';
+    }
     
     // Add workflow status if requested
     if (options.includeWorkflowStatus && item.workflowStatus) {
