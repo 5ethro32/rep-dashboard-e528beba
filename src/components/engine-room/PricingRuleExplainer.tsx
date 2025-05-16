@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -279,18 +278,26 @@ const PricingRuleExplainer = ({ open, onClose, item }: PricingRuleExplainerProps
     return `Margin ${direction} by ${Math.abs(changePoints).toFixed(1)} percentage points`;
   };
   
-  // Format the ruleApplied string for display
+  // Format the ruleApplied string for display - UPDATED TO IMPROVE FORMATTING
   const formatRuleForDisplay = () => {
     const ruleName = getRuleDisplayName();
     const methodLabel = getMethodLabel();
     const capDescription = getCapDescription();
     
-    let formatted = `${ruleName} - ${methodLabel} (G${usageGroup})`;
+    // Get the trend in a nicely formatted way
+    const trend = extractTrend(item.ruleApplied || '');
+    const formattedTrend = trend !== 'unknown' ? 
+      (trend === 'upward' ? 'Upward' : 'Downward') : '';
     
-    if (extractTrend(item.ruleApplied || '') !== 'unknown') {
-      formatted += `, ${extractTrend(item.ruleApplied || '').charAt(0).toUpperCase() + extractTrend(item.ruleApplied || '').slice(1)}`;
+    // Format the base rule text
+    let formatted = `${ruleName} - ${methodLabel} (Group ${usageGroup})`;
+    
+    // Add trend if available
+    if (formattedTrend) {
+      formatted += `, ${formattedTrend}`;
     }
     
+    // Add cap description if available
     if (capDescription) {
       formatted += ` [${capDescription}]`;
     }
