@@ -18,6 +18,11 @@ export interface RuleConfig {
     // For when AVC >= ML
     marketLowUplift: number; // Standard 3% uplift for ML
     costMarkup: number; // Standard 12% markup for cost
+    marginCaps: {  // Added margin caps for rule2
+      group1_2: number;
+      group3_4: number;
+      group5_6: number;
+    };
   };
   globalMarginFloor: number;
 }
@@ -281,20 +286,21 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     // Standard markup for market low (3% + usage uplift)
     const standardMLMarkup = 1 + (ruleConfig.rule2.marketLowUplift / 100) + usageUplift;
     
-    // Standard markup for cost (12%) - FIXED: Removed the usage uplift from cost markup
-    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
+    // UPDATED: Apply usage uplift to cost markup as per proposed structure
+    // Standard markup for cost (12% + usage uplift)
+    const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
     
     // ML price with standard markup (includes uplift)
     const mlPrice = marketLow * standardMLMarkup;
     
-    // Cost price with standard markup (no uplift)
+    // Cost price with standard markup (now with uplift)
     const costPrice = cost * standardCostMarkup;
     
     // For downward trends (NBP ≤ AVC)
     if (isDownwardTrend) {
       // Set price to lower of:
       // - ML + 3% + uplift
-      // - AVC + 12% (NO UPLIFT)
+      // - AVC + 12% + uplift
       newPrice = Math.min(mlPrice, costPrice);
       ruleApplied = newPrice === mlPrice ? 'rule2_downward_ml' : 'rule2_downward_cost';
     } 
@@ -302,9 +308,30 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     else {
       // Set price to higher of:
       // - ML + 3% + uplift
-      // - AVC + 12% (NO UPLIFT)
+      // - AVC + 12% + uplift
       newPrice = Math.max(mlPrice, costPrice);
       ruleApplied = newPrice === mlPrice ? 'rule2_upward_ml' : 'rule2_upward_cost';
+    }
+    
+    // ADDED: Apply margin cap for Rule 2 if cost ≤ £1.00
+    if (cost <= 1.00 && cost > 0) {
+      // Get the appropriate margin cap percentage for this usage group
+      const marginCapKey = usageGroup as keyof typeof ruleConfig.rule2.marginCaps;
+      const marginCap = ruleConfig.rule2.marginCaps[marginCapKey] / 100; // Convert to decimal
+      
+      // Calculate max price based on margin cap
+      const maxPriceByMarginCap = cost / (1 - marginCap);
+      
+      console.log(`Rule 2 Margin cap check: Cost=${cost}, Cap=${marginCap}, MaxPrice=${maxPriceByMarginCap}, CurrentPrice=${newPrice}`);
+      
+      if (newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
+        console.log(`Applying margin cap for Rule 2: Reducing price from ${newPrice} to ${maxPriceByMarginCap}`);
+        newPrice = maxPriceByMarginCap;
+        marginCapApplied = true;
+        ruleApplied += '_capped';
+      }
+    } else if (cost <= 0) {
+      console.log(`Skipping margin cap for zero-cost item: ${item.description}`);
     }
   }
   // ENHANCED FALLBACK RULES: No Market Low (ETH_NET) available - CRITICAL FIX HERE
@@ -333,7 +360,8 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     // FALLBACK 2: Only use cost-based pricing when no competitor prices exist
     else if (hasValidCost) {
-      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
+      // UPDATED: Apply usage uplift to cost markup in fallback as per proposed structure
+      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
       newPrice = cost * standardCostMarkup;
       ruleApplied = 'fallback_cost_based';
       
@@ -348,7 +376,8 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
     // No valid cost, try next cost
     else if (treatZeroAsNull(nextCost) !== null) {
-      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100);
+      // UPDATED: Apply usage uplift to next cost markup in fallback as per proposed structure
+      const standardCostMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
       newPrice = nextCost * standardCostMarkup;
       ruleApplied = 'fallback_nextcost_based';
       
@@ -367,6 +396,27 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       ruleApplied = 'fallback_minimum';
       
       console.log(`Using minimum price fallback: ${newPrice}`);
+    }
+    
+    // ADDED: Apply margin cap for Fallback rules if cost ≤ £1.00
+    if (hasValidCost && cost <= 1.00 && cost > 0) {
+      // Get the appropriate margin cap percentage for this usage group
+      const marginCapKey = usageGroup as keyof typeof ruleConfig.rule2.marginCaps;
+      const marginCap = ruleConfig.rule2.marginCaps[marginCapKey] / 100; // Convert to decimal
+      
+      // Calculate max price based on margin cap
+      const maxPriceByMarginCap = cost / (1 - marginCap);
+      
+      console.log(`Fallback Margin cap check: Cost=${cost}, Cap=${marginCap}, MaxPrice=${maxPriceByMarginCap}, CurrentPrice=${newPrice}`);
+      
+      if (newPrice > maxPriceByMarginCap && maxPriceByMarginCap > 0) {
+        console.log(`Applying margin cap for Fallback: Reducing price from ${newPrice} to ${maxPriceByMarginCap}`);
+        newPrice = maxPriceByMarginCap;
+        marginCapApplied = true;
+        ruleApplied += '_capped';
+      }
+    } else if (cost <= 0) {
+      console.log(`Skipping margin cap for zero-cost item: ${item.description}`);
     }
   }
   

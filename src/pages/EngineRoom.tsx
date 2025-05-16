@@ -15,13 +15,14 @@ const EngineRoom: React.FC = () => {
     console.log('Fallback rules will properly trigger when ETH_NET is missing.');
     console.log('Fixed fallback hierarchy: Now uses TrueMarketLow + markup when ETH_NET is missing but other competitor prices exist.');
     console.log('CRITICAL FIX APPLIED: Rule 1b and 2b calculation corrected.');
-    console.log('Usage-based uplift is now correctly applied only to Market Low calculations, not AVC calculations.');
+    console.log('Usage-based uplift is now correctly applied to both Market Low and AVC calculations.');
+    console.log('MARGIN CAP IMPLEMENTED: For all low-cost items (≤ £1.00) to limit margins based on usage rank.');
     console.log('FIXED SPECIFIC CASE: Alfuzosin Tabs 2.5mg / 60 price now correctly calculated as £3.92 instead of £3.99');
     
     // Show toast notification about the fix with more details
     toast({
       title: "Pricing Engine Updates",
-      description: "1) Fixed Symbicort pricing issue with proper competitive price detection. 2) Corrected Rule 1b/2b uplift inconsistency - uplift now applied correctly.",
+      description: "1) Fixed Symbicort pricing with proper competitive price detection. 2) Corrected Rule 1b/2b uplift application. 3) Added margin caps for low-cost items.",
       duration: 7000
     });
     
