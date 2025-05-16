@@ -5,6 +5,9 @@ import {
   RouterProvider,
   Outlet,
 } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { EngineRoomProvider } from "@/contexts/EngineRoomContext";
 import AppLayout from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import RepPerformance from "@/pages/RepPerformance";
@@ -19,6 +22,9 @@ import ApprovalsDashboard from "@/pages/engine-room/ApprovalsDashboard";
 import RuleSimulator from "@/pages/engine-room/RuleSimulator";
 import NotFound from "@/pages/NotFound";
 import PricingAnalytics from "@/pages/engine-room/PricingAnalytics";
+
+// Create a client
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -43,7 +49,15 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <EngineRoomProvider>
+          <RouterProvider router={router} />
+        </EngineRoomProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
 }
 
 export default App;
