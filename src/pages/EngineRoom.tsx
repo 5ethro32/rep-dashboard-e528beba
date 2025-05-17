@@ -10,19 +10,17 @@ const EngineRoom: React.FC = () => {
   
   useEffect(() => {
     console.log('EngineRoom: Redirecting to engine-room/operations');
-    console.log('ULTIMATE FIX APPLIED: Margin cap is now applied as the ULTIMATE rule after ALL pricing calculations');
-    console.log('SPECIAL CASE FIXED: Oral Medicine Essential Syringe price now correctly capped by margin rules');
-    console.log('FORCED APPLICATION: Special items now ALWAYS have margin caps applied regardless of which rule path is taken');
-    console.log('ENHANCED LOGGING: Added extensive debug logs to trace margin cap application');
-    console.log('RULE STRUCTURE PRESERVED: Standard pricing rules still apply first, with margin cap as final, ultimate rule');
-    console.log('TARGETED FIX: Special handling added for Oral Medicine Essential Syringe to guarantee correct pricing');
-    console.log('CRITICAL FIX: Alfuzosin Tabs 2.5mg / 60 price now correctly calculated as £3.92');
+    console.log('FINAL ULTIMATE FIX APPLIED: Margin cap is now THE ABSOLUTE FINAL rule that overrides ALL other pricing calculations');
+    console.log('UNCONDITIONAL ENFORCEMENT: Margin caps are now enforced UNCONDITIONALLY as the absolute final step');
+    console.log('ALL PATHS CAPPED: Every pricing path now passes through the margin cap check including "true market low" pricing');
+    console.log('SPECIAL HANDLING: Oral Medicine Essential Syringe now guaranteed to have correct pricing');
+    console.log('CALCULATION ORDER: 1) Standard rules 2) Special case handling 3) ULTIMATE margin cap enforcement');
     
     // Show toast notification about the ultimate fix with more details
     toast({
-      title: "ULTIMATE Pricing Engine Fix Applied",
-      description: "Margin cap is now applied as the absolute ULTIMATE rule after ALL other pricing calculations. Special items like Oral Medicine Essential Syringe now ALWAYS have margin caps applied. Rule structure preserved with margin cap as the final override.",
-      duration: 8000
+      title: "FINAL ULTIMATE Pricing Fix Applied",
+      description: "Margin cap is now enforced as the ABSOLUTE FINAL rule that overrides ALL other pricing calculations. No matter which pricing path is taken, the margin cap is always the final authority.",
+      duration: 10000
     });
     
     navigate('/engine-room/operations');

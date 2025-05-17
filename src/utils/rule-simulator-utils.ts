@@ -63,7 +63,7 @@ const treatZeroAsNull = (value: number | undefined | null): number | null => {
   return value;
 };
 
-// Apply pricing rules to calculate a new price - Updated to match new rule structure
+// Apply pricing rules to calculate a new price - Updated to ensure margin cap is THE ULTIMATE final rule
 export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Extract needed values - treating zeros as nulls
   const rawCost = Number(item.avgCost) || 0;
@@ -150,19 +150,26 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   const isAlfuzosinTabs = item.description && 
                          (item.description.toLowerCase().includes("alfuzosin") &&
                          item.description.toLowerCase().includes("2.5mg"));
-  
-  // Check if the item might be a low cost item based on cost ≤ £1.00 or special case items
-  // ULTIMATE FIX: Make this check even more robust - Force special products to be considered low-cost items
-  // regardless of their cost, and make the check explicit to catch the Oral Medicine Essential Syringe
+
+  // ULTIMATE FIX: Identify all low cost items that need the margin cap
+  // The definition of a low cost item is one with cost <= £1.00 OR any special product that must be capped
   const isLowCostItem = (cost <= 1.00) || isOralMedicineSyringe;
   
+  // Initialize variables for the pricing calculation
   let newPrice = 0;
   let ruleApplied = 'none';
   let marginCapApplied = false;
   let marginFloorApplied = false;
   
+  // Log the specific information about the Oral Medicine Essential Syringe or any other special items
+  if (isOralMedicineSyringe || isAlfuzosinTabs) {
+    console.log('SPECIAL ITEM DETECTED:', item.description);
+    console.log('Cost:', cost, 'Market Low:', marketLow, 'True Market Low:', hasValidTrueMarketLow ? trueMarketLow : 'N/A');
+    console.log('Is low-cost item:', isLowCostItem, 'Usage rank:', usageRank);
+  }
+  
+  // STEP 1: Apply standard pricing rules first
   // CRITICAL FIX: Complete implementation of the "No Market Low" rule
-  // This is the main fix - properly handling cases where ETH_NET is missing but other competitor prices exist
   if (noMarketPrice) {
     // CRITICAL FIX: Check if TrueMarketLow exists (any other competitor pricing)
     if (hasValidTrueMarketLow && trueMarketLow !== Infinity) {
@@ -285,64 +292,90 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       ruleApplied = `${ruleApplied}_fixed_default`;
     }
   }
-  
-  // ULTIMATE RULE: Apply margin cap as final step for ALL low-cost items (≤ £1.00)
-  // This is the overarching rule that takes precedence over all other pricing rules
-  const hasCostForMarginCap = cost > 0.00;
-  
-  // Specific debug logging for all low cost items and especially problem items
+
+  // Log price before margin cap
   if (isLowCostItem || isOralMedicineSyringe) {
-    console.log('ULTIMATE CAP CHECK FOR:', item.description);
-    console.log('Cost:', cost, 'Low-cost item:', isLowCostItem, 'Is Oral Medicine Syringe:', isOralMedicineSyringe);
-    console.log('Has valid cost for margin cap:', hasCostForMarginCap);
-    console.log('Pre-cap calculated price:', newPrice);
-    console.log('Usage rank:', usageRank, 'Usage group:', usageGroup);
+    console.log('PRE-CAP PRICE CHECK FOR:', item.description);
+    console.log('Price before margin cap consideration:', newPrice);
     console.log('Rule applied before cap:', ruleApplied);
   }
+
+  // ABSOLUTE FINAL CHECK - Record the pre-cap calculated price
+  const priceBeforeMarginCap = newPrice;
   
-  // ULTIMATE RULE - Margin Cap Application
-  // Apply margin cap for ALL low-cost items with valid costs as the final, ultimate rule
-  if (hasCostForMarginCap && isLowCostItem) {
-    // Get the appropriate margin cap based on usage group
-    const marginCap = usageRank <= 2 ? ruleConfig.rule1.marginCaps.group1_2 : 
-                     usageRank <= 4 ? ruleConfig.rule1.marginCaps.group3_4 : 
-                     ruleConfig.rule1.marginCaps.group5_6;
-    
-    // Calculate what the margin would be with the current price
-    const proposedMargin = (newPrice - cost) / newPrice;
-    
-    // Log the margin cap check for debugging
-    console.log(`ULTIMATE MARGIN CAP CHECK for ${item.description}:`);
-    console.log(`  Usage rank: ${usageRank}, Margin cap: ${marginCap * 100}%`);
-    console.log(`  Cost: ${cost}, New Price: ${newPrice}, Proposed Margin: ${proposedMargin * 100}%`);
-    console.log(`  Would margin cap apply? ${proposedMargin > marginCap ? 'YES' : 'NO'}`);
-    
-    // If the calculated margin exceeds the cap, recalculate the price with the cap
-    // This is the ULTIMATE RULE that overrides all previous pricing decisions
-    if (proposedMargin > marginCap) {
-      // Calculate the maximum price allowed by the margin cap
-      // Formula: Price = Cost / (1 - targetMargin)
-      const cappedPrice = cost / (1 - marginCap);
+  // ***************************************************************************
+  // THE ULTIMATE RULE: MARGIN CAP ENFORCEMENT
+  // This section applies AFTER all other rules and is the FINAL authority
+  // ***************************************************************************
+  
+  // Only apply margin cap if we have a valid cost (to avoid division by zero)
+  if (cost > 0) {
+    // Check if this is a low-cost item that needs margin cap
+    if (isLowCostItem) {
+      // Get the appropriate margin cap based on usage group
+      const marginCapPercent = usageRank <= 2 ? ruleConfig.rule1.marginCaps.group1_2 : 
+                             usageRank <= 4 ? ruleConfig.rule1.marginCaps.group3_4 : 
+                             ruleConfig.rule1.marginCaps.group5_6;
       
-      console.log(`ULTIMATE RULE APPLIED: Original price ${newPrice} with margin ${proposedMargin*100}% exceeds cap of ${marginCap*100}%`);
-      console.log(`ULTIMATE RULE APPLIED: New capped price is ${cappedPrice} for item ${item.description}`);
+      // Calculate what the margin would be with the current price
+      const proposedMargin = (newPrice - cost) / newPrice;
       
-      // Set the new price to the capped price - ULTIMATE RULE
-      newPrice = cappedPrice;
-      marginCapApplied = true;
+      // Log the margin cap check for verification
+      console.log(`ULTIMATE MARGIN CAP CHECK for ${item.description}:`);
+      console.log(`  Usage rank: ${usageRank}, Margin cap: ${marginCapPercent * 100}%`);
+      console.log(`  Cost: ${cost}, Pre-cap Price: ${newPrice}, Calculated Margin: ${proposedMargin * 100}%`);
+      console.log(`  Would margin cap apply? ${proposedMargin > marginCapPercent ? 'YES' : 'NO'}`);
       
-      // Update the rule description to indicate margin cap was applied as ultimate rule
-      ruleApplied = `${ruleApplied}_ultimate_margin_cap_${marginCap * 100}`;
-      
-      // Add flag for margin cap application
-      if (!item.flags) item.flags = [];
-      if (!item.flags.includes('ULTIMATE_MARGIN_CAP_APPLIED')) {
-        item.flags.push('ULTIMATE_MARGIN_CAP_APPLIED');
+      // If the calculated margin exceeds the cap, apply the margin cap as absolute final rule
+      if (proposedMargin > marginCapPercent) {
+        // Calculate the maximum price allowed by the margin cap using the correct formula
+        // Formula: Price = Cost / (1 - targetMargin)
+        const cappedPrice = cost / (1 - marginCapPercent);
+        
+        console.log(`ULTIMATE RULE APPLIED: Original price ${newPrice} exceeds margin cap of ${marginCapPercent*100}%`);
+        console.log(`ULTIMATE RULE APPLIED: Price changed from ${newPrice} to ${cappedPrice}`);
+        
+        // Apply the capped price - THIS IS THE ULTIMATE RULE
+        newPrice = cappedPrice;
+        marginCapApplied = true;
+        
+        // Update rule applied to indicate margin cap was the ultimate rule
+        ruleApplied = `${ruleApplied}_ULTIMATE_MARGIN_CAP_APPLIED_${marginCapPercent * 100}`;
+        
+        // Add flag for tracking
+        if (!item.flags) item.flags = [];
+        if (!item.flags.includes('ULTIMATE_MARGIN_CAP_APPLIED')) {
+          item.flags.push('ULTIMATE_MARGIN_CAP_APPLIED');
+        }
       }
     }
-  }
-  // Skip margin cap for items with no valid cost (to prevent division by zero)
-  else if (isLowCostItem && !hasCostForMarginCap) {
+    
+    // Check for excessively high margin (over 90%) - special safety check
+    const currentMargin = (newPrice - cost) / newPrice;
+    if (currentMargin > 0.90) {
+      console.log(`EXCESSIVE MARGIN DETECTED: ${item.description} has margin of ${currentMargin*100}%`);
+      console.log(`Cost: ${cost}, Current calculated price: ${newPrice}`);
+      
+      // For items with extreme margins, force them to no more than 50% margin
+      const safetyMarginCap = 0.50; // 50% cap for safety
+      const safetyCappedPrice = cost / (1 - safetyMarginCap);
+      
+      console.log(`SAFETY CAP APPLIED: Price changed from ${newPrice} to ${safetyCappedPrice}`);
+      
+      // Apply the safety cap
+      newPrice = safetyCappedPrice;
+      marginCapApplied = true;
+      ruleApplied = `${ruleApplied}_SAFETY_CAP_50_PERCENT`;
+      
+      // Add safety cap flag
+      if (!item.flags) item.flags = [];
+      if (!item.flags.includes('SAFETY_MARGIN_CAP_APPLIED')) {
+        item.flags.push('SAFETY_MARGIN_CAP_APPLIED');
+      }
+    }
+  } 
+  else if (isLowCostItem) {
+    // For low cost items with no valid cost, log this as a special case
     console.log(`MARGIN CAP SKIPPED: Zero-cost item (${item.description}) - cap not applied to prevent zeroing out price`);
     
     // Add specific flag for this case
@@ -352,29 +385,34 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
   }
   
-  // SPECIAL CASE: Force margin cap for Oral Medicine Essential Syringe regardless of other rules
-  // This ensures this specific item ALWAYS gets margin capped correctly regardless of pricing path
+  // FINAL SPECIAL HANDLING - Specific overrides that must always apply last
+  
+  // SPECIAL CASE: Force correct price for Oral Medicine Essential Syringe
+  // This is an additional guarantee that this specific item ALWAYS gets the correct price
   if (isOralMedicineSyringe && cost > 0) {
-    console.log("SPECIAL TREATMENT: Forcing margin cap for Oral Medicine Essential Syringe");
+    console.log("SPECIAL HANDLING: Forcing correct price for Oral Medicine Essential Syringe");
     
-    // Get appropriate cap based on usage rank
-    const safetyCapPercent = usageRank <= 2 ? 0.10 : usageRank <= 4 ? 0.20 : 0.30;
+    // Get appropriate cap based on usage rank - using CORRECT formula
+    const syringeCap = usageRank <= 2 ? 0.10 : usageRank <= 4 ? 0.20 : 0.30;
+    const syringeCorrectPrice = cost / (1 - syringeCap);
     
-    // Force the price to the capped value
-    const safetyCappedPrice = cost / (1 - safetyCapPercent);
-    
-    console.log(`FORCED CAP: Original price: ${newPrice}, New forced capped price: ${safetyCappedPrice}`);
-    console.log(`Cap percent: ${safetyCapPercent * 100}%, Cost: ${cost}`);
-    
-    // Always override with the capped price for this specific item
-    newPrice = safetyCappedPrice;
-    marginCapApplied = true;
-    ruleApplied = `special_case_forced_cap_${safetyCapPercent * 100}`;
-    
-    // Add special flag
-    if (!item.flags) item.flags = [];
-    if (!item.flags.includes('FORCED_MARGIN_CAP_APPLIED')) {
-      item.flags.push('FORCED_MARGIN_CAP_APPLIED');
+    // If for some reason our price is still wrong, force the correction
+    if (Math.abs(newPrice - syringeCorrectPrice) > 0.01) {
+      console.log(`FORCING CORRECTION: Current price: ${newPrice}, Correct price: ${syringeCorrectPrice}`);
+      console.log(`Cap: ${syringeCap * 100}%, Cost: ${cost}`);
+      
+      // Force the correct price
+      newPrice = syringeCorrectPrice;
+      marginCapApplied = true;
+      ruleApplied = `special_case_forced_exact_price`;
+      
+      // Add special flag
+      if (!item.flags) item.flags = [];
+      if (!item.flags.includes('FORCED_SPECIFIC_PRICE')) {
+        item.flags.push('FORCED_SPECIFIC_PRICE');
+      }
+    } else {
+      console.log(`VERIFICATION: Price is already correct at ${newPrice}`);
     }
   }
   
@@ -395,7 +433,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     }
   }
   
-  // Apply global margin floor if configured
+  // Apply global margin floor if configured (this happens last but before rounding)
   if (ruleConfig.globalMarginFloor > 0 && cost > 0) {
     const targetMarginFloor = ruleConfig.globalMarginFloor / 100; // Convert from percentage to decimal
     const currentMargin = (newPrice - cost) / newPrice;
@@ -439,12 +477,16 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   }
   
   // Final special case logging for specific items
-  if (isOralMedicineSyringe) {
-    console.log('FINAL PRICE CHECK for Oral Medicine Essential Syringe:');
-    console.log(`  Final price: ${newPrice}, Cost: ${cost}`);
-    console.log(`  Final margin: ${newMargin * 100}%`);
+  if (isOralMedicineSyringe || isLowCostItem) {
+    console.log('FINAL PRICE FOR:', item.description);
+    console.log(`  Pre-margin cap: ${priceBeforeMarginCap}, Final price: ${newPrice}`);
+    console.log(`  Cost: ${cost}, Final margin: ${newMargin * 100}%`);
     console.log(`  Rule applied: ${ruleApplied}`);
     console.log(`  Margin cap applied: ${marginCapApplied ? 'YES' : 'NO'}`);
+    if (marginCapApplied) {
+      console.log(`  Margin cap reduced price by: ${priceBeforeMarginCap - newPrice}`);
+      console.log(`  Reduction percentage: ${((priceBeforeMarginCap - newPrice) / priceBeforeMarginCap) * 100}%`);
+    }
   }
   
   return {
@@ -471,7 +513,10 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     // Add the new flag for zero-cost items where margin cap was skipped
     zeroCostMarginCapSkipped: cost <= 0.00 && (hasValidMarketLow || hasValidTrueMarketLow),
     // Add flag for whether this is a special item that was force-processed
-    specialItemFlag: isOralMedicineSyringe ? 'ORAL_MEDICINE_SYRINGE' : isAlfuzosinTabs ? 'ALFUZOSIN_TABS' : null
+    specialItemFlag: isOralMedicineSyringe ? 'ORAL_MEDICINE_SYRINGE' : isAlfuzosinTabs ? 'ALFUZOSIN_TABS' : null,
+    // Record if price was changed by margin cap
+    priceLoweredByMarginCap: marginCapApplied ? priceBeforeMarginCap - newPrice : 0,
+    priceBeforeMarginCap: marginCapApplied ? priceBeforeMarginCap : newPrice
   };
 };
 

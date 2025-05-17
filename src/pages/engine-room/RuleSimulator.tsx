@@ -40,11 +40,11 @@ const RuleSimulator = () => {
   // Handle running the simulation
   const handleRunSimulation = (ruleConfig: any) => {
     try {
-      // Display rule structure toast to help users understand the changes
+      // Display updated rule structure toast to help users understand the changes
       toast({
-        title: "Updated Pricing Rules Applied",
-        description: "Average Cost (AVC) vs Market Low (ML) determines which rule applies. Usage-based uplifts (0-2%) automatically applied based on rank.",
-        duration: 5000
+        title: "Pricing Rules Applied with ULTIMATE Margin Cap",
+        description: "Standard pricing rules determine initial price. Then as the ULTIMATE final step, margin caps are enforced for all low-cost items (≤£1.00).",
+        duration: 6000
       });
       
       const result = simulateRuleChanges(engineData.items, ruleConfig);
@@ -56,15 +56,15 @@ const RuleSimulator = () => {
         toast({
           title: "Zero-cost items detected",
           description: `${result.simulated.zeroCostMarginCapSkipped} items with zero cost had margin caps skipped to preserve pricing.`,
-          variant: "default", // Changed from "info" to "default"
+          variant: "default",
           duration: 7000
         });
       }
       
       // Add a specific toast message for margin cap application
       toast({
-        title: "Margin caps enforced",
-        description: `${result.simulated.marginCapApplied} low-cost items had margin caps applied as the overarching rule.`,
+        title: "ULTIMATE Margin caps enforced",
+        description: `${result.simulated.marginCapApplied} low-cost items had margin caps applied as the ULTIMATE overriding rule.`,
         variant: "default",
         duration: 5000
       });
@@ -140,18 +140,21 @@ const RuleSimulator = () => {
         )}
       </div>
       
-      {/* Rule structure explanation card - Updated to include margin caps and zero-cost handling */}
+      {/* Updated rule structure explanation card with emphasis on margin cap as ULTIMATE rule */}
       <Card className="mb-6 bg-blue-950/30 border-blue-800/50">
         <CardContent className="p-4 text-sm">
           <h3 className="font-semibold mb-2 flex items-center gap-2">
             <Info className="h-4 w-4" />
-            New Pricing Rule Structure
+            Updated Pricing Rule Structure with ULTIMATE Margin Cap
           </h3>
           <div className="space-y-2">
-            <p><strong>Rule 1 (AVC &lt; ML):</strong> Applied when Average Cost is below Market Low</p>
-            <p><strong>Rule 2 (AVC ≥ ML):</strong> Applied when Average Cost is equal to or above Market Low</p>
-            <p><strong>Usage-based Uplift:</strong> 0% for Ranks 1-2, 1% for Ranks 3-4, 2% for Ranks 5-6</p>
-            <p><strong>Margin Caps for Low-Cost Items (≤ £1):</strong> Rank 1-2: 10% cap, Rank 3-4: 20% cap, Rank 5-6: 30% cap</p>
+            <p><strong>Standard Pricing Rules:</strong></p>
+            <p>1. <strong>Rule 1 (AVC &lt; ML):</strong> Applied when Average Cost is below Market Low</p>
+            <p>2. <strong>Rule 2 (AVC ≥ ML):</strong> Applied when Average Cost is equal to or above Market Low</p>
+            <p>3. <strong>Usage-based Uplift:</strong> 0% for Ranks 1-2, 1% for Ranks 3-4, 2% for Ranks 5-6</p>
+            <p className="mt-2 font-semibold text-amber-500">ULTIMATE OVERRIDING RULE:</p>
+            <p><strong>Margin Caps for Low-Cost Items (≤ £1.00):</strong> Rank 1-2: 10% cap, Rank 3-4: 20% cap, Rank 5-6: 30% cap</p>
+            <p><em>The margin cap is applied as the absolute final rule after all other price calculations.</em></p>
             <p><strong>Zero-Cost Handling:</strong> Margin caps are skipped for zero-cost items to prevent £0.00 pricing</p>
           </div>
         </CardContent>
