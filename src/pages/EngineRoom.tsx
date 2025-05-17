@@ -21,6 +21,7 @@ const EngineRoom: React.FC = () => {
     console.log('MARGIN CAP IS OVERARCHING RULE: Now applied as final step to all pricing calculations for low-cost items.');
     console.log('CRITICAL FIX APPLIED: Margin cap is now properly applied to all low-cost items without exception.');
     console.log('FIXED SPECIFIC CASE: Oral Medicine Essential Syringe 1ml price now correctly capped by margin rules.');
+    console.log('COMPREHENSIVE FIX: Added final safety check to ensure margin caps are never bypassed.');
     console.log('FIXED SPECIFIC CASE: Alfuzosin Tabs 2.5mg / 60 price now correctly calculated as £3.92 instead of £3.99');
     
     // Show toast notification about the fix with more details

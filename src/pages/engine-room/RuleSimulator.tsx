@@ -12,7 +12,7 @@ import { formatCurrency, formatPercentage } from '@/utils/formatting-utils';
 import MetricCard from '@/components/MetricCard';
 import LineChart from '@/components/LineChart';
 import { simulateRuleChanges } from '@/utils/rule-simulator-utils';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import RuleSimulatorConfigPanel from '@/components/engine-room/RuleSimulatorConfigPanel';
 import SimulationResults from '@/components/engine-room/SimulationResults';
 import GroupImpactAnalysis from '@/components/engine-room/GroupImpactAnalysis';
@@ -60,6 +60,14 @@ const RuleSimulator = () => {
           duration: 7000
         });
       }
+      
+      // Add a specific toast message for margin cap application
+      toast({
+        title: "Margin caps enforced",
+        description: `${result.simulated.marginCapApplied} low-cost items had margin caps applied as the overarching rule.`,
+        variant: "default",
+        duration: 5000
+      });
       
       toast({
         title: "Simulation complete",
