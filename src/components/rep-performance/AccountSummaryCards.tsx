@@ -150,7 +150,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 md:p-6">
       {/* Active Accounts Card */}
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+      <Card className="border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <Users size={16} className="text-[#ea384c] mr-2" />
@@ -170,7 +170,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       </Card>
       
       {/* Top Customer Card */}
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+      <Card className="border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <Award size={16} className="text-[#ea384c] mr-2" />
@@ -186,7 +186,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       </Card>
 
       {/* Top Margin Customer Card */}
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+      <Card className="border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <Star size={16} className="text-[#ea384c] mr-2" />
@@ -204,7 +204,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       </Card>
 
       {/* Most Improved Account Card */}
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+      <Card className="border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <TrendingUp size={16} className="text-[#ea384c] mr-2" />
@@ -222,7 +222,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       </Card>
       
       {/* Increasing Spend Accounts */}
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+      <Card className="border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <ArrowUpRight size={16} className="text-green-500 mr-2" />
@@ -243,7 +243,7 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
       </Card>
       
       {/* Decreasing Spend Accounts - Updated text color to white for better contrast */}
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
+      <Card className="border-white/10 text-white overflow-hidden transition-all duration-300 ease-in-out hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)] hover:scale-[1.02] will-change-transform">
         <CardContent className="p-4 md:p-6">
           <div className="flex items-center mb-2 text-xs text-white/50 uppercase tracking-wider font-bold">
             <ArrowDownRight size={16} className="text-[#ea384c] mr-2" />

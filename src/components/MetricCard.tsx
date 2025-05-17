@@ -86,7 +86,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
     >
       <Card 
         className={cn(
-          "border border-white/10 bg-gray-900/40 backdrop-blur-sm shadow-lg",
+          "border border-white/10 bg-gradient-to-b from-gray-950 to-gray-900 backdrop-blur-sm shadow-lg",
           "transition-all duration-500 ease-in-out",
           "hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)]",
           "will-change-transform relative h-full",
@@ -180,7 +180,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
         {/* Back of card - blank for now */}
         {flippable && (
           <CardContent 
-            className="p-4 md:p-5 absolute top-0 left-0 w-full h-full backface-hidden rotate-y-180 flex flex-col"
+            className="p-4 md:p-5 absolute top-0 left-0 w-full h-full backface-hidden rotate-y-180 flex flex-col bg-gradient-to-b from-gray-950 to-gray-900"
             style={{
               backfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)'
