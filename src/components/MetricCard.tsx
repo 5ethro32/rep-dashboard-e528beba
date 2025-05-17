@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import LoadingState from './metric-card/LoadingState';
 import ChangeIndicator from './metric-card/ChangeIndicator';
+import { FlipHorizontal } from 'lucide-react';
 
 interface MetricCardProps {
   title: React.ReactNode;
@@ -90,7 +91,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           "transition-all duration-500 ease-in-out",
           "hover:shadow-[0_15px_25px_rgba(0,0,0,0.2)]",
           "will-change-transform relative h-full",
-          flippable ? "cursor-pointer transform-style-preserve-3d" : "",
+          flippable ? "cursor-pointer transform-style-preserve-3d group" : "",
           flippable && isFlipped ? "rotate-y-180" : "",
           className
         )}
@@ -171,13 +172,14 @@ const MetricCard: React.FC<MetricCardProps> = ({
           )}
 
           {flippable && (
-            <div className="absolute bottom-1 right-1 text-xs text-white/40">
-              Click to flip
+            <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-xs text-white/60">
+              <span>Flip</span>
+              <FlipHorizontal className="h-3 w-3" />
             </div>
           )}
         </CardContent>
 
-        {/* Back of card - blank for now */}
+        {/* Back of card - with proper content orientation */}
         {flippable && (
           <CardContent 
             className="p-4 md:p-5 absolute top-0 left-0 w-full h-full backface-hidden rotate-y-180 flex flex-col bg-gradient-to-b from-gray-950 to-gray-900"
@@ -191,13 +193,18 @@ const MetricCard: React.FC<MetricCardProps> = ({
             </div>
             
             <div className="flex-grow flex items-center justify-center">
-              <div className="text-sm text-muted-foreground">
-                Additional insights coming soon
-              </div>
+              {backContent ? (
+                <div className="w-full h-full">{backContent}</div>
+              ) : (
+                <div className="text-sm text-muted-foreground text-center">
+                  Additional insights coming soon
+                </div>
+              )}
             </div>
             
-            <div className="text-xs text-white/40 text-center mt-2">
-              Click to flip back
+            <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-xs text-white/60">
+              <span>Flip</span>
+              <FlipHorizontal className="h-3 w-3" />
             </div>
           </CardContent>
         )}
