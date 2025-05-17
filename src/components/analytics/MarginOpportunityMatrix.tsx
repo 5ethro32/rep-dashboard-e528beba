@@ -18,6 +18,13 @@ interface MarginOpportunityMatrixProps {
   data: any[];
 }
 
+const CHART_COLORS = {
+  star: '#eab308',      // Yellow for stars
+  cash: '#10b981',      // Green for cash generators
+  opportunity: '#f97316', // Orange for opportunities
+  problem: '#ef4444',   // Red for problems
+};
+
 const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data }) => {
   const matrixData = useMemo(() => {
     if (!data || data.length === 0) return { chartData: [], topOpportunities: [] };
@@ -74,16 +81,14 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <Card className="bg-gray-800 border-gray-700 text-white p-2">
-          <CardContent className="p-3">
-            <p className="font-semibold">{data.name}</p>
-            <p>Margin: {data.margin}%</p>
-            <p>Usage: {data.usage}</p>
-            <p>Price: £{data.price.toFixed(2)}</p>
-            <p>Cost: £{data.cost.toFixed(2)}</p>
-            <p>Margin Opportunity: {data.marginOpportunity}</p>
-          </CardContent>
-        </Card>
+        <div className="bg-gray-800/90 border border-white/10 rounded-lg p-3 shadow-lg backdrop-blur-sm text-white">
+          <p className="font-semibold">{data.name}</p>
+          <p className="text-sm">Margin: <span className="font-medium">{data.margin}%</span></p>
+          <p className="text-sm">Usage: <span className="font-medium">{data.usage}</span></p>
+          <p className="text-sm">Price: <span className="font-medium">£{data.price.toFixed(2)}</span></p>
+          <p className="text-sm">Cost: <span className="font-medium">£{data.cost.toFixed(2)}</span></p>
+          <p className="text-sm">Opportunity: <span className="font-medium">{data.marginOpportunity}</span></p>
+        </div>
       );
     }
     return null;
@@ -103,7 +108,7 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
           <ScatterChart
             margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis 
               type="number" 
               dataKey="margin" 
@@ -137,30 +142,37 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
               range={[5, 20]} 
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend 
+              formatter={(value) => <span className="text-sm font-medium">{value}</span>}
+              wrapperStyle={{ paddingTop: 10 }}
+            />
             <Scatter 
               name="Star Products (High Margin, High Usage)" 
               data={matrixData.chartData.filter(item => item.quadrant === 'star')} 
-              fill="#eab308" // Yellow for star products
+              fill={CHART_COLORS.star}
               shape="circle"
+              className="animate-fade-in"
             />
             <Scatter 
               name="Cash Generator (High Margin, Low Usage)" 
               data={matrixData.chartData.filter(item => item.quadrant === 'cash')} 
-              fill="#10b981" // Green for cash generators
+              fill={CHART_COLORS.cash}
               shape="circle"
+              className="animate-fade-in"
             />
             <Scatter 
               name="Opportunity Products (Low Margin, High Usage)" 
               data={matrixData.chartData.filter(item => item.quadrant === 'opportunity')} 
-              fill="#f97316" // Orange for opportunities
+              fill={CHART_COLORS.opportunity}
               shape="circle"
+              className="animate-fade-in"
             />
             <Scatter 
               name="Problem Products (Low Margin, Low Usage)" 
               data={matrixData.chartData.filter(item => item.quadrant === 'problem')} 
-              fill="#ef4444" // Red for problem products
+              fill={CHART_COLORS.problem}
               shape="circle"
+              className="animate-fade-in"
             />
           </ScatterChart>
         </ResponsiveContainer>

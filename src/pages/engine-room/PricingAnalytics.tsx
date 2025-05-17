@@ -323,14 +323,14 @@ const PricingAnalyticsContent = () => {
           </div>
 
           {/* Price Elasticity Chart */}
-          <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+          <Card className="border border-white/10 bg-gradient-to-b from-gray-950 to-gray-900 backdrop-blur-sm shadow-lg">
             <CardContent className="p-6">
               <PriceElasticityChart data={engineData.items} />
             </CardContent>
           </Card>
 
           {/* Margin Opportunity Matrix */}
-          <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+          <Card className="border border-white/10 bg-gradient-to-b from-gray-950 to-gray-900 backdrop-blur-sm shadow-lg">
             <CardContent className="p-6">
               <MarginOpportunityMatrix data={engineData.items} />
             </CardContent>
@@ -371,7 +371,7 @@ const PricingAnalyticsContent = () => {
           </div>
 
           {/* Market trend analysis would go here */}
-          <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+          <Card className="border border-white/10 bg-gradient-to-b from-gray-950 to-gray-900 backdrop-blur-sm shadow-lg">
             <CardContent className="p-6 text-center py-12">
               <h3 className="text-xl font-semibold mb-4">Market Trend Analysis</h3>
               <p className="text-muted-foreground mb-4">
@@ -418,7 +418,7 @@ const PricingAnalyticsContent = () => {
           </div>
 
           {/* Product Lifecycle Analysis */}
-          <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+          <Card className="border border-white/10 bg-gradient-to-b from-gray-950 to-gray-900 backdrop-blur-sm shadow-lg">
             <CardContent className="p-6">
               <ProductLifecycleAnalysis data={engineData.items} />
             </CardContent>
@@ -459,7 +459,7 @@ const PricingAnalyticsContent = () => {
           </div>
 
           {/* Pricing Action Recommendations */}
-          <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+          <Card className="border border-white/10 bg-gradient-to-b from-gray-950 to-gray-900 backdrop-blur-sm shadow-lg">
             <CardContent className="p-6">
               <PricingActionRecommendations data={engineData.items} />
             </CardContent>

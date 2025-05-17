@@ -1,16 +1,15 @@
 
 import React, { useMemo, useState } from 'react';
 import {
-  PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
-  Legend,
   Tooltip,
 } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DonutChart from '@/components/DonutChart';
 
 interface ProductLifecycleAnalysisProps {
   data: any[];
@@ -89,6 +88,7 @@ const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ dat
     const summary = Object.entries(stageCounts).map(([name, value]) => ({
       name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize
       value,
+      color: LIFECYCLE_COLORS[name as keyof typeof LIFECYCLE_COLORS] || '#777777'
     }));
 
     // Group products by lifecycle stage
@@ -171,29 +171,12 @@ const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ dat
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={lifecycleData.summary}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                >
-                  {lifecycleData.summary.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={LIFECYCLE_COLORS[entry.name.toLowerCase()] || '#777777'} 
-                    />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value} products`, 'Count']} />
-                <Legend verticalAlign="bottom" height={36} />
-              </PieChart>
-            </ResponsiveContainer>
+            {/* Replace pie chart with our DonutChart component */}
+            <DonutChart 
+              data={lifecycleData.summary}
+              innerValue={`${lifecycleData.summary.length}`} 
+              innerLabel="Stages" 
+            />
           </div>
         </div>
         
@@ -210,7 +193,7 @@ const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ dat
 
             <TabsContent value={selectedStage} className="mt-0">
               {selectedStage !== 'all' && (
-                <Card className="mb-4 border border-white/10 bg-gray-800/30">
+                <Card className="mb-4 border border-white/10 bg-gray-800/30 backdrop-blur-sm">
                   <CardContent className="p-4">
                     <p className="text-sm">{renderLifecycleStageDescription(selectedStage)}</p>
                   </CardContent>
@@ -220,7 +203,7 @@ const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ dat
               {getProductsToShow().map(({ stage, products }) => (
                 <div key={stage} className="mb-4">
                   {selectedStage === 'all' && (
-                    <h4 className="text-md font-medium mb-2 capitalize" style={{ color: LIFECYCLE_COLORS[stage] }}>
+                    <h4 className="text-md font-medium mb-2 capitalize" style={{ color: LIFECYCLE_COLORS[stage as keyof typeof LIFECYCLE_COLORS] }}>
                       {stage} Stage Products
                     </h4>
                   )}
