@@ -9,7 +9,7 @@ const EngineRoom: React.FC = () => {
   const { toast } = useToast();
   
   useEffect(() => {
-    console.log('EngineRoom: Redirecting to engine-room/operations');
+    console.log('PricingEngine: Redirecting to engine-room/operations');
     console.log('CRITICAL FIX APPLIED: ETH_NET pricing issue has been fixed.');
     console.log('ML (Market Low) is now strictly linked to ETH_NET price.');
     console.log('NEW RULE IMPLEMENTED: Products with no Market Low (ETH_NET) now follow specific pricing logic.');
