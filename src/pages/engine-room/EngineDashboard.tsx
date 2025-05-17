@@ -306,87 +306,92 @@ const EngineDashboardContent = () => {
   });
   
   return <div className="container mx-auto px-4 py-6">
-      {/* Primary metrics - Removed the outer Card container and kept just the metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <MetricCard 
-          title="Total Active SKUs" 
-          value={metrics.activeItems.toString()} 
-          subtitle={`${metrics.totalItems} total SKUs`} 
-          icon={<Package className="h-5 w-5" />} 
-          iconPosition="right" 
-          flippable={true}
-        />
-        
-        <MetricCard 
-          title="Usage-Weighted Margin" 
-          value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
-          icon={<Percent className="h-5 w-5" />} 
-          iconPosition="right"
-          subtitle="Weighted by usage volume"
-          details="Average margin across products"
-          flippable={true}
-        />
-        
-        <MetricCard 
-          title="Average Cost < Market Low" 
-          value={`${metrics.avgCostLessThanMLCount}`} 
-          subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} 
-          icon={<TrendingUp className="h-5 w-5" />} 
-          iconPosition="right" 
-          flippable={true}
-        />
-        
-        <MetricCard 
-          title="Flagged Items" 
-          value={`${metrics.rule1Flags + metrics.rule2Flags}`} 
-          subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} 
-          icon={<Flag className="h-5 w-5" />} 
-          iconPosition="right" 
-          flippable={true}
-        />
-      </div>
-      
-      {/* Business Margin and Analysis Metrics - Removed the outer Card container */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
-        <MetricCard 
-          title="Total Business Margin" 
-          value={`${usageMetrics.businessMargin.toFixed(2)}%`} 
-          icon={<Percent className="h-5 w-5" />} 
-          iconPosition="right" 
-          subtitle="Total Profit ÷ Total Revenue"
-          details="Best measure of overall financial performance"
-          change={usageMetrics.businessMarginImprovement !== 0 ? {
-            value: `${usageMetrics.businessMarginImprovement > 0 ? '+' : ''}${usageMetrics.businessMarginImprovement.toFixed(2)}%`,
-            type: usageMetrics.businessMarginImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined}
-          flippable={true}
-        />
-        
-        <MetricCard 
-          title="Total Revenue" 
-          value={formatCurrency(usageMetrics.totalRevenue)} 
-          subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`} 
-          icon={<DollarSign className="h-5 w-5" />} 
-          iconPosition="right" 
-          change={revenueImprovement !== 0 ? {
-            value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
-            type: revenueImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined}
-          flippable={true}
-        />
-        
-        <MetricCard 
-          title="Total Profit" 
-          value={formatCurrency(usageMetrics.totalProfit)} 
-          icon={<TrendingUp className="h-5 w-5" />} 
-          iconPosition="right" 
-          change={profitImprovement !== 0 ? {
-            value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
-            type: profitImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined}
-          flippable={true}
-        />
-      </div>
+      {/* Master container card for all metrics */}
+      <Card className="mb-8 border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
+        <CardContent className="p-6">
+          {/* Primary metrics - Updated to have 4 cards with Usage-Weighted Margin replacing Overall Margin */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <MetricCard 
+              title="Total Active SKUs" 
+              value={metrics.activeItems.toString()} 
+              subtitle={`${metrics.totalItems} total SKUs`} 
+              icon={<Package className="h-5 w-5" />} 
+              iconPosition="right" 
+              flippable={true}
+            />
+            
+            <MetricCard 
+              title="Usage-Weighted Margin" 
+              value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
+              icon={<Percent className="h-5 w-5" />} 
+              iconPosition="right"
+              subtitle="Weighted by usage volume"
+              details="Average margin across products"
+              flippable={true}
+            />
+            
+            <MetricCard 
+              title="Average Cost < Market Low" 
+              value={`${metrics.avgCostLessThanMLCount}`} 
+              subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} 
+              icon={<TrendingUp className="h-5 w-5" />} 
+              iconPosition="right" 
+              flippable={true}
+            />
+            
+            <MetricCard 
+              title="Flagged Items" 
+              value={`${metrics.rule1Flags + metrics.rule2Flags}`} 
+              subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} 
+              icon={<Flag className="h-5 w-5" />} 
+              iconPosition="right" 
+              flippable={true}
+            />
+          </div>
+          
+          {/* Business Margin and Analysis Metrics - Updated to have 3 cards, removing Usage-Weighted Margin */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+            <MetricCard 
+              title="Total Business Margin" 
+              value={`${usageMetrics.businessMargin.toFixed(2)}%`} 
+              icon={<Percent className="h-5 w-5" />} 
+              iconPosition="right" 
+              subtitle="Total Profit ÷ Total Revenue"
+              details="Best measure of overall financial performance"
+              change={usageMetrics.businessMarginImprovement !== 0 ? {
+                value: `${usageMetrics.businessMarginImprovement > 0 ? '+' : ''}${usageMetrics.businessMarginImprovement.toFixed(2)}%`,
+                type: usageMetrics.businessMarginImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+              flippable={true}
+            />
+            
+            <MetricCard 
+              title="Total Revenue" 
+              value={formatCurrency(usageMetrics.totalRevenue)} 
+              subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`} 
+              icon={<DollarSign className="h-5 w-5" />} 
+              iconPosition="right" 
+              change={revenueImprovement !== 0 ? {
+                value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
+                type: revenueImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+              flippable={true}
+            />
+            
+            <MetricCard 
+              title="Total Profit" 
+              value={formatCurrency(usageMetrics.totalProfit)} 
+              icon={<TrendingUp className="h-5 w-5" />} 
+              iconPosition="right" 
+              change={profitImprovement !== 0 ? {
+                value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
+                type: profitImprovement >= 0 ? 'increase' : 'decrease'
+              } : undefined}
+              flippable={true}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* REVA Metrics Chart - Using the updated chart component */}
       <div className="mb-8">
