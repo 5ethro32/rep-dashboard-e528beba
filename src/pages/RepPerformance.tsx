@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -14,18 +13,11 @@ import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/contexts/AuthContext';
-import AppLayout from '@/components/layout/AppLayout';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
-  const { user } = useAuth();
-  
-  // Add state for user selection
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(user?.id || null);
-  const [selectedUserName, setSelectedUserName] = useState<string>('My Data');
   
   const {
     includeRetail,
@@ -71,21 +63,6 @@ const RepPerformance = () => {
     }
   }, [autoRefreshed]);
 
-  // Handle user selection
-  const handleSelectUser = (userId: string | null, displayName: string) => {
-    console.log('RepPerformance: Selected user changed to', userId, displayName);
-    setSelectedUserId(userId);
-    setSelectedUserName(displayName);
-    
-    // TODO: In a real implementation, we would filter the data based on the selected user
-    // For now, we'll just show a toast to indicate the selection changed
-    toast({
-      title: "User selection changed",
-      description: `Now showing data for ${displayName}`,
-      duration: 2000
-    });
-  };
-
   // Handle month selection with proper data refresh
   const handleMonthSelection = async (month: string) => {
     // Set month first to avoid UI flicker
@@ -121,7 +98,7 @@ const RepPerformance = () => {
   // Connect to the global app layout - make the header refresh button use our local refresh handler
   useLayoutEffect(() => {
     // Expose refresh handler to window for the AppHeader to access
-    if (location.pathname === '/rep-performance' || location.pathname === '/') {
+    if (location.pathname === '/rep-performance') {
       console.log('Setting up global refresh handler for RepPerformance');
       window.repPerformanceRefresh = handleRefresh;
     }
@@ -168,89 +145,81 @@ const RepPerformance = () => {
   }
 
   return (
-    <AppLayout
-      selectedUserId={selectedUserId}
-      onSelectUser={handleSelectUser}
-      showUserSelector={true}
-      onRefresh={handleRefresh}
-      isLoading={isLoading}
-    >
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
-        <PerformanceHeader 
-          selectedMonth={selectedMonth} 
-          setSelectedMonth={handleMonthSelection}
-        />
-        
-        <PerformanceFilters 
-          includeRetail={includeRetail} 
-          setIncludeRetail={setIncludeRetail} 
-          includeReva={includeReva} 
-          setIncludeReva={setIncludeReva} 
-          includeWholesale={includeWholesale} 
-          setIncludeWholesale={setIncludeWholesale} 
-          selectedMonth={selectedMonth} 
-          setSelectedMonth={handleMonthSelection}
-          onRefresh={handleRefresh}
-          isLoading={isLoading}
-        />
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 bg-transparent overflow-x-hidden">
+      <PerformanceHeader 
+        selectedMonth={selectedMonth} 
+        setSelectedMonth={handleMonthSelection}
+      />
+      
+      <PerformanceFilters 
+        includeRetail={includeRetail} 
+        setIncludeRetail={setIncludeRetail} 
+        includeReva={includeReva} 
+        setIncludeReva={setIncludeReva} 
+        includeWholesale={includeWholesale} 
+        setIncludeWholesale={setIncludeWholesale} 
+        selectedMonth={selectedMonth} 
+        setSelectedMonth={handleMonthSelection}
+        onRefresh={handleRefresh}
+        isLoading={isLoading}
+      />
 
-        {/* Wrap the SummaryMetrics in a Card */}
-        <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-8">
-          <CardContent className="pt-4 py-[19px]">
-            <SummaryMetrics 
-              summary={summary} 
-              summaryChanges={summaryChanges} 
-              isLoading={isLoading} 
-              includeRetail={includeRetail} 
-              includeReva={includeReva} 
-              includeWholesale={includeWholesale} 
-              selectedMonth={selectedMonth} 
-            />
-          </CardContent>
-        </Card>
-        
-        <div className="mb-6">
-          <TrendLineChart 
-            febSummary={filteredFebSummary} 
-            marchSummary={filteredMarSummary} 
-            aprilSummary={filteredAprSummary} 
-            maySummary={filteredMaySummary} 
+      {/* Wrap the SummaryMetrics in a Card */}
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 p-0 mb-8">
+        <CardContent className="pt-4 py-[19px]">
+          <SummaryMetrics 
+            summary={summary} 
+            summaryChanges={summaryChanges} 
             isLoading={isLoading} 
-            repDataProp={repData} 
             includeRetail={includeRetail} 
             includeReva={includeReva} 
             includeWholesale={includeWholesale} 
+            selectedMonth={selectedMonth} 
           />
-        </div>
-
-        <PerformanceContent 
-          tabValues={['overall', 'rep', 'reva', 'wholesale']} 
-          getActiveData={getActiveData} 
-          sortData={sortData} 
-          sortBy={sortBy} 
-          sortOrder={sortOrder} 
-          handleSort={handleSort} 
-          repChanges={repChanges} 
-          formatCurrency={formatCurrency} 
-          formatPercent={formatPercent} 
-          formatNumber={formatNumber} 
-          renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
-            const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
-            return <RenderChangeIndicator changeValue={changeValue} size={size === "small" ? "small" : "large"} previousValue={previousValue} />;
-          }} 
+        </CardContent>
+      </Card>
+      
+      <div className="mb-6">
+        <TrendLineChart 
+          febSummary={filteredFebSummary} 
+          marchSummary={filteredMarSummary} 
+          aprilSummary={filteredAprSummary} 
+          maySummary={filteredMaySummary} 
           isLoading={isLoading} 
-          getFebValue={getFebValue} 
-          selectedMonth={selectedMonth} 
-          summary={summary} 
+          repDataProp={repData} 
           includeRetail={includeRetail} 
           includeReva={includeReva} 
           includeWholesale={includeWholesale} 
-          baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary} 
-          revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues} 
-          wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues} 
         />
       </div>
-    </AppLayout>
+
+      <PerformanceContent 
+        tabValues={['overall', 'rep', 'reva', 'wholesale']} 
+        getActiveData={getActiveData} 
+        sortData={sortData} 
+        sortBy={sortBy} 
+        sortOrder={sortOrder} 
+        handleSort={handleSort} 
+        repChanges={repChanges} 
+        formatCurrency={formatCurrency} 
+        formatPercent={formatPercent} 
+        formatNumber={formatNumber} 
+        renderChangeIndicator={(changeValue, size, metricType, repName, metricValue) => {
+          const previousValue = getFebValue(repName, metricType, metricValue, changeValue);
+          return <RenderChangeIndicator changeValue={changeValue} size={size === "small" ? "small" : "large"} previousValue={previousValue} />;
+        }} 
+        isLoading={isLoading} 
+        getFebValue={getFebValue} 
+        selectedMonth={selectedMonth} 
+        summary={summary} 
+        includeRetail={includeRetail} 
+        includeReva={includeReva} 
+        includeWholesale={includeWholesale} 
+        baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary} 
+        revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues} 
+        wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues} 
+      />
+    </div>
   );
 };
 
