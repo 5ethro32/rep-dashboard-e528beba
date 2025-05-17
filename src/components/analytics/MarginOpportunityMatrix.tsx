@@ -10,24 +10,29 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ReferenceLine,
 } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import AnalyticsTooltip from './AnalyticsTooltip';
 
 interface MarginOpportunityMatrixProps {
   data: any[];
 }
 
 const CHART_COLORS = {
-  star: '#eab308',      // Yellow for stars
-  cash: '#10b981',      // Green for cash generators
+  star: '#eab308',        // Yellow for stars
+  cash: '#10b981',        // Green for cash generators
   opportunity: '#f97316', // Orange for opportunities
-  problem: '#ef4444',   // Red for problems
+  problem: '#ef4444',     // Red for problems
+  rule1: '#8b5cf6',       // Purple for Rule 1 (ML based)
+  rule2: '#3b82f6',       // Blue for Rule 2 (AVC based)
+  ruleOther: '#d946ef',   // Magenta for other rules
 };
 
 const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data }) => {
   const matrixData = useMemo(() => {
-    if (!data || data.length === 0) return { chartData: [], topOpportunities: [] };
+    if (!data || data.length === 0) return { chartData: [], topOpportunities: [], ruleBreakdown: {} };
 
     // Filter to only include products with all necessary data points
     const filteredData = data.filter(item => 
@@ -42,6 +47,18 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
       // Calculate a margin opportunity score
       const marginOpportunity = currentMargin < 15 ? (15 - currentMargin) * (item.revaUsage / 10) : 0;
       
+      // Determine pricing rule used (simulated as we don't have actual rule data)
+      let pricingRule = 'unknown';
+      if (item.ethNetPrice > 0 && Math.abs(item.currentREVAPrice - item.ethNetPrice * 1.03) < 0.01) {
+        pricingRule = 'ML+3%';
+      } else if (Math.abs(item.currentREVAPrice - item.avgCost * 1.12) < 0.01) {
+        pricingRule = 'AVC+12%';
+      } else if (item.ethNetPrice > 0 && item.currentREVAPrice > item.ethNetPrice) {
+        pricingRule = 'market-based';
+      } else {
+        pricingRule = 'cost-based';
+      }
+
       return {
         id: item.id,
         name: item.description?.substring(0, 30) || 'Unknown',
@@ -49,15 +66,31 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
         usage: item.revaUsage,
         cost: item.avgCost,
         price: item.currentREVAPrice,
+        marketPrice: item.ethNetPrice || 0,
         marginOpportunity: marginOpportunity.toFixed(1),
+        pricingRule,
         // Size is based on usage and represents importance
         size: Math.min(Math.sqrt(item.revaUsage) * 2, 30),
         // Quadrant helps with coloring and filtering
         quadrant: currentMargin >= 15 && item.revaUsage >= 10 ? 'star' :
                  currentMargin >= 15 ? 'cash' :
-                 item.revaUsage >= 10 ? 'opportunity' : 'problem'
+                 item.revaUsage >= 10 ? 'opportunity' : 'problem',
+        // Shape based on pricing rule
+        shape: pricingRule === 'ML+3%' ? 'circle' : 
+               pricingRule === 'AVC+12%' ? 'triangle' : 'square',
+        // Rule color
+        ruleColor: pricingRule.includes('ML') ? CHART_COLORS.rule1 :
+                  pricingRule.includes('AVC') ? CHART_COLORS.rule2 :
+                  CHART_COLORS.ruleOther
       };
     });
+
+    // Calculate rule breakdown
+    const ruleBreakdown = chartData.reduce((acc: Record<string, number>, item: any) => {
+      const rule = item.pricingRule;
+      acc[rule] = (acc[rule] || 0) + 1;
+      return acc;
+    }, {});
 
     // Calculate top 10 opportunities based on margin opportunity and usage
     const topOpportunities = [...chartData]
@@ -65,7 +98,7 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
       .sort((a, b) => Number(b.marginOpportunity) - Number(a.marginOpportunity))
       .slice(0, 10);
 
-    return { chartData, topOpportunities };
+    return { chartData, topOpportunities, ruleBreakdown };
   }, [data]);
 
   if (matrixData.chartData.length === 0) {
@@ -77,21 +110,31 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
     );
   }
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-gray-800/90 border border-white/10 rounded-lg p-3 shadow-lg backdrop-blur-sm text-white">
-          <p className="font-semibold">{data.name}</p>
-          <p className="text-sm">Margin: <span className="font-medium">{data.margin}%</span></p>
-          <p className="text-sm">Usage: <span className="font-medium">{data.usage}</span></p>
-          <p className="text-sm">Price: <span className="font-medium">£{data.price.toFixed(2)}</span></p>
-          <p className="text-sm">Cost: <span className="font-medium">£{data.cost.toFixed(2)}</span></p>
-          <p className="text-sm">Opportunity: <span className="font-medium">{data.marginOpportunity}</span></p>
+  const renderRuleTooltip = () => {
+    if (!matrixData.ruleBreakdown) return null;
+    
+    return (
+      <div className="mt-3 px-4 py-2 bg-gray-800/60 backdrop-blur-sm border border-white/10 rounded-md">
+        <h4 className="text-sm font-medium mb-2">Pricing Rule Distribution</h4>
+        <div className="flex flex-wrap gap-3 text-xs">
+          {Object.entries(matrixData.ruleBreakdown).map(([rule, count], index) => (
+            <div key={rule} className="flex items-center">
+              <div 
+                className="w-2 h-2 rounded-full mr-1" 
+                style={{ backgroundColor: 
+                  rule.includes('ML') ? CHART_COLORS.rule1 :
+                  rule.includes('AVC') ? CHART_COLORS.rule2 :
+                  CHART_COLORS.ruleOther 
+                }}
+              />
+              <span>
+                {rule}: <span className="font-medium">{count}</span>
+              </span>
+            </div>
+          ))}
         </div>
-      );
-    }
-    return null;
+      </div>
+    );
   };
 
   return (
@@ -141,11 +184,36 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
               dataKey="size" 
               range={[5, 20]} 
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip 
+              content={({active, payload}) => (
+                <AnalyticsTooltip 
+                  active={active}
+                  payload={payload}
+                  title={payload && payload[0] ? payload[0]?.payload?.name : ''}
+                  formatter={(value, name) => {
+                    // Format different properties
+                    if (name === 'Margin %') return [`${value}%`, name];
+                    if (name === 'Usage Volume') return [value.toLocaleString(), name];
+                    if (name === 'Price') return [`£${value.toFixed(2)}`, name];
+                    if (name === 'Cost') return [`£${value.toFixed(2)}`, name];
+                    if (name === 'Market Price') {
+                      return [value > 0 ? `£${value.toFixed(2)}` : 'N/A', 'ETH NET Price'];
+                    }
+                    if (name === 'marginOpportunity') return [value, 'Opportunity Score'];
+                    if (name === 'pricingRule') return [value, 'Pricing Rule'];
+                    return [value, name];
+                  }}
+                />
+              )}
+            />
+            <ReferenceLine y={10} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" label={{ value: 'High Usage Threshold', angle: -90, position: 'insideLeft', fill: '#999', fontSize: 10 }} />
+            <ReferenceLine x={15} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" label={{ value: 'Target Margin', position: 'insideBottom', fill: '#999', fontSize: 10 }} />
+            
             <Legend 
               formatter={(value) => <span className="text-sm font-medium">{value}</span>}
               wrapperStyle={{ paddingTop: 10 }}
             />
+            
             <Scatter 
               name="Star Products (High Margin, High Usage)" 
               data={matrixData.chartData.filter(item => item.quadrant === 'star')} 
@@ -177,6 +245,8 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
           </ScatterChart>
         </ResponsiveContainer>
       </div>
+
+      {renderRuleTooltip()}
       
       <div>
         <h4 className="text-lg font-medium mb-3">Top Margin Improvement Opportunities</h4>
@@ -188,6 +258,7 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
                 <TableHead className="w-[100px]">Current Margin</TableHead>
                 <TableHead className="w-[100px]">Usage</TableHead>
                 <TableHead className="w-[120px]">Price</TableHead>
+                <TableHead className="w-[120px]">Rule</TableHead>
                 <TableHead className="w-[120px]">Opportunity Score</TableHead>
               </TableRow>
             </TableHeader>
@@ -198,6 +269,15 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
                   <TableCell>{item.margin}%</TableCell>
                   <TableCell>{item.usage}</TableCell>
                   <TableCell>£{item.price.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <div 
+                        className="w-2 h-2 rounded-full mr-1" 
+                        style={{ backgroundColor: item.ruleColor }}
+                      />
+                      {item.pricingRule}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <span className="font-medium text-orange-500">{item.marginOpportunity}</span>
                   </TableCell>

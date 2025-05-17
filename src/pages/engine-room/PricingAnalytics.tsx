@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { EngineRoomProvider, useEngineRoom } from '@/contexts/EngineRoomContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +10,8 @@ import PriceElasticityChart from '@/components/analytics/PriceElasticityChart';
 import MarginOpportunityMatrix from '@/components/analytics/MarginOpportunityMatrix';
 import ProductLifecycleAnalysis from '@/components/analytics/ProductLifecycleAnalysis';
 import PricingActionRecommendations from '@/components/analytics/PricingActionRecommendations';
+import PricingRuleAnalysis from '@/components/analytics/PricingRuleAnalysis';
+import MarginProtectionAnalysis from '@/components/analytics/MarginProtectionAnalysis';
 
 const PricingAnalyticsContent = () => {
   const { engineData, isUploading } = useEngineRoom();
@@ -41,7 +42,7 @@ const PricingAnalyticsContent = () => {
     );
   }
 
-  // Extract some key metrics for overview cards
+  // Keep existing code for getting metrics
   const getOptimizationMetrics = () => {
     if (!engineData?.items || engineData.items.length === 0) return {
       elasticProducts: 0,
@@ -282,9 +283,10 @@ const PricingAnalyticsContent = () => {
       </div>
 
       <Tabs defaultValue="optimization" className="mb-8" onValueChange={setActiveAnalytic}>
-        <TabsList className="grid grid-cols-4 mb-8">
+        <TabsList className="grid grid-cols-5 mb-8">
           <TabsTrigger value="optimization">Price Optimization</TabsTrigger>
-          <TabsTrigger value="trends">Market Trends</TabsTrigger>
+          <TabsTrigger value="rules">Pricing Rules</TabsTrigger>
+          <TabsTrigger value="protection">Margin Protection</TabsTrigger>
           <TabsTrigger value="portfolio">Portfolio Analysis</TabsTrigger>
           <TabsTrigger value="impact">Business Impact</TabsTrigger>
         </TabsList>
@@ -336,50 +338,21 @@ const PricingAnalyticsContent = () => {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="trends" className="space-y-8">
-          {/* Metric Cards for Market Trends */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <MetricCard 
-              title="Cost Increasing" 
-              value={trendMetrics.costIncreasingProducts.toString()}
-              subtitle="Products with rising costs" 
-              icon={<TrendingUp className="h-5 w-5" />} 
-              flippable={true}
-            />
-            <MetricCard 
-              title="Market Price Decreasing" 
-              value={trendMetrics.marketPriceDecreaseProducts.toString()}
-              subtitle="Products with falling market prices" 
-              icon={<TrendingUp className="h-5 w-5 text-red-500" />} 
-              flippable={true}
-            />
-            <MetricCard 
-              title="Seasonal Trend Products" 
-              value={trendMetrics.seasonalTrendProducts.toString()}
-              subtitle="Products with seasonal patterns" 
-              icon={<Info className="h-5 w-5" />} 
-              flippable={true}
-            />
-            <MetricCard 
-              title="Volatile Products" 
-              value={trendMetrics.volatileProducts.toString()}
-              subtitle="Products with high price volatility" 
-              icon={<Flag className="h-5 w-5" />} 
-              flippable={true}
-            />
-          </div>
-
-          {/* Market trend analysis would go here */}
+        
+        {/* NEW: Pricing Rules Tab */}
+        <TabsContent value="rules" className="space-y-8">
           <Card className="border border-white/10 bg-gradient-to-b from-gray-950 to-gray-900 backdrop-blur-sm shadow-lg">
-            <CardContent className="p-6 text-center py-12">
-              <h3 className="text-xl font-semibold mb-4">Market Trend Analysis</h3>
-              <p className="text-muted-foreground mb-4">
-                Historical data analysis would be displayed here, showing price trends over time.
-              </p>
-              <div className="text-sm text-gray-400">
-                (This feature requires historical data spanning multiple time periods)
-              </div>
+            <CardContent className="p-6">
+              <PricingRuleAnalysis data={engineData.items} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* NEW: Margin Protection Tab */}
+        <TabsContent value="protection" className="space-y-8">
+          <Card className="border border-white/10 bg-gradient-to-b from-gray-950 to-gray-900 backdrop-blur-sm shadow-lg">
+            <CardContent className="p-6">
+              <MarginProtectionAnalysis data={engineData.items} />
             </CardContent>
           </Card>
         </TabsContent>

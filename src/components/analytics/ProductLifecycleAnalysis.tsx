@@ -1,11 +1,5 @@
 
 import React, { useMemo, useState } from 'react';
-import {
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,6 +16,13 @@ const LIFECYCLE_COLORS = {
   decline: '#f97316',      // Orange
   end: '#ef4444',          // Red
 };
+
+// Define a DataItem interface to match DonutChart expectations
+interface DataItem {
+  name: string;
+  value: number;
+  color: string;
+}
 
 const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ data }) => {
   const [selectedStage, setSelectedStage] = useState<string>('all');
@@ -86,7 +87,7 @@ const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ dat
     }, {});
 
     // Convert to array and ensure value is a number for the chart
-    const summary = Object.entries(stageCounts).map(([name, value]) => ({
+    const summary: DataItem[] = Object.entries(stageCounts).map(([name, value]) => ({
       name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize
       value: Number(value), // Ensure value is a number
       color: LIFECYCLE_COLORS[name as keyof typeof LIFECYCLE_COLORS] || '#777777'
@@ -160,6 +161,20 @@ const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ dat
     }
   };
 
+  const calculateStageStats = (stage: string) => {
+    const products = lifecycleData.products[stage] || [];
+    if (products.length === 0) return { avgMargin: 0, totalUsage: 0, count: 0 };
+    
+    const totalMargin = products.reduce((sum, p) => sum + parseFloat(p.margin), 0);
+    const totalUsage = products.reduce((sum, p) => sum + p.usage, 0);
+    
+    return {
+      avgMargin: totalMargin / products.length,
+      totalUsage,
+      count: products.length
+    };
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -178,6 +193,26 @@ const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ dat
               innerValue={`${lifecycleData.summary.length}`} 
               innerLabel="Stages" 
             />
+          </div>
+          
+          <div className="mt-4 space-y-2 p-3 bg-gray-800/30 border border-white/10 rounded-md">
+            <h4 className="text-sm font-medium mb-2">Lifecycle Stage Stats</h4>
+            <div className="grid grid-cols-5 gap-1 text-xs">
+              {Object.keys(LIFECYCLE_COLORS).map(stage => {
+                const stats = calculateStageStats(stage);
+                return (
+                  <div 
+                    key={stage} 
+                    className="flex flex-col items-center p-2 rounded-md"
+                    style={{ backgroundColor: `${LIFECYCLE_COLORS[stage as keyof typeof LIFECYCLE_COLORS]}20` }}
+                  >
+                    <div className="w-3 h-3 rounded-full mb-1" style={{ backgroundColor: LIFECYCLE_COLORS[stage as keyof typeof LIFECYCLE_COLORS] }} />
+                    <span className="font-medium capitalize">{stage}</span>
+                    <span className="text-gray-400">{stats.count}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
         
