@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -120,23 +119,23 @@ const AppHeader = ({
   const navItems = [{
     path: '/rep-performance',
     label: 'Home',
-    icon: <Home className="h-4 w-4" />
+    icon: <div className="h-4 w-4 text-current">/</div>
   }, {
     path: '/account-performance',
     label: 'Accounts',
-    icon: <BarChart3 className="h-4 w-4" />
+    icon: <div className="h-4 w-4 text-current">/</div>
   }, {
     path: '/rep-tracker',
     label: 'Planner',
-    icon: <ClipboardList className="h-4 w-4" />
+    icon: <div className="h-4 w-4 text-current">/</div>
   }, {
     path: '/my-performance',
     label: 'My Dashboard',
-    icon: <UserCircle className="h-4 w-4" />
+    icon: <div className="h-4 w-4 text-current">/</div>
   }, {
     path: '/engine-room/dashboard',
     label: 'Engine Room',
-    icon: <Wrench className="h-4 w-4" />,
+    icon: <div className="h-4 w-4 text-current">/</div>,
     hasSubNav: true,
     subItems: [{
       path: '/engine-room/dashboard',
@@ -213,7 +212,9 @@ const AppHeader = ({
                         <CollapsibleTrigger className="w-full">
                           <div className={cn(
                             "px-4 py-2 flex items-center justify-between text-sm font-medium", 
-                            isEngineRoomSection ? "text-finance-red" : "text-white/60"
+                            isEngineRoomSection ? 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400"
                           )}>
                             <div className="flex items-center gap-2">
                               {item.icon}
@@ -230,7 +231,9 @@ const AppHeader = ({
                                 to={subItem.path} 
                                 className={({isActive}) => 
                                   cn("block py-2 text-sm", 
-                                    isActive ? "text-finance-red" : "text-white/70 hover:text-white")
+                                    isActive ? 
+                                      "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                                      "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400")
                                 }
                                 onClick={() => setIsNavOpen(false)}
                               >
@@ -247,17 +250,19 @@ const AppHeader = ({
                           to={item.path} 
                           className={cn(
                             "px-4 py-2 flex items-center gap-2 text-sm font-medium relative", 
-                            isEngineRoomSection ? "text-finance-red" : "text-white/60 hover:text-white"
+                            isEngineRoomSection ? 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
                           )}
                         >
                           {isEngineRoomSection && (
-                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                            <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-finance-red to-rose-700"></div>
                           )}
                           {item.icon}
                           <span>{item.label}</span>
                         </Link>
                         
-                        {/* Subnav that appears on hover */}
+                        {/* Subnav that appears on hover only */}
                         {isEngineSubnavHovered && (
                           <div 
                             className={cn(
@@ -273,7 +278,9 @@ const AppHeader = ({
                                   to={subItem.path} 
                                   className={({isActive}) => 
                                     cn("block px-4 py-2 text-sm rounded-sm", 
-                                      isActive ? "bg-white/5 text-finance-red" : "text-white/70 hover:bg-white/5 hover:text-white")
+                                      isActive ? 
+                                        "bg-white/5 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                                        "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:bg-white/5 hover:text-white")
                                   }
                                 >
                                   {subItem.label}
@@ -292,14 +299,16 @@ const AppHeader = ({
                     to={item.path} 
                     className={({isActive}) => cn(
                       `${isMobile ? 'py-3' : 'px-4 py-2'} flex items-center gap-2 text-sm font-medium relative`, 
-                      isActive ? "text-finance-red" : "text-white/60 hover:text-white"
+                      isActive ? 
+                        "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                        "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
                     )}
                     onClick={() => isMobile && setIsNavOpen(false)}
                   >
                     {({isActive}) => (
                       <>
                         {isActive && !isMobile && 
-                          <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-finance-red to-rose-700"></div>
+                          <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-finance-red to-rose-700"></div>
                         }
                         {item.icon}
                         <span>{item.label}</span>
