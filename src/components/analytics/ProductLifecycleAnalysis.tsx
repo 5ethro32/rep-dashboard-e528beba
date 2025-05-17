@@ -85,9 +85,10 @@ const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ dat
       return acc;
     }, {});
 
+    // Convert to array and ensure value is a number for the chart
     const summary = Object.entries(stageCounts).map(([name, value]) => ({
       name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize
-      value,
+      value: Number(value), // Ensure value is a number
       color: LIFECYCLE_COLORS[name as keyof typeof LIFECYCLE_COLORS] || '#777777'
     }));
 
@@ -171,7 +172,7 @@ const ProductLifecycleAnalysis: React.FC<ProductLifecycleAnalysisProps> = ({ dat
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
           <div className="h-80">
-            {/* Replace pie chart with our DonutChart component */}
+            {/* Use DonutChart with correctly typed data */}
             <DonutChart 
               data={lifecycleData.summary}
               innerValue={`${lifecycleData.summary.length}`} 
