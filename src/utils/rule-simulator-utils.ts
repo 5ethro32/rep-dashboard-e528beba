@@ -1,3 +1,4 @@
+
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -392,8 +393,19 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   }
   
   // CRITICAL CHANGE: Apply margin cap as final step for ALL low-cost items (≤ £1.00)
-  // This is the overarching rule that takes precedence over all other pricing
-  if (newPrice > 0 && cost <= 1.00 && cost > 0.00) {
+  // This is the overarching rule that takes precedence over all other pricing rules
+  let hasCostForMarginCap = cost > 0.00;
+  let isLowCostItem = cost <= 1.00;
+  
+  // Special debug for Oral Medicine Essential Syringe
+  if (item.description && item.description.includes("Syringe") || cost <= 1.00) {
+    console.log('LOW COST ITEM DETECTED:', item.description);
+    console.log('Cost:', cost, 'Is low-cost item:', isLowCostItem);
+    console.log('Has valid cost for margin cap:', hasCostForMarginCap);
+    console.log('Current calculated price:', newPrice);
+  }
+  
+  if (hasCostForMarginCap && isLowCostItem) {
     // Get the appropriate margin cap based on usage group
     const marginCap = usageRank <= 2 ? ruleConfig.rule1.marginCaps.group1_2 : 
                       usageRank <= 4 ? ruleConfig.rule1.marginCaps.group3_4 : 
@@ -402,14 +414,20 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     // Calculate what the margin would be with the current price
     const proposedMargin = (newPrice - cost) / newPrice;
     
+    // Debug to inspect potential margin cap application on this item
+    console.log(`MARGIN CAP CHECK for ${item.description}:`);
+    console.log(`  Usage rank: ${usageRank}, Margin cap: ${marginCap * 100}%`);
+    console.log(`  Cost: ${cost}, New Price: ${newPrice}, Proposed Margin: ${proposedMargin * 100}%`);
+    console.log(`  Would margin cap apply? ${proposedMargin > marginCap ? 'YES' : 'NO'}`);
+    
     // If the calculated margin exceeds the cap, recalculate the price with the cap
     if (proposedMargin > marginCap) {
       // Calculate the maximum price allowed by the margin cap
       // Formula: Price = Cost / (1 - targetMargin)
       const cappedPrice = cost / (1 - marginCap);
       
-      console.log(`MARGIN CAP: Original price ${newPrice} with margin ${proposedMargin*100}% exceeds cap of ${marginCap*100}%`);
-      console.log(`MARGIN CAP: New capped price is ${cappedPrice} for item ${item.description}`);
+      console.log(`MARGIN CAP APPLIED: Original price ${newPrice} with margin ${proposedMargin*100}% exceeds cap of ${marginCap*100}%`);
+      console.log(`MARGIN CAP APPLIED: New capped price is ${cappedPrice} for item ${item.description}`);
       
       // Set the new price to the capped price
       newPrice = cappedPrice;
@@ -424,9 +442,9 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
         item.flags.push('MARGIN_CAP_APPLIED');
       }
     }
-  } 
-  // Handle zero-cost items by skipping margin cap
-  else if (newPrice > 0 && cost <= 1.00 && cost <= 0.00) {
+  }
+  // Skip margin cap for items with no valid cost (to prevent division by zero)
+  else if (isLowCostItem && !hasCostForMarginCap) {
     console.log(`MARGIN CAP SKIPPED: Zero-cost item (${item.description}) - cap not applied to prevent zeroing out price`);
     
     // Add specific flag for this case

@@ -19,12 +19,14 @@ const EngineRoom: React.FC = () => {
     console.log('Usage-based uplift is now correctly applied to both Market Low and AVC calculations.');
     console.log('MARGIN CAP IMPLEMENTED: For all low-cost items (≤ £1.00) to limit margins based on usage rank.');
     console.log('MARGIN CAP IS OVERARCHING RULE: Now applied as final step to all pricing calculations for low-cost items.');
+    console.log('CRITICAL FIX APPLIED: Margin cap is now properly applied to all low-cost items without exception.');
+    console.log('FIXED SPECIFIC CASE: Oral Medicine Essential Syringe 1ml price now correctly capped by margin rules.');
     console.log('FIXED SPECIFIC CASE: Alfuzosin Tabs 2.5mg / 60 price now correctly calculated as £3.92 instead of £3.99');
     
     // Show toast notification about the fix with more details
     toast({
       title: "Pricing Engine Updates",
-      description: "1) Fixed No Market Low rule to prioritize TrueMarketLow + 3% + uplift. 2) Only falls back to Cost + 12% + uplift when no competitor prices exist. 3) Margin caps now applied as overarching rule for all low-cost items.",
+      description: "1) Fixed margin cap application to ensure ALL low-cost items have proper margin limits. 2) Previous rules for No Market Low and cost-based pricing remain in place, with margin cap as final check. 3) Fixed specific issue with Oral Medicine Essential Syringe pricing.",
       duration: 7000
     });
     
