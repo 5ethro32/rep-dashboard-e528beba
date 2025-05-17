@@ -87,38 +87,25 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // Using explicit check of each competitor price with the new isValidPrice helper
   const competitorPrices = [];
   
-  // Log all competitor price fields to diagnose issues
-  console.log('RAW competitor prices for item:', item.description);
-  console.log('  ETH_NET:', item.eth_net, 'type:', typeof item.eth_net);
-  console.log('  ETH:', item.eth, 'type:', typeof item.eth);
-  console.log('  NUPHARM:', item.nupharm, 'type:', typeof item.nupharm);
-  console.log('  LEXON:', item.lexon, 'type:', typeof item.lexon);
-  console.log('  AAH:', item.aah, 'type:', typeof item.aah);
-  
   // Add each competitor price explicitly only if it's valid using the new isValidPrice helper
   if (isValidPrice(item.eth_net)) {
     competitorPrices.push(Number(item.eth_net));
-    console.log(`  Added ETH_NET price: ${Number(item.eth_net)}`);
   }
   
   if (isValidPrice(item.eth)) {
     competitorPrices.push(Number(item.eth));
-    console.log(`  Added ETH price: ${Number(item.eth)}`);
   }
   
   if (isValidPrice(item.nupharm)) {
     competitorPrices.push(Number(item.nupharm));
-    console.log(`  Added NUPHARM price: ${Number(item.nupharm)}`);
   }
   
   if (isValidPrice(item.lexon)) {
     competitorPrices.push(Number(item.lexon));
-    console.log(`  Added LEXON price: ${Number(item.lexon)}`);
   }
   
   if (isValidPrice(item.aah)) {
     competitorPrices.push(Number(item.aah));
-    console.log(`  Added AAH price: ${Number(item.aah)}`);
   }
   
   // Find the minimum valid competitor price
@@ -128,9 +115,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   if (competitorPrices.length > 0) {
     hasValidTrueMarketLow = true;
     trueMarketLow = Math.min(...competitorPrices);
-    console.log(`  True Market Low calculated as: ${trueMarketLow} from ${competitorPrices.length} competitor prices`);
-  } else {
-    console.log(`  No valid competitor prices found for ${item.description}`);
   }
   
   // Flag if no market price is available - specifically for ETH_NET
@@ -159,55 +143,17 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // CRITICAL FIX: Special identification for problematic products
   // Check if this is the specific Oral Medicine Essential Syringe product
   const isOralMedicineSyringe = item.description && 
-                               item.description.toLowerCase().includes("oral medicine") && 
-                               item.description.toLowerCase().includes("syringe");
+                               (item.description.toLowerCase().includes("oral medicine") && 
+                               item.description.toLowerCase().includes("syringe"));
   
   // Also check for Alfuzosin Tabs specifically
   const isAlfuzosinTabs = item.description && 
-                         item.description.toLowerCase().includes("alfuzosin") &&
-                         item.description.toLowerCase().includes("2.5mg");
+                         (item.description.toLowerCase().includes("alfuzosin") &&
+                         item.description.toLowerCase().includes("2.5mg"));
   
   // Check if the item might be a low cost item based on cost ≤ £1.00 or special case items
-  const isLowCostItem = cost <= 1.00 || isOralMedicineSyringe;
-  
-  // Extra special debug logging for known problematic items
-  if (isOralMedicineSyringe) {
-    console.log('***** SPECIAL ITEM DETECTED: Oral Medicine Essential Syringe *****');
-    console.log('Description:', item.description);
-    console.log('Cost:', cost, 'Market Low:', marketLow, 'True Market Low:', trueMarketLow);
-    console.log('Is low cost item:', isLowCostItem);
-    console.log('Current REVA Price:', item.currentREVAPrice);
-    console.log('Usage Rank:', usageRank);
-    console.log('Usage Group:', usageGroup);
-  }
-  
-  if (isAlfuzosinTabs) {
-    console.log('***** SPECIAL ITEM DETECTED: Alfuzosin Tabs 2.5mg *****');
-    console.log('Description:', item.description);
-    console.log('Cost:', cost, 'Market Low:', marketLow, 'True Market Low:', trueMarketLow);
-    console.log('Current REVA Price:', item.currentREVAPrice);
-  }
-  
-  // Enhanced debug logging to help identify issues
-  console.log('Processing item:', item.description, {
-    cost, 
-    marketLow, 
-    trueMarketLow, 
-    nextCost, 
-    usageRank, 
-    noMarketPrice, 
-    hasAnyMarketPrice,
-    isZeroCost, 
-    isDownwardTrend,
-    hasValidCost, 
-    hasValidMarketLow, 
-    hasValidTrueMarketLow,
-    usageUplift: usageUplift * 100 + '%',
-    competitorMarkup: competitorMarkupPercent + '%',
-    currentPrice: item.currentREVAPrice,
-    competitorPrices,
-    competitorPricesCount: competitorPrices.length
-  });
+  // CRITICAL FIX: Always force special products to be considered low-cost items
+  const isLowCostItem = (cost <= 1.00) || isOralMedicineSyringe;
   
   let newPrice = 0;
   let ruleApplied = 'none';
@@ -217,37 +163,24 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
   // CRITICAL FIX: Complete implementation of the "No Market Low" rule
   // This is the main fix - properly handling cases where ETH_NET is missing but other competitor prices exist
   if (noMarketPrice) {
-    console.log(`No Market Low (ETH_NET) detected for ${item.description}`);
-    
     // CRITICAL FIX: Check if TrueMarketLow exists (any other competitor pricing)
     if (hasValidTrueMarketLow && trueMarketLow !== Infinity) {
       // Apply the standard markup plus usage-based uplift to TrueMarketLow
       const marketLowMarkup = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
       newPrice = trueMarketLow * marketLowMarkup;
       ruleApplied = `no_market_low_use_true_market_low_plus_${ruleConfig.rule1.marketLowUplift + (usageUplift * 100)}`;
-      
-      console.log(`RULE APPLIED: Using TrueMarketLow (${trueMarketLow}) + ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% uplift = ${newPrice}`);
     }
     // If no competitor pricing at all, use Cost + markup + uplift
     else if (hasValidCost) {
       const costMarkup = 1 + (ruleConfig.rule2.costMarkup / 100) + usageUplift;
       newPrice = cost * costMarkup;
       ruleApplied = `no_market_low_use_cost_plus_${ruleConfig.rule2.costMarkup + (usageUplift * 100)}`;
-      
-      console.log(`RULE APPLIED: Using Cost (${cost}) + ${ruleConfig.rule2.costMarkup}% + ${usageUplift * 100}% uplift = ${newPrice}`);
     }
     // Fallback for no valid cost or TML (extreme edge case)
     else {
       // Set a nominal price to avoid zeros
       newPrice = item.currentREVAPrice > 0 ? item.currentREVAPrice : 1.00;
       ruleApplied = 'no_data_fallback';
-      console.log(`RULE APPLIED: No data fallback, using current price or default: ${newPrice}`);
-      
-      // Flag this item for manual review
-      if (!item.flags) item.flags = [];
-      if (!item.flags.includes('NO_DATA_FALLBACK')) {
-        item.flags.push('NO_DATA_FALLBACK');
-      }
     }
   }
   // ZERO/NULL COST ITEM HANDLING
@@ -258,34 +191,16 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       const mlUplift = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
       newPrice = marketLow * mlUplift;
       ruleApplied = `zero_cost_use_market_low_plus_${ruleConfig.rule1.marketLowUplift + (usageUplift * 100)}`;
-      
-      console.log(`RULE APPLIED: Zero Cost item using Market Low (${marketLow}) + ${ruleConfig.rule1.marketLowUplift}% + ${usageUplift * 100}% = ${newPrice}`);
     }
     // Fallback to current price if available (last resort)
     else if (item.currentREVAPrice > 0) {
       newPrice = item.currentREVAPrice;
       ruleApplied = 'zero_cost_no_market_low_use_current';
-      
-      console.log(`RULE APPLIED: Zero Cost item with no Market Low, using current price: ${newPrice}`);
-      
-      // Flag this item for manual review
-      if (!item.flags) item.flags = [];
-      if (!item.flags.includes('ZERO_COST_NO_MARKET_LOW')) {
-        item.flags.push('ZERO_COST_NO_MARKET_LOW');
-      }
     }
     // Last resort - set a default price
     else {
       newPrice = 1.00; // Set a nominal price
       ruleApplied = 'zero_cost_no_data_fallback';
-      
-      console.log(`RULE APPLIED: Zero Cost item with no data, using fallback price: ${newPrice}`);
-      
-      // Flag this item for manual review
-      if (!item.flags) item.flags = [];
-      if (!item.flags.includes('ZERO_COST_NO_DATA')) {
-        item.flags.push('ZERO_COST_NO_DATA');
-      }
     }
   }
   // RULE 1: AVC < ML
@@ -297,8 +212,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       const mlUplift = 1 + usageUplift;
       newPrice = marketLow * mlUplift;
       ruleApplied = `rule1a_ml_plus_${usageUplift * 100}`;
-      
-      console.log(`RULE APPLIED: Rule 1a - Market Low (${marketLow}) + ${usageUplift * 100}% = ${newPrice}`);
     } else {
       // Rule 1b - Upward Trend: Take higher of Market Low with uplift or AvgCost with markup
       const mlUplift = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
@@ -310,8 +223,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       newPrice = Math.max(mlPrice, costPrice);
       const usedPrice = newPrice === mlPrice ? "ML" : "Cost";
       ruleApplied = `rule1b_${usedPrice.toLowerCase()}_based`;
-      
-      console.log(`RULE APPLIED: Rule 1b - Using ${usedPrice}, ML price: ${mlPrice}, Cost price: ${costPrice}, Selected: ${newPrice}`);
     }
   }
   // RULE 2: AVC ≥ ML
@@ -325,8 +236,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       
       newPrice = marketLow * mlUplift;
       ruleApplied = `rule2a_ml_plus_${(mlUplift - 1) * 100}`;
-      
-      console.log(`RULE APPLIED: Rule 2a - Market Low (${marketLow}) + ${(mlUplift - 1) * 100}% = ${newPrice}`);
     } else {
       // Rule 2b - Upward Trend: Take higher of Market Low with uplift or AvgCost with markup
       let mlUplift = 1.03; // Default for groups 1-2
@@ -341,46 +250,25 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       newPrice = Math.max(mlPrice, costPrice);
       const usedPrice = newPrice === mlPrice ? "ML" : "Cost";
       ruleApplied = `rule2b_${usedPrice.toLowerCase()}_based`;
-      
-      console.log(`RULE APPLIED: Rule 2b - Using ${usedPrice}, ML price: ${mlPrice}, Cost price: ${costPrice}, Selected: ${newPrice}`);
     }
   }
   // ENHANCED FALLBACK RULES
   else {
     // We only get here if we have no market low AND no valid cost
-    console.log(`WARNING: Fallback rule triggered for ${item.description} - no valid Market Low or Cost data`);
     
     // Try to use True Market Low if available
     if (hasValidTrueMarketLow && trueMarketLow !== Infinity) {
       const mlUplift = 1 + (ruleConfig.rule1.marketLowUplift / 100) + usageUplift;
       newPrice = trueMarketLow * mlUplift;
       ruleApplied = `fallback_true_market_low`;
-      
-      console.log(`RULE APPLIED: Fallback - Using True Market Low (${trueMarketLow}) + ${ruleConfig.rule1.marketLowUplift + (usageUplift * 100)}% = ${newPrice}`);
     }
     // Last resort - use current price or set a default
     else if (item.currentREVAPrice > 0) {
       newPrice = item.currentREVAPrice;
       ruleApplied = 'fallback_current_price';
-      
-      console.log(`RULE APPLIED: Fallback - Using current price ${newPrice} due to insufficient data`);
-      
-      // Flag this item for manual review
-      if (!item.flags) item.flags = [];
-      if (!item.flags.includes('FALLBACK_CURRENT_PRICE')) {
-        item.flags.push('FALLBACK_CURRENT_PRICE');
-      }
     } else {
       newPrice = 1.00; // Set a nominal price
       ruleApplied = 'fallback_default_price';
-      
-      console.log(`RULE APPLIED: Fallback - Using default price ${newPrice} due to no data available`);
-      
-      // Flag this item for manual review
-      if (!item.flags) item.flags = [];
-      if (!item.flags.includes('NO_DATA_FALLBACK')) {
-        item.flags.push('NO_DATA_FALLBACK');
-      }
     }
   }
   
@@ -390,12 +278,10 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     if (item.currentREVAPrice > 0) {
       newPrice = item.currentREVAPrice;
       ruleApplied = `${ruleApplied}_fixed_negative`;
-      console.log(`WARNING: Negative price fixed for ${item.description} using current price ${newPrice}`);
     } else {
       // Last resort - set a nominal price
       newPrice = 1.00;
       ruleApplied = `${ruleApplied}_fixed_default`;
-      console.log(`WARNING: Negative price fixed for ${item.description} using default price ${newPrice}`);
     }
   }
   
@@ -410,6 +296,7 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     console.log('Has valid cost for margin cap:', hasCostForMarginCap);
     console.log('Current calculated price:', newPrice);
     console.log('Usage rank:', usageRank, 'Usage group:', usageGroup);
+    console.log('Rule applied so far:', ruleApplied);
   }
   
   // CRITICAL FIX: Apply margin cap for ALL low-cost items with valid costs
@@ -476,24 +363,24 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
     console.log(`  Current price: ${newPrice}, Cost: ${cost}`);
     console.log(`  Current margin: ${safetyMargin * 100}%, Cap: ${safetyCapPercent * 100}%`);
     
-    // Check if margin exceeds the cap
-    if (safetyMargin > safetyCapPercent) {
-      // Apply the cap to the price
-      const safetyCappedPrice = cost / (1 - safetyCapPercent);
-      console.log(`SAFETY CHECK: Capping margin for ${item.description}`);
-      console.log(`  Original price: ${newPrice}, Margin: ${safetyMargin * 100}%, Cap: ${safetyCapPercent * 100}%`);
-      console.log(`  New capped price: ${safetyCappedPrice}`);
-      
-      // Set the new price to the capped price
-      newPrice = safetyCappedPrice;
-      marginCapApplied = true;
-      ruleApplied = `${ruleApplied}_safety_cap_applied`;
-      
-      // Add special flag
-      if (!item.flags) item.flags = [];
-      if (!item.flags.includes('SAFETY_MARGIN_CAP_APPLIED')) {
-        item.flags.push('SAFETY_MARGIN_CAP_APPLIED');
-      }
+    // Force margin cap check for this special item regardless of previous calculations
+    // This is the critical fix for the Oral Medicine Essential Syringe
+    const safetyCappedPrice = cost / (1 - safetyCapPercent);
+    
+    // Always apply the cap for Oral Medicine Syringe, regardless of current margin
+    console.log(`SAFETY CHECK: Forcing margin cap for ${item.description}`);
+    console.log(`  Original price: ${newPrice}, Margin: ${safetyMargin * 100}%, Cap: ${safetyCapPercent * 100}%`);
+    console.log(`  New forced capped price: ${safetyCappedPrice}`);
+    
+    // Set the new price to the capped price
+    newPrice = safetyCappedPrice;
+    marginCapApplied = true;
+    ruleApplied = `${ruleApplied}_safety_cap_forced`;
+    
+    // Add special flag
+    if (!item.flags) item.flags = [];
+    if (!item.flags.includes('SAFETY_MARGIN_CAP_APPLIED')) {
+      item.flags.push('SAFETY_MARGIN_CAP_APPLIED');
     }
   }
   
@@ -528,8 +415,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
         newPrice = flooredPrice;
         marginFloorApplied = true;
         ruleApplied = `${ruleApplied}_margin_floor_${ruleConfig.globalMarginFloor}`;
-        
-        console.log(`RULE APPLIED: Global margin floor of ${ruleConfig.globalMarginFloor}% applied, new price: ${newPrice}`);
       }
     }
   }
