@@ -18,12 +18,13 @@ const EngineRoom: React.FC = () => {
     console.log('CRITICAL FIX APPLIED: Rule 1b and 2b calculation corrected.');
     console.log('Usage-based uplift is now correctly applied to both Market Low and AVC calculations.');
     console.log('MARGIN CAP IMPLEMENTED: For all low-cost items (≤ £1.00) to limit margins based on usage rank.');
+    console.log('MARGIN CAP IS OVERARCHING RULE: Now applied as final step to all pricing calculations for low-cost items.');
     console.log('FIXED SPECIFIC CASE: Alfuzosin Tabs 2.5mg / 60 price now correctly calculated as £3.92 instead of £3.99');
     
     // Show toast notification about the fix with more details
     toast({
       title: "Pricing Engine Updates",
-      description: "1) Fixed No Market Low rule to prioritize TrueMarketLow + 3% + uplift. 2) Only falls back to Cost + 12% + uplift when no competitor prices exist. 3) Fixed margin caps for low-cost items.",
+      description: "1) Fixed No Market Low rule to prioritize TrueMarketLow + 3% + uplift. 2) Only falls back to Cost + 12% + uplift when no competitor prices exist. 3) Margin caps now applied as overarching rule for all low-cost items.",
       duration: 7000
     });
     

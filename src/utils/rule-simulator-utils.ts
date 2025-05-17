@@ -1,4 +1,3 @@
-
 import { formatCurrency, calculateUsageWeightedMetrics } from './formatting-utils';
 
 // Define the rule config type
@@ -306,35 +305,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       
       console.log(`RULE APPLIED: Rule 1b - Using ${usedPrice}, ML price: ${mlPrice}, Cost price: ${costPrice}, Selected: ${newPrice}`);
     }
-    
-    // Apply margin cap for low-cost items (≤ £1.00)
-    // FIX: Add a check to skip margin cap calculation when cost is zero
-    if (newPrice > 0 && cost <= 1.00 && cost > 0.00) { // CRITICAL FIX: Added "cost > 0.00" condition
-      const proposedMargin = (newPrice - cost) / newPrice;
-      const marginCap = usageRank <= 2 ? ruleConfig.rule1.marginCaps.group1_2 : 
-                        usageRank <= 4 ? ruleConfig.rule1.marginCaps.group3_4 : 
-                        ruleConfig.rule1.marginCaps.group5_6;
-      
-      if (proposedMargin > marginCap) {
-        // Formula to calculate price from target margin: Price = Cost / (1 - targetMargin)
-        const cappedPrice = cost / (1 - marginCap);
-        newPrice = cappedPrice;
-        marginCapApplied = true;
-        
-        // Update the rule description to indicate cap was applied
-        ruleApplied = `${ruleApplied}_margin_cap_${marginCap * 100}`;
-        
-        console.log(`RULE APPLIED: Margin cap of ${marginCap * 100}% applied, new price: ${newPrice}`);
-      }
-    } else if (newPrice > 0 && cost <= 1.00 && cost <= 0.00) { // Add specific logging for zero-cost items
-      console.log(`MARGIN CAP SKIPPED: Zero-cost item (${item.description}) - cap not applied to prevent zeroing out price`);
-      
-      // Add specific flag for this case
-      if (!item.flags) item.flags = [];
-      if (!item.flags.includes('ZERO_COST_MARGIN_CAP_SKIPPED')) {
-        item.flags.push('ZERO_COST_MARGIN_CAP_SKIPPED');
-      }
-    }
   }
   // RULE 2: AVC ≥ ML
   else if (hasValidMarketLow && hasValidCost && cost >= marketLow) {
@@ -365,35 +335,6 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       ruleApplied = `rule2b_${usedPrice.toLowerCase()}_based`;
       
       console.log(`RULE APPLIED: Rule 2b - Using ${usedPrice}, ML price: ${mlPrice}, Cost price: ${costPrice}, Selected: ${newPrice}`);
-    }
-    
-    // Apply margin cap for low-cost items (≤ £1.00)
-    // FIX: Add a check to skip margin cap calculation when cost is zero
-    if (newPrice > 0 && cost <= 1.00 && cost > 0.00) { // CRITICAL FIX: Added "cost > 0.00" condition
-      const proposedMargin = (newPrice - cost) / newPrice;
-      const marginCap = usageRank <= 2 ? ruleConfig.rule2.marginCaps.group1_2 : 
-                        usageRank <= 4 ? ruleConfig.rule2.marginCaps.group3_4 : 
-                        ruleConfig.rule2.marginCaps.group5_6;
-      
-      if (proposedMargin > marginCap) {
-        // Formula to calculate price from target margin: Price = Cost / (1 - targetMargin)
-        const cappedPrice = cost / (1 - marginCap);
-        newPrice = cappedPrice;
-        marginCapApplied = true;
-        
-        // Update the rule description to indicate cap was applied
-        ruleApplied = `${ruleApplied}_margin_cap_${marginCap * 100}`;
-        
-        console.log(`RULE APPLIED: Margin cap of ${marginCap * 100}% applied, new price: ${newPrice}`);
-      }
-    } else if (newPrice > 0 && cost <= 1.00 && cost <= 0.00) { // Add specific logging for zero-cost items
-      console.log(`MARGIN CAP SKIPPED: Zero-cost item (${item.description}) - cap not applied to prevent zeroing out price`);
-      
-      // Add specific flag for this case
-      if (!item.flags) item.flags = [];
-      if (!item.flags.includes('ZERO_COST_MARGIN_CAP_SKIPPED')) {
-        item.flags.push('ZERO_COST_MARGIN_CAP_SKIPPED');
-      }
     }
   }
   // ENHANCED FALLBACK RULES
@@ -447,6 +388,51 @@ export const applyPricingRules = (item: any, ruleConfig: RuleConfig) => {
       newPrice = 1.00;
       ruleApplied = `${ruleApplied}_fixed_default`;
       console.log(`WARNING: Negative price fixed for ${item.description} using default price ${newPrice}`);
+    }
+  }
+  
+  // CRITICAL CHANGE: Apply margin cap as final step for ALL low-cost items (≤ £1.00)
+  // This is the overarching rule that takes precedence over all other pricing
+  if (newPrice > 0 && cost <= 1.00 && cost > 0.00) {
+    // Get the appropriate margin cap based on usage group
+    const marginCap = usageRank <= 2 ? ruleConfig.rule1.marginCaps.group1_2 : 
+                      usageRank <= 4 ? ruleConfig.rule1.marginCaps.group3_4 : 
+                      ruleConfig.rule1.marginCaps.group5_6;
+    
+    // Calculate what the margin would be with the current price
+    const proposedMargin = (newPrice - cost) / newPrice;
+    
+    // If the calculated margin exceeds the cap, recalculate the price with the cap
+    if (proposedMargin > marginCap) {
+      // Calculate the maximum price allowed by the margin cap
+      // Formula: Price = Cost / (1 - targetMargin)
+      const cappedPrice = cost / (1 - marginCap);
+      
+      console.log(`MARGIN CAP: Original price ${newPrice} with margin ${proposedMargin*100}% exceeds cap of ${marginCap*100}%`);
+      console.log(`MARGIN CAP: New capped price is ${cappedPrice} for item ${item.description}`);
+      
+      // Set the new price to the capped price
+      newPrice = cappedPrice;
+      marginCapApplied = true;
+      
+      // Update the rule description to indicate margin cap was applied as final step
+      ruleApplied = `${ruleApplied}_margin_cap_${marginCap * 100}`;
+      
+      // Add flag for margin cap application
+      if (!item.flags) item.flags = [];
+      if (!item.flags.includes('MARGIN_CAP_APPLIED')) {
+        item.flags.push('MARGIN_CAP_APPLIED');
+      }
+    }
+  } 
+  // Handle zero-cost items by skipping margin cap
+  else if (newPrice > 0 && cost <= 1.00 && cost <= 0.00) {
+    console.log(`MARGIN CAP SKIPPED: Zero-cost item (${item.description}) - cap not applied to prevent zeroing out price`);
+    
+    // Add specific flag for this case
+    if (!item.flags) item.flags = [];
+    if (!item.flags.includes('ZERO_COST_MARGIN_CAP_SKIPPED')) {
+      item.flags.push('ZERO_COST_MARGIN_CAP_SKIPPED');
     }
   }
   
