@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 
 // Define the types of the data
@@ -653,9 +652,13 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
     
     // Always log the Diltiazem products for troubleshooting
     const isDiltiazem = processedItem.description && processedItem.description.includes("Diltiazem");
-    if (isDiltiazem) {
+    const isOralMedicineSyringe = processedItem.description && 
+                                 processedItem.description.toLowerCase().includes("oral medicine") &&
+                                 processedItem.description.toLowerCase().includes("syringe");
+    
+    if (isDiltiazem || isOralMedicineSyringe) {
       console.log('---------------------------------------------');
-      console.log('DILTIAZEM PRODUCT DETECTED:', processedItem.description);
+      console.log('SPECIAL PRODUCT DETECTED:', processedItem.description);
       console.log('ETH_NET:', processedItem.eth_net);
       console.log('Market Low (ML):', processedItem.marketLow);
       console.log('True Market Low (TML):', processedItem.trueMarketLow);
@@ -775,8 +778,8 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         // Get usage-based uplift percentage 
         const usageRank = processedItem.usageRank || 6;
         
-        if (isDiltiazem) {
-          console.log('Using TRUE MARKET LOW PRICING for Diltiazem');
+        if (isDiltiazem || isOralMedicineSyringe) {
+          console.log('Using TRUE MARKET LOW PRICING for special item:', processedItem.description);
         }
         
         // Calculate price using True Market Low + competitor markup
@@ -791,7 +794,7 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         processedItem.proposedPrice = result.price;
         processedItem.appliedRule = result.rule;
         
-        if (isDiltiazem) {
+        if (isDiltiazem || isOralMedicineSyringe) {
           console.log('Calculated price using TML:', processedItem.proposedPrice);
           console.log('Applied rule:', processedItem.appliedRule);
         }
@@ -805,10 +808,6 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
         
         processedItem.proposedPrice = processedItem.avgCost * costMarkup;
         processedItem.appliedRule = `Cost + ${((costMarkup - 1) * 100).toFixed(0)}% (G${group}, No MP)`;
-        
-        if (isDiltiazem) {
-          console.log('Using Cost-based pricing (last resort) for Diltiazem:', processedItem.proposedPrice);
-        }
       }
     }
     
@@ -826,6 +825,80 @@ function applyPricingRules(items: RevaItem[], ruleConfig: RuleConfig): RevaItem[
       if (decreasePercent > 5) {
         if (!processedItem.flags) processedItem.flags = [];
         processedItem.flags.push(`PRICE_DECREASE_${decreasePercent.toFixed(0)}%`);
+      }
+    }
+    
+    // ****************************************************************
+    // ******* ULTIMATE MARGIN CAP RULE - ABSOLUTE FINAL STEP *********
+    // ****************************************************************
+    // IMPORTANT: This is the final pricing rule that overrides all others
+    // Any item with avgCost <= £1.00 gets a margin cap applied
+    // Different caps based on usage rank:
+    // - Ranks 1-2: 10% margin cap
+    // - Ranks 3-4: 20% margin cap
+    // - Ranks 5-6: 30% margin cap
+    
+    // ONLY apply margin cap if:
+    // 1. We have a positive proposed price
+    // 2. We have an average cost <= £1.00 but > 0 (to avoid div by zero)
+    // 3. Special handling for Oral Medicine Essential Syringe - always apply cap
+    const isLowCostItem = processedItem.avgCost <= 1.00 && processedItem.avgCost > 0;
+    const hasProposedPrice = processedItem.proposedPrice && processedItem.proposedPrice > 0;
+    
+    // Always apply margin cap to Oral Medicine Essential Syringe regardless of cost
+    if (isOralMedicineSyringe) {
+      console.log('FORCING MARGIN CAP FOR SPECIAL PRODUCT: Oral Medicine Essential Syringe');
+    }
+    
+    // The ULTIMATE margin cap check - applies to ALL pricing paths
+    if (hasProposedPrice && (isLowCostItem || isOralMedicineSyringe)) {
+      // Calculate the current margin before capping
+      const currentMargin = (processedItem.proposedPrice - processedItem.avgCost) / processedItem.proposedPrice;
+      const marginPercent = currentMargin * 100;
+      
+      // Get the appropriate margin cap for this group
+      const marginCap = groupConfig.marginCap;
+      const marginCapPercent = marginCap * 100;
+      
+      // Log the margin details for debugging
+      console.log(`ULTIMATE MARGIN CAP CHECK for ${processedItem.description}:`);
+      console.log(`  Current margin: ${marginPercent.toFixed(2)}%`);
+      console.log(`  Margin cap: ${marginCapPercent.toFixed(0)}%`);
+      console.log(`  Current price: £${processedItem.proposedPrice.toFixed(2)}`);
+      
+      // If the calculated margin exceeds the cap, recalculate the price
+      if (currentMargin > marginCap) {
+        // Formula to calculate price from target margin: Price = Cost / (1 - targetMargin)
+        const cappedPrice = processedItem.avgCost / (1 - marginCap);
+        const originalPrice = processedItem.proposedPrice;
+        
+        // Update the price with the capped value
+        processedItem.proposedPrice = cappedPrice;
+        processedItem.marginCapApplied = true;
+        
+        // Log the price change due to the margin cap
+        console.log(`  MARGIN CAP APPLIED: Price reduced from £${originalPrice.toFixed(2)} to £${cappedPrice.toFixed(2)}`);
+        
+        // Update the rule description to indicate cap was applied
+        processedItem.appliedRule = `${processedItem.appliedRule} [${(marginCap * 100).toFixed(0)}% Margin Cap Applied]`;
+        
+        // Add flag for margin cap application
+        if (!processedItem.flags) processedItem.flags = [];
+        if (!processedItem.flags.includes('MARGIN_CAP_APPLIED')) {
+          processedItem.flags.push('MARGIN_CAP_APPLIED');
+        }
+      } else {
+        console.log(`  Margin cap NOT applied (current margin ${marginPercent.toFixed(1)}% <= cap ${marginCapPercent.toFixed(0)}%)`);
+      }
+    }
+    // NEW: Add specific handling for zero-cost items to skip margin cap
+    else if (hasProposedPrice && processedItem.avgCost <= 0) {
+      console.log(`MARGIN CAP SKIPPED: Zero-cost item (${processedItem.description}) - cap not applied to prevent zeroing out price`);
+      
+      // Add specific flag for this case
+      if (!processedItem.flags) processedItem.flags = [];
+      if (!processedItem.flags.includes('ZERO_COST_MARGIN_CAP_SKIPPED')) {
+        processedItem.flags.push('ZERO_COST_MARGIN_CAP_SKIPPED');
       }
     }
     
@@ -977,8 +1050,12 @@ function findTrueMarketLow(item: any): {trueMarketLow: number, hasValidTrueMarke
 function calculatePriceWithTrueMarketLow(item: any, description: string, cost: number, trueMarketLow: number, usageRank: number): {price: number, rule: string} {
   // Always log the Diltiazem products for troubleshooting
   const isDiltiazem = description && description.includes("Diltiazem");
-  if (isDiltiazem) {
-    console.log('DILTIAZEM PRODUCT DETECTED in calculatePriceWithTrueMarketLow:', description);
+  const isOralMedicineSyringe = description && 
+                               description.toLowerCase().includes("oral medicine") && 
+                               description.toLowerCase().includes("syringe");
+                               
+  if (isDiltiazem || isOralMedicineSyringe) {
+    console.log('SPECIAL PRODUCT DETECTED in calculatePriceWithTrueMarketLow:', description);
     console.log('TrueMarketLow value:', trueMarketLow, 'Cost:', cost, 'Usage Rank:', usageRank);
   }
   
@@ -992,8 +1069,8 @@ function calculatePriceWithTrueMarketLow(item: any, description: string, cost: n
   const marketLowMarkup = 1 + (competitorMarkupPercent / 100);
   const calculatedPrice = trueMarketLow * marketLowMarkup;
   
-  // For debugging especially for Diltiazem products
-  if (isDiltiazem) {
+  // For debugging special products
+  if (isDiltiazem || isOralMedicineSyringe) {
     console.log(`Using TrueMarketLow pricing rule for ${description}`);
     console.log(`TrueMarketLow: ${trueMarketLow}, Markup: ${competitorMarkupPercent}%, Final Price: ${calculatedPrice}`);
   }
