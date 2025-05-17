@@ -70,13 +70,13 @@ const AppHeader = ({
       case '/my-performance':
         return isMobile ? 'My Dashboard' : 'My Dashboard';
       case '/engine-room/dashboard':
-        return isMobile ? 'Engine' : 'Pricing Engine / Dashboard';
+        return isMobile ? 'Engine' : 'Engine Room / Dashboard';
       case '/engine-room/operations':
-        return isMobile ? 'Operations' : 'Pricing Engine / Operations';
+        return isMobile ? 'Operations' : 'Engine Room / Operations';
       case '/engine-room/approvals':
-        return isMobile ? 'Approvals' : 'Pricing Engine / Approvals';
+        return isMobile ? 'Approvals' : 'Engine Room / Approvals';
       case '/engine-room':
-        return isMobile ? 'Engine' : 'Pricing Engine';
+        return isMobile ? 'Engine' : 'Engine Room';
       default:
         return '';
     }
@@ -135,7 +135,7 @@ const AppHeader = ({
     icon: <div className="h-4 w-4 text-current">/</div>
   }, {
     path: '/engine-room/dashboard',
-    label: 'Pricing Engine',
+    label: 'Engine Room',
     icon: <div className="h-4 w-4 text-current">/</div>,
     hasSubNav: true,
     subItems: [{
@@ -194,126 +194,123 @@ const AppHeader = ({
           </div>
         </div>
         
-        {/* Navigation bar container with conditional rendering */}
-        <div 
-          className={cn(
-            `transition-all duration-200 ease-in-out border-t border-white/5`,
-            (!isMobile || isNavOpen) ? "h-auto opacity-100" : "h-0 opacity-0 overflow-hidden"
-          )}
-        >
-          <nav className={`flex ${isMobile ? 'flex-col' : 'items-center'} py-1`}>
-            {navItems.map((item) => 
-              item.hasSubNav ? (
-                // Pricing Engine navigation with hover functionality
-                <div
-                  key={item.path}
-                  className="relative"
-                  onMouseEnter={() => !isMobile && setIsEngineSubnavHovered(true)}
-                  onMouseLeave={() => !isMobile && setIsEngineSubnavHovered(false)}
-                >
-                  {isMobile ? (
-                    // Mobile version - collapsible dropdown
-                    <Collapsible>
-                      <CollapsibleTrigger className="w-full">
-                        <div className={cn(
-                          "px-4 py-2 flex items-center justify-between text-sm font-medium", 
-                          isEngineRoomSection ? 
-                            "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
-                            "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400"
-                        )}>
-                          <div className="flex items-center gap-2">
-                            {item.icon}
-                            <span>{item.label}</span>
+        {/* Navigation bar - Only render when not on mobile or when mobile nav is open */}
+        {(!isMobile || isNavOpen) && (
+          <div className={`${isMobile ? 'py-2' : 'border-t border-white/5'} overflow-hidden`}>
+            <nav className={`flex ${isMobile ? 'flex-col' : 'items-center'} py-1`}>
+              {navItems.map((item) => 
+                item.hasSubNav ? (
+                  // Engine Room navigation with hover functionality
+                  <div
+                    key={item.path}
+                    className="relative"
+                    onMouseEnter={() => !isMobile && setIsEngineSubnavHovered(true)}
+                    onMouseLeave={() => !isMobile && setIsEngineSubnavHovered(false)}
+                  >
+                    {isMobile ? (
+                      // Mobile version - collapsible dropdown
+                      <Collapsible>
+                        <CollapsibleTrigger className="w-full">
+                          <div className={cn(
+                            "px-4 py-2 flex items-center justify-between text-sm font-medium", 
+                            isEngineRoomSection ? 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400"
+                          )}>
+                            <div className="flex items-center gap-2">
+                              {item.icon}
+                              <span>{item.label}</span>
+                            </div>
+                            <ChevronDown className="h-4 w-4" />
                           </div>
-                          <ChevronDown className="h-4 w-4" />
-                        </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="pl-8 space-y-1 py-1">
-                          {item.subItems?.map(subItem => (
-                            <NavLink 
-                              key={subItem.path}
-                              to={subItem.path} 
-                              className={({isActive}) => 
-                                cn("block py-2 text-sm", 
-                                  isActive ? 
-                                    "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
-                                    "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400")
-                              }
-                              onClick={() => setIsNavOpen(false)}
-                            >
-                              {subItem.label}
-                            </NavLink>
-                          ))}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  ) : (
-                    // Desktop version - hover dropdown
-                    <>
-                      <Link 
-                        to={item.path} 
-                        className={cn(
-                          "px-4 py-2 flex items-center gap-2 text-sm font-medium", 
-                          isEngineRoomSection ? 
-                            "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
-                            "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
-                        )}
-                      >
-                        {item.icon}
-                        <span>{item.label}</span>
-                      </Link>
-                      
-                      {/* Subnav that appears on hover only */}
-                      {isEngineSubnavHovered && (
-                        <div 
-                          className={cn(
-                            "absolute top-full left-0 bg-gray-950/95 backdrop-blur-sm border border-white/10 rounded-md shadow-lg overflow-hidden z-50",
-                            "transition-all duration-200",
-                            "opacity-100 translate-y-0"
-                          )}
-                        >
-                          <div className="p-1">
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="pl-8 space-y-1 py-1">
                             {item.subItems?.map(subItem => (
                               <NavLink 
                                 key={subItem.path}
                                 to={subItem.path} 
                                 className={({isActive}) => 
-                                  cn("block px-4 py-2 text-sm rounded-sm", 
+                                  cn("block py-2 text-sm", 
                                     isActive ? 
-                                      "bg-white/5 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
-                                      "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:bg-white/5 hover:text-white")
+                                      "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                                      "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400")
                                 }
+                                onClick={() => setIsNavOpen(false)}
                               >
                                 {subItem.label}
                               </NavLink>
                             ))}
                           </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              ) : (
-                // Regular navigation links
-                <NavLink 
-                  key={item.path}
-                  to={item.path} 
-                  className={({isActive}) => cn(
-                    `${isMobile ? 'py-3' : 'px-4 py-2'} flex items-center gap-2 text-sm font-medium`, 
-                    isActive ? 
-                      "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
-                      "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
-                  )}
-                  onClick={() => isMobile && setIsNavOpen(false)}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </NavLink>
-              )
-            )}
-          </nav>
-        </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ) : (
+                      // Desktop version - hover dropdown
+                      <>
+                        <Link 
+                          to={item.path} 
+                          className={cn(
+                            "px-4 py-2 flex items-center gap-2 text-sm font-medium", 
+                            isEngineRoomSection ? 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
+                          )}
+                        >
+                          {item.icon}
+                          <span>{item.label}</span>
+                        </Link>
+                        
+                        {/* Subnav that appears on hover only */}
+                        {isEngineSubnavHovered && (
+                          <div 
+                            className={cn(
+                              "absolute top-full left-0 bg-gray-950/95 backdrop-blur-sm border border-white/10 rounded-md shadow-lg overflow-hidden z-50",
+                              "transition-all duration-200",
+                              "opacity-100 translate-y-0"
+                            )}
+                          >
+                            <div className="p-1">
+                              {item.subItems?.map(subItem => (
+                                <NavLink 
+                                  key={subItem.path}
+                                  to={subItem.path} 
+                                  className={({isActive}) => 
+                                    cn("block px-4 py-2 text-sm rounded-sm", 
+                                      isActive ? 
+                                        "bg-white/5 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                                        "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:bg-white/5 hover:text-white")
+                                  }
+                                >
+                                  {subItem.label}
+                                </NavLink>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  // Regular navigation links
+                  <NavLink 
+                    key={item.path}
+                    to={item.path} 
+                    className={({isActive}) => cn(
+                      `${isMobile ? 'py-3' : 'px-4 py-2'} flex items-center gap-2 text-sm font-medium`, 
+                      isActive ? 
+                        "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                        "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
+                    )}
+                    onClick={() => isMobile && setIsNavOpen(false)}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </NavLink>
+                )
+              )}
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

@@ -21,14 +21,14 @@ interface NavItemProps {
   Icon: React.ComponentType<any>;
 }
 
-// Update the navigation items to include all Engine Room links with renamed "Pricing Engine"
+// Update the navigation items to include all Engine Room links - Changed "Engine Operations" to "Operations"
 const navigation = [
   { name: "Dashboard", href: "/", Icon: LayoutDashboard },
   { name: "Rep Performance", href: "/rep-performance", Icon: Users },
   { name: "Account Performance", href: "/account-performance", Icon: Building2 },
   { name: "My Performance", href: "/my-performance", Icon: BarChartHorizontal },
   { name: "Rep Planner", href: "/rep-tracker", Icon: CalendarDays },
-  { name: "Pricing Engine", href: "/engine-room", Icon: Cpu },
+  { name: "Engine Room", href: "/engine-room", Icon: Cpu },
   { name: "Engine Dashboard", href: "/engine-room/dashboard", Icon: LayoutDashboard },
   { name: "Operations", href: "/engine-room/operations", Icon: ClipboardList },
   { name: "Rule Simulator", href: "/engine-room/simulator", Icon: FlaskConical },
