@@ -190,18 +190,18 @@ const MarginOpportunityMatrix: React.FC<MarginOpportunityMatrixProps> = ({ data 
                   active={active}
                   payload={payload}
                   title={payload && payload[0] ? payload[0]?.payload?.name : ''}
-                  formatter={(value, name) => {
+                  formatter={(value, name): [string, string] => {
                     // Format different properties
                     if (name === 'Margin %') return [`${value}%`, name];
-                    if (name === 'Usage Volume') return [value.toLocaleString(), name];
+                    if (name === 'Usage Volume') return [`${value.toLocaleString()}`, name];
                     if (name === 'Price') return [`£${value.toFixed(2)}`, name];
                     if (name === 'Cost') return [`£${value.toFixed(2)}`, name];
                     if (name === 'Market Price') {
                       return [value > 0 ? `£${value.toFixed(2)}` : 'N/A', 'ETH NET Price'];
                     }
-                    if (name === 'marginOpportunity') return [value, 'Opportunity Score'];
-                    if (name === 'pricingRule') return [value, 'Pricing Rule'];
-                    return [value, name];
+                    if (name === 'marginOpportunity') return [value.toString(), 'Opportunity Score'];
+                    if (name === 'pricingRule') return [value.toString(), 'Pricing Rule'];
+                    return [value.toString(), name];
                   }}
                 />
               )}

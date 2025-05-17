@@ -36,7 +36,7 @@ const AnalyticsTooltip: React.FC<AnalyticsTooltipProps> = ({
             ? formatter(entry.value, entry.name)[0] 
             : typeof entry.value === 'number'
               ? entry.value.toLocaleString()
-              : entry.value;
+              : entry.value.toString();
           
           const formattedName = formatter 
             ? formatter(entry.value, entry.name)[1] 
