@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -193,10 +194,10 @@ const AppHeader = ({
           </div>
         </div>
         
-        {/* Navigation bar - Desktop (always visible) and Mobile (collapsible) */}
+        {/* Navigation bar - Only render when not on mobile or when mobile nav is open */}
         {(!isMobile || isNavOpen) && (
-          <nav className={`${isMobile ? 'py-2' : 'border-t border-white/5'}`}>
-            <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} py-1`}>
+          <div className={`${isMobile ? 'py-2' : 'border-t border-white/5'} overflow-hidden`}>
+            <nav className={`flex ${isMobile ? 'flex-col' : 'items-center'} py-1`}>
               {navItems.map((item) => 
                 item.hasSubNav ? (
                   // Engine Room navigation with hover functionality
@@ -307,8 +308,8 @@ const AppHeader = ({
                   </NavLink>
                 )
               )}
-            </div>
-          </nav>
+            </nav>
+          </div>
         )}
       </div>
     </header>
