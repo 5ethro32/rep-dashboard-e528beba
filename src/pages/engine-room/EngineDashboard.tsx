@@ -13,70 +13,47 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/use-toast';
 
 // Micro component for donut chart to use on card backs
-const MicroDonutChart = ({ percentage, color = '#10b981' }) => {
+const MicroDonutChart = ({
+  percentage,
+  color = '#10b981'
+}) => {
   const radius = 40;
   const strokeWidth = 12;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div className="flex items-center justify-center h-full">
+  const strokeDashoffset = circumference - percentage / 100 * circumference;
+  return <div className="flex items-center justify-center h-full">
       <div className="relative flex items-center justify-center">
         <svg width="100" height="100" viewBox="0 0 100 100">
-          <circle
-            className="text-gray-800"
-            strokeWidth={strokeWidth}
-            stroke="currentColor"
-            fill="transparent"
-            r={radius}
-            cx="50"
-            cy="50"
-          />
-          <circle
-            className="text-primary"
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            stroke={color}
-            fill="transparent"
-            r={radius}
-            cx="50"
-            cy="50"
-            transform="rotate(-90 50 50)"
-          />
+          <circle className="text-gray-800" strokeWidth={strokeWidth} stroke="currentColor" fill="transparent" r={radius} cx="50" cy="50" />
+          <circle className="text-primary" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" stroke={color} fill="transparent" r={radius} cx="50" cy="50" transform="rotate(-90 50 50)" />
         </svg>
         <div className="absolute text-xl font-bold text-white">
           {percentage.toFixed(1)}%
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
 
 // Micro bar chart component for card backs
-const MicroBarChart = ({ data, title }) => {
+const MicroBarChart = ({
+  data,
+  title
+}) => {
   const max = Math.max(...data.map(d => d.value));
-  
-  return (
-    <div className="flex flex-col h-full">
+  return <div className="flex flex-col h-full">
       <div className="text-sm font-medium mb-2">{title}</div>
       <div className="flex-1 flex items-end space-x-1">
-        {data.map((item, i) => (
-          <div key={i} className="flex flex-col items-center flex-1">
-            <div className="w-full bg-gray-800 rounded-t overflow-hidden" style={{ 
-              height: `${(item.value / max * 100)}%`,
-              minHeight: '10%',
-              backgroundColor: item.color || '#10b981'
-            }}></div>
+        {data.map((item, i) => <div key={i} className="flex flex-col items-center flex-1">
+            <div className="w-full bg-gray-800 rounded-t overflow-hidden" style={{
+          height: `${item.value / max * 100}%`,
+          minHeight: '10%',
+          backgroundColor: item.color || '#10b981'
+        }}></div>
             <div className="text-[10px] mt-1 text-white/60">{item.label}</div>
-          </div>
-        ))}
+          </div>)}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 const EngineDashboardContent = () => {
   const {
     engineData,
@@ -86,7 +63,9 @@ const EngineDashboardContent = () => {
     handleFileUpload
   } = useEngineRoom();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [usageMetrics, setUsageMetrics] = useState({
     weightedMargin: 0,
@@ -167,7 +146,7 @@ const EngineDashboardContent = () => {
     };
   };
   const metrics = getMetrics();
-  
+
   // Calculate usage-weighted metrics safely
   useEffect(() => {
     if (engineData?.items && engineData.items.length > 0 && isMounted) {
@@ -192,28 +171,50 @@ const EngineDashboardContent = () => {
 
   // Functions for generating back content
   const generateSKUChartData = () => {
-    return [
-      { label: 'Active', value: metrics.activeItems, color: '#10b981' },
-      { label: 'Inactive', value: metrics.totalItems - metrics.activeItems, color: '#6b7280' }
-    ];
+    return [{
+      label: 'Active',
+      value: metrics.activeItems,
+      color: '#10b981'
+    }, {
+      label: 'Inactive',
+      value: metrics.totalItems - metrics.activeItems,
+      color: '#6b7280'
+    }];
   };
-
   const generateMarginDistribution = () => {
     // Simple mock data for margin distribution
-    return [
-      { label: '<0%', value: 5, color: '#ef4444' },
-      { label: '0-5%', value: 15, color: '#f97316' },
-      { label: '5-10%', value: 30, color: '#eab308' },
-      { label: '10-15%', value: 25, color: '#84cc16' },
-      { label: '>15%', value: 25, color: '#10b981' },
-    ];
+    return [{
+      label: '<0%',
+      value: 5,
+      color: '#ef4444'
+    }, {
+      label: '0-5%',
+      value: 15,
+      color: '#f97316'
+    }, {
+      label: '5-10%',
+      value: 30,
+      color: '#eab308'
+    }, {
+      label: '10-15%',
+      value: 25,
+      color: '#84cc16'
+    }, {
+      label: '>15%',
+      value: 25,
+      color: '#10b981'
+    }];
   };
-
   const generateFlagDistribution = () => {
-    return [
-      { label: 'Rule 1', value: metrics.rule1Flags, color: '#f97316' },
-      { label: 'Rule 2', value: metrics.rule2Flags, color: '#84cc16' }
-    ];
+    return [{
+      label: 'Rule 1',
+      value: metrics.rule1Flags,
+      color: '#f97316'
+    }, {
+      label: 'Rule 2',
+      value: metrics.rule2Flags,
+      color: '#84cc16'
+    }];
   };
 
   // Handle drag and drop file upload
@@ -228,35 +229,23 @@ const EngineDashboardContent = () => {
       handleFileUpload(e.dataTransfer.files[0]);
     }
   };
-  
+
   // Handler for clicking upload area
   const handleClickUpload = () => {
     fileInputRef.current?.click();
   };
-  
+
   // Handle file selection from input
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFileUpload(e.target.files[0]);
     }
   };
-  
   if (!engineData) {
     return <div className="container mx-auto px-4 py-6">
-        <div 
-          onDragOver={handleDragOver} 
-          onDrop={handleDrop}
-          onClick={handleClickUpload}
-          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all mt-4
-            ${isUploading ? "pointer-events-none" : "border-gray-700 hover:border-primary/50"}`}
-        >
-          <input 
-            type="file" 
-            ref={fileInputRef}
-            className="hidden"
-            accept=".xlsx,.csv"
-            onChange={handleFileInputChange}
-          />
+        <div onDragOver={handleDragOver} onDrop={handleDrop} onClick={handleClickUpload} className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all mt-4
+            ${isUploading ? "pointer-events-none" : "border-gray-700 hover:border-primary/50"}`}>
+          <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx,.csv" onChange={handleFileInputChange} />
         
           <div className="flex flex-col items-center justify-center space-y-4">
             <UploadCloud className="h-12 w-12 text-gray-400" />
@@ -292,10 +281,8 @@ const EngineDashboardContent = () => {
   }
 
   // Calculate revenue and profit improvements for the metric cards
-  const revenueImprovement = usageMetrics.proposedRevenue > 0 && usageMetrics.totalRevenue > 0 ? 
-    (usageMetrics.proposedRevenue - usageMetrics.totalRevenue) / usageMetrics.totalRevenue * 100 : 0;
-  const profitImprovement = usageMetrics.proposedProfit > 0 && usageMetrics.totalProfit > 0 ? 
-    (usageMetrics.proposedProfit - usageMetrics.totalProfit) / usageMetrics.totalProfit * 100 : 0;
+  const revenueImprovement = usageMetrics.proposedRevenue > 0 && usageMetrics.totalRevenue > 0 ? (usageMetrics.proposedRevenue - usageMetrics.totalRevenue) / usageMetrics.totalRevenue * 100 : 0;
+  const profitImprovement = usageMetrics.proposedProfit > 0 && usageMetrics.totalProfit > 0 ? (usageMetrics.proposedProfit - usageMetrics.totalProfit) / usageMetrics.totalProfit * 100 : 0;
 
   // Log the calculated metrics for debugging
   console.log('EngineDashboard: Calculated usage-weighted metrics:', {
@@ -304,93 +291,39 @@ const EngineDashboardContent = () => {
     totalRevenue: usageMetrics.totalRevenue,
     totalProfit: usageMetrics.totalProfit
   });
-  
   return <div className="container mx-auto px-4 py-6">
       {/* Primary metrics - Removed the outer Card container and kept just the metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <MetricCard 
-          title="Total Active SKUs" 
-          value={metrics.activeItems.toString()} 
-          subtitle={`${metrics.totalItems} total SKUs`} 
-          icon={<Package className="h-5 w-5" />} 
-          iconPosition="right" 
-          flippable={true}
-        />
+        <MetricCard title="Total Active SKUs" value={metrics.activeItems.toString()} subtitle={`${metrics.totalItems} total SKUs`} icon={<Package className="h-5 w-5" />} iconPosition="right" flippable={true} />
         
-        <MetricCard 
-          title="Usage-Weighted Margin" 
-          value={`${usageMetrics.weightedMargin.toFixed(2)}%`} 
-          icon={<Percent className="h-5 w-5" />} 
-          iconPosition="right"
-          subtitle="Weighted by usage volume"
-          details="Average margin across products"
-          flippable={true}
-        />
+        <MetricCard title="Usage-Weighted Margin" value={`${usageMetrics.weightedMargin.toFixed(2)}%`} icon={<Percent className="h-5 w-5" />} iconPosition="right" subtitle="Weighted by usage volume" details="Average margin across products" flippable={true} />
         
-        <MetricCard 
-          title="Average Cost < Market Low" 
-          value={`${metrics.avgCostLessThanMLCount}`} 
-          subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} 
-          icon={<TrendingUp className="h-5 w-5" />} 
-          iconPosition="right" 
-          flippable={true}
-        />
+        <MetricCard title="Average Cost < Market Low" value={`${metrics.avgCostLessThanMLCount}`} subtitle={`${Math.round(metrics.avgCostLessThanMLCount / metrics.totalItems * 100)}% of items`} icon={<TrendingUp className="h-5 w-5" />} iconPosition="right" flippable={true} />
         
-        <MetricCard 
-          title="Flagged Items" 
-          value={`${metrics.rule1Flags + metrics.rule2Flags}`} 
-          subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} 
-          icon={<Flag className="h-5 w-5" />} 
-          iconPosition="right" 
-          flippable={true}
-        />
+        <MetricCard title="Flagged Items" value={`${metrics.rule1Flags + metrics.rule2Flags}`} subtitle={`Rule 1: ${metrics.rule1Flags} | Rule 2: ${metrics.rule2Flags}`} icon={<Flag className="h-5 w-5" />} iconPosition="right" flippable={true} />
       </div>
       
       {/* Business Margin and Analysis Metrics - Removed the outer Card container */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
-        <MetricCard 
-          title="Total Business Margin" 
-          value={`${usageMetrics.businessMargin.toFixed(2)}%`} 
-          icon={<Percent className="h-5 w-5" />} 
-          iconPosition="right" 
-          subtitle="Total Profit ÷ Total Revenue"
-          details="Best measure of overall financial performance"
-          change={usageMetrics.businessMarginImprovement !== 0 ? {
-            value: `${usageMetrics.businessMarginImprovement > 0 ? '+' : ''}${usageMetrics.businessMarginImprovement.toFixed(2)}%`,
-            type: usageMetrics.businessMarginImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined}
-          flippable={true}
-        />
+        <MetricCard title="Total Business Margin" value={`${usageMetrics.businessMargin.toFixed(2)}%`} icon={<Percent className="h-5 w-5" />} iconPosition="right" subtitle="Total Profit ÷ Total Revenue" details="Best measure of overall financial performance" change={usageMetrics.businessMarginImprovement !== 0 ? {
+        value: `${usageMetrics.businessMarginImprovement > 0 ? '+' : ''}${usageMetrics.businessMarginImprovement.toFixed(2)}%`,
+        type: usageMetrics.businessMarginImprovement >= 0 ? 'increase' : 'decrease'
+      } : undefined} flippable={true} />
         
-        <MetricCard 
-          title="Total Revenue" 
-          value={formatCurrency(usageMetrics.totalRevenue)} 
-          subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`} 
-          icon={<DollarSign className="h-5 w-5" />} 
-          iconPosition="right" 
-          change={revenueImprovement !== 0 ? {
-            value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
-            type: revenueImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined}
-          flippable={true}
-        />
+        <MetricCard title="Total Revenue" value={formatCurrency(usageMetrics.totalRevenue)} subtitle={`${usageMetrics.totalUsage.toLocaleString()} total units`} icon={<DollarSign className="h-5 w-5" />} iconPosition="right" change={revenueImprovement !== 0 ? {
+        value: `${revenueImprovement > 0 ? '+' : ''}${revenueImprovement.toFixed(2)}%`,
+        type: revenueImprovement >= 0 ? 'increase' : 'decrease'
+      } : undefined} flippable={true} />
         
-        <MetricCard 
-          title="Total Profit" 
-          value={formatCurrency(usageMetrics.totalProfit)} 
-          icon={<TrendingUp className="h-5 w-5" />} 
-          iconPosition="right" 
-          change={profitImprovement !== 0 ? {
-            value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
-            type: profitImprovement >= 0 ? 'increase' : 'decrease'
-          } : undefined}
-          flippable={true}
-        />
+        <MetricCard title="Total Profit" value={formatCurrency(usageMetrics.totalProfit)} icon={<TrendingUp className="h-5 w-5" />} iconPosition="right" change={profitImprovement !== 0 ? {
+        value: `${profitImprovement > 0 ? '+' : ''}${profitImprovement.toFixed(2)}%`,
+        type: profitImprovement >= 0 ? 'increase' : 'decrease'
+      } : undefined} flippable={true} />
       </div>
 
       {/* REVA Metrics Chart - Using the updated chart component */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Pricing Analysis</h2>
+        
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm shadow-lg">
           <CardContent className="p-4">
             <RevaMetricsChartUpdated data={engineData.chartData || []} />
