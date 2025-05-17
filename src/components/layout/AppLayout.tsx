@@ -35,7 +35,7 @@ const AppLayout = ({
   const isRepPerformancePage = location.pathname === '/rep-performance' || location.pathname === '/'; // Also check if it's the root path
 
   // Determine if we should show the user selector based on props or page
-  const shouldShowUserSelector = showUserSelector || isAccountPerformancePage || isRepTrackerPage || isRepPerformancePage || isMyPerformancePage;
+  const shouldShowUserSelector = showUserSelector || isAccountPerformancePage || isRepTrackerPage || isRepPerformancePage;
 
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
