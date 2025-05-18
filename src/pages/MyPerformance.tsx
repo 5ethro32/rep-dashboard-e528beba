@@ -13,7 +13,6 @@ import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAn
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
 import GoalTrackingComponent from '@/components/my-performance/GoalTrackingComponent';
 import RepPerformanceComparison from '@/components/my-performance/RepPerformanceComparison';
-import UserSelector from '@/components/rep-tracker/UserSelector';
 
 interface MyPerformanceProps {
   selectedUserId?: string | null;
@@ -68,8 +67,12 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         const firstName = propSelectedUserName.split(' ')[0];
         setUserFirstName(firstName);
       }
+      
+      console.log('MyPerformance - Using provided userId:', propSelectedUserId);
+      console.log('MyPerformance - Using provided displayName:', propSelectedUserName);
     } else if (user && !selectedUserId) {
       setSelectedUserId(user.id);
+      console.log('MyPerformance - Using current user ID:', user.id);
       
       // Try to get user's name from profile
       const fetchUserProfile = async () => {
@@ -81,6 +84,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           
         if (data?.first_name) {
           setUserFirstName(data.first_name);
+          console.log('MyPerformance - Found user first name:', data.first_name);
         }
       };
       
@@ -101,17 +105,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       fetchAccountHealthData();
     }
   }, [accountHealthMonth, compareMonth, includeRetail, includeReva, includeWholesale]);
-  
-  const handleSelectUser = (userId: string | null, displayName: string) => {
-    setSelectedUserId(userId);
-    setSelectedUserDisplayName(displayName);
-    
-    // Extract first name from display name
-    const firstName = displayName.split(' ')[0];
-    setUserFirstName(firstName);
-    
-    setIsLoading(true);
-  };
   
   const handleAccountHealthMonthChange = (month: string) => {
     setAccountHealthMonth(month);
@@ -1104,13 +1097,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         />
         
         <div className="flex items-center gap-2">
-          {/* Add UserSelector component here */}
-          <UserSelector
-            selectedUserId={selectedUserId}
-            onSelectUser={handleSelectUser}
-            showAllDataOption={true}
-          />
-          
+          {/* UserSelector removed from here - now only in AppHeader */}
           <PerformanceHeader 
             selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}

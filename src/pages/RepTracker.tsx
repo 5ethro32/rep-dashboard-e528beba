@@ -18,7 +18,7 @@ import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
-import UserSelector from '@/components/rep-tracker/UserSelector';
+// Remove UserSelector import since we're no longer using it directly here
 
 interface RepTrackerProps {
   selectedUserId?: string | null;
@@ -40,12 +40,15 @@ const RepTracker: React.FC<RepTrackerProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId || user?.id);
   const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName || "My Data");
 
-  // Ensure we update selectedUserId when user authentication changes
+  // Ensure we update selectedUserId when prop changes
   useEffect(() => {
-    if (!selectedUserId && user) {
-      setSelectedUserId(user.id);
+    if (propSelectedUserId !== undefined) {
+      setSelectedUserId(propSelectedUserId);
+      if (propSelectedUserName) {
+        setSelectedUserName(propSelectedUserName);
+      }
     }
-  }, [user, selectedUserId]);
+  }, [propSelectedUserId, propSelectedUserName]);
 
   // Console log for debugging
   useEffect(() => {
@@ -57,32 +60,6 @@ const RepTracker: React.FC<RepTrackerProps> = ({
 
   // Determine if user is viewing their own data
   const isViewingOwnData = selectedUserId === user?.id || selectedUserId === "all";
-
-  // Handle user selection with improved logging
-  const handleUserSelection = (userId: string | null, displayName: string) => {
-    console.log('RepTracker - User selection triggered:', { userId, displayName });
-    
-    // Ensure we have valid values before updating state
-    if (userId !== undefined) {
-      setSelectedUserId(userId);
-      setSelectedUserName(displayName);
-      
-      // Invalidate queries to force data refresh
-      queryClient.invalidateQueries({
-        queryKey: ['visit-metrics'],
-        exact: false,
-        refetchType: 'all'
-      });
-      
-      queryClient.invalidateQueries({
-        queryKey: ['customer-visits'],
-        exact: false,
-        refetchType: 'all'
-      });
-      
-      console.log('RepTracker - User selection complete and queries invalidated');
-    }
-  };
 
   const queryClient = useQueryClient();
   const weekStart = startOfWeek(selectedDate, {
@@ -237,16 +214,8 @@ const RepTracker: React.FC<RepTrackerProps> = ({
           </h2>
         </div>
         
-        <div className="flex items-center gap-2">
-          {/* Add UserSelector component here */}
-          <UserSelector 
-            selectedUserId={selectedUserId} 
-            onSelectUser={handleUserSelection}
-            showAllDataOption={true} 
-          />
-          
-          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
-            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+        <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
             setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
           }}>
               Previous
@@ -263,7 +232,6 @@ const RepTracker: React.FC<RepTrackerProps> = ({
           }}>
               Next
             </Button>
-          </div>
         </div>
       </div>
       
