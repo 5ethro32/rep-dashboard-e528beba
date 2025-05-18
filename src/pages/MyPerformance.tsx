@@ -5,8 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
-import ActionsHeader from '@/components/rep-performance/ActionsHeader';
-import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import PersonalPerformanceCard from '@/components/my-performance/PersonalPerformanceCard';
 import AccountHealthSection from '@/components/my-performance/AccountHealthSection';
@@ -1102,22 +1100,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       isLoading={isLoading}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        <div className="mb-4 flex justify-between items-center">
-          <ActionsHeader 
-            onRefresh={handleRefresh}
-            isLoading={isLoading}
-            autoRefreshed={autoRefreshed}
-          />
-          
-          <div className="flex items-center gap-2">
-            <PerformanceHeader 
-              selectedMonth={selectedMonth}
-              setSelectedMonth={setSelectedMonth}
-              hideTitle={true}
-            />
-          </div>
-        </div>
-        
         {/* Add PerformanceFilters component */}
         <PerformanceFilters
           includeRetail={includeRetail}

@@ -6,23 +6,21 @@ interface PerformanceHeaderProps {
   selectedMonth: string;
   setSelectedMonth: (value: string) => void;
   hideTitle?: boolean;
-  reducedPadding?: boolean; // For reduced padding
-  onRefresh?: () => void;  // Keep the prop for functionality but don't use it in UI
+  reducedPadding?: boolean;
 }
 
 const PerformanceHeader: React.FC<PerformanceHeaderProps> = ({ 
   selectedMonth, 
   setSelectedMonth,
   hideTitle = false,
-  reducedPadding = false,
-  onRefresh
+  reducedPadding = false
 }) => {
   const isMobile = useIsMobile();
   
   // Determine padding classes based on the reducedPadding prop
   const paddingClasses = reducedPadding 
-    ? 'py-4' // More balanced padding for top and bottom
-    : 'py-8 md:py-16'; // Original padding
+    ? 'py-4' 
+    : 'py-8 md:py-16'; 
     
   return (
     <header className={`${hideTitle ? '' : paddingClasses} px-4 md:px-6 container max-w-7xl mx-auto animate-fade-in bg-transparent ${hideTitle ? 'flex justify-end' : ''}`}>
