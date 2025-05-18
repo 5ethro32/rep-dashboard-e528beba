@@ -1,4 +1,3 @@
-
 export interface RepData {
   rep: string;
   spend: number;
@@ -44,8 +43,8 @@ export interface RepChanges {
   profit: number;
   margin: number;
   packs: number;
-  activeAccounts: number; // Added this property
-  totalAccounts: number; // Added this property
+  activeAccounts: number;
+  totalAccounts: number;
   profitPerActiveShop: number;
   profitPerPack: number;
   activeRatio: number;

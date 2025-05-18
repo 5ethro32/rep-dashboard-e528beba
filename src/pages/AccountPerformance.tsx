@@ -136,43 +136,79 @@ const AccountPerformance = () => {
           data: profileData,
           error: profileError
         } = await supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single();
+        
         if (profileError) {
           console.error('Error fetching user profile:', profileError);
           // Continue with fallback approach
         }
+        
+        // IMPROVED: Create an array of possible name formats to match against
+        let possibleNameFormats: string[] = [];
+        
+        // Add full name if profile data exists
         if (profileData) {
           const fullName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim();
-          console.log(`Filtering for current user using profile name: "${fullName}"`);
+          console.log(`User's full name from profile: "${fullName}"`);
+          
           if (fullName) {
-            return allRecords.filter(item => {
-              const rep = item.Rep || item.rep_name || '';
-              const subRep = item['Sub-Rep'] || item.sub_rep || '';
-              return rep === fullName || subRep === fullName;
-            });
+            possibleNameFormats.push(fullName);
+            
+            // Also add first name only and last name only for more flexible matching
+            if (profileData.first_name) possibleNameFormats.push(profileData.first_name.trim());
+            if (profileData.last_name) possibleNameFormats.push(profileData.last_name.trim());
           }
         }
-
-        // Fallback to email username if profile name isn't available
+        
+        // Add email username as a fallback option
         if (user.email) {
           const username = user.email.split('@')[0];
-          const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1);
-          console.log(`Fallback: Filtering for username: "${capitalizedUsername}"`);
-          return allRecords.filter(item => {
-            const rep = item.Rep || item.rep_name || '';
-            const subRep = item['Sub-Rep'] || item.sub_rep || '';
-            return rep.includes(capitalizedUsername) || subRep.includes(capitalizedUsername);
-          });
+          const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
+          possibleNameFormats.push(capitalizedUsername);
+          
+          // Also add the original username without capitalization
+          possibleNameFormats.push(username);
         }
-        console.warn('Could not determine user name for filtering - showing all data as fallback');
-        return allRecords; // Fallback: show all data if we can't determine the user name
+        
+        // Remove any duplicates and empty strings
+        possibleNameFormats = [...new Set(possibleNameFormats)].filter(Boolean);
+        console.log('Possible name formats to match against:', possibleNameFormats);
+        
+        // NEW: Filter with improved logic - case insensitive and multiple possible matches
+        if (possibleNameFormats.length > 0) {
+          const filteredRecords = allRecords.filter(item => {
+            // Get rep and sub-rep, convert to lowercase for case-insensitive comparison
+            const rep = (item.Rep || item.rep_name || '').toLowerCase();
+            const subRep = (item['Sub-Rep'] || item.sub_rep || '').toLowerCase();
+            
+            // Check if any of our possible name formats match
+            return possibleNameFormats.some(name => {
+              const lowerName = name.toLowerCase();
+              // For "My Data", we check if the name is contained within the rep or sub-rep field
+              // This is more lenient than the exact match used for other users
+              return rep.includes(lowerName) || subRep.includes(lowerName);
+            });
+          });
+          
+          console.log(`Found ${filteredRecords.length} records matching user's possible names out of ${allRecords.length} total records`);
+          return filteredRecords;
+        }
+        
+        console.warn('Could not determine any valid name formats for filtering - showing all data as fallback');
+        return allRecords; // Fallback: show all data if we can't determine any name formats
       }
 
       // For a specific user (not the current user), filter by the selected user name
-      return allRecords.filter(item => {
-        const rep = item.Rep || item.rep_name || '';
-        const subRep = item['Sub-Rep'] || item.sub_rep || '';
-        return rep === selectedUserName || subRep === selectedUserName;
+      // Use more lenient matching (includes) instead of strict equality
+      const filteredRecords = allRecords.filter(item => {
+        const rep = (item.Rep || item.rep_name || '').toLowerCase();
+        const subRep = (item['Sub-Rep'] || item.sub_rep || '').toLowerCase();
+        const selectedNameLower = selectedUserName.toLowerCase();
+        
+        return rep.includes(selectedNameLower) || subRep.includes(selectedNameLower);
       });
+      
+      console.log(`Found ${filteredRecords.length} records for selected user ${selectedUserName}`);
+      return filteredRecords;
     }
 
     // This should never happen (we've handled both "all" and specific user cases)
