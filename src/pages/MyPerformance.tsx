@@ -1,8 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useQuery } from '@tanstack/react-query';
+import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 import PersonalPerformanceCard from '@/components/my-performance/PersonalPerformanceCard';
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
@@ -21,6 +24,48 @@ const MyPerformance = () => {
   
   // Use this flag to skip first render refresh
   const isFirstRender = useRef(true);
+
+  // Mock data for the components
+  const mockPerformanceData = {
+    totalProfit: 125000,
+    totalSpend: 850000,
+    margin: 14.7,
+    totalAccounts: 42,
+    activeAccounts: 38,
+    previousMonthData: {
+      totalProfit: 118000,
+      totalSpend: 800000,
+      margin: 14.2,
+      totalAccounts: 40,
+      activeAccounts: 35
+    }
+  };
+  
+  const mockAccountHealthData = [
+    { accountRef: "ACC001", accountName: "Pharmacy Plus", profit: 15000, spend: 120000, profitChangePercent: 5.2, status: "growing" },
+    { accountRef: "ACC002", accountName: "MediCare Solutions", profit: 8500, spend: 85000, profitChangePercent: -2.1, status: "declining" },
+    { accountRef: "ACC003", accountName: "HealthHub", profit: 12000, spend: 95000, profitChangePercent: 1.8, status: "stable" }
+  ];
+  
+  const mockVisitData = [
+    { id: 1, date: "2025-05-10", customer_name: "Pharmacy Plus", customer_ref: "ACC001", profit: 1200, outcome: "Order placed" },
+    { id: 2, date: "2025-05-12", customer_name: "MediCare Solutions", customer_ref: "ACC002", profit: 0, outcome: "No order" },
+    { id: 3, date: "2025-05-15", customer_name: "HealthHub", customer_ref: "ACC003", profit: 950, outcome: "Order placed" }
+  ];
+  
+  const mockUserData = {
+    profit: 125000,
+    margin: 14.7,
+    activeRatio: 90.5,
+    visitConversion: 66.7
+  };
+  
+  const mockAverageData = {
+    profit: 105000,
+    margin: 13.2,
+    activeRatio: 82.5,
+    visitConversion: 58.4
+  };
 
   const handleRefresh = async () => {
     setIsLoading(true);
@@ -80,14 +125,24 @@ const MyPerformance = () => {
           <div className="lg:col-span-2">
             <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 h-full">
               <CardContent className="p-6">
-                <PersonalPerformanceCard />
+                <PersonalPerformanceCard 
+                  performanceData={mockPerformanceData} 
+                  isLoading={isLoading}
+                />
               </CardContent>
             </Card>
           </div>
           <div>
             <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 h-full">
               <CardContent className="p-6">
-                <PersonalizedInsights />
+                <PersonalizedInsights 
+                  accountHealthData={mockAccountHealthData}
+                  visitData={mockVisitData}
+                  performanceData={mockPerformanceData}
+                  isLoading={isLoading}
+                  formatCurrency={formatCurrency}
+                  formatPercent={formatPercent}
+                />
               </CardContent>
             </Card>
           </div>
@@ -102,19 +157,40 @@ const MyPerformance = () => {
           </TabsList>
           
           <TabsContent value="goals">
-            <GoalTrackingComponent />
+            <GoalTrackingComponent 
+              performanceData={mockPerformanceData}
+              accountHealthData={mockAccountHealthData}
+              visitData={mockVisitData}
+              isLoading={isLoading}
+              formatCurrency={formatCurrency}
+              formatPercent={formatPercent}
+            />
           </TabsContent>
           
           <TabsContent value="accounts">
-            <AccountHealthSection />
+            <AccountHealthSection 
+              accountHealthData={mockAccountHealthData}
+              isLoading={isLoading}
+              formatCurrency={formatCurrency}
+              formatPercent={formatPercent}
+            />
           </TabsContent>
           
           <TabsContent value="activities">
-            <ActivityImpactAnalysis />
+            <ActivityImpactAnalysis 
+              visitData={mockVisitData}
+              accountHealthData={mockAccountHealthData}
+              isLoading={isLoading}
+            />
           </TabsContent>
           
           <TabsContent value="comparison">
-            <RepPerformanceComparison />
+            <RepPerformanceComparison 
+              userData={mockUserData}
+              averageData={mockAverageData}
+              isLoading={isLoading}
+              userName="Your"
+            />
           </TabsContent>
         </Tabs>
       </div>

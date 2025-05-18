@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, NavLink } from 'react-router-dom';
 import { Home, LayoutDashboard, BarChart3, ClipboardList, UserCircle, BrainCircuit, ChevronDown, Menu, X, CircleUser, Search, Wrench, RefreshCw } from 'lucide-react';
@@ -8,6 +9,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import UserSelector from '@/components/rep-tracker/UserSelector';
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
@@ -33,6 +35,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const [isEngineSubnavHovered, setIsEngineSubnavHovered] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileExpandedItems, setMobileExpandedItems] = useState<string[]>([]);
+
+  // Add state to track selected user display name
+  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
 
   // Check if we're in the Engine Room section
   const isEngineRoomSection = location.pathname.startsWith('/engine-room');
@@ -80,6 +85,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     });
   };
 
+  // Function to handle user selection
+  const handleUserSelection = (userId: string | null, displayName: string) => {
+    setSelectedUserDisplayName(displayName);
+    if (onSelectUser) {
+      onSelectUser(userId, displayName);
+    }
+  };
+
   // Function to get the current page title based on the URL path
   const getPageTitle = () => {
     // Determine page title based on current route
@@ -92,7 +105,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       if (selectedUserId === "all") {
         return "Aver's Accounts";
       } 
-      const firstName = selectedUserName === 'My Data' ? 'My' : selectedUserName.split(' ')[0];
+      const firstName = selectedUserDisplayName === 'My Data' ? 'My' : selectedUserDisplayName.split(' ')[0];
       const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
       return `${displayName} Accounts`;
     }
@@ -122,8 +135,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     if (path === '/account-performance') {
       return selectedUserId === "all" 
         ? "Compare Aver's accounts performance between months to identify declining or improving accounts." 
-        : selectedUserName && selectedUserName !== 'My Data' 
-          ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.` 
+        : selectedUserDisplayName && selectedUserDisplayName !== 'My Data' 
+          ? `Compare ${selectedUserDisplayName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.` 
           : "Compare your accounts performance between months to identify declining or improving accounts.";
     }
     if (path === '/ai-vera') 
