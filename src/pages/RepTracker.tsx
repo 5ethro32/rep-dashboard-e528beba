@@ -206,9 +206,7 @@ const RepTracker: React.FC = () => {
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 mt-8">
           <div className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
             <h2 className="text-base sm:text-lg font-semibold truncate">
-              {selectedUserId !== "all" && selectedUserId !== user?.id ? `${selectedUserName.split(' ')[0]}'s ` : ""} 
               Week: {weekStartFormatted} - {weekEndFormatted}
             </h2>
           </div>
