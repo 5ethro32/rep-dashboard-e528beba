@@ -392,8 +392,6 @@ const AccountPerformance = () => {
       isLoading={isLoading}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        {/* Remove the redundant header section with PerformanceHeader */}
-        
         {/* Add PerformanceFilters component - keep this as it contains the month selector */}
         <PerformanceFilters
           includeRetail={includeRetail}
