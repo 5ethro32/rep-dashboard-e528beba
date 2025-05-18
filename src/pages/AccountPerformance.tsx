@@ -173,10 +173,10 @@ const AccountPerformance = () => {
         
         {/* Summary cards */}
         <AccountSummaryCards
-          totalRevenue={totalRevenue}
-          totalProfit={totalProfit}
-          averageMargin={averageMargin}
-          totalVisits={totalVisits}
+          revenue={totalRevenue}
+          profit={totalProfit}
+          margin={averageMargin}
+          visits={totalVisits}
           isLoading={isLoading}
         />
         
@@ -185,7 +185,7 @@ const AccountPerformance = () => {
           <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
             <CardContent className="py-6">
               <AccountPerformanceComparison 
-                topAccounts={filteredAccounts.slice(0, 5)} 
+                accounts={filteredAccounts.slice(0, 5)} 
                 isLoading={isLoading}
               />
             </CardContent>
@@ -214,37 +214,37 @@ const AccountPerformance = () => {
               
               <TabsContent value="all" className="p-0">
                 <PerformanceTable 
-                  accounts={filteredAccounts} 
+                  data={filteredAccounts} 
                   isLoading={isLoading}
-                  month={selectedMonth}
-                  tableType="account"
+                  selectedMonth={selectedMonth}
+                  type="account"
                 />
               </TabsContent>
               
               <TabsContent value="direct" className="p-0">
                 <PerformanceTable 
-                  accounts={filteredAccounts} 
+                  data={filteredAccounts} 
                   isLoading={isLoading}
-                  month={selectedMonth}
-                  tableType="account"
+                  selectedMonth={selectedMonth}
+                  type="account"
                 />
               </TabsContent>
               
               <TabsContent value="distribution" className="p-0">
                 <PerformanceTable 
-                  accounts={filteredAccounts} 
+                  data={filteredAccounts} 
                   isLoading={isLoading}
-                  month={selectedMonth}
-                  tableType="account"
+                  selectedMonth={selectedMonth}
+                  type="account"
                 />
               </TabsContent>
               
               <TabsContent value="starred" className="p-0">
                 <PerformanceTable 
-                  accounts={filteredAccounts} 
+                  data={filteredAccounts} 
                   isLoading={isLoading}
-                  month={selectedMonth}
-                  tableType="account"
+                  selectedMonth={selectedMonth}
+                  type="account"
                 />
               </TabsContent>
             </Tabs>

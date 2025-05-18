@@ -158,7 +158,7 @@ const RepTracker = () => {
                   />
                   <Separator className="bg-white/10" />
                   <CustomerVisitsList 
-                    customers={[{ id: selectedCustomerId || '', name: selectedCustomerName }]}
+                    customers={[{ account_name: selectedCustomerName, account_ref: selectedCustomerId || '' }]}
                     isLoading={isLoading}
                   />
                 </div>
