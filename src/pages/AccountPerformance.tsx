@@ -70,7 +70,7 @@ const AccountPerformance = () => {
 
   // Handle user selection change
   const handleUserChange = (userId: string | null, displayName: string) => {
-    console.log(`AccountPerformance: User changed to: ${displayName} (${userId})`);
+    console.log(`AccountPerformance: User selection changed to ${displayName} (${userId})`);
     setSelectedUserId(userId);
     setSelectedUserName(displayName);
     // Data will refresh due to the useEffect dependency
@@ -394,8 +394,6 @@ const AccountPerformance = () => {
       isLoading={isLoading}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        {/* Remove the duplicate title and description section */}
-        
         {/* Month dropdown, now without the refresh button */}
         <div className="mb-6 flex items-center space-x-4">
           <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
@@ -427,4 +425,5 @@ const AccountPerformance = () => {
     </AppLayout>
   );
 };
+
 export default AccountPerformance;
