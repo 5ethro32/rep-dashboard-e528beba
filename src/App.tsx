@@ -97,14 +97,7 @@ const router = createBrowserRouter([
       { path: "/account-performance", element: <AccountPerformance /> },
       { path: "/ai-vera", element: <AIVera /> },
       { path: "/rep-tracker", element: <RepTracker /> },
-      { 
-        path: "/my-performance", 
-        element: <MyPerformance 
-                   selectedUserId={null}  
-                   selectedUserName="My Data"
-                   onSelectUser={undefined}  
-                 />
-      },
+      { path: "/my-performance", element: <MyPerformance /> }, // Removed hardcoded props to use context
       { path: "/engine-room", element: <EngineRoom /> },
       { path: "/engine-room/operations", element: <EngineOperations /> },
       { path: "/engine-room/engine", element: <Navigate to="/engine-room/operations" replace /> }, // Redirect old "engine" route to Operations

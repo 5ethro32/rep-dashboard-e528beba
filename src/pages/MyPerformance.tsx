@@ -11,62 +11,41 @@ import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAn
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
 import GoalTrackingComponent from '@/components/my-performance/GoalTrackingComponent';
 import RepPerformanceComparison from '@/components/my-performance/RepPerformanceComparison';
-import { useLocation } from 'react-router-dom';
-import { useOutletContext } from 'react-router-dom';
+import { useLocation, useOutletContext } from 'react-router-dom';
+import { toast } from '@/components/ui/use-toast';
 
-interface MyPerformanceProps {
-  selectedUserId?: string | null;
-  selectedUserName?: string;
-  onSelectUser?: (userId: string | null, displayName: string) => void;
-  onRefresh?: () => void;
-  isLoading?: boolean;
-}
-
-// Access the outlet context to get props from the parent route
+// Define the outlet context type for proper TypeScript support
 type OutletContextType = {
   selectedUserId: string | null;
   selectedUserName: string;
   onSelectUser: (userId: string | null, displayName: string) => void;
-  onRefresh?: () => void;
+  onRefresh: () => void;
   isLoading: boolean;
 };
 
-const MyPerformance: React.FC<MyPerformanceProps> = ({ 
-  selectedUserId: propSelectedUserId, 
-  selectedUserName: propSelectedUserName,
-  onSelectUser: propOnSelectUser,
-  onRefresh: propOnRefresh,
-  isLoading: propIsLoading
-}) => {
+const MyPerformance: React.FC = () => {
   const { user } = useAuth();
-  
-  // Get values from outlet context if they exist
   const location = useLocation();
-  const outletContext = location.pathname === '/my-performance' ? 
-    useOutletContext<OutletContextType>() : null;
   
-  // Use props or context values, with props taking precedence
-  const contextUserId = outletContext?.selectedUserId;
-  const contextUserName = outletContext?.selectedUserName;
-  const contextOnSelectUser = outletContext?.onSelectUser;
-  const contextOnRefresh = outletContext?.onRefresh;
-  const contextIsLoading = outletContext?.isLoading;
+  // Get the outlet context which contains user selection data from AppLayoutWrapper
+  const context = useOutletContext<OutletContextType>();
   
-  // Combine props with context, prioritizing props
-  const effectiveSelectedUserId = propSelectedUserId !== undefined ? propSelectedUserId : contextUserId;
-  const effectiveSelectedUserName = propSelectedUserName || contextUserName;
-  const effectiveOnSelectUser = propOnSelectUser || contextOnSelectUser;
-  const effectiveOnRefresh = propOnRefresh || contextOnRefresh;
-  const effectiveIsLoading = propIsLoading !== undefined ? propIsLoading : contextIsLoading;
-  
+  // Extract values from context with defaults
+  const contextSelectedUserId = context?.selectedUserId || "all";
+  const contextSelectedUserName = context?.selectedUserName || "All Data";
+  const contextOnSelectUser = context?.onSelectUser;
+  const contextOnRefresh = context?.onRefresh;
+  const contextIsLoading = context?.isLoading || false;
+
+  // Local state to track the selected user
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
   const [isLoading, setIsLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState<any>(null);
   const [accountHealthData, setAccountHealthData] = useState<any[]>([]);
   const [visitData, setVisitData] = useState<any[]>([]);
   const [autoRefreshed, setAutoRefreshed] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(effectiveSelectedUserId || null);
-  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>(effectiveSelectedUserName || 'My Data');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(contextSelectedUserId);
+  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>(contextSelectedUserName);
   const [userFirstName, setUserFirstName] = useState<string>('');
   const [compareMonth, setCompareMonth] = useState<string>('April');
   const [accountHealthMonth, setAccountHealthMonth] = useState<string>('May');
@@ -91,28 +70,24 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   
   const isMobile = useIsMobile();
   
-  // Update selected user when context changes
+  // Update selected user whenever context changes
   useEffect(() => {
-    if (effectiveSelectedUserId !== undefined && effectiveSelectedUserId !== selectedUserId) {
-      console.log(`MyPerformance: Updating selected user from context: ${effectiveSelectedUserId}`);
-      setSelectedUserId(effectiveSelectedUserId);
-    }
-    
-    if (effectiveSelectedUserName && effectiveSelectedUserName !== selectedUserDisplayName) {
-      console.log(`MyPerformance: Updating selected user name from context: ${effectiveSelectedUserName}`);
-      setSelectedUserDisplayName(effectiveSelectedUserName);
+    if (contextSelectedUserId !== selectedUserId) {
+      console.log(`MyPerformance: User selection changed from context: ${contextSelectedUserId}`);
+      setSelectedUserId(contextSelectedUserId);
+      setSelectedUserDisplayName(contextSelectedUserName);
       
       // Extract first name if we have a full name
-      if (effectiveSelectedUserName !== "My Data" && effectiveSelectedUserName !== "All Data") {
-        const firstName = effectiveSelectedUserName.split(' ')[0];
+      if (contextSelectedUserName && contextSelectedUserName !== "My Data" && contextSelectedUserName !== "All Data") {
+        const firstName = contextSelectedUserName.split(' ')[0];
         setUserFirstName(firstName);
       }
     }
-  }, [effectiveSelectedUserId, effectiveSelectedUserName]);
+  }, [contextSelectedUserId, contextSelectedUserName]);
   
-  // Initialize with props if provided, otherwise use the current user
+  // Initialize with current user or context
   useEffect(() => {
-    if (selectedUserId === null && user) {
+    if (!selectedUserId && user) {
       setSelectedUserId(user.id);
       console.log('MyPerformance - Using current user ID:', user.id);
       
@@ -134,8 +109,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   }, [user, selectedUserId]);
   
-  // Fetch all the data when user changes
+  // Fetch all the data when any dependency changes - INCLUDING user selection changes
   useEffect(() => {
+    console.log(`Fetching data for user: ${selectedUserId} (${selectedUserDisplayName})`);
     if (user && selectedUserId) {
       fetchAllData();
     }
@@ -146,7 +122,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     if (user && selectedUserId) {
       fetchAccountHealthData();
     }
-  }, [accountHealthMonth, compareMonth, includeRetail, includeReva, includeWholesale]);
+  }, [accountHealthMonth, compareMonth, selectedUserId, includeRetail, includeReva, includeWholesale]);
   
   // Handle user selection from the header
   const handleUserSelection = (userId: string | null, displayName: string) => {
@@ -157,15 +133,21 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     setSelectedUserDisplayName(displayName);
     
     // Propagate to parent if callback exists
-    if (effectiveOnSelectUser) {
-      effectiveOnSelectUser(userId, displayName);
+    if (contextOnSelectUser) {
+      contextOnSelectUser(userId, displayName);
     }
     
     // Extract first name if we have a full name
-    if (displayName !== "My Data" && displayName !== "All Data") {
+    if (displayName && displayName !== "My Data" && displayName !== "All Data") {
       const firstName = displayName.split(' ')[0];
       setUserFirstName(firstName);
     }
+    
+    // Show feedback to user
+    toast({
+      title: "User changed",
+      description: `Now showing data for ${displayName}`,
+    });
   };
   
   // Connect to global AppLayoutWrapper refresh
@@ -180,7 +162,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         delete window.myDashboardRefresh;
       }
     };
-  }, [location.pathname, selectedMonth]);
+  }, [location.pathname, selectedMonth, selectedUserId]);
   
   const handleAccountHealthMonthChange = (month: string) => {
     setAccountHealthMonth(month);
@@ -192,6 +174,26 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     setIsLoading(true);
   };
   
+  // Handle refresh - can be triggered internally or from AppLayoutWrapper
+  const handleRefresh = async () => {
+    console.log('MyPerformance: Refreshing data...');
+    
+    // Call global refresh handler if provided
+    if (contextOnRefresh) {
+      contextOnRefresh();
+    }
+    
+    setIsLoading(true);
+    await fetchAllData();
+    setAutoRefreshed(true);
+    setTimeout(() => setAutoRefreshed(false), 3000);
+    
+    toast({
+      title: "Data refreshed",
+      description: `Updated data for ${selectedUserDisplayName}`,
+    });
+  };
+  
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
@@ -200,10 +202,15 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         fetchPersonalPerformanceData(),
         fetchAccountHealthData(),
         fetchVisitData(),
-        fetchRepComparisonData() // New function to fetch comparison data
+        fetchRepComparisonData()
       ]);
     } catch (error) {
       console.error("Error fetching performance data:", error);
+      toast({
+        title: "Error loading data",
+        description: "Could not load performance data",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -1127,17 +1134,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     return healthScores.sort((a, b) => b.healthScore - a.healthScore);
   };
   
-  const handleRefresh = async () => {
-    // Call global refresh handler if provided
-    if (effectiveOnRefresh) {
-      effectiveOnRefresh();
-    }
-    
-    await fetchAllData();
-    setAutoRefreshed(true);
-    setTimeout(() => setAutoRefreshed(false), 3000);
-  };
-  
   // Get the subtitle description based on user type
   const getSubtitle = () => {
     if (selectedUserId === "all") {
@@ -1177,7 +1173,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       <div className="mb-6">
         <PersonalPerformanceCard
           performanceData={performanceData}
-          isLoading={isLoading || (effectiveIsLoading || false)}
+          isLoading={isLoading || contextIsLoading}
         />
       </div>
       
@@ -1187,7 +1183,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           userData={userTrendsData}
           averageData={teamAverageData}
           comparisonData={repComparisonData}
-          isLoading={isLoading || (effectiveIsLoading || false)}
+          isLoading={isLoading || contextIsLoading}
           userName={selectedUserDisplayName !== "My Data" ? selectedUserDisplayName : "You"}
         />
       </div>
@@ -1212,7 +1208,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         <TabsContent value="accounts" className="mt-0">
           <AccountHealthSection 
             accountHealthData={accountHealthData}
-            isLoading={isLoading || (effectiveIsLoading || false)}
+            isLoading={isLoading || contextIsLoading}
             formatCurrency={formatCurrency}
             formatPercent={formatPercent}
             onMonthChange={handleAccountHealthMonthChange}
@@ -1226,7 +1222,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           <ActivityImpactAnalysis
             visitData={visitData}
             accountHealthData={accountHealthData}
-            isLoading={isLoading || (effectiveIsLoading || false)}
+            isLoading={isLoading || contextIsLoading}
           />
         </TabsContent>
         
@@ -1235,7 +1231,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             accountHealthData={accountHealthData}
             visitData={visitData}
             performanceData={performanceData}
-            isLoading={isLoading || (effectiveIsLoading || false)}
+            isLoading={isLoading || contextIsLoading}
             formatCurrency={formatCurrency}
             formatPercent={formatPercent}
           />
@@ -1246,7 +1242,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             performanceData={performanceData}
             accountHealthData={accountHealthData}
             visitData={visitData}
-            isLoading={isLoading || (effectiveIsLoading || false)}
+            isLoading={isLoading || contextIsLoading}
             formatCurrency={formatCurrency}
             formatPercent={formatPercent}
             selectedUserId={selectedUserId}
