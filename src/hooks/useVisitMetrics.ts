@@ -25,6 +25,12 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
   return useQuery({
     queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString(), userId],
     queryFn: async (): Promise<VisitMetrics> => {
+      console.log('Fetching visit metrics for:', {
+        weekStart: weekStart.toISOString(),
+        weekEnd: weekEnd.toISOString(),
+        userId
+      });
+      
       // If we have a specific user ID, filter by that; otherwise use the current user's ID
       const visitsQuery = supabase
         .from('customer_visits')
@@ -40,8 +46,11 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
         
       // Apply user filter if a user ID is provided and it's not "all"
       if (userId && userId !== "all") {
+        console.log('Filtering visits and plans by user ID:', userId);
         visitsQuery.eq('user_id', userId);
         plansQuery.eq('user_id', userId);
+      } else {
+        console.log('Fetching all visits and plans across users');
       }
 
       const [{ data: visits, error: visitsError }, { data: plans, error: plansError }] = await Promise.all([
@@ -49,8 +58,16 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
         plansQuery
       ]);
 
-      if (visitsError) throw visitsError;
-      if (plansError) throw plansError;
+      if (visitsError) {
+        console.error('Error fetching visits:', visitsError);
+        throw visitsError;
+      }
+      if (plansError) {
+        console.error('Error fetching plans:', plansError);
+        throw plansError;
+      }
+
+      console.log(`Found ${visits?.length || 0} visits and ${plans?.length || 0} plans`);
 
       // Calculate base metrics
       const totalVisits = visits.length;

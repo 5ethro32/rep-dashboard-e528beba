@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,6 +90,8 @@ export default function UserSelector({
 
         // Debug: Log the returned profiles data
         console.log('Profiles fetched:', profilesData?.length || 0, 'profiles');
+        console.log('Profile data:', profilesData);
+        
         if (profilesData?.length === 0) {
           console.warn('No profiles were returned from the database');
         }
@@ -134,7 +137,11 @@ export default function UserSelector({
 
     // Only fetch users when we have a valid auth state
     if (user && typeof isAdmin !== 'undefined') {
+      console.log('Fetching users - User is authenticated and admin status is known');
       fetchUsers();
+    } else {
+      console.log('Skipping user fetch - User not authenticated or admin status unknown', 
+        { authenticated: !!user, adminStatus: isAdmin });
     }
   }, [user, isAdmin]);
 
@@ -198,12 +205,19 @@ export default function UserSelector({
     }
   };
 
+  // Debug isAdmin access
+  console.log('UserSelector render - isAdmin:', isAdmin, 'Available users:', users.length);
+
+  // Only offer other users if the user is an admin
+  const canSwitchUsers = isAdmin === true;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
           className={`flex items-center gap-2 ${className}`}
+          onClick={() => console.log('Dropdown trigger clicked')}
         >
           {getTriggerContent()}
         </Button>
@@ -212,11 +226,14 @@ export default function UserSelector({
         <DropdownMenuLabel>User Selection</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {/* Show All Data option if enabled */}
-          {showAllDataOption && (
+          {/* Show All Data option if enabled and user is admin */}
+          {showAllDataOption && canSwitchUsers && (
             <>
               <DropdownMenuItem 
-                onClick={() => onSelectUser(ALL_DATA_ID, 'All Data')}
+                onClick={() => {
+                  console.log('Selected "All Data"');
+                  onSelectUser(ALL_DATA_ID, 'All Data');
+                }}
                 className="cursor-pointer"
               >
                 <Users className="mr-2 h-4 w-4" />
@@ -231,7 +248,10 @@ export default function UserSelector({
           
           {/* Always show "My Data" option */}
           <DropdownMenuItem 
-            onClick={() => onSelectUser(user?.id || null, 'My Data')}
+            onClick={() => {
+              console.log('Selected "My Data"');
+              onSelectUser(user?.id || null, 'My Data');
+            }}
             className="cursor-pointer"
           >
             <User className="mr-2 h-4 w-4" />
@@ -241,7 +261,7 @@ export default function UserSelector({
             )}
           </DropdownMenuItem>
           
-          {isAdmin && users.length > 0 && (
+          {canSwitchUsers && users.length > 0 && (
             <DropdownMenuSeparator />
           )}
           
@@ -249,22 +269,27 @@ export default function UserSelector({
             <DropdownMenuItem disabled>
               Loading users...
             </DropdownMenuItem>
+          ) : !canSwitchUsers ? (
+            // Don't show other users if not admin
+            null
           ) : users.filter(u => u.id !== user?.id).length === 0 ? (
-            isAdmin && (
-              <DropdownMenuItem disabled>
-                No other users available
-              </DropdownMenuItem>
-            )
+            <DropdownMenuItem disabled>
+              No other users available
+            </DropdownMenuItem>
           ) : (
+            // Only show other users if admin
             users
               .filter(u => u.id !== user?.id)
               .map(otherUser => (
                 <DropdownMenuItem
                   key={otherUser.id}
-                  onClick={() => onSelectUser(
-                    otherUser.id, 
-                    getUserDisplayName(otherUser.id)
-                  )}
+                  onClick={() => {
+                    console.log('Selected other user:', otherUser.id);
+                    onSelectUser(
+                      otherUser.id, 
+                      getUserDisplayName(otherUser.id)
+                    );
+                  }}
                   className="cursor-pointer"
                 >
                   <Users className="mr-2 h-4 w-4" />

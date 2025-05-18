@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,7 +31,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
 }) => {
   const navigate = useNavigate();
   const {
-    user
+    user, isAdmin
   } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showAddVisit, setShowAddVisit] = useState(false);
@@ -39,13 +40,48 @@ const RepTracker: React.FC<RepTrackerProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId || user?.id);
   const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName || "My Data");
 
+  // Ensure we update selectedUserId when user authentication changes
+  useEffect(() => {
+    if (!selectedUserId && user) {
+      setSelectedUserId(user.id);
+    }
+  }, [user, selectedUserId]);
+
+  // Console log for debugging
+  useEffect(() => {
+    console.log('RepTracker - Current selectedUserId:', selectedUserId);
+    console.log('RepTracker - Current selectedUserName:', selectedUserName);
+    console.log('RepTracker - Current user:', user);
+    console.log('RepTracker - Is admin:', isAdmin);
+  }, [selectedUserId, selectedUserName, user, isAdmin]);
+
   // Determine if user is viewing their own data
   const isViewingOwnData = selectedUserId === user?.id || selectedUserId === "all";
 
-  // Handle user selection
+  // Handle user selection with improved logging
   const handleUserSelection = (userId: string | null, displayName: string) => {
-    setSelectedUserId(userId);
-    setSelectedUserName(displayName);
+    console.log('RepTracker - User selection triggered:', { userId, displayName });
+    
+    // Ensure we have valid values before updating state
+    if (userId !== undefined) {
+      setSelectedUserId(userId);
+      setSelectedUserName(displayName);
+      
+      // Invalidate queries to force data refresh
+      queryClient.invalidateQueries({
+        queryKey: ['visit-metrics'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
+      queryClient.invalidateQueries({
+        queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
+      console.log('RepTracker - User selection complete and queries invalidated');
+    }
   };
 
   const queryClient = useQueryClient();
@@ -152,6 +188,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
         </h1>;
     }
   };
+  
   const handleAddVisitSuccess = () => {
     queryClient.invalidateQueries({
       queryKey: ['visit-metrics'],
@@ -165,6 +202,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     });
     setShowAddVisit(false);
   };
+  
   const handleDataChange = () => {
     queryClient.invalidateQueries({
       queryKey: ['visit-metrics'],
@@ -172,6 +210,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
       refetchType: 'all'
     });
   };
+  
   const handleAddPlanSuccess = () => {
     queryClient.invalidateQueries({
       queryKey: ['visit-metrics'],
@@ -180,6 +219,7 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     });
     setSelectedTab('week-plan-v2');
   };
+  
   return <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
       <div className="mb-6 pt-8">
         {renderPageHeading()}
