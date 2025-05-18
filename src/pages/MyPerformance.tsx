@@ -4,7 +4,6 @@ import { useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useQuery } from '@tanstack/react-query';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 
 import PersonalPerformanceCard from '@/components/my-performance/PersonalPerformanceCard';
@@ -53,18 +52,68 @@ const MyPerformance = () => {
     { id: 3, date: "2025-05-15", customer_name: "HealthHub", customer_ref: "ACC003", profit: 950, outcome: "Order placed" }
   ];
   
-  const mockUserData = {
-    profit: 125000,
-    margin: 14.7,
-    activeRatio: 90.5,
-    visitConversion: 66.7
+  // Create time-series data for the performance comparison chart
+  const mockTimeSeriesData = {
+    profit: [
+      { month: "Jan", value: 105000 },
+      { month: "Feb", value: 110000 },
+      { month: "Mar", value: 115000 },
+      { month: "Apr", value: 120000 },
+      { month: "May", value: 125000 }
+    ],
+    spend: [
+      { month: "Jan", value: 750000 },
+      { month: "Feb", value: 780000 },
+      { month: "Mar", value: 800000 },
+      { month: "Apr", value: 820000 },
+      { month: "May", value: 850000 }
+    ],
+    packs: [
+      { month: "Jan", value: 4200 },
+      { month: "Feb", value: 4300 },
+      { month: "Mar", value: 4350 },
+      { month: "Apr", value: 4400 },
+      { month: "May", value: 4500 }
+    ],
+    margin: [
+      { month: "Jan", value: 14.0 },
+      { month: "Feb", value: 14.1 },
+      { month: "Mar", value: 14.3 },
+      { month: "Apr", value: 14.5 },
+      { month: "May", value: 14.7 }
+    ]
   };
   
-  const mockAverageData = {
-    profit: 105000,
-    margin: 13.2,
-    activeRatio: 82.5,
-    visitConversion: 58.4
+  // Create time-series data for the team average
+  const mockAverageTimeSeriesData = {
+    profit: [
+      { month: "Jan", value: 95000 },
+      { month: "Feb", value: 98000 },
+      { month: "Mar", value: 100000 },
+      { month: "Apr", value: 102000 },
+      { month: "May", value: 105000 }
+    ],
+    spend: [
+      { month: "Jan", value: 700000 },
+      { month: "Feb", value: 710000 },
+      { month: "Mar", value: 720000 },
+      { month: "Apr", value: 730000 },
+      { month: "May", value: 740000 }
+    ],
+    packs: [
+      { month: "Jan", value: 3900 },
+      { month: "Feb", value: 3950 },
+      { month: "Mar", value: 4000 },
+      { month: "Apr", value: 4050 },
+      { month: "May", value: 4100 }
+    ],
+    margin: [
+      { month: "Jan", value: 13.0 },
+      { month: "Feb", value: 13.2 },
+      { month: "Mar", value: 13.5 },
+      { month: "Apr", value: 13.8 },
+      { month: "May", value: 14.2 }
+    ]
   };
 
   const handleRefresh = async () => {
@@ -186,8 +235,8 @@ const MyPerformance = () => {
           
           <TabsContent value="comparison">
             <RepPerformanceComparison 
-              userData={mockUserData}
-              averageData={mockAverageData}
+              userData={mockTimeSeriesData}
+              averageData={mockAverageTimeSeriesData}
               isLoading={isLoading}
               userName="Your"
             />
