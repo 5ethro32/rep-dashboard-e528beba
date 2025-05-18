@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { useNavigate } from 'react-router-dom';
@@ -146,24 +145,6 @@ const RepTracker: React.FC = () => {
     }
   });
 
-  // Helper function to generate heading with white text
-  const renderPageHeading = () => {
-    if (selectedUserId === "all") {
-      return <h1 className="text-3xl font-bold text-white mb-2 md:text-3xl">
-          Aver's Planner
-        </h1>;
-    } else {
-      // Extract first name
-      const firstName = selectedUserName === 'My Data' ? 'My' : selectedUserName.split(' ')[0];
-
-      // Add apostrophe only if it's not "My"
-      const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
-      return <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          {displayName} Planner
-        </h1>;
-    }
-  };
-  
   const handleRefresh = () => {
     setIsLoading(true);
     queryClient.invalidateQueries({
@@ -223,14 +204,7 @@ const RepTracker: React.FC = () => {
       isLoading={isLoading}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
-        <div className="mb-6 pt-8">
-          {renderPageHeading()}
-          <p className="text-white/60">
-            {selectedUserId === "all" ? "Track Aver's visits and plan customer interactions across the team." : selectedUserName && selectedUserName !== 'My Data' ? `Track ${selectedUserName.split(' ')[0]}'s visits and plan customer interactions.` : "Track your visits and plan your customer interactions."}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 mt-8">
           <div className="flex items-center">
             <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
             <h2 className="text-base sm:text-lg font-semibold truncate">
