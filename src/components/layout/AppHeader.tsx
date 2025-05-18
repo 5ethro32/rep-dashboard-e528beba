@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,13 +43,12 @@ const AppHeader = ({
   onRefresh,
   isLoading = false
 }: AppHeaderProps) => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isEngineSubnavHovered, setIsEngineSubnavHovered] = useState(false);
+  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>("");
 
   // Check if we're in the Engine Room section
   const isEngineRoomSection = location.pathname.startsWith('/engine-room');
@@ -94,6 +92,7 @@ const AppHeader = ({
   
   const handleUserSelection = (userId: string | null, displayName: string) => {
     console.log(`AppHeader: User selection changed to ${displayName} (${userId})`);
+    setSelectedUserDisplayName(displayName);
     if (onSelectUser) {
       onSelectUser(userId, displayName);
     }
