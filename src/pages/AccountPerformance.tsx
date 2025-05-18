@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
-import ActionsHeader from '@/components/rep-performance/ActionsHeader';
 import AppLayout from '@/components/layout/AppLayout';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
@@ -394,12 +392,9 @@ const AccountPerformance = () => {
       isLoading={isLoading}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        {/* Month dropdown, now without the refresh button */}
-        <div className="mb-6 flex items-center space-x-4">
-          <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
-        </div>
+        {/* Remove the redundant header section with PerformanceHeader */}
         
-        {/* Add PerformanceFilters component */}
+        {/* Add PerformanceFilters component - keep this as it contains the month selector */}
         <PerformanceFilters
           includeRetail={includeRetail}
           setIncludeRetail={setIncludeRetail}
