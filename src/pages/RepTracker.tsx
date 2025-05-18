@@ -17,10 +17,13 @@ import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
+import UserSelector from '@/components/rep-tracker/UserSelector';
+
 interface RepTrackerProps {
   selectedUserId?: string | null;
   selectedUserName?: string;
 }
+
 const RepTracker: React.FC<RepTrackerProps> = ({
   selectedUserId: propSelectedUserId,
   selectedUserName: propSelectedUserName
@@ -33,15 +36,18 @@ const RepTracker: React.FC<RepTrackerProps> = ({
   const [showAddVisit, setShowAddVisit] = useState(false);
   const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
   const isMobile = useIsMobile();
-
-  // Initialize with props if provided, otherwise use the current user
-  const selectedUserId = propSelectedUserId || user?.id;
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId || user?.id);
+  const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName || "My Data");
 
   // Determine if user is viewing their own data
   const isViewingOwnData = selectedUserId === user?.id || selectedUserId === "all";
 
-  // Get the user's display name
-  const selectedUserName = propSelectedUserName || "My Data";
+  // Handle user selection
+  const handleUserSelection = (userId: string | null, displayName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(displayName);
+  };
+
   const queryClient = useQueryClient();
   const weekStart = startOfWeek(selectedDate, {
     weekStartsOn: 1
@@ -191,24 +197,33 @@ const RepTracker: React.FC<RepTrackerProps> = ({
           </h2>
         </div>
         
-        <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
-          <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
-          setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
-        }}>
-            Previous
-          </Button>
+        <div className="flex items-center gap-2">
+          {/* Add UserSelector component here */}
+          <UserSelector 
+            selectedUserId={selectedUserId} 
+            onSelectUser={handleUserSelection}
+            showAllDataOption={true} 
+          />
           
-          <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
-          setSelectedDate(new Date());
-        }}>
-            Current
-          </Button>
-          
-          <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
-          setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
-        }}>
-            Next
-          </Button>
+          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+            setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
+          }}>
+              Previous
+            </Button>
+            
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+            setSelectedDate(new Date());
+          }}>
+              Current
+            </Button>
+            
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+            setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
+          }}>
+              Next
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -248,4 +263,5 @@ const RepTracker: React.FC<RepTrackerProps> = ({
       {showAddVisit && isViewingOwnData && <AddVisitDialog isOpen={showAddVisit} onClose={() => setShowAddVisit(false)} onSuccess={handleAddVisitSuccess} customers={customers || []} />}
     </div>;
 };
+
 export default RepTracker;

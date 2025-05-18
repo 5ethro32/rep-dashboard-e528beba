@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAn
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
 import GoalTrackingComponent from '@/components/my-performance/GoalTrackingComponent';
 import RepPerformanceComparison from '@/components/my-performance/RepPerformanceComparison';
+import UserSelector from '@/components/rep-tracker/UserSelector';
 
 interface MyPerformanceProps {
   selectedUserId?: string | null;
@@ -1103,7 +1103,14 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           autoRefreshed={autoRefreshed}
         />
         
-        <div className="flex-shrink-0">
+        <div className="flex items-center gap-2">
+          {/* Add UserSelector component here */}
+          <UserSelector
+            selectedUserId={selectedUserId}
+            onSelectUser={handleSelectUser}
+            showAllDataOption={true}
+          />
+          
           <PerformanceHeader 
             selectedMonth={selectedMonth}
             setSelectedMonth={setSelectedMonth}
