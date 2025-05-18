@@ -22,14 +22,20 @@ import ApprovalsDashboard from "@/pages/engine-room/ApprovalsDashboard";
 import RuleSimulator from "@/pages/engine-room/RuleSimulator";
 import NotFound from "@/pages/NotFound";
 import PricingAnalytics from "@/pages/engine-room/PricingAnalytics";
+import Auth from "@/pages/Auth";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 // Create a client
 const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
+    path: "/auth",
+    element: <Auth />,
+  },
+  {
     path: "/",
-    element: <AppLayout><Outlet /></AppLayout>,
+    element: <ProtectedRoute><AppLayout><Outlet /></AppLayout></ProtectedRoute>,
     children: [
       { path: "/", element: <Dashboard /> },
       { path: "/rep-performance", element: <RepPerformance /> },
