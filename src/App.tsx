@@ -8,7 +8,6 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { EngineRoomProvider } from "@/contexts/EngineRoomContext";
-import AppLayout from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import RepPerformance from "@/pages/RepPerformance";
 import AccountPerformance from "@/pages/AccountPerformance";
@@ -35,7 +34,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: <ProtectedRoute><AppLayout><Outlet /></AppLayout></ProtectedRoute>,
+    element: <ProtectedRoute><Outlet /></ProtectedRoute>,
     children: [
       { path: "/", element: <Dashboard /> },
       { path: "/rep-performance", element: <RepPerformance /> },
