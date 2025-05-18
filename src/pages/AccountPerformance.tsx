@@ -1,258 +1,394 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Calendar, ChevronDown, Filter, RefreshCw, Star } from 'lucide-react';
-import AppLayout from '@/components/layout/AppLayout';
-import { AccountData, MetricsData } from '@/types/rep-performance.types';
-import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
+import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
-import PerformanceTable from '@/components/rep-performance/PerformanceTable';
-import { format } from 'date-fns';
+import { formatCurrency } from '@/utils/rep-performance-utils';
+import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
+import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
+import { toast } from '@/components/ui/use-toast';
+import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent } from '@/components/ui/card';
+import ActionsHeader from '@/components/rep-performance/ActionsHeader';
+import AppLayout from '@/components/layout/AppLayout';
 
-// Mock data generation functions
-const generateMetricsData = (baseProfit: number): MetricsData => ({
-  totalOrders: Math.floor(Math.random() * 100) + 50,
-  revenue: Math.floor(Math.random() * 100000) + 50000,
-  margin: (Math.random() * 10) + 15,
-  profit: baseProfit,
-  visits: Math.floor(Math.random() * 20) + 5,
-});
-
-const generateMockAccount = (id: number, baseProfit: number): AccountData => ({
-  id: `ACC${id}`,
-  name: `Account ${id}`,
-  representative: `Rep ${Math.floor(Math.random() * 5) + 1}`,
-  type: Math.random() > 0.5 ? 'Direct' : 'Distribution',
-  industry: ['Healthcare', 'Manufacturing', 'Technology', 'Retail', 'Finance'][Math.floor(Math.random() * 5)],
-  location: ['East', 'West', 'Central', 'North', 'South'][Math.floor(Math.random() * 5)],
-  metrics: generateMetricsData(baseProfit),
-  changePercent: (Math.random() * 40) - 20,
-  starred: Math.random() > 0.8,
-});
+type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
+type DataItem = {
+  [key: string]: any;
+  "Account Name"?: string;
+  account_name?: string;
+  "Account Ref"?: string;
+  account_ref?: string;
+  Rep?: string;
+  rep_name?: string;
+  "Sub-Rep"?: string;
+  sub_rep?: string;
+  Profit?: number;
+  profit?: number;
+  Spend?: number;
+  spend?: number;
+  Department?: string;
+  department?: string;
+};
 
 const AccountPerformance = () => {
-  const [accounts, setAccounts] = useState<AccountData[]>([]);
-  const [filteredAccounts, setFilteredAccounts] = useState<AccountData[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState('March');
+  const [selectedMonth, setSelectedMonth] = useState<string>('May');
+  const [currentMonthRawData, setCurrentMonthRawData] = useState<DataItem[]>([]);
+  const [previousMonthRawData, setPreviousMonthRawData] = useState<DataItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState('All Data');
-  const { toast } = useToast();
-  const isMobile = useIsMobile();
-
-  // Load initial data
-  useEffect(() => {
-    loadAccountData();
-  }, []);
-
-  // Load account data based on selected month
-  const loadAccountData = () => {
-    setIsLoading(true);
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      const multiplier = selectedMonth === 'March' ? 1 : 
-                        selectedMonth === 'February' ? 0.9 : 
-                        selectedMonth === 'April' ? 1.12 : 1.18; // May
-      
-      const newAccounts = Array.from({ length: 30 }, (_, i) => 
-        generateMockAccount(i + 1, Math.floor((Math.random() * 15000 + 5000) * multiplier))
-      );
-      
-      setAccounts(newAccounts);
-      setFilteredAccounts(newAccounts);
-      setIsLoading(false);
-    }, 800);
-  };
-
-  // Handle month selection change
-  const handleMonthChange = (month: string) => {
-    setSelectedMonth(month);
-    loadAccountData();
-  };
-
-  // Filter accounts by tab selection
-  useEffect(() => {
-    if (activeTab === 'all') {
-      setFilteredAccounts(accounts);
-    } else if (activeTab === 'direct') {
-      setFilteredAccounts(accounts.filter(acc => acc.type === 'Direct'));
-    } else if (activeTab === 'distribution') {
-      setFilteredAccounts(accounts.filter(acc => acc.type === 'Distribution'));
-    } else if (activeTab === 'starred') {
-      setFilteredAccounts(accounts.filter(acc => acc.starred));
-    }
-  }, [activeTab, accounts]);
-
-  // Refresh data
-  const handleRefresh = () => {
-    setIsLoading(true);
-    console.log('Refreshing account performance data');
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      loadAccountData();
-      toast({
-        title: "Data refreshed",
-        description: `Account data for ${selectedMonth} has been updated`,
-        duration: 3000
-      });
-    }, 1200);
-  };
+  const [activeAccounts, setActiveAccounts] = useState({
+    current: 0,
+    previous: 0
+  });
+  const [topRep, setTopRep] = useState({
+    name: '',
+    profit: 0
+  });
+  const [accountsTrendData, setAccountsTrendData] = useState({
+    increasing: 0,
+    decreasing: 0
+  });
   
-  // Handle user selection
-  const handleUserSelection = (userId: string | null, displayName: string) => {
-    console.log(`Selected user: ${displayName} (${userId})`);
+  // Add state for department toggles
+  const [includeRetail, setIncludeRetail] = useState<boolean>(true);
+  const [includeReva, setIncludeReva] = useState<boolean>(true);
+  const [includeWholesale, setIncludeWholesale] = useState<boolean>(true);
+  
+  const isMobile = useIsMobile();
+  const {
+    user,
+    isAdmin
+  } = useAuth();
+
+  // State for selected user to filter by
+  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
+  const [selectedUserName, setSelectedUserName] = useState<string>("All Data");
+  
+  useEffect(() => {
+    fetchComparisonData();
+  }, [selectedMonth, selectedUserId, selectedUserName, includeRetail, includeReva, includeWholesale]);
+
+  // Handle user selection change
+  const handleUserChange = (userId: string | null, displayName: string) => {
+    console.log(`AccountPerformance: User changed to: ${displayName} (${userId})`);
     setSelectedUserId(userId);
     setSelectedUserName(displayName);
-    // In a real app, this would filter the data by the selected user
+    // Data will refresh due to the useEffect dependency
   };
   
-  // Page heading based on month
+  const fetchAllRecordsFromTable = async (table: AllowedTable, columnFilter?: {
+    column: string;
+    value: string;
+  }) => {
+    console.log(`Fetching data from ${table} with filter:`, columnFilter);
+    console.log(`Selected user: ${selectedUserName} (${selectedUserId})`);
+    const PAGE_SIZE = 1000;
+    let allRecords: any[] = [];
+    let page = 0;
+    let hasMoreData = true;
+    while (hasMoreData) {
+      const query = supabase.from(table).select('*') as any;
+      if (columnFilter) {
+        query.eq(columnFilter.column, columnFilter.value);
+      }
+      const {
+        data,
+        error
+      } = await query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      if (error) throw error;
+      if (data && data.length > 0) {
+        allRecords = [...allRecords, ...data];
+        page++;
+        hasMoreData = data.length === PAGE_SIZE;
+      } else {
+        hasMoreData = false;
+      }
+    }
+
+    // Filter by selected departments
+    if (!includeRetail || !includeReva || !includeWholesale) {
+      allRecords = allRecords.filter(item => {
+        const department = item.Department || item.department || '';
+        if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+        if (!includeReva && department.toUpperCase() === 'REVA') return false;
+        if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+        return true;
+      });
+    }
+
+    // If "All Data" is selected, return all records (no filtering)
+    if (selectedUserId === "all") {
+      console.log(`Returning all data (${allRecords.length} records)`);
+      return allRecords;
+    }
+
+    // If a specific user is selected (not "all")
+    // This is the case for both "My Data" and specific other user selection
+    if (selectedUserId !== "all") {
+      console.log(`Filtering for user: ${selectedUserName} (${selectedUserId})`);
+
+      // If it's "My Data", we need to get the current user's profile information
+      if (selectedUserId === user?.id) {
+        console.log('Getting profile for current user:', user.id);
+
+        // Try to get the user's profile name from the profiles table
+        const {
+          data: profileData,
+          error: profileError
+        } = await supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single();
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          // Continue with fallback approach
+        }
+        if (profileData) {
+          const fullName = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim();
+          console.log(`Filtering for current user using profile name: "${fullName}"`);
+          if (fullName) {
+            return allRecords.filter(item => {
+              const rep = item.Rep || item.rep_name || '';
+              const subRep = item['Sub-Rep'] || item.sub_rep || '';
+              return rep === fullName || subRep === fullName;
+            });
+          }
+        }
+
+        // Fallback to email username if profile name isn't available
+        if (user.email) {
+          const username = user.email.split('@')[0];
+          const capitalizedUsername = username.charAt(0).toUpperCase() + username.slice(1);
+          console.log(`Fallback: Filtering for username: "${capitalizedUsername}"`);
+          return allRecords.filter(item => {
+            const rep = item.Rep || item.rep_name || '';
+            const subRep = item['Sub-Rep'] || item.sub_rep || '';
+            return rep.includes(capitalizedUsername) || subRep.includes(capitalizedUsername);
+          });
+        }
+        console.warn('Could not determine user name for filtering - showing all data as fallback');
+        return allRecords; // Fallback: show all data if we can't determine the user name
+      }
+
+      // For a specific user (not the current user), filter by the selected user name
+      return allRecords.filter(item => {
+        const rep = item.Rep || item.rep_name || '';
+        const subRep = item['Sub-Rep'] || item.sub_rep || '';
+        return rep === selectedUserName || subRep === selectedUserName;
+      });
+    }
+
+    // This should never happen (we've handled both "all" and specific user cases)
+    // But just in case, return all records
+    return allRecords;
+  };
+  
+  const fetchComparisonData = async () => {
+    setIsLoading(true);
+    try {
+      let currentTable: AllowedTable;
+      let previousTable: AllowedTable | null;
+      switch (selectedMonth) {
+        case 'May':
+          currentTable = "May_Data";
+          previousTable = "Prior_Month_Rolling";
+          break;
+        case 'April':
+          currentTable = "mtd_daily";
+          previousTable = "sales_data";
+          break;
+        case 'March':
+          currentTable = "sales_data";
+          previousTable = "sales_data_februrary";
+          break;
+        case 'February':
+          currentTable = "sales_data_februrary";
+          previousTable = null;
+          break;
+        default:
+          currentTable = "sales_data";
+          previousTable = "sales_data_februrary";
+      }
+      console.log(`Fetching current month (${selectedMonth}) data from ${currentTable} and previous month data from ${previousTable || 'none'}`);
+      let currentData: DataItem[] = [];
+      currentData = await fetchAllRecordsFromTable(currentTable);
+      console.log(`Fetched ${currentData?.length || 0} records for ${selectedMonth} from ${currentTable}`);
+      if (currentData && currentData.length > 0) {
+        console.log(`Sample record from ${currentTable}:`, currentData[0]);
+      }
+      let previousData: DataItem[] = [];
+      if (previousTable) {
+        previousData = await fetchAllRecordsFromTable(previousTable);
+        console.log(`Fetched ${previousData?.length || 0} records for previous month from ${previousTable}`);
+        if (previousData && previousData.length > 0) {
+          console.log(`Sample record from ${previousTable}:`, previousData[0]);
+        }
+      }
+
+      // Set state with fetched data
+      setCurrentMonthRawData(currentData || []);
+      setPreviousMonthRawData(previousData);
+
+      // Calculate active accounts
+      const currentActiveAccounts = new Set(currentData?.map((item: DataItem) => {
+        return item["Account Name"] || item.account_name;
+      }).filter(Boolean)).size || 0;
+      const previousActiveAccounts = new Set(previousData?.map((item: DataItem) => {
+        return item["Account Name"] || item.account_name;
+      }).filter(Boolean)).size || 0;
+      setActiveAccounts({
+        current: currentActiveAccounts,
+        previous: previousActiveAccounts
+      });
+
+      // Calculate increasing and decreasing spend accounts
+      if (currentData && previousData && currentData.length > 0 && previousData.length > 0) {
+        // Create maps for current and previous data to easily compare accounts
+        const currentAccountMap = new Map();
+        const previousAccountMap = new Map();
+
+        // Build maps with account ref as key and spend as value
+        currentData.forEach((item: DataItem) => {
+          const accountRef = item["Account Ref"] || item.account_ref || '';
+          const spend = typeof item.Spend === 'number' ? item.Spend : typeof item.spend === 'number' ? item.spend : 0;
+          if (accountRef) {
+            currentAccountMap.set(accountRef, spend);
+          }
+        });
+        previousData.forEach((item: DataItem) => {
+          const accountRef = item["Account Ref"] || item.account_ref || '';
+          const spend = typeof item.Spend === 'number' ? item.Spend : typeof item.spend === 'number' ? item.spend : 0;
+          if (accountRef) {
+            previousAccountMap.set(accountRef, spend);
+          }
+        });
+        let increasingCount = 0;
+        let decreasingCount = 0;
+
+        // Compare the accounts that exist in both periods
+        currentAccountMap.forEach((currentSpend, accountRef) => {
+          const previousSpend = previousAccountMap.get(accountRef);
+
+          // Only compare if the account existed in the previous period
+          if (previousSpend !== undefined && previousSpend > 0) {
+            if (currentSpend > previousSpend) {
+              increasingCount++;
+            } else if (currentSpend < previousSpend) {
+              decreasingCount++;
+            }
+          }
+        });
+        setAccountsTrendData({
+          increasing: increasingCount,
+          decreasing: decreasingCount
+        });
+      }
+
+      // Calculate top rep
+      if (currentData && currentData.length > 0) {
+        const repProfits = new Map();
+        currentData.forEach((item: DataItem) => {
+          const repName = item.Rep || item.rep_name || '';
+          const profit = typeof item.Profit === 'number' ? item.Profit : typeof item.profit === 'number' ? item.profit : 0;
+          if (repName) {
+            const currentProfit = repProfits.get(repName) || 0;
+            repProfits.set(repName, currentProfit + profit);
+          }
+        });
+        let maxProfit = 0;
+        let topRepName = '';
+        repProfits.forEach((profit, rep) => {
+          if (profit > maxProfit) {
+            maxProfit = profit;
+            topRepName = rep;
+          }
+        });
+        setTopRep({
+          name: topRepName,
+          profit: maxProfit
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching comparison data:', error);
+      toast({
+        title: "Error loading data",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to generate heading with white text username
   const renderPageHeading = () => {
-    return `Account Performance - ${selectedMonth} ${new Date().getFullYear()}`;
+    if (selectedUserId === "all") {
+      return (
+        <>
+          Aver's Accounts
+        </>
+      );
+    } else {
+      // Extract first name
+      const firstName = selectedUserName === 'My Data' ? 'My' : selectedUserName.split(' ')[0];
+
+      // Add apostrophe only if it's not "My"
+      const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
+      return (
+        <>
+          {displayName} Accounts
+        </>
+      );
+    }
   };
   
-  // Page description based on selected user
   const getPageDescription = () => {
-    return selectedUserId && selectedUserId !== 'all'
-      ? `${selectedUserName}'s account performance metrics and analysis`
-      : "Overall account performance metrics and analysis";
+    return selectedUserId === "all" 
+      ? "Compare Aver's accounts performance between months to identify declining or improving accounts." 
+      : selectedUserName && selectedUserName !== 'My Data' 
+        ? `Compare ${selectedUserName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.` 
+        : "Compare your accounts performance between months to identify declining or improving accounts.";
   };
-
-  // Calculate metrics summary
-  const totalRevenue = filteredAccounts.reduce((sum, acc) => sum + acc.metrics.revenue, 0);
-  const totalProfit = filteredAccounts.reduce((sum, acc) => sum + acc.metrics.profit, 0);
-  const averageMargin = filteredAccounts.reduce((sum, acc) => sum + acc.metrics.margin, 0) / 
-                         (filteredAccounts.length || 1);
-  const totalVisits = filteredAccounts.reduce((sum, acc) => sum + acc.metrics.visits, 0);
-
+  
+  // Wrap the component with AppLayout and pass the user selection handler
   return (
-    <AppLayout
+    <AppLayout 
+      showChatInterface={false}
       selectedUserId={selectedUserId}
-      onSelectUser={handleUserSelection}
+      onSelectUser={handleUserChange}
       showUserSelector={true}
-      onRefresh={handleRefresh}
+      onRefresh={fetchComparisonData}
       isLoading={isLoading}
-      showChatInterface={true}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+        {/* Remove the duplicate title and description section */}
+        
         {/* Month dropdown, now without the refresh button */}
         <div className="mb-6 flex items-center space-x-4">
-          <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              {renderPageHeading()}
-            </h1>
-            <p className="text-white/60">
-              {getPageDescription()}
-            </p>
-          </div>
-          <div>
-            <Select value={selectedMonth} onValueChange={handleMonthChange}>
-              <SelectTrigger className="w-[180px] bg-gray-900/40 border-white/10">
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Select Month" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="February">February</SelectItem>
-                <SelectItem value="March">March</SelectItem>
-                <SelectItem value="April">April</SelectItem>
-                <SelectItem value="May">May</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
         </div>
         
-        {/* Summary cards */}
-        <AccountSummaryCards
-          revenue={totalRevenue}
-          profit={totalProfit}
-          margin={averageMargin}
-          visits={totalVisits}
-          isLoading={isLoading}
+        {/* Add PerformanceFilters component */}
+        <PerformanceFilters
+          includeRetail={includeRetail}
+          setIncludeRetail={setIncludeRetail}
+          includeReva={includeReva}
+          setIncludeReva={setIncludeReva}
+          includeWholesale={includeWholesale}
+          setIncludeWholesale={setIncludeWholesale}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
         />
         
-        {/* Account comparison */}
-        <div className="my-8">
-          <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
-            <CardContent className="py-6">
-              <AccountPerformanceComparison 
-                accounts={filteredAccounts.slice(0, 5)} 
-                isLoading={isLoading}
-              />
-            </CardContent>
-          </Card>
-        </div>
+        {/* Update Card - remove the p-0 and fix the padding in CardContent */}
+        <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
+          <CardContent className="p-0"> {/* Remove padding from CardContent */}
+            <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
+          </CardContent>
+        </Card>
         
-        {/* Account list with tabs */}
-        <div className="mb-8">
-          <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
-            <div className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Account Details</h2>
-            </div>
-            
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="px-6">
-                <TabsList className={`${isMobile ? 'grid grid-cols-4 w-full' : ''}`}>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="direct">Direct</TabsTrigger>
-                  <TabsTrigger value="distribution">Distribution</TabsTrigger>
-                  <TabsTrigger value="starred">
-                    <Star className="h-4 w-4 mr-1" />
-                    Starred
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              
-              <TabsContent value="all" className="p-0">
-                <PerformanceTable 
-                  data={filteredAccounts} 
-                  isLoading={isLoading}
-                  selectedMonth={selectedMonth}
-                  type="account"
-                />
-              </TabsContent>
-              
-              <TabsContent value="direct" className="p-0">
-                <PerformanceTable 
-                  data={filteredAccounts} 
-                  isLoading={isLoading}
-                  selectedMonth={selectedMonth}
-                  type="account"
-                />
-              </TabsContent>
-              
-              <TabsContent value="distribution" className="p-0">
-                <PerformanceTable 
-                  data={filteredAccounts} 
-                  isLoading={isLoading}
-                  selectedMonth={selectedMonth}
-                  type="account"
-                />
-              </TabsContent>
-              
-              <TabsContent value="starred" className="p-0">
-                <PerformanceTable 
-                  data={filteredAccounts} 
-                  isLoading={isLoading}
-                  selectedMonth={selectedMonth}
-                  type="account"
-                />
-              </TabsContent>
-            </Tabs>
-          </Card>
+        <div className="mb-12">
+          <AccountPerformanceComparison currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedMonth={selectedMonth} formatCurrency={formatCurrency} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} />
         </div>
       </div>
     </AppLayout>
   );
 };
-
 export default AccountPerformance;
