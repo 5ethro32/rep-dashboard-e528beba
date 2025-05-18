@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -105,6 +106,19 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       fetchAccountHealthData();
     }
   }, [accountHealthMonth, compareMonth, includeRetail, includeReva, includeWholesale]);
+  
+  // Handle user selection from the header
+  const handleUserSelection = (userId: string | null, displayName: string) => {
+    console.log(`MyPerformance: User selection changed to ${displayName} (${userId})`);
+    setSelectedUserId(userId);
+    setSelectedUserDisplayName(displayName);
+    
+    // Extract first name if we have a full name
+    if (displayName !== "My Data" && displayName !== "All Data") {
+      const firstName = displayName.split(' ')[0];
+      setUserFirstName(firstName);
+    }
+  };
   
   const handleAccountHealthMonthChange = (month: string) => {
     setAccountHealthMonth(month);
@@ -1077,129 +1091,137 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   };
   
-  // Render the page directly without the redundant AppLayout wrapper
+  // Render the page with AppLayout wrapper
   return (
-    <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          {getTitleName()} Dashboard
-        </h1>
-        <p className="text-white/60">
-          {getSubtitle()}
-        </p>
-      </div>
-      
-      <div className="mb-4 flex justify-between items-center">
-        <ActionsHeader 
-          onRefresh={handleRefresh}
-          isLoading={isLoading}
-          autoRefreshed={autoRefreshed}
-        />
+    <AppLayout 
+      showChatInterface={false}
+      selectedUserId={selectedUserId}
+      onSelectUser={handleUserSelection}
+      showUserSelector={true}
+      onRefresh={handleRefresh}
+      isLoading={isLoading}
+    >
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+            {getTitleName()} Dashboard
+          </h1>
+          <p className="text-white/60">
+            {getSubtitle()}
+          </p>
+        </div>
         
-        <div className="flex items-center gap-2">
-          {/* UserSelector removed from here - now only in AppHeader */}
-          <PerformanceHeader 
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            hideTitle={true}
+        <div className="mb-4 flex justify-between items-center">
+          <ActionsHeader 
+            onRefresh={handleRefresh}
+            isLoading={isLoading}
+            autoRefreshed={autoRefreshed}
+          />
+          
+          <div className="flex items-center gap-2">
+            <PerformanceHeader 
+              selectedMonth={selectedMonth}
+              setSelectedMonth={setSelectedMonth}
+              hideTitle={true}
+            />
+          </div>
+        </div>
+        
+        {/* Add PerformanceFilters component */}
+        <PerformanceFilters
+          includeRetail={includeRetail}
+          setIncludeRetail={setIncludeRetail}
+          includeReva={includeReva}
+          setIncludeReva={setIncludeReva}
+          includeWholesale={includeWholesale}
+          setIncludeWholesale={setIncludeWholesale}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+        />
+
+        {/* Personal Performance Overview */}
+        <div className="mb-6">
+          <PersonalPerformanceCard
+            performanceData={performanceData}
+            isLoading={isLoading}
           />
         </div>
-      </div>
-      
-      {/* Add PerformanceFilters component */}
-      <PerformanceFilters
-        includeRetail={includeRetail}
-        setIncludeRetail={setIncludeRetail}
-        includeReva={includeReva}
-        setIncludeReva={setIncludeReva}
-        includeWholesale={includeWholesale}
-        setIncludeWholesale={setIncludeWholesale}
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-      />
+        
+        {/* Performance Comparison Chart */}
+        <div className="mb-6">
+          <RepPerformanceComparison
+            userData={userTrendsData}
+            averageData={teamAverageData}
+            comparisonData={repComparisonData}
+            isLoading={isLoading}
+            userName={selectedUserDisplayName !== "My Data" ? selectedUserDisplayName : "You"}
+          />
+        </div>
 
-      {/* Personal Performance Overview */}
-      <div className="mb-6">
-        <PersonalPerformanceCard
-          performanceData={performanceData}
-          isLoading={isLoading}
-        />
+        {/* Main content tabs */}
+        <Tabs defaultValue="accounts" className="w-full">
+          <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
+            <TabsTrigger value="accounts" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+              Account Health
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+              Activity Impact
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+              AI Insights
+            </TabsTrigger>
+            <TabsTrigger value="goals" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+              Goal Tracking
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="accounts" className="mt-0">
+            <AccountHealthSection 
+              accountHealthData={accountHealthData}
+              isLoading={isLoading}
+              formatCurrency={formatCurrency}
+              formatPercent={formatPercent}
+              onMonthChange={handleAccountHealthMonthChange}
+              onCompareMonthChange={handleCompareMonthChange}
+              selectedMonth={accountHealthMonth}
+              compareMonth={compareMonth}
+            />
+          </TabsContent>
+          
+          <TabsContent value="activity" className="mt-0">
+            <ActivityImpactAnalysis
+              visitData={visitData}
+              accountHealthData={accountHealthData}
+              isLoading={isLoading}
+            />
+          </TabsContent>
+          
+          <TabsContent value="insights" className="mt-0">
+            <PersonalizedInsights
+              accountHealthData={accountHealthData}
+              visitData={visitData}
+              performanceData={performanceData}
+              isLoading={isLoading}
+              formatCurrency={formatCurrency}
+              formatPercent={formatPercent}
+            />
+          </TabsContent>
+          
+          <TabsContent value="goals" className="mt-0">
+            <GoalTrackingComponent
+              performanceData={performanceData}
+              accountHealthData={accountHealthData}
+              visitData={visitData}
+              isLoading={isLoading}
+              formatCurrency={formatCurrency}
+              formatPercent={formatPercent}
+              selectedUserId={selectedUserId}
+              selectedUserDisplayName={selectedUserDisplayName}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
-      
-      {/* Performance Comparison Chart */}
-      <div className="mb-6">
-        <RepPerformanceComparison
-          userData={userTrendsData}
-          averageData={teamAverageData}
-          comparisonData={repComparisonData}
-          isLoading={isLoading}
-          userName={selectedUserDisplayName !== "My Data" ? selectedUserDisplayName : "You"}
-        />
-      </div>
-
-      {/* Main content tabs */}
-      <Tabs defaultValue="accounts" className="w-full">
-        <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
-          <TabsTrigger value="accounts" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-            Account Health
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-            Activity Impact
-          </TabsTrigger>
-          <TabsTrigger value="insights" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-            AI Insights
-          </TabsTrigger>
-          <TabsTrigger value="goals" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-            Goal Tracking
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="accounts" className="mt-0">
-          <AccountHealthSection 
-            accountHealthData={accountHealthData}
-            isLoading={isLoading}
-            formatCurrency={formatCurrency}
-            formatPercent={formatPercent}
-            onMonthChange={handleAccountHealthMonthChange}
-            onCompareMonthChange={handleCompareMonthChange}
-            selectedMonth={accountHealthMonth}
-            compareMonth={compareMonth}
-          />
-        </TabsContent>
-        
-        <TabsContent value="activity" className="mt-0">
-          <ActivityImpactAnalysis
-            visitData={visitData}
-            accountHealthData={accountHealthData}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-        
-        <TabsContent value="insights" className="mt-0">
-          <PersonalizedInsights
-            accountHealthData={accountHealthData}
-            visitData={visitData}
-            performanceData={performanceData}
-            isLoading={isLoading}
-            formatCurrency={formatCurrency}
-            formatPercent={formatPercent}
-          />
-        </TabsContent>
-        
-        <TabsContent value="goals" className="mt-0">
-          <GoalTrackingComponent
-            performanceData={performanceData}
-            accountHealthData={accountHealthData}
-            visitData={visitData}
-            isLoading={isLoading}
-            formatCurrency={formatCurrency}
-            formatPercent={formatPercent}
-            selectedUserId={selectedUserId}
-            selectedUserDisplayName={selectedUserDisplayName}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
+    </AppLayout>
   );
 };
 

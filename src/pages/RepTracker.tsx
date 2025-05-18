@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import AppLayout from '@/components/layout/AppLayout';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,17 +19,8 @@ import CustomerHistoryTable from '@/components/rep-tracker/CustomerHistoryTable'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
-// Remove UserSelector import since we're no longer using it directly here
 
-interface RepTrackerProps {
-  selectedUserId?: string | null;
-  selectedUserName?: string;
-}
-
-const RepTracker: React.FC<RepTrackerProps> = ({
-  selectedUserId: propSelectedUserId,
-  selectedUserName: propSelectedUserName
-}) => {
+const RepTracker: React.FC = () => {
   const navigate = useNavigate();
   const {
     user, isAdmin
@@ -37,18 +29,17 @@ const RepTracker: React.FC<RepTrackerProps> = ({
   const [showAddVisit, setShowAddVisit] = useState(false);
   const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
   const isMobile = useIsMobile();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId || user?.id);
-  const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName || "My Data");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string>("My Data");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Ensure we update selectedUserId when prop changes
+  // Initialize state with current user
   useEffect(() => {
-    if (propSelectedUserId !== undefined) {
-      setSelectedUserId(propSelectedUserId);
-      if (propSelectedUserName) {
-        setSelectedUserName(propSelectedUserName);
-      }
+    if (user && !selectedUserId) {
+      setSelectedUserId(user.id);
+      console.log('RepTracker - Using current user ID:', user.id);
     }
-  }, [propSelectedUserId, propSelectedUserName]);
+  }, [user]);
 
   // Console log for debugging
   useEffect(() => {
@@ -57,6 +48,13 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     console.log('RepTracker - Current user:', user);
     console.log('RepTracker - Is admin:', isAdmin);
   }, [selectedUserId, selectedUserName, user, isAdmin]);
+
+  // Handle user selection from AppHeader
+  const handleUserSelection = (userId: string | null, displayName: string) => {
+    console.log(`RepTracker: User selection changed to ${displayName} (${userId})`);
+    setSelectedUserId(userId);
+    setSelectedUserName(displayName);
+  };
 
   // Determine if user is viewing their own data
   const isViewingOwnData = selectedUserId === user?.id || selectedUserId === "all";
@@ -166,6 +164,24 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     }
   };
   
+  const handleRefresh = () => {
+    setIsLoading(true);
+    queryClient.invalidateQueries({
+      queryKey: ['visit-metrics'],
+      exact: false,
+      refetchType: 'all'
+    });
+    queryClient.invalidateQueries({
+      queryKey: ['customer-visits'],
+      exact: false,
+      refetchType: 'all'
+    });
+    
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+  };
+  
   const handleAddVisitSuccess = () => {
     queryClient.invalidateQueries({
       queryKey: ['visit-metrics'],
@@ -197,79 +213,90 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     setSelectedTab('week-plan-v2');
   };
   
-  return <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
-      <div className="mb-6 pt-8">
-        {renderPageHeading()}
-        <p className="text-white/60">
-          {selectedUserId === "all" ? "Track Aver's visits and plan customer interactions across the team." : selectedUserName && selectedUserName !== 'My Data' ? `Track ${selectedUserName.split(' ')[0]}'s visits and plan customer interactions.` : "Track your visits and plan your customer interactions."}
-        </p>
-      </div>
+  return (
+    <AppLayout 
+      showChatInterface={false}
+      selectedUserId={selectedUserId}
+      onSelectUser={handleUserSelection}
+      showUserSelector={true}
+      onRefresh={handleRefresh}
+      isLoading={isLoading}
+    >
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
+        <div className="mb-6 pt-8">
+          {renderPageHeading()}
+          <p className="text-white/60">
+            {selectedUserId === "all" ? "Track Aver's visits and plan customer interactions across the team." : selectedUserName && selectedUserName !== 'My Data' ? `Track ${selectedUserName.split(' ')[0]}'s visits and plan customer interactions.` : "Track your visits and plan your customer interactions."}
+          </p>
+        </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div className="flex items-center">
-          <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
-          <h2 className="text-base sm:text-lg font-semibold truncate">
-            {selectedUserId !== "all" && selectedUserId !== user?.id ? `${selectedUserName.split(' ')[0]}'s ` : ""} 
-            Week: {weekStartFormatted} - {weekEndFormatted}
-          </h2>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="flex items-center">
+            <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
+            <h2 className="text-base sm:text-lg font-semibold truncate">
+              {selectedUserId !== "all" && selectedUserId !== user?.id ? `${selectedUserName.split(' ')[0]}'s ` : ""} 
+              Week: {weekStartFormatted} - {weekEndFormatted}
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+              setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
+            }}>
+                Previous
+              </Button>
+              
+              <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+              setSelectedDate(new Date());
+            }}>
+                Current
+              </Button>
+              
+              <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+              setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
+            }}>
+                Next
+              </Button>
+          </div>
         </div>
         
-        <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
-          <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
-            setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
-          }}>
-              Previous
-            </Button>
-            
-            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
-            setSelectedDate(new Date());
-          }}>
-              Current
-            </Button>
-            
-            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
-            setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
-          }}>
-              Next
-            </Button>
-        </div>
+        <WeeklySummary data={currentWeekMetrics || {
+          totalVisits: 0,
+          totalProfit: 0,
+          totalOrders: 0,
+          conversionRate: 0,
+          dailyAvgProfit: 0,
+          topProfitOrder: 0,
+          avgProfitPerOrder: 0,
+          plannedVisits: 0
+        }} previousData={previousWeekMetrics} weekStartDate={weekStart} weekEndDate={weekEnd} isLoading={isLoadingCurrentMetrics} />
+        
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
+          <TabsList className="bg-black/20 border-gray-800">
+            <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
+            <TabsTrigger value="visits">Customer Visits</TabsTrigger>
+            <TabsTrigger value="customer-history">Customer History</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="week-plan-v2" className="mt-6">
+            {isMobile ? <ScrollArea className="h-[calc(100vh-380px)]">
+                <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
+              </ScrollArea> : <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />}
+          </TabsContent>
+          
+          <TabsContent value="visits" className="mt-6">
+            <CustomerVisitsList weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} isLoadingCustomers={isLoadingCustomers} onDataChange={handleDataChange} onAddVisit={() => setShowAddVisit(true)} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
+          </TabsContent>
+          
+          <TabsContent value="customer-history" className="mt-6">
+            <CustomerHistoryTable customers={customers || []} selectedUserId={selectedUserId} />
+          </TabsContent>
+        </Tabs>
+        
+        {showAddVisit && isViewingOwnData && <AddVisitDialog isOpen={showAddVisit} onClose={() => setShowAddVisit(false)} onSuccess={handleAddVisitSuccess} customers={customers || []} />}
       </div>
-      
-      <WeeklySummary data={currentWeekMetrics || {
-      totalVisits: 0,
-      totalProfit: 0,
-      totalOrders: 0,
-      conversionRate: 0,
-      dailyAvgProfit: 0,
-      topProfitOrder: 0,
-      avgProfitPerOrder: 0,
-      plannedVisits: 0
-    }} previousData={previousWeekMetrics} weekStartDate={weekStart} weekEndDate={weekEnd} isLoading={isLoadingCurrentMetrics} />
-      
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="bg-black/20 border-gray-800">
-          <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
-          <TabsTrigger value="visits">Customer Visits</TabsTrigger>
-          <TabsTrigger value="customer-history">Customer History</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="week-plan-v2" className="mt-6">
-          {isMobile ? <ScrollArea className="h-[calc(100vh-380px)]">
-              <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
-            </ScrollArea> : <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />}
-        </TabsContent>
-        
-        <TabsContent value="visits" className="mt-6">
-          <CustomerVisitsList weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} isLoadingCustomers={isLoadingCustomers} onDataChange={handleDataChange} onAddVisit={() => setShowAddVisit(true)} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
-        </TabsContent>
-        
-        <TabsContent value="customer-history" className="mt-6">
-          <CustomerHistoryTable customers={customers || []} selectedUserId={selectedUserId} />
-        </TabsContent>
-      </Tabs>
-      
-      {showAddVisit && isViewingOwnData && <AddVisitDialog isOpen={showAddVisit} onClose={() => setShowAddVisit(false)} onSuccess={handleAddVisitSuccess} customers={customers || []} />}
-    </div>;
+    </AppLayout>
+  );
 };
 
 export default RepTracker;
