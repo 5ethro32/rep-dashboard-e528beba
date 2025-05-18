@@ -100,7 +100,9 @@ const router = createBrowserRouter([
       { 
         path: "/my-performance", 
         element: <MyPerformance 
-                   onSelectUser={undefined} // Will get props from AppLayoutWrapper
+                   selectedUserId={null}  
+                   selectedUserName="My Data"
+                   onSelectUser={undefined}  
                  />
       },
       { path: "/engine-room", element: <EngineRoom /> },
