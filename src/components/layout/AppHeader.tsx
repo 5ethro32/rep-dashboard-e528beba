@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,6 +57,16 @@ const AppHeader = ({
   const isEngineDashboard = location.pathname === '/engine-room/dashboard';
   const isEngineOperations = location.pathname === '/engine-room/operations';
   const isEngineApprovals = location.pathname === '/engine-room/approvals';
+
+  // Add debug logging for props
+  console.log('AppHeader props:', { 
+    path: location.pathname, 
+    showUserSelector, 
+    selectedUserId,
+    hasOnSelectUser: !!onSelectUser,
+    hasRefresh: !!onRefresh,
+    isLoading
+  });
 
   // Function to get the current page title based on the URL path
   const getCurrentPageTitle = () => {

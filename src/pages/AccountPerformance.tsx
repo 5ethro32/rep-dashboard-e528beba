@@ -358,15 +358,7 @@ const AccountPerformance = () => {
       isLoading={isLoading}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        {/* Title and Description */}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            {renderPageHeading()}
-          </h1>
-          <p className="text-white/60">
-            {getPageDescription()}
-          </p>
-        </div>
+        {/* Remove the duplicate title and description section */}
         
         {/* Month dropdown, now without the refresh button */}
         <div className="mb-6 flex items-center space-x-4">

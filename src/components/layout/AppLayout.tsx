@@ -35,7 +35,9 @@ const AppLayout = ({
     path: location.pathname, 
     selectedUserId, 
     showUserSelector,
-    hasOnSelectUser: !!onSelectUser
+    hasOnSelectUser: !!onSelectUser,
+    hasRefresh: !!onRefresh,
+    isLoading
   });
 
   return (
