@@ -56,16 +56,6 @@ const AppHeader = ({
   const isEngineOperations = location.pathname === '/engine-room/operations';
   const isEngineApprovals = location.pathname === '/engine-room/approvals';
 
-  // Add debug logging for props
-  console.log('AppHeader props:', { 
-    path: location.pathname, 
-    showUserSelector, 
-    selectedUserId,
-    hasOnSelectUser: !!onSelectUser,
-    hasRefresh: !!onRefresh,
-    isLoading
-  });
-
   // Function to get the current page title based on the URL path
   const getCurrentPageTitle = () => {
     switch (location.pathname) {
@@ -126,7 +116,7 @@ const AppHeader = ({
     }
   };
   
-  // Ensure we're using Link components for all navigation items
+  // Navigation items for desktop only - mobile uses MobileNavigation component
   const navItems = [{
     path: '/rep-performance',
     label: 'Home',
@@ -190,7 +180,7 @@ const AppHeader = ({
             {showUserSelector && <UserSelector selectedUserId={selectedUserId || "all"} onSelectUser={handleUserSelection} showAllDataOption={true} />}
             <UserProfileDropdown />
             
-            {/* Mobile menu toggle */}
+            {/* Mobile menu toggle - only affects top navigation, NOT bottom nav */}
             {isMobile && (
               <Button 
                 variant="ghost" 
@@ -204,10 +194,13 @@ const AppHeader = ({
           </div>
         </div>
         
-        {/* Navigation bar - Desktop (always visible) and Mobile (collapsible) */}
+        {/* Desktop navigation bar OR mobile dropdown menu (not the bottom navigation) */}
+        {/* On mobile this is ONLY for the dropdown menu, bottom navigation is handled by MobileNavigation */}
         {(!isMobile || isNavOpen) && (
           <nav className={`${isMobile ? 'py-2' : 'border-t border-white/5'}`}>
             <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} py-1`}>
+              {/* ... keep existing code (navigation items rendering) the same ... */}
+              
               {navItems.map((item) => 
                 item.hasSubNav ? (
                   // Engine Room navigation with hover functionality

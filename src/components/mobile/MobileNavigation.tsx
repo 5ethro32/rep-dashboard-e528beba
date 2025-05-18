@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import { Home, BarChart3, ClipboardList, UserCircle, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// MobileNavigation component for bottom navigation on mobile devices
+// MobileNavigation component for bottom navigation on mobile devices ONLY
 const MobileNavigation = () => {
   const navItems = [
     {

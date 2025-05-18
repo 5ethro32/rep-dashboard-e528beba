@@ -41,13 +41,14 @@ const AppLayout = ({
         isLoading={isLoading}
       />
       
-      {/* Main content section */}
+      {/* Main content section with appropriate padding for mobile bottom nav */}
       <div className="flex w-full relative">
-        <div className={`flex-1 ${isMobile ? 'pb-16' : ''} overflow-x-auto overflow-y-auto`}>
+        <div className={`flex-1 ${isMobile ? 'pb-20' : ''} overflow-x-auto overflow-y-auto`}>
           {children}
           {showChatInterface && isMobile && <ChatInterface selectedMonth={selectedMonth} />}
         </div>
         
+        {/* Mobile navigation at bottom ONLY - no duplicate navigation */}
         {isMobile && <MobileNavigation />}
       </div>
     </div>
