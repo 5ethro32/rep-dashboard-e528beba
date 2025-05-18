@@ -127,6 +127,7 @@ const AppHeader = ({
     }
   };
   
+  // Ensure we're using Link components for all navigation items
   const navItems = [{
     path: '/rep-performance',
     label: 'Home',
@@ -247,6 +248,7 @@ const AppHeader = ({
                                       "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400")
                                 }
                                 onClick={() => setIsNavOpen(false)}
+                                end
                               >
                                 {subItem.label}
                               </NavLink>
@@ -290,6 +292,7 @@ const AppHeader = ({
                                         "bg-white/5 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
                                         "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:bg-white/5 hover:text-white")
                                   }
+                                  end
                                 >
                                   {subItem.label}
                                 </NavLink>
@@ -312,6 +315,7 @@ const AppHeader = ({
                         "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
                     )}
                     onClick={() => isMobile && setIsNavOpen(false)}
+                    end={item.path === '/rep-performance'}
                   >
                     {item.icon}
                     <span>{item.label}</span>

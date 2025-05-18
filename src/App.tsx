@@ -4,6 +4,7 @@ import {
   createBrowserRouter,
   RouterProvider,
   Outlet,
+  Navigate
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -37,7 +38,7 @@ const router = createBrowserRouter([
     path: "/",
     element: <ProtectedRoute><AppLayout><Outlet /></AppLayout></ProtectedRoute>,
     children: [
-      { path: "/", element: <Dashboard /> },
+      { path: "/", element: <Navigate to="/rep-performance" replace /> }, // Redirect root to rep-performance
       { path: "/rep-performance", element: <RepPerformance /> },
       { path: "/account-performance", element: <AccountPerformance /> },
       { path: "/ai-vera", element: <AIVera /> },
@@ -45,7 +46,7 @@ const router = createBrowserRouter([
       { path: "/my-performance", element: <MyPerformance /> },
       { path: "/engine-room", element: <EngineRoom /> },
       { path: "/engine-room/operations", element: <EngineOperations /> },
-      { path: "/engine-room/engine", element: <EngineOperations /> }, // Redirect old "engine" route to Operations
+      { path: "/engine-room/engine", element: <Navigate to="/engine-room/operations" replace /> }, // Redirect old "engine" route to Operations
       { path: "/engine-room/dashboard", element: <EngineDashboard /> },
       { path: "/engine-room/approvals", element: <ApprovalsDashboard /> },
       { path: "/engine-room/simulator", element: <RuleSimulator /> },
