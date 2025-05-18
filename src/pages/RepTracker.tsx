@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import AppLayout from '@/components/layout/AppLayout';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -195,81 +194,72 @@ const RepTracker: React.FC = () => {
   };
   
   return (
-    <AppLayout 
-      showChatInterface={false}
-      selectedUserId={selectedUserId}
-      onSelectUser={handleUserSelection}
-      showUserSelector={true}
-      onRefresh={handleRefresh}
-      isLoading={isLoading}
-    >
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 mt-8">
-          <div className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
-            <h2 className="text-base sm:text-lg font-semibold truncate">
-              {selectedUserId !== "all" && selectedUserId !== user?.id ? `${selectedUserName.split(' ')[0]}'s ` : ""} 
-              Week: {weekStartFormatted} - {weekEndFormatted}
-            </h2>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
-            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
-              setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
-            }}>
-                Previous
-              </Button>
-              
-              <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
-              setSelectedDate(new Date());
-            }}>
-                Current
-              </Button>
-              
-              <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
-              setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
-            }}>
-                Next
-              </Button>
-          </div>
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 pb-16">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 mt-8">
+        <div className="flex items-center">
+          <Calendar className="h-5 w-5 mr-2 text-finance-red shrink-0" />
+          <h2 className="text-base sm:text-lg font-semibold truncate">
+            {selectedUserId !== "all" && selectedUserId !== user?.id ? `${selectedUserName.split(' ')[0]}'s ` : ""} 
+            Week: {weekStartFormatted} - {weekEndFormatted}
+          </h2>
         </div>
         
-        <WeeklySummary data={currentWeekMetrics || {
-          totalVisits: 0,
-          totalProfit: 0,
-          totalOrders: 0,
-          conversionRate: 0,
-          dailyAvgProfit: 0,
-          topProfitOrder: 0,
-          avgProfitPerOrder: 0,
-          plannedVisits: 0
-        }} previousData={previousWeekMetrics} weekStartDate={weekStart} weekEndDate={weekEnd} isLoading={isLoadingCurrentMetrics} />
-        
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="bg-black/20 border-gray-800">
-            <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
-            <TabsTrigger value="visits">Customer Visits</TabsTrigger>
-            <TabsTrigger value="customer-history">Customer History</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="week-plan-v2" className="mt-6">
-            {isMobile ? <ScrollArea className="h-[calc(100vh-380px)]">
-                <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
-              </ScrollArea> : <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />}
-          </TabsContent>
-          
-          <TabsContent value="visits" className="mt-6">
-            <CustomerVisitsList weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} isLoadingCustomers={isLoadingCustomers} onDataChange={handleDataChange} onAddVisit={() => setShowAddVisit(true)} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
-          </TabsContent>
-          
-          <TabsContent value="customer-history" className="mt-6">
-            <CustomerHistoryTable customers={customers || []} selectedUserId={selectedUserId} />
-          </TabsContent>
-        </Tabs>
-        
-        {showAddVisit && isViewingOwnData && <AddVisitDialog isOpen={showAddVisit} onClose={() => setShowAddVisit(false)} onSuccess={handleAddVisitSuccess} customers={customers || []} />}
+        <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+            setSelectedDate(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
+          }}>
+              Previous
+            </Button>
+            
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+            setSelectedDate(new Date());
+          }}>
+              Current
+            </Button>
+            
+            <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm" onClick={() => {
+            setSelectedDate(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
+          }}>
+              Next
+            </Button>
+        </div>
       </div>
-    </AppLayout>
+      
+      <WeeklySummary data={currentWeekMetrics || {
+        totalVisits: 0,
+        totalProfit: 0,
+        totalOrders: 0,
+        conversionRate: 0,
+        dailyAvgProfit: 0,
+        topProfitOrder: 0,
+        avgProfitPerOrder: 0,
+        plannedVisits: 0
+      }} previousData={previousWeekMetrics} weekStartDate={weekStart} weekEndDate={weekEnd} isLoading={isLoadingCurrentMetrics} />
+      
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
+        <TabsList className="bg-black/20 border-gray-800">
+          <TabsTrigger value="week-plan-v2">Week Plan</TabsTrigger>
+          <TabsTrigger value="visits">Customer Visits</TabsTrigger>
+          <TabsTrigger value="customer-history">Customer History</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="week-plan-v2" className="mt-6">
+          {isMobile ? <ScrollArea className="h-[calc(100vh-380px)]">
+              <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
+            </ScrollArea> : <WeekPlanTabV2 weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} onAddPlanSuccess={handleAddPlanSuccess} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />}
+        </TabsContent>
+        
+        <TabsContent value="visits" className="mt-6">
+          <CustomerVisitsList weekStartDate={weekStart} weekEndDate={weekEnd} customers={customers || []} isLoadingCustomers={isLoadingCustomers} onDataChange={handleDataChange} onAddVisit={() => setShowAddVisit(true)} selectedUserId={selectedUserId} isViewingOwnData={isViewingOwnData} />
+        </TabsContent>
+        
+        <TabsContent value="customer-history" className="mt-6">
+          <CustomerHistoryTable customers={customers || []} selectedUserId={selectedUserId} />
+        </TabsContent>
+      </Tabs>
+      
+      {showAddVisit && isViewingOwnData && <AddVisitDialog isOpen={showAddVisit} onClose={() => setShowAddVisit(false)} onSuccess={handleAddVisitSuccess} customers={customers || []} />}
+    </div>
   );
 };
 

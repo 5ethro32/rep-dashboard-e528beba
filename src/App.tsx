@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   createBrowserRouter,
   RouterProvider,
   Outlet,
-  Navigate
+  Navigate,
+  useLocation
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -29,6 +30,50 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 // Create a client
 const queryClient = new QueryClient();
 
+// AppLayoutWrapper to handle shared state and props for each route
+const AppLayoutWrapper = () => {
+  const location = useLocation();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
+  const [selectedUserName, setSelectedUserName] = useState<string>("All Data");
+  const [selectedMonth, setSelectedMonth] = useState<string>("March");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Handle user selection that gets passed to the header
+  const handleUserSelection = (userId: string | null, displayName: string) => {
+    console.log(`App: User selection changed to ${displayName} (${userId})`);
+    setSelectedUserId(userId);
+    setSelectedUserName(displayName);
+  };
+  
+  // Handle global refresh
+  const handleRefresh = () => {
+    console.log('App: Global refresh triggered');
+    setIsLoading(true);
+    
+    // Simple timeout to simulate refresh - actual logic will come from pages
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+  };
+  
+  // Determine if we should show user selector based on current route
+  const showUserSelector = ['/rep-tracker', '/account-performance', '/my-performance'].includes(location.pathname);
+  
+  return (
+    <AppLayout 
+      showChatInterface={true}
+      selectedMonth={selectedMonth}
+      selectedUserId={selectedUserId}
+      onSelectUser={handleUserSelection}
+      showUserSelector={showUserSelector}
+      onRefresh={handleRefresh}
+      isLoading={isLoading}
+    >
+      <Outlet />
+    </AppLayout>
+  );
+};
+
 const router = createBrowserRouter([
   {
     path: "/auth",
@@ -36,7 +81,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: <ProtectedRoute><AppLayout><Outlet /></AppLayout></ProtectedRoute>,
+    element: <ProtectedRoute><AppLayoutWrapper /></ProtectedRoute>,
     children: [
       { path: "/", element: <Navigate to="/rep-performance" replace /> }, // Redirect root to rep-performance
       { path: "/rep-performance", element: <RepPerformance /> },

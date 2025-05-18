@@ -8,7 +8,6 @@ import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCard
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
-import AppLayout from '@/components/layout/AppLayout';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 type DataItem = {
@@ -381,41 +380,32 @@ const AccountPerformance = () => {
         : "Compare your accounts performance between months to identify declining or improving accounts.";
   };
   
-  // Wrap the component with AppLayout and pass the user selection handler
+  // Use a div instead of AppLayout
   return (
-    <AppLayout 
-      showChatInterface={false}
-      selectedUserId={selectedUserId}
-      onSelectUser={handleUserChange}
-      showUserSelector={true}
-      onRefresh={fetchComparisonData}
-      isLoading={isLoading}
-    >
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        {/* Add PerformanceFilters component - keep this as it contains the month selector */}
-        <PerformanceFilters
-          includeRetail={includeRetail}
-          setIncludeRetail={setIncludeRetail}
-          includeReva={includeReva}
-          setIncludeReva={setIncludeReva}
-          includeWholesale={includeWholesale}
-          setIncludeWholesale={setIncludeWholesale}
-          selectedMonth={selectedMonth}
-          setSelectedMonth={setSelectedMonth}
-        />
-        
-        {/* Update Card - remove the p-0 and fix the padding in CardContent */}
-        <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
-          <CardContent className="p-0"> {/* Remove padding from CardContent */}
-            <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
-          </CardContent>
-        </Card>
-        
-        <div className="mb-12">
-          <AccountPerformanceComparison currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedMonth={selectedMonth} formatCurrency={formatCurrency} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} />
-        </div>
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+      {/* Add PerformanceFilters component - keep this as it contains the month selector */}
+      <PerformanceFilters
+        includeRetail={includeRetail}
+        setIncludeRetail={setIncludeRetail}
+        includeReva={includeReva}
+        setIncludeReva={setIncludeReva}
+        includeWholesale={includeWholesale}
+        setIncludeWholesale={setIncludeWholesale}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+      />
+      
+      {/* Update Card - remove the p-0 and fix the padding in CardContent */}
+      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
+        <CardContent className="p-0"> {/* Remove padding from CardContent */}
+          <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
+        </CardContent>
+      </Card>
+      
+      <div className="mb-12">
+        <AccountPerformanceComparison currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedMonth={selectedMonth} formatCurrency={formatCurrency} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} />
       </div>
-    </AppLayout>
+    </div>
   );
 };
 
