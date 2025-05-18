@@ -140,10 +140,9 @@ const AccountPerformance = () => {
       showUserSelector={true}
       onRefresh={handleRefresh}
       isLoading={isLoading}
+      showChatInterface={true}
     >
       <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        {/* Remove the duplicate title and description section */}
-        
         {/* Month dropdown, now without the refresh button */}
         <div className="mb-6 flex items-center space-x-4">
           <div className="flex-1">
@@ -174,10 +173,10 @@ const AccountPerformance = () => {
         
         {/* Summary cards */}
         <AccountSummaryCards
-          revenue={totalRevenue}
-          profit={totalProfit}
-          margin={averageMargin}
-          visits={totalVisits}
+          totalRevenue={totalRevenue}
+          totalProfit={totalProfit}
+          averageMargin={averageMargin}
+          totalVisits={totalVisits}
           isLoading={isLoading}
         />
         
@@ -186,7 +185,7 @@ const AccountPerformance = () => {
           <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
             <CardContent className="py-6">
               <AccountPerformanceComparison 
-                accounts={filteredAccounts.slice(0, 5)} 
+                topAccounts={filteredAccounts.slice(0, 5)} 
                 isLoading={isLoading}
               />
             </CardContent>
@@ -215,37 +214,37 @@ const AccountPerformance = () => {
               
               <TabsContent value="all" className="p-0">
                 <PerformanceTable 
-                  data={filteredAccounts} 
+                  accounts={filteredAccounts} 
                   isLoading={isLoading}
-                  selectedMonth={selectedMonth}
-                  type="account"
+                  month={selectedMonth}
+                  tableType="account"
                 />
               </TabsContent>
               
               <TabsContent value="direct" className="p-0">
                 <PerformanceTable 
-                  data={filteredAccounts} 
+                  accounts={filteredAccounts} 
                   isLoading={isLoading}
-                  selectedMonth={selectedMonth}
-                  type="account"
+                  month={selectedMonth}
+                  tableType="account"
                 />
               </TabsContent>
               
               <TabsContent value="distribution" className="p-0">
                 <PerformanceTable 
-                  data={filteredAccounts} 
+                  accounts={filteredAccounts} 
                   isLoading={isLoading}
-                  selectedMonth={selectedMonth}
-                  type="account"
+                  month={selectedMonth}
+                  tableType="account"
                 />
               </TabsContent>
               
               <TabsContent value="starred" className="p-0">
                 <PerformanceTable 
-                  data={filteredAccounts} 
+                  accounts={filteredAccounts} 
                   isLoading={isLoading}
-                  selectedMonth={selectedMonth}
-                  type="account"
+                  month={selectedMonth}
+                  tableType="account"
                 />
               </TabsContent>
             </Tabs>

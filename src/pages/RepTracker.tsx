@@ -7,12 +7,36 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { RefreshCw } from 'lucide-react';
-import CustomerSelector from '@/components/rep-tracker/CustomerSelector';
+import { CustomerSelector } from '@/components/rep-tracker/CustomerSelector';
 import CustomerVisitsList from '@/components/rep-tracker/CustomerVisitsList';
-import CustomerSearch from '@/components/rep-tracker/CustomerSearch';
+import { CustomerSearch } from '@/components/rep-tracker/CustomerSearch';
 import WeekPlanTabV2 from '@/components/rep-tracker/WeekPlanTabV2';
 import WeeklySummary from '@/components/rep-tracker/WeeklySummary';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// Mock data for weekly summary
+const mockWeeklyData = {
+  totalVisits: 25,
+  totalProfit: 75000,
+  totalOrders: 18,
+  conversionRate: 72.0,
+  dailyAvgProfit: 15000,
+  topProfitOrder: 12500,
+  avgProfitPerOrder: 4166.67,
+  plannedVisits: 30
+};
+
+// Mock previous week data
+const mockPreviousWeekData = {
+  totalVisits: 22,
+  totalProfit: 68000,
+  totalOrders: 15,
+  conversionRate: 68.2,
+  dailyAvgProfit: 13600,
+  topProfitOrder: 11000,
+  avgProfitPerOrder: 4533.33,
+  plannedVisits: 28
+};
 
 const RepTracker = () => {
   const [selectedTab, setSelectedTab] = useState('planner');
@@ -23,6 +47,20 @@ const RepTracker = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  
+  // Mock current date for weekly data
+  const currentDate = new Date();
+  const weekStartDate = new Date(currentDate);
+  const weekEndDate = new Date(currentDate);
+  weekStartDate.setDate(currentDate.getDate() - currentDate.getDay() + 1); // Monday
+  weekEndDate.setDate(weekStartDate.getDate() + 4); // Friday
+
+  // Mock customers data
+  const mockCustomers = [
+    { account_ref: 'CUST001', account_name: 'Customer One' },
+    { account_ref: 'CUST002', account_name: 'Customer Two' },
+    { account_ref: 'CUST003', account_name: 'Customer Three' }
+  ];
 
   const handleSelectCustomer = (customerId: string | null, customerName: string) => {
     console.log(`Selected customer: ${customerName} (${customerId})`);
@@ -88,12 +126,17 @@ const RepTracker = () => {
           <TabsContent value="planner" className="mt-6">
             <div className="grid gap-6">
               <WeekPlanTabV2 
-                selectedUserId={selectedUserId} 
-                selectedUserName={selectedUserName} 
+                selectedUserId={selectedUserId}
+                weekStartDate={weekStartDate}
+                weekEndDate={weekEndDate}
+                customers={mockCustomers}
               />
               <WeeklySummary 
-                selectedUserId={selectedUserId} 
-                selectedUserName={selectedUserName} 
+                data={mockWeeklyData}
+                previousData={mockPreviousWeekData}
+                weekStartDate={weekStartDate}
+                weekEndDate={weekEndDate}
+                isLoading={isLoading}
               />
             </div>
           </TabsContent>
@@ -102,16 +145,21 @@ const RepTracker = () => {
             <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
               <CardContent className="p-6">
                 <div className="grid gap-6">
-                  <CustomerSearch />
+                  <CustomerSearch 
+                    customers={mockCustomers}
+                    selectedCustomer={selectedCustomerName}
+                    onSelect={handleSelectCustomer}
+                  />
                   <Separator className="bg-white/10" />
                   <CustomerSelector 
-                    selectedCustomerId={selectedCustomerId} 
-                    onSelectCustomer={handleSelectCustomer} 
+                    customers={mockCustomers}
+                    selectedCustomer={selectedCustomerName}
+                    onSelect={handleSelectCustomer}
                   />
                   <Separator className="bg-white/10" />
                   <CustomerVisitsList 
-                    customerId={selectedCustomerId} 
-                    customerName={selectedCustomerName} 
+                    customers={[{ id: selectedCustomerId || '', name: selectedCustomerName }]}
+                    isLoading={isLoading}
                   />
                 </div>
               </CardContent>

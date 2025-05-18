@@ -44,11 +44,32 @@ export interface RepChanges {
   profit: number;
   margin: number;
   packs: number;
-  activeAccounts: number; // Added this property
-  totalAccounts: number; // Added this property
+  activeAccounts: number;
+  totalAccounts: number;
   profitPerActiveShop: number;
   profitPerPack: number;
   activeRatio: number;
 }
 
 export type RepChangesRecord = Record<string, RepChanges>;
+
+// Add the missing AccountData and MetricsData interfaces
+export interface MetricsData {
+  totalOrders: number;
+  revenue: number;
+  margin: number;
+  profit: number;
+  visits: number;
+}
+
+export interface AccountData {
+  id: string;
+  name: string;
+  representative: string;
+  type: string;
+  industry: string;
+  location: string;
+  metrics: MetricsData;
+  changePercent: number;
+  starred: boolean;
+}
