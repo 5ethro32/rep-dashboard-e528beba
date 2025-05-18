@@ -29,12 +29,14 @@ const AppLayout = ({
 }: AppLayoutProps) => {
   const isMobile = useIsMobile();
   const location = useLocation();
-  const isAccountPerformancePage = location.pathname === '/account-performance';
-  const isRepTrackerPage = location.pathname === '/rep-tracker';
-  const isMyPerformancePage = location.pathname === '/my-performance';
-
-  // Determine if we should show the user selector based on props or page
-  const shouldShowUserSelector = showUserSelector || isAccountPerformancePage || isRepTrackerPage;
+  
+  // Additional logging to debug user selection propagation
+  console.log('AppLayout rendering with:', { 
+    path: location.pathname, 
+    selectedUserId, 
+    showUserSelector,
+    hasOnSelectUser: !!onSelectUser
+  });
 
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
@@ -42,7 +44,7 @@ const AppLayout = ({
       <AppHeader 
         selectedUserId={selectedUserId} 
         onSelectUser={onSelectUser} 
-        showUserSelector={shouldShowUserSelector}
+        showUserSelector={showUserSelector}
         onRefresh={onRefresh}
         isLoading={isLoading}
       />

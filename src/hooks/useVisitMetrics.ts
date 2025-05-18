@@ -21,6 +21,15 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
   // Use the provided userId or fall back to the current user's id
   const userId = selectedUserId || user?.id;
+  
+  // For debugging
+  console.log('useVisitMetrics called with:', {
+    selectedUserId,
+    effectiveUserId: userId,
+    isAll: selectedUserId === "all",
+    weekStart: weekStart.toISOString(),
+    weekEnd: weekEnd.toISOString()
+  });
 
   return useQuery({
     queryKey: ['visit-metrics', weekStart.toISOString(), weekEnd.toISOString(), userId],
@@ -28,7 +37,8 @@ export const useVisitMetrics = (selectedDate: Date, selectedUserId?: string | nu
       console.log('Fetching visit metrics for:', {
         weekStart: weekStart.toISOString(),
         weekEnd: weekEnd.toISOString(),
-        userId
+        userId,
+        isAll: userId === "all"
       });
       
       // If we have a specific user ID, filter by that; otherwise use the current user's ID

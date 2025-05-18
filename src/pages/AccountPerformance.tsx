@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AccountPerformanceComparison from '@/components/rep-performance/AccountPerformanceComparison';
@@ -11,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import ActionsHeader from '@/components/rep-performance/ActionsHeader';
+import AppLayout from '@/components/layout/AppLayout';
 
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 type DataItem = {
@@ -30,14 +30,8 @@ type DataItem = {
   Department?: string;
   department?: string;
 };
-interface AccountPerformanceProps {
-  selectedUserId?: string | null;
-  selectedUserName?: string;
-}
-const AccountPerformance = ({
-  selectedUserId: propSelectedUserId = "all",
-  selectedUserName: propSelectedUserName = "All Data"
-}: AccountPerformanceProps) => {
+
+const AccountPerformance = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
   const [currentMonthRawData, setCurrentMonthRawData] = useState<DataItem[]>([]);
   const [previousMonthRawData, setPreviousMonthRawData] = useState<DataItem[]>([]);
@@ -66,19 +60,9 @@ const AccountPerformance = ({
     isAdmin
   } = useAuth();
 
-  // Use the props directly
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId);
-  const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName);
-
-  // Update local state when props change
-  useEffect(() => {
-    if (propSelectedUserId) {
-      setSelectedUserId(propSelectedUserId);
-    }
-    if (propSelectedUserName) {
-      setSelectedUserName(propSelectedUserName);
-    }
-  }, [propSelectedUserId, propSelectedUserName]);
+  // State for selected user to filter by
+  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
+  const [selectedUserName, setSelectedUserName] = useState<string>("All Data");
   
   useEffect(() => {
     fetchComparisonData();
@@ -86,7 +70,7 @@ const AccountPerformance = ({
 
   // Handle user selection change
   const handleUserChange = (userId: string | null, displayName: string) => {
-    console.log(`User changed to: ${displayName} (${userId})`);
+    console.log(`AccountPerformance: User changed to: ${displayName} (${userId})`);
     setSelectedUserId(userId);
     setSelectedUserName(displayName);
     // Data will refresh due to the useEffect dependency
@@ -363,44 +347,56 @@ const AccountPerformance = ({
         : "Compare your accounts performance between months to identify declining or improving accounts.";
   };
   
-  return <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Title and Description */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          {renderPageHeading()}
-        </h1>
-        <p className="text-white/60">
-          {getPageDescription()}
-        </p>
+  // Wrap the component with AppLayout and pass the user selection handler
+  return (
+    <AppLayout 
+      showChatInterface={false}
+      selectedUserId={selectedUserId}
+      onSelectUser={handleUserChange}
+      showUserSelector={true}
+      onRefresh={fetchComparisonData}
+      isLoading={isLoading}
+    >
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+        {/* Title and Description */}
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+            {renderPageHeading()}
+          </h1>
+          <p className="text-white/60">
+            {getPageDescription()}
+          </p>
+        </div>
+        
+        {/* Month dropdown, now without the refresh button */}
+        <div className="mb-6 flex items-center space-x-4">
+          <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
+        </div>
+        
+        {/* Add PerformanceFilters component */}
+        <PerformanceFilters
+          includeRetail={includeRetail}
+          setIncludeRetail={setIncludeRetail}
+          includeReva={includeReva}
+          setIncludeReva={setIncludeReva}
+          includeWholesale={includeWholesale}
+          setIncludeWholesale={setIncludeWholesale}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+        />
+        
+        {/* Update Card - remove the p-0 and fix the padding in CardContent */}
+        <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
+          <CardContent className="p-0"> {/* Remove padding from CardContent */}
+            <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
+          </CardContent>
+        </Card>
+        
+        <div className="mb-12">
+          <AccountPerformanceComparison currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedMonth={selectedMonth} formatCurrency={formatCurrency} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} />
+        </div>
       </div>
-      
-      {/* Month dropdown, now without the refresh button */}
-      <div className="mb-6 flex items-center space-x-4">
-        <PerformanceHeader selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} hideTitle={true} reducedPadding={true} />
-      </div>
-      
-      {/* Add PerformanceFilters component */}
-      <PerformanceFilters
-        includeRetail={includeRetail}
-        setIncludeRetail={setIncludeRetail}
-        includeReva={includeReva}
-        setIncludeReva={setIncludeReva}
-        includeWholesale={includeWholesale}
-        setIncludeWholesale={setIncludeWholesale}
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-      />
-      
-      {/* Update Card - remove the p-0 and fix the padding in CardContent */}
-      <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
-        <CardContent className="p-0"> {/* Remove padding from CardContent */}
-          <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
-        </CardContent>
-      </Card>
-      
-      <div className="mb-12">
-        <AccountPerformanceComparison currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedMonth={selectedMonth} formatCurrency={formatCurrency} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} />
-      </div>
-    </div>;
+    </AppLayout>
+  );
 };
 export default AccountPerformance;
