@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import PerformanceHeader from '@/components/rep-performance/PerformanceHeader';
 import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
@@ -14,7 +13,6 @@ import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
-import AppLayout from '@/components/layout/AppLayout';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);

@@ -49,7 +49,6 @@ const MobileNavigation = () => {
                   : 'text-white/60 hover:text-white/80'
               )
             }
-            end={item.path === '/rep-performance'} // Use 'end' prop to ensure exact matching for home route
           >
             {({ isActive }) => (
               <>

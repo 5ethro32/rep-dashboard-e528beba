@@ -1,15 +1,33 @@
 
 import React, { useState, useEffect } from 'react';
-import { useLocation, NavLink } from 'react-router-dom';
-import { Home, LayoutDashboard, BarChart3, ClipboardList, UserCircle, BrainCircuit, ChevronDown, Menu, X, CircleUser, Search, Wrench, RefreshCw } from 'lucide-react';
-import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
+import { Link, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import UserProfileDropdown from '@/components/auth/UserProfileDropdown';
+import UserSelector from '@/components/rep-tracker/UserSelector';
+import { Home, BarChart3, ClipboardList, UserCircle, ChevronDown, RefreshCw, Wrench, Menu, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { Separator } from '@/components/ui/separator';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
-import UserSelector from '@/components/rep-tracker/UserSelector';
+import { 
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  NavigationMenuLink
+} from "@/components/ui/navigation-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 interface AppHeaderProps {
   selectedUserId?: string | null;
@@ -19,13 +37,13 @@ interface AppHeaderProps {
   isLoading?: boolean;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ 
-  selectedUserId, 
-  onSelectUser, 
+const AppHeader = ({
+  selectedUserId,
+  onSelectUser,
   showUserSelector = false,
   onRefresh,
   isLoading = false
-}) => {
+}: AppHeaderProps) => {
   const {
     user
   } = useAuth();
@@ -33,11 +51,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const isMobile = useIsMobile();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isEngineSubnavHovered, setIsEngineSubnavHovered] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [mobileExpandedItems, setMobileExpandedItems] = useState<string[]>([]);
-
-  // Add state to track selected user display name
-  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
 
   // Check if we're in the Engine Room section
   const isEngineRoomSection = location.pathname.startsWith('/engine-room');
@@ -55,370 +68,260 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     isLoading
   });
 
-  // Method to handle global refresh
-  const handleRefresh = () => {
-    // Check if we're on RepPerformance page and use its refresh method if available
-    if (window.repPerformanceRefresh && location.pathname === '/rep-performance') {
-      console.log('Triggering RepPerformance refresh');
-      window.repPerformanceRefresh();
-      return;
+  // Function to get the current page title based on the URL path
+  const getCurrentPageTitle = () => {
+    switch (location.pathname) {
+      case '/rep-performance':
+        return isMobile ? 'Dashboard' : 'Performance Dashboard';
+      case '/account-performance':
+        return isMobile ? 'Accounts' : 'Account Performance';
+      case '/rep-tracker':
+        return isMobile ? 'Planner' : 'Rep Planner';
+      case '/my-performance':
+        return isMobile ? 'My Dashboard' : 'My Dashboard';
+      case '/engine-room/dashboard':
+        return isMobile ? 'Engine' : 'Engine Room / Dashboard';
+      case '/engine-room/operations':
+        return isMobile ? 'Operations' : 'Engine Room / Operations';
+      case '/engine-room/approvals':
+        return isMobile ? 'Approvals' : 'Engine Room / Approvals';
+      case '/engine-room':
+        return isMobile ? 'Engine' : 'Engine Room';
+      default:
+        return '';
     }
-    
-    // Check if we're on MyPerformance page and use its refresh method if available
-    if (window.myPerformanceRefresh && location.pathname === '/my-performance') {
-      console.log('Triggering MyPerformance refresh');
-      window.myPerformanceRefresh();
-      return;
-    }
-    
-    // Use the provided onRefresh callback from props if available
-    if (onRefresh) {
-      console.log('Using provided refresh callback');
-      onRefresh();
-      return;
-    }
-    
-    // Fallback toast if no refresh method is available
-    toast({
-      title: "Refresh requested",
-      description: "No refresh handler available for this page"
-    });
   };
-
-  // Function to handle user selection
+  
   const handleUserSelection = (userId: string | null, displayName: string) => {
-    setSelectedUserDisplayName(displayName);
+    console.log(`AppHeader: User selection changed to ${displayName} (${userId})`);
     if (onSelectUser) {
       onSelectUser(userId, displayName);
     }
   };
+  
+  const handleRefreshClick = () => {
+    console.log('Refresh button clicked in AppHeader');
 
-  // Function to get the current page title based on the URL path
-  const getPageTitle = () => {
-    // Determine page title based on current route
-    const path = location.pathname;
-    
-    if (path === '/') return 'Home';
-    if (path === '/rep-performance') return 'Rep Performance';
-    if (path === '/account-performance') {
-      // Add logic for AccountPerformance title
-      if (selectedUserId === "all") {
-        return "Aver's Accounts";
-      } 
-      const firstName = selectedUserDisplayName === 'My Data' ? 'My' : selectedUserDisplayName.split(' ')[0];
-      const displayName = firstName === 'My' ? 'My' : `${firstName}'s`;
-      return `${displayName} Accounts`;
+    // Check if we're on the rep performance page and have a specific refresh handler
+    if (location.pathname === '/rep-performance' && window.repPerformanceRefresh) {
+      console.log('Using RepPerformance refresh handler');
+      try {
+        window.repPerformanceRefresh();
+
+        // No need to show toast here as the component will handle it
+      } catch (error) {
+        console.error('Error calling RepPerformance refresh:', error);
+        toast({
+          title: "Refresh failed",
+          description: "Could not refresh the dashboard data",
+          variant: "destructive"
+        });
+      }
+      return;
     }
-    if (path === '/ai-vera') return 'AI Vera Assistant';
-    if (path === '/rep-tracker') return 'Rep Planner';
-    if (path === '/my-performance') return 'My Performance Dashboard';
-    if (path.startsWith('/engine-room')) {
-      if (path === '/engine-room') return 'Engine Room';
-      if (path === '/engine-room/operations') return 'Engine Operations';
-      if (path === '/engine-room/dashboard') return 'Engine Dashboard';
-      if (path === '/engine-room/approvals') return 'Approvals Dashboard';
-      if (path === '/engine-room/simulator') return 'Rule Simulator';
-      if (path === '/engine-room/analytics') return 'Pricing Analytics';
-      return 'Engine Room';
+
+    // Otherwise use the global refresh handler
+    if (onRefresh) {
+      console.log('Using global refresh handler');
+      onRefresh();
     }
-    
-    // Default title
-    return 'REVA Platform';
   };
   
-  const getPageDescription = () => {
-    // Add descriptions for different pages
-    const path = location.pathname;
-    
-    if (path === '/rep-performance') 
-      return "Track and analyze rep performance metrics across different departments.";
-    if (path === '/account-performance') {
-      return selectedUserId === "all" 
-        ? "Compare Aver's accounts performance between months to identify declining or improving accounts." 
-        : selectedUserDisplayName && selectedUserDisplayName !== 'My Data' 
-          ? `Compare ${selectedUserDisplayName.split(' ')[0]}'s accounts performance between months to identify declining or improving accounts.` 
-          : "Compare your accounts performance between months to identify declining or improving accounts.";
-    }
-    if (path === '/ai-vera') 
-      return "Get AI-powered assistance for your day-to-day sales operations.";
-    if (path === '/rep-tracker') 
-      return "Plan and track customer visits and interactions.";
-    if (path === '/my-performance') 
-      return "View your personalized performance metrics and insights.";
-    if (path === '/engine-room') 
-      return "Access and manage pricing engine operations and configurations.";
-    if (path === '/engine-room/operations') 
-      return "Configure operational settings for the pricing engine.";
-    if (path === '/engine-room/dashboard') 
-      return "View key engine metrics and performance dashboard.";
-    if (path === '/engine-room/approvals') 
-      return "Review and process pending approval requests.";
-    if (path === '/engine-room/simulator') 
-      return "Simulate pricing rules and view potential impacts.";
-    if (path === '/engine-room/analytics') 
-      return "Analyze pricing data and identify optimization opportunities.";
-      
-    return "Welcome to the REVA Platform";
-  };
-
-  // Function to toggle mobile submenu
-  const toggleMobileSubmenu = (path: string) => {
-    if (mobileExpandedItems.includes(path)) {
-      setMobileExpandedItems(mobileExpandedItems.filter(item => item !== path));
-    } else {
-      setMobileExpandedItems([...mobileExpandedItems, path]);
-    }
-  };
-
-  // Function to toggle dropdown
-  const toggleDropdown = (path: string) => {
-    if (activeDropdown === path) {
-      setActiveDropdown(null);
-    } else {
-      setActiveDropdown(path);
-    }
-  };
-
-  // Ensure we're using Link components for all navigation items
   const navItems = [{
     path: '/rep-performance',
     label: 'Home',
-    icon: <Home className="mr-2 h-4 w-4" />,
+    icon: <div className="h-4 w-4 text-current">/</div>
   }, {
     path: '/account-performance',
     label: 'Accounts',
-    icon: <BarChart3 className="mr-2 h-4 w-4" />,
+    icon: <div className="h-4 w-4 text-current">/</div>
   }, {
     path: '/rep-tracker',
     label: 'Planner',
-    icon: <ClipboardList className="mr-2 h-4 w-4" />,
+    icon: <div className="h-4 w-4 text-current">/</div>
   }, {
     path: '/my-performance',
     label: 'My Dashboard',
-    icon: <UserCircle className="mr-2 h-4 w-4" />,
+    icon: <div className="h-4 w-4 text-current">/</div>
   }, {
-    path: '/engine-room',
+    path: '/engine-room/dashboard',
     label: 'Engine Room',
-    icon: <Wrench className="mr-2 h-4 w-4" />,
+    icon: <div className="h-4 w-4 text-current">/</div>,
+    hasSubNav: true,
     subItems: [{
       path: '/engine-room/dashboard',
-      label: 'Dashboard',
+      label: 'Dashboard'
     }, {
       path: '/engine-room/operations',
-      label: 'Operations',
-    }, {
-      path: '/engine-room/simulator',
-      label: 'Rule Simulator',
+      label: 'Operations'
     }, {
       path: '/engine-room/approvals',
-      label: 'Approvals',
-    }, {
-      path: '/engine-room/analytics',
-      label: 'Analytics',
+      label: 'Approvals'
     }]
-  }, {
-    path: '/ai-vera',
-    label: 'AI Vera',
-    icon: <BrainCircuit className="mr-2 h-4 w-4" />,
   }];
 
   // Check if refresh functionality should be shown
   const showRefresh = onRefresh !== undefined || location.pathname === '/rep-performance' && window.repPerformanceRefresh !== undefined;
   
   return (
-    <header className="sticky top-0 z-40 bg-gray-950/95 backdrop-blur-sm border-b border-white/5">
-      <div className="flex items-center justify-between px-4 py-3">
-        {/* Left section - Logo / Mobile Menu Button */}
-        <div className="flex items-center">
-          {isMobile && (
-            <button 
-              onClick={() => setIsNavOpen(!isNavOpen)} 
-              className="mr-2 p-1 rounded-md hover:bg-white/10"
-            >
-              {isNavOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          )}
+    <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-gray-950/95">
+      <div className="container max-w-7xl mx-auto px-4">
+        {/* Main header with logo and user profile */}
+        <div className="h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/rep-performance" className="flex items-center">
+              <span className="text-2xl font-bold">
+                <span className="font-normal italic mr-1 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700">a</span>
+              </span>
+            </Link>
+            <div className="flex items-center text-white/70">
+              <span className="text-finance-red mx-1.5">/</span>
+              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+                {getCurrentPageTitle()}
+              </span>
+            </div>
+          </div>
           
-          <div className="flex items-center">
-            <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-finance-red to-rose-600">
-              REVA
-            </span>
+          <div className="flex items-center gap-3">
+            {showRefresh && <Button variant="ghost" size="icon" onClick={handleRefreshClick} disabled={isLoading} className="text-white/70 hover:text-white hover:bg-white/10 h-9 w-9">
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>}
+            
+            {showUserSelector && <UserSelector selectedUserId={selectedUserId || "all"} onSelectUser={handleUserSelection} showAllDataOption={true} />}
+            <UserProfileDropdown />
+            
+            {/* Mobile menu toggle */}
+            {isMobile && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsNavOpen(!isNavOpen)} 
+                className="ml-2 text-white/70 hover:text-white"
+              >
+                {isNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
           </div>
         </div>
         
-        {/* Center section - Search Bar */}
-        <div className="hidden lg:flex flex-1 max-w-md mx-12">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              placeholder="Search..."
-              className="w-full bg-white/5 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-white/30 transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Right section - Navigation, User Menu */}
-        <div className="flex items-center space-x-2">
-          {/* Add refresh button */}
-          {onRefresh && (
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              size="sm"
-              className="bg-transparent border-white/10 hover:bg-white/5"
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-          )}
-          
-          {/* User selector if enabled */}
-          {showUserSelector && onSelectUser && (
-            <div className="mr-2">
-              <UserSelector selectedUserId={selectedUserId || "all"} onSelectUser={handleUserSelection} showAllDataOption={true} />
-            </div>
-          )}
-          
-          <UserProfileDropdown />
-        </div>
-      </div>
-      
-      {/* Page title section */}
-      <div className="px-4 py-3 bg-gradient-to-r from-gray-950 to-gray-900">
-        <h1 className="text-xl font-semibold">{getPageTitle()}</h1>
-        <p className="text-sm text-white/60">{getPageDescription()}</p>
-      </div>
-      
-      {/* Navigation - Desktop */}
-      <nav className="hidden md:flex px-4 py-1 border-b border-white/5 overflow-x-auto">
-        {navItems.map((item, i) => (
-          <React.Fragment key={item.path}>
-            {item.subItems ? (
-              <div className="relative group">
-                <button
-                  className={cn(
-                    "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
-                    location.pathname.startsWith(item.path) 
-                      ? "text-white bg-white/10" 
-                      : "text-white/80 hover:bg-white/5 hover:text-white"
-                  )}
-                  onClick={() => toggleDropdown(item.path)}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                </button>
-                
-                {activeDropdown === item.path && (
-                  <div className="absolute left-0 mt-1 w-48 bg-gray-900 border border-white/10 rounded-md shadow-lg z-10">
-                    {item.subItems.map(subItem => (
-                      <NavLink
-                        key={subItem.path}
-                        to={subItem.path}
-                        className={({isActive}) => cn(
-                          "block px-4 py-2 text-sm rounded-md transition-colors",
-                          isActive ? 
-                            "bg-white/10 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
-                            "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:bg-white/5 hover:text-white"
-                        )}
-                        end
-                      >
-                        {subItem.label}
-                      </NavLink>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <NavLink
-                to={item.path}
-                className={({isActive}) => cn(
-                  "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
-                  isActive ? 
-                    "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
-                    "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
-                )}
-                end={item.path === '/rep-performance'}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </NavLink>
-            )}
-            
-            {i < navItems.length - 1 && (
-              <Separator orientation="vertical" className="h-6 mx-1 my-auto bg-white/10" />
-            )}
-          </React.Fragment>
-        ))}
-      </nav>
-      
-      {/* Mobile Navigation Dropdown */}
-      {isMobile && isNavOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-gray-950/95 backdrop-blur-sm border-b border-white/5 z-50">
-          <div className="p-4 space-y-3">
-            {navItems.map((item) => (
-              <div key={item.path}>
-                {item.subItems ? (
-                  <div>
-                    <button
-                      className={cn(
-                        "w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors",
-                        location.pathname.startsWith(item.path) 
-                          ? "text-white bg-white/10" 
-                          : "text-white/80 hover:bg-white/5 hover:text-white"
-                      )}
-                      onClick={() => toggleMobileSubmenu(item.path)}
-                    >
-                      <div className="flex items-center">
-                        {item.icon}
-                        <span>{item.label}</span>
-                      </div>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${mobileExpandedItems.includes(item.path) ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {mobileExpandedItems.includes(item.path) && (
-                      <div className="mt-1 ml-8 space-y-1">
-                        {item.subItems.map(subItem => (
-                          <NavLink
-                            key={subItem.path}
-                            to={subItem.path}
-                            className={({isActive}) => cn(
-                              "block px-4 py-2 text-sm rounded-md transition-colors",
-                              isActive ? 
-                                "bg-white/10 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
-                                "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400")
-                            }
-                            onClick={() => setIsNavOpen(false)}
-                            end
+        {/* Navigation bar - Desktop (always visible) and Mobile (collapsible) */}
+        {(!isMobile || isNavOpen) && (
+          <nav className={`${isMobile ? 'py-2' : 'border-t border-white/5'}`}>
+            <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} py-1`}>
+              {navItems.map((item) => 
+                item.hasSubNav ? (
+                  // Engine Room navigation with hover functionality
+                  <div
+                    key={item.path}
+                    className="relative"
+                    onMouseEnter={() => !isMobile && setIsEngineSubnavHovered(true)}
+                    onMouseLeave={() => !isMobile && setIsEngineSubnavHovered(false)}
+                  >
+                    {isMobile ? (
+                      // Mobile version - collapsible dropdown
+                      <Collapsible>
+                        <CollapsibleTrigger className="w-full">
+                          <div className={cn(
+                            "px-4 py-2 flex items-center justify-between text-sm font-medium", 
+                            isEngineRoomSection ? 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400"
+                          )}>
+                            <div className="flex items-center gap-2">
+                              {item.icon}
+                              <span>{item.label}</span>
+                            </div>
+                            <ChevronDown className="h-4 w-4" />
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="pl-8 space-y-1 py-1">
+                            {item.subItems?.map(subItem => (
+                              <NavLink 
+                                key={subItem.path}
+                                to={subItem.path} 
+                                className={({isActive}) => 
+                                  cn("block py-2 text-sm", 
+                                    isActive ? 
+                                      "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                                      "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400")
+                                }
+                                onClick={() => setIsNavOpen(false)}
+                              >
+                                {subItem.label}
+                              </NavLink>
+                            ))}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ) : (
+                      // Desktop version - hover dropdown
+                      <>
+                        <Link 
+                          to={item.path} 
+                          className={cn(
+                            "px-4 py-2 flex items-center gap-2 text-sm font-medium", 
+                            isEngineRoomSection ? 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                              "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
+                          )}
+                        >
+                          {item.icon}
+                          <span>{item.label}</span>
+                        </Link>
+                        
+                        {/* Subnav that appears on hover only */}
+                        {isEngineSubnavHovered && (
+                          <div 
+                            className={cn(
+                              "absolute top-full left-0 bg-gray-950/95 backdrop-blur-sm border border-white/10 rounded-md shadow-lg overflow-hidden z-50",
+                              "transition-all duration-200",
+                              "opacity-100 translate-y-0"
+                            )}
                           >
-                            {subItem.label}
-                          </NavLink>
-                        ))}
-                      </div>
+                            <div className="p-1">
+                              {item.subItems?.map(subItem => (
+                                <NavLink 
+                                  key={subItem.path}
+                                  to={subItem.path} 
+                                  className={({isActive}) => 
+                                    cn("block px-4 py-2 text-sm rounded-sm", 
+                                      isActive ? 
+                                        "bg-white/5 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                                        "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:bg-white/5 hover:text-white")
+                                  }
+                                >
+                                  {subItem.label}
+                                </NavLink>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ) : (
-                  <NavLink
-                    to={item.path}
+                  // Regular navigation links
+                  <NavLink 
+                    key={item.path}
+                    to={item.path} 
                     className={({isActive}) => cn(
-                        "flex items-center px-3 py-2 text-sm rounded-md transition-colors",
-                        isActive ? 
-                            "bg-white/10 text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
-                            "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
+                      `${isMobile ? 'py-3' : 'px-4 py-2'} flex items-center gap-2 text-sm font-medium`, 
+                      isActive ? 
+                        "text-transparent bg-clip-text bg-gradient-to-r from-finance-red to-rose-700" : 
+                        "text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hover:text-white"
                     )}
                     onClick={() => isMobile && setIsNavOpen(false)}
-                    end={item.path === '/rep-performance'}
                   >
                     {item.icon}
                     <span>{item.label}</span>
                   </NavLink>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                )
+              )}
+            </div>
+          </nav>
+        )}
+      </div>
     </header>
   );
 };
