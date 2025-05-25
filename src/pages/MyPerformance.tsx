@@ -187,7 +187,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let filteredData = currentData || [];
         if (!includeRetail || !includeReva || !includeWholesale) {
           filteredData = filteredData.filter((item: any) => {
-            const department = item.Department || item.department || '';
+            // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+            const department = item.Department || item.department || item.rep_type || '';
             if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
             if (!includeReva && department.toUpperCase() === 'REVA') return false;
             if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
@@ -209,7 +210,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             let filteredPreviousData = previousData;
             if (!includeRetail || !includeReva || !includeWholesale) {
               filteredPreviousData = filteredPreviousData.filter((item: any) => {
-                const department = item.Department || item.department || '';
+                // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+                const department = item.Department || item.department || item.rep_type || '';
                 if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
                 if (!includeReva && department.toUpperCase() === 'REVA') return false;
                 if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
@@ -317,7 +319,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       let filteredData = currentData || [];
       if (!includeRetail || !includeReva || !includeWholesale) {
         filteredData = filteredData.filter((item: any) => {
-          const department = item.Department || item.department || '';
+          // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+          const department = item.Department || item.department || item.rep_type || '';
           if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
           if (!includeReva && department.toUpperCase() === 'REVA') return false;
           if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
@@ -346,7 +349,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           let filteredPreviousData = previousData;
           if (!includeRetail || !includeReva || !includeWholesale) {
             filteredPreviousData = filteredPreviousData.filter((item: any) => {
-              const department = item.Department || item.department || '';
+              // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+              const department = item.Department || item.department || item.rep_type || '';
               if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
               if (!includeReva && department.toUpperCase() === 'REVA') return false;
               if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
@@ -534,7 +538,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         // Apply department filtering - only filter if not all departments are selected
         if (!includeRetail || !includeReva || !includeWholesale) {
           filteredData = filteredData.filter((item: any) => {
-            const department = item.Department || item.department || '';
+            // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+            const department = item.Department || item.department || item.rep_type || '';
             const deptUpper = department.toUpperCase();
             
             // Include the record if its department is enabled
@@ -696,7 +701,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             let filteredUserData = userMonthData;
             if (!includeRetail || !includeReva || !includeWholesale) {
               filteredUserData = filteredUserData.filter((item: any) => {
-                const department = item.Department || item.department || '';
+                // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+                const department = item.Department || item.department || item.rep_type || '';
                 if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
                 if (!includeReva && department.toUpperCase() === 'REVA') return false;
                 if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
@@ -949,7 +955,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         
         if (!includeRetail || !includeReva || !includeWholesale) {
           filteredCurrentData = filteredCurrentData.filter((item: any) => {
-            const department = item.Department || item.department || '';
+            // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+            const department = item.Department || item.department || item.rep_type || '';
             if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
             if (!includeReva && department.toUpperCase() === 'REVA') return false;
             if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
@@ -957,7 +964,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           });
           
           filteredCompareData = filteredCompareData.filter((item: any) => {
-            const department = item.Department || item.department || '';
+            // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+            const department = item.Department || item.department || item.rep_type || '';
             if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
             if (!includeReva && department.toUpperCase() === 'REVA') return false;
             if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
@@ -1009,7 +1017,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       
       if (!includeRetail || !includeReva || !includeWholesale) {
         filteredCurrentData = filteredCurrentData.filter((item: any) => {
-          const department = item.Department || item.department || '';
+          // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+          const department = item.Department || item.department || item.rep_type || '';
           if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
           if (!includeReva && department.toUpperCase() === 'REVA') return false;
           if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
@@ -1017,7 +1026,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         });
         
         filteredCompareData = filteredCompareData.filter((item: any) => {
-          const department = item.Department || item.department || '';
+          // Handle different column names: sales_data uses 'rep_type', others use 'Department'
+          const department = item.Department || item.department || item.rep_type || '';
           if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
           if (!includeReva && department.toUpperCase() === 'REVA') return false;
           if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
