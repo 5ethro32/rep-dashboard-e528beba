@@ -528,29 +528,21 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       <CardContent>
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Only show rep selector dropdown if no user is selected */}
-            {!selectedUser ? (
-              <div className="md:w-1/3">
-                <Select value={selectedRep} onValueChange={setSelectedRep}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                    <SelectValue placeholder="Select a rep" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                    {repOptions.map(rep => (
-                      <SelectItem key={rep} value={rep}>
-                        {rep}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <div className="md:w-1/3">
-                <div className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded-md flex items-center gap-2">
-                  <span className="truncate">Selected Rep: {selectedUser}</span>
-                </div>
-              </div>
-            )}
+            {/* Always show rep selector dropdown for account filtering */}
+            <div className="md:w-1/3">
+              <Select value={selectedRep} onValueChange={setSelectedRep}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder={selectedUser ? `Viewing ${selectedUser}'s accounts` : "Select a rep"} />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  {repOptions.map(rep => (
+                    <SelectItem key={rep} value={rep}>
+                      {rep}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="md:w-1/3 relative">
               <div className="relative">
                 <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />

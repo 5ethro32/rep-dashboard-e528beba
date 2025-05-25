@@ -18,7 +18,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 
-const RepTracker: React.FC = () => {
+interface RepTrackerProps {
+  selectedUserId?: string | null;
+  selectedUserName?: string;
+}
+
+const RepTracker: React.FC<RepTrackerProps> = ({ 
+  selectedUserId: propSelectedUserId, 
+  selectedUserName: propSelectedUserName 
+}) => {
   const navigate = useNavigate();
   const {
     user, isAdmin
@@ -27,17 +35,30 @@ const RepTracker: React.FC = () => {
   const [showAddVisit, setShowAddVisit] = useState(false);
   const [selectedTab, setSelectedTab] = useState('week-plan-v2'); // Default to week-plan-v2 tab
   const isMobile = useIsMobile();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserName, setSelectedUserName] = useState<string>("My Data");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId || null);
+  const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName || "My Data");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize state with current user
+  // Initialize state with current user or props
   useEffect(() => {
-    if (user && !selectedUserId) {
+    if (propSelectedUserId) {
+      setSelectedUserId(propSelectedUserId);
+      setSelectedUserName(propSelectedUserName || "My Data");
+      console.log('RepTracker - Using props selectedUserId:', propSelectedUserId);
+    } else if (user && !selectedUserId) {
       setSelectedUserId(user.id);
       console.log('RepTracker - Using current user ID:', user.id);
     }
-  }, [user]);
+  }, [user, propSelectedUserId, propSelectedUserName]);
+
+  // Update local state when props change
+  useEffect(() => {
+    if (propSelectedUserId !== undefined) {
+      setSelectedUserId(propSelectedUserId);
+      setSelectedUserName(propSelectedUserName || "My Data");
+      console.log('RepTracker - Props changed, updating selectedUserId to:', propSelectedUserId);
+    }
+  }, [propSelectedUserId, propSelectedUserName]);
 
   // Console log for debugging
   useEffect(() => {

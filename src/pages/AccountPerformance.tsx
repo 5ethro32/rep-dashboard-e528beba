@@ -9,6 +9,11 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 
+interface AccountPerformanceProps {
+  selectedUserId?: string | null;
+  selectedUserName?: string;
+}
+
 type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data';
 type DataItem = {
   [key: string]: any;
@@ -28,7 +33,10 @@ type DataItem = {
   department?: string;
 };
 
-const AccountPerformance = () => {
+const AccountPerformance: React.FC<AccountPerformanceProps> = ({ 
+  selectedUserId: propSelectedUserId, 
+  selectedUserName: propSelectedUserName 
+}) => {
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
   const [currentMonthRawData, setCurrentMonthRawData] = useState<DataItem[]>([]);
   const [previousMonthRawData, setPreviousMonthRawData] = useState<DataItem[]>([]);
@@ -58,9 +66,18 @@ const AccountPerformance = () => {
   } = useAuth();
 
   // State for selected user to filter by
-  const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
-  const [selectedUserName, setSelectedUserName] = useState<string>("All Data");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId || "all");
+  const [selectedUserName, setSelectedUserName] = useState<string>(propSelectedUserName || "All Data");
   
+  // Update local state when props change
+  useEffect(() => {
+    if (propSelectedUserId !== undefined) {
+      setSelectedUserId(propSelectedUserId);
+      setSelectedUserName(propSelectedUserName || "All Data");
+      console.log('AccountPerformance - Props changed, updating selectedUserId to:', propSelectedUserId);
+    }
+  }, [propSelectedUserId, propSelectedUserName]);
+
   useEffect(() => {
     fetchComparisonData();
   }, [selectedMonth, selectedUserId, selectedUserName, includeRetail, includeReva, includeWholesale]);

@@ -67,11 +67,11 @@ const AppLayoutWrapper = () => {
       case '/rep-performance':
         return <RepPerformance />;
       case '/account-performance':
-        return <AccountPerformance />;
+        return <AccountPerformance selectedUserId={selectedUserId} selectedUserName={selectedUserName} />;
       case '/ai-vera':
         return <AIVera />;
       case '/rep-tracker':
-        return <RepTracker />;
+        return <RepTracker selectedUserId={selectedUserId} selectedUserName={selectedUserName} />;
       case '/my-performance':
         return <MyPerformance selectedUserId={selectedUserId} selectedUserName={selectedUserName} />;
       case '/engine-room':
