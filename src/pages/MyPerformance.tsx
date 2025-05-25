@@ -591,9 +591,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         includeWholesale
       });
       
-      // Collect all rep names
-      processedMonthlyData.forEach(monthData => {
-        monthData.data.forEach(rep => {
+      // Collect all rep names from filtered data
+      filteredMonthlyData.forEach((monthResult, index) => {
+        const monthRepData = processRepData(monthResult.data || []);
+        monthRepData.forEach(rep => {
           // Skip the current user's data as we'll handle it separately
           if (!rep.repName.includes(userRepName)) {
             // Additional filtering to ensure we only get proper rep names
@@ -602,6 +603,12 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             // Skip department names
             const departmentNames = ['RETAIL', 'REVA', 'WHOLESALE', 'TRADE'];
             if (departmentNames.includes(repName.toUpperCase())) {
+              return;
+            }
+            
+            // Skip known non-rep names
+            const nonRepNames = ['YVONNE WALTON', 'ADAM FORSYTHE'];
+            if (nonRepNames.includes(repName.toUpperCase())) {
               return;
             }
             
@@ -717,43 +724,52 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           }
         }
       } else {
-        // For "All Data" view, use aggregated totals
-        processedMonthlyData.forEach(monthData => {
-          // Calculate totals
-          let totalProfit = 0;
-          let totalSpend = 0;
-          let totalPacks = 0;
+        // For "All Data" view, use aggregated totals from filtered data
+        for (let i = 0; i < months.length; i++) {
+          const month = months[i];
+          const table = monthlyTables[i];
           
-          monthData.data.forEach(rep => {
-            totalProfit += rep.profit;
-            totalSpend += rep.spend;
-            totalPacks += rep.totalAccounts || 0;
+          // Get the filtered data for this month (same filtering as individual users)
+          const filteredMonthData = filteredMonthlyData[i];
+          
+          // Calculate metrics directly from filtered raw data (same as metric cards)
+          const profitColumn = table === 'sales_data' ? 'profit' : 'Profit';
+          const spendColumn = table === 'sales_data' ? 'spend' : 'Spend';
+          const metrics = calculatePerformanceMetrics(filteredMonthData.data || [], profitColumn, spendColumn);
+          
+          console.log(`Using aggregated filtered data for "All Data" in ${month}:`, {
+            profit: metrics.totalProfit,
+            spend: metrics.totalSpend,
+            margin: metrics.margin,
+            accounts: metrics.totalAccounts,
+            recordCount: filteredMonthData.data?.length || 0
           });
           
-          const aggregatedMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
-          console.log(`Using aggregated data for "All Data" in ${monthData.month}:`, {
-            profit: totalProfit,
-            spend: totalSpend,
-            margin: aggregatedMargin,
-            accounts: totalPacks
-          });
-          
-          userData.profit.push({ month: monthData.month.substring(0, 3), value: totalProfit });
-          userData.spend.push({ month: monthData.month.substring(0, 3), value: totalSpend });
-          userData.packs.push({ month: monthData.month.substring(0, 3), value: totalPacks });
-          userData.margin.push({ month: monthData.month.substring(0, 3), value: aggregatedMargin });
-        });
+          userData.profit.push({ month: month.substring(0, 3), value: metrics.totalProfit });
+          userData.spend.push({ month: month.substring(0, 3), value: metrics.totalSpend });
+          userData.packs.push({ month: month.substring(0, 3), value: metrics.totalAccounts });
+          userData.margin.push({ month: month.substring(0, 3), value: metrics.margin });
+        }
       }
       
-      // Calculate team averages (unchanged)
-      processedMonthlyData.forEach(monthData => {
+      // Calculate team averages using the same filtered data approach
+      for (let i = 0; i < months.length; i++) {
+        const month = months[i];
+        const table = monthlyTables[i];
+        
+        // Get the filtered data for this month
+        const filteredMonthData = filteredMonthlyData[i];
+        
+        // Process all reps in the filtered data
+        const monthRepData = processRepData(filteredMonthData.data || []);
+        
         let totalProfit = 0;
         let totalSpend = 0;
         let totalPacks = 0;
         let totalMargin = 0;
         let repCount = 0;
         
-        monthData.data.forEach(rep => {
+        monthRepData.forEach(rep => {
           totalProfit += rep.profit;
           totalSpend += rep.spend;
           totalPacks += rep.totalAccounts || 0;
@@ -764,25 +780,32 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         // Add average for the month
         if (repCount > 0) {
           averageData.profit.push({ 
-            month: monthData.month.substring(0, 3), 
+            month: month.substring(0, 3), 
             value: totalProfit / repCount 
           });
           averageData.spend.push({ 
-            month: monthData.month.substring(0, 3), 
+            month: month.substring(0, 3), 
             value: totalSpend / repCount 
           });
           averageData.packs.push({ 
-            month: monthData.month.substring(0, 3), 
+            month: month.substring(0, 3), 
             value: totalPacks / repCount 
           });
           averageData.margin.push({ 
-            month: monthData.month.substring(0, 3), 
+            month: month.substring(0, 3), 
             value: totalMargin / repCount 
           });
+          
+          console.log(`Team average for ${month} (filtered):`, {
+            profit: totalProfit / repCount,
+            spend: totalSpend / repCount,
+            margin: totalMargin / repCount,
+            repCount: repCount
+          });
         }
-      });
+      }
       
-      // Prepare comparison data for each rep
+      // Prepare comparison data for each rep using the SAME filtered data approach
       const comparisonData = Array.from(repNames).map(repName => {
         const repData = {
           repName,
@@ -792,15 +815,45 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           margin: [] as { month: string; value: number }[]
         };
         
-        processedMonthlyData.forEach(monthData => {
-          const rep = monthData.data.find(r => r.repName === repName);
-          if (rep) {
-            repData.profit.push({ month: monthData.month.substring(0, 3), value: rep.profit });
-            repData.spend.push({ month: monthData.month.substring(0, 3), value: rep.spend });
-            repData.packs.push({ month: monthData.month.substring(0, 3), value: rep.totalAccounts || 0 });
-            repData.margin.push({ month: monthData.month.substring(0, 3), value: rep.margin });
+        // For each month, get the rep's data using the same filtering approach
+        for (let i = 0; i < months.length; i++) {
+          const month = months[i];
+          const table = monthlyTables[i];
+          
+          // Get the filtered data for this month (same as what we used for user data)
+          const filteredMonthData = filteredMonthlyData[i];
+          
+          // Find this rep's data in the filtered dataset
+          let repMonthData = filteredMonthData.data?.filter((item: any) => {
+            const itemRepName = item.Rep || item.rep_name || '';
+            return itemRepName.includes(repName) || repName.includes(itemRepName);
+          }) || [];
+          
+          if (repMonthData.length > 0) {
+            // Calculate metrics for this rep using the same method as user data
+            const profitColumn = table === 'sales_data' ? 'profit' : 'Profit';
+            const spendColumn = table === 'sales_data' ? 'spend' : 'Spend';
+            const metrics = calculatePerformanceMetrics(repMonthData, profitColumn, spendColumn);
+            
+            repData.profit.push({ month: month.substring(0, 3), value: metrics.totalProfit });
+            repData.spend.push({ month: month.substring(0, 3), value: metrics.totalSpend });
+            repData.packs.push({ month: month.substring(0, 3), value: metrics.totalAccounts });
+            repData.margin.push({ month: month.substring(0, 3), value: metrics.margin });
+            
+            console.log(`Comparison rep ${repName} in ${month}:`, {
+              profit: metrics.totalProfit,
+              spend: metrics.totalSpend,
+              margin: metrics.margin,
+              recordCount: repMonthData.length
+            });
+          } else {
+            // No data for this rep in this month
+            repData.profit.push({ month: month.substring(0, 3), value: 0 });
+            repData.spend.push({ month: month.substring(0, 3), value: 0 });
+            repData.packs.push({ month: month.substring(0, 3), value: 0 });
+            repData.margin.push({ month: month.substring(0, 3), value: 0 });
           }
-        });
+        }
         
         return repData;
       });
