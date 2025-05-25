@@ -49,6 +49,7 @@ const AppHeader = ({
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isEngineSubnavHovered, setIsEngineSubnavHovered] = useState(false);
   const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>("");
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 
   // Check if we're in the Engine Room section
   const isEngineRoomSection = location.pathname.startsWith('/engine-room');
@@ -154,7 +155,11 @@ const AppHeader = ({
   const showRefresh = onRefresh !== undefined || location.pathname === '/rep-performance' && window.repPerformanceRefresh !== undefined;
   
   return (
-    <header className="sticky top-0 z-50 w-full backdrop-blur-sm bg-gray-950/95">
+    <header 
+      className="sticky top-0 z-50 w-full backdrop-blur-sm bg-gray-950/95"
+      onMouseEnter={() => !isMobile && setIsHeaderHovered(true)}
+      onMouseLeave={() => !isMobile && setIsHeaderHovered(false)}
+    >
       <div className="container max-w-7xl mx-auto px-4">
         {/* Main header with logo and user profile */}
         <div className="h-16 flex items-center justify-between">
@@ -196,8 +201,9 @@ const AppHeader = ({
         
         {/* Desktop navigation bar OR mobile dropdown menu (not the bottom navigation) */}
         {/* On mobile this is ONLY for the dropdown menu, bottom navigation is handled by MobileNavigation */}
-        {(!isMobile || isNavOpen) && (
-          <nav className={`${isMobile ? 'py-2' : 'border-t border-white/5'}`}>
+        {/* On desktop, show navigation only when header is hovered */}
+        {(isMobile ? isNavOpen : isHeaderHovered) && (
+          <nav className={`${isMobile ? 'py-2' : 'border-t border-white/5'} ${!isMobile ? 'transition-all duration-200 ease-in-out' : ''}`}>
             <div className={`flex ${isMobile ? 'flex-col' : 'items-center'} py-1`}>
               {/* ... keep existing code (navigation items rendering) the same ... */}
               
