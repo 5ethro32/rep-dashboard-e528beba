@@ -59,6 +59,40 @@ const AppLayoutWrapper = () => {
   // Determine if we should show user selector based on current route
   const showUserSelector = ['/rep-tracker', '/account-performance', '/my-performance'].includes(location.pathname);
   
+  // Render the appropriate page component with props
+  const renderPageComponent = () => {
+    switch (location.pathname) {
+      case '/':
+        return <Navigate to="/rep-performance" replace />;
+      case '/rep-performance':
+        return <RepPerformance />;
+      case '/account-performance':
+        return <AccountPerformance />;
+      case '/ai-vera':
+        return <AIVera />;
+      case '/rep-tracker':
+        return <RepTracker />;
+      case '/my-performance':
+        return <MyPerformance selectedUserId={selectedUserId} selectedUserName={selectedUserName} />;
+      case '/engine-room':
+        return <EngineRoom />;
+      case '/engine-room/operations':
+        return <EngineOperations />;
+      case '/engine-room/engine':
+        return <Navigate to="/engine-room/operations" replace />;
+      case '/engine-room/dashboard':
+        return <EngineDashboard />;
+      case '/engine-room/approvals':
+        return <ApprovalsDashboard />;
+      case '/engine-room/simulator':
+        return <RuleSimulator />;
+      case '/engine-room/analytics':
+        return <PricingAnalytics />;
+      default:
+        return <NotFound />;
+    }
+  };
+  
   return (
     <AppLayout 
       showChatInterface={true}
@@ -69,7 +103,7 @@ const AppLayoutWrapper = () => {
       onRefresh={handleRefresh}
       isLoading={isLoading}
     >
-      <Outlet />
+      {renderPageComponent()}
     </AppLayout>
   );
 };
@@ -80,24 +114,8 @@ const router = createBrowserRouter([
     element: <Auth />,
   },
   {
-    path: "/",
+    path: "/*",
     element: <ProtectedRoute><AppLayoutWrapper /></ProtectedRoute>,
-    children: [
-      { path: "/", element: <Navigate to="/rep-performance" replace /> }, // Redirect root to rep-performance
-      { path: "/rep-performance", element: <RepPerformance /> },
-      { path: "/account-performance", element: <AccountPerformance /> },
-      { path: "/ai-vera", element: <AIVera /> },
-      { path: "/rep-tracker", element: <RepTracker /> },
-      { path: "/my-performance", element: <MyPerformance /> },
-      { path: "/engine-room", element: <EngineRoom /> },
-      { path: "/engine-room/operations", element: <EngineOperations /> },
-      { path: "/engine-room/engine", element: <Navigate to="/engine-room/operations" replace /> }, // Redirect old "engine" route to Operations
-      { path: "/engine-room/dashboard", element: <EngineDashboard /> },
-      { path: "/engine-room/approvals", element: <ApprovalsDashboard /> },
-      { path: "/engine-room/simulator", element: <RuleSimulator /> },
-      { path: "/engine-room/analytics", element: <PricingAnalytics /> },
-      { path: "*", element: <NotFound /> },
-    ],
   },
 ]);
 

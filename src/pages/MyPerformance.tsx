@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
-import PerformanceFilters from '@/components/rep-performance/PerformanceFilters';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "@/components/ui/dropdown-menu";
 import PersonalPerformanceCard from '@/components/my-performance/PersonalPerformanceCard';
 import AccountHealthSection from '@/components/my-performance/AccountHealthSection';
 import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAnalysis';
@@ -29,8 +33,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [accountHealthData, setAccountHealthData] = useState<any[]>([]);
   const [visitData, setVisitData] = useState<any[]>([]);
   const [autoRefreshed, setAutoRefreshed] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId || null);
+  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>(propSelectedUserName || 'My Data');
   const [userFirstName, setUserFirstName] = useState<string>('');
   const [compareMonth, setCompareMonth] = useState<string>('April');
   const [accountHealthMonth, setAccountHealthMonth] = useState<string>('May');
@@ -1089,28 +1093,84 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     }
   };
   
-  // Render the page with AppLayout wrapper
+  // Render the page content directly (AppLayout wrapper is handled at App level)
   return (
-    <AppLayout 
-      showChatInterface={false}
-      selectedUserId={selectedUserId}
-      onSelectUser={handleUserSelection}
-      showUserSelector={true}
-      onRefresh={handleRefresh}
-      isLoading={isLoading}
-    >
-      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-        {/* Add PerformanceFilters component */}
-        <PerformanceFilters
-          includeRetail={includeRetail}
-          setIncludeRetail={setIncludeRetail}
-          includeReva={includeReva}
-          setIncludeReva={setIncludeReva}
-          includeWholesale={includeWholesale}
-          setIncludeWholesale={setIncludeWholesale}
-          selectedMonth={selectedMonth}
-          setSelectedMonth={setSelectedMonth}
-        />
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+        {/* Simple filter controls without header styling */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          {/* Department filters */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setIncludeRetail(!includeRetail)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                includeRetail 
+                  ? 'bg-finance-red text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Retail
+            </button>
+            <button
+              onClick={() => setIncludeReva(!includeReva)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                includeReva 
+                  ? 'bg-finance-red text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              REVA
+            </button>
+            <button
+              onClick={() => setIncludeWholesale(!includeWholesale)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                includeWholesale 
+                  ? 'bg-finance-red text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Wholesale
+            </button>
+          </div>
+          
+          {/* Month selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none">
+              <svg className="h-4 w-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>Month: {selectedMonth}</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-gray-950/95 backdrop-blur-sm border border-white/5 z-50">
+              <DropdownMenuItem 
+                className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
+                onClick={() => setSelectedMonth('May')}
+              >
+                May 2025
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
+                onClick={() => setSelectedMonth('April')}
+              >
+                April 2025
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
+                onClick={() => setSelectedMonth('March')}
+              >
+                March 2025
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
+                onClick={() => setSelectedMonth('February')}
+              >
+                February 2025
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Personal Performance Overview */}
         <div className="mb-6">
@@ -1194,7 +1254,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           </TabsContent>
         </Tabs>
       </div>
-    </AppLayout>
   );
 };
 
