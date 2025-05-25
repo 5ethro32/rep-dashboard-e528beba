@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AppLayout from '@/components/layout/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,41 +12,25 @@ import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAn
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
 import GoalTrackingComponent from '@/components/my-performance/GoalTrackingComponent';
 import RepPerformanceComparison from '@/components/my-performance/RepPerformanceComparison';
-import { useLocation, useOutletContext } from 'react-router-dom';
-import { toast } from '@/components/ui/use-toast';
 
-// Define the outlet context type for proper TypeScript support
-type OutletContextType = {
-  selectedUserId: string | null;
-  selectedUserName: string;
-  onSelectUser: (userId: string | null, displayName: string) => void;
-  onRefresh: () => void;
-  isLoading: boolean;
-};
+interface MyPerformanceProps {
+  selectedUserId?: string | null;
+  selectedUserName?: string;
+}
 
-const MyPerformance: React.FC = () => {
+const MyPerformance: React.FC<MyPerformanceProps> = ({ 
+  selectedUserId: propSelectedUserId, 
+  selectedUserName: propSelectedUserName 
+}) => {
   const { user } = useAuth();
-  const location = useLocation();
-  
-  // Get the outlet context which contains user selection data from AppLayoutWrapper
-  const context = useOutletContext<OutletContextType>();
-  
-  // Extract values from context with defaults
-  const contextSelectedUserId = context?.selectedUserId || "all";
-  const contextSelectedUserName = context?.selectedUserName || "All Data";
-  const contextOnSelectUser = context?.onSelectUser;
-  const contextOnRefresh = context?.onRefresh;
-  const contextIsLoading = context?.isLoading || false;
-
-  // Local state to track the selected user
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
   const [isLoading, setIsLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState<any>(null);
   const [accountHealthData, setAccountHealthData] = useState<any[]>([]);
   const [visitData, setVisitData] = useState<any[]>([]);
   const [autoRefreshed, setAutoRefreshed] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(contextSelectedUserId);
-  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>(contextSelectedUserName);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>('My Data');
   const [userFirstName, setUserFirstName] = useState<string>('');
   const [compareMonth, setCompareMonth] = useState<string>('April');
   const [accountHealthMonth, setAccountHealthMonth] = useState<string>('May');
@@ -70,24 +55,21 @@ const MyPerformance: React.FC = () => {
   
   const isMobile = useIsMobile();
   
-  // Update selected user whenever context changes
+  // Initialize with props if provided, otherwise use the current user
   useEffect(() => {
-    if (contextSelectedUserId !== selectedUserId) {
-      console.log(`MyPerformance: User selection changed from context: ${contextSelectedUserId}`);
-      setSelectedUserId(contextSelectedUserId);
-      setSelectedUserDisplayName(contextSelectedUserName);
+    if (propSelectedUserId) {
+      setSelectedUserId(propSelectedUserId);
+      setSelectedUserDisplayName(propSelectedUserName || "My Data");
       
       // Extract first name if we have a full name
-      if (contextSelectedUserName && contextSelectedUserName !== "My Data" && contextSelectedUserName !== "All Data") {
-        const firstName = contextSelectedUserName.split(' ')[0];
+      if (propSelectedUserName) {
+        const firstName = propSelectedUserName.split(' ')[0];
         setUserFirstName(firstName);
       }
-    }
-  }, [contextSelectedUserId, contextSelectedUserName]);
-  
-  // Initialize with current user or context
-  useEffect(() => {
-    if (!selectedUserId && user) {
+      
+      console.log('MyPerformance - Using provided userId:', propSelectedUserId);
+      console.log('MyPerformance - Using provided displayName:', propSelectedUserName);
+    } else if (user && !selectedUserId) {
       setSelectedUserId(user.id);
       console.log('MyPerformance - Using current user ID:', user.id);
       
@@ -107,11 +89,10 @@ const MyPerformance: React.FC = () => {
       
       fetchUserProfile();
     }
-  }, [user, selectedUserId]);
+  }, [user, propSelectedUserId, propSelectedUserName]);
   
-  // Fetch all the data when any dependency changes - INCLUDING user selection changes
+  // Fetch all the data when user changes
   useEffect(() => {
-    console.log(`Fetching data for user: ${selectedUserId} (${selectedUserDisplayName})`);
     if (user && selectedUserId) {
       fetchAllData();
     }
@@ -122,47 +103,20 @@ const MyPerformance: React.FC = () => {
     if (user && selectedUserId) {
       fetchAccountHealthData();
     }
-  }, [accountHealthMonth, compareMonth, selectedUserId, includeRetail, includeReva, includeWholesale]);
+  }, [accountHealthMonth, compareMonth, includeRetail, includeReva, includeWholesale]);
   
   // Handle user selection from the header
   const handleUserSelection = (userId: string | null, displayName: string) => {
     console.log(`MyPerformance: User selection changed to ${displayName} (${userId})`);
-    
-    // Update local state
     setSelectedUserId(userId);
     setSelectedUserDisplayName(displayName);
     
-    // Propagate to parent if callback exists
-    if (contextOnSelectUser) {
-      contextOnSelectUser(userId, displayName);
-    }
-    
     // Extract first name if we have a full name
-    if (displayName && displayName !== "My Data" && displayName !== "All Data") {
+    if (displayName !== "My Data" && displayName !== "All Data") {
       const firstName = displayName.split(' ')[0];
       setUserFirstName(firstName);
     }
-    
-    // Show feedback to user
-    toast({
-      title: "User changed",
-      description: `Now showing data for ${displayName}`,
-    });
   };
-  
-  // Connect to global AppLayoutWrapper refresh
-  useEffect(() => {
-    if (location.pathname === '/my-performance') {
-      console.log('Setting up global refresh handler for MyPerformance');
-      window.myDashboardRefresh = handleRefresh;
-    }
-    return () => {
-      if (window.myDashboardRefresh) {
-        console.log('Cleaning up global refresh handler');
-        delete window.myDashboardRefresh;
-      }
-    };
-  }, [location.pathname, selectedMonth, selectedUserId]);
   
   const handleAccountHealthMonthChange = (month: string) => {
     setAccountHealthMonth(month);
@@ -174,26 +128,6 @@ const MyPerformance: React.FC = () => {
     setIsLoading(true);
   };
   
-  // Handle refresh - can be triggered internally or from AppLayoutWrapper
-  const handleRefresh = async () => {
-    console.log('MyPerformance: Refreshing data...');
-    
-    // Call global refresh handler if provided
-    if (contextOnRefresh) {
-      contextOnRefresh();
-    }
-    
-    setIsLoading(true);
-    await fetchAllData();
-    setAutoRefreshed(true);
-    setTimeout(() => setAutoRefreshed(false), 3000);
-    
-    toast({
-      title: "Data refreshed",
-      description: `Updated data for ${selectedUserDisplayName}`,
-    });
-  };
-  
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
@@ -202,15 +136,10 @@ const MyPerformance: React.FC = () => {
         fetchPersonalPerformanceData(),
         fetchAccountHealthData(),
         fetchVisitData(),
-        fetchRepComparisonData()
+        fetchRepComparisonData() // New function to fetch comparison data
       ]);
     } catch (error) {
       console.error("Error fetching performance data:", error);
-      toast({
-        title: "Error loading data",
-        description: "Could not load performance data",
-        variant: "destructive"
-      });
     } finally {
       setIsLoading(false);
     }
@@ -1134,6 +1063,12 @@ const MyPerformance: React.FC = () => {
     return healthScores.sort((a, b) => b.healthScore - a.healthScore);
   };
   
+  const handleRefresh = async () => {
+    await fetchAllData();
+    setAutoRefreshed(true);
+    setTimeout(() => setAutoRefreshed(false), 3000);
+  };
+  
   // Get the subtitle description based on user type
   const getSubtitle = () => {
     if (selectedUserId === "all") {
@@ -1154,112 +1089,113 @@ const MyPerformance: React.FC = () => {
     }
   };
   
-  // Render the page with content
+  // Render the page with AppLayout wrapper
   return (
-    <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Add PerformanceFilters component */}
-      <PerformanceFilters
-        includeRetail={includeRetail}
-        setIncludeRetail={setIncludeRetail}
-        includeReva={includeReva}
-        setIncludeReva={setIncludeReva}
-        includeWholesale={includeWholesale}
-        setIncludeWholesale={setIncludeWholesale}
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-      />
-
-      {/* Personal Performance Overview */}
-      <div className="mb-6">
-        <PersonalPerformanceCard
-          performanceData={performanceData}
-          isLoading={isLoading || contextIsLoading}
+    <AppLayout 
+      showChatInterface={false}
+      selectedUserId={selectedUserId}
+      onSelectUser={handleUserSelection}
+      showUserSelector={true}
+      onRefresh={handleRefresh}
+      isLoading={isLoading}
+    >
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
+        {/* Add PerformanceFilters component */}
+        <PerformanceFilters
+          includeRetail={includeRetail}
+          setIncludeRetail={setIncludeRetail}
+          includeReva={includeReva}
+          setIncludeReva={setIncludeReva}
+          includeWholesale={includeWholesale}
+          setIncludeWholesale={setIncludeWholesale}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
         />
-      </div>
-      
-      {/* Performance Comparison Chart */}
-      <div className="mb-6">
-        <RepPerformanceComparison
-          userData={userTrendsData}
-          averageData={teamAverageData}
-          comparisonData={repComparisonData}
-          isLoading={isLoading || contextIsLoading}
-          userName={selectedUserDisplayName !== "My Data" ? selectedUserDisplayName : "You"}
-        />
-      </div>
 
-      {/* Main content tabs */}
-      <Tabs defaultValue="accounts" className="w-full">
-        <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
-          <TabsTrigger value="accounts" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-            Account Health
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-            Activity Impact
-          </TabsTrigger>
-          <TabsTrigger value="insights" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-            AI Insights
-          </TabsTrigger>
-          <TabsTrigger value="goals" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
-            Goal Tracking
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="accounts" className="mt-0">
-          <AccountHealthSection 
-            accountHealthData={accountHealthData}
-            isLoading={isLoading || contextIsLoading}
-            formatCurrency={formatCurrency}
-            formatPercent={formatPercent}
-            onMonthChange={handleAccountHealthMonthChange}
-            onCompareMonthChange={handleCompareMonthChange}
-            selectedMonth={accountHealthMonth}
-            compareMonth={compareMonth}
-          />
-        </TabsContent>
-        
-        <TabsContent value="activity" className="mt-0">
-          <ActivityImpactAnalysis
-            visitData={visitData}
-            accountHealthData={accountHealthData}
-            isLoading={isLoading || contextIsLoading}
-          />
-        </TabsContent>
-        
-        <TabsContent value="insights" className="mt-0">
-          <PersonalizedInsights
-            accountHealthData={accountHealthData}
-            visitData={visitData}
+        {/* Personal Performance Overview */}
+        <div className="mb-6">
+          <PersonalPerformanceCard
             performanceData={performanceData}
-            isLoading={isLoading || contextIsLoading}
-            formatCurrency={formatCurrency}
-            formatPercent={formatPercent}
+            isLoading={isLoading}
           />
-        </TabsContent>
+        </div>
         
-        <TabsContent value="goals" className="mt-0">
-          <GoalTrackingComponent
-            performanceData={performanceData}
-            accountHealthData={accountHealthData}
-            visitData={visitData}
-            isLoading={isLoading || contextIsLoading}
-            formatCurrency={formatCurrency}
-            formatPercent={formatPercent}
-            selectedUserId={selectedUserId}
-            selectedUserDisplayName={selectedUserDisplayName}
+        {/* Performance Comparison Chart */}
+        <div className="mb-6">
+          <RepPerformanceComparison
+            userData={userTrendsData}
+            averageData={teamAverageData}
+            comparisonData={repComparisonData}
+            isLoading={isLoading}
+            userName={selectedUserDisplayName !== "My Data" ? selectedUserDisplayName : "You"}
           />
-        </TabsContent>
-      </Tabs>
-    </div>
+        </div>
+
+        {/* Main content tabs */}
+        <Tabs defaultValue="accounts" className="w-full">
+          <TabsList className={`${isMobile ? 'flex flex-wrap' : 'grid grid-cols-4'} mb-6 md:mb-8 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-white/5 shadow-lg p-1`}>
+            <TabsTrigger value="accounts" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+              Account Health
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+              Activity Impact
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+              AI Insights
+            </TabsTrigger>
+            <TabsTrigger value="goals" className="data-[state=active]:text-white data-[state=active]:shadow-md text-xs md:text-sm py-1 md:py-2">
+              Goal Tracking
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="accounts" className="mt-0">
+            <AccountHealthSection 
+              accountHealthData={accountHealthData}
+              isLoading={isLoading}
+              formatCurrency={formatCurrency}
+              formatPercent={formatPercent}
+              onMonthChange={handleAccountHealthMonthChange}
+              onCompareMonthChange={handleCompareMonthChange}
+              selectedMonth={accountHealthMonth}
+              compareMonth={compareMonth}
+            />
+          </TabsContent>
+          
+          <TabsContent value="activity" className="mt-0">
+            <ActivityImpactAnalysis
+              visitData={visitData}
+              accountHealthData={accountHealthData}
+              isLoading={isLoading}
+            />
+          </TabsContent>
+          
+          <TabsContent value="insights" className="mt-0">
+            <PersonalizedInsights
+              accountHealthData={accountHealthData}
+              visitData={visitData}
+              performanceData={performanceData}
+              isLoading={isLoading}
+              formatCurrency={formatCurrency}
+              formatPercent={formatPercent}
+            />
+          </TabsContent>
+          
+          <TabsContent value="goals" className="mt-0">
+            <GoalTrackingComponent
+              performanceData={performanceData}
+              accountHealthData={accountHealthData}
+              visitData={visitData}
+              isLoading={isLoading}
+              formatCurrency={formatCurrency}
+              formatPercent={formatPercent}
+              selectedUserId={selectedUserId}
+              selectedUserDisplayName={selectedUserDisplayName}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AppLayout>
   );
 };
-
-// Add the global window type declaration
-declare global {
-  interface Window {
-    repPerformanceRefresh?: () => Promise<void>;
-    myDashboardRefresh?: () => Promise<void>;
-  }
-}
 
 export default MyPerformance;

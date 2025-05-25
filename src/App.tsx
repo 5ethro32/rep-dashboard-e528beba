@@ -50,15 +50,6 @@ const AppLayoutWrapper = () => {
     console.log('App: Global refresh triggered');
     setIsLoading(true);
     
-    // Check if we're on My Dashboard and use its refresh handler
-    if (location.pathname === '/my-performance' && window.myDashboardRefresh) {
-      window.myDashboardRefresh();
-    }
-    // Check if we're on Rep Performance and use its refresh handler
-    else if (location.pathname === '/rep-performance' && window.repPerformanceRefresh) {
-      window.repPerformanceRefresh();
-    }
-    
     // Simple timeout to simulate refresh - actual logic will come from pages
     setTimeout(() => {
       setIsLoading(false);
@@ -97,7 +88,7 @@ const router = createBrowserRouter([
       { path: "/account-performance", element: <AccountPerformance /> },
       { path: "/ai-vera", element: <AIVera /> },
       { path: "/rep-tracker", element: <RepTracker /> },
-      { path: "/my-performance", element: <MyPerformance /> }, // Removed hardcoded props to use context
+      { path: "/my-performance", element: <MyPerformance /> },
       { path: "/engine-room", element: <EngineRoom /> },
       { path: "/engine-room/operations", element: <EngineOperations /> },
       { path: "/engine-room/engine", element: <Navigate to="/engine-room/operations" replace /> }, // Redirect old "engine" route to Operations
