@@ -155,7 +155,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       
       // If we're viewing "All Data", we need to handle this differently
       if (selectedUserId === "all") {
-        console.log('Fetching all data for admin view');
+        console.log('Fetching aggregated data for "All Data" view');
         
         // Determine the table names based on selected month and previous month
         let currentTable;
@@ -237,22 +237,31 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         return;
       }
       
-      // Get the user's profile information
+      // Determine which user's data to fetch
+      let targetUserId = selectedUserId;
+      
+      // If "My Data" is selected, use the current logged-in user's ID
+      if (selectedUserDisplayName === "My Data") {
+        targetUserId = user?.id || selectedUserId;
+        console.log('My Data selected: Using logged-in user ID:', targetUserId);
+      }
+      
+      // Get the target user's profile information
       const { data: profileData } = await supabase
         .from('profiles')
         .select('first_name, last_name')
-        .eq('id', selectedUserId)
+        .eq('id', targetUserId)
         .single();
       
       // Get the user's email to help with matching records
       let userEmail = '';
-      if (selectedUserId === user?.id) {
+      if (targetUserId === user?.id) {
         userEmail = user.email || '';
       } else {
         // For other users, try to construct a likely email from their profile data
         // This is just a fallback and may not be accurate
         const domain = user?.email ? user.email.split('@')[1] : 'avergenerics.co.uk';
-        userEmail = `${selectedUserId.split('-')[0]}@${domain}`;
+        userEmail = `${targetUserId.split('-')[0]}@${domain}`;
       }
       
       // Extract username from email
@@ -267,7 +276,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
         '';
       
-      console.log('Matching with names:', { userName, fullName });
+      console.log('Matching with names:', { userName, fullName, targetUserId, selectedUserDisplayName });
       
       // Determine table names based on selected month and previous month
       let currentTable;
@@ -403,9 +412,51 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const processRepData = (data: any[]) => {
     const repMap = new Map();
     
+    // Function to normalize rep names for better matching
+    const normalizeRepName = (name: string) => {
+      if (!name) return '';
+      // Convert to lowercase, remove extra spaces, and standardize
+      return name.toLowerCase().trim().replace(/\s+/g, ' ');
+    };
+    
+    // Function to get a canonical rep name (for display)
+    const getCanonicalRepName = (name: string) => {
+      if (!name) return '';
+      // Return the original name but trimmed
+      return name.trim();
+    };
+    
     data.forEach(item => {
-      const repName = item.Rep || item.rep_name || '';
-      if (!repName) return;
+      const originalRepName = item.Rep || item.rep_name || '';
+      if (!originalRepName) return;
+      
+      // Filter out department names and invalid rep names
+      const departmentNames = ['RETAIL', 'REVA', 'WHOLESALE', 'TRADE'];
+      const nonRepNames = ['YVONNE WALTON', 'ADAM FORSYTHE']; // Known non-rep names that appear in data
+      const upperRepName = originalRepName.toUpperCase().trim();
+      
+      // Skip if this is a department name
+      if (departmentNames.includes(upperRepName)) {
+        return;
+      }
+      
+      // Skip if this is a known non-rep name
+      if (nonRepNames.includes(upperRepName)) {
+        return;
+      }
+      
+      // Skip if the name is too short (likely not a real name)
+      if (originalRepName.trim().length < 3) {
+        return;
+      }
+      
+      // Skip if the name contains only numbers or special characters
+      if (!/[a-zA-Z]/.test(originalRepName)) {
+        return;
+      }
+      
+      const normalizedRepName = normalizeRepName(originalRepName);
+      const canonicalRepName = getCanonicalRepName(originalRepName);
       
       const profit = typeof item.Profit === 'number' ? item.Profit : 
                     typeof item.profit === 'number' ? item.profit : 0;
@@ -413,19 +464,22 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
                    typeof item.spend === 'number' ? item.spend : 0;
       const accountRef = item['Account Ref'] || item.account_ref || '';
       
-      if (!repMap.has(repName)) {
-        repMap.set(repName, {
-          repName,
+      // Use normalized name as key but store canonical name for display
+      if (!repMap.has(normalizedRepName)) {
+        repMap.set(normalizedRepName, {
+          repName: canonicalRepName, // Use the canonical name for display
           profit: 0,
           spend: 0,
           accounts: new Set(),
-          activeAccounts: new Set()
+          activeAccounts: new Set(),
+          recordCount: 0
         });
       }
       
-      const repData = repMap.get(repName);
+      const repData = repMap.get(normalizedRepName);
       repData.profit += profit;
       repData.spend += spend;
+      repData.recordCount += 1;
       
       if (accountRef) {
         repData.accounts.add(accountRef);
@@ -436,14 +490,24 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     });
     
     // Convert map to array and calculate derivatives
-    return Array.from(repMap.values()).map(rep => ({
+    const processedReps = Array.from(repMap.values()).map(rep => ({
       repName: rep.repName,
       profit: rep.profit,
       spend: rep.spend,
       margin: rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0,
       totalAccounts: rep.accounts.size,
-      activeAccounts: rep.activeAccounts.size
+      activeAccounts: rep.activeAccounts.size,
+      recordCount: rep.recordCount
     }));
+    
+    console.log('processRepData output:', {
+      totalReps: processedReps.length,
+      totalProfit: processedReps.reduce((sum, rep) => sum + rep.profit, 0),
+      craigData: processedReps.find(rep => rep.repName.toLowerCase().includes('craig')),
+      allRepNames: processedReps.map(rep => rep.repName).sort()
+    });
+    
+    return processedReps;
   };
   
   const fetchRepComparisonData = async () => {
@@ -462,9 +526,52 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         monthlyTables.map(table => fetchDataFromTable(table))
       );
       
+      // Apply department filtering to each month's data before processing
+      const filteredMonthlyData = monthlyData.map((result, index) => {
+        let filteredData = result.data || [];
+        const originalCount = filteredData.length;
+        
+        // Apply department filtering - only filter if not all departments are selected
+        if (!includeRetail || !includeReva || !includeWholesale) {
+          filteredData = filteredData.filter((item: any) => {
+            const department = item.Department || item.department || '';
+            const deptUpper = department.toUpperCase();
+            
+            // Include the record if its department is enabled
+            if (deptUpper === 'RETAIL') return includeRetail;
+            if (deptUpper === 'REVA') return includeReva;
+            if (deptUpper === 'WHOLESALE' || deptUpper === 'TRADE') return includeWholesale;
+            
+            // Include records with unknown/empty departments by default
+            return true;
+          });
+          
+          console.log(`Month ${months[index]}: Filtered from ${originalCount} to ${filteredData.length} records`);
+          console.log(`Filters: Retail=${includeRetail}, REVA=${includeReva}, Wholesale=${includeWholesale}`);
+        } else {
+          console.log(`Month ${months[index]}: No filtering applied - all departments selected`);
+        }
+        
+        return { ...result, data: filteredData };
+      });
+      
       // Process data to get monthly metrics by rep
-      const processedMonthlyData = monthlyData.map((result, index) => {
+      const processedMonthlyData = filteredMonthlyData.map((result, index) => {
+        console.log(`Month ${months[index]} before processing:`, {
+          totalRecords: result.data?.length || 0,
+          sampleDepartments: result.data?.slice(0, 5).map(item => item.Department || item.department) || [],
+          craigRecords: result.data?.filter(item => 
+            (item.Rep || item.rep_name || '').includes('Craig')).length || 0,
+          uniqueRepNames: [...new Set(result.data?.map(item => item.Rep || item.rep_name).filter(Boolean))].sort()
+        });
+        
         const repData = processRepData(result.data || []);
+        console.log(`Month ${months[index]} processed data:`, {
+          totalRecords: result.data?.length || 0,
+          totalReps: repData.length,
+          totalProfit: repData.reduce((sum, rep) => sum + rep.profit, 0),
+          craigData: repData.find(rep => rep.repName.includes('Craig'))
+        });
         return {
           month: months[index],
           data: repData
@@ -475,15 +582,39 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       const repNames = new Set<string>();
       const userRepName = selectedUserDisplayName !== "My Data" ? selectedUserDisplayName : (userFirstName || "");
       
+      console.log('Chart data processing:', {
+        selectedUserDisplayName,
+        userFirstName,
+        userRepName,
+        includeRetail,
+        includeReva,
+        includeWholesale
+      });
+      
       // Collect all rep names
       processedMonthlyData.forEach(monthData => {
         monthData.data.forEach(rep => {
           // Skip the current user's data as we'll handle it separately
           if (!rep.repName.includes(userRepName)) {
-            repNames.add(rep.repName);
+            // Additional filtering to ensure we only get proper rep names
+            const repName = rep.repName.trim();
+            
+            // Skip department names
+            const departmentNames = ['RETAIL', 'REVA', 'WHOLESALE', 'TRADE'];
+            if (departmentNames.includes(repName.toUpperCase())) {
+              return;
+            }
+            
+            // Only include names that look like proper names (contain at least one space for first/last name)
+            // or are known single names
+            if (repName.includes(' ') || repName.length > 3) {
+              repNames.add(rep.repName);
+            }
           }
         });
       });
+      
+      console.log('Collected rep names for comparison:', Array.from(repNames));
       
       // Extract user's data across months
       const userData = {
@@ -501,8 +632,121 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         margin: [] as { month: string; value: number }[]
       };
       
+      // For "All Data" view, we want to show the total aggregated data
+      // For "My Data" and individual user views, we show their specific data using the SAME method as metric cards
+      const isAllDataView = selectedUserId === "all";
+      const isMyDataView = selectedUserDisplayName === "My Data";
+      
+      // For individual users (including "My Data"), we need to use the same approach as metric cards
+      if (!isAllDataView) {
+        // Use the same user matching logic as metric cards
+        // Determine which user's data to fetch
+        let targetUserId = selectedUserId;
+        
+        // If "My Data" is selected, use the current logged-in user's ID
+        if (isMyDataView) {
+          targetUserId = user?.id || selectedUserId;
+          console.log('Chart My Data view: Using logged-in user ID:', targetUserId);
+        }
+        
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', targetUserId)
+          .single();
+        
+        let userEmail = '';
+        if (targetUserId === user?.id) {
+          userEmail = user.email || '';
+        }
+        
+        let userName = '';
+        if (userEmail) {
+          userName = userEmail.split('@')[0];
+          userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+        }
+        
+        const fullName = profileData ? 
+          `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim() : 
+          '';
+        
+        const matchName = fullName || userName;
+        console.log(`Chart data matching with: ${matchName} (targetUserId: ${targetUserId}, isMyDataView: ${isMyDataView})`);
+        
+        
+        // For each month, get user data using the same method as metric cards
+        for (let i = 0; i < months.length; i++) {
+          const month = months[i];
+          const table = monthlyTables[i];
+          
+          console.log(`Getting chart data for ${matchName} from ${table} for ${month}`);
+          
+          // Get user data using the same method as metric cards
+          const { data: userMonthData, error } = await fetchUserDataFromTable(table, matchName);
+          
+          if (!error && userMonthData) {
+            // Apply department filtering (same as metric cards)
+            let filteredUserData = userMonthData;
+            if (!includeRetail || !includeReva || !includeWholesale) {
+              filteredUserData = filteredUserData.filter((item: any) => {
+                const department = item.Department || item.department || '';
+                if (!includeRetail && department.toUpperCase() === 'RETAIL') return false;
+                if (!includeReva && department.toUpperCase() === 'REVA') return false;
+                if (!includeWholesale && (department.toUpperCase() === 'WHOLESALE' || department.toUpperCase() === 'TRADE')) return false;
+                return true;
+              });
+            }
+            
+            // Calculate metrics using the same method as metric cards
+            const profitColumn = table === 'sales_data' ? 'profit' : 'Profit';
+            const spendColumn = table === 'sales_data' ? 'spend' : 'Spend';
+            const metrics = calculatePerformanceMetrics(filteredUserData, profitColumn, spendColumn);
+            
+            console.log(`Chart data for ${matchName} in ${month}:`, {
+              profit: metrics.totalProfit,
+              spend: metrics.totalSpend,
+              margin: metrics.margin,
+              accounts: metrics.totalAccounts,
+              recordCount: filteredUserData.length
+            });
+            
+            userData.profit.push({ month: month.substring(0, 3), value: metrics.totalProfit });
+            userData.spend.push({ month: month.substring(0, 3), value: metrics.totalSpend });
+            userData.packs.push({ month: month.substring(0, 3), value: metrics.totalAccounts });
+            userData.margin.push({ month: month.substring(0, 3), value: metrics.margin });
+          }
+        }
+      } else {
+        // For "All Data" view, use aggregated totals
+        processedMonthlyData.forEach(monthData => {
+          // Calculate totals
+          let totalProfit = 0;
+          let totalSpend = 0;
+          let totalPacks = 0;
+          
+          monthData.data.forEach(rep => {
+            totalProfit += rep.profit;
+            totalSpend += rep.spend;
+            totalPacks += rep.totalAccounts || 0;
+          });
+          
+          const aggregatedMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+          console.log(`Using aggregated data for "All Data" in ${monthData.month}:`, {
+            profit: totalProfit,
+            spend: totalSpend,
+            margin: aggregatedMargin,
+            accounts: totalPacks
+          });
+          
+          userData.profit.push({ month: monthData.month.substring(0, 3), value: totalProfit });
+          userData.spend.push({ month: monthData.month.substring(0, 3), value: totalSpend });
+          userData.packs.push({ month: monthData.month.substring(0, 3), value: totalPacks });
+          userData.margin.push({ month: monthData.month.substring(0, 3), value: aggregatedMargin });
+        });
+      }
+      
+      // Calculate team averages (unchanged)
       processedMonthlyData.forEach(monthData => {
-        // Calculate averages
         let totalProfit = 0;
         let totalSpend = 0;
         let totalPacks = 0;
@@ -515,14 +759,6 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           totalPacks += rep.totalAccounts || 0;
           totalMargin += rep.margin;
           repCount++;
-          
-          // Extract user's data if match found
-          if (rep.repName.includes(userRepName)) {
-            userData.profit.push({ month: monthData.month.substring(0, 3), value: rep.profit });
-            userData.spend.push({ month: monthData.month.substring(0, 3), value: rep.spend });
-            userData.packs.push({ month: monthData.month.substring(0, 3), value: rep.totalAccounts || 0 });
-            userData.margin.push({ month: monthData.month.substring(0, 3), value: rep.margin });
-          }
         });
         
         // Add average for the month
@@ -574,10 +810,26 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         rep => rep.profit.length > 0
       );
       
+      // Sort by total profit (sum of all months) to get top performers
+      const sortedByProfit = filteredComparisonData.sort((a, b) => {
+        const totalProfitA = a.profit.reduce((sum, month) => sum + month.value, 0);
+        const totalProfitB = b.profit.reduce((sum, month) => sum + month.value, 0);
+        return totalProfitB - totalProfitA; // Descending order (highest first)
+      });
+      
+      console.log('Final comparison data being set:', {
+        totalReps: filteredComparisonData.length,
+        repNames: filteredComparisonData.map(rep => rep.repName).sort(),
+        topPerformers: sortedByProfit.slice(0, 5).map(rep => ({
+          name: rep.repName,
+          totalProfit: rep.profit.reduce((sum, month) => sum + month.value, 0)
+        }))
+      });
+      
       // Set the state with the processed data
       setUserTrendsData(userData);
       setTeamAverageData(averageData);
-      setRepComparisonData(filteredComparisonData.slice(0, 5)); // Limit to 5 reps for comparison
+      setRepComparisonData(sortedByProfit.slice(0, 5)); // Limit to top 5 performers by profit
       
     } catch (error) {
       console.error("Error fetching rep comparison data:", error);
