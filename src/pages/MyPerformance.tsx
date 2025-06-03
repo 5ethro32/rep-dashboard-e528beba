@@ -161,6 +161,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let currentTable;
         let previousTable;
         switch (selectedMonth) {
+          case 'June':
+            currentTable = 'June_Data';
+            previousTable = 'May_Data'; // May data for comparison
+            break;
           case 'May':
             currentTable = 'May_Data';
             previousTable = 'Prior_Month_Rolling'; // Updated: Using Prior_Month_Rolling for April data
@@ -284,6 +288,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       let currentTable;
       let previousTable;
       switch (selectedMonth) {
+        case 'June':
+          currentTable = 'June_Data';
+          previousTable = 'May_Data'; // May data for comparison
+          break;
         case 'May':
           currentTable = 'May_Data';
           previousTable = 'Prior_Month_Rolling'; // Updated: Using Prior_Month_Rolling for April data
@@ -517,12 +525,13 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const fetchRepComparisonData = async () => {
     try {
       // Fetch monthly data for all reps
-      const months = ['February', 'March', 'April', 'May'];
+      const months = ['February', 'March', 'April', 'May', 'June'];
       const monthlyTables = [
         'sales_data_februrary',
         'sales_data',
         'mtd_daily',
-        'May_Data'
+        'May_Data',
+        'June_Data'
       ];
       
       // Get data for each month

@@ -24,7 +24,7 @@ export const useRepPerformanceData = () => {
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState('May');
+  const [selectedMonth, setSelectedMonth] = useState('June');
   
   const [overallData, setOverallData] = useState(defaultOverallData);
   const [repData, setRepData] = useState(defaultRepData);
@@ -47,6 +47,14 @@ export const useRepPerformanceData = () => {
   const [aprBaseSummary, setAprBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [aprRevaValues, setAprRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [aprWholesaleValues, setAprWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  
+  // June data states
+  const [junRepData, setJunRepData] = useState(defaultRepData);
+  const [junRevaData, setJunRevaData] = useState(defaultRevaData);
+  const [junWholesaleData, setJunWholesaleData] = useState(defaultWholesaleData);
+  const [junBaseSummary, setJunBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [junRevaValues, setJunRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [junWholesaleValues, setJunWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
   const [mayRepData, setMayRepData] = useState(defaultRepData);
   const [mayRevaData, setMayRevaData] = useState(defaultRevaData);
@@ -184,6 +192,247 @@ export const useRepPerformanceData = () => {
       mayRepData, mayRevaData, mayWholesaleData]);
 
   // New loadMayData function to fetch May data from the May_Data table
+  const loadJuneData = async () => {
+    setIsLoading(true);
+    try {
+      console.log('Starting to fetch June data from June_Data table...');
+      
+      // First, check if there's any data in the June_Data table
+      const { count, error: countError } = await supabase
+        .from('June_Data')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) throw new Error(`Error getting count: ${countError.message}`);
+      
+      if (!count || count === 0) {
+        setIsLoading(false);
+        console.log('No data found in the June_Data table');
+        return false;
+      }
+      
+      console.log(`Found ${count} total records in June_Data table`);
+      
+      // Fetch all records from June_Data using pagination
+      let allRecords = [];
+      const pageSize = 1000;
+      const pages = Math.ceil(count / pageSize);
+      
+      for (let page = 0; page < pages; page++) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('June_Data')
+          .select('*')
+          .range(from, to);
+        
+        if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
+        if (pageData) allRecords = [...allRecords, ...pageData];
+        
+        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records from June_Data`);
+      }
+      
+      const juneData = allRecords;
+      console.log('Fetched June records total count:', juneData.length);
+      
+      // Use May_Data for comparison data
+      console.log('Fetching May data from May_Data table for June comparison...');
+      
+      const { count: mayCount, error: mayCountError } = await supabase
+        .from('May_Data')
+        .select('*', { count: 'exact', head: true });
+        
+      if (mayCountError) throw new Error(`Error getting May count: ${mayCountError.message}`);
+      
+      let mayRecords = [];
+      if (mayCount && mayCount > 0) {
+        const mayPages = Math.ceil(mayCount / pageSize);
+        
+        for (let page = 0; page < mayPages; page++) {
+          const from = page * pageSize;
+          const to = from + pageSize - 1;
+          
+          const { data: pageData, error: pageError } = await supabase
+            .from('May_Data')
+            .select('*')
+            .range(from, to);
+          
+          if (pageError) throw new Error(`Error fetching May page ${page}: ${pageError.message}`);
+          if (pageData) mayRecords = [...mayRecords, ...pageData];
+        }
+      }
+      
+      console.log('Fetched May records for comparison:', mayRecords.length);
+      
+      // Process June data by department
+      const juneRetailData = juneData.filter(item => item.Department === 'RETAIL');
+      const juneRevaData = juneData.filter(item => item.Department === 'REVA');
+      const juneWholesaleData = juneData.filter(item => item.Department === 'Wholesale' || item.Department === 'WHOLESALE');
+      
+      // Process May data by department for comparison
+      const mayRetailData = mayRecords.filter(item => item.Department === 'RETAIL');
+      const mayRevaData = mayRecords.filter(item => item.Department === 'REVA');
+      const mayWholesaleData = mayRecords.filter(item => item.Department === 'Wholesale' || item.Department === 'WHOLESALE');
+      
+      console.log('June data breakdown:', {
+        retail: juneRetailData.length,
+        reva: juneRevaData.length,
+        wholesale: juneWholesaleData.length
+      });
+      
+             // Transform data function (same as in loadMayData)
+       const transformData = (data: any[], isDepartmentData = false): RepData[] => {
+         const repMap = new Map<string, {
+           rep: string;
+           spend: number;
+           profit: number;
+           packs: number;
+           activeAccounts: Set<string>;
+           totalAccounts: Set<string>;
+           profitPerActiveShop: number;
+           profitPerPack: number;
+           activeRatio: number;
+         }>();
+         
+         data.forEach(item => {
+           let repName;
+           
+           if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+             repName = item['Sub-Rep'];
+           } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
+             return;
+           } else {
+             repName = item.Rep;
+           }
+           
+           if (!repName) return;
+           
+           if (!repMap.has(repName)) {
+             repMap.set(repName, {
+               rep: repName,
+               spend: 0,
+               profit: 0,
+               packs: 0,
+               activeAccounts: new Set(),
+               totalAccounts: new Set(),
+               profitPerActiveShop: 0,
+               profitPerPack: 0,
+               activeRatio: 0
+             });
+           }
+           
+           const currentRep = repMap.get(repName)!;
+           
+           const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+           const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+           const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+           
+           currentRep.spend += spend;
+           currentRep.profit += profit;
+           currentRep.packs += packs;
+           
+           if (item["Account Ref"]) {
+             currentRep.totalAccounts.add(item["Account Ref"]);
+             if (spend > 0) {
+               currentRep.activeAccounts.add(item["Account Ref"]);
+             }
+           }
+           
+           repMap.set(repName, currentRep);
+         });
+         
+         return Array.from(repMap.values()).map(rep => {
+           const margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
+           
+           return {
+             rep: rep.rep,
+             spend: rep.spend,
+             profit: rep.profit,
+             margin: margin,
+             packs: rep.packs,
+             activeAccounts: rep.activeAccounts.size,
+             totalAccounts: rep.totalAccounts.size,
+             profitPerActiveShop: rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0,
+             profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
+             activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
+           };
+         }).filter(rep => {
+           return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
+         });
+       };
+
+       // Calculate summary function
+       const calculateDeptSummary = (data: any[]) => {
+         const totalProfit = data.reduce((sum, item) => {
+           const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+           return sum + profit;
+         }, 0);
+       
+         const totalSpend = data.reduce((sum, item) => {
+           const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+           return sum + spend;
+         }, 0);
+       
+         const totalPacks = data.reduce((sum, item) => {
+           const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+           return sum + packs;
+         }, 0);
+       
+         const uniqueAccounts = new Set();
+         const activeAccounts = new Set();
+       
+         data.forEach(item => {
+           if (item["Account Ref"]) {
+             uniqueAccounts.add(item["Account Ref"]);
+             
+             const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+             if (spend > 0) {
+               activeAccounts.add(item["Account Ref"]);
+             }
+           }
+         });
+       
+         const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+       
+         return {
+           totalProfit,
+           totalSpend,
+           totalPacks,
+           totalAccounts: uniqueAccounts.size,
+           activeAccounts: activeAccounts.size,
+           averageMargin
+         };
+       };
+       
+       // Transform and aggregate June data
+       const processedJuneRetail = transformData(juneRetailData);
+       const processedJuneReva = transformData(juneRevaData, true);
+       const processedJuneWholesale = transformData(juneWholesaleData, true);
+       
+       // Calculate summaries
+       const juneSummary = calculateDeptSummary(juneRetailData);
+       const juneRevaSummary = calculateDeptSummary(juneRevaData);
+       const juneWholesaleSummary = calculateDeptSummary(juneWholesaleData);
+      
+      // Set June data
+      setJunRepData(processedJuneRetail);
+      setJunRevaData(processedJuneReva);
+      setJunWholesaleData(processedJuneWholesale);
+      setJunBaseSummary(juneSummary);
+      setJunRevaValues(juneRevaSummary);
+      setJunWholesaleValues(juneWholesaleSummary);
+      
+      console.log('June data loaded successfully');
+      return true;
+      
+    } catch (error) {
+      console.error('Error loading June data:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loadMayData = async () => {
     setIsLoading(true);
     try {
@@ -1053,6 +1302,7 @@ export const useRepPerformanceData = () => {
 
       await loadAprilData();
       await loadMayData();
+      await loadJuneData();
       
       console.log("Successfully loaded data from Supabase");
       return true;
@@ -1084,6 +1334,10 @@ export const useRepPerformanceData = () => {
       currentRepData = mayRepData;
       currentRevaData = mayRevaData;
       currentWholesaleData = mayWholesaleData;
+    } else if (monthToUse === 'June') {
+      currentRepData = junRepData;
+      currentRevaData = junRevaData;
+      currentWholesaleData = junWholesaleData;
     }
     
     // Determine which data to return based on the tab value
@@ -1102,15 +1356,18 @@ export const useRepPerformanceData = () => {
           return getCombinedRepData(
             monthToUse === 'February' ? febRepData :
             monthToUse === 'April' ? aprRepData :
-            monthToUse === 'May' ? mayRepData : repData,
+            monthToUse === 'May' ? mayRepData :
+            monthToUse === 'June' ? junRepData : repData,
             
             monthToUse === 'February' ? febRevaData :
             monthToUse === 'April' ? aprRevaData :
-            monthToUse === 'May' ? mayRevaData : revaData,
+            monthToUse === 'May' ? mayRevaData :
+            monthToUse === 'June' ? junRevaData : revaData,
             
             monthToUse === 'February' ? febWholesaleData :
             monthToUse === 'April' ? aprWholesaleData :
-            monthToUse === 'May' ? mayWholesaleData : wholesaleData,
+            monthToUse === 'May' ? mayWholesaleData :
+            monthToUse === 'June' ? junWholesaleData : wholesaleData,
             
             includeRetail,
             includeReva,
@@ -1134,19 +1391,22 @@ export const useRepPerformanceData = () => {
     return sortRepData(data, sortBy, sortOrder);
   };
 
-  // Updated summary calculation to include May data
+  // Updated summary calculation to include June data
   const summary = calculateSummary(
     selectedMonth === 'March' ? baseSummary : 
     selectedMonth === 'February' ? febBaseSummary : 
-    selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary,
+    selectedMonth === 'April' ? aprBaseSummary : 
+    selectedMonth === 'May' ? mayBaseSummary : junBaseSummary,
     
     selectedMonth === 'March' ? revaValues : 
     selectedMonth === 'February' ? febRevaValues : 
-    selectedMonth === 'April' ? aprRevaValues : mayRevaValues,
+    selectedMonth === 'April' ? aprRevaValues : 
+    selectedMonth === 'May' ? mayRevaValues : junRevaValues,
     
     selectedMonth === 'March' ? wholesaleValues : 
     selectedMonth === 'February' ? febWholesaleValues :
-    selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues,
+    selectedMonth === 'April' ? aprWholesaleValues : 
+    selectedMonth === 'May' ? mayWholesaleValues : junWholesaleValues,
     
     includeRetail,
     includeReva, 
@@ -1207,5 +1467,8 @@ export const useRepPerformanceData = () => {
     mayBaseSummary,
     mayRevaValues,
     mayWholesaleValues,
+    junBaseSummary,
+    junRevaValues,
+    junWholesaleValues,
   };
 };

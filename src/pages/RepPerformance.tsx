@@ -121,10 +121,11 @@ const RepPerformance = () => {
 
   // Create the rep data object for the chart with month-specific data
   const repData = {
-    february: getActiveData('rep', 'February'),
-    march: getActiveData('rep', 'March'),
-    april: getActiveData('rep', 'April'),
-    may: getActiveData('rep', 'May')
+          february: getActiveData('rep', 'February'),
+      march: getActiveData('rep', 'March'),
+      april: getActiveData('rep', 'April'),
+      may: getActiveData('rep', 'May'),
+      june: getActiveData('rep', 'June')
   };
 
   // Add debugging logs to verify we're getting different data for each month
