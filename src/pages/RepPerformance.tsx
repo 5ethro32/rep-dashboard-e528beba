@@ -50,7 +50,10 @@ const RepPerformance = () => {
     febWholesaleValues,
     mayBaseSummary,
     mayRevaValues,
-    mayWholesaleValues
+    mayWholesaleValues,
+    junBaseSummary,
+    junRevaValues,
+    junWholesaleValues
   } = useRepPerformanceData();
 
   // Clear auto-refreshed status after a delay
@@ -118,6 +121,7 @@ const RepPerformance = () => {
   const filteredMarSummary: SummaryData = calculateSummary(baseSummary, revaValues, wholesaleValues, includeRetail, includeReva, includeWholesale);
   const filteredAprSummary: SummaryData = calculateSummary(aprBaseSummary, aprRevaValues, aprWholesaleValues, includeRetail, includeReva, includeWholesale);
   const filteredMaySummary: SummaryData = calculateSummary(mayBaseSummary, mayRevaValues, mayWholesaleValues, includeRetail, includeReva, includeWholesale);
+  const filteredJunSummary: SummaryData = calculateSummary(junBaseSummary, junRevaValues, junWholesaleValues, includeRetail, includeReva, includeWholesale);
 
   // Create the rep data object for the chart with month-specific data
   const repData = {
@@ -186,6 +190,7 @@ const RepPerformance = () => {
           marchSummary={filteredMarSummary} 
           aprilSummary={filteredAprSummary} 
           maySummary={filteredMaySummary} 
+          juneSummary={filteredJunSummary}
           isLoading={isLoading} 
           repDataProp={repData} 
           includeRetail={includeRetail} 

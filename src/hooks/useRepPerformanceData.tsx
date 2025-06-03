@@ -133,6 +133,10 @@ export const useRepPerformanceData = () => {
       currentRepData = mayRepData;
       currentRevaData = mayRevaData;
       currentWholesaleData = mayWholesaleData;
+    } else if (selectedMonth === 'June') {
+      currentRepData = junRepData;
+      currentRevaData = junRevaData;
+      currentWholesaleData = junWholesaleData;
     }
     
     const combinedData = getCombinedRepData(
@@ -189,7 +193,7 @@ export const useRepPerformanceData = () => {
     }
   }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, 
       febRepData, febRevaData, febWholesaleData, aprRepData, aprRevaData, aprWholesaleData,
-      mayRepData, mayRevaData, mayWholesaleData]);
+      mayRepData, mayRevaData, mayWholesaleData, junRepData, junRevaData, junWholesaleData]);
 
   // New loadMayData function to fetch May data from the May_Data table
   const loadJuneData = async () => {
@@ -205,9 +209,28 @@ export const useRepPerformanceData = () => {
       if (countError) throw new Error(`Error getting count: ${countError.message}`);
       
       if (!count || count === 0) {
+        console.log('No data found in the June_Data table - setting empty June data');
+        
+        // Create empty/zero summary values for June
+        const emptySummary = {
+          totalSpend: 0,
+          totalProfit: 0,
+          totalPacks: 0,
+          totalAccounts: 0,
+          activeAccounts: 0,
+          averageMargin: 0
+        };
+        
+        // Set all June data states to empty/zero values
+        setJunRepData([]);
+        setJunRevaData([]);
+        setJunWholesaleData([]);
+        setJunBaseSummary(emptySummary);
+        setJunRevaValues(emptySummary);
+        setJunWholesaleValues(emptySummary);
+        
         setIsLoading(false);
-        console.log('No data found in the June_Data table');
-        return false;
+        return true; // Return true to indicate successful handling of empty data
       }
       
       console.log(`Found ${count} total records in June_Data table`);

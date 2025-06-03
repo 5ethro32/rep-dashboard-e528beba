@@ -255,6 +255,9 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
+                <DropdownMenuItem onClick={() => handleMonthChange('June')} className="cursor-pointer">
+                  June
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleMonthChange('May')} className="cursor-pointer">
                   May
                 </DropdownMenuItem>
@@ -277,6 +280,9 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
+                <DropdownMenuItem onClick={() => handleCompareMonthChange('June')} className="cursor-pointer">
+                  June
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleCompareMonthChange('May')} className="cursor-pointer">
                   May
                 </DropdownMenuItem>

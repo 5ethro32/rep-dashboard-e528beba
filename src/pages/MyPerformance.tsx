@@ -27,7 +27,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   selectedUserName: propSelectedUserName 
 }) => {
   const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState<string>('May');
+  const [selectedMonth, setSelectedMonth] = useState<string>('June');
   const [isLoading, setIsLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState<any>(null);
   const [accountHealthData, setAccountHealthData] = useState<any[]>([]);
@@ -36,8 +36,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId || null);
   const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>(propSelectedUserName || 'My Data');
   const [userFirstName, setUserFirstName] = useState<string>('');
-  const [compareMonth, setCompareMonth] = useState<string>('April');
-  const [accountHealthMonth, setAccountHealthMonth] = useState<string>('May');
+  const [compareMonth, setCompareMonth] = useState<string>('May');
+  const [accountHealthMonth, setAccountHealthMonth] = useState<string>('June');
   const [repComparisonData, setRepComparisonData] = useState<any[]>([]);
   const [teamAverageData, setTeamAverageData] = useState<any>({
     profit: [],
@@ -1468,6 +1468,12 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
               <span>Month: {selectedMonth}</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-gray-950/95 backdrop-blur-sm border border-white/5 z-50">
+              <DropdownMenuItem 
+                className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
+                onClick={() => setSelectedMonth('June')}
+              >
+                June 2025
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
                 onClick={() => setSelectedMonth('May')}
