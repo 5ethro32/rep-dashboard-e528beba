@@ -395,6 +395,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     // Determine current data table based on selected month
     let tableName;
     switch (selectedMonth) {
+      case 'June':
+        tableName = 'June_Data';
+        break;
       case 'May':
         tableName = 'May_Data';
         break;
@@ -913,6 +916,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       // Determine current month data source
       let currentMonthTableName: string;
       switch (accountHealthMonth) {
+        case 'June':
+          currentMonthTableName = 'June_Data';
+          break;
         case 'May':
           currentMonthTableName = 'May_Data';
           break;
@@ -932,6 +938,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       // Determine comparison data source based on compareMonth selection
       let compareMonthTableName: string;
       switch (compareMonth) {
+        case 'June':
+          compareMonthTableName = compareMonth === accountHealthMonth ? 'May_Data' : 'June_Data';
+          break;
         case 'May':
           compareMonthTableName = 'May_Data';
           break;
@@ -1068,6 +1077,12 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let query;
         
         switch (tableName) {
+          case 'June_Data':
+            query = supabase
+              .from('June_Data')
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
           case 'May_Data':
             query = supabase
               .from('May_Data')
@@ -1143,6 +1158,13 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let query;
         
         switch (tableName) {
+          case 'June_Data':
+            query = supabase
+              .from('June_Data')
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
           case 'May_Data':
             query = supabase
               .from('May_Data')
