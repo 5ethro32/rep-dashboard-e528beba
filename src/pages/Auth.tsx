@@ -1,25 +1,49 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, EyeOff, LogIn, UserPlus, Mail } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+
+  // Check if user is coming from password reset email
+  useEffect(() => {
+    const accessToken = searchParams.get('access_token');
+    const refreshToken = searchParams.get('refresh_token');
+    const type = searchParams.get('type');
+    
+    if (accessToken && refreshToken && type === 'recovery') {
+      // User clicked password reset link
+      setIsResetPassword(true);
+      setIsForgotPassword(false);
+      setIsLogin(false);
+      
+      // Set the session with the tokens from URL
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      });
+    }
+  }, [searchParams]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,17 +134,67 @@ const Auth = () => {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      // Validate password match
+      if (password !== confirmPassword) {
+        throw new Error('Passwords do not match.');
+      }
+
+      // Validate password strength
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters long.');
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password Updated Successfully",
+        description: "Your password has been reset. You can now sign in with your new password.",
+      });
+      
+      // Reset form and redirect to login
+      setIsResetPassword(false);
+      setIsLogin(true);
+      setPassword('');
+      setConfirmPassword('');
+      
+      // Clear URL parameters
+      navigate('/auth', { replace: true });
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleView = () => {
     setIsLogin(!isLogin);
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
     setIsForgotPassword(false);
+    setIsResetPassword(false);
     setRegistrationSuccess(false);
   };
 
   const toggleForgotPassword = () => {
     setIsForgotPassword(!isForgotPassword);
     setPassword('');
+    setConfirmPassword('');
+    setIsResetPassword(false);
     setRegistrationSuccess(false);
   };
 
@@ -137,10 +211,10 @@ const Auth = () => {
         <Card className="border border-white/10 bg-gray-900/70 backdrop-blur-sm text-white">
           <CardHeader>
             <CardTitle>
-              {isForgotPassword ? "Reset Password" : (isLogin ? 'Sign In' : 'Create Account')}
+              {isResetPassword ? "Set New Password" : (isForgotPassword ? "Reset Password" : (isLogin ? 'Sign In' : 'Create Account'))}
             </CardTitle>
             <CardDescription className="text-finance-gray">
-              Only avergenerics.co.uk email addresses are allowed
+              {isResetPassword ? "Enter your new password below" : "Only avergenerics.co.uk email addresses are allowed"}
             </CardDescription>
           </CardHeader>
           
@@ -157,7 +231,64 @@ const Auth = () => {
             </div>
           )}
           
-          {isForgotPassword ? (
+          {isResetPassword ? (
+            <form onSubmit={handleResetPassword}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password" className="text-white">New Password</Label>
+                  <div className="relative">
+                    <Input 
+                      id="new-password"
+                      type={showPassword ? "text" : "password"} 
+                      placeholder="Enter new password" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="bg-gray-800 border-white/10 text-white pr-10"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password" className="text-white">Confirm New Password</Label>
+                  <div className="relative">
+                    <Input 
+                      id="confirm-password"
+                      type={showConfirmPassword ? "text" : "password"} 
+                      placeholder="Confirm new password" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="bg-gray-800 border-white/10 text-white pr-10"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col space-y-4">
+                <Button 
+                  type="submit" 
+                  className="w-full bg-finance-red hover:bg-finance-red/80 text-white" 
+                  disabled={loading}
+                >
+                  {loading ? "Updating..." : "Update Password"}
+                  {!loading && <Lock className="ml-2 h-4 w-4" />}
+                </Button>
+              </CardFooter>
+            </form>
+          ) : isForgotPassword ? (
             <form onSubmit={handleForgotPassword}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
