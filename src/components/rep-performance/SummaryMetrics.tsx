@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
@@ -38,8 +37,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
 
-  // Only show change indicators if we're viewing March, April, or May data (compared to previous month)
-  const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April' || selectedMonth === 'May';
+  // Only show change indicators if we're viewing March, April, May, or June data (compared to previous month)
+  const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April' || selectedMonth === 'May' || selectedMonth === 'June';
 
   useEffect(() => {
     // Recalculate changes whenever toggle states change
@@ -67,6 +66,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     if (selectedMonth === 'March') return 'February';
     if (selectedMonth === 'April') return 'March';
     if (selectedMonth === 'May') return 'April';
+    if (selectedMonth === 'June') return 'May';
     return '';
   };
 

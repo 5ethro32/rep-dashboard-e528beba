@@ -395,6 +395,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     // Determine current data table based on selected month
     let tableName;
     switch (selectedMonth) {
+      case 'June':
+        tableName = 'June_Data';
+        break;
       case 'May':
         tableName = 'May_Data';
         break;
@@ -913,6 +916,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       // Determine current month data source
       let currentMonthTableName: string;
       switch (accountHealthMonth) {
+        case 'June':
+          currentMonthTableName = 'June_Data';
+          break;
         case 'May':
           currentMonthTableName = 'May_Data';
           break;
@@ -926,12 +932,15 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           currentMonthTableName = 'sales_data_februrary';
           break;
         default:
-          currentMonthTableName = 'May_Data';
+          currentMonthTableName = 'June_Data';
       }
       
       // Determine comparison data source based on compareMonth selection
       let compareMonthTableName: string;
       switch (compareMonth) {
+        case 'June':
+          compareMonthTableName = compareMonth === accountHealthMonth ? 'May_Data' : 'June_Data';
+          break;
         case 'May':
           compareMonthTableName = 'May_Data';
           break;
@@ -1068,6 +1077,12 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let query;
         
         switch (tableName) {
+          case 'June_Data':
+            query = supabase
+              .from('June_Data')
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
           case 'May_Data':
             query = supabase
               .from('May_Data')
@@ -1130,9 +1145,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     return { data: allData, error: null };
   };
   
-  // Helper function to fetch user-specific data from a specific table with pagination
+  // Helper function to fetch user-specific data from a table
   const fetchUserDataFromTable = async (tableName: string, matchName: string) => {
-    console.log(`Fetching user data for "${matchName}" from table: ${tableName} with pagination`);
+    console.log(`Fetching user data from table: ${tableName} for user: ${matchName}`);
     const PAGE_SIZE = 1000;
     let allData: any[] = [];
     let page = 0;
@@ -1143,6 +1158,13 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let query;
         
         switch (tableName) {
+          case 'June_Data':
+            query = supabase
+              .from('June_Data')
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
           case 'May_Data':
             query = supabase
               .from('May_Data')
@@ -1184,29 +1206,28 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         
         const { data, error, count } = await query;
         
-        if (error) {
-          console.error(`Error fetching user data page ${page} from ${tableName}:`, error);
-          return { data: allData, error };
-        }
+        if (error) throw error;
         
         if (data && data.length > 0) {
           allData = [...allData, ...data];
           page++;
           
-          // Check if we've fetched all available data
-          hasMoreData = data.length === PAGE_SIZE;
-          console.log(`Fetched ${data.length} user records from ${tableName}, page ${page}. Total so far: ${allData.length}`);
+          // If we got less than PAGE_SIZE records, we've reached the end
+          if (data.length < PAGE_SIZE) {
+            hasMoreData = false;
+          }
         } else {
           hasMoreData = false;
         }
+        
+        console.log(`Fetched page ${page} from ${tableName} for user ${matchName}: ${data?.length || 0} records`);
       } catch (error) {
-        console.error(`Error in user data pagination loop for ${tableName}:`, error);
+        console.error(`Error fetching page ${page} from ${tableName}:`, error);
         hasMoreData = false;
-        return { data: allData, error };
       }
     }
     
-    console.log(`Completed fetching user data from ${tableName}. Total records: ${allData.length}`);
+    console.log(`Total records fetched from ${tableName} for user ${matchName}: ${allData.length}`);
     return { data: allData, error: null };
   };
   
