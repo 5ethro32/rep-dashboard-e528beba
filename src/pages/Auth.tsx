@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -23,27 +22,36 @@ const Auth = () => {
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
 
   // Check if user is coming from password reset email
   useEffect(() => {
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    const type = searchParams.get('type');
+    // Supabase sends tokens in URL fragments (after #), not query parameters
+    const hash = window.location.hash;
     
-    if (accessToken && refreshToken && type === 'recovery') {
-      // User clicked password reset link
-      setIsResetPassword(true);
-      setIsForgotPassword(false);
-      setIsLogin(false);
+    if (hash) {
+      // Parse the hash fragment (remove the # and parse as query string)
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
       
-      // Set the session with the tokens from URL
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      });
+      if (accessToken && refreshToken && type === 'recovery') {
+        // User clicked password reset link
+        setIsResetPassword(true);
+        setIsForgotPassword(false);
+        setIsLogin(false);
+        
+        // Set the session with the tokens from URL
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        
+        // Clear the hash from URL for security
+        window.history.replaceState(null, '', window.location.pathname);
+      }
     }
-  }, [searchParams]);
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
