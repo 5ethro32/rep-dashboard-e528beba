@@ -1293,8 +1293,6 @@ export const useRepPerformanceData = () => {
         return await loadAprilData();
       } else if (selectedMonth === 'May') {
         return await loadMayData();
-      } else if (selectedMonth === 'June') {
-        return await loadJuneData();
       }
       
       const data = await fetchRepPerformanceData();
