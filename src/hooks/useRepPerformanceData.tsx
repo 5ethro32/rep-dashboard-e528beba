@@ -176,7 +176,7 @@ export const useRepPerformanceData = () => {
       
       setSummaryChanges(invertedSummaryChanges);
       setRepChanges(invertedChanges);
-    } else if (selectedMonth === 'April' || selectedMonth === 'May') {
+    } else if (selectedMonth === 'April' || selectedMonth === 'May' || selectedMonth === 'June') {
       if (repChanges) {
         setRepChanges(repChanges);
       }
@@ -1293,6 +1293,8 @@ export const useRepPerformanceData = () => {
         return await loadAprilData();
       } else if (selectedMonth === 'May') {
         return await loadMayData();
+      } else if (selectedMonth === 'June') {
+        return await loadJuneData();
       }
       
       const data = await fetchRepPerformanceData();
