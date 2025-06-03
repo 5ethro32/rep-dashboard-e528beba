@@ -436,18 +436,107 @@ export const useRepPerformanceData = () => {
        const juneSummary = calculateDeptSummary(juneRetailData);
        const juneRevaSummary = calculateDeptSummary(juneRevaData);
        const juneWholesaleSummary = calculateDeptSummary(juneWholesaleData);
-      
-      // Set June data
-      setJunRepData(processedJuneRetail);
-      setJunRevaData(processedJuneReva);
-      setJunWholesaleData(processedJuneWholesale);
-      setJunBaseSummary(juneSummary);
-      setJunRevaValues(juneRevaSummary);
-      setJunWholesaleValues(juneWholesaleSummary);
-      
-      console.log('June data loaded successfully');
-      return true;
-      
+       
+       // Transform comparison data (May data)
+       const comparisonRetailRepData = transformData(mayRetailData);
+       const comparisonRevaRepData = transformData(mayRevaData, true);
+       const comparisonWholesaleRepData = transformData(mayWholesaleData, true);
+       
+       // Calculate comparison summaries
+       const comparisonRetailSummary = calculateDeptSummary(mayRetailData);
+       const comparisonRevaSummary = calculateDeptSummary(mayRevaData);
+       const comparisonWholesaleSummary = calculateDeptSummary(mayWholesaleData);
+       
+       // Calculate combined summary for comparison data
+       const calculateSummary = (retail: SummaryData, reva: SummaryData, wholesale: SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean) => {
+         const totalSpend = (includeRetail ? retail.totalSpend : 0) + 
+                           (includeReva ? reva.totalSpend : 0) + 
+                           (includeWholesale ? wholesale.totalSpend : 0);
+         
+         const totalProfit = (includeRetail ? retail.totalProfit : 0) + 
+                            (includeReva ? reva.totalProfit : 0) + 
+                            (includeWholesale ? wholesale.totalProfit : 0);
+         
+         const totalPacks = (includeRetail ? retail.totalPacks : 0) + 
+                           (includeReva ? reva.totalPacks : 0) + 
+                           (includeWholesale ? wholesale.totalPacks : 0);
+         
+         const totalAccounts = (includeRetail ? retail.totalAccounts : 0) + 
+                              (includeReva ? reva.totalAccounts : 0) + 
+                              (includeWholesale ? wholesale.totalAccounts : 0);
+         
+         const activeAccounts = (includeRetail ? retail.activeAccounts : 0) + 
+                               (includeReva ? reva.activeAccounts : 0) + 
+                               (includeWholesale ? wholesale.activeAccounts : 0);
+         
+         const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+         
+         return {
+           totalSpend,
+           totalProfit,
+           totalPacks,
+           totalAccounts,
+           activeAccounts,
+           averageMargin
+         };
+       };
+       
+       const juneCombinedSummary = calculateSummary(
+         juneSummary,
+         juneRevaSummary,
+         juneWholesaleSummary,
+         true, true, true
+       );
+       
+       const comparisonSummary = calculateSummary(
+         comparisonRetailSummary,
+         comparisonRevaSummary,
+         comparisonWholesaleSummary,
+         true, true, true
+       );
+       
+       // Calculate summary percentage changes for metric cards
+       const juneSummaryChanges = {
+         totalSpend: comparisonSummary.totalSpend > 0 ? 
+           ((juneCombinedSummary.totalSpend - comparisonSummary.totalSpend) / comparisonSummary.totalSpend) * 100 : 0,
+         totalProfit: comparisonSummary.totalProfit > 0 ? 
+           ((juneCombinedSummary.totalProfit - comparisonSummary.totalProfit) / comparisonSummary.totalProfit) * 100 : 0,
+         averageMargin: juneCombinedSummary.averageMargin - comparisonSummary.averageMargin,
+         totalPacks: comparisonSummary.totalPacks > 0 ? 
+           ((juneCombinedSummary.totalPacks - comparisonSummary.totalPacks) / comparisonSummary.totalPacks) * 100 : 0,
+         totalAccounts: comparisonSummary.totalAccounts > 0 ? 
+           ((juneCombinedSummary.totalAccounts - comparisonSummary.totalAccounts) / comparisonSummary.totalAccounts) * 100 : 0,
+         activeAccounts: comparisonSummary.activeAccounts > 0 ? 
+           ((juneCombinedSummary.activeAccounts - comparisonSummary.activeAccounts) / comparisonSummary.activeAccounts) * 100 : 0
+       };
+       
+       // Set June data
+       setJunRepData(processedJuneRetail);
+       setJunRevaData(processedJuneReva);
+       setJunWholesaleData(processedJuneWholesale);
+       setJunBaseSummary(juneSummary);
+       setJunRevaValues(juneRevaSummary);
+       setJunWholesaleValues(juneWholesaleSummary);
+       
+       // Update the state if June is currently selected
+       if (selectedMonth === 'June') {
+         console.log('Setting June summary changes:', juneSummaryChanges);
+         setSummaryChanges(juneSummaryChanges);
+         
+         // Create combined data based on selected toggles
+         const combinedJuneData = getCombinedRepData(
+           processedJuneRetail,
+           processedJuneReva,
+           processedJuneWholesale,
+           includeRetail,
+           includeReva,
+           includeWholesale
+         );
+         
+         setOverallData(combinedJuneData);
+       }
+       
+       return true;
     } catch (error) {
       console.error('Error loading June data:', error);
       return false;
@@ -1204,6 +1293,8 @@ export const useRepPerformanceData = () => {
         return await loadAprilData();
       } else if (selectedMonth === 'May') {
         return await loadMayData();
+      } else if (selectedMonth === 'June') {
+        return await loadJuneData();
       }
       
       const data = await fetchRepPerformanceData();

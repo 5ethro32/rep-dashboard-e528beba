@@ -221,9 +221,9 @@ const RepPerformance = () => {
         includeRetail={includeRetail} 
         includeReva={includeReva} 
         includeWholesale={includeWholesale} 
-        baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : mayBaseSummary} 
-        revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : mayRevaValues} 
-        wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : mayWholesaleValues} 
+        baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : selectedMonth === 'May' ? mayBaseSummary : selectedMonth === 'June' ? junBaseSummary : baseSummary} 
+        revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : selectedMonth === 'May' ? mayRevaValues : selectedMonth === 'June' ? junRevaValues : revaValues} 
+        wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : selectedMonth === 'May' ? mayWholesaleValues : selectedMonth === 'June' ? junWholesaleValues : wholesaleValues} 
       />
     </div>
   );
