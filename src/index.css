@@ -239,39 +239,64 @@
     transform: rotateY(180deg);
   }
 
-  /* Compact table styling for engine room operations */
+  /* Ultra-compact table styling for engine room operations */
   .compact-table {
-    /* Make everything more compact */
-    --table-cell-padding-x: 0.5rem;
-    --table-cell-padding-y: 0.25rem;
+    /* Make everything extremely compact */
+    --table-cell-padding-x: 0.25rem;
+    --table-cell-padding-y: 0.125rem;
+    font-size: 0.55rem !important;
+    line-height: 0.9 !important;
   }
   
   .compact-table table {
-    font-size: 0.65rem !important;
-    line-height: 1.0 !important;
+    font-size: 0.55rem !important;
+    line-height: 0.9 !important;
+    width: 100% !important;
   }
   
   .compact-table th,
   .compact-table td {
     padding: var(--table-cell-padding-y) var(--table-cell-padding-x) !important;
-    font-size: inherit !important;
-    line-height: inherit !important;
+    font-size: 0.55rem !important;
+    line-height: 0.9 !important;
+    white-space: nowrap !important;
+    max-width: none !important;
+  }
+  
+  .compact-table th {
+    font-size: 0.5rem !important;
+    font-weight: 600 !important;
   }
   
   .compact-table button {
-    font-size: 0.6rem !important;
-    padding: 0.125rem 0.25rem !important;
+    font-size: 0.45rem !important;
+    padding: 0.0625rem 0.125rem !important;
+    height: auto !important;
+    min-height: 1.25rem !important;
   }
   
   .compact-table .badge {
-    font-size: 0.55rem !important;
-    padding: 0.125rem 0.25rem !important;
+    font-size: 0.4rem !important;
+    padding: 0.0625rem 0.125rem !important;
   }
   
   .compact-table input {
-    font-size: 0.6rem !important;
-    padding: 0.125rem 0.25rem !important;
+    font-size: 0.5rem !important;
+    padding: 0.0625rem 0.125rem !important;
     height: auto !important;
-    min-height: 1.5rem !important;
+    min-height: 1.25rem !important;
+  }
+  
+  .compact-table select {
+    font-size: 0.5rem !important;
+    padding: 0.0625rem 0.125rem !important;
+    height: auto !important;
+    min-height: 1.25rem !important;
+  }
+  
+  /* Make icons smaller */
+  .compact-table svg {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
   }
 }
