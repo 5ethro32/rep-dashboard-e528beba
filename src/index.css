@@ -238,4 +238,40 @@
   .rotate-y-180 {
     transform: rotateY(180deg);
   }
+
+  /* Compact table styling for engine room operations */
+  .compact-table {
+    /* Make everything more compact */
+    --table-cell-padding-x: 0.5rem;
+    --table-cell-padding-y: 0.25rem;
+  }
+  
+  .compact-table table {
+    font-size: 0.65rem !important;
+    line-height: 1.0 !important;
+  }
+  
+  .compact-table th,
+  .compact-table td {
+    padding: var(--table-cell-padding-y) var(--table-cell-padding-x) !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+  
+  .compact-table button {
+    font-size: 0.6rem !important;
+    padding: 0.125rem 0.25rem !important;
+  }
+  
+  .compact-table .badge {
+    font-size: 0.55rem !important;
+    padding: 0.125rem 0.25rem !important;
+  }
+  
+  .compact-table input {
+    font-size: 0.6rem !important;
+    padding: 0.125rem 0.25rem !important;
+    height: auto !important;
+    min-height: 1.5rem !important;
+  }
 }
