@@ -59,6 +59,7 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
 
     const competitors = [
       { name: 'ETH NET', value: item["ETH NET"] || item.eth_net },
+      { name: 'ETH', value: item["ETH"] || item.eth },
       { name: 'Nupharm', value: item.Nupharm || item.nupharm },
       { name: 'LEXON', value: item.LEXON || item.lexon },
       { name: 'AAH', value: item.AAH || item.aah }
@@ -120,6 +121,9 @@ const CellDetailsPopover: React.FC<CellDetailsPopoverProps> = ({
         // Add the competitor pricing data
         if (item["ETH NET"] || item.eth_net) {
           displayItems.push({ label: "ETH NET", value: formatValue(item["ETH NET"] || item.eth_net) });
+        }
+        if (item["ETH"] || item.eth) {
+          displayItems.push({ label: "ETH", value: formatValue(item["ETH"] || item.eth) });
         }
         if (item.Nupharm || item.nupharm) {
           displayItems.push({ label: "Nupharm", value: formatValue(item.Nupharm || item.nupharm) });
