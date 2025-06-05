@@ -922,7 +922,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderDataTable = () => {
     return (
       <div className="rounded-md border">
-        <div className="max-h-[600px] overflow-y-auto overflow-x-auto text-xs compact-table" style={{ fontSize: '0.55rem', lineHeight: '0.9' }}>
+        <div className="max-h-[600px] overflow-y-auto overflow-x-auto text-xs compact-table" style={{ fontSize: '0.6875rem', lineHeight: '1.1' }}>
           <Table>
             <TableHeader>
               <TableRow>
