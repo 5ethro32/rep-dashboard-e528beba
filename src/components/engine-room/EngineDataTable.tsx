@@ -779,29 +779,29 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     if (!item) return null;
     const flags = [];
     if (item.flag1) {
-      flags.push(<span key="high-price" className="bg-red-900/30 text-xs px-2 py-0.5 rounded-md text-red-300" title="Price ≥10% above TRUE MARKET LOW">
+      flags.push(<span key="high-price" className="badge bg-red-900/30 text-xs px-1 py-0 rounded text-red-300" title="Price ≥10% above TRUE MARKET LOW">
         High Price
       </span>);
     }
     if (item.flag2) {
-      flags.push(<span key="low-margin" className="bg-orange-900/30 text-xs px-2 py-0.5 rounded-md text-orange-300" title="Margin < 5%">
+      flags.push(<span key="low-margin" className="badge bg-orange-900/30 text-xs px-1 py-0 rounded text-orange-300" title="Margin < 5%">
         Low Margin
       </span>);
     }
     if (item.shortage) {
-      flags.push(<span key="short" className="bg-purple-900/30 text-xs px-2 py-0.5 rounded-md text-purple-300" title="Product has supply shortage">
+      flags.push(<span key="short" className="badge bg-purple-900/30 text-xs px-1 py-0 rounded text-purple-300" title="Product has supply shortage">
         Short
       </span>);
     }
     if (item.missingNextBuying) {
-      flags.push(<span key="missing-nbp" className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300" title="Missing Next Buying Price">
+      flags.push(<span key="missing-nbp" className="badge bg-blue-900/30 text-xs px-1 py-0 rounded text-blue-300" title="Missing Next Buying Price">
         No NBP
       </span>);
     }
     
     if (item.noMarketPrice || (item.flags && item.flags.includes('No Market Price Available'))) {
-      flags.push(<span key="no-market-price" className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300 flex items-center gap-1" title="No Market Price Available">
-        <Ban className="h-3 w-3" /> No MP
+      flags.push(<span key="no-market-price" className="badge bg-blue-900/30 text-xs px-1 py-0 rounded text-blue-300 inline-flex items-center gap-1" title="No Market Price Available">
+        <Ban className="h-2 w-2" /> No MP
       </span>);
     }
     
@@ -814,20 +814,20 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
           flags.push(
             <span 
               key={`price-decrease-${i}`} 
-              className="bg-red-900/30 text-xs px-2 py-0.5 rounded-md text-red-300 flex items-center gap-1" 
+              className="badge bg-red-900/30 text-xs px-1 py-0 rounded text-red-300 inline-flex items-center gap-1" 
               title={`Price decrease of ${percentage}`}
             >
-              <TrendingDown className="h-3 w-3" /> ↓{percentage}
+              <TrendingDown className="h-2 w-2" /> ↓{percentage}
             </span>
           );
         } else {
-          flags.push(<span key={`flag-${i}`} className="bg-blue-900/30 text-xs px-2 py-0.5 rounded-md text-blue-300" title={flag}>
+          flags.push(<span key={`flag-${i}`} className="badge bg-blue-900/30 text-xs px-1 py-0 rounded text-blue-300" title={flag}>
               {flag}
             </span>);
         }
       });
     }
-    return flags.length > 0 ? <div className="flex flex-wrap gap-1">{flags}</div> : null;
+    return flags.length > 0 ? <div className="flex flex-wrap gap-0.5 items-center" style={{ height: '1.5rem', overflow: 'hidden' }}>{flags}</div> : <div style={{ height: '1.5rem' }}></div>;
   };
 
   const summarizeNumericFilters = (values: any[]) => {
@@ -1117,7 +1117,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderDataTable = () => {
     return (
       <div className="rounded-md border">
-        <div className="max-h-[600px] overflow-y-auto compact-table" style={{ fontSize: '0.5625rem', lineHeight: '1.1' }}>
+        <div className="max-h-[600px] overflow-y-auto compact-table" style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
           <Table className="w-full">
             <TableHeader>
               <TableRow>

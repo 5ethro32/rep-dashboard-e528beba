@@ -239,18 +239,18 @@
     transform: rotateY(180deg);
   }
 
-  /* Super compact table styling for engine room operations - fit all columns */
+  /* Balanced compact table styling for engine room operations - readable but space efficient */
   .compact-table {
-    /* Super compactness - equivalent to ~55% scaling */
-    --table-cell-padding-x: 0.125rem;
-    --table-cell-padding-y: 0.0625rem;
-    font-size: 0.5625rem !important;
-    line-height: 1.1 !important;
+    /* Balanced compactness - equivalent to ~70% scaling */
+    --table-cell-padding-x: 0.25rem;
+    --table-cell-padding-y: 0.125rem;
+    font-size: 0.75rem !important;
+    line-height: 1.2 !important;
   }
   
   .compact-table table {
-    font-size: 0.5625rem !important;
-    line-height: 1.1 !important;
+    font-size: 0.75rem !important;
+    line-height: 1.2 !important;
     width: 100% !important;
     table-layout: fixed !important;
     border-collapse: collapse !important;
@@ -259,18 +259,21 @@
   .compact-table th,
   .compact-table td {
     padding: var(--table-cell-padding-y) var(--table-cell-padding-x) !important;
-    font-size: 0.5625rem !important;
-    line-height: 1.1 !important;
+    font-size: 0.75rem !important;
+    line-height: 1.2 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     max-width: 0 !important;
     min-width: 0 !important;
+    height: 2rem !important; /* Fixed row height */
+    vertical-align: middle !important;
   }
   
   .compact-table th {
-    font-size: 0.5rem !important;
+    font-size: 0.6875rem !important;
     font-weight: 600 !important;
+    height: 2rem !important;
   }
   
   /* Specific column width allocations */
@@ -294,8 +297,15 @@
   }
   
   .compact-table .badge {
-    font-size: 0.4375rem !important;
-    padding: 0.03125rem 0.0625rem !important;
+    font-size: 0.5rem !important;
+    padding: 0.0625rem 0.125rem !important;
+    height: 1rem !important;
+    line-height: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    min-width: auto !important;
+    max-height: 1rem !important;
+    margin: 0.0625rem !important;
   }
   
   .compact-table input {
