@@ -119,7 +119,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [ruleFilter, setRuleFilter] = useState<string>('all');
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<Record<string, string>>({});
   const [bulkEditChanges, setBulkEditChanges] = useState<Record<string, number>>({});
-  const itemsPerPage = 65;
+  const itemsPerPage = 85;
 
   useEffect(() => {
     if (flagFilter && flagFilter !== 'all') {
