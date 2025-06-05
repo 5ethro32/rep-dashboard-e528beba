@@ -119,7 +119,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [ruleFilter, setRuleFilter] = useState<string>('all');
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<Record<string, string>>({});
   const [bulkEditChanges, setBulkEditChanges] = useState<Record<string, number>>({});
-  const itemsPerPage = 85;
+  const itemsPerPage = 70;
 
   useEffect(() => {
     if (flagFilter && flagFilter !== 'all') {
@@ -922,7 +922,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderDataTable = () => {
     return (
       <div className="rounded-md border">
-        <div className="h-[800px] overflow-y-auto overflow-x-auto transform scale-75 origin-top-left" style={{ width: '133.33%' }}>
+        <div className="h-[650px] overflow-y-auto overflow-x-auto transform scale-75 origin-top-left" style={{ width: '133.33%' }}>
           <Table>
             <TableHeader>
               <TableRow>
