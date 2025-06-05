@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, TrendingUp, TrendingDown, Info, Ban, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown, Star, Edit2, CheckCircle, X, Filter, TrendingUp, TrendingDown, Info, Ban, ChevronDown, ChevronUp, Pencil, Eye } from 'lucide-react';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -119,6 +119,7 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const [ruleFilter, setRuleFilter] = useState<string>('all');
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<Record<string, string>>({});
   const [bulkEditChanges, setBulkEditChanges] = useState<Record<string, number>>({});
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(columns.map(col => col.field)));
   const itemsPerPage = 70;
 
   useEffect(() => {
@@ -475,6 +476,166 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
     
     setBulkEditMode(!bulkEditMode);
     setEditingItemId(null); // Clear any individual editing when toggling bulk mode
+  };
+
+  // Column visibility functions
+  const toggleColumnVisibility = (columnField: string) => {
+    setVisibleColumns(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(columnField)) {
+        newSet.delete(columnField);
+      } else {
+        newSet.add(columnField);
+      }
+      return newSet;
+    });
+  };
+
+  const showAllColumns = () => {
+    setVisibleColumns(new Set(columns.map(col => col.field)));
+  };
+
+  const hideAllColumns = () => {
+    // Keep at least Description column visible
+    setVisibleColumns(new Set(['description']));
+  };
+
+  const getVisibleColumns = () => {
+    return columns.filter(col => visibleColumns.has(col.field));
+  };
+
+  const renderCellContent = (item: any, column: any) => {
+    const value = item[column.field];
+    
+    switch (column.field) {
+      case 'description':
+        return item.description;
+      case 'inStock':
+        return item.inStock;
+      case 'revaUsage':
+        return item.revaUsage;
+      case 'usageRank':
+        return item.usageRank;
+      case 'avgCost':
+        return (
+          <CellDetailsPopover item={item} field="avgCost">
+            {formatCurrency(item.avgCost)}
+          </CellDetailsPopover>
+        );
+      case 'nextCost':
+        return (
+          <CellDetailsPopover item={item} field="nextCost">
+            {formatNextBuyingPrice(item)}
+          </CellDetailsPopover>
+        );
+      case 'marketLow':
+        return (
+          <CellDetailsPopover item={item} field="marketLow">
+            <div className="flex items-center gap-1">
+              {formatCurrency(item.marketLow, item.noMarketPrice)}
+              {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
+              {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
+            </div>
+          </CellDetailsPopover>
+        );
+      case 'trueMarketLow':
+        return (
+          <CellDetailsPopover item={item} field="trueMarketLow">
+            {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
+          </CellDetailsPopover>
+        );
+      case 'currentREVAPrice':
+        return (
+          <CellDetailsPopover item={item} field="currentREVAPrice">
+            <span className="font-medium">{formatCurrency(item.currentREVAPrice)}</span>
+          </CellDetailsPopover>
+        );
+      case 'currentREVAMargin':
+        return (
+          <CellDetailsPopover item={item} field="currentREVAMargin">
+            {formatCurrentMargin(item.currentREVAMargin)}
+          </CellDetailsPopover>
+        );
+      case 'proposedPrice':
+        const isEditingThisItem = editingItemId === item.id;
+        return (
+          <>
+            {bulkEditMode ? (
+              <PriceEditor
+                initialPrice={bulkEditChanges[item.id] ?? item.proposedPrice}
+                currentPrice={item.currentREVAPrice}
+                calculatedPrice={item.calculatedPrice || item.currentREVAPrice}
+                cost={item.avgCost}
+                onSave={(newPrice) => handleBulkPriceChange(item.id, newPrice)}
+                onCancel={() => {
+                  setBulkEditChanges(prev => {
+                    const newChanges = {...prev};
+                    delete newChanges[item.id];
+                    return newChanges;
+                  });
+                }}
+                compact={true}
+              />
+            ) : isEditingThisItem && onPriceChange ? (
+              <PriceEditor
+                initialPrice={item.proposedPrice}
+                currentPrice={item.currentREVAPrice}
+                calculatedPrice={item.calculatedPrice || item.currentREVAPrice}
+                cost={item.avgCost}
+                onSave={(newPrice) => {
+                  onPriceChange(item, newPrice);
+                  setEditingItemId(null);
+                }}
+                onCancel={() => setEditingItemId(null)}
+                compact={true}
+              />
+            ) : (
+              <CellDetailsPopover item={item} field="proposedPrice">
+                <div className="flex items-center gap-2 group">
+                  <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
+                  {item.priceModified && <CheckCircle className="h-3 w-3 text-blue-400" />}
+                  {onPriceChange && !bulkEditMode && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartEdit(item.id);
+                      }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              </CellDetailsPopover>
+            )}
+          </>
+        );
+      case 'priceChangePercentage':
+        const priceChangePercentage = calculatePriceChangePercentage(item);
+        return priceChangePercentage !== 0 ? (
+          <span className={priceChangePercentage > 0 ? "text-green-400" : "text-red-400"}>
+            {priceChangePercentage > 0 ? "+" : ""}{priceChangePercentage.toFixed(2)}%
+          </span>
+        ) : null;
+      case 'proposedMargin':
+        return (
+          <CellDetailsPopover item={item} field="proposedMargin">
+            {formatPercentage(item.proposedMargin)}
+          </CellDetailsPopover>
+        );
+      case 'tmlPercentage':
+        return (
+          <CellDetailsPopover item={item} field="tmlPercentage">
+            {formatTMLPercentage(item.tmlPercentage)}
+          </CellDetailsPopover>
+        );
+      case 'appliedRule':
+        return formatRuleDisplay(item.appliedRule);
+      default:
+        return value;
+    }
   };
 
   const renderColumnHeader = (column: any) => {
@@ -896,6 +1057,40 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             Hide Inactive
           </label>
         </div>
+
+        {/* Column visibility control */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Eye className="h-4 w-4 mr-2" />
+              Columns ({visibleColumns.size}/{columns.length})
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-gray-900 border border-gray-700">
+            <div className="p-2">
+              <p className="text-sm font-medium mb-2">Show/Hide Columns</p>
+              <div className="flex gap-2 mb-2">
+                <Button size="sm" variant="outline" onClick={showAllColumns}>
+                  Show All
+                </Button>
+                <Button size="sm" variant="outline" onClick={hideAllColumns}>
+                  Hide All
+                </Button>
+              </div>
+            </div>
+            <DropdownMenuSeparator />
+            {columns.map(column => (
+              <DropdownMenuCheckboxItem
+                key={column.field}
+                checked={visibleColumns.has(column.field)}
+                onCheckedChange={() => toggleColumnVisibility(column.field)}
+                disabled={column.field === 'description'} // Always keep description visible
+              >
+                {column.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         
         {/* Add bulk edit mode toggle button */}
         <Button 
@@ -922,11 +1117,11 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
   const renderDataTable = () => {
     return (
       <div className="rounded-md border">
-        <div className="max-h-[600px] overflow-y-auto overflow-x-auto text-sm compact-table" style={{ fontSize: '0.875rem', lineHeight: '1.3' }}>
-          <Table>
+        <div className="max-h-[600px] overflow-y-auto compact-table" style={{ fontSize: '0.5625rem', lineHeight: '1.1' }}>
+          <Table className="w-full">
             <TableHeader>
               <TableRow>
-                {columns.map(column => (
+                {getVisibleColumns().map(column => (
                   <TableHead key={column.field} className="cursor-pointer hover:bg-gray-900/90">
                     {renderColumnHeader(column)}
                   </TableHead>
@@ -940,147 +1135,28 @@ const EngineDataTable: React.FC<EngineDataTableProps> = ({
             <TableBody>
               {paginatedData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={columns.length + 2} className="text-center py-10">
+                  <TableCell colSpan={getVisibleColumns().length + 2} className="text-center py-10">
                     No items found matching your search criteria
                   </TableCell>
                 </TableRow>
               )}
-              {paginatedData.map((item, index) => {
-                const priceChangePercentage = calculatePriceChangePercentage(item);
-                const isEditingThisItem = editingItemId === item.id;
-                
+              {paginatedData.map((item, index) => {                
                 return (
                   <TableRow 
                     key={index} 
                     className={`${item.noMarketPrice ? 'bg-blue-900/10' : ''} ${item.flag1 || item.flag2 || item.flags && item.flags.length > 0 ? 'bg-red-900/20' : ''} ${item.priceModified ? 'bg-blue-900/20' : ''}`}
                   >
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.inStock}</TableCell>
-                    <TableCell>{item.revaUsage}</TableCell>
-                    <TableCell>{item.usageRank}</TableCell>
+                    {/* Render only visible columns */}
+                    {getVisibleColumns().map(column => (
+                      <TableCell key={column.field} className={column.bold ? 'font-medium' : ''}>
+                        {renderCellContent(item, column)}
+                      </TableCell>
+                    ))}
                     
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="avgCost">
-                        {formatCurrency(item.avgCost)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="nextCost">
-                        {formatNextBuyingPrice(item)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="marketLow">
-                        <div className="flex items-center gap-1">
-                          {formatCurrency(item.marketLow, item.noMarketPrice)}
-                          {item.marketTrend === 'up' && <TrendingUp className="h-3 w-3 text-green-500" />}
-                          {item.marketTrend === 'down' && <TrendingDown className="h-3 w-3 text-red-500" />}
-                        </div>
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="trueMarketLow">
-                        {formatCurrency(item.trueMarketLow, item.noMarketPrice)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="currentREVAPrice">
-                        <span className="font-medium">{formatCurrency(item.currentREVAPrice)}</span>
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="currentREVAMargin">
-                        {formatCurrentMargin(item.currentREVAMargin)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    <TableCell>
-                      {/* Price editing */}
-                      {bulkEditMode ? (
-                        // Bulk edit mode - all cells show editor
-                        <PriceEditor
-                          initialPrice={bulkEditChanges[item.id] ?? item.proposedPrice}
-                          currentPrice={item.currentREVAPrice}
-                          calculatedPrice={item.calculatedPrice || item.currentREVAPrice}
-                          cost={item.avgCost}
-                          onSave={(newPrice) => handleBulkPriceChange(item.id, newPrice)}
-                          onCancel={() => {
-                            // Remove from bulk edits if cancelled
-                            setBulkEditChanges(prev => {
-                              const newChanges = {...prev};
-                              delete newChanges[item.id];
-                              return newChanges;
-                            });
-                          }}
-                          compact={true}
-                        />
-                      ) : isEditingThisItem && onPriceChange ? (
-                        // Individual edit mode - only show editor for the selected item
-                        <PriceEditor
-                          initialPrice={item.proposedPrice}
-                          currentPrice={item.currentREVAPrice}
-                          calculatedPrice={item.calculatedPrice || item.currentREVAPrice}
-                          cost={item.avgCost}
-                          onSave={(newPrice) => {
-                            onPriceChange(item, newPrice);
-                            setEditingItemId(null);
-                          }}
-                          onCancel={() => setEditingItemId(null)}
-                          compact={true}
-                        />
-                      ) : (
-                        // Display mode
-                        <CellDetailsPopover item={item} field="proposedPrice">
-                          <div className="flex items-center gap-2 group">
-                            <span className="font-medium">{formatCurrency(item.proposedPrice)}</span>
-                            {item.priceModified && <CheckCircle className="h-3 w-3 text-blue-400" />}
-                            {onPriceChange && !bulkEditMode && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStartEdit(item.id);
-                                }}
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </CellDetailsPopover>
-                      )}
-                    </TableCell>
-                    
-                    <TableCell>
-                      {priceChangePercentage !== 0 && (
-                        <span className={priceChangePercentage > 0 ? "text-green-400" : "text-red-400"}>
-                          {priceChangePercentage > 0 ? "+" : ""}{priceChangePercentage.toFixed(2)}%
-                        </span>
-                      )}
-                    </TableCell>
-                    
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="proposedMargin">
-                        {formatPercentage(item.proposedMargin)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    <TableCell>
-                      <CellDetailsPopover item={item} field="tmlPercentage">
-                        {formatTMLPercentage(item.tmlPercentage)}
-                      </CellDetailsPopover>
-                    </TableCell>
-                    
-                    <TableCell>{formatRuleDisplay(item.appliedRule)}</TableCell>
-                    
+                    {/* Always show Flags column */}
                     <TableCell>{renderFlags(item)}</TableCell>
                     
+                    {/* Always show Actions column */}
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <Button 
