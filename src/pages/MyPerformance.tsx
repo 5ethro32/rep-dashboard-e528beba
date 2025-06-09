@@ -318,6 +318,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       // Use fullName or userName for matching, prioritizing fullName
       const matchName = fullName || userName;
       
+
       // Get current month data
       const { data: currentData, error: currentError } = await fetchUserDataFromTable(currentTable, matchName);
       
@@ -1206,7 +1207,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         
         const { data, error, count } = await query;
         
-        if (error) throw error;
+        if (error) {
+          console.error(`Error fetching from ${tableName}:`, error);
+          throw error;
+        }
         
         if (data && data.length > 0) {
           allData = [...allData, ...data];
@@ -1312,16 +1316,25 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     const previousAccounts = new Map();
     
     // Process current month data
-    currentData.forEach(item => {
-      const accountRef = item['Account Ref'] || '';
-      const accountName = item['Account Name'] || '';
-      const profit = typeof item.Profit === 'number' ? item.Profit : 0;
-      const spend = typeof item.Spend === 'number' ? item.Spend : 0;
+    currentData.forEach((item, index) => {
+      // Try multiple ways to get account reference
+      const accountRef = item['Account Ref'] || item.account_ref || item.AccountRef || '';
+      const accountName = item['Account Name'] || item.account_name || item.AccountName || '';
+      const profit = typeof item.Profit === 'number' ? item.Profit : 
+                     typeof item.profit === 'number' ? item.profit : 0;
+      const spend = typeof item.Spend === 'number' ? item.Spend : 
+                    typeof item.spend === 'number' ? item.spend : 0;
       // Get the rep name - either from Rep or rep_name field depending on the table structure
       const repName = item.Rep || item.rep_name || '';
       
-      if (accountRef) {
-        currentAccounts.set(accountRef, {
+      // If no account ref, create one from account name + rep name
+      const effectiveAccountRef = accountRef || 
+        (accountName && repName ? `${accountName}_${repName}` : '') ||
+        (accountName ? accountName : '');
+      
+      // Only process if we have some way to identify the account and it has meaningful data
+      if (effectiveAccountRef && (profit !== 0 || spend !== 0)) {
+        currentAccounts.set(effectiveAccountRef, {
           name: accountName,
           profit,
           spend,
@@ -1333,7 +1346,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     
     // Process previous month data
     previousData.forEach(item => {
-      const accountRef = item['Account Ref'] || item.account_ref || '';
+      // Try multiple ways to get account reference
+      const accountRef = item['Account Ref'] || item.account_ref || item.AccountRef || '';
+      const accountName = item['Account Name'] || item.account_name || item.AccountName || '';
       const profit = typeof item.Profit === 'number' ? item.Profit : 
                      typeof item.profit === 'number' ? item.profit : 0;
       const spend = typeof item.Spend === 'number' ? item.Spend : 
@@ -1341,8 +1356,13 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       // Get the rep name from previous data if available
       const prevRepName = item.Rep || item.rep_name || '';
       
-      if (accountRef) {
-        previousAccounts.set(accountRef, {
+      // If no account ref, create one from account name + rep name (same logic as current data)
+      const effectiveAccountRef = accountRef || 
+        (accountName && prevRepName ? `${accountName}_${prevRepName}` : '') ||
+        (accountName ? accountName : '');
+      
+      if (effectiveAccountRef && (profit !== 0 || spend !== 0)) {
+        previousAccounts.set(effectiveAccountRef, {
           profit,
           spend,
           repName: prevRepName,
