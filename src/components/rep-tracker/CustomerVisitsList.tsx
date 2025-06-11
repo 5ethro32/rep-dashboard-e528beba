@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/rep-performance-utils';
-import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar, Eye, User } from 'lucide-react';
+import { Edit2, Trash2, ArrowUpDown, PlusCircle, Calendar, Eye, EyeOff, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { 
   AlertDialog,
@@ -83,6 +83,8 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
   const [visitToEdit, setVisitToEdit] = useState<Visit | null>(null);
+  // New state to track expanded rows for viewing full comments
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -188,6 +190,19 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
     if (!isViewingOwnData) return false;
     if (isAllDataView) return user?.id === visit.user_id;
     return true;
+  };
+
+  // New helper to toggle expanded state for a row
+  const toggleRowExpansion = (visitId: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(visitId)) {
+        newSet.delete(visitId);
+      } else {
+        newSet.add(visitId);
+      }
+      return newSet;
+    });
   };
 
   const filteredVisits = visits?.filter(visit => {
@@ -305,14 +320,23 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                     >
                       <TableCell>{new Date(visit.date).toLocaleDateString('en-GB')}</TableCell>
                       <TableCell>{visit.visit_type}</TableCell>
-                      <TableCell>{visit.customer_name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span>{visit.customer_name}</span>
+                          {visit.customer_ref === 'PROSPECT' && (
+                            <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-400">
+                              Prospect
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{visit.contact_name}</TableCell>
                       <TableCell>{visit.has_order ? 'Yes' : 'No'}</TableCell>
                       <TableCell>
                         {visit.has_order ? formatCurrency(visit.profit) : 'N/A'}
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {visit.comments}
+                      <TableCell className={expandedRows.has(visit.id) ? "" : "max-w-[200px] truncate"}>
+                        {visit.comments || 'No comments'}
                       </TableCell>
                       <TableCell>
                         {visit.week_plan_id ? (
@@ -357,9 +381,14 @@ const CustomerVisitsList: React.FC<CustomerVisitsListProps> = ({
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0 flex items-center justify-center text-gray-500 hover:text-white"
+                            onClick={() => toggleRowExpansion(visit.id)}
                           >
-                            <Eye className="h-4 w-4" aria-hidden="true" />
-                            <span className="sr-only">View Only</span>
+                            {expandedRows.has(visit.id) ? (
+                              <EyeOff className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <Eye className="h-4 w-4" aria-hidden="true" />
+                            )}
+                            <span className="sr-only">View Comments</span>
                           </Button>
                         )}
                       </TableCell>

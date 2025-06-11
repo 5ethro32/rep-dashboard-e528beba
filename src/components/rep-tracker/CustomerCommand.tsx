@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Virtuoso } from 'react-virtuoso';
+// Temporarily comment out react-virtuoso to fix dependency issue
+// import { Virtuoso } from 'react-virtuoso';
 
 interface CustomerCommandProps {
   customers: Array<{ account_name: string; account_ref: string }>;
@@ -161,20 +162,18 @@ export function CustomerCommand({
         {filteredCustomers.length === 0 ? (
           <div className="py-6 text-center text-sm">No customer found.</div>
         ) : (
-          <div className="h-[60vh] max-h-[600px]">
-            <Virtuoso
-              style={{ height: '100%' }}
-              totalCount={filteredCustomers.length}
-              itemContent={(index) => (
-                <div className="px-1 py-0.5">
+          <ScrollArea className="h-[60vh] max-h-[600px]">
+            <div className="space-y-1 p-1">
+              {filteredCustomers.map((customer, index) => (
+                <div key={customer.account_ref} className="px-1 py-0.5">
                   <CustomerItem 
-                    customer={filteredCustomers[index]} 
+                    customer={customer} 
                     index={index} 
                   />
                 </div>
-              )}
-            />
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         )}
       </div>
     </div>

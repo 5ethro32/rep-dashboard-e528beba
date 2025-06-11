@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -73,6 +73,9 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
   
   const formattedDate = format(new Date(visit.date), 'yyyy-MM-dd');
   
+  // Determine if this is a prospect based on customer_ref
+  const [isProspect, setIsProspect] = useState(visit.customer_ref === 'PROSPECT');
+  
   const { register, handleSubmit, setValue, watch } = useForm<VisitFormData>({
     defaultValues: {
       date: formattedDate,
@@ -88,11 +91,16 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
 
   const safeCustomers = Array.isArray(customers) ? customers : [];
 
+  // Update prospect state when visit changes
+  useEffect(() => {
+    setIsProspect(visit.customer_ref === 'PROSPECT');
+  }, [visit.customer_ref]);
+
   const updateVisitMutation = useMutation({
     mutationFn: async (data: VisitFormData) => {
       // Validate customer_ref is present
       if (!data.customer_ref || !data.customer_name) {
-        throw new Error('Please select a customer before saving');
+        throw new Error('Please select a customer or enter a prospect name before saving');
       }
       
       const formattedDate = new Date(data.date);
@@ -131,7 +139,7 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
       console.error("Error updating visit:", error);
       
       // Show a more specific error message
-      const errorMessage = error.message.includes('select a customer') 
+      const errorMessage = error.message.includes('select a customer') || error.message.includes('prospect name')
         ? error.message 
         : 'Failed to update visit. Please try again.';
         
@@ -148,12 +156,33 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
     setValue('customer_name', name);
   };
 
+  const handleProspectToggle = (checked: boolean) => {
+    setIsProspect(checked);
+    if (checked) {
+      // Switching TO prospect mode - keep current name but change ref
+      setValue('customer_ref', 'PROSPECT');
+    } else {
+      // Switching FROM prospect mode - clear selection so user must choose
+      setValue('customer_ref', '');
+      setValue('customer_name', '');
+    }
+  };
+
+  const handleProspectNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const prospectName = e.target.value;
+    setValue('customer_name', prospectName);
+    // Use a special identifier for prospects
+    setValue('customer_ref', prospectName ? 'PROSPECT' : '');
+  };
+
   const onSubmit = (data: VisitFormData) => {
     // Additional validation before submitting
     if (!data.customer_ref || !data.customer_name) {
       toast({
         title: 'Validation Error',
-        description: 'Please select a customer before saving',
+        description: isProspect 
+          ? 'Please enter a prospect name before saving'
+          : 'Please select a customer before saving',
         variant: 'destructive',
       });
       return;
@@ -176,15 +205,49 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
             onChange={(date) => setValue('date', date)}
           />
 
-          <div className="space-y-2">
-            <Label htmlFor="customer">Customer <span className="text-destructive">*</span></Label>
-            <ImprovedCustomerSelector 
-              customers={safeCustomers}
-              selectedCustomer={watch('customer_name') || ''}
-              onSelect={handleCustomerSelect}
-            />
-            {/* Removed the premature feedback messages */}
-            <p className="text-xs text-muted-foreground">Please select a customer from the list</p>
+          <div className="space-y-4">
+            {/* Toggle between existing customer and new prospect */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="prospect-mode"
+                checked={isProspect}
+                onCheckedChange={handleProspectToggle}
+              />
+              <Label htmlFor="prospect-mode" className="text-sm">
+                New prospect (not in customer list)
+              </Label>
+            </div>
+
+            {/* Customer selection - existing customers */}
+            {!isProspect && (
+              <div className="space-y-2">
+                <Label htmlFor="customer">Existing Customer <span className="text-destructive">*</span></Label>
+                <ImprovedCustomerSelector 
+                  customers={safeCustomers}
+                  selectedCustomer={watch('customer_name') || ''}
+                  onSelect={handleCustomerSelect}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Select from your existing customer list
+                </p>
+              </div>
+            )}
+
+            {/* Prospect name input - new prospects */}
+            {isProspect && (
+              <div className="space-y-2">
+                <Label htmlFor="prospect-name">Prospect Name <span className="text-destructive">*</span></Label>
+                <Input
+                  id="prospect-name"
+                  placeholder="Enter prospect company name"
+                  value={watch('customer_name') || ''}
+                  onChange={handleProspectNameChange}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the name of a new prospect/potential customer
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -249,6 +312,11 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
               {...register('comments')}
               placeholder="Optional"
             />
+            {isProspect && (
+              <p className="text-xs text-muted-foreground">
+                Include any relevant details about this prospect
+              </p>
+            )}
           </div>
 
           <DialogFooter>

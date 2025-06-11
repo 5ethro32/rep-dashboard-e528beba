@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2, Eye, User } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Calendar, CheckCircle2, Eye, EyeOff, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AddPlanDialog from './AddPlanDialog';
 import EditPlanDialog from './EditPlanDialog';
@@ -22,6 +22,7 @@ import {
 import { usePlanMutation } from '@/hooks/usePlanMutation';
 import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { formatCurrency } from '@/utils/rep-performance-utils';
 
 interface WeekPlan {
   id: string;
@@ -36,6 +37,10 @@ interface CustomerVisit {
   id: string;
   week_plan_id: string;
   has_order: boolean;
+  profit?: number;
+  comments?: string;
+  contact_name?: string;
+  visit_type?: string;
 }
 
 interface UserProfile {
@@ -69,6 +74,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
   const [selectedPlan, setSelectedPlan] = useState<WeekPlan | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<string | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const isMobile = useIsMobile();
 
   const userId = selectedUserId || user?.id;
@@ -137,7 +143,7 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
       
       const { data, error } = await supabase
         .from('customer_visits')
-        .select('id, week_plan_id, has_order')
+        .select('id, week_plan_id, has_order, profit, comments, contact_name, visit_type')
         .in('week_plan_id', planIds);
       
       if (error) throw error;
@@ -310,6 +316,70 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
     return customerVisits?.some(visit => visit.week_plan_id === planId && visit.has_order);
   };
 
+  // Helper function to get visit details for a plan
+  const getVisitDetails = (planId: string) => {
+    return customerVisits?.find(visit => visit.week_plan_id === planId);
+  };
+
+  // Helper function to get formatted profit value
+  const getVisitProfit = (planId: string): string => {
+    const visit = getVisitDetails(planId);
+    if (visit && visit.has_order) {
+      return formatCurrency(visit.profit || 0);
+    }
+    return '';
+  };
+
+  // Helper function to truncate combined text for brief view
+  const getTruncatedText = (text: string, maxLines: number = 1.5): string => {
+    if (!text) return '';
+    
+    // More aggressive truncation - limit to approximate character count for 3 lines
+    const maxCharsPerLine = isMobile ? 35 : 50; // Adjust based on mobile/desktop
+    const maxChars = maxLines * maxCharsPerLine;
+    
+    if (text.length <= maxChars) return text;
+    
+    // Find the last space before the character limit to avoid cutting words
+    const truncated = text.substring(0, maxChars);
+    const lastSpaceIndex = truncated.lastIndexOf(' ');
+    
+    return (lastSpaceIndex > 0 ? truncated.substring(0, lastSpaceIndex) : truncated) + '...';
+  };
+
+  // Helper function to combine plan notes and visit comments
+  const getCombinedComments = (planId: string): { combined: string; planNotes: string; visitComments: string } => {
+    const plan = weekPlans?.find(p => p.id === planId);
+    const visitDetails = getVisitDetails(planId);
+    
+    const planNotes = plan?.notes || '';
+    const visitComments = visitDetails?.comments || '';
+    
+    let combined = '';
+    if (planNotes && visitComments) {
+      combined = `Plan: ${planNotes} Visit: ${visitComments}`;
+    } else if (planNotes) {
+      combined = `Plan: ${planNotes}`;
+    } else if (visitComments) {
+      combined = `Visit: ${visitComments}`;
+    }
+    
+    return { combined, planNotes, visitComments };
+  };
+
+  // Helper function to toggle card expansion
+  const toggleCardExpansion = (planId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(planId)) {
+        newSet.delete(planId);
+      } else {
+        newSet.add(planId);
+      }
+      return newSet;
+    });
+  };
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   // Group plans by user for the All Data view
@@ -371,7 +441,14 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                                   className="p-2 rounded bg-black/30 border border-gray-800"
                                 >
                                   <div className="flex justify-between items-center">
-                                    <p className="font-medium">{plan.customer_name}</p>
+                                    <div className="flex items-center gap-1">
+                                      <p className="text-sm font-medium">{plan.customer_name}</p>
+                                      {plan.customer_ref === 'PROSPECT' && (
+                                        <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-400">
+                                          Prospect
+                                        </Badge>
+                                      )}
+                                    </div>
                                     {hasAssociatedVisit(plan.id) && (
                                       <div className="ml-2">
                                         {visitHasOrder(plan.id) ? (
@@ -382,17 +459,78 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                                       </div>
                                     )}
                                   </div>
-                                  {plan.notes && (
-                                    <p className="text-sm text-gray-400 mt-1">{plan.notes}</p>
+                                  
+                                  {/* Show profit if order was taken */}
+                                  {hasAssociatedVisit(plan.id) && visitHasOrder(plan.id) && (
+                                    <p className="text-sm text-green-400 mt-1 font-medium">
+                                      {getVisitProfit(plan.id)} profit
+                                    </p>
                                   )}
+                                  
+                                  {/* Show combined comments (plan + visit) */}
+                                  {(() => {
+                                    const { combined, planNotes, visitComments } = getCombinedComments(plan.id);
+                                    const isExpanded = expandedCards.has(plan.id);
+                                    const visitDetails = getVisitDetails(plan.id);
+                                    
+                                    if (!combined) return null;
+                                    
+                                    return (
+                                      <div className="mt-1">
+                                        {isExpanded ? (
+                                          // Expanded view - show full details separately
+                                          <div className="space-y-1">
+                                            {planNotes && (
+                                              <p className="text-sm text-gray-400">
+                                                <span className="text-xs text-blue-400">Plan:</span> {planNotes}
+                                              </p>
+                                            )}
+                                            {visitComments && (
+                                              <p className="text-sm text-gray-300">
+                                                <span className="text-xs text-orange-400">Visit:</span> {visitComments}
+                                              </p>
+                                            )}
+                                            {/* Show additional details when expanded */}
+                                            {visitDetails && (
+                                              <div className="mt-2 space-y-1">
+                                                {visitDetails.contact_name && (
+                                                  <p className="text-xs text-gray-400">
+                                                    <span className="text-xs text-purple-400">Contact:</span> {visitDetails.contact_name}
+                                                  </p>
+                                                )}
+                                                {visitDetails.visit_type && (
+                                                  <p className="text-xs text-gray-400">
+                                                    <span className="text-xs text-cyan-400">Type:</span> {visitDetails.visit_type}
+                                                  </p>
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          // Collapsed view - show truncated combined text
+                                          <p className="text-sm text-gray-300">
+                                            {getTruncatedText(combined)}
+                                          </p>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
+                                  
                                   <div className="flex justify-end mt-2">
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       className="h-8 w-8 p-0 flex items-center justify-center text-gray-500 hover:text-white"
+                                      onClick={() => toggleCardExpansion(plan.id)}
                                     >
-                                      <Eye className="h-4 w-4" aria-hidden="true" />
-                                      <span className="sr-only">View Only</span>
+                                      {expandedCards.has(plan.id) ? (
+                                        <Eye className="h-4 w-4" aria-hidden="true" />
+                                      ) : (
+                                        <EyeOff className="h-4 w-4" aria-hidden="true" />
+                                      )}
+                                      <span className="sr-only">
+                                        {expandedCards.has(plan.id) ? 'Collapse Details' : 'Expand Details'}
+                                      </span>
                                     </Button>
                                   </div>
                                 </div>
@@ -464,7 +602,14 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                       className="p-2 rounded bg-black/30 border border-gray-800"
                     >
                       <div className="flex justify-between items-center">
-                        <p className="font-medium">{plan.customer_name}</p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm font-medium">{plan.customer_name}</p>
+                          {plan.customer_ref === 'PROSPECT' && (
+                            <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-400">
+                              Prospect
+                            </Badge>
+                          )}
+                        </div>
                         {hasAssociatedVisit(plan.id) && (
                           <div className="ml-2">
                             {visitHasOrder(plan.id) ? (
@@ -475,11 +620,80 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                           </div>
                         )}
                       </div>
-                      {plan.notes && (
-                        <p className="text-sm text-gray-400 mt-1">{plan.notes}</p>
+                      
+                      {/* Show profit if order was taken */}
+                      {hasAssociatedVisit(plan.id) && visitHasOrder(plan.id) && (
+                        <p className="text-sm text-green-400 mt-1 font-medium">
+                          {getVisitProfit(plan.id)} profit
+                        </p>
                       )}
+                      
+                      {/* Show combined comments (plan + visit) */}
+                      {(() => {
+                        const { combined, planNotes, visitComments } = getCombinedComments(plan.id);
+                        const isExpanded = expandedCards.has(plan.id);
+                        const visitDetails = getVisitDetails(plan.id);
+                        
+                        if (!combined) return null;
+                        
+                        return (
+                          <div className="mt-1">
+                            {isExpanded ? (
+                              // Expanded view - show full details separately
+                              <div className="space-y-1">
+                                {planNotes && (
+                                  <p className="text-sm text-gray-400">
+                                    <span className="text-xs text-blue-400">Plan:</span> {planNotes}
+                                  </p>
+                                )}
+                                {visitComments && (
+                                  <p className="text-sm text-gray-300">
+                                    <span className="text-xs text-orange-400">Visit:</span> {visitComments}
+                                  </p>
+                                )}
+                                {/* Show additional details when expanded */}
+                                {visitDetails && (
+                                  <div className="mt-2 space-y-1">
+                                    {visitDetails.contact_name && (
+                                      <p className="text-xs text-gray-400">
+                                        <span className="text-xs text-purple-400">Contact:</span> {visitDetails.contact_name}
+                                      </p>
+                                    )}
+                                    {visitDetails.visit_type && (
+                                      <p className="text-xs text-gray-400">
+                                        <span className="text-xs text-cyan-400">Type:</span> {visitDetails.visit_type}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              // Collapsed view - show truncated combined text
+                              <p className="text-sm text-gray-300">
+                                {getTruncatedText(combined)}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      
                       {canEditPlan(plan) ? (
                         <div className="flex justify-end space-x-2 mt-2">
+                          {/* Add expand button for own plans too if there are any comments */}
+                          {getCombinedComments(plan.id).combined && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => toggleCardExpansion(plan.id)}
+                            >
+                              {expandedCards.has(plan.id) ? (
+                                <Eye className="h-4 w-4" />
+                              ) : (
+                                <EyeOff className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -503,9 +717,16 @@ const WeekPlanTabV2: React.FC<WeekPlanTabV2Props> = ({
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0 flex items-center justify-center text-gray-500 hover:text-white"
+                            onClick={() => toggleCardExpansion(plan.id)}
                           >
-                            <Eye className="h-4 w-4" aria-hidden="true" />
-                            <span className="sr-only">View Only</span>
+                            {expandedCards.has(plan.id) ? (
+                              <Eye className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <EyeOff className="h-4 w-4" aria-hidden="true" />
+                            )}
+                            <span className="sr-only">
+                              {expandedCards.has(plan.id) ? 'Collapse Details' : 'Expand Details'}
+                            </span>
                           </Button>
                         </div>
                       )}
