@@ -5,8 +5,6 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
-// Temporarily comment out react-virtuoso to fix dependency issue
-// import { Virtuoso } from 'react-virtuoso';
 
 interface CustomerCommandProps {
   customers: Array<{ account_name: string; account_ref: string }>;
