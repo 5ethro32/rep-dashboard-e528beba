@@ -7,6 +7,7 @@ import { formatCurrency, formatPercent, formatNumber, calculateSummary } from '@
 import { useRepPerformanceData } from '@/hooks/useRepPerformanceData';
 import { RenderChangeIndicator } from '@/components/rep-performance/ChangeIndicators';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import TrendLineChart from '@/components/rep-performance/TrendLineChart';
 import { SummaryData } from '@/types/rep-performance.types';
 import { useLayoutEffect } from 'react';
@@ -18,6 +19,9 @@ const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
+  
+  // Set dynamic page title
+  usePageTitle();
   
   const {
     includeRetail,

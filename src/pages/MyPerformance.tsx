@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import {
@@ -28,6 +29,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
 }) => {
   const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState<string>('June');
+  
+  // Set dynamic page title
+  usePageTitle();
   const [isLoading, setIsLoading] = useState(true);
   const [performanceData, setPerformanceData] = useState<any>(null);
   const [accountHealthData, setAccountHealthData] = useState<any[]>([]);

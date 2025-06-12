@@ -75,19 +75,59 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
       const formattedDate = new Date(data.date);
       formattedDate.setHours(12, 0, 0, 0);
       
-      const { error } = await supabase
+      // First, create a corresponding week plan entry
+      // This ensures the visit appears in both tabs
+      const weekPlanData = {
+        planned_date: data.date, // Use date string format for week plans
+        customer_ref: data.customer_ref,
+        customer_name: data.customer_name,
+        notes: data.comments || null,
+        user_id: user?.id
+      };
+      
+      const { data: insertedPlan, error: planError } = await supabase
+        .from('week_plans')
+        .insert([weekPlanData])
+        .select('*')
+        .single();
+      
+      if (planError) {
+        console.error("Error creating week plan:", planError);
+        throw new Error('Failed to create week plan entry');
+      }
+      
+      // Now create the customer visit entry with reference to the week plan
+      const visitData = {
+        ...data,
+        user_id: user?.id,
+        date: formattedDate.toISOString(),
+        week_plan_id: insertedPlan.id // Link to the week plan
+      };
+      
+      const { error: visitError } = await supabase
         .from('customer_visits')
-        .insert([{ 
-          ...data, 
-          user_id: user?.id,
-          date: formattedDate.toISOString()
-        }]);
+        .insert([visitData]);
 
-      if (error) throw error;
+      if (visitError) {
+        // If visit creation fails, we should clean up the week plan
+        await supabase
+          .from('week_plans')
+          .delete()
+          .eq('id', insertedPlan.id);
+        throw visitError;
+      }
     },
     onSuccess: () => {
+      // Invalidate all related queries to ensure both tabs are updated
       queryClient.invalidateQueries({
         queryKey: ['customer-visits'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
+      // Also invalidate week plans queries so the Week Plan tab is updated
+      queryClient.invalidateQueries({
+        queryKey: ['week-plans'],
         exact: false,
         refetchType: 'all'
       });
@@ -100,7 +140,7 @@ const AddVisitDialog: React.FC<AddVisitDialogProps> = ({
       
       toast({
         title: 'Visit Added',
-        description: 'Customer visit has been recorded successfully.',
+        description: 'Customer visit and corresponding week plan have been created successfully.',
       });
       
       reset({

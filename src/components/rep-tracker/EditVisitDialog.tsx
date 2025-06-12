@@ -106,7 +106,15 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
       const formattedDate = new Date(data.date);
       formattedDate.setHours(12, 0, 0, 0);
       
-      const { error } = await supabase
+      // First, check if this visit has an associated week plan
+      const { data: visitData } = await supabase
+        .from('customer_visits')
+        .select('week_plan_id')
+        .eq('id', visit.id)
+        .single();
+      
+      // Update the customer visit
+      const { error: visitError } = await supabase
         .from('customer_visits')
         .update({ 
           ...data, 
@@ -115,18 +123,47 @@ const EditVisitDialog: React.FC<EditVisitDialogProps> = ({
         })
         .eq('id', visit.id);
 
-      if (error) throw error;
+      if (visitError) throw visitError;
+      
+      // If there's an associated week plan, update it too (unless it has order data)
+      if (visitData?.week_plan_id) {
+        // Only update basic details if the visit hasn't been marked as having an order
+        // to preserve important order information
+        if (!visit.has_order) {
+          const { error: planError } = await supabase
+            .from('week_plans')
+            .update({
+              planned_date: data.date,
+              customer_ref: data.customer_ref,
+              customer_name: data.customer_name,
+              notes: data.comments
+            })
+            .eq('id', visitData.week_plan_id);
+            
+          if (planError) {
+            console.error("Error updating week plan:", planError);
+            // We continue even if week plan update fails
+          }
+        }
+      }
     },
     onSuccess: () => {
+      // Invalidate both customer visits and week plans to ensure sync
       queryClient.invalidateQueries({
         queryKey: ['customer-visits'],
         exact: false,
         refetchType: 'all'
       });
       
+      queryClient.invalidateQueries({
+        queryKey: ['week-plans'],
+        exact: false,
+        refetchType: 'all'
+      });
+      
       toast({
         title: 'Visit Updated',
-        description: 'Customer visit has been updated successfully.',
+        description: 'Customer visit and associated week plan have been updated successfully.',
       });
       
       onClose();

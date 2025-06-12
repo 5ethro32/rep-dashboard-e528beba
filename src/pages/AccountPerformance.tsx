@@ -6,6 +6,7 @@ import PerformanceFilters from '@/components/rep-performance/PerformanceFilters'
 import { toast } from '@/components/ui/use-toast';
 import AccountSummaryCards from '@/components/rep-performance/AccountSummaryCards';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -38,6 +39,9 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
   selectedUserName: propSelectedUserName 
 }) => {
   const [selectedMonth, setSelectedMonth] = useState<string>('May');
+  
+  // Set dynamic page title
+  usePageTitle();
   const [currentMonthRawData, setCurrentMonthRawData] = useState<DataItem[]>([]);
   const [previousMonthRawData, setPreviousMonthRawData] = useState<DataItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);

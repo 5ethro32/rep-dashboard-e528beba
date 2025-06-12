@@ -7,6 +7,7 @@ import LoadingIndicator from '@/components/chat/LoadingIndicator';
 import ChatInput from '@/components/chat/ChatInput';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { reformulateQuery } from '@/utils/aiAssistantUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Switch } from '@/components/ui/switch';
@@ -43,6 +44,9 @@ interface ConversationContext {
 }
 
 const AIVera = () => {
+  // Set dynamic page title
+  usePageTitle();
+  
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
