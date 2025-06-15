@@ -327,4 +327,22 @@
     width: 0.5rem !important;
     height: 0.5rem !important;
   }
+
+  /* Announcement Banner Animations */
+  @keyframes scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-33.333%);
+    }
+  }
+  
+  .animate-scroll {
+    animation: scroll 18s linear infinite;
+  }
+  
+  .animate-scroll:hover {
+    animation-play-state: paused;
+  }
 }

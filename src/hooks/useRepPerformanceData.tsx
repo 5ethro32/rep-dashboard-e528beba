@@ -258,44 +258,44 @@ export const useRepPerformanceData = () => {
       const juneData = allRecords;
       console.log('Fetched June records total count:', juneData.length);
       
-      // Use May_Data for comparison data
-      console.log('Fetching May data from May_Data table for June comparison...');
+      // Use June_Data_Comparison for comparison data
+      console.log('Fetching June comparison data from June_Data_Comparison table...');
       
-      const { count: mayCount, error: mayCountError } = await supabase
-        .from('May_Data')
+      const { count: comparisonCount, error: comparisonCountError } = await supabase
+        .from('June_Data_Comparison')
         .select('*', { count: 'exact', head: true });
         
-      if (mayCountError) throw new Error(`Error getting May count: ${mayCountError.message}`);
-      
-      let mayRecords = [];
-      if (mayCount && mayCount > 0) {
-        const mayPages = Math.ceil(mayCount / pageSize);
+              if (comparisonCountError) throw new Error(`Error getting June comparison count: ${comparisonCountError.message}`);
         
-        for (let page = 0; page < mayPages; page++) {
-          const from = page * pageSize;
-          const to = from + pageSize - 1;
+        let comparisonRecords = [];
+        if (comparisonCount && comparisonCount > 0) {
+          const comparisonPages = Math.ceil(comparisonCount / pageSize);
           
-          const { data: pageData, error: pageError } = await supabase
-            .from('May_Data')
-            .select('*')
-            .range(from, to);
-          
-          if (pageError) throw new Error(`Error fetching May page ${page}: ${pageError.message}`);
-          if (pageData) mayRecords = [...mayRecords, ...pageData];
+          for (let page = 0; page < comparisonPages; page++) {
+            const from = page * pageSize;
+            const to = from + pageSize - 1;
+            
+            const { data: pageData, error: pageError } = await supabase
+              .from('June_Data_Comparison')
+              .select('*')
+              .range(from, to);
+            
+            if (pageError) throw new Error(`Error fetching June comparison page ${page}: ${pageError.message}`);
+            if (pageData) comparisonRecords = [...comparisonRecords, ...pageData];
+          }
         }
-      }
-      
-      console.log('Fetched May records for comparison:', mayRecords.length);
+        
+        console.log('Fetched June comparison records:', comparisonRecords.length);
       
       // Process June data by department
       const juneRetailData = juneData.filter(item => item.Department === 'RETAIL');
       const juneRevaData = juneData.filter(item => item.Department === 'REVA');
       const juneWholesaleData = juneData.filter(item => item.Department === 'Wholesale' || item.Department === 'WHOLESALE');
       
-      // Process May data by department for comparison
-      const mayRetailData = mayRecords.filter(item => item.Department === 'RETAIL');
-      const mayRevaData = mayRecords.filter(item => item.Department === 'REVA');
-      const mayWholesaleData = mayRecords.filter(item => item.Department === 'Wholesale' || item.Department === 'WHOLESALE');
+              // Process June comparison data by department
+        const comparisonRetailData = comparisonRecords.filter(item => item.Department === 'RETAIL');
+        const comparisonRevaData = comparisonRecords.filter(item => item.Department === 'REVA');
+        const comparisonWholesaleData = comparisonRecords.filter(item => item.Department === 'Wholesale' || item.Department === 'WHOLESALE');
       
       console.log('June data breakdown:', {
         retail: juneRetailData.length,
@@ -437,15 +437,15 @@ export const useRepPerformanceData = () => {
        const juneRevaSummary = calculateDeptSummary(juneRevaData);
        const juneWholesaleSummary = calculateDeptSummary(juneWholesaleData);
        
-       // Transform comparison data (May data)
-       const comparisonRetailRepData = transformData(mayRetailData);
-       const comparisonRevaRepData = transformData(mayRevaData, true);
-       const comparisonWholesaleRepData = transformData(mayWholesaleData, true);
+       // Transform comparison data (June_Data_Comparison data)
+       const comparisonRetailRepData = transformData(comparisonRetailData);
+       const comparisonRevaRepData = transformData(comparisonRevaData, true);
+       const comparisonWholesaleRepData = transformData(comparisonWholesaleData, true);
        
        // Calculate comparison summaries
-       const comparisonRetailSummary = calculateDeptSummary(mayRetailData);
-       const comparisonRevaSummary = calculateDeptSummary(mayRevaData);
-       const comparisonWholesaleSummary = calculateDeptSummary(mayWholesaleData);
+       const comparisonRetailSummary = calculateDeptSummary(comparisonRetailData);
+       const comparisonRevaSummary = calculateDeptSummary(comparisonRevaData);
+       const comparisonWholesaleSummary = calculateDeptSummary(comparisonWholesaleData);
        
        // Calculate combined summary for comparison data
        const calculateSummary = (retail: SummaryData, reva: SummaryData, wholesale: SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean) => {

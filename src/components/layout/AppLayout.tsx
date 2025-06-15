@@ -4,6 +4,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import MobileNavigation from '@/components/mobile/MobileNavigation';
 import ChatInterface from '@/components/chat/ChatInterface';
 import AppHeader from '@/components/layout/AppHeader';
+import AnnouncementBanner from '@/components/layout/AnnouncementBanner';
 import { useLocation } from 'react-router-dom';
 
 interface AppLayoutProps {
@@ -32,6 +33,9 @@ const AppLayout = ({
   
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
+      {/* Announcement banner at the very top - shows June profit changes */}
+      {selectedMonth === 'June' && <AnnouncementBanner currentMonth={selectedMonth} />}
+      
       {/* Single header with actions integrated */}
       <AppHeader 
         selectedUserId={selectedUserId} 
