@@ -108,31 +108,50 @@ const RepTracker: React.FC<RepTrackerProps> = ({
     data: previousWeekMetrics
   } = useVisitMetrics(previousWeekDate, selectedUserId);
 
-  // Modified query to exclude wholesale customers specifically on this page
+  // Customer query now includes ALL customer types (RETAIL, REVA, WHOLESALE)
+  // Uses pagination to fetch ALL customers, not just the first 1000
   const {
     data: customers,
     isLoading: isLoadingCustomers
   } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      console.log('Fetching customers from Supabase, excluding wholesale...');
+      console.log('Fetching ALL customers from Supabase with pagination (including wholesale)...');
       
-      const {
-        data: salesData,
-        error
-      } = await supabase
-        .from('sales_data')
-        .select('account_name, account_ref, rep_type')
-        .not('rep_type', 'eq', 'WHOLESALE')
-        .order('account_name');
+      // Use pagination to fetch all customers, not just the first 1000
+      const PAGE_SIZE = 1000;
+      let allSalesData: any[] = [];
+      let page = 0;
+      let hasMoreData = true;
+      
+      while (hasMoreData) {
+        const { data: pageData, error } = await supabase
+          .from('sales_data')
+          .select('account_name, account_ref, rep_type')
+          .order('account_name')
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+          
+        if (error) {
+          console.error('Error fetching customers page:', page, error);
+          throw error;
+        }
         
-      if (error) {
-        console.error('Error fetching customers:', error);
-        throw error;
+        if (pageData && pageData.length > 0) {
+          allSalesData = [...allSalesData, ...pageData];
+          console.log(`Fetched customer page ${page + 1} with ${pageData.length} records. Total so far: ${allSalesData.length}`);
+          page++;
+          
+          // If we got less than PAGE_SIZE records, we've reached the end
+          hasMoreData = pageData.length === PAGE_SIZE;
+        } else {
+          hasMoreData = false;
+        }
       }
       
+      console.log(`Completed fetching customers. Total raw records: ${allSalesData.length}`);
+      
       // Make sure we get unique customers by account_ref to avoid duplicates
-      const uniqueCustomers = salesData.reduce((acc: any[], current) => {
+      const uniqueCustomers = allSalesData.reduce((acc: any[], current) => {
         const x = acc.find(item => item.account_ref === current.account_ref);
         if (!x) {
           return acc.concat([current]);
@@ -141,19 +160,32 @@ const RepTracker: React.FC<RepTrackerProps> = ({
         }
       }, []);
       
-      console.log(`Fetched ${salesData.length} customer records, filtered to ${uniqueCustomers.length} unique customers (excluding wholesale)`);
+      console.log(`Filtered to ${uniqueCustomers.length} unique customers (all types: RETAIL, REVA, WHOLESALE)`);
       
       // Sort the unique customers alphabetically to ensure consistent ordering
       uniqueCustomers.sort((a, b) => {
         return a.account_name.localeCompare(b.account_name);
       });
       
-      // Log some debug information to verify we have customers at different points in the alphabet
+      // Log debug information to verify we have customers at different points in the alphabet
       const firstCustomers = uniqueCustomers.slice(0, 3);
       const lastCustomers = uniqueCustomers.slice(-3);
-      console.log('First few customers:', firstCustomers);
-      console.log('Last few customers:', lastCustomers);
-      console.log(`Total unique customers (excluding wholesale): ${uniqueCustomers.length}`);
+      console.log('First few customers:', firstCustomers.map(c => c.account_name));
+      console.log('Last few customers:', lastCustomers.map(c => c.account_name));
+      
+      // Check for customers starting with later letters to verify the fix
+      const wCustomers = uniqueCustomers.filter(c => c.account_name.toLowerCase().startsWith('w'));
+      const yCustomers = uniqueCustomers.filter(c => c.account_name.toLowerCase().startsWith('y'));
+      const zCustomers = uniqueCustomers.filter(c => c.account_name.toLowerCase().startsWith('z'));
+      console.log(`Customer counts by letter - W: ${wCustomers.length}, Y: ${yCustomers.length}, Z: ${zCustomers.length}`);
+      
+      // Log customer breakdown by type
+      const retailCustomers = uniqueCustomers.filter(c => c.rep_type === 'RETAIL');
+      const revaCustomers = uniqueCustomers.filter(c => c.rep_type === 'REVA');
+      const wholesaleCustomers = uniqueCustomers.filter(c => c.rep_type === 'WHOLESALE');
+      console.log(`Customer breakdown - RETAIL: ${retailCustomers.length}, REVA: ${revaCustomers.length}, WHOLESALE: ${wholesaleCustomers.length}`);
+      
+      console.log(`✅ Successfully loaded ${uniqueCustomers.length} unique customers (all types included)`);
       
       return uniqueCustomers;
     },

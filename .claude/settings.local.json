@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(claude-code)",
+      "Bash(ls:*)",
+      "Bash(claude)",
+      "Bash(cursor:*)",
+      "Bash(code .)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm run dev:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git config:*)",
+      "Bash(gh pr create:*)"
+    ],
+    "deny": []
+  }
+}
