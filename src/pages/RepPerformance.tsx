@@ -14,6 +14,7 @@ import { useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const RepPerformance = () => {
   const [autoRefreshed, setAutoRefreshed] = useState(false);
@@ -57,7 +58,11 @@ const RepPerformance = () => {
     mayWholesaleValues,
     junBaseSummary,
     junRevaValues,
-    junWholesaleValues
+    junWholesaleValues,
+    comparisonSummary,
+    debugJuneData,
+    debugMayDataTable,
+    juneRepChanges
   } = useRepPerformanceData();
 
   // Clear auto-refreshed status after a delay
@@ -108,6 +113,21 @@ const RepPerformance = () => {
     if (location.pathname === '/rep-performance') {
       console.log('Setting up global refresh handler for RepPerformance');
       window.repPerformanceRefresh = handleRefresh;
+      
+      // Also expose rep changes data for the announcement banner
+      // Use June-specific rep changes when June is selected for accurate comparison data
+      const monthSpecificRepChanges = selectedMonth === 'June' ? juneRepChanges : repChanges;
+      
+      console.log('Exposing rep changes data for announcement banner:', {
+        selectedMonth,
+        usingJuneSpecificData: selectedMonth === 'June',
+        repChangesCount: Object.keys(monthSpecificRepChanges).length
+      });
+      
+      window.repPerformanceData = {
+        repChanges: monthSpecificRepChanges,
+        selectedMonth: selectedMonth
+      };
     }
     return () => {
       // Cleanup when component unmounts
@@ -115,8 +135,11 @@ const RepPerformance = () => {
         console.log('Cleaning up global refresh handler');
         delete window.repPerformanceRefresh;
       }
+      if (window.repPerformanceData) {
+        delete window.repPerformanceData;
+      }
     };
-  }, [location.pathname, selectedMonth]); // Add selectedMonth as dependency
+  }, [location.pathname, selectedMonth, repChanges, juneRepChanges]); // Add repChanges and juneRepChanges as dependencies
 
   const activeData = getActiveData('overall');
 
@@ -184,6 +207,7 @@ const RepPerformance = () => {
             includeReva={includeReva} 
             includeWholesale={includeWholesale} 
             selectedMonth={selectedMonth} 
+            comparisonSummary={comparisonSummary}
           />
         </CardContent>
       </Card>
@@ -201,6 +225,19 @@ const RepPerformance = () => {
           includeReva={includeReva} 
           includeWholesale={includeWholesale} 
         />
+      </div>
+
+      <div className="container max-w-7xl mx-auto px-4 md:px-6 mb-6">
+        <div className="flex items-center gap-4 justify-end">
+          <Button 
+            onClick={handleRefresh} 
+            disabled={isLoading}
+            variant="outline"
+            size="sm"
+          >
+            {isLoading ? 'Loading...' : 'Refresh Data'}
+          </Button>
+        </div>
       </div>
 
       <PerformanceContent 
@@ -237,6 +274,10 @@ const RepPerformance = () => {
 declare global {
   interface Window {
     repPerformanceRefresh?: () => Promise<void>;
+    repPerformanceData?: {
+      repChanges: any;
+      selectedMonth: string;
+    };
   }
 }
 

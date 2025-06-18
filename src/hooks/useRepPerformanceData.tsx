@@ -16,6 +16,8 @@ import {
   defaultRepChanges
 } from '@/data/rep-performance-default-data';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
+import { debugJuneComparisonData } from '@/utils/debug-june-data';
+import { debugMayData } from '@/utils/debug-may-data';
 
 export const useRepPerformanceData = () => {
   const [includeRetail, setIncludeRetail] = useState(true);
@@ -66,6 +68,30 @@ export const useRepPerformanceData = () => {
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
 
+  // Add new state for storing actual comparison values from June_Data_Comparison
+  const [comparisonSummary, setComparisonSummary] = useState<SummaryData | null>(null);
+  // Store June comparison summary separately so it's always available
+  const [juneComparisonSummary, setJuneComparisonSummary] = useState<SummaryData | null>(null);
+  // Store June summary changes separately so they're always available
+  const [juneSummaryChanges, setJuneSummaryChanges] = useState(defaultSummaryChanges);
+  // Store June rep changes separately so they're always available
+  const [juneRepChanges, setJuneRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
+  
+  // June comparison department summaries for toggle filtering
+  const [juneComparisonRetailSummary, setJuneComparisonRetailSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [juneComparisonRevaSummary, setJuneComparisonRevaSummary] = useState<SummaryData>(defaultRevaValues);
+  const [juneComparisonWholesaleSummary, setJuneComparisonWholesaleSummary] = useState<SummaryData>(defaultWholesaleValues);
+  
+  // May comparison department summaries for toggle filtering (April data from Prior_Month_Rolling)
+  const [mayComparisonRetailSummary, setMayComparisonRetailSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [mayComparisonRevaSummary, setMayComparisonRevaSummary] = useState<SummaryData>(defaultRevaValues);
+  const [mayComparisonWholesaleSummary, setMayComparisonWholesaleSummary] = useState<SummaryData>(defaultWholesaleValues);
+  
+  // April comparison department summaries for toggle filtering (March data from sales_data)
+  const [aprilComparisonRetailSummary, setAprilComparisonRetailSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [aprilComparisonRevaSummary, setAprilComparisonRevaSummary] = useState<SummaryData>(defaultRevaValues);
+  const [aprilComparisonWholesaleSummary, setAprilComparisonWholesaleSummary] = useState<SummaryData>(defaultWholesaleValues);
+
   useEffect(() => {
     const storedData = loadStoredRepPerformanceData();
     
@@ -100,6 +126,35 @@ export const useRepPerformanceData = () => {
       setMayRevaValues(storedData.mayRevaValues || defaultRevaValues);
       setMayWholesaleValues(storedData.mayWholesaleValues || defaultWholesaleValues);
       
+      // Load June data and comparison summaries
+      setJunRepData(storedData.junRepData || defaultRepData);
+      setJunRevaData(storedData.junRevaData || defaultRevaData);
+      setJunWholesaleData(storedData.junWholesaleData || defaultWholesaleData);
+      setJunBaseSummary(storedData.junBaseSummary || defaultBaseSummary);
+      setJunRevaValues(storedData.junRevaValues || defaultRevaValues);
+      setJunWholesaleValues(storedData.junWholesaleValues || defaultWholesaleValues);
+      setJuneComparisonSummary(storedData.juneComparisonSummary || null);
+      setJuneSummaryChanges(storedData.juneSummaryChanges || defaultSummaryChanges);
+      setJuneRepChanges(storedData.juneRepChanges || defaultRepChanges);
+      setJuneComparisonRetailSummary(storedData.juneComparisonRetailSummary || defaultBaseSummary);
+      setJuneComparisonRevaSummary(storedData.juneComparisonRevaSummary || defaultRevaValues);
+      setJuneComparisonWholesaleSummary(storedData.juneComparisonWholesaleSummary || defaultWholesaleValues);
+      
+      // Load May comparison department summaries
+      setMayComparisonRetailSummary(storedData.priorRollingRetailSummary || defaultBaseSummary);
+      setMayComparisonRevaSummary(storedData.priorRollingRevaSummary || defaultRevaValues);
+      setMayComparisonWholesaleSummary(storedData.priorRollingWholesaleSummary || defaultWholesaleValues);
+      console.log('Loaded May comparison summaries from localStorage:', {
+        priorRollingRetailSummary: storedData.priorRollingRetailSummary,
+        priorRollingRevaSummary: storedData.priorRollingRevaSummary,
+        priorRollingWholesaleSummary: storedData.priorRollingWholesaleSummary
+      });
+      
+      // Load April comparison department summaries
+      setAprilComparisonRetailSummary(storedData.marchRollingRetailSummary || defaultBaseSummary);
+      setAprilComparisonRevaSummary(storedData.marchRollingRevaSummary || defaultRevaValues);
+      setAprilComparisonWholesaleSummary(storedData.marchRollingWholesaleSummary || defaultWholesaleValues);
+      
       setSummaryChanges(storedData.summaryChanges || defaultSummaryChanges);
       setRepChanges(storedData.repChanges || defaultRepChanges);
       
@@ -116,6 +171,11 @@ export const useRepPerformanceData = () => {
 
   useEffect(() => {
     console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale, selectedMonth });
+    
+    // Clear comparison summary when switching months to prevent cross-contamination
+    if (selectedMonth !== 'June' && selectedMonth !== 'May' && selectedMonth !== 'April') {
+      setComparisonSummary(null);
+    }
 
     let currentRepData = repData;
     let currentRevaData = revaData;
@@ -176,6 +236,85 @@ export const useRepPerformanceData = () => {
       
       setSummaryChanges(invertedSummaryChanges);
       setRepChanges(invertedChanges);
+    } else if (selectedMonth === 'March') {
+      // Special handling for March - recalculate comparison data based on toggles
+      const calculateSummary = (retail: SummaryData, reva: SummaryData, wholesale: SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean) => {
+        const totalSpend = (includeRetail ? retail.totalSpend : 0) + 
+                          (includeReva ? reva.totalSpend : 0) + 
+                          (includeWholesale ? wholesale.totalSpend : 0);
+        
+        const totalProfit = (includeRetail ? retail.totalProfit : 0) + 
+                           (includeReva ? reva.totalProfit : 0) + 
+                           (includeWholesale ? wholesale.totalProfit : 0);
+        
+        const totalPacks = (includeRetail ? retail.totalPacks : 0) + 
+                          (includeReva ? reva.totalPacks : 0) + 
+                          (includeWholesale ? wholesale.totalPacks : 0);
+        
+        const totalAccounts = (includeRetail ? retail.totalAccounts : 0) + 
+                             (includeReva ? reva.totalAccounts : 0) + 
+                             (includeWholesale ? wholesale.totalAccounts : 0);
+        
+        const activeAccounts = (includeRetail ? retail.activeAccounts : 0) + 
+                              (includeReva ? reva.activeAccounts : 0) + 
+                              (includeWholesale ? wholesale.activeAccounts : 0);
+        
+        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+        
+        return {
+          totalSpend,
+          totalProfit,
+          totalPacks,
+          totalAccounts,
+          activeAccounts,
+          averageMargin
+        };
+      };
+
+      console.log('Recalculating March comparison data based on toggles:', { includeRetail, includeReva, includeWholesale });
+      
+      // For March, recalculate comparison with February data based on toggles
+      const filteredComparisonSummary = calculateSummary(
+        febBaseSummary,
+        febRevaValues,
+        febWholesaleValues,
+        includeRetail,
+        includeReva,
+        includeWholesale
+      );
+      
+      // Recalculate March current summary with current toggles
+      const filteredMarchSummary = calculateSummary(
+        baseSummary,
+        revaValues,
+        wholesaleValues,
+        includeRetail,
+        includeReva,
+        includeWholesale
+      );
+      
+      // Recalculate summary changes with filtered data
+      const recalculatedSummaryChanges = {
+        totalSpend: filteredComparisonSummary.totalSpend > 0 ? 
+          ((filteredMarchSummary.totalSpend - filteredComparisonSummary.totalSpend) / filteredComparisonSummary.totalSpend) * 100 : 0,
+        totalProfit: filteredComparisonSummary.totalProfit > 0 ? 
+          ((filteredMarchSummary.totalProfit - filteredComparisonSummary.totalProfit) / filteredComparisonSummary.totalProfit) * 100 : 0,
+        averageMargin: filteredMarchSummary.averageMargin - filteredComparisonSummary.averageMargin,
+        totalPacks: filteredComparisonSummary.totalPacks > 0 ? 
+          ((filteredMarchSummary.totalPacks - filteredComparisonSummary.totalPacks) / filteredComparisonSummary.totalPacks) * 100 : 0,
+        totalAccounts: filteredComparisonSummary.totalAccounts > 0 ? 
+          ((filteredMarchSummary.totalAccounts - filteredComparisonSummary.totalAccounts) / filteredComparisonSummary.totalAccounts) * 100 : 0,
+        activeAccounts: filteredComparisonSummary.activeAccounts > 0 ? 
+          ((filteredMarchSummary.activeAccounts - filteredComparisonSummary.activeAccounts) / filteredComparisonSummary.activeAccounts) * 100 : 0
+      };
+      
+      console.log('Recalculated March comparison summary:', filteredComparisonSummary);
+      console.log('Recalculated March summary changes:', recalculatedSummaryChanges);
+      
+      setSummaryChanges(recalculatedSummaryChanges);
+      
+      // Clear comparison summary for March (it doesn't use comparisonSummary like June)
+      setComparisonSummary(null);
     } else if (selectedMonth === 'April' || selectedMonth === 'May' || selectedMonth === 'June') {
       if (repChanges) {
         setRepChanges(repChanges);
@@ -183,6 +322,206 @@ export const useRepPerformanceData = () => {
       
       if (summaryChanges) {
         setSummaryChanges(summaryChanges);
+      }
+      
+      // Special handling for months with comparison data - recalculate based on toggles
+      const calculateSummary = (retail: SummaryData, reva: SummaryData, wholesale: SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean) => {
+        const totalSpend = (includeRetail ? retail.totalSpend : 0) + 
+                          (includeReva ? reva.totalSpend : 0) + 
+                          (includeWholesale ? wholesale.totalSpend : 0);
+        
+        const totalProfit = (includeRetail ? retail.totalProfit : 0) + 
+                           (includeReva ? reva.totalProfit : 0) + 
+                           (includeWholesale ? wholesale.totalProfit : 0);
+        
+        const totalPacks = (includeRetail ? retail.totalPacks : 0) + 
+                          (includeReva ? reva.totalPacks : 0) + 
+                          (includeWholesale ? wholesale.totalPacks : 0);
+        
+        const totalAccounts = (includeRetail ? retail.totalAccounts : 0) + 
+                             (includeReva ? reva.totalAccounts : 0) + 
+                             (includeWholesale ? wholesale.totalAccounts : 0);
+        
+        const activeAccounts = (includeRetail ? retail.activeAccounts : 0) + 
+                              (includeReva ? reva.activeAccounts : 0) + 
+                              (includeWholesale ? wholesale.activeAccounts : 0);
+        
+        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+        
+        return {
+          totalSpend,
+          totalProfit,
+          totalPacks,
+          totalAccounts,
+          activeAccounts,
+          averageMargin
+        };
+      };
+
+      if (selectedMonth === 'June' && juneComparisonSummary) {
+        console.log('Recalculating June comparison data based on toggles:', { includeRetail, includeReva, includeWholesale });
+        
+        // Use stored June department summaries from state
+        if (juneComparisonRetailSummary && juneComparisonRevaSummary && juneComparisonWholesaleSummary) {
+          // Recalculate comparison summary with current toggles
+          const filteredComparisonSummary = calculateSummary(
+            juneComparisonRetailSummary,
+            juneComparisonRevaSummary,
+            juneComparisonWholesaleSummary,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate June current summary with current toggles
+          const filteredJuneSummary = calculateSummary(
+            junBaseSummary,
+            junRevaValues,
+            junWholesaleValues,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate summary changes with filtered data
+          const recalculatedSummaryChanges = {
+            totalSpend: filteredComparisonSummary.totalSpend > 0 ? 
+              ((filteredJuneSummary.totalSpend - filteredComparisonSummary.totalSpend) / filteredComparisonSummary.totalSpend) * 100 : 0,
+            totalProfit: filteredComparisonSummary.totalProfit > 0 ? 
+              ((filteredJuneSummary.totalProfit - filteredComparisonSummary.totalProfit) / filteredComparisonSummary.totalProfit) * 100 : 0,
+            averageMargin: filteredJuneSummary.averageMargin - filteredComparisonSummary.averageMargin,
+            totalPacks: filteredComparisonSummary.totalPacks > 0 ? 
+              ((filteredJuneSummary.totalPacks - filteredComparisonSummary.totalPacks) / filteredComparisonSummary.totalPacks) * 100 : 0,
+            totalAccounts: filteredComparisonSummary.totalAccounts > 0 ? 
+              ((filteredJuneSummary.totalAccounts - filteredComparisonSummary.totalAccounts) / filteredComparisonSummary.totalAccounts) * 100 : 0,
+            activeAccounts: filteredComparisonSummary.activeAccounts > 0 ? 
+              ((filteredJuneSummary.activeAccounts - filteredComparisonSummary.activeAccounts) / filteredComparisonSummary.activeAccounts) * 100 : 0
+          };
+          
+          console.log('Recalculated June comparison summary:', filteredComparisonSummary);
+          console.log('Recalculated June summary changes:', recalculatedSummaryChanges);
+          
+          setComparisonSummary(filteredComparisonSummary);
+          setSummaryChanges(recalculatedSummaryChanges);
+        } else {
+          // Fallback to original stored data
+          console.log('Using original June comparison summary:', juneComparisonSummary);
+          console.log('Using original June summary changes:', juneSummaryChanges);
+          setComparisonSummary(juneComparisonSummary);
+          setSummaryChanges(juneSummaryChanges);
+        }
+        
+        // Rep changes should also be filtered, but this is more complex
+        // For now, use the stored rep changes
+        setRepChanges(juneRepChanges);
+      } else if (selectedMonth === 'May') {
+        console.log('Recalculating May comparison data based on toggles:', { includeRetail, includeReva, includeWholesale });
+        console.log('May comparison summaries from state:', {
+          retail: mayComparisonRetailSummary,
+          reva: mayComparisonRevaSummary,
+          wholesale: mayComparisonWholesaleSummary
+        });
+        
+        // Use stored May comparison department summaries from state (April data from Prior_Month_Rolling)
+        if (mayComparisonRetailSummary && mayComparisonRevaSummary && mayComparisonWholesaleSummary) {
+          // Recalculate comparison summary with current toggles
+          const filteredComparisonSummary = calculateSummary(
+            mayComparisonRetailSummary,
+            mayComparisonRevaSummary,
+            mayComparisonWholesaleSummary,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate May current summary with current toggles
+          const filteredMaySummary = calculateSummary(
+            mayBaseSummary,
+            mayRevaValues,
+            mayWholesaleValues,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate summary changes with filtered data
+          const recalculatedSummaryChanges = {
+            totalSpend: filteredComparisonSummary.totalSpend > 0 ? 
+              ((filteredMaySummary.totalSpend - filteredComparisonSummary.totalSpend) / filteredComparisonSummary.totalSpend) * 100 : 0,
+            totalProfit: filteredComparisonSummary.totalProfit > 0 ? 
+              ((filteredMaySummary.totalProfit - filteredComparisonSummary.totalProfit) / filteredComparisonSummary.totalProfit) * 100 : 0,
+            averageMargin: filteredMaySummary.averageMargin - filteredComparisonSummary.averageMargin,
+            totalPacks: filteredComparisonSummary.totalPacks > 0 ? 
+              ((filteredMaySummary.totalPacks - filteredComparisonSummary.totalPacks) / filteredComparisonSummary.totalPacks) * 100 : 0,
+            totalAccounts: filteredComparisonSummary.totalAccounts > 0 ? 
+              ((filteredMaySummary.totalAccounts - filteredComparisonSummary.totalAccounts) / filteredComparisonSummary.totalAccounts) * 100 : 0,
+            activeAccounts: filteredComparisonSummary.activeAccounts > 0 ? 
+              ((filteredMaySummary.activeAccounts - filteredComparisonSummary.activeAccounts) / filteredComparisonSummary.activeAccounts) * 100 : 0
+          };
+          
+          console.log('Recalculated May comparison summary:', filteredComparisonSummary);
+          console.log('Recalculated May summary changes:', recalculatedSummaryChanges);
+          
+          setSummaryChanges(recalculatedSummaryChanges);
+          // Set comparison summary for May so SummaryMetrics can use actual values
+          setComparisonSummary(filteredComparisonSummary);
+        } else {
+          // Clear comparison summary if no May comparison data available
+          setComparisonSummary(null);
+        }
+      } else if (selectedMonth === 'April') {
+        console.log('Recalculating April comparison data based on toggles:', { includeRetail, includeReva, includeWholesale });
+        
+        // Use stored April comparison department summaries from state (March data from sales_data)
+        if (aprilComparisonRetailSummary && aprilComparisonRevaSummary && aprilComparisonWholesaleSummary) {
+          // Recalculate comparison summary with current toggles
+          const filteredComparisonSummary = calculateSummary(
+            aprilComparisonRetailSummary,
+            aprilComparisonRevaSummary,
+            aprilComparisonWholesaleSummary,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate April current summary with current toggles
+          const filteredAprilSummary = calculateSummary(
+            aprBaseSummary,
+            aprRevaValues,
+            aprWholesaleValues,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate summary changes with filtered data
+          const recalculatedSummaryChanges = {
+            totalSpend: filteredComparisonSummary.totalSpend > 0 ? 
+              ((filteredAprilSummary.totalSpend - filteredComparisonSummary.totalSpend) / filteredComparisonSummary.totalSpend) * 100 : 0,
+            totalProfit: filteredComparisonSummary.totalProfit > 0 ? 
+              ((filteredAprilSummary.totalProfit - filteredComparisonSummary.totalProfit) / filteredComparisonSummary.totalProfit) * 100 : 0,
+            averageMargin: filteredAprilSummary.averageMargin - filteredComparisonSummary.averageMargin,
+            totalPacks: filteredComparisonSummary.totalPacks > 0 ? 
+              ((filteredAprilSummary.totalPacks - filteredComparisonSummary.totalPacks) / filteredComparisonSummary.totalPacks) * 100 : 0,
+            totalAccounts: filteredComparisonSummary.totalAccounts > 0 ? 
+              ((filteredAprilSummary.totalAccounts - filteredComparisonSummary.totalAccounts) / filteredComparisonSummary.totalAccounts) * 100 : 0,
+            activeAccounts: filteredComparisonSummary.activeAccounts > 0 ? 
+              ((filteredAprilSummary.activeAccounts - filteredComparisonSummary.activeAccounts) / filteredComparisonSummary.activeAccounts) * 100 : 0
+          };
+          
+          console.log('Recalculated April comparison summary:', filteredComparisonSummary);
+          console.log('Recalculated April summary changes:', recalculatedSummaryChanges);
+          
+          setSummaryChanges(recalculatedSummaryChanges);
+          // Set comparison summary for April so SummaryMetrics can use actual values
+          setComparisonSummary(filteredComparisonSummary);
+        } else {
+          // Clear comparison summary if no April comparison data available
+          setComparisonSummary(null);
+        }
+      } else {
+        // Clear comparison summary for other months
+        setComparisonSummary(null);
       }
     } else {
       const storedData = loadStoredRepPerformanceData();
@@ -193,7 +532,15 @@ export const useRepPerformanceData = () => {
     }
   }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, 
       febRepData, febRevaData, febWholesaleData, aprRepData, aprRevaData, aprWholesaleData,
-      mayRepData, mayRevaData, mayWholesaleData, junRepData, junRevaData, junWholesaleData]);
+      mayRepData, mayRevaData, mayWholesaleData, junRepData, junRevaData, junWholesaleData, 
+      juneComparisonSummary, juneSummaryChanges, juneRepChanges,
+      junBaseSummary, junRevaValues, junWholesaleValues,
+      juneComparisonRetailSummary, juneComparisonRevaSummary, juneComparisonWholesaleSummary,
+      mayBaseSummary, mayRevaValues, mayWholesaleValues,
+      mayComparisonRetailSummary, mayComparisonRevaSummary, mayComparisonWholesaleSummary,
+      aprBaseSummary, aprRevaValues, aprWholesaleValues,
+      aprilComparisonRetailSummary, aprilComparisonRevaSummary, aprilComparisonWholesaleSummary,
+      baseSummary, revaValues, wholesaleValues, febBaseSummary, febRevaValues, febWholesaleValues]);
 
   // New loadMayData function to fetch May data from the May_Data table
   const loadJuneData = async () => {
@@ -510,6 +857,56 @@ export const useRepPerformanceData = () => {
            ((juneCombinedSummary.activeAccounts - comparisonSummary.activeAccounts) / comparisonSummary.activeAccounts) * 100 : 0
        };
        
+       // Calculate individual rep changes for the table (MISSING PIECE!)
+       const calculateChanges = (juneData: RepData[], comparisonData: RepData[]): RepChangesRecord => {
+         const changes: RepChangesRecord = {};
+         
+         juneData.forEach(juneRep => {
+           const comparisonRep = comparisonData.find(r => r.rep === juneRep.rep);
+           
+           if (comparisonRep) {
+             changes[juneRep.rep] = {
+               profit: comparisonRep.profit > 0 ? ((juneRep.profit - comparisonRep.profit) / comparisonRep.profit) * 100 : 0,
+               spend: comparisonRep.spend > 0 ? ((juneRep.spend - comparisonRep.spend) / comparisonRep.spend) * 100 : 0,
+               margin: juneRep.margin - comparisonRep.margin,
+               packs: comparisonRep.packs > 0 ? ((juneRep.packs - comparisonRep.packs) / comparisonRep.packs) * 100 : 0,
+               activeAccounts: comparisonRep.activeAccounts > 0 ? ((juneRep.activeAccounts - comparisonRep.activeAccounts) / comparisonRep.activeAccounts) * 100 : 0,
+               totalAccounts: comparisonRep.totalAccounts > 0 ? ((juneRep.totalAccounts - comparisonRep.totalAccounts) / comparisonRep.totalAccounts) * 100 : 0,
+               profitPerActiveShop: comparisonRep.profitPerActiveShop > 0 ? 
+                 ((juneRep.profitPerActiveShop - comparisonRep.profitPerActiveShop) / comparisonRep.profitPerActiveShop) * 100 : 0,
+               profitPerPack: comparisonRep.profitPerPack > 0 ? 
+                 ((juneRep.profitPerPack - comparisonRep.profitPerPack) / comparisonRep.profitPerPack) * 100 : 0,
+               activeRatio: comparisonRep.activeRatio > 0 ? 
+                 juneRep.activeRatio - comparisonRep.activeRatio : 0
+             };
+           }
+         });
+         
+         return changes;
+       };
+       
+       // Create combined data for all departments
+       const juneAllData = getCombinedRepData(
+         processedJuneRetail,
+         processedJuneReva,
+         processedJuneWholesale,
+         true, true, true
+       );
+       
+       const comparisonAllData = getCombinedRepData(
+         comparisonRetailRepData,
+         comparisonRevaRepData,
+         comparisonWholesaleRepData,
+         true, true, true
+       );
+       
+       const juneRepChanges = calculateChanges(juneAllData, comparisonAllData);
+       console.log('Calculated June rep changes:', juneRepChanges);
+       
+       // Always store June rep changes for later use - regardless of selected month
+       setJuneRepChanges(juneRepChanges);
+       console.log('Stored June rep changes for later use:', juneRepChanges);
+       
        // Set June data
        setJunRepData(processedJuneRetail);
        setJunRevaData(processedJuneReva);
@@ -518,10 +915,41 @@ export const useRepPerformanceData = () => {
        setJunRevaValues(juneRevaSummary);
        setJunWholesaleValues(juneWholesaleSummary);
        
+       // Always store the June comparison summary for later use - regardless of selected month
+       setJuneComparisonSummary(comparisonSummary);
+       console.log('Stored June comparison summary for later use:', comparisonSummary);
+       
+       // Always store June summary changes for later use - regardless of selected month
+       setJuneSummaryChanges(juneSummaryChanges);
+       console.log('Stored June summary changes for later use:', juneSummaryChanges);
+       
+       // Store individual department comparison summaries for toggle filtering
+       setJuneComparisonRetailSummary(comparisonRetailSummary);
+       setJuneComparisonRevaSummary(comparisonRevaSummary);
+       setJuneComparisonWholesaleSummary(comparisonWholesaleSummary);
+       console.log('Stored June comparison department summaries for toggle filtering');
+       
+       // Always calculate and store June summary changes - regardless of selected month
+       console.log('Always calculating June summary changes:', juneSummaryChanges);
+       console.log('June combined summary values:', {
+         totalSpend: juneCombinedSummary.totalSpend,
+         totalProfit: juneCombinedSummary.totalProfit,
+         averageMargin: juneCombinedSummary.averageMargin,
+         totalPacks: juneCombinedSummary.totalPacks
+       });
+       console.log('Comparison summary values:', {
+         totalSpend: comparisonSummary.totalSpend,
+         totalProfit: comparisonSummary.totalProfit,
+         averageMargin: comparisonSummary.averageMargin,
+         totalPacks: comparisonSummary.totalPacks
+       });
+       
        // Update the state if June is currently selected
        if (selectedMonth === 'June') {
-         console.log('Setting June summary changes:', juneSummaryChanges);
+         console.log('June is currently selected - setting active data');
          setSummaryChanges(juneSummaryChanges);
+         setComparisonSummary(comparisonSummary); // Store actual comparison values from June_Data_Comparison
+         setRepChanges(juneRepChanges); // Store actual rep changes from June vs June_Data_Comparison
          
          // Create combined data based on selected toggles
          const combinedJuneData = getCombinedRepData(
@@ -535,6 +963,25 @@ export const useRepPerformanceData = () => {
          
          setOverallData(combinedJuneData);
        }
+       
+       // Save the data to localStorage
+       const currentData = loadStoredRepPerformanceData() || {};
+       saveRepPerformanceData({
+         ...currentData,
+         junRepData: processedJuneRetail,
+         junRevaData: processedJuneReva,
+         junWholesaleData: processedJuneWholesale,
+         junBaseSummary: juneSummary,
+         junRevaValues: juneRevaSummary,
+         junWholesaleValues: juneWholesaleSummary,
+         juneComparisonSummary: comparisonSummary,
+         juneSummaryChanges: juneSummaryChanges,
+         juneRepChanges: juneRepChanges,
+         // Store individual department comparison summaries for toggle filtering
+         juneComparisonRetailSummary: comparisonRetailSummary,
+         juneComparisonRevaSummary: comparisonRevaSummary,
+         juneComparisonWholesaleSummary: comparisonWholesaleSummary
+       });
        
        return true;
     } catch (error) {
@@ -818,6 +1265,22 @@ export const useRepPerformanceData = () => {
       setMayRevaValues(mayRevaSummary);
       setMayWholesaleValues(mayWholesaleSummary);
       
+      // Debug logging for May summary values
+      console.log('🔍 Setting May summary values:');
+      console.log('May Retail Summary (mayBaseSummary):', mayRetailSummary);
+      console.log('May REVA Summary (mayRevaValues):', mayRevaSummary);
+      console.log('May Wholesale Summary (mayWholesaleValues):', mayWholesaleSummary);
+      
+      // Store May comparison department summaries for toggle filtering
+      setMayComparisonRetailSummary(priorRetailSummary);
+      setMayComparisonRevaSummary(priorRevaSummary);
+      setMayComparisonWholesaleSummary(priorWholesaleSummary);
+      console.log('Stored May comparison department summaries for toggle filtering:', {
+        priorRetailSummary,
+        priorRevaSummary,
+        priorWholesaleSummary
+      });
+      
       // Calculate changes between May and April
       const calculateChanges = (mayData: RepData[], priorData: RepData[]): RepChangesRecord => {
         const changes: RepChangesRecord = {};
@@ -882,8 +1345,8 @@ export const useRepPerformanceData = () => {
                              (includeWholesale ? wholesale.totalAccounts : 0);
         
         const activeAccounts = (includeRetail ? retail.activeAccounts : 0) + 
-                              (includeReva ? reva.activeAccounts : 0) + 
-                              (includeWholesale ? wholesale.activeAccounts : 0);
+                               (includeReva ? reva.activeAccounts : 0) + 
+                               (includeWholesale ? wholesale.activeAccounts : 0);
         
         const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
         
@@ -1166,6 +1629,12 @@ export const useRepPerformanceData = () => {
       setAprRevaValues(aprRevaSummary);
       setAprWholesaleValues(aprWholesaleSummary);
       
+      // Store April comparison department summaries for toggle filtering
+      setAprilComparisonRetailSummary(marchRetailSummary);
+      setAprilComparisonRevaSummary(marchRevaSummary);
+      setAprilComparisonWholesaleSummary(marchWholesaleSummary);
+      console.log('Stored April comparison department summaries for toggle filtering');
+      
       const calculateChanges = (aprData: RepData[], marchData: RepData[]): RepChangesRecord => {
         const changes: RepChangesRecord = {};
         
@@ -1414,9 +1883,19 @@ export const useRepPerformanceData = () => {
         repChanges: data.repChanges
       });
 
-      await loadAprilData();
-      await loadMayData();
-      await loadJuneData();
+      // Only load the specific month data to avoid overwriting comparison summaries
+      if (selectedMonth === 'April') {
+        await loadAprilData();
+      } else if (selectedMonth === 'May') {
+        await loadMayData();
+      } else if (selectedMonth === 'June') {
+        await loadJuneData();
+      } else {
+        // For March and February, load all additional months for chart data
+        await loadAprilData();
+        await loadMayData();
+        await loadJuneData();
+      }
       
       console.log("Successfully loaded data from Supabase");
       return true;
@@ -1527,6 +2006,15 @@ export const useRepPerformanceData = () => {
     includeWholesale
   );
 
+  // Debug logging for May summary calculation
+  if (selectedMonth === 'May') {
+    console.log('🔍 May summary calculation inputs:');
+    console.log('mayBaseSummary:', mayBaseSummary);
+    console.log('mayRevaValues:', mayRevaValues);
+    console.log('mayWholesaleValues:', mayWholesaleValues);
+    console.log('Final calculated summary:', summary);
+  }
+
   // Updated getFebValue function to handle May data for comparison
   const getFebValue = (repName: string, metricType: string, currentValue: number, changePercent: number) => {
     if (!repName || Math.abs(changePercent) < 0.1) return '';
@@ -1547,6 +2035,18 @@ export const useRepPerformanceData = () => {
       selectedMonth === 'May' ? aprWholesaleData : febWholesaleData;
     
     // ... keep existing code (previous value calculation)
+  };
+
+  // Add debug function for June comparison data
+  const debugJuneData = async () => {
+    console.log('🧪 Running June comparison data debug...');
+    await debugJuneComparisonData();
+  };
+
+  // Add debug function for May data
+  const debugMayDataTable = async () => {
+    console.log('🧪 Running May data debug...');
+    await debugMayData();
   };
 
   return {
@@ -1584,5 +2084,9 @@ export const useRepPerformanceData = () => {
     junBaseSummary,
     junRevaValues,
     junWholesaleValues,
+    comparisonSummary,
+    debugJuneData,
+    debugMayDataTable,
+    juneRepChanges,
   };
 };

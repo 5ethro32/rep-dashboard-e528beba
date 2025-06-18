@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
@@ -137,12 +136,78 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
     console.log(`Filtered data for ${selectedRep}: ${selectedMonth} accounts: ${currentRepAccounts.length}, Previous month accounts: ${previousRepAccounts.length}`);
     console.log(`Breakdown - As main rep: ${currentRepAccounts.filter((item: any) => (item.Rep || item.rep_name) === selectedRep).length}, As sub-rep: ${currentRepAccounts.filter((item: any) => (item['Sub-Rep'] || item.sub_rep) === selectedRep).length}`);
     
+    // Add specific debugging for June data to understand duplicate issue
+    if (selectedMonth === 'June') {
+      console.log('🔍 JUNE DATA ANALYSIS:');
+      
+      // Check for accounts with missing Account Ref in current data
+      const currentWithoutRef = currentRepAccounts.filter(item => !item["Account Ref"] || (typeof item["Account Ref"] === 'string' && item["Account Ref"].trim() === ''));
+      const currentWithRef = currentRepAccounts.filter(item => item["Account Ref"] && (typeof item["Account Ref"] === 'string' && item["Account Ref"].trim() !== ''));
+      console.log(`Current data: ${currentWithRef.length} with Account Ref, ${currentWithoutRef.length} without Account Ref`);
+      
+      // Check for accounts with missing Account Ref in previous data  
+      const previousWithoutRef = previousRepAccounts.filter(item => !item["Account Ref"] || (typeof item["Account Ref"] === 'string' && item["Account Ref"].trim() === ''));
+      const previousWithRef = previousRepAccounts.filter(item => item["Account Ref"] && (typeof item["Account Ref"] === 'string' && item["Account Ref"].trim() !== ''));
+      console.log(`Previous data: ${previousWithRef.length} with Account Ref, ${previousWithoutRef.length} without Account Ref`);
+      
+      // Sample accounts to understand structure
+      if (currentRepAccounts.length > 0) {
+        console.log('Sample current account:', {
+          name: currentRepAccounts[0]["Account Name"],
+          ref: currentRepAccounts[0]["Account Ref"],
+          profit: currentRepAccounts[0].Profit
+        });
+      }
+      if (previousRepAccounts.length > 0) {
+        console.log('Sample previous account:', {
+          name: previousRepAccounts[0]["Account Name"], 
+          ref: previousRepAccounts[0]["Account Ref"],
+          profit: previousRepAccounts[0].Profit
+        });
+      }
+    }
+    
     const accountMap = new Map<string, AccountComparison>();
+    
+    // Helper function to create a more robust account matching key
+    // This handles cases where Account Ref might be missing or inconsistent between tables
+    const createAccountKey = (accountName: string, accountRef: string) => {
+      const cleanName = accountName.trim().toLowerCase();
+      const cleanRef = accountRef?.trim();
+      
+      // Always use just the name as the primary key to ensure matching
+      // This prevents duplicates when one table has refs and another doesn't
+      return cleanName;
+    };
+    
+    // Helper function to find matching account in previous data using flexible matching
+    const findMatchingAccount = (currentAccount: any, previousAccounts: any[]) => {
+      const currentName = (currentAccount["Account Name"] || currentAccount.account_name || '').trim().toLowerCase();
+      const currentRef = (currentAccount["Account Ref"] || currentAccount.account_ref || '').trim();
+      
+      // First try exact match with both name and ref
+      if (currentRef) {
+        const exactMatch = previousAccounts.find(prev => {
+          const prevName = (prev["Account Name"] || prev.account_name || '').trim().toLowerCase();
+          const prevRef = (prev["Account Ref"] || prev.account_ref || '').trim();
+          return prevName === currentName && prevRef === currentRef;
+        });
+        if (exactMatch) return exactMatch;
+      }
+      
+      // Fall back to name-only matching for cases where refs are inconsistent
+      const nameMatch = previousAccounts.find(prev => {
+        const prevName = (prev["Account Name"] || prev.account_name || '').trim().toLowerCase();
+        return prevName === currentName;
+      });
+      
+      return nameMatch;
+    };
     
     currentRepAccounts.forEach((account: any) => {
       const accountName = account["Account Name"] || account.account_name || '';
       const accountRef = account["Account Ref"] || account.account_ref || '';
-      const key = `${accountName}-${accountRef}`;
+      const key = createAccountKey(accountName, accountRef);
       
       const profit = typeof account.Profit === 'string' 
         ? parseFloat(account.Profit) 
@@ -168,31 +233,69 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
           ? parseFloat(account.spend)
           : Number(account.Spend || account.spend || 0);
       
-      accountMap.set(key, {
-        accountName,
-        accountRef,
-        currentProfit: profit,
-        previousProfit: 0,
-        difference: profit,
-        percentChange: profit === 0 ? 0 : 100,
-        currentMargin: margin,
-        previousMargin: 0,
-        marginDifference: margin,
-        currentPacks: packs,
-        previousPacks: 0,
-        packsDifference: packs,
-        packsPercentChange: packs === 0 ? 0 : 100,
-        currentSpend: spend,
-        previousSpend: 0,
-        spendDifference: spend,
-        spendPercentChange: spend === 0 ? 0 : 100
-      });
+      // Check if we already have this account (from previous data processing)
+      if (accountMap.has(key)) {
+        // Update existing entry with current data, combining values
+        const existingAccount = accountMap.get(key)!;
+        
+        // Combine current values (in case there are multiple entries for same account)
+        existingAccount.currentProfit += profit;
+        existingAccount.currentSpend += spend;
+        existingAccount.currentPacks += packs;
+        // Recalculate margin based on combined values
+        existingAccount.currentMargin = existingAccount.currentSpend > 0 ? 
+          (existingAccount.currentProfit / existingAccount.currentSpend) * 100 : 0;
+        
+        // Use the most complete account reference (prefer non-empty refs)
+        if (accountRef && accountRef.trim() && (!existingAccount.accountRef || existingAccount.accountRef.trim() === '')) {
+          existingAccount.accountRef = accountRef;
+        }
+        
+        // Recalculate differences
+        existingAccount.difference = existingAccount.currentProfit - existingAccount.previousProfit;
+        existingAccount.percentChange = existingAccount.previousProfit !== 0 
+          ? ((existingAccount.currentProfit - existingAccount.previousProfit) / Math.abs(existingAccount.previousProfit)) * 100 
+          : existingAccount.currentProfit > 0 ? 100 : 0;
+        existingAccount.marginDifference = existingAccount.currentMargin! - existingAccount.previousMargin!;
+        existingAccount.packsDifference = existingAccount.currentPacks! - existingAccount.previousPacks!;
+        existingAccount.packsPercentChange = existingAccount.previousPacks !== 0
+          ? ((existingAccount.currentPacks! - existingAccount.previousPacks!) / Math.abs(existingAccount.previousPacks!)) * 100
+          : existingAccount.currentPacks! > 0 ? 100 : 0;
+        existingAccount.spendDifference = existingAccount.currentSpend! - existingAccount.previousSpend!;
+        existingAccount.spendPercentChange = existingAccount.previousSpend !== 0
+          ? ((existingAccount.currentSpend! - existingAccount.previousSpend!) / Math.abs(existingAccount.previousSpend!)) * 100
+          : existingAccount.currentSpend! > 0 ? 100 : 0;
+        
+        accountMap.set(key, existingAccount);
+      } else {
+        // Create new entry with current data
+        accountMap.set(key, {
+          accountName,
+          accountRef,
+          currentProfit: profit,
+          previousProfit: 0,
+          difference: profit,
+          percentChange: profit === 0 ? 0 : 100,
+          currentMargin: margin,
+          previousMargin: 0,
+          marginDifference: margin,
+          currentPacks: packs,
+          previousPacks: 0,
+          packsDifference: packs,
+          packsPercentChange: packs === 0 ? 0 : 100,
+          currentSpend: spend,
+          previousSpend: 0,
+          spendDifference: spend,
+          spendPercentChange: spend === 0 ? 0 : 100
+        });
+      }
     });
     
+    // Process previous accounts with improved matching
     previousRepAccounts.forEach((account: any) => {
       const accountName = account["Account Name"] || account.account_name || '';
       const accountRef = account["Account Ref"] || account.account_ref || '';
-      const key = `${accountName}-${accountRef}`;
+      const key = createAccountKey(accountName, accountRef);
       
       const profit = typeof account.Profit === 'string' 
         ? parseFloat(account.Profit) 
@@ -219,30 +322,43 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
           : Number(account.Spend || account.spend || 0);
       
       if (accountMap.has(key)) {
+        // Update existing account with previous data, combining values
         const existingAccount = accountMap.get(key)!;
-        existingAccount.previousProfit = profit;
-        existingAccount.difference = existingAccount.currentProfit - profit;
-        existingAccount.percentChange = profit !== 0 
-          ? ((existingAccount.currentProfit - profit) / Math.abs(profit)) * 100 
+        
+        // Combine previous values (in case there are multiple entries for same account)
+        existingAccount.previousProfit += profit;
+        existingAccount.previousSpend += spend;
+        existingAccount.previousPacks += packs;
+        // Recalculate margin based on combined values
+        existingAccount.previousMargin = existingAccount.previousSpend > 0 ? 
+          (existingAccount.previousProfit / existingAccount.previousSpend) * 100 : 0;
+        
+        // Use the most complete account reference (prefer non-empty refs)
+        if (accountRef && accountRef.trim() && (!existingAccount.accountRef || existingAccount.accountRef.trim() === '')) {
+          existingAccount.accountRef = accountRef;
+        }
+        
+        // Recalculate differences
+        existingAccount.difference = existingAccount.currentProfit - existingAccount.previousProfit;
+        existingAccount.percentChange = existingAccount.previousProfit !== 0 
+          ? ((existingAccount.currentProfit - existingAccount.previousProfit) / Math.abs(existingAccount.previousProfit)) * 100 
           : existingAccount.currentProfit > 0 ? 100 : 0;
         
-        existingAccount.previousMargin = margin;
-        existingAccount.marginDifference = existingAccount.currentMargin! - margin;
+        existingAccount.marginDifference = existingAccount.currentMargin! - existingAccount.previousMargin!;
         
-        existingAccount.previousPacks = packs;
-        existingAccount.packsDifference = existingAccount.currentPacks! - packs;
-        existingAccount.packsPercentChange = packs !== 0
-          ? ((existingAccount.currentPacks! - packs) / Math.abs(packs)) * 100
+        existingAccount.packsDifference = existingAccount.currentPacks! - existingAccount.previousPacks!;
+        existingAccount.packsPercentChange = existingAccount.previousPacks !== 0
+          ? ((existingAccount.currentPacks! - existingAccount.previousPacks!) / Math.abs(existingAccount.previousPacks!)) * 100
           : existingAccount.currentPacks! > 0 ? 100 : 0;
         
-        existingAccount.previousSpend = spend;
-        existingAccount.spendDifference = existingAccount.currentSpend! - spend;
-        existingAccount.spendPercentChange = spend !== 0
-          ? ((existingAccount.currentSpend! - spend) / Math.abs(spend)) * 100
+        existingAccount.spendDifference = existingAccount.currentSpend! - existingAccount.previousSpend!;
+        existingAccount.spendPercentChange = existingAccount.previousSpend !== 0
+          ? ((existingAccount.currentSpend! - existingAccount.previousSpend!) / Math.abs(existingAccount.previousSpend!)) * 100
           : existingAccount.currentSpend! > 0 ? 100 : 0;
         
         accountMap.set(key, existingAccount);
       } else {
+        // Create new entry for account that only exists in previous data
         accountMap.set(key, {
           accountName,
           accountRef,
@@ -265,7 +381,42 @@ const AccountPerformanceComparison: React.FC<AccountPerformanceComparisonProps> 
       }
     });
     
-    return Array.from(accountMap.values());
+    const result = Array.from(accountMap.values());
+    console.log(`Final account comparison result: ${result.length} unique accounts after deduplication`);
+    
+    // Add specific debugging for Strathclyde to understand what's happening
+    if (selectedMonth === 'June') {
+      const strathclydeAccounts = result.filter(acc => 
+        acc.accountName.toLowerCase().includes('strathclyde')
+      );
+      console.log('🔍 STRATHCLYDE ACCOUNTS AFTER PROCESSING:', strathclydeAccounts);
+      
+      // Show the keys that were generated
+      const currentStrathclyde = currentRepAccounts.filter(acc => 
+        (acc["Account Name"] || '').toLowerCase().includes('strathclyde')
+      );
+      const previousStrathclyde = previousRepAccounts.filter(acc => 
+        (acc["Account Name"] || '').toLowerCase().includes('strathclyde')
+      );
+      
+      console.log('Current Strathclyde entries with keys:');
+      currentStrathclyde.forEach(acc => {
+        const name = acc["Account Name"] || '';
+        const ref = acc["Account Ref"] || '';
+        const key = createAccountKey(name, ref);
+        console.log(`  Key: "${key}", Name: "${name}", Ref: "${ref}", Profit: ${acc.Profit}`);
+      });
+      
+      console.log('Previous Strathclyde entries with keys:');
+      previousStrathclyde.forEach(acc => {
+        const name = acc["Account Name"] || '';
+        const ref = acc["Account Ref"] || '';
+        const key = createAccountKey(name, ref);
+        console.log(`  Key: "${key}", Name: "${name}", Ref: "${ref}", Profit: ${acc.Profit}`);
+      });
+    }
+    
+    return result;
   }, [selectedRep, currentMonthData, previousMonthData, selectedMonth]);
 
   const handleSort = (column: string) => {

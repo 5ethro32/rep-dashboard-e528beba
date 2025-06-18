@@ -22,6 +22,12 @@ interface SummaryMetricsProps {
   includeWholesale: boolean;
   selectedMonth?: string;
   hideRankings?: boolean;
+  comparisonSummary?: {
+    totalSpend?: number;
+    totalProfit?: number;
+    averageMargin?: number;
+    totalPacks?: number;
+  };
 }
 
 const SummaryMetrics: React.FC<SummaryMetricsProps> = ({ 
@@ -32,7 +38,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   includeReva,
   includeWholesale,
   selectedMonth = 'March',
-  hideRankings = false
+  hideRankings = false,
+  comparisonSummary
 }) => {
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
@@ -55,19 +62,32 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     };
   };
 
-  // Calculate previous value based on current value and percent change
-  const getPreviousValue = (current: number, changePercent: number) => {
-    if (!showChangeIndicators || !changePercent || Math.abs(changePercent) < 0.1) return current;
+  // Function to get the previous month's value for display
+  const getPreviousValue = (current: number, changePercent: number): number => {
+    if (changePercent === 0) return current;
     return current / (1 + changePercent / 100);
   };
 
-  // Calculate comparison month for subtitle
-  const getComparisonMonthText = () => {
+  // Function to get comparison values - use actual values when available, calculated for others
+  const getComparisonValue = (metricKey: keyof typeof summary): number => {
+    // For months with actual comparison data available, use actual values
+    if ((selectedMonth === 'June' || selectedMonth === 'May' || selectedMonth === 'April') && comparisonSummary) {
+      return comparisonSummary[metricKey] || 0;
+    }
+    
+    // For other months, calculate from percentage change
+    const currentValue = summary[metricKey];
+    const changePercent = filteredChanges[metricKey];
+    return getPreviousValue(currentValue, changePercent);
+  };
+
+  // Get the correct comparison month name
+  const getComparisonMonthName = (): string => {
     if (selectedMonth === 'March') return 'February';
     if (selectedMonth === 'April') return 'March';
     if (selectedMonth === 'May') return 'April';
-    if (selectedMonth === 'June') return 'May';
-    return '';
+    if (selectedMonth === 'June') return 'May'; // Display name - actual data comes from June_Data_Comparison
+    return 'Previous';
   };
 
   return (
@@ -78,7 +98,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         value={formatCurrency(summary.totalSpend || 0, 0)}
         change={renderChangeIndicator(filteredChanges.totalSpend)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalSpend || 0, filteredChanges.totalSpend), 0)}` : 
+          `${getComparisonMonthName()}: ${formatCurrency(getComparisonValue('totalSpend'), 0)}` : 
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         icon={<ChartBar />}
@@ -92,7 +112,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         value={formatCurrency(summary.totalProfit || 0, 0)}
         change={renderChangeIndicator(filteredChanges.totalProfit)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatCurrency(getPreviousValue(summary.totalProfit || 0, filteredChanges.totalProfit), 0)}` :
+          `${getComparisonMonthName()}: ${formatCurrency(getComparisonValue('totalProfit'), 0)}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         valueClassName="font-extrabold text-white"
@@ -107,7 +127,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         value={formatPercent(summary.averageMargin || 0)}
         change={renderChangeIndicator(filteredChanges.averageMargin)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatPercent(getPreviousValue(summary.averageMargin || 0, filteredChanges.averageMargin))}` :
+          `${getComparisonMonthName()}: ${formatPercent(getComparisonValue('averageMargin'))}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         icon={<Gauge />}
@@ -121,7 +141,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         value={formatNumber(summary.totalPacks || 0)}
         change={renderChangeIndicator(filteredChanges.totalPacks)}
         subtitle={showChangeIndicators ? 
-          `${getComparisonMonthText()}: ${formatNumber(getPreviousValue(summary.totalPacks || 0, filteredChanges.totalPacks))}` :
+          `${getComparisonMonthName()}: ${formatNumber(getComparisonValue('totalPacks'))}` :
           selectedMonth === 'February' ? 'No comparison data available' : undefined
         }
         icon={<Package />}

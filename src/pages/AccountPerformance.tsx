@@ -15,7 +15,7 @@ interface AccountPerformanceProps {
   selectedUserName?: string;
 }
 
-type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data' | 'June_Data';
+type AllowedTable = 'mtd_daily' | 'sales_data' | 'sales_data_februrary' | 'Prior_Month_Rolling' | 'May_Data' | 'June_Data' | 'June_Data_Comparison';
 type DataItem = {
   [key: string]: any;
   "Account Name"?: string;
@@ -242,7 +242,7 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
       switch (selectedMonth) {
         case 'June':
           currentTable = "June_Data";
-          previousTable = "May_Data";
+          previousTable = "June_Data_Comparison";
           break;
         case 'May':
           currentTable = "May_Data";

@@ -73,13 +73,16 @@ const getChangeIcon = (change: number) => {
 
 const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ 
   className,
-  repChangesData = defaultRepChanges,
+  repChangesData,
   currentMonth = 'June'
 }) => {
   const [isVisible, setIsVisible] = useState(true);
 
+  // Use live data if available, otherwise fall back to default data
+  const dataToUse = repChangesData && Object.keys(repChangesData).length > 0 ? repChangesData : defaultRepChanges;
+  
   // Get the ticker data
-  const tickerData = getTickerData(repChangesData);
+  const tickerData = getTickerData(dataToUse);
 
   // Don't render if not visible
   if (!isVisible) return null;

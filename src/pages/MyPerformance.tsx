@@ -17,6 +17,7 @@ import ActivityImpactAnalysis from '@/components/my-performance/ActivityImpactAn
 import PersonalizedInsights from '@/components/my-performance/PersonalizedInsights';
 import GoalTrackingComponent from '@/components/my-performance/GoalTrackingComponent';
 import RepPerformanceComparison from '@/components/my-performance/RepPerformanceComparison';
+import { debugJuneComparisonData } from '@/utils/debug-june-data';
 
 interface MyPerformanceProps {
   selectedUserId?: string | null;
@@ -103,6 +104,11 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   useEffect(() => {
     if (user && selectedUserId) {
       fetchAllData();
+      
+      // Debug June comparison data if we're on June
+      if (selectedMonth === 'June') {
+        debugJuneComparisonData();
+      }
     }
   }, [user, selectedMonth, selectedUserId, includeRetail, includeReva, includeWholesale]);
   
@@ -167,7 +173,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         switch (selectedMonth) {
           case 'June':
             currentTable = 'June_Data';
-            previousTable = 'May_Data'; // May data for comparison
+            previousTable = 'June_Data_Comparison'; // June comparison data (NOT May_Data)
             break;
           case 'May':
             currentTable = 'May_Data';
@@ -209,9 +215,13 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         const spendColumn = currentTable === 'sales_data' ? 'spend' : 'Spend';
         const currentPerformance = calculatePerformanceMetrics(filteredData, profitColumn, spendColumn);
         
+        console.log(`🔍 All Data - Current month (${selectedMonth}) performance:`, currentPerformance);
+        console.log(`🔍 All Data - Current data records processed: ${filteredData.length}`);
+        
         // Get previous month data if available
         let previousPerformance = null;
         if (previousTable) {
+          console.log(`🔍 All Data - Fetching previous month data from ${previousTable}`);
           const { data: previousData, error: previousError } = await fetchDataFromTable(previousTable);
             
           if (!previousError && previousData) {
@@ -230,6 +240,11 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             const prevProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
             const prevSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
             previousPerformance = calculatePerformanceMetrics(filteredPreviousData, prevProfitColumn, prevSpendColumn);
+            
+            console.log(`🔍 All Data - Previous month performance calculated:`, previousPerformance);
+            console.log(`🔍 All Data - Previous data records processed: ${filteredPreviousData.length}`);
+          } else {
+            console.log(`🔍 All Data - No previous data found or error occurred:`, { error: previousError, dataLength: previousData?.length });
           }
         }
         
@@ -294,7 +309,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       switch (selectedMonth) {
         case 'June':
           currentTable = 'June_Data';
-          previousTable = 'May_Data'; // May data for comparison
+          previousTable = 'June_Data_Comparison'; // June comparison data (NOT May_Data)
           break;
         case 'May':
           currentTable = 'May_Data';
@@ -356,7 +371,14 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         const previousProfitColumn = previousTable === 'sales_data' ? 'profit' : 'Profit';
         const previousSpendColumn = previousTable === 'sales_data' ? 'spend' : 'Spend';
         
+        console.log(`Fetching previous month data from ${previousTable} for user ${matchName}`);
         const { data: previousData, error: previousError } = await fetchUserDataFromTable(previousTable, matchName);
+        
+        console.log(`Previous data result:`, { 
+          error: previousError, 
+          dataLength: previousData?.length, 
+          sampleRecord: previousData?.[0] 
+        });
         
         if (!previousError && previousData && previousData.length > 0) {
           let filteredPreviousData = previousData;
@@ -1118,6 +1140,12 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
               .select('*')
               .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
             break;
+          case 'June_Data_Comparison':
+            query = supabase
+              .from('June_Data_Comparison')
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
           default:
             throw new Error(`Unknown table: ${tableName}`);
         }
@@ -1201,6 +1229,13 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           case 'Prior_Month_Rolling':
             query = supabase
               .from('Prior_Month_Rolling')
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'June_Data_Comparison':
+            query = supabase
+              .from('June_Data_Comparison')
               .select('*')
               .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
               .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);

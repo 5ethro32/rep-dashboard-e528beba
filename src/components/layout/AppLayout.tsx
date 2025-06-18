@@ -31,10 +31,20 @@ const AppLayout = ({
   const isMobile = useIsMobile();
   const location = useLocation();
   
+  // Get live rep performance data if available
+  const repPerformanceData = (window as any).repPerformanceData;
+  const liveRepChanges = repPerformanceData?.repChanges;
+  const liveSelectedMonth = repPerformanceData?.selectedMonth;
+  
   return (
     <div className="min-h-screen bg-finance-darkBg text-white bg-gradient-to-b from-gray-950 to-gray-900">
-      {/* Announcement banner at the very top - shows June profit changes */}
-      {selectedMonth === 'June' && <AnnouncementBanner currentMonth={selectedMonth} />}
+      {/* Announcement banner at the very top - shows live profit changes when data is available */}
+      {liveRepChanges && Object.keys(liveRepChanges).length > 0 && (
+        <AnnouncementBanner 
+          currentMonth={liveSelectedMonth || selectedMonth}
+          repChangesData={liveRepChanges}
+        />
+      )}
       
       {/* Single header with actions integrated */}
       <AppHeader 
