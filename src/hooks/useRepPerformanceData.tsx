@@ -907,6 +907,15 @@ export const useRepPerformanceData = () => {
        setJuneRepChanges(juneRepChanges);
        console.log('Stored June rep changes for later use:', juneRepChanges);
        
+       // Immediately update window data if we're on rep performance page and June is selected
+       if (typeof window !== 'undefined' && window.location?.pathname === '/rep-performance') {
+         console.log('🚀 Immediately updating window.repPerformanceData with June rep changes');
+         window.repPerformanceData = {
+           repChanges: juneRepChanges,
+           selectedMonth: 'June'
+         };
+       }
+       
        // Set June data
        setJunRepData(processedJuneRetail);
        setJunRevaData(processedJuneReva);

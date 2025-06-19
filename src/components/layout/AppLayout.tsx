@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileNavigation from '@/components/mobile/MobileNavigation';
 import ChatInterface from '@/components/chat/ChatInterface';
@@ -31,8 +30,28 @@ const AppLayout = ({
   const isMobile = useIsMobile();
   const location = useLocation();
   
-  // Get live rep performance data if available
-  const repPerformanceData = (window as any).repPerformanceData;
+  // Get live rep performance data if available - with periodic updates
+  const [repPerformanceData, setRepPerformanceData] = useState((window as any).repPerformanceData);
+  
+  // Check for updated data periodically when on rep performance page
+  useEffect(() => {
+    if (location.pathname === '/rep-performance') {
+      const checkForUpdates = () => {
+        const currentData = (window as any).repPerformanceData;
+        if (currentData && JSON.stringify(currentData) !== JSON.stringify(repPerformanceData)) {
+          console.log('🔄 AppLayout detected updated rep performance data, refreshing announcement banner');
+          setRepPerformanceData(currentData);
+        }
+      };
+      
+      // Check immediately and then every second
+      checkForUpdates();
+      const interval = setInterval(checkForUpdates, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [location.pathname, repPerformanceData]);
+  
   const liveRepChanges = repPerformanceData?.repChanges;
   const liveSelectedMonth = repPerformanceData?.selectedMonth;
   

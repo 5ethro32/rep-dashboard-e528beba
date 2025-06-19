@@ -124,6 +124,24 @@ const RepPerformance = () => {
         repChangesCount: Object.keys(monthSpecificRepChanges).length
       });
       
+      // Add specific debugging for Michael McKay
+      if (selectedMonth === 'June') {
+        console.log('🔍 MICHAEL MCKAY DEBUGGING:');
+        console.log('June rep changes data for Michael McKay:', juneRepChanges['Michael McKay']);
+        console.log('Regular rep changes data for Michael McKay:', repChanges['Michael McKay']);
+        console.log('Full juneRepChanges object keys:', Object.keys(juneRepChanges));
+        console.log('Full repChanges object keys:', Object.keys(repChanges));
+        
+        // Check if we're using default data
+        if (Object.keys(juneRepChanges).length === 0) {
+          console.log('⚠️ WARNING: juneRepChanges is empty! This might cause fallback to default data.');
+        }
+        
+        // Show what data is actually being passed to announcement banner
+        const actualDataToUse = Object.keys(monthSpecificRepChanges).length > 0 ? monthSpecificRepChanges : repChanges;
+        console.log('Actual data being exposed to announcement banner:', actualDataToUse['Michael McKay']);
+      }
+      
       window.repPerformanceData = {
         repChanges: monthSpecificRepChanges,
         selectedMonth: selectedMonth
@@ -139,7 +157,7 @@ const RepPerformance = () => {
         delete window.repPerformanceData;
       }
     };
-  }, [location.pathname, selectedMonth, repChanges, juneRepChanges]); // Add repChanges and juneRepChanges as dependencies
+  }, [location.pathname, selectedMonth, repChanges, juneRepChanges, handleRefresh]); // Add handleRefresh to dependencies and make sure we update whenever data changes
 
   const activeData = getActiveData('overall');
 
