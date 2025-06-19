@@ -107,6 +107,7 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
   const [showMetricSelector, setShowMetricSelector] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Persist selectedMetric to sessionStorage whenever it changes
   useEffect(() => {
@@ -124,11 +125,20 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
     }
   }, [showMetricSelector]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside - updated to handle portal
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showMetricSelector && buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
-        setShowMetricSelector(false);
+      if (showMetricSelector) {
+        const target = event.target as Node;
+        const isClickOnButton = buttonRef.current && buttonRef.current.contains(target);
+        const isClickOnDropdown = dropdownRef.current && dropdownRef.current.contains(target);
+        
+        console.log('🎯 CLICK OUTSIDE - Click detected, on button:', isClickOnButton, 'on dropdown:', isClickOnDropdown);
+        
+        if (!isClickOnButton && !isClickOnDropdown) {
+          console.log('🎯 CLICK OUTSIDE - Closing dropdown');
+          setShowMetricSelector(false);
+        }
       }
     };
 
@@ -271,6 +281,7 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
         console.log('🎯 DROPDOWN PORTAL - Creating portal dropdown, position:', dropdownPosition);
         return createPortal(
           <div 
+            ref={dropdownRef}
             className="fixed bg-gray-900 border border-white/10 rounded-md shadow-xl backdrop-blur-md z-[9999] min-w-[6rem]"
             style={{
               top: dropdownPosition.top,
