@@ -205,7 +205,11 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
             <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
             <button
               ref={buttonRef}
-              onClick={() => setShowMetricSelector(!showMetricSelector)}
+              onClick={() => {
+                console.log('🎯 DROPDOWN TRIGGER - Button clicked, current showMetricSelector:', showMetricSelector);
+                setShowMetricSelector(!showMetricSelector);
+                console.log('🎯 DROPDOWN TRIGGER - Setting showMetricSelector to:', !showMetricSelector);
+              }}
               className={cn(
                 "text-xs font-medium tracking-wide hidden sm:flex items-center gap-1 px-2 py-1 rounded-md transition-all duration-200 hover:bg-white/5",
                 METRIC_CONFIG[selectedMetric].color
@@ -263,40 +267,50 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
       </div>
 
       {/* Portal-rendered dropdown to escape container constraints */}
-      {showMetricSelector && createPortal(
-        <div 
-          className="fixed bg-gray-900 border border-white/10 rounded-md shadow-xl backdrop-blur-md z-[9999] min-w-[6rem]"
-          style={{
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-          }}
-        >
-          {(Object.keys(METRIC_CONFIG) as MetricType[]).map((metric) => (
-            <button
-              key={metric}
-              onClick={() => {
-                console.log('🎯 METRIC CHANGE CLICKED:', metric);
-                console.log('Previous metric:', selectedMetric);
-                console.log('Setting metric to:', metric);
-                setSelectedMetric(metric);
-                setShowMetricSelector(false);
-                console.log('Metric state updated');
-                
-                // Force immediate storage update and verification
-                sessionStorage.setItem('announcement-banner-metric', metric);
-                console.log('SessionStorage updated to:', sessionStorage.getItem('announcement-banner-metric'));
-              }}
-              className={cn(
-                "w-full px-3 py-2 text-xs text-left hover:bg-white/5 first:rounded-t-md last:rounded-b-md transition-colors",
-                selectedMetric === metric ? METRIC_CONFIG[metric].color : 'text-white/60'
-              )}
-            >
-              {METRIC_CONFIG[metric].label}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
+      {showMetricSelector && (() => {
+        console.log('🎯 DROPDOWN PORTAL - Creating portal dropdown, position:', dropdownPosition);
+        return createPortal(
+          <div 
+            className="fixed bg-gray-900 border border-white/10 rounded-md shadow-xl backdrop-blur-md z-[9999] min-w-[6rem]"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+            }}
+            onMouseDown={() => console.log('🎯 DROPDOWN PORTAL - Mouse down on dropdown container')}
+          >
+            {(Object.keys(METRIC_CONFIG) as MetricType[]).map((metric) => {
+              console.log('🎯 DROPDOWN PORTAL - Rendering button for metric:', metric);
+              return (
+                <button
+                  key={metric}
+                  onMouseDown={() => console.log('🎯 DROPDOWN PORTAL - Mouse down on button:', metric)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🎯 METRIC CHANGE CLICKED:', metric);
+                    console.log('Previous metric:', selectedMetric);
+                    console.log('Setting metric to:', metric);
+                    setSelectedMetric(metric);
+                    setShowMetricSelector(false);
+                    console.log('Metric state updated');
+                    
+                    // Force immediate storage update and verification
+                    sessionStorage.setItem('announcement-banner-metric', metric);
+                    console.log('SessionStorage updated to:', sessionStorage.getItem('announcement-banner-metric'));
+                  }}
+                  className={cn(
+                    "w-full px-3 py-2 text-xs text-left hover:bg-white/5 first:rounded-t-md last:rounded-b-md transition-colors",
+                    selectedMetric === metric ? METRIC_CONFIG[metric].color : 'text-white/60'
+                  )}
+                >
+                  {METRIC_CONFIG[metric].label}
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        );
+      })()}
     </>
   );
 };
