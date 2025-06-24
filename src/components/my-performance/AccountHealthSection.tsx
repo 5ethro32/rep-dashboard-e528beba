@@ -26,7 +26,7 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
   formatPercent,
   onMonthChange,
   onCompareMonthChange,
-  selectedMonth = 'May',
+  selectedMonth = 'June',
   compareMonth = 'April'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');

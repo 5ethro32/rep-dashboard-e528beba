@@ -85,25 +85,34 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     const currentAccountMap = new Map();
     const previousAccountMap = new Map();
     
-    currentMonthData.forEach(item => {
+    // Helper function to create account key with fallback for missing refs
+    const createAccountKey = (item: any) => {
       const accountRef = item["Account Ref"] || item.account_ref || '';
+      const accountName = item["Account Name"] || item.account_name || '';
+      
+      // Use name as fallback when ref is missing or empty (especially for June data)
+      return accountRef && accountRef.trim() ? accountRef : accountName.trim().toLowerCase();
+    };
+    
+    currentMonthData.forEach(item => {
+      const accountKey = createAccountKey(item);
       const accountName = item["Account Name"] || item.account_name || '';
       const profit = typeof item.Profit === 'number' ? item.Profit : 
                    typeof item.profit === 'number' ? item.profit : 0;
       
-      if (accountRef) {
-        currentAccountMap.set(accountRef, { name: accountName, profit });
+      if (accountKey) {
+        currentAccountMap.set(accountKey, { name: accountName, profit });
       }
     });
     
     previousMonthData.forEach(item => {
-      const accountRef = item["Account Ref"] || item.account_ref || '';
+      const accountKey = createAccountKey(item);
       const accountName = item["Account Name"] || item.account_name || '';
       const profit = typeof item.Profit === 'number' ? item.Profit : 
                    typeof item.profit === 'number' ? item.profit : 0;
       
-      if (accountRef) {
-        previousAccountMap.set(accountRef, { name: accountName, profit });
+      if (accountKey) {
+        previousAccountMap.set(accountKey, { name: accountName, profit });
       }
     });
     
@@ -111,8 +120,8 @@ const AccountSummaryCards: React.FC<AccountSummaryCardsProps> = ({
     let maxPercentImprovement = 0;
     
     // Check each current account to see if it exists in the previous data
-    currentAccountMap.forEach((currentData, accountRef) => {
-      const previousData = previousAccountMap.get(accountRef);
+    currentAccountMap.forEach((currentData, accountKey) => {
+      const previousData = previousAccountMap.get(accountKey);
       
       // Only consider accounts that exist in both periods and had some profit in previous month
       if (previousData && previousData.profit > 0) {

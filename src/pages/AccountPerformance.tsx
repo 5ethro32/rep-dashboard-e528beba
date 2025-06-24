@@ -38,7 +38,7 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
   selectedUserId: propSelectedUserId, 
   selectedUserName: propSelectedUserName 
 }) => {
-  const [selectedMonth, setSelectedMonth] = useState<string>('May');
+  const [selectedMonth, setSelectedMonth] = useState<string>('June');
   
   // Set dynamic page title
   usePageTitle();
@@ -302,27 +302,41 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
         const currentAccountMap = new Map();
         const previousAccountMap = new Map();
 
-        // Build maps with account ref as key and spend as value
-        currentData.forEach((item: DataItem) => {
+        // Helper function to create account key with fallback for June data
+        const createAccountKey = (item: DataItem) => {
           const accountRef = item["Account Ref"] || item.account_ref || '';
+          const accountName = item["Account Name"] || item.account_name || '';
+          
+          // For June data, use name as fallback when ref is missing or empty
+          if (selectedMonth === 'June') {
+            return accountRef && accountRef.trim() ? accountRef : accountName.trim().toLowerCase();
+          }
+          
+          // For other months, use existing logic
+          return accountRef;
+        };
+
+        // Build maps with account key and spend as value
+        currentData.forEach((item: DataItem) => {
+          const accountKey = createAccountKey(item);
           const spend = typeof item.Spend === 'number' ? item.Spend : typeof item.spend === 'number' ? item.spend : 0;
-          if (accountRef) {
-            currentAccountMap.set(accountRef, spend);
+          if (accountKey) {
+            currentAccountMap.set(accountKey, spend);
           }
         });
         previousData.forEach((item: DataItem) => {
-          const accountRef = item["Account Ref"] || item.account_ref || '';
+          const accountKey = createAccountKey(item);
           const spend = typeof item.Spend === 'number' ? item.Spend : typeof item.spend === 'number' ? item.spend : 0;
-          if (accountRef) {
-            previousAccountMap.set(accountRef, spend);
+          if (accountKey) {
+            previousAccountMap.set(accountKey, spend);
           }
         });
         let increasingCount = 0;
         let decreasingCount = 0;
 
         // Compare the accounts that exist in both periods
-        currentAccountMap.forEach((currentSpend, accountRef) => {
-          const previousSpend = previousAccountMap.get(accountRef);
+        currentAccountMap.forEach((currentSpend, accountKey) => {
+          const previousSpend = previousAccountMap.get(accountKey);
 
           // Only compare if the account existed in the previous period
           if (previousSpend !== undefined && previousSpend > 0) {
