@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ToggleButton } from "@/components/ui/toggle-button";
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -87,7 +86,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
         )}
         
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none">
+          <DropdownMenuTrigger className="flex items-center gap-2 px-3 rounded-md border border-gray-700 bg-gray-900/70 text-white hover:bg-gray-800 transition-colors focus:outline-none h-9">
             <CalendarIcon className="h-4 w-4 opacity-70" />
             {isMobile ? (
               <span>{selectedMonth}</span>
