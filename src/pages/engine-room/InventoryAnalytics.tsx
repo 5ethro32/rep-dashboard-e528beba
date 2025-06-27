@@ -254,7 +254,7 @@ const InventoryAnalyticsContent: React.FC = () => {
                 Required columns: stockcode, description, quantity_available, packs_sold_avg_last_six_months, avg_cost
               </p>
               <p className="text-xs text-muted-foreground">
-                Optional: next_cost, min_cost, last_po_cost, competitor prices (Nupharm, AAH2, ETH_LIST, LEXON2, AVER)
+                Optional: next_cost, min_cost, last_po_cost, competitor prices (Nupharm, AAH2, ETH_LIST, LEXON2, AVER), tariffs (SDT, EDT)
               </p>
             </div>
           </div>
@@ -281,7 +281,7 @@ const InventoryAnalyticsContent: React.FC = () => {
                   <ul className="list-disc pl-5 mt-1 text-sm space-y-1">
                     <li>Excel file with 'maintenance' sheet (or first sheet used)</li>
                     <li>Required: stockcode, description, quantity_available, packs_sold_avg_last_six_months, avg_cost</li>
-                    <li>Optional: quantity_ringfenced, quantity_on_order, next_cost, competitor prices</li>
+                    <li>Optional: quantity_ringfenced, quantity_on_order, next_cost, competitor prices, tariffs (SDT, EDT)</li>
                   </ul>
                 </AlertDescription>
               </div>
@@ -623,6 +623,14 @@ const AllItemsAnalysis: React.FC<{
           aValue = a.AVER || 0;
           bValue = b.AVER || 0;
           break;
+        case 'sdt':
+          aValue = a.SDT || 0;
+          bValue = b.SDT || 0;
+          break;
+        case 'edt':
+          aValue = a.EDT || 0;
+          bValue = b.EDT || 0;
+          break;
         default:
           aValue = a.stockValue;
           bValue = b.stockValue;
@@ -788,6 +796,12 @@ const AllItemsAnalysis: React.FC<{
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300">
                     Star

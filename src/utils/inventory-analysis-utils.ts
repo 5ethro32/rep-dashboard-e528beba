@@ -19,6 +19,8 @@ export interface InventoryItem {
   ETH_LIST?: number;
   LEXON2?: number;
   AVER?: number; // Our selling price
+  SDT?: number; // Scottish Drug Tariff
+  EDT?: number; // English Drug Tariff
 }
 
 export interface ProcessedInventoryItem extends InventoryItem {
@@ -155,7 +157,9 @@ const generateInventoryColumnMapping = (headers: string[]) => {
     AAH2: ['aah2', 'aah 2', 'aah2 price'],
     ETH_LIST: ['eth_list', 'eth list', 'eth list price'],
     LEXON2: ['lexon2', 'lexon 2', 'lexon2 price'],
-    AVER: ['aver', 'our price', 'selling price', 'current price']
+    AVER: ['aver', 'our price', 'selling price', 'current price'],
+    SDT: ['sdt', 'scottish drug tariff', 'scottish tariff', 'scotland tariff'],
+    EDT: ['edt', 'english drug tariff', 'english tariff', 'england tariff']
   };
   
   // Find matches for each field
@@ -250,6 +254,12 @@ const transformInventoryRow = (row: any, mapping: Record<string, string>): Inven
   }
   if (mapping.AVER && row[mapping.AVER] !== undefined) {
     transformed.AVER = Number(row[mapping.AVER] || 0);
+  }
+  if (mapping.SDT && row[mapping.SDT] !== undefined) {
+    transformed.SDT = Number(row[mapping.SDT] || 0);
+  }
+  if (mapping.EDT && row[mapping.EDT] !== undefined) {
+    transformed.EDT = Number(row[mapping.EDT] || 0);
   }
   
   return transformed;
