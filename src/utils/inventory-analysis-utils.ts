@@ -175,22 +175,17 @@ const generateInventoryColumnMapping = (headers: string[]) => {
 
 // Helper function to find column matches
 const findColumnMatch = (headers: string[], possibleNames: string[]): string | null => {
-  console.log(`Looking for column matches among: ${possibleNames.join(', ')}`);
-  
   // Clean headers by trimming whitespace and normalizing
   const cleanHeaders = headers.map(h => ({ 
     original: h, 
     clean: h.toLowerCase().trim().replace(/\s+/g, ' ').replace(/_/g, ' ') 
   }));
   
-  console.log('Cleaned headers:', cleanHeaders.map(h => `"${h.original}" -> "${h.clean}"`));
-  
   // First try exact matches (case insensitive, trimmed, underscores normalized)
   for (const { original, clean } of cleanHeaders) {
     for (const name of possibleNames) {
       const cleanName = name.toLowerCase().trim().replace(/\s+/g, ' ').replace(/_/g, ' ');
       if (clean === cleanName) {
-        console.log(`✅ Exact match found: "${original}" matches "${name}"`);
         return original;
       }
     }
@@ -201,17 +196,14 @@ const findColumnMatch = (headers: string[], possibleNames: string[]): string | n
     for (const name of possibleNames) {
       const cleanName = name.toLowerCase().trim().replace(/\s+/g, ' ').replace(/_/g, ' ');
       if (clean.includes(cleanName) && cleanName.length > 3) {
-        console.log(`✅ Partial match found: "${original}" contains "${name}"`);
         return original;
       }
       if (cleanName.includes(clean) && clean.length > 3) {
-        console.log(`✅ Reverse partial match found: "${name}" contains "${original}"`);
         return original;
       }
     }
   }
   
-  console.log(`❌ No match found for: ${possibleNames.join(', ')}`);
   return null;
 };
 
@@ -478,73 +470,43 @@ export const processInventoryExcelFile = async (file: File): Promise<ProcessedIn
         }
 
         // Look for 'maintenance' sheet first, then fallback to first sheet
-        console.log('🔍 Available sheets in Excel file:', sheetNames);
         const sheetName = sheetNames.find(name => name.toLowerCase().includes('maintenance')) || sheetNames[0];
-        console.log('📊 Processing sheet:', sheetName);
         
         // Debug the sheet structure before converting to JSON
         const sheet = workbook.Sheets[sheetName];
-        console.log('🔍 Sheet range:', sheet['!ref']);
-        console.log('🔍 Sheet keys (cell references):', Object.keys(sheet).filter(key => !key.startsWith('!')).slice(0, 20), '...');
         
         // Try different parsing methods
-        console.log('📋 Trying different parsing methods:');
         
         // Method 1: Default JSON conversion (force wide range to ensure we get all columns)
         const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { 
           range: undefined, // Read entire sheet
           defval: null // Use null for empty cells
         });
-        console.log('  Method 1 - Default JSON: Found', rawData.length, 'rows');
         if (rawData.length > 0) {
           const headers1 = Object.keys(rawData[0] as object);
-          console.log('    Headers:', headers1.join(', '));
         }
         
         // Method 2: Raw values with header option
         const rawData2 = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
-        console.log('  Method 2 - Raw with header=1: Found', rawData2.length, 'rows');
         if (rawData2.length > 0) {
-          console.log('    First row (headers):', (rawData2[0] as any[]).join(', '));
         }
         
         // Method 3: Range-based parsing to ensure we get all columns
         const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:Z1000');
-        console.log('  Method 3 - Decoded range:', range);
         const rawData3 = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { range: range });
-        console.log('  Method 3 - Range-based: Found', rawData3.length, 'rows');
         if (rawData3.length > 0) {
           const headers3 = Object.keys(rawData3[0] as object);
-          console.log('    Headers:', headers3.join(', '));
         }
         
         // Debug: Check if packs_sold_avg_last_six_months exists in ANY sheet
-        console.log('🧪 Checking all sheets for packs_sold_avg_last_six_months column:');
         sheetNames.forEach(sName => {
           const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sName]);
           if (sheetData.length > 0) {
             const headers = Object.keys(sheetData[0] as object);
             const hasPacksColumn = headers.some(h => h.toLowerCase().includes('packs_sold_avg_last_six_months'));
-            console.log(`  Sheet "${sName}": ${hasPacksColumn ? '✅ HAS' : '❌ MISSING'} packs_sold_avg_last_six_months`);
-            console.log(`    Headers: ${headers.join(', ')}`);
             
             // Extra debugging for maintenance sheet
             if (sName.toLowerCase().includes('maintenance')) {
-              console.log(`🔬 DETAILED MAINTENANCE SHEET ANALYSIS:`);
-              console.log(`    Total headers found: ${headers.length}`);
-              console.log(`    Headers with character codes:`);
-              headers.forEach((h, idx) => {
-                const chars = [...h].map(c => c.charCodeAt(0));
-                console.log(`      [${idx}] "${h}" (${h.length} chars) - codes: ${chars.join(',')}`);
-              });
-              
-              // Check for any header containing "packs" or "sold" or "months"
-              const packsHeaders = headers.filter(h => h.toLowerCase().includes('packs'));
-              const soldHeaders = headers.filter(h => h.toLowerCase().includes('sold'));
-              const monthsHeaders = headers.filter(h => h.toLowerCase().includes('months'));
-              console.log(`    Headers containing "packs": ${packsHeaders.join(', ')}`);
-              console.log(`    Headers containing "sold": ${soldHeaders.join(', ')}`);
-              console.log(`    Headers containing "months": ${monthsHeaders.join(', ')}`);
             }
           }
         });
@@ -553,58 +515,18 @@ export const processInventoryExcelFile = async (file: File): Promise<ProcessedIn
           throw new Error('Excel sheet is empty. Please upload a file with data.');
         }
         
-        console.log('Processing inventory file:', file.name);
-        console.log('Using sheet:', sheetName);
-        
         // Get headers and clean them up
         const rawHeaders = Object.keys(rawData[0] as object);
-        console.log('Raw data headers:', rawHeaders);
-        console.log('Header details:', rawHeaders.map(h => ({ name: h, length: h.length, codes: [...h].map(c => c.charCodeAt(0)) })));
         
         // Generate column mapping
         const columnMapping = generateInventoryColumnMapping(rawHeaders);
-        
-        console.log('Column mapping:', columnMapping);
         
         // Check for minimum required columns
         const requiredFields = ['stockcode', 'description', 'quantity_available', 'packs_sold_avg_last_six_months', 'avg_cost'];
         const missingFields = requiredFields.filter(field => !columnMapping[field]);
         
         if (missingFields.length > 0) {
-          console.error('Missing fields analysis:');
-          console.error('Required fields:', requiredFields);
-          console.error('Available headers:', rawHeaders);
-          console.error('Column mapping result:', columnMapping);
-          console.error('Missing fields:', missingFields);
-          
-          // Try to suggest close matches
-          missingFields.forEach(missingField => {
-            console.error(`Looking for "${missingField}" in headers:`);
-            rawHeaders.forEach(header => {
-              const lowerHeader = header.toLowerCase().trim();
-              const lowerMissing = missingField.toLowerCase();
-              if (lowerHeader.includes(lowerMissing) || lowerMissing.includes(lowerHeader)) {
-                console.error(`  Potential match: "${header}" (similarity found)`);
-              }
-            });
-          });
-          
-                     throw new Error(`Missing required columns: ${missingFields.join(', ')}. Please ensure your file includes these fields.
-
-🔍 DEBUGGING INFO:
-- File: ${file.name}
-- Sheet processed: "${sheetName}"
-- Available sheets: ${sheetNames.join(', ')}
-
-Expected file structure:
-- Excel file with 'maintenance' sheet (or first sheet used)
-- Required: stockcode, description, quantity_available, packs_sold_avg_last_six_months, avg_cost
-- Optional: quantity_ringfenced, quantity_on_order, next_cost, competitor prices
-
-Available columns in processed sheet "${sheetName}": ${rawHeaders.join(', ')}
-
-💡 TIP: If your data is on a different sheet, make sure it's named 'maintenance' or move it to the first sheet.
-📋 CHECK: Open browser console (F12) to see detailed column matching attempts.`);
+          throw new Error(`Missing required columns: ${missingFields.join(', ')}. Please ensure your file includes these fields.`);
         }
         
         // Transform raw data
@@ -642,7 +564,6 @@ Available columns in processed sheet "${sheetName}": ${rawHeaders.join(', ')}
         
         resolve(result);
       } catch (error) {
-        console.error('Inventory processing error:', error);
         reject(new Error(error instanceof Error ? error.message : 'Invalid Excel file format. Please ensure your file follows the required structure.'));
       }
     };
