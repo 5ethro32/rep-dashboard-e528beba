@@ -2248,8 +2248,8 @@ const MetricFilteredView: React.FC<{
           <div className="max-h-[600px] overflow-y-auto">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1400px]">
-                <thead>
-                  <tr className="border-b border-gray-700 bg-gray-900/90 sticky top-0 z-10">
+                <thead className="bg-gray-900/90 sticky top-0 z-10">
+                  <tr className="border-b border-gray-700">
                     <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('item')}>
                       Item {sortField === 'item' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
