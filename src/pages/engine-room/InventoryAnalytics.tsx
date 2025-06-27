@@ -211,6 +211,19 @@ const InventoryAnalyticsContent: React.FC = () => {
         if (!parsedData.rawData) {
           parsedData.rawData = [];
         }
+        
+        // Add missing strategic metrics if they don't exist (for backward compatibility)
+        if (parsedData.summaryStats && !parsedData.summaryStats.hasOwnProperty('outOfStockItems')) {
+          parsedData.summaryStats.outOfStockItems = 0;
+          parsedData.summaryStats.outOfStockFastMovers = 0;
+          parsedData.summaryStats.marginOpportunityItems = 0;
+          parsedData.summaryStats.marginOpportunityValue = 0;
+          parsedData.summaryStats.costDisadvantageItems = 0;
+          parsedData.summaryStats.costDisadvantageValue = 0;
+          parsedData.summaryStats.stockRiskItems = 0;
+          parsedData.summaryStats.stockRiskValue = 0;
+        }
+        
         setInventoryData(parsedData);
       } catch (error) {
         console.error('Error loading saved data:', error);
@@ -360,53 +373,53 @@ const InventoryAnalyticsContent: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard 
           title="Out of Stock"
-          value={inventoryData.summaryStats.outOfStockItems.toLocaleString()}
-          subtitle={`${inventoryData.summaryStats.outOfStockFastMovers} fast movers`}
+          value={(inventoryData.summaryStats.outOfStockItems || 0).toLocaleString()}
+          subtitle={`${inventoryData.summaryStats.outOfStockFastMovers || 0} fast movers`}
           icon={<AlertTriangle className="h-5 w-5 text-red-500" />}
           iconPosition="right"
           flippable={true}
           change={{
-            value: inventoryData.summaryStats.outOfStockFastMovers > 0 ? 'Critical' : 'OK',
-            type: inventoryData.summaryStats.outOfStockFastMovers > 0 ? 'decrease' : 'increase'
+            value: (inventoryData.summaryStats.outOfStockFastMovers || 0) > 0 ? 'Critical' : 'OK',
+            type: (inventoryData.summaryStats.outOfStockFastMovers || 0) > 0 ? 'decrease' : 'increase'
           }}
         />
         
         <MetricCard 
           title="Margin Opportunities"
-          value={inventoryData.summaryStats.marginOpportunityItems.toLocaleString()}
-          subtitle={`${formatCurrency(inventoryData.summaryStats.marginOpportunityValue)} potential`}
+          value={(inventoryData.summaryStats.marginOpportunityItems || 0).toLocaleString()}
+          subtitle={`${formatCurrency(inventoryData.summaryStats.marginOpportunityValue || 0)} potential`}
           icon={<TrendingUp className="h-5 w-5 text-green-500" />}
           iconPosition="right"
           flippable={true}
           change={{
-            value: inventoryData.summaryStats.marginOpportunityValue > 0 ? 'Revenue+' : 'None',
-            type: inventoryData.summaryStats.marginOpportunityValue > 0 ? 'increase' : 'neutral'
+            value: (inventoryData.summaryStats.marginOpportunityValue || 0) > 0 ? 'Revenue+' : 'None',
+            type: (inventoryData.summaryStats.marginOpportunityValue || 0) > 0 ? 'increase' : 'neutral'
           }}
         />
         
         <MetricCard 
           title="Cost Disadvantage"
-          value={inventoryData.summaryStats.costDisadvantageItems.toLocaleString()}
-          subtitle={`${formatCurrency(inventoryData.summaryStats.costDisadvantageValue)} at risk`}
+          value={(inventoryData.summaryStats.costDisadvantageItems || 0).toLocaleString()}
+          subtitle={`${formatCurrency(inventoryData.summaryStats.costDisadvantageValue || 0)} at risk`}
           icon={<AlertTriangle className="h-5 w-5 text-orange-500" />}
           iconPosition="right"
           flippable={true}
           change={{
-            value: inventoryData.summaryStats.costDisadvantageValue > 0 ? 'Risk' : 'OK',
-            type: inventoryData.summaryStats.costDisadvantageValue > 0 ? 'decrease' : 'increase'
+            value: (inventoryData.summaryStats.costDisadvantageValue || 0) > 0 ? 'Risk' : 'OK',
+            type: (inventoryData.summaryStats.costDisadvantageValue || 0) > 0 ? 'decrease' : 'increase'
           }}
         />
         
         <MetricCard 
           title="Stock Risk"
-          value={inventoryData.summaryStats.stockRiskItems.toLocaleString()}
-          subtitle={`${formatCurrency(inventoryData.summaryStats.stockRiskValue)} <2wks supply`}
+          value={(inventoryData.summaryStats.stockRiskItems || 0).toLocaleString()}
+          subtitle={`${formatCurrency(inventoryData.summaryStats.stockRiskValue || 0)} <2wks supply`}
           icon={<Clock className="h-5 w-5 text-yellow-500" />}
           iconPosition="right"
           flippable={true}
           change={{
-            value: inventoryData.summaryStats.stockRiskItems > 0 ? 'Action Needed' : 'OK',
-            type: inventoryData.summaryStats.stockRiskItems > 0 ? 'decrease' : 'increase'
+            value: (inventoryData.summaryStats.stockRiskItems || 0) > 0 ? 'Action Needed' : 'OK',
+            type: (inventoryData.summaryStats.stockRiskItems || 0) > 0 ? 'decrease' : 'increase'
           }}
         />
       </div>
