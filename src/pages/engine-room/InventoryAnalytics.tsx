@@ -70,8 +70,31 @@ const InventoryAnalyticsContent: React.FC = () => {
       // Process the file
       const processedData = await processInventoryExcelFile(file);
       
-      // Store in localStorage for persistence
-      localStorage.setItem('inventoryAnalysisData', JSON.stringify(processedData));
+      // Store in localStorage for persistence (with error handling for quota exceeded)
+      try {
+        localStorage.setItem('inventoryAnalysisData', JSON.stringify(processedData));
+      } catch (error) {
+        console.warn('Failed to store data in localStorage (quota exceeded):', error);
+        // Clear any existing data and try storing just essential summary
+        localStorage.removeItem('inventoryAnalysisData');
+        try {
+          const essentialData = {
+            fileName: processedData.fileName,
+            totalProducts: processedData.totalProducts,
+            summaryStats: processedData.summaryStats,
+            // Store only first 100 items for display
+            analyzedItems: processedData.analyzedItems.slice(0, 100),
+            overstockItems: processedData.overstockItems.slice(0, 50),
+            priorityIssues: processedData.priorityIssues.slice(0, 50),
+            velocityBreakdown: processedData.velocityBreakdown,
+            trendBreakdown: processedData.trendBreakdown,
+            strategyBreakdown: processedData.strategyBreakdown
+          };
+          localStorage.setItem('inventoryAnalysisData', JSON.stringify(essentialData));
+        } catch (secondError) {
+          console.warn('Failed to store even essential data, proceeding without persistence');
+        }
+      }
       setInventoryData(processedData);
       
       clearInterval(progressInterval);
@@ -81,6 +104,19 @@ const InventoryAnalyticsContent: React.FC = () => {
         title: "File processed successfully",
         description: `Analyzed ${processedData.totalProducts} products with ${processedData.priorityIssues.length} priority issues identified.`
       });
+
+      // Show additional message if localStorage storage was limited
+      const savedData = localStorage.getItem('inventoryAnalysisData');
+      if (savedData) {
+        const parsedSavedData = JSON.parse(savedData);
+        if (parsedSavedData.analyzedItems?.length < processedData.analyzedItems.length) {
+          toast({
+            title: "Large dataset detected",
+            description: "Data persistence limited due to browser storage constraints. All analysis features remain fully functional.",
+            variant: "default"
+          });
+        }
+      }
 
       setTimeout(() => {
         setIsUploading(false);
@@ -168,6 +204,13 @@ const InventoryAnalyticsContent: React.FC = () => {
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData);
+        // Add missing arrays if they don't exist (for backward compatibility)
+        if (!parsedData.overstockItems) {
+          parsedData.overstockItems = parsedData.analyzedItems?.filter((item: any) => item.isOverstocked) || [];
+        }
+        if (!parsedData.rawData) {
+          parsedData.rawData = [];
+        }
         setInventoryData(parsedData);
       } catch (error) {
         console.error('Error loading saved data:', error);
