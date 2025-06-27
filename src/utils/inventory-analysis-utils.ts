@@ -13,10 +13,11 @@ export interface InventoryItem {
   min_cost?: number;
   last_po_cost?: number;
   group: number; // Watchlist indicator (1 = problem line)
-  // Competitor prices - ETH excluded from analysis
+  // Competitor prices - ETH_NET now included in analysis
   Nupharm?: number;
   AAH2?: number;
   ETH_LIST?: number;
+  ETH_NET?: number;
   LEXON2?: number;
   AVER?: number; // Our selling price
   SDT?: number; // Scottish Drug Tariff
@@ -166,6 +167,7 @@ const generateInventoryColumnMapping = (headers: string[]) => {
     Nupharm: ['nupharm', 'nu pharm', 'nupharm price'],
     AAH2: ['aah2', 'aah 2', 'aah2 price'],
     ETH_LIST: ['eth_list', 'eth list', 'eth list price'],
+    ETH_NET: ['eth_net', 'eth net', 'eth net price'],
     LEXON2: ['lexon2', 'lexon 2', 'lexon2 price'],
     AVER: ['aver', 'our price', 'selling price', 'current price'],
     SDT: ['sdt', 'scottish drug tariff', 'scottish tariff', 'scotland tariff'],
@@ -251,6 +253,9 @@ const transformInventoryRow = (row: any, mapping: Record<string, string>): Inven
   if (mapping.ETH_LIST && row[mapping.ETH_LIST] !== undefined) {
     transformed.ETH_LIST = Number(row[mapping.ETH_LIST] || 0);
   }
+  if (mapping.ETH_NET && row[mapping.ETH_NET] !== undefined) {
+    transformed.ETH_NET = Number(row[mapping.ETH_NET] || 0);
+  }
   if (mapping.LEXON2 && row[mapping.LEXON2] !== undefined) {
     transformed.LEXON2 = Number(row[mapping.LEXON2] || 0);
   }
@@ -334,7 +339,7 @@ export const getCompetitivePricing = (item: InventoryItem): {
   pricingStrategy: string;
   competitorCount: number;
 } => {
-  const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'LEXON2'];
+  const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'ETH_NET', 'LEXON2'];
   const prices: number[] = [];
   
   competitors.forEach(competitor => {
@@ -639,7 +644,7 @@ export const generateInventorySummaryStats = (items: ProcessedInventoryItem[]): 
   const costDisadvantageItems = items.filter(item => {
     if (!item.lowestMarketPrice) return false;
     // Get highest competitor price from available competitors
-    const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'LEXON2'];
+    const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'ETH_NET', 'LEXON2'];
     const prices: number[] = [];
     competitors.forEach(competitor => {
       const price = item[competitor as keyof typeof item] as number;

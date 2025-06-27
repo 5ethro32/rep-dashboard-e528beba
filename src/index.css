@@ -151,27 +151,200 @@
   /* Enhanced horizontal scrollbar for tables */
   .table-scroll::-webkit-scrollbar {
     width: 12px;
-    height: 12px;
+    height: 24px; /* Extra thick horizontal scrollbar */
   }
   
   .table-scroll::-webkit-scrollbar-track {
     background: #1f2937;
     border-radius: 6px;
     margin: 0 4px;
+    border: 2px solid #8b5cf6; /* Purple border to make it stand out */
   }
   
   .table-scroll::-webkit-scrollbar-thumb {
-    background: #4b5563;
+    background: linear-gradient(45deg, #8b5cf6, #a78bfa); /* Gradient purple */
     border-radius: 6px;
     border: 2px solid #1f2937;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.6); /* Strong glow */
   }
   
   .table-scroll::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
+    background: linear-gradient(45deg, #a78bfa, #c4b5fd); /* Brighter gradient on hover */
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
   }
   
   .table-scroll::-webkit-scrollbar-corner {
     background: #1f2937;
+    border: 2px solid #8b5cf6;
+  }
+  
+  /* Add scroll navigation arrows */
+  .table-container {
+    position: relative;
+  }
+  
+  .table-container::before {
+    content: '← SCROLL LEFT/RIGHT TO SEE ALL COLUMNS →';
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    font-weight: bold;
+    color: #8b5cf6;
+    background: rgba(31, 41, 55, 0.95);
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 2px solid #8b5cf6;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    backdrop-filter: blur(10px);
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% { 
+      transform: translateX(-50%) translateY(0px);
+      opacity: 0.8;
+    }
+    50% { 
+      transform: translateX(-50%) translateY(-5px);
+      opacity: 1;
+    }
+  }
+  
+  /* Hide the indicator when table is not scrollable */
+  .table-container[data-scrollable="false"]::before {
+    display: none;
+  }
+  
+  /* Add scroll navigation buttons */
+  .scroll-nav-left,
+  .scroll-nav-right {
+    position: fixed;
+    bottom: 20px;
+    width: 50px;
+    height: 50px;
+    background: rgba(139, 92, 246, 0.9);
+    border: 2px solid #8b5cf6;
+    border-radius: 50%;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+  
+  .scroll-nav-left {
+    left: 20px;
+  }
+  
+  .scroll-nav-right {
+    right: 20px;
+  }
+  
+  .scroll-nav-left:hover,
+  .scroll-nav-right:hover {
+    background: rgba(167, 139, 250, 1);
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.7);
+  }
+  
+  /* Make table focusable for better UX */
+  .table-scroll {
+    cursor: grab;
+    scroll-behavior: smooth;
+  }
+  
+  .table-scroll:active {
+    cursor: grabbing;
+  }
+  
+  .table-scroll:focus {
+    outline: 3px solid #8b5cf6;
+    outline-offset: 2px;
+  }
+  
+  /* Sticky horizontal scrollbar solution */
+  .table-scroll-wrapper {
+    position: relative;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  .sticky-horizontal-scroll {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #1f2937;
+    border-top: 1px solid #374151;
+    z-index: 10;
+  }
+  
+  .sticky-horizontal-scroll::-webkit-scrollbar {
+    height: 16px;
+  }
+  
+  .sticky-horizontal-scroll::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 0;
+    margin: 0;
+  }
+  
+  .sticky-horizontal-scroll::-webkit-scrollbar-thumb {
+    background: #6b7280;
+    border-radius: 8px;
+    border: 2px solid #1f2937;
+  }
+  
+  .sticky-horizontal-scroll::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+  
+  .sticky-scroll-content {
+    height: 1px;
+    pointer-events: none;
+  }
+  
+  /* Alternative: Dual scrollbar approach */
+  .dual-scroll-container {
+    position: relative;
+  }
+  
+  .top-scrollbar {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 20px;
+    background: #1f2937;
+    border-bottom: 1px solid #374151;
+  }
+  
+  .top-scrollbar::-webkit-scrollbar {
+    height: 16px;
+  }
+  
+  .top-scrollbar::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+  
+  .top-scrollbar::-webkit-scrollbar-thumb {
+    background: #6b7280;
+    border-radius: 8px;
+  }
+  
+  .top-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
   }
   
   /* Custom scrollbar for Firefox */
