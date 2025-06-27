@@ -918,8 +918,8 @@ const MetricFilteredView: React.FC<{
       {/* Data Table */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto table-scroll">
+            <table className="w-full min-w-[1400px]">
               <thead>
                 <tr className="border-b border-gray-700">
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('item')}>
@@ -1288,8 +1288,8 @@ const OverstockAnalysis: React.FC<{
       {/* Data Table */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto table-scroll">
+            <table className="w-full min-w-[1400px]">
               <thead>
                 <tr className="border-b border-gray-700">
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
@@ -1755,198 +1755,198 @@ const PriorityIssuesAnalysis: React.FC<{
       {/* Issues Table */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto table-scroll">
+            <table className="w-full min-w-[1400px]">
               <thead>
-                                 <tr className="border-b border-gray-700">
-                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('severity')}>
-                     Severity {sortField === 'severity' && (sortDirection === 'asc' ? '↑' : '↓')}
-                   </th>
-                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
-                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
-                   </th>
-                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('type')}>
-                     Type {sortField === 'type' && (sortDirection === 'asc' ? '↑' : '↓')}
-                   </th>
-                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
-                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
-                   </th>
-                   <th className="text-right p-3 text-gray-300">Avg Cost</th>
-                   <th className="text-center p-3 text-gray-300">Stock Qty</th>
-                   <th className="text-center p-3 text-gray-300">Months</th>
-                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
-                     Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
-                   </th>
-                   <th className="text-center p-3 text-gray-300">Trend</th>
-                   <th className="text-center p-3 text-gray-300">Watch</th>
-                   <th className="text-right p-3 text-gray-300">Price</th>
-                   <th className="text-right p-3 text-gray-300">NBP</th>
-                   <th className="text-right p-3 text-gray-300">Lowest Comp</th>
-                   <th className="text-right p-3 text-gray-300">SDT</th>
-                   <th className="text-right p-3 text-gray-300">EDT</th>
-                   <th className="text-center p-3 text-gray-300">Star</th>
-                 </tr>
+                <tr className="border-b border-gray-700">
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('severity')}>
+                    Severity {sortField === 'severity' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
+                    Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('type')}>
+                    Type {sortField === 'type' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
+                    Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300">Avg Cost</th>
+                  <th className="text-center p-3 text-gray-300">Stock Qty</th>
+                  <th className="text-center p-3 text-gray-300">Months</th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
+                    Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300">Trend</th>
+                  <th className="text-center p-3 text-gray-300">Watch</th>
+                  <th className="text-right p-3 text-gray-300">Price</th>
+                  <th className="text-right p-3 text-gray-300">NBP</th>
+                  <th className="text-right p-3 text-gray-300">Lowest Comp</th>
+                  <th className="text-right p-3 text-gray-300">SDT</th>
+                  <th className="text-right p-3 text-gray-300">EDT</th>
+                  <th className="text-center p-3 text-gray-300">Star</th>
+                </tr>
               </thead>
               <tbody>
-                                 {filteredIssues.map((issue) => (
-                   <tr key={issue.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                     <td className="p-3 text-center">
-                       <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-semibold ${getSeverityColor(issue.severity)}`}>
-                         <span>{getSeverityIcon(issue.severity)}</span>
-                         <span className="capitalize">{issue.severity}</span>
-                       </div>
-                     </td>
-                     <td className="p-3">
-                       <div className="flex flex-col">
-                         <span className="text-white font-mono text-sm font-semibold">{issue.item.stockcode}</span>
-                         <span className="text-gray-400 text-xs max-w-xs truncate" title={issue.item.description}>
-                           {issue.item.description}
-                         </span>
-                       </div>
-                     </td>
-                     <td className="p-3 text-center">
-                       <TooltipProvider>
-                         <UITooltip>
-                           <TooltipTrigger asChild>
-                             <span className="cursor-help bg-gray-700 px-2 py-1 rounded text-xs font-bold">
-                               {getTypeAbbreviation(issue.type)}
-                             </span>
-                           </TooltipTrigger>
-                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
-                             {getTypeDescription(issue.type)}
-                           </TooltipContent>
-                         </UITooltip>
-                       </TooltipProvider>
-                     </td>
-                     <td className="p-3 text-white text-right font-semibold">
-                       {formatCurrency(issue.item.stockValue || 0)}
-                     </td>
-                     <td className="p-3 text-white text-right font-semibold">
-                       {formatCurrency(issue.item.avg_cost || 0)}
-                     </td>
-                     <td className="p-3 text-center text-gray-300">
-                       {(issue.item.stock || issue.item.currentStock || 0).toLocaleString()}
-                     </td>
-                     <td className="p-3 text-center font-semibold text-orange-400">
-                       <TooltipProvider>
-                         <UITooltip>
-                           <TooltipTrigger asChild>
-                             <span className="cursor-help underline decoration-dotted">
-                               {(issue.item.monthsOfStock || 0).toFixed(1)}
-                             </span>
-                           </TooltipTrigger>
-                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
-                             <div className="space-y-1">
-                               {formatMonthsTooltip(issue.item).split('\n').map((line, idx) => (
-                                 <div key={idx} className="text-sm">{line}</div>
-                               ))}
-                             </div>
-                           </TooltipContent>
-                         </UITooltip>
-                       </TooltipProvider>
-                     </td>
-                     <td className={`p-3 text-center font-semibold ${getCategoryColor(issue.item.velocityCategory)}`}>
-                       {issue.item.velocityCategory || 'N/A'}
-                     </td>
-                     <td className="p-3 text-center">
-                       <span className={`text-lg font-bold ${
-                         issue.item.trendDirection === 'UP' ? 'text-red-400' :
-                         issue.item.trendDirection === 'DOWN' ? 'text-green-400' :
-                         issue.item.trendDirection === 'STABLE' ? 'text-blue-400' :
-                         'text-gray-400'
-                       }`}>
-                         {issue.item.trendDirection === 'UP' ? '↑' :
-                          issue.item.trendDirection === 'DOWN' ? '↓' :
-                          issue.item.trendDirection === 'STABLE' ? '−' : '?'}
-                       </span>
-                     </td>
-                     <td className="p-3 text-center text-lg">
-                       {issue.item.watchlist}
-                     </td>
-                     <td className="p-3 text-right text-purple-400 font-semibold">
-                       {issue.item.AVER ? formatCurrency(issue.item.AVER) : 'N/A'}
-                     </td>
-                     <td className="p-3 text-right text-green-400 font-semibold">
-                       <TooltipProvider>
-                         <UITooltip>
-                           <TooltipTrigger asChild>
-                             <span className="cursor-help underline decoration-dotted">
-                               {issue.item.nextBuyingPrice ? formatCurrency(issue.item.nextBuyingPrice) : 
-                                (issue.item.nbp ? formatCurrency(issue.item.nbp) : 
-                                 (issue.item.next_cost ? formatCurrency(issue.item.next_cost) : 
-                                  (issue.item.min_cost ? formatCurrency(issue.item.min_cost) : 
-                                   (issue.item.last_po_cost ? formatCurrency(issue.item.last_po_cost) : 'N/A'))))}
-                             </span>
-                           </TooltipTrigger>
-                                                       <TooltipContent className="bg-gray-800 border-gray-700 text-white">
-                              <div className="space-y-1">
-                                {issue.item.next_cost && issue.item.next_cost > 0 && (
-                                  <div className="text-sm">Next Cost: {formatCurrency(issue.item.next_cost)}</div>
-                                )}
-                                {issue.item.min_cost && issue.item.min_cost > 0 && (
-                                  <div className="text-sm">Min Cost: {formatCurrency(issue.item.min_cost)}</div>
-                                )}
-                                {issue.item.last_po_cost && issue.item.last_po_cost > 0 && (
-                                  <div className="text-sm">Last PO Cost: {formatCurrency(issue.item.last_po_cost)}</div>
-                                )}
-                                {!issue.item.next_cost && !issue.item.min_cost && !issue.item.last_po_cost && (
-                                  <div className="text-sm">No NBP data available</div>
-                                )}
-                              </div>
-                            </TooltipContent>
-                         </UITooltip>
-                       </TooltipProvider>
-                     </td>
-                     <td className="p-3 text-right text-blue-400 font-semibold">
-                       <TooltipProvider>
-                         <UITooltip>
-                           <TooltipTrigger asChild>
-                             <span className="cursor-help underline decoration-dotted">
-                               {issue.item.bestCompetitorPrice ? formatCurrency(issue.item.bestCompetitorPrice) : 
-                                (issue.item.lowestMarketPrice ? formatCurrency(issue.item.lowestMarketPrice) : 
-                                 (issue.item.Nupharm ? formatCurrency(issue.item.Nupharm) : 
-                                  (issue.item.AAH2 ? formatCurrency(issue.item.AAH2) : 
-                                   (issue.item.LEXON2 ? formatCurrency(issue.item.LEXON2) : 'N/A'))))}
-                             </span>
-                           </TooltipTrigger>
-                           <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                             <div className="space-y-1">
-                               {formatCompetitorTooltip(issue.item).split('\n').map((line, idx) => (
-                                 <div key={idx} className="text-sm">{line}</div>
-                               ))}
-                             </div>
-                           </TooltipContent>
-                         </UITooltip>
-                       </TooltipProvider>
-                     </td>
-                     <td className="p-3 text-center">
-                       <button
-                         onClick={() => onToggleStar(issue.item.id)}
-                         className={`text-lg hover:scale-110 transition-transform ${
-                           starredItems.has(issue.item.id) ? 'text-yellow-400' : 'text-gray-600 hover:text-yellow-400'
-                         }`}
-                       >
-                         {starredItems.has(issue.item.id) ? '★' : '☆'}
-                       </button>
-                     </td>
-                     <td className="p-3 text-right text-cyan-400 font-semibold">
-                       {issue.item.SDT ? formatCurrency(issue.item.SDT) : 'N/A'}
-                     </td>
-                     <td className="p-3 text-right text-indigo-400 font-semibold">
-                       {issue.item.EDT ? formatCurrency(issue.item.EDT) : 'N/A'}
-                     </td>
-                     <td className="p-3 text-center">
-                       <button
-                         onClick={() => onToggleStar(issue.item.id)}
-                         className={`text-lg hover:scale-110 transition-transform ${
-                           starredItems.has(issue.item.id) ? 'text-yellow-400' : 'text-gray-600 hover:text-yellow-400'
-                         }`}
-                       >
-                         {starredItems.has(issue.item.id) ? '★' : '☆'}
-                       </button>
-                     </td>
-                   </tr>
-                 ))}
+                {filteredIssues.map((issue) => (
+                  <tr key={issue.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                    <td className="p-3 text-center">
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-semibold ${getSeverityColor(issue.severity)}`}>
+                        <span>{getSeverityIcon(issue.severity)}</span>
+                        <span className="capitalize">{issue.severity}</span>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex flex-col">
+                        <span className="text-white font-mono text-sm font-semibold">{issue.item.stockcode}</span>
+                        <span className="text-gray-400 text-xs max-w-xs truncate" title={issue.item.description}>
+                          {issue.item.description}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-3 text-center">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help bg-gray-700 px-2 py-1 rounded text-xs font-bold">
+                              {getTypeAbbreviation(issue.type)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            {getTypeDescription(issue.type)}
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-white text-right font-semibold">
+                      {formatCurrency(issue.item.stockValue || 0)}
+                    </td>
+                    <td className="p-3 text-white text-right font-semibold">
+                      {formatCurrency(issue.item.avg_cost || 0)}
+                    </td>
+                    <td className="p-3 text-center text-gray-300">
+                      {(issue.item.stock || issue.item.currentStock || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-center font-semibold text-orange-400">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {(issue.item.monthsOfStock || 0).toFixed(1)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="space-y-1">
+                              {formatMonthsTooltip(issue.item).split('\n').map((line, idx) => (
+                                <div key={idx} className="text-sm">{line}</div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className={`p-3 text-center font-semibold ${getCategoryColor(issue.item.velocityCategory)}`}>
+                      {issue.item.velocityCategory || 'N/A'}
+                    </td>
+                    <td className="p-3 text-center">
+                      <span className={`text-lg font-bold ${
+                        issue.item.trendDirection === 'UP' ? 'text-red-400' :
+                        issue.item.trendDirection === 'DOWN' ? 'text-green-400' :
+                        issue.item.trendDirection === 'STABLE' ? 'text-blue-400' :
+                        'text-gray-400'
+                      }`}>
+                        {issue.item.trendDirection === 'UP' ? '↑' :
+                         issue.item.trendDirection === 'DOWN' ? '↓' :
+                         issue.item.trendDirection === 'STABLE' ? '−' : '?'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center text-lg">
+                      {issue.item.watchlist}
+                    </td>
+                    <td className="p-3 text-right text-purple-400 font-semibold">
+                      {issue.item.AVER ? formatCurrency(issue.item.AVER) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-green-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {issue.item.nextBuyingPrice ? formatCurrency(issue.item.nextBuyingPrice) : 
+                               (issue.item.nbp ? formatCurrency(issue.item.nbp) : 
+                                (issue.item.next_cost ? formatCurrency(issue.item.next_cost) : 
+                                 (issue.item.min_cost ? formatCurrency(issue.item.min_cost) : 
+                                  (issue.item.last_po_cost ? formatCurrency(issue.item.last_po_cost) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="space-y-1">
+                              {issue.item.next_cost && issue.item.next_cost > 0 && (
+                                <div className="text-sm">Next Cost: {formatCurrency(issue.item.next_cost)}</div>
+                              )}
+                              {issue.item.min_cost && issue.item.min_cost > 0 && (
+                                <div className="text-sm">Min Cost: {formatCurrency(issue.item.min_cost)}</div>
+                              )}
+                              {issue.item.last_po_cost && issue.item.last_po_cost > 0 && (
+                                <div className="text-sm">Last PO Cost: {formatCurrency(issue.item.last_po_cost)}</div>
+                              )}
+                              {!issue.item.next_cost && !issue.item.min_cost && !issue.item.last_po_cost && (
+                                <div className="text-sm">No NBP data available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-blue-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {issue.item.bestCompetitorPrice ? formatCurrency(issue.item.bestCompetitorPrice) : 
+                               (issue.item.lowestMarketPrice ? formatCurrency(issue.item.lowestMarketPrice) : 
+                                (issue.item.Nupharm ? formatCurrency(issue.item.Nupharm) : 
+                                 (issue.item.AAH2 ? formatCurrency(issue.item.AAH2) : 
+                                  (issue.item.LEXON2 ? formatCurrency(issue.item.LEXON2) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                            <div className="space-y-1">
+                              {formatCompetitorTooltip(issue.item).split('\n').map((line, idx) => (
+                                <div key={idx} className="text-sm">{line}</div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() => onToggleStar(issue.item.id)}
+                        className={`text-lg hover:scale-110 transition-transform ${
+                          starredItems.has(issue.item.id) ? 'text-yellow-400' : 'text-gray-600 hover:text-yellow-400'
+                        }`}
+                      >
+                        {starredItems.has(issue.item.id) ? '★' : '☆'}
+                      </button>
+                    </td>
+                    <td className="p-3 text-right text-cyan-400 font-semibold">
+                      {issue.item.SDT ? formatCurrency(issue.item.SDT) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-indigo-400 font-semibold">
+                      {issue.item.EDT ? formatCurrency(issue.item.EDT) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() => onToggleStar(issue.item.id)}
+                        className={`text-lg hover:scale-110 transition-transform ${
+                          starredItems.has(issue.item.id) ? 'text-yellow-400' : 'text-gray-600 hover:text-yellow-400'
+                        }`}
+                      >
+                        {starredItems.has(issue.item.id) ? '★' : '☆'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -2174,8 +2174,8 @@ const WatchlistAnalysis: React.FC<{
       {/* Watchlist Items Table */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto table-scroll">
+            <table className="w-full min-w-[1400px]">
               <thead>
                 <tr className="border-b border-gray-700">
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
@@ -2533,8 +2533,8 @@ const StarredItemsAnalysis: React.FC<{
       {/* Starred Items Table */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto table-scroll">
+            <table className="w-full min-w-[1400px]">
               <thead>
                 <tr className="border-b border-gray-700">
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
@@ -2988,8 +2988,8 @@ const AllItemsAnalysis: React.FC<{
       {/* Data Table */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto table-scroll">
+            <table className="w-full min-w-[1400px]">
               <thead>
                 <tr className="border-b border-gray-700">
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('item')}>
