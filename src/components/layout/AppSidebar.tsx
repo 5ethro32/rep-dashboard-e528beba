@@ -10,6 +10,7 @@ import {
   Cpu,
   FlaskConical,
   LayoutDashboard,
+  Package,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const navigation = [
   { name: "Rule Simulator", href: "/engine-room/simulator", Icon: FlaskConical },
   { name: "Approvals", href: "/engine-room/approvals", Icon: CheckSquare },
   { name: "Pricing Analytics", href: "/engine-room/analytics", Icon: TrendingUp },
+  { name: "Inventory Analytics", href: "/engine-room/inventory", Icon: Package },
   { name: "AI Vera", href: "/ai-vera", Icon: Bot },
 ];
 

@@ -379,3 +379,129 @@ export const isUserStarredAccount = async (accountRef: string, userId: string): 
     return false;
   }
 };
+
+// Goal-related utility functions
+
+export type GoalType = 'profit' | 'margin' | 'activeRatio' | 'packs';
+
+export interface Goals {
+  profit: number;
+  margin: number;
+  activeRatio: number;
+  packs: number;
+}
+
+/**
+ * Validates goal values to ensure they are reasonable
+ * @param goals The goals object to validate
+ * @returns Object with validation results and any error messages
+ */
+export const validateGoals = (goals: Goals): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  // Validate profit goal (should be positive and reasonable)
+  if (goals.profit <= 0) {
+    errors.push("Profit goal must be greater than £0");
+  } else if (goals.profit > 10000000) {
+    errors.push("Profit goal seems unrealistically high (max £10M)");
+  }
+  
+  // Validate margin goal (should be between 0% and 100%)
+  if (goals.margin < 0) {
+    errors.push("Margin goal cannot be negative");
+  } else if (goals.margin > 100) {
+    errors.push("Margin goal cannot exceed 100%");
+  }
+  
+  // Validate active ratio (should be between 0% and 100%)
+  if (goals.activeRatio < 0) {
+    errors.push("Active ratio goal cannot be negative");
+  } else if (goals.activeRatio > 100) {
+    errors.push("Active ratio goal cannot exceed 100%");
+  }
+  
+  // Validate packs goal (should be positive and reasonable)
+  if (goals.packs <= 0) {
+    errors.push("Packs goal must be greater than 0");
+  } else if (goals.packs > 1000000) {
+    errors.push("Packs goal seems unrealistically high (max 1M)");
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+/**
+ * Applies growth percentage to existing goals
+ * @param currentGoals Current goals to base growth on
+ * @param growthPercent Growth percentage (e.g., 10 for 10% growth)
+ * @returns New goals with growth applied
+ */
+export const applyGrowthToGoals = (currentGoals: Goals, growthPercent: number): Goals => {
+  const growthFactor = 1 + (growthPercent / 100);
+  
+  return {
+    profit: Math.round(currentGoals.profit * growthFactor),
+    margin: Math.round(currentGoals.margin * growthFactor * 10) / 10, // Keep 1 decimal place
+    activeRatio: Math.min(100, Math.round(currentGoals.activeRatio * growthFactor * 10) / 10), // Cap at 100%
+    packs: Math.round(currentGoals.packs * growthFactor)
+  };
+};
+
+/**
+ * Formats goal values for display
+ * @param goalType Type of goal to format
+ * @param value Value to format
+ * @returns Formatted string for display
+ */
+export const formatGoalValue = (goalType: GoalType, value: number): string => {
+  switch (goalType) {
+    case 'profit':
+      return formatCurrency(value);
+    case 'margin':
+    case 'activeRatio':
+      return `${value.toFixed(1)}%`;
+    case 'packs':
+      return formatNumber(value);
+    default:
+      return value.toString();
+  }
+};
+
+/**
+ * Gets goal metadata including labels and descriptions
+ * @param goalType Type of goal
+ * @returns Metadata object with label, description, and other info
+ */
+export const getGoalMetadata = (goalType: GoalType) => {
+  const metadata = {
+    profit: {
+      label: 'Profit Goal',
+      description: 'Total profit target for the period',
+      unit: '£',
+      placeholder: 'Enter profit target...'
+    },
+    margin: {
+      label: 'Margin Goal',
+      description: 'Target profit margin percentage',
+      unit: '%', 
+      placeholder: 'Enter margin target...'
+    },
+    activeRatio: {
+      label: 'Active Accounts Ratio',
+      description: 'Percentage of accounts that should be active',
+      unit: '%',
+      placeholder: 'Enter active ratio target...'
+    },
+    packs: {
+      label: 'Packs Goal',
+      description: 'Total number of packs target',
+      unit: '',
+      placeholder: 'Enter packs target...'
+    }
+  };
+  
+  return metadata[goalType];
+};

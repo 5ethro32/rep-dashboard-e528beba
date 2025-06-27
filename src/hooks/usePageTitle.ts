@@ -39,6 +39,8 @@ export const usePageTitle = (customTitle?: string) => {
           return 'Carlos AI - Rule Simulator';
         case '/engine-room/analytics':
           return 'Carlos AI - Pricing Analytics';
+        case '/engine-room/inventory':
+          return 'Carlos AI - Inventory Analytics';
         case '/auth':
           return 'Carlos AI - Authentication';
         default:

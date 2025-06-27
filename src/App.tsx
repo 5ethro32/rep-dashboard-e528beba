@@ -24,6 +24,7 @@ import ApprovalsDashboard from "@/pages/engine-room/ApprovalsDashboard";
 import RuleSimulator from "@/pages/engine-room/RuleSimulator";
 import NotFound from "@/pages/NotFound";
 import PricingAnalytics from "@/pages/engine-room/PricingAnalytics";
+import InventoryAnalytics from "@/pages/engine-room/InventoryAnalytics";
 import Auth from "@/pages/Auth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
@@ -88,6 +89,8 @@ const AppLayoutWrapper = () => {
         return <RuleSimulator />;
       case '/engine-room/analytics':
         return <PricingAnalytics />;
+      case '/engine-room/inventory':
+        return <InventoryAnalytics />;
       default:
         return <NotFound />;
     }

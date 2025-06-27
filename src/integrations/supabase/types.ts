@@ -745,6 +745,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_goals: {
+        Row: {
+          id: string
+          user_id: string
+          user_display_name: string | null
+          goal_type: string
+          target_value: number
+          is_custom: boolean | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          user_display_name?: string | null
+          goal_type: string
+          target_value: number
+          is_custom?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          user_display_name?: string | null
+          goal_type?: string
+          target_value?: number
+          is_custom?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_table_exists: {

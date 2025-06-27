@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   LineChart, 
   Line, 
@@ -14,8 +16,10 @@ import {
 } from 'recharts';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { ChevronUp, ChevronDown, Flag } from 'lucide-react';
-import { calculateGoals, formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
+import { ChevronUp, ChevronDown, Flag, Settings, Target } from 'lucide-react';
+import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
+import { useUserGoals } from '@/hooks/useUserGoals';
+import GoalEditModal from './GoalEditModal';
 
 interface GoalTrackingComponentProps {
   performanceData: any;
@@ -39,39 +43,57 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
   selectedUserDisplayName
 }) => {
   const [metricType, setMetricType] = useState<string>('profit');
-  const [goals, setGoals] = useState({
-    profit: 100000,
-    margin: 15,
-    activeRatio: 75,
-    packs: 5000
-  });
-  const [isLoadingGoals, setIsLoadingGoals] = useState(false);
   const [trendData, setTrendData] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [suggestedGoals, setSuggestedGoals] = useState<any>(null);
   
-  // Fetch goals based on previous month data
+  // Use the custom goals hook
+  const {
+    goals,
+    hasCustomGoals,
+    isLoading: isLoadingGoals,
+    isSaving,
+    saveCustomGoals,
+    resetToCalculatedGoals,
+    getSuggestedGoals,
+    canCustomize
+  } = useUserGoals(selectedUserId, selectedUserDisplayName);
+
+  // Generate trend data when performance data or goals change
   useEffect(() => {
-    const fetchGoals = async () => {
-      setIsLoadingGoals(true);
-      try {
-        // Determine if we are looking at all data or specific user
-        const isAllData = selectedUserId === "all";
-        const matchName = isAllData ? "all" : (selectedUserDisplayName || "");
-        
-        const calculatedGoals = await calculateGoals(matchName, isAllData);
-        setGoals(calculatedGoals);
-        console.log("Set goals to:", calculatedGoals);
-        
-        // Generate historical trend data
-        await generateTrendData();
-      } catch (error) {
-        console.error("Error fetching goals:", error);
-      } finally {
-        setIsLoadingGoals(false);
-      }
-    };
-    
-    fetchGoals();
-  }, [selectedUserId, selectedUserDisplayName]);
+    generateTrendData();
+  }, [performanceData, goals]);
+
+  // Handle opening the goal edit modal
+  const handleEditGoals = async () => {
+    try {
+      const suggested = await getSuggestedGoals();
+      setSuggestedGoals(suggested);
+    } catch (error) {
+      console.error('Error getting suggested goals:', error);
+    }
+    setIsModalOpen(true);
+  };
+
+  // Handle saving goals from modal
+  const handleSaveGoals = async (newGoals: any) => {
+    const success = await saveCustomGoals(newGoals);
+    if (success) {
+      // Regenerate trend data with new goals
+      await generateTrendData();
+    }
+    return success;
+  };
+
+  // Handle resetting goals from modal
+  const handleResetGoals = async () => {
+    const success = await resetToCalculatedGoals();
+    if (success) {
+      // Regenerate trend data with reset goals
+      await generateTrendData();
+    }
+    return success;
+  };
   
   // Generate trend data for visualization using realistic data patterns
   const generateTrendData = async () => {
@@ -195,7 +217,33 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
   return (
     <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10">
       <CardContent className="p-4 md:p-6">
-        <h3 className="text-lg md:text-xl font-semibold text-white mb-4">Goal Tracking</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg md:text-xl font-semibold text-white">Goal Tracking</h3>
+            {hasCustomGoals ? (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Target className="h-3 w-3" />
+                Custom
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="flex items-center gap-1">
+                Auto-Generated
+              </Badge>
+            )}
+          </div>
+          {canCustomize && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEditGoals}
+              className="flex items-center gap-2"
+              disabled={isLoadingGoals}
+            >
+              <Settings className="h-4 w-4" />
+              Edit Goals
+            </Button>
+          )}
+        </div>
         
         {!performanceData ? (
           <div className="bg-gray-900/60 border border-white/10 rounded-lg p-6 text-center">
@@ -318,6 +366,18 @@ const GoalTrackingComponent: React.FC<GoalTrackingComponentProps> = ({
             </Tabs>
           </>
         )}
+
+        <GoalEditModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          currentGoals={goals}
+          suggestedGoals={suggestedGoals}
+          hasCustomGoals={hasCustomGoals}
+          onSave={handleSaveGoals}
+          onReset={handleResetGoals}
+          isSaving={isSaving}
+          canCustomize={canCustomize}
+        />
       </CardContent>
     </Card>
   );

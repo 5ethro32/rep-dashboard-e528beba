@@ -74,6 +74,10 @@ const AppHeader = ({
         return isMobile ? 'Operations' : 'Engine Room / Operations';
       case '/engine-room/approvals':
         return isMobile ? 'Approvals' : 'Engine Room / Approvals';
+      case '/engine-room/analytics':
+        return isMobile ? 'Analytics' : 'Engine Room / Pricing Analytics';
+      case '/engine-room/inventory':
+        return isMobile ? 'Inventory' : 'Engine Room / Inventory Analytics';
       case '/engine-room':
         return isMobile ? 'Engine' : 'Engine Room';
       default:
@@ -148,6 +152,12 @@ const AppHeader = ({
     }, {
       path: '/engine-room/approvals',
       label: 'Approvals'
+    }, {
+      path: '/engine-room/analytics',
+      label: 'Pricing Analytics'
+    }, {
+      path: '/engine-room/inventory',
+      label: 'Inventory Analytics'
     }]
   }];
 
