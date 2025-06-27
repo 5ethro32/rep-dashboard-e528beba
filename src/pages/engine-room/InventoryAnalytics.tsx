@@ -955,6 +955,12 @@ const MetricFilteredView: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="text-center p-3 text-gray-300">
                     Star
                   </th>
@@ -1072,6 +1078,12 @@ const MetricFilteredView: React.FC<{
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-cyan-400 font-semibold">
+                      {item.SDT ? formatCurrency(item.SDT) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-indigo-400 font-semibold">
+                      {item.EDT ? formatCurrency(item.EDT) : 'N/A'}
                     </td>
                     <td className="p-3 text-center">
                       <button
