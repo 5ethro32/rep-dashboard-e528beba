@@ -41,6 +41,8 @@ const InventoryAnalyticsContent: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState('overview');
   const [starredItems, setStarredItems] = useState<Set<string>>(new Set());
+  // Add state for active metric filter
+  const [activeMetricFilter, setActiveMetricFilter] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -196,6 +198,12 @@ const InventoryAnalyticsContent: React.FC = () => {
       }
       return newStarred;
     });
+  };
+
+  // Handle metric card clicks for strategic insights
+  const handleMetricCardClick = (metricType: string) => {
+    setActiveMetricFilter(metricType);
+    setSelectedTab('overview'); // Switch to overview tab to show filtered results
   };
 
   // Load data from localStorage on component mount
@@ -371,57 +379,65 @@ const InventoryAnalyticsContent: React.FC = () => {
 
       {/* Summary Metrics - Row 2 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <MetricCard 
-          title="Out of Stock"
-          value={(inventoryData.summaryStats.outOfStockItems || 0).toLocaleString()}
-          subtitle={`${inventoryData.summaryStats.outOfStockFastMovers || 0} fast movers`}
-          icon={<AlertTriangle className="h-5 w-5 text-red-500" />}
-          iconPosition="right"
-          flippable={true}
-          change={{
-            value: (inventoryData.summaryStats.outOfStockFastMovers || 0) > 0 ? 'Critical' : 'OK',
-            type: (inventoryData.summaryStats.outOfStockFastMovers || 0) > 0 ? 'decrease' : 'increase'
-          }}
-        />
+        <div onClick={() => handleMetricCardClick('out-of-stock')} className="cursor-pointer">
+          <MetricCard 
+            title="Out of Stock"
+            value={(inventoryData.summaryStats.outOfStockItems || 0).toLocaleString()}
+            subtitle={`${inventoryData.summaryStats.outOfStockFastMovers || 0} fast movers`}
+            icon={<AlertTriangle className="h-5 w-5 text-red-500" />}
+            iconPosition="right"
+            flippable={false}
+            change={{
+              value: (inventoryData.summaryStats.outOfStockFastMovers || 0) > 0 ? 'Critical' : 'OK',
+              type: (inventoryData.summaryStats.outOfStockFastMovers || 0) > 0 ? 'decrease' : 'increase'
+            }}
+          />
+        </div>
         
-        <MetricCard 
-          title="Margin Opportunities"
-          value={(inventoryData.summaryStats.marginOpportunityItems || 0).toLocaleString()}
-          subtitle={`${formatCurrency(inventoryData.summaryStats.marginOpportunityValue || 0)} potential`}
-          icon={<TrendingUp className="h-5 w-5 text-green-500" />}
-          iconPosition="right"
-          flippable={true}
-          change={{
-            value: (inventoryData.summaryStats.marginOpportunityValue || 0) > 0 ? 'Revenue+' : 'None',
-            type: (inventoryData.summaryStats.marginOpportunityValue || 0) > 0 ? 'increase' : 'neutral'
-          }}
-        />
+        <div onClick={() => handleMetricCardClick('margin-opportunity')} className="cursor-pointer">
+          <MetricCard 
+            title="Margin Opportunities"
+            value={(inventoryData.summaryStats.marginOpportunityItems || 0).toLocaleString()}
+            subtitle={`${formatCurrency(inventoryData.summaryStats.marginOpportunityValue || 0)} potential`}
+            icon={<TrendingUp className="h-5 w-5 text-green-500" />}
+            iconPosition="right"
+            flippable={false}
+            change={{
+              value: (inventoryData.summaryStats.marginOpportunityValue || 0) > 0 ? 'Revenue+' : 'None',
+              type: (inventoryData.summaryStats.marginOpportunityValue || 0) > 0 ? 'increase' : 'neutral'
+            }}
+          />
+        </div>
         
-        <MetricCard 
-          title="Cost Disadvantage"
-          value={(inventoryData.summaryStats.costDisadvantageItems || 0).toLocaleString()}
-          subtitle={`${formatCurrency(inventoryData.summaryStats.costDisadvantageValue || 0)} at risk`}
-          icon={<AlertTriangle className="h-5 w-5 text-orange-500" />}
-          iconPosition="right"
-          flippable={true}
-          change={{
-            value: (inventoryData.summaryStats.costDisadvantageValue || 0) > 0 ? 'Risk' : 'OK',
-            type: (inventoryData.summaryStats.costDisadvantageValue || 0) > 0 ? 'decrease' : 'increase'
-          }}
-        />
+        <div onClick={() => handleMetricCardClick('cost-disadvantage')} className="cursor-pointer">
+          <MetricCard 
+            title="Cost Disadvantage"
+            value={(inventoryData.summaryStats.costDisadvantageItems || 0).toLocaleString()}
+            subtitle={`${formatCurrency(inventoryData.summaryStats.costDisadvantageValue || 0)} at risk`}
+            icon={<AlertTriangle className="h-5 w-5 text-orange-500" />}
+            iconPosition="right"
+            flippable={false}
+            change={{
+              value: (inventoryData.summaryStats.costDisadvantageValue || 0) > 0 ? 'Risk' : 'OK',
+              type: (inventoryData.summaryStats.costDisadvantageValue || 0) > 0 ? 'decrease' : 'increase'
+            }}
+          />
+        </div>
         
-        <MetricCard 
-          title="Stock Risk"
-          value={(inventoryData.summaryStats.stockRiskItems || 0).toLocaleString()}
-          subtitle={`${formatCurrency(inventoryData.summaryStats.stockRiskValue || 0)} <2wks supply`}
-          icon={<Clock className="h-5 w-5 text-yellow-500" />}
-          iconPosition="right"
-          flippable={true}
-          change={{
-            value: (inventoryData.summaryStats.stockRiskItems || 0) > 0 ? 'Action Needed' : 'OK',
-            type: (inventoryData.summaryStats.stockRiskItems || 0) > 0 ? 'decrease' : 'increase'
-          }}
-        />
+        <div onClick={() => handleMetricCardClick('stock-risk')} className="cursor-pointer">
+          <MetricCard 
+            title="Stock Risk"
+            value={(inventoryData.summaryStats.stockRiskItems || 0).toLocaleString()}
+            subtitle={`${formatCurrency(inventoryData.summaryStats.stockRiskValue || 0)} <2wks supply`}
+            icon={<Clock className="h-5 w-5 text-yellow-500" />}
+            iconPosition="right"
+            flippable={false}
+            change={{
+              value: (inventoryData.summaryStats.stockRiskItems || 0) > 0 ? 'Action Needed' : 'OK',
+              type: (inventoryData.summaryStats.stockRiskItems || 0) > 0 ? 'decrease' : 'increase'
+            }}
+          />
+        </div>
       </div>
 
       {/* Main Content Tabs */}
@@ -464,7 +480,13 @@ const InventoryAnalyticsContent: React.FC = () => {
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
-          <InventoryOverview data={inventoryData} />
+          <InventoryOverview 
+            data={inventoryData} 
+            activeMetricFilter={activeMetricFilter}
+            onToggleStar={handleToggleStar}
+            starredItems={starredItems}
+            onClearFilter={() => setActiveMetricFilter(null)}
+          />
         </TabsContent>
         
         <TabsContent value="all" className="space-y-6">
@@ -512,9 +534,27 @@ const InventoryAnalyticsContent: React.FC = () => {
 };
 
 // Overview component with charts and breakdowns
-const InventoryOverview: React.FC<{ data: ProcessedInventoryData }> = ({ data }) => {
+const InventoryOverview: React.FC<{ 
+  data: ProcessedInventoryData; 
+  activeMetricFilter: string | null;
+  onToggleStar: (id: string) => void; 
+  starredItems: Set<string>; 
+  onClearFilter: () => void; 
+}> = ({ data, activeMetricFilter, onToggleStar, starredItems, onClearFilter }) => {
   const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16'];
 
+  // If a metric filter is active, show filtered data table
+  if (activeMetricFilter) {
+    return <MetricFilteredView 
+      data={data} 
+      filterType={activeMetricFilter}
+      onToggleStar={onToggleStar}
+      starredItems={starredItems}
+      onClearFilter={onClearFilter}
+    />;
+  }
+
+  // Default static overview with charts
   return (
     <div className="space-y-6">
       {/* Velocity Distribution Chart */}
@@ -612,36 +652,38 @@ const InventoryOverview: React.FC<{ data: ProcessedInventoryData }> = ({ data })
   );
 };
 
-// All Items Analysis - shows complete inventory with all data points
-const AllItemsAnalysis: React.FC<{ 
-  data: ProcessedInventoryData; 
-  onToggleStar: (id: string) => void; 
-  starredItems: Set<string>; 
-}> = ({ data, onToggleStar, starredItems }) => {
+// New component to show filtered data when a metric card is clicked
+const MetricFilteredView: React.FC<{
+  data: ProcessedInventoryData;
+  filterType: string;
+  onToggleStar: (id: string) => void;
+  starredItems: Set<string>;
+  onClearFilter: () => void;
+}> = ({ data, filterType, onToggleStar, starredItems, onClearFilter }) => {
   const [sortField, setSortField] = useState<string>('stockValue');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
 
-  // Get all items
-  const allItems = data.analyzedItems;
-
-  // Filter and sort items
+  // Get filtered items based on metric type
   const filteredItems = useMemo(() => {
-    let filtered = allItems.filter(item => {
+    let filtered = data.analyzedItems.filter(item => {
       const matchesSearch = searchTerm === '' || 
         item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.description.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = filterCategory === 'all' || 
-        (filterCategory === 'overstock' && item.isOverstocked) ||
-        (filterCategory === 'watchlist' && item.watchlist === '⚠️') ||
-        (filterCategory === 'fast-mover' && typeof item.velocityCategory === 'number' && item.velocityCategory <= 3) ||
-        (filterCategory === 'high-value' && item.stockValue >= 10000) ||
-        (filterCategory === 'starred' && starredItems.has(item.id)) ||
-        (filterCategory === 'margin-opportunity' && item.lowestMarketPrice && item.avg_cost < (item.lowestMarketPrice * 0.9)) ||
-        (filterCategory === 'cost-disadvantage' && (() => {
-          if (!item.lowestMarketPrice) return false;
+
+      let matchesFilter = false;
+      switch (filterType) {
+        case 'out-of-stock':
+          matchesFilter = item.quantity_available === 0 && item.quantity_ringfenced === 0 && item.quantity_on_order === 0;
+          break;
+        case 'margin-opportunity':
+          matchesFilter = item.lowestMarketPrice && item.avg_cost < (item.lowestMarketPrice * 0.9);
+          break;
+        case 'cost-disadvantage':
+          if (!item.lowestMarketPrice) {
+            matchesFilter = false;
+            break;
+          }
           const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'LEXON2'];
           const prices: number[] = [];
           competitors.forEach(competitor => {
@@ -650,14 +692,22 @@ const AllItemsAnalysis: React.FC<{
               prices.push(price);
             }
           });
-          if (prices.length === 0) return false;
+          if (prices.length === 0) {
+            matchesFilter = false;
+            break;
+          }
           const highestPrice = Math.max(...prices);
-          return item.avg_cost > (highestPrice * 1.05);
-        })()) ||
-        (filterCategory === 'out-of-stock' && item.quantity_available === 0 && item.quantity_ringfenced === 0 && item.quantity_on_order === 0) ||
-        (filterCategory === 'stock-risk' && item.packs_sold_avg_last_six_months > 0 && (item.currentStock / item.packs_sold_avg_last_six_months) < 0.5);
-      
-      return matchesSearch && matchesCategory;
+          matchesFilter = item.avg_cost > (highestPrice * 1.05);
+          break;
+        case 'stock-risk':
+          matchesFilter = item.packs_sold_avg_last_six_months > 0 && 
+                         (item.currentStock / item.packs_sold_avg_last_six_months) < 0.5;
+          break;
+        default:
+          matchesFilter = true;
+      }
+
+      return matchesSearch && matchesFilter;
     });
 
     // Sort items
@@ -675,12 +725,12 @@ const AllItemsAnalysis: React.FC<{
           bValue = b.stockValue;
           break;
         case 'averageCost':
-          aValue = a.avg_cost || a.AVER || 0;
-          bValue = b.avg_cost || b.AVER || 0;
+          aValue = a.avg_cost || 0;
+          bValue = b.avg_cost || 0;
           break;
         case 'currentStock':
-          aValue = a.currentStock || a.stock || 0;
-          bValue = b.currentStock || b.stock || 0;
+          aValue = a.currentStock || 0;
+          bValue = b.currentStock || 0;
           break;
         case 'monthsOfStock':
           aValue = a.monthsOfStock || 0;
@@ -729,7 +779,7 @@ const AllItemsAnalysis: React.FC<{
     });
 
     return filtered;
-  }, [allItems, searchTerm, filterCategory, sortField, sortDirection, starredItems]);
+  }, [data.analyzedItems, filterType, searchTerm, sortField, sortDirection, starredItems]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -764,24 +814,59 @@ const AllItemsAnalysis: React.FC<{
     return 'text-red-400';
   };
 
+  const getFilterTitle = () => {
+    switch (filterType) {
+      case 'out-of-stock': return 'Out of Stock Items';
+      case 'margin-opportunity': return 'Margin Opportunity Items';
+      case 'cost-disadvantage': return 'Cost Disadvantage Items';
+      case 'stock-risk': return 'Stock Risk Items';
+      default: return 'Filtered Items';
+    }
+  };
+
+  const getFilterDescription = () => {
+    switch (filterType) {
+      case 'out-of-stock': return 'Items with 0 available, 0 ringfenced, and 0 on order';
+      case 'margin-opportunity': return 'Items where our cost is >10% below lowest market price';
+      case 'cost-disadvantage': return 'Items where our cost is >5% above highest market price';
+      case 'stock-risk': return 'Items with less than 2 weeks supply based on usage';
+      default: return 'Filtered view of inventory items';
+    }
+  };
+
   // Calculate summary stats for filtered items
   const filteredStats = useMemo(() => {
     const totalValue = filteredItems.reduce((sum, item) => sum + (item.stockValue || 0), 0);
-    const overstockItems = filteredItems.filter(item => item.isOverstocked);
-    const watchlistItems = filteredItems.filter(item => item.watchlist === '⚠️');
-    const starredCount = filteredItems.filter(item => starredItems.has(item.id)).length;
+    const fastMovers = filteredItems.filter(item => typeof item.velocityCategory === 'number' && item.velocityCategory <= 3);
+    const potentialRevenue = filteredItems.reduce((sum, item) => {
+      if (filterType === 'margin-opportunity' && item.lowestMarketPrice) {
+        return sum + ((item.lowestMarketPrice - item.avg_cost) * (item.currentStock || 0));
+      }
+      return sum;
+    }, 0);
     
     return {
       totalItems: filteredItems.length,
       totalValue,
-      overstockCount: overstockItems.length,
-      watchlistCount: watchlistItems.length,
-      starredCount
+      fastMovers: fastMovers.length,
+      potentialRevenue
     };
-  }, [filteredItems, starredItems]);
+  }, [filteredItems, filterType]);
 
   return (
     <div className="space-y-6">
+      {/* Header with clear filter button */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold text-white">{getFilterTitle()}</h2>
+          <p className="text-gray-400">{getFilterDescription()}</p>
+        </div>
+        <Button variant="outline" onClick={onClearFilter} className="flex items-center gap-2">
+          <Flag className="h-4 w-4" />
+          Show All Overview
+        </Button>
+      </div>
+
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -798,50 +883,34 @@ const AllItemsAnalysis: React.FC<{
         </Card>
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-orange-400">{filteredStats.overstockCount}</div>
-            <div className="text-sm text-gray-400">Overstock Items</div>
+            <div className="text-2xl font-bold text-green-400">{filteredStats.fastMovers}</div>
+            <div className="text-sm text-gray-400">Fast Movers (Cat 1-3)</div>
           </CardContent>
         </Card>
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-400">{filteredStats.starredCount}</div>
-            <div className="text-sm text-gray-400">Starred Items</div>
+            <div className="text-2xl font-bold text-yellow-400">
+              {filterType === 'margin-opportunity' ? formatCurrency(filteredStats.potentialRevenue) : 
+               starredItems.size.toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-400">
+              {filterType === 'margin-opportunity' ? 'Potential Revenue' : 'Starred Items'}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters and Search */}
+      {/* Search */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by stock code or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white"
-              />
-            </div>
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-48 bg-gray-800 border-gray-700 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="all">All Items</SelectItem>
-                <SelectItem value="overstock">Overstock &gt;6 months</SelectItem>
-                <SelectItem value="watchlist">Watchlist Only</SelectItem>
-                <SelectItem value="fast-mover">Fast Movers (Cat 1-3)</SelectItem>
-                <SelectItem value="high-value">High Value (£10k+)</SelectItem>
-                <SelectItem value="starred">Starred Items</SelectItem>
-                <SelectItem value="margin-opportunity">💰 Margin Opportunities</SelectItem>
-                <SelectItem value="cost-disadvantage">⚠️ Cost Disadvantage</SelectItem>
-                <SelectItem value="out-of-stock">🚨 Out of Stock</SelectItem>
-                <SelectItem value="stock-risk">⏰ Stock Risk &lt;2wks</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Input
+            placeholder="Search by stock code or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-gray-800 border-gray-700 text-white"
+          />
           <div className="mt-2 text-sm text-gray-400">
-            Showing {filteredStats.totalItems.toLocaleString()} of {allItems.length.toLocaleString()} inventory items
+            Showing {filteredStats.totalItems.toLocaleString()} items
           </div>
         </CardContent>
       </Card>
@@ -886,177 +955,146 @@ const AllItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
-                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
-                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
                   <th className="text-center p-3 text-gray-300">
                     Star
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredItems.map((item, index) => {
-                  return (
-                    <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                      <td className="p-3">
-                        <div>
-                          <div className="font-medium text-white">{item.stockcode}</div>
-                          <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
-                        </div>
-                      </td>
-                      <td className="p-3 text-right text-white font-semibold">
-                        {formatCurrency(item.stockValue)}
-                      </td>
-                                             <td className="p-3 text-right text-gray-300">
-                         {item.avg_cost || item.AVER ? formatCurrency(item.avg_cost || item.AVER) : 'N/A'}
-                       </td>
-                      <td className="p-3 text-right text-gray-300">
-                        {(item.currentStock || item.stock || 0).toLocaleString()}
-                      </td>
-                      <td className="p-3 text-center">
-                        <TooltipProvider>
-                          <UITooltip>
-                            <TooltipTrigger asChild>
-                              <span className={`cursor-help ${item.monthsOfStock && item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
-                                {item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
-                              <div className="text-sm">{item.averageUsage || item.packs_sold_avg_last_six_months ? (item.averageUsage || item.packs_sold_avg_last_six_months).toFixed(0) : 'No'} packs/month</div>
-                            </TooltipContent>
-                          </UITooltip>
-                        </TooltipProvider>
-                      </td>
-                      <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
-                        {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
-                      </td>
-                      <td className="p-3 text-center">
-                        <span className={`text-lg font-bold ${getTrendColor(item.trendDirection)}`}>
-                          {item.trendDirection === 'UP' ? '↑' :
-                           item.trendDirection === 'DOWN' ? '↓' :
-                           item.trendDirection === 'STABLE' ? '−' : '?'}
-                        </span>
-                      </td>
-                      <td className="p-3 text-center">
-                        <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
-                          {item.watchlist || '−'}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right text-purple-400 font-semibold">
-                        {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
-                      </td>
-                      <td className="p-3 text-right text-green-400 font-semibold">
-                        <TooltipProvider>
-                          <UITooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-help underline decoration-dotted">
-                                {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
-                                 (item.nbp ? formatCurrency(item.nbp) : 
-                                  (item.next_cost ? formatCurrency(item.next_cost) : 
-                                   (item.min_cost ? formatCurrency(item.min_cost) : 
-                                    (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
-                              <div className="space-y-1">
-                                {item.next_cost && item.next_cost > 0 && (
-                                  <div className="text-sm">Next Cost: {formatCurrency(item.next_cost)}</div>
-                                )}
-                                {item.min_cost && item.min_cost > 0 && (
-                                  <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
-                                )}
-                                {item.last_po_cost && item.last_po_cost > 0 && (
-                                  <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
-                                )}
-                                {!item.next_cost && !item.min_cost && !item.last_po_cost && (
-                                  <div className="text-sm">No NBP data available</div>
-                                )}
-                              </div>
-                            </TooltipContent>
-                          </UITooltip>
-                        </TooltipProvider>
-                      </td>
-                      <td className="p-3 text-right text-blue-400 font-semibold">
-                        <TooltipProvider>
-                          <UITooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-help underline decoration-dotted">
-                                {item.bestCompetitorPrice ? formatCurrency(item.bestCompetitorPrice) : 
-                                 (item.lowestMarketPrice ? formatCurrency(item.lowestMarketPrice) : 
-                                  (item.Nupharm ? formatCurrency(item.Nupharm) : 
-                                   (item.AAH2 ? formatCurrency(item.AAH2) : 
-                                    (item.LEXON2 ? formatCurrency(item.LEXON2) : 'N/A'))))}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                              <div className="space-y-1">
-                                {[
-                                  { name: 'Nupharm', price: item.Nupharm },
-                                  { name: 'AAH2', price: item.AAH2 },
-                                  { name: 'ETH LIST', price: item.ETH_LIST },
-                                  { name: 'LEXON2', price: item.LEXON2 }
-                                ].filter(comp => comp.price && comp.price > 0)
-                                 .sort((a, b) => a.price - b.price)
-                                 .map((comp, idx) => (
-                                  <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
-                                ))}
-                                {![item.Nupharm, item.AAH2, item.ETH_LIST, item.LEXON2].some(price => price && price > 0) && (
-                                  <div className="text-sm">No competitor pricing available</div>
-                                )}
-                              </div>
-                            </TooltipContent>
-                          </UITooltip>
-                        </TooltipProvider>
-                      </td>
-                      <td className="p-3 text-right text-cyan-400 font-semibold">
-                        {item.SDT ? formatCurrency(item.SDT) : 'N/A'}
-                      </td>
-                      <td className="p-3 text-right text-indigo-400 font-semibold">
-                        {item.EDT ? formatCurrency(item.EDT) : 'N/A'}
-                      </td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => onToggleStar(item.id)}
-                          className={`text-lg hover:scale-110 transition-transform ${
-                            starredItems.has(item.id) ? 'text-yellow-400' : 'text-gray-600 hover:text-yellow-400'
-                          }`}
-                        >
-                          {starredItems.has(item.id) ? '★' : '☆'}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredItems.map((item, index) => (
+                  <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                    <td className="p-3">
+                      <div>
+                        <div className="font-medium text-white">{item.stockcode}</div>
+                        <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
+                      </div>
+                    </td>
+                    <td className="p-3 text-right text-white font-semibold">
+                      {formatCurrency(item.stockValue)}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {(item.currentStock || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-center">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`cursor-help ${item.monthsOfStock && item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
+                              {item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">{item.packs_sold_avg_last_six_months ? item.packs_sold_avg_last_six_months.toFixed(0) : 'No'} packs/month</div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
+                      {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
+                    </td>
+                    <td className="p-3 text-center">
+                      <span className={`text-lg font-bold ${getTrendColor(item.trendDirection)}`}>
+                        {item.trendDirection === 'UP' ? '↑' :
+                         item.trendDirection === 'DOWN' ? '↓' :
+                         item.trendDirection === 'STABLE' ? '−' : '?'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center">
+                      <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
+                        {item.watchlist || '−'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right text-purple-400 font-semibold">
+                      {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-green-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
+                               (item.next_cost ? formatCurrency(item.next_cost) : 
+                                (item.min_cost ? formatCurrency(item.min_cost) : 
+                                 (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A')))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="space-y-1">
+                              {item.next_cost && item.next_cost > 0 && (
+                                <div className="text-sm">Next Cost: {formatCurrency(item.next_cost)}</div>
+                              )}
+                              {item.min_cost && item.min_cost > 0 && (
+                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
+                              )}
+                              {item.last_po_cost && item.last_po_cost > 0 && (
+                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
+                              )}
+                              {!item.next_cost && !item.min_cost && !item.last_po_cost && (
+                                <div className="text-sm">No NBP data available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-blue-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.bestCompetitorPrice ? formatCurrency(item.bestCompetitorPrice) : 
+                               (item.lowestMarketPrice ? formatCurrency(item.lowestMarketPrice) : 'N/A')}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                            <div className="space-y-1">
+                              {[
+                                { name: 'Nupharm', price: item.Nupharm },
+                                { name: 'AAH2', price: item.AAH2 },
+                                { name: 'ETH_LIST', price: item.ETH_LIST },
+                                { name: 'LEXON2', price: item.LEXON2 }
+                              ]
+                                .filter(comp => comp.price && comp.price > 0)
+                                .sort((a, b) => a.price - b.price)
+                                .map(comp => (
+                                  <div key={comp.name} className="text-sm">
+                                    {comp.name}: {formatCurrency(comp.price)}
+                                  </div>
+                                ))
+                              }
+                              {![item.Nupharm, item.AAH2, item.ETH_LIST, item.LEXON2].some(price => price && price > 0) && (
+                                <div className="text-sm">No competitor data available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() => onToggleStar(item.id)}
+                        className={`p-1 rounded hover:bg-gray-700 ${
+                          starredItems.has(item.id) ? 'text-yellow-400' : 'text-gray-600'
+                        }`}
+                      >
+                        <Star className="h-4 w-4" fill={starredItems.has(item.id) ? 'currentColor' : 'none'} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
+          
           {filteredItems.length === 0 && (
             <div className="p-8 text-center text-gray-400">
-              No items found matching your criteria.
+              <div className="text-lg font-medium">No items found</div>
+              <div className="text-sm mt-1">Try adjusting your search criteria</div>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Usage Tips */}
-      <Card className="border border-blue-500/30 bg-blue-500/10 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <Package className="h-5 w-5 text-blue-400 mt-0.5" />
-            <div>
-              <h3 className="text-blue-400 font-semibold">All Items View - Usage Tips</h3>
-              <ul className="text-gray-300 text-sm mt-2 space-y-1">
-                <li>• Use filters to focus on specific categories: overstock, watchlist, fast movers, or high value items</li>
-                <li>• Sort by any column to identify patterns - try sorting by months of stock or velocity category</li>
-                <li>• Star important items for quick access in the Starred tab</li>
-                <li>• Hover over data points for detailed tooltips with additional information</li>
-                <li>• Items with &gt;6 months of stock are highlighted in red in the Months column</li>
-              </ul>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
@@ -1361,10 +1399,7 @@ const OverstockAnalysis: React.FC<{
                           <TooltipTrigger asChild>
                             <span className="cursor-help underline decoration-dotted">
                               {item.bestCompetitorPrice ? formatCurrency(item.bestCompetitorPrice) : 
-                               (item.lowestMarketPrice ? formatCurrency(item.lowestMarketPrice) : 
-                                (item.Nupharm ? formatCurrency(item.Nupharm) : 
-                                 (item.AAH2 ? formatCurrency(item.AAH2) : 
-                                  (item.LEXON2 ? formatCurrency(item.LEXON2) : 'N/A'))))}
+                               (item.lowestMarketPrice ? formatCurrency(item.lowestMarketPrice) : 'N/A')}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
@@ -1372,15 +1407,19 @@ const OverstockAnalysis: React.FC<{
                               {[
                                 { name: 'Nupharm', price: item.Nupharm },
                                 { name: 'AAH2', price: item.AAH2 },
-                                { name: 'ETH LIST', price: item.ETH_LIST },
+                                { name: 'ETH_LIST', price: item.ETH_LIST },
                                 { name: 'LEXON2', price: item.LEXON2 }
-                              ].filter(comp => comp.price && comp.price > 0)
-                               .sort((a, b) => a.price - b.price)
-                               .map((comp, idx) => (
-                                <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
-                              ))}
+                              ]
+                                .filter(comp => comp.price && comp.price > 0)
+                                .sort((a, b) => a.price - b.price)
+                                .map(comp => (
+                                  <div key={comp.name} className="text-sm">
+                                    {comp.name}: {formatCurrency(comp.price)}
+                                  </div>
+                                ))
+                              }
                               {![item.Nupharm, item.AAH2, item.ETH_LIST, item.LEXON2].some(price => price && price > 0) && (
-                                <div className="text-sm">No competitor pricing available</div>
+                                <div className="text-sm">No competitor data available</div>
                               )}
                             </div>
                           </TooltipContent>
@@ -2187,7 +2226,7 @@ const WatchlistAnalysis: React.FC<{
                           <UITooltip>
                             <TooltipTrigger asChild>
                               <span className="cursor-help underline decoration-dotted">
-                                {item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
+                                {item.monthsOfStock === 999.9 ? '∞' : item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
                               </span>
                             </TooltipTrigger>
                             <TooltipContent className="bg-gray-800 border-gray-700 text-white">
@@ -2197,7 +2236,7 @@ const WatchlistAnalysis: React.FC<{
                         </TooltipProvider>
                       </td>
                       <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
-                        {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
+                        {typeof item.velocityCategory === 'number' ? `Cat ${item.velocityCategory}` : 'N/A'}
                       </td>
                       <td className="p-3 text-center">
                         <span className={`text-lg font-bold ${getTrendColor(item.trendDirection)}`}>
@@ -2696,6 +2735,457 @@ const StarredItemsAnalysis: React.FC<{
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+};
+
+// All Items Analysis - shows complete inventory with all data points
+const AllItemsAnalysis: React.FC<{ 
+  data: ProcessedInventoryData; 
+  onToggleStar: (id: string) => void; 
+  starredItems: Set<string>; 
+}> = ({ data, onToggleStar, starredItems }) => {
+  const [sortField, setSortField] = useState<string>('stockValue');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+
+  // Get all items
+  const allItems = data.analyzedItems;
+
+  // Filter and sort items
+  const filteredItems = useMemo(() => {
+    let filtered = allItems.filter(item => {
+      const matchesSearch = searchTerm === '' || 
+        item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = filterCategory === 'all' || 
+        (filterCategory === 'overstock' && item.isOverstocked) ||
+        (filterCategory === 'watchlist' && item.watchlist === '⚠️') ||
+        (filterCategory === 'fast-mover' && typeof item.velocityCategory === 'number' && item.velocityCategory <= 3) ||
+        (filterCategory === 'high-value' && item.stockValue >= 10000) ||
+        (filterCategory === 'starred' && starredItems.has(item.id)) ||
+        (filterCategory === 'margin-opportunity' && item.lowestMarketPrice && item.avg_cost < (item.lowestMarketPrice * 0.9)) ||
+        (filterCategory === 'cost-disadvantage' && (() => {
+          if (!item.lowestMarketPrice) return false;
+          const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'LEXON2'];
+          const prices: number[] = [];
+          competitors.forEach(competitor => {
+            const price = item[competitor as keyof typeof item] as number;
+            if (price && price > 0) {
+              prices.push(price);
+            }
+          });
+          if (prices.length === 0) return false;
+          const highestPrice = Math.max(...prices);
+          return item.avg_cost > (highestPrice * 1.05);
+        })()) ||
+        (filterCategory === 'out-of-stock' && item.quantity_available === 0 && item.quantity_ringfenced === 0 && item.quantity_on_order === 0) ||
+        (filterCategory === 'stock-risk' && item.packs_sold_avg_last_six_months > 0 && (item.currentStock / item.packs_sold_avg_last_six_months) < 0.5);
+      
+      return matchesSearch && matchesCategory;
+    });
+
+    // Sort items
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+      
+      switch (sortField) {
+        case 'item':
+        case 'stockcode':
+          aValue = a.stockcode;
+          bValue = b.stockcode;
+          break;
+        case 'stockValue':
+          aValue = a.stockValue;
+          bValue = b.stockValue;
+          break;
+        case 'averageCost':
+          aValue = a.avg_cost || a.AVER || 0;
+          bValue = b.avg_cost || b.AVER || 0;
+          break;
+        case 'currentStock':
+          aValue = a.currentStock || a.stock || 0;
+          bValue = b.currentStock || b.stock || 0;
+          break;
+        case 'monthsOfStock':
+          aValue = a.monthsOfStock || 0;
+          bValue = b.monthsOfStock || 0;
+          break;
+        case 'velocityCategory':
+          aValue = typeof a.velocityCategory === 'number' ? a.velocityCategory : 99;
+          bValue = typeof b.velocityCategory === 'number' ? b.velocityCategory : 99;
+          break;
+        case 'trendDirection':
+          // Custom sorting for trend: DOWN > STABLE > UP > N/A
+          const trendOrder = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
+          aValue = trendOrder[a.trendDirection as keyof typeof trendOrder] || 4;
+          bValue = trendOrder[b.trendDirection as keyof typeof trendOrder] || 4;
+          break;
+        case 'nbp':
+          aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
+          bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
+          break;
+        case 'lowestComp':
+          aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
+          bValue = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2 || 0;
+          break;
+        case 'price':
+          aValue = a.AVER || 0;
+          bValue = b.AVER || 0;
+          break;
+        case 'sdt':
+          aValue = a.SDT || 0;
+          bValue = b.SDT || 0;
+          break;
+        case 'edt':
+          aValue = a.EDT || 0;
+          bValue = b.EDT || 0;
+          break;
+        default:
+          aValue = a.stockValue;
+          bValue = b.stockValue;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    });
+
+    return filtered;
+  }, [allItems, searchTerm, filterCategory, sortField, sortDirection, starredItems]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      minimumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'UP': return 'text-green-400';
+      case 'DOWN': return 'text-red-400';
+      case 'STABLE': return 'text-yellow-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getCategoryColor = (category: number | 'N/A') => {
+    if (category === 'N/A') return 'text-gray-400';
+    if (category <= 2) return 'text-green-400';
+    if (category <= 4) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  // Calculate summary stats for filtered items
+  const filteredStats = useMemo(() => {
+    const totalValue = filteredItems.reduce((sum, item) => sum + (item.stockValue || 0), 0);
+    const overstockItems = filteredItems.filter(item => item.isOverstocked);
+    const watchlistItems = filteredItems.filter(item => item.watchlist === '⚠️');
+    const starredCount = filteredItems.filter(item => starredItems.has(item.id)).length;
+    
+    return {
+      totalItems: filteredItems.length,
+      totalValue,
+      overstockCount: overstockItems.length,
+      watchlistCount: watchlistItems.length,
+      starredCount
+    };
+  }, [filteredItems, starredItems]);
+
+  return (
+    <div className="space-y-6">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-white">{filteredStats.totalItems.toLocaleString()}</div>
+            <div className="text-sm text-gray-400">Total Items</div>
+          </CardContent>
+        </Card>
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-white">{formatCurrency(filteredStats.totalValue)}</div>
+            <div className="text-sm text-gray-400">Total Value</div>
+          </CardContent>
+        </Card>
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-orange-400">{filteredStats.overstockCount}</div>
+            <div className="text-sm text-gray-400">Overstock Items</div>
+          </CardContent>
+        </Card>
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-yellow-400">{filteredStats.starredCount}</div>
+            <div className="text-sm text-gray-400">Starred Items</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters and Search */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Search by stock code or description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-48 bg-gray-800 border-gray-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="all">All Items</SelectItem>
+                <SelectItem value="overstock">Overstock &gt;6 months</SelectItem>
+                <SelectItem value="watchlist">Watchlist Only</SelectItem>
+                <SelectItem value="fast-mover">Fast Movers (Cat 1-3)</SelectItem>
+                <SelectItem value="high-value">High Value (£10k+)</SelectItem>
+                <SelectItem value="starred">Starred Items</SelectItem>
+                <SelectItem value="margin-opportunity">💰 Margin Opportunities</SelectItem>
+                <SelectItem value="cost-disadvantage">⚠️ Cost Disadvantage</SelectItem>
+                <SelectItem value="out-of-stock">🚨 Out of Stock</SelectItem>
+                <SelectItem value="stock-risk">⏰ Stock Risk &lt;2wks</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mt-2 text-sm text-gray-400">
+            Showing {filteredStats.totalItems.toLocaleString()} of {allItems.length.toLocaleString()} inventory items
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Data Table */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('item')}>
+                    Item {sortField === 'item' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
+                    Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                    Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
+                    Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('trendDirection')}>
+                    Trend {sortField === 'trendDirection' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300">
+                    Watch
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                    Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                    Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300">
+                    Star
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredItems.map((item, index) => {
+                  return (
+                    <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
+                      <td className="p-3">
+                        <div>
+                          <div className="font-medium text-white">{item.stockcode}</div>
+                          <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
+                        </div>
+                      </td>
+                      <td className="p-3 text-right text-white font-semibold">
+                        {formatCurrency(item.stockValue)}
+                      </td>
+                      <td className="p-3 text-right text-gray-300">
+                        {item.avg_cost || item.AVER ? formatCurrency(item.avg_cost || item.AVER) : 'N/A'}
+                      </td>
+                      <td className="p-3 text-right text-gray-300">
+                        {(item.currentStock || item.stock || 0).toLocaleString()}
+                      </td>
+                      <td className="p-3 text-center">
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <span className={`cursor-help ${item.monthsOfStock && item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
+                                {item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                              <div className="text-sm">{item.averageUsage || item.packs_sold_avg_last_six_months ? (item.averageUsage || item.packs_sold_avg_last_six_months).toFixed(0) : 'No'} packs/month</div>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      </td>
+                      <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
+                        {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`text-lg font-bold ${getTrendColor(item.trendDirection)}`}>
+                          {item.trendDirection === 'UP' ? '↑' :
+                           item.trendDirection === 'DOWN' ? '↓' :
+                           item.trendDirection === 'STABLE' ? '−' : '?'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
+                          {item.watchlist || '−'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right text-purple-400 font-semibold">
+                        {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                      </td>
+                      <td className="p-3 text-right text-green-400 font-semibold">
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted">
+                                {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
+                                 (item.nbp ? formatCurrency(item.nbp) : 
+                                  (item.next_cost ? formatCurrency(item.next_cost) : 
+                                   (item.min_cost ? formatCurrency(item.min_cost) : 
+                                    (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                              <div className="space-y-1">
+                                {item.next_cost && item.next_cost > 0 && (
+                                  <div className="text-sm">Next Cost: {formatCurrency(item.next_cost)}</div>
+                                )}
+                                {item.min_cost && item.min_cost > 0 && (
+                                  <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
+                                )}
+                                {item.last_po_cost && item.last_po_cost > 0 && (
+                                  <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
+                                )}
+                                {!item.next_cost && !item.min_cost && !item.last_po_cost && (
+                                  <div className="text-sm">No NBP data available</div>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      </td>
+                      <td className="p-3 text-right text-blue-400 font-semibold">
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted">
+                                {item.bestCompetitorPrice ? formatCurrency(item.bestCompetitorPrice) : 
+                                 (item.lowestMarketPrice ? formatCurrency(item.lowestMarketPrice) : 
+                                  (item.Nupharm ? formatCurrency(item.Nupharm) : 
+                                   (item.AAH2 ? formatCurrency(item.AAH2) : 
+                                    (item.LEXON2 ? formatCurrency(item.LEXON2) : 'N/A'))))}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                              <div className="space-y-1">
+                                {[
+                                  { name: 'Nupharm', price: item.Nupharm },
+                                  { name: 'AAH2', price: item.AAH2 },
+                                  { name: 'ETH LIST', price: item.ETH_LIST },
+                                  { name: 'LEXON2', price: item.LEXON2 }
+                                ].filter(comp => comp.price && comp.price > 0)
+                                 .sort((a, b) => a.price - b.price)
+                                 .map((comp, idx) => (
+                                  <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
+                                ))}
+                                {![item.Nupharm, item.AAH2, item.ETH_LIST, item.LEXON2].some(price => price && price > 0) && (
+                                  <div className="text-sm">No competitor pricing available</div>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      </td>
+                      <td className="p-3 text-right text-cyan-400 font-semibold">
+                        {item.SDT ? formatCurrency(item.SDT) : 'N/A'}
+                      </td>
+                      <td className="p-3 text-right text-indigo-400 font-semibold">
+                        {item.EDT ? formatCurrency(item.EDT) : 'N/A'}
+                      </td>
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => onToggleStar(item.id)}
+                          className={`text-lg hover:scale-110 transition-transform ${
+                            starredItems.has(item.id) ? 'text-yellow-400' : 'text-gray-600 hover:text-yellow-400'
+                          }`}
+                        >
+                          {starredItems.has(item.id) ? '★' : '☆'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {filteredItems.length === 0 && (
+            <div className="p-8 text-center text-gray-400">
+              No items found matching your criteria.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Usage Tips */}
+      <Card className="border border-blue-500/30 bg-blue-500/10 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Package className="h-5 w-5 text-blue-400 mt-0.5" />
+            <div>
+              <h3 className="text-blue-400 font-semibold">All Items View - Usage Tips</h3>
+              <ul className="text-gray-300 text-sm mt-2 space-y-1">
+                <li>• Use filters to focus on specific categories: overstock, watchlist, fast movers, or high value items</li>
+                <li>• Sort by any column to identify patterns - try sorting by months of stock or velocity category</li>
+                <li>• Star important items for quick access in the Starred tab</li>
+                <li>• Hover over data points for detailed tooltips with additional information</li>
+                <li>• Items with &gt;6 months of stock are highlighted in red in the Months column</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
