@@ -313,8 +313,8 @@ const InventoryAnalyticsContent: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Summary Metrics - Row 1 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <MetricCard 
           title="Total Products"
           value={inventoryData.summaryStats.totalProducts.toLocaleString()}
@@ -353,6 +353,61 @@ const InventoryAnalyticsContent: React.FC = () => {
             type: inventoryData.summaryStats.overstockPercentage > 20 ? 'decrease' : 'neutral'
           }}
           flippable={true}
+        />
+      </div>
+
+      {/* Summary Metrics - Row 2 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <MetricCard 
+          title="Out of Stock"
+          value={inventoryData.summaryStats.outOfStockItems.toLocaleString()}
+          subtitle={`${inventoryData.summaryStats.outOfStockFastMovers} fast movers`}
+          icon={<AlertTriangle className="h-5 w-5 text-red-500" />}
+          iconPosition="right"
+          flippable={true}
+          change={{
+            value: inventoryData.summaryStats.outOfStockFastMovers > 0 ? 'Critical' : 'OK',
+            type: inventoryData.summaryStats.outOfStockFastMovers > 0 ? 'decrease' : 'increase'
+          }}
+        />
+        
+        <MetricCard 
+          title="Margin Opportunities"
+          value={inventoryData.summaryStats.marginOpportunityItems.toLocaleString()}
+          subtitle={`${formatCurrency(inventoryData.summaryStats.marginOpportunityValue)} potential`}
+          icon={<TrendingUp className="h-5 w-5 text-green-500" />}
+          iconPosition="right"
+          flippable={true}
+          change={{
+            value: inventoryData.summaryStats.marginOpportunityValue > 0 ? 'Revenue+' : 'None',
+            type: inventoryData.summaryStats.marginOpportunityValue > 0 ? 'increase' : 'neutral'
+          }}
+        />
+        
+        <MetricCard 
+          title="Cost Disadvantage"
+          value={inventoryData.summaryStats.costDisadvantageItems.toLocaleString()}
+          subtitle={`${formatCurrency(inventoryData.summaryStats.costDisadvantageValue)} at risk`}
+          icon={<AlertTriangle className="h-5 w-5 text-orange-500" />}
+          iconPosition="right"
+          flippable={true}
+          change={{
+            value: inventoryData.summaryStats.costDisadvantageValue > 0 ? 'Risk' : 'OK',
+            type: inventoryData.summaryStats.costDisadvantageValue > 0 ? 'decrease' : 'increase'
+          }}
+        />
+        
+        <MetricCard 
+          title="Stock Risk"
+          value={inventoryData.summaryStats.stockRiskItems.toLocaleString()}
+          subtitle={`${formatCurrency(inventoryData.summaryStats.stockRiskValue)} <2wks supply`}
+          icon={<Clock className="h-5 w-5 text-yellow-500" />}
+          iconPosition="right"
+          flippable={true}
+          change={{
+            value: inventoryData.summaryStats.stockRiskItems > 0 ? 'Action Needed' : 'OK',
+            type: inventoryData.summaryStats.stockRiskItems > 0 ? 'decrease' : 'increase'
+          }}
         />
       </div>
 
@@ -570,7 +625,24 @@ const AllItemsAnalysis: React.FC<{
         (filterCategory === 'watchlist' && item.watchlist === '⚠️') ||
         (filterCategory === 'fast-mover' && typeof item.velocityCategory === 'number' && item.velocityCategory <= 3) ||
         (filterCategory === 'high-value' && item.stockValue >= 10000) ||
-        (filterCategory === 'starred' && starredItems.has(item.id));
+        (filterCategory === 'starred' && starredItems.has(item.id)) ||
+        (filterCategory === 'margin-opportunity' && item.lowestMarketPrice && item.avg_cost < (item.lowestMarketPrice * 0.9)) ||
+        (filterCategory === 'cost-disadvantage' && (() => {
+          if (!item.lowestMarketPrice) return false;
+          const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'LEXON2'];
+          const prices: number[] = [];
+          competitors.forEach(competitor => {
+            const price = item[competitor as keyof typeof item] as number;
+            if (price && price > 0) {
+              prices.push(price);
+            }
+          });
+          if (prices.length === 0) return false;
+          const highestPrice = Math.max(...prices);
+          return item.avg_cost > (highestPrice * 1.05);
+        })()) ||
+        (filterCategory === 'out-of-stock' && item.quantity_available === 0 && item.quantity_ringfenced === 0 && item.quantity_on_order === 0) ||
+        (filterCategory === 'stock-risk' && item.packs_sold_avg_last_six_months > 0 && (item.currentStock / item.packs_sold_avg_last_six_months) < 0.5);
       
       return matchesSearch && matchesCategory;
     });
@@ -748,6 +820,10 @@ const AllItemsAnalysis: React.FC<{
                 <SelectItem value="fast-mover">Fast Movers (Cat 1-3)</SelectItem>
                 <SelectItem value="high-value">High Value (£10k+)</SelectItem>
                 <SelectItem value="starred">Starred Items</SelectItem>
+                <SelectItem value="margin-opportunity">💰 Margin Opportunities</SelectItem>
+                <SelectItem value="cost-disadvantage">⚠️ Cost Disadvantage</SelectItem>
+                <SelectItem value="out-of-stock">🚨 Out of Stock</SelectItem>
+                <SelectItem value="stock-risk">⏰ Stock Risk &lt;2wks</SelectItem>
               </SelectContent>
             </Select>
           </div>

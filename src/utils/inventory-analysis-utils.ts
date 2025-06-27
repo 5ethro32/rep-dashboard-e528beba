@@ -78,6 +78,16 @@ export interface InventorySummaryStats {
   watchlistCount: number;
   overstockWatchlistCount: number;
   overstockWatchlistValue: number;
+  
+  // New strategic metrics
+  outOfStockItems: number;
+  outOfStockFastMovers: number; // Velocity categories 1-3
+  marginOpportunityItems: number;
+  marginOpportunityValue: number; // Potential revenue impact
+  costDisadvantageItems: number;
+  costDisadvantageValue: number; // Total value at risk
+  stockRiskItems: number; // <2 weeks supply
+  stockRiskValue: number; // Value of at-risk stock
 }
 
 export interface VelocityBreakdown {
@@ -601,6 +611,55 @@ export const generateInventorySummaryStats = (items: ProcessedInventoryItem[]): 
   const overstockWatchlistCount = overstockWatchlistItems.length;
   const overstockWatchlistValue = overstockWatchlistItems.reduce((sum, item) => sum + item.stockValue, 0);
   
+  // New strategic metrics
+  // OOS: Items with 0 qty available, 0 ringfenced, 0 on order
+  const outOfStockItems = items.filter(item => 
+    item.quantity_available === 0 && 
+    item.quantity_ringfenced === 0 && 
+    item.quantity_on_order === 0
+  );
+  const outOfStockFastMovers = outOfStockItems.filter(item => 
+    typeof item.velocityCategory === 'number' && item.velocityCategory <= 3
+  );
+  
+  // Margin Opportunities: avg_cost < (lowest_competitor_price * 0.9) - 10% margin room
+  const marginOpportunityItems = items.filter(item => 
+    item.lowestMarketPrice && 
+    item.avg_cost < (item.lowestMarketPrice * 0.9)
+  );
+  const marginOpportunityValue = marginOpportunityItems.reduce((sum, item) => {
+    if (item.lowestMarketPrice) {
+      const potentialRevenue = (item.lowestMarketPrice - item.avg_cost) * item.currentStock;
+      return sum + potentialRevenue;
+    }
+    return sum;
+  }, 0);
+  
+  // Cost Disadvantage: avg_cost > (highest_competitor_price * 1.05) - 5% above market
+  const costDisadvantageItems = items.filter(item => {
+    if (!item.lowestMarketPrice) return false;
+    // Get highest competitor price from available competitors
+    const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'LEXON2'];
+    const prices: number[] = [];
+    competitors.forEach(competitor => {
+      const price = item[competitor as keyof typeof item] as number;
+      if (price && price > 0) {
+        prices.push(price);
+      }
+    });
+    if (prices.length === 0) return false;
+    const highestPrice = Math.max(...prices);
+    return item.avg_cost > (highestPrice * 1.05);
+  });
+  const costDisadvantageValue = costDisadvantageItems.reduce((sum, item) => sum + item.stockValue, 0);
+  
+  // Stock Risk: <2 weeks supply (current stock / monthly usage < 0.5)
+  const stockRiskItems = items.filter(item => 
+    item.packs_sold_avg_last_six_months > 0 && 
+    (item.currentStock / item.packs_sold_avg_last_six_months) < 0.5
+  );
+  const stockRiskValue = stockRiskItems.reduce((sum, item) => sum + item.stockValue, 0);
+  
   return {
     totalProducts,
     totalStockValue: Number(totalStockValue.toFixed(2)),
@@ -614,7 +673,15 @@ export const generateInventorySummaryStats = (items: ProcessedInventoryItem[]): 
     watchlistValue: Number(watchlistValue.toFixed(2)),
     watchlistCount,
     overstockWatchlistCount,
-    overstockWatchlistValue: Number(overstockWatchlistValue.toFixed(2))
+    overstockWatchlistValue: Number(overstockWatchlistValue.toFixed(2)),
+    outOfStockItems: outOfStockItems.length,
+    outOfStockFastMovers: outOfStockFastMovers.length,
+    marginOpportunityItems: marginOpportunityItems.length,
+    marginOpportunityValue: Number(marginOpportunityValue.toFixed(2)),
+    costDisadvantageItems: costDisadvantageItems.length,
+    costDisadvantageValue: Number(costDisadvantageValue.toFixed(2)),
+    stockRiskItems: stockRiskItems.length,
+    stockRiskValue: Number(stockRiskValue.toFixed(2))
   };
 };
 
