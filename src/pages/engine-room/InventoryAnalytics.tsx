@@ -922,6 +922,12 @@ const AllItemsAnalysis: React.FC<{
                           </UITooltip>
                         </TooltipProvider>
                       </td>
+                      <td className="p-3 text-right text-cyan-400 font-semibold">
+                        {item.SDT ? formatCurrency(item.SDT) : 'N/A'}
+                      </td>
+                      <td className="p-3 text-right text-indigo-400 font-semibold">
+                        {item.EDT ? formatCurrency(item.EDT) : 'N/A'}
+                      </td>
                       <td className="p-3 text-center">
                         <button
                           onClick={() => onToggleStar(item.id)}
@@ -1029,6 +1035,14 @@ const OverstockAnalysis: React.FC<{
         case 'trendDirection':
           aValue = a.trendDirection;
           bValue = b.trendDirection;
+          break;
+        case 'sdt':
+          aValue = a.SDT || 0;
+          bValue = b.SDT || 0;
+          break;
+        case 'edt':
+          aValue = a.EDT || 0;
+          bValue = b.EDT || 0;
           break;
         default:
           aValue = a.stockValue;
@@ -1162,6 +1176,8 @@ const OverstockAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300">Price</th>
                   <th className="text-right p-3 text-gray-300">NBP</th>
                   <th className="text-right p-3 text-gray-300">Lowest Comp</th>
+                  <th className="text-right p-3 text-gray-300">SDT</th>
+                  <th className="text-right p-3 text-gray-300">EDT</th>
                   <th className="text-center p-3 text-gray-300">Star</th>
                 </tr>
               </thead>
@@ -1282,6 +1298,12 @@ const OverstockAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
+                    <td className="p-3 text-right text-cyan-400 font-semibold">
+                      {item.SDT ? formatCurrency(item.SDT) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-indigo-400 font-semibold">
+                      {item.EDT ? formatCurrency(item.EDT) : 'N/A'}
+                    </td>
                     <td className="p-3 text-center">
                       <button
                         onClick={() => onToggleStar(item.id)}
@@ -1391,6 +1413,14 @@ const PriorityIssuesAnalysis: React.FC<{
         case 'velocityCategory':
           aValue = typeof a.item.velocityCategory === 'number' ? a.item.velocityCategory : 99;
           bValue = typeof b.item.velocityCategory === 'number' ? b.item.velocityCategory : 99;
+          break;
+        case 'sdt':
+          aValue = a.item.SDT || 0;
+          bValue = b.item.SDT || 0;
+          break;
+        case 'edt':
+          aValue = a.item.EDT || 0;
+          bValue = b.item.EDT || 0;
           break;
         default:
           aValue = a.impactValue;
@@ -1612,6 +1642,8 @@ const PriorityIssuesAnalysis: React.FC<{
                    <th className="text-right p-3 text-gray-300">Price</th>
                    <th className="text-right p-3 text-gray-300">NBP</th>
                    <th className="text-right p-3 text-gray-300">Lowest Comp</th>
+                   <th className="text-right p-3 text-gray-300">SDT</th>
+                   <th className="text-right p-3 text-gray-300">EDT</th>
                    <th className="text-center p-3 text-gray-300">Star</th>
                  </tr>
               </thead>
@@ -1757,6 +1789,22 @@ const PriorityIssuesAnalysis: React.FC<{
                          {starredItems.has(issue.item.id) ? '★' : '☆'}
                        </button>
                      </td>
+                     <td className="p-3 text-right text-cyan-400 font-semibold">
+                       {issue.item.SDT ? formatCurrency(issue.item.SDT) : 'N/A'}
+                     </td>
+                     <td className="p-3 text-right text-indigo-400 font-semibold">
+                       {issue.item.EDT ? formatCurrency(issue.item.EDT) : 'N/A'}
+                     </td>
+                     <td className="p-3 text-center">
+                       <button
+                         onClick={() => onToggleStar(issue.item.id)}
+                         className={`text-lg hover:scale-110 transition-transform ${
+                           starredItems.has(issue.item.id) ? 'text-yellow-400' : 'text-gray-600 hover:text-yellow-400'
+                         }`}
+                       >
+                         {starredItems.has(issue.item.id) ? '★' : '☆'}
+                       </button>
+                     </td>
                    </tr>
                  ))}
               </tbody>
@@ -1835,6 +1883,14 @@ const WatchlistAnalysis: React.FC<{
           const trendOrder = { DOWN: 3, STABLE: 2, UP: 1, 'N/A': 0 };
           aValue = trendOrder[a.trendDirection] || 0;
           bValue = trendOrder[b.trendDirection] || 0;
+          break;
+        case 'sdt':
+          aValue = a.SDT || 0;
+          bValue = b.SDT || 0;
+          break;
+        case 'edt':
+          aValue = a.EDT || 0;
+          bValue = b.EDT || 0;
           break;
         default:
           aValue = a.stockValue;
@@ -2005,6 +2061,8 @@ const WatchlistAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300">Price</th>
                   <th className="text-right p-3 text-gray-300">NBP</th>
                   <th className="text-right p-3 text-gray-300">Lowest Comp</th>
+                  <th className="text-right p-3 text-gray-300">SDT</th>
+                  <th className="text-right p-3 text-gray-300">EDT</th>
                   <th className="text-center p-3 text-gray-300">Star</th>
                 </tr>
               </thead>
@@ -2125,6 +2183,12 @@ const WatchlistAnalysis: React.FC<{
                           </UITooltip>
                         </TooltipProvider>
                       </td>
+                      <td className="p-3 text-right text-cyan-400 font-semibold">
+                        {item.SDT ? formatCurrency(item.SDT) : 'N/A'}
+                      </td>
+                      <td className="p-3 text-right text-indigo-400 font-semibold">
+                        {item.EDT ? formatCurrency(item.EDT) : 'N/A'}
+                      </td>
                       <td className="p-3 text-center">
                         <button
                           onClick={() => onToggleStar(item.id)}
@@ -2221,6 +2285,14 @@ const StarredItemsAnalysis: React.FC<{
         case 'currentStock':
           aValue = a.currentStock || a.stock || 0;
           bValue = b.currentStock || b.stock || 0;
+          break;
+        case 'sdt':
+          aValue = a.SDT || 0;
+          bValue = b.SDT || 0;
+          break;
+        case 'edt':
+          aValue = a.EDT || 0;
+          bValue = b.EDT || 0;
           break;
         default:
           aValue = a.stockValue;
@@ -2346,6 +2418,8 @@ const StarredItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300">Price</th>
                   <th className="text-right p-3 text-gray-300">NBP</th>
                   <th className="text-right p-3 text-gray-300">Lowest Comp</th>
+                  <th className="text-right p-3 text-gray-300">SDT</th>
+                  <th className="text-right p-3 text-gray-300">EDT</th>
                   <th className="text-center p-3 text-gray-300">Unstar</th>
                 </tr>
               </thead>
@@ -2480,6 +2554,12 @@ const StarredItemsAnalysis: React.FC<{
                             </TooltipContent>
                           </UITooltip>
                         </TooltipProvider>
+                      </td>
+                      <td className="p-3 text-right text-cyan-400 font-semibold">
+                        {item.SDT ? formatCurrency(item.SDT) : 'N/A'}
+                      </td>
+                      <td className="p-3 text-right text-indigo-400 font-semibold">
+                        {item.EDT ? formatCurrency(item.EDT) : 'N/A'}
                       </td>
                       <td className="p-3 text-center">
                         <button
