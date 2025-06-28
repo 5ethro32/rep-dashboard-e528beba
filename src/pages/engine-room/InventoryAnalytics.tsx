@@ -2246,50 +2246,49 @@ const MetricFilteredView: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="max-h-[600px] overflow-y-auto">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1400px]">
-                <thead className="bg-gray-900/90 sticky top-0 z-10">
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('item')}>
-                      Item {sortField === 'item' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
-                      Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
-                      Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
-                      Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
-                      Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories())}
-                    {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections())}
-                    <th className="text-center p-3 text-gray-300">
-                      Watch
-                    </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
-                      Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
-                      NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
-                      Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
-                      SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
-                      EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-center p-3 text-gray-300">
-                      Star
-                    </th>
-                  </tr>
-                </thead>
+            <table className="w-full min-w-[1400px]">
+              <thead className="bg-gray-900/90 sticky top-0 z-10">
+                <tr className="border-b border-gray-700">
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('item')}>
+                    Item {sortField === 'item' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
+                    Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                    Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories())}
+                  {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections())}
+                  <th className="text-center p-3 text-gray-300">
+                    Watch
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                    Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                    Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300">
+                    Star
+                  </th>
+                </tr>
+              </thead>
               <tbody>
                 {filteredItems.map((item, index) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
@@ -2423,8 +2422,7 @@ const MetricFilteredView: React.FC<{
                   </tr>
                 ))}
               </tbody>
-              </table>
-            </div>
+            </table>
           </div>
           
           {filteredItems.length === 0 && (
