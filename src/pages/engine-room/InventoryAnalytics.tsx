@@ -39,6 +39,32 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 // Add imports for dropdown components at the top
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
+// Helper functions for average cost display logic
+// Use calculated next cost (Column J) when meaningful, otherwise use avg_cost
+const getDisplayedAverageCost = (item: ProcessedInventoryItem): number | null => {
+  // Use next_cost if it has a meaningful value (>0), otherwise use avg_cost
+  if (item.next_cost && item.next_cost > 0) {
+    return item.next_cost;
+  }
+  return item.avg_cost || null;
+};
+
+const shouldShowAverageCostTooltip = (item: ProcessedInventoryItem): boolean => {
+  // Show tooltip when using next_cost instead of avg_cost
+  return !!(item.next_cost && item.next_cost > 0 && item.avg_cost && item.avg_cost > 0);
+};
+
+const getAverageCostTooltip = (item: ProcessedInventoryItem): string => {
+  // Show original avg_cost when displaying next_cost
+  if (item.avg_cost && item.avg_cost > 0) {
+    return `Original Avg Cost: ${new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP'
+    }).format(item.avg_cost)}`;
+  }
+  return '';
+};
+
 // Sticky Horizontal Scroll Table Component
 const StickyHorizontalScrollTable: React.FC<{
   children: React.ReactNode;
@@ -535,7 +561,22 @@ const PriorityIssuesAnalysis: React.FC<{
                       {formatCurrency(issue.impactValue)}
                     </td>
                     <td className="p-3 text-right text-gray-300">
-                      {issue.item.avg_cost ? formatCurrency(issue.item.avg_cost) : 'N/A'}
+                      {shouldShowAverageCostTooltip(issue.item) ? (
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted">
+                                {getDisplayedAverageCost(issue.item) ? formatCurrency(getDisplayedAverageCost(issue.item)!) : 'N/A'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                              <div className="text-sm">{getAverageCostTooltip(issue.item)}</div>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      ) : (
+                        getDisplayedAverageCost(issue.item) ? formatCurrency(getDisplayedAverageCost(issue.item)!) : 'N/A'
+                      )}
                     </td>
                     <td className="p-3 text-right text-gray-300">
                       {(issue.item.currentStock || 0).toLocaleString()}
@@ -826,7 +867,22 @@ const WatchlistAnalysis: React.FC<{
                       {formatCurrency(item.stockValue)}
                     </td>
                     <td className="p-3 text-right text-gray-300">
-                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
+                      {shouldShowAverageCostTooltip(item) ? (
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted">
+                                {getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                              <div className="text-sm">{getAverageCostTooltip(item)}</div>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      ) : (
+                        getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
+                      )}
                     </td>
                     <td className="p-3 text-right text-gray-300">
                       {(item.currentStock || 0).toLocaleString()}
@@ -1117,7 +1173,22 @@ const StarredItemsAnalysis: React.FC<{
                       {formatCurrency(item.stockValue)}
                     </td>
                     <td className="p-3 text-right text-gray-300">
-                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
+                      {shouldShowAverageCostTooltip(item) ? (
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted">
+                                {getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                              <div className="text-sm">{getAverageCostTooltip(item)}</div>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      ) : (
+                        getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
+                      )}
                     </td>
                     <td className="p-3 text-right text-gray-300">
                       {(item.currentStock || 0).toLocaleString()}
@@ -1448,7 +1519,22 @@ const AllItemsAnalysis: React.FC<{
                       {formatCurrency(item.stockValue)}
                     </td>
                     <td className="p-3 text-right text-gray-300">
-                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
+                      {shouldShowAverageCostTooltip(item) ? (
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted">
+                                {getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                              <div className="text-sm">{getAverageCostTooltip(item)}</div>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      ) : (
+                        getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
+                      )}
                     </td>
                     <td className="p-3 text-right text-gray-300">
                       {(item.currentStock || 0).toLocaleString()}
@@ -1748,7 +1834,22 @@ const OverstockAnalysis: React.FC<{
                       {formatCurrency(item.stockValue)}
                     </td>
                     <td className="p-3 text-right text-gray-300">
-                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
+                      {shouldShowAverageCostTooltip(item) ? (
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted">
+                                {getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                              <div className="text-sm">{getAverageCostTooltip(item)}</div>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      ) : (
+                        getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
+                      )}
                     </td>
                     <td className="p-3 text-right text-gray-300">
                       {(item.currentStock || 0).toLocaleString()}
@@ -2971,7 +3072,22 @@ const MetricFilteredView: React.FC<{
                       {formatCurrency(item.stockValue)}
                     </td>
                     <td className="p-3 text-right text-gray-300">
-                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
+                      {shouldShowAverageCostTooltip(item) ? (
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted">
+                                {getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                              <div className="text-sm">{getAverageCostTooltip(item)}</div>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      ) : (
+                        getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
+                      )}
                     </td>
                     <td className="p-3 text-right text-gray-300">
                       {(item.currentStock || item.stock || 0).toLocaleString()}
