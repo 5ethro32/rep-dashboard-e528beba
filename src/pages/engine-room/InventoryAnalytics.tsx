@@ -2957,8 +2957,7 @@ const MetricFilteredView: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="max-h-[600px] overflow-y-auto">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1400px]">
+            <table className="w-full min-w-[1400px]">
                 <thead className="bg-gray-900/90 sticky top-0 z-10">
                   <tr className="border-b border-gray-700">
                     <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('item')}>
@@ -3141,7 +3140,6 @@ const MetricFilteredView: React.FC<{
                 ))}
               </tbody>
               </table>
-            </div>
           </div>
           
           {filteredItems.length === 0 && (
