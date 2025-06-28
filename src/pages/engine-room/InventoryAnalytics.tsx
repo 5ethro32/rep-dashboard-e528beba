@@ -312,12 +312,47 @@ const PriorityIssuesAnalysis: React.FC<{
         issue.description.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => {
-        let aValue: any = a[sortField as keyof typeof a];
-        let bValue: any = b[sortField as keyof typeof b];
+        let aValue: any, bValue: any;
         
-        if (sortField === 'impactValue' || sortField === 'severity') {
-          aValue = sortField === 'impactValue' ? a.impactValue : a.severity;
-          bValue = sortField === 'impactValue' ? b.impactValue : b.severity;
+        switch (sortField) {
+          case 'impactValue':
+            aValue = a.impactValue; bValue = b.impactValue; break;
+          case 'severity':
+            aValue = a.severity; bValue = b.severity; break;
+          case 'type':
+            aValue = a.type; bValue = b.type; break;
+          case 'stockcode':
+            aValue = a.item.stockcode; bValue = b.item.stockcode; break;
+          case 'stockValue':
+            aValue = a.item.stockValue; bValue = b.item.stockValue; break;
+          case 'averageCost':
+            aValue = a.item.avg_cost || 0; bValue = b.item.avg_cost || 0; break;
+          case 'currentStock':
+            aValue = a.item.currentStock; bValue = b.item.currentStock; break;
+          case 'onOrder':
+            aValue = a.item.quantity_on_order || 0; bValue = b.item.quantity_on_order || 0; break;
+          case 'monthsOfStock':
+            aValue = a.item.monthsOfStock; bValue = b.item.monthsOfStock; break;
+          case 'velocityCategory':
+            aValue = typeof a.item.velocityCategory === 'number' ? a.item.velocityCategory : 999;
+            bValue = typeof b.item.velocityCategory === 'number' ? b.item.velocityCategory : 999;
+            break;
+          case 'nbp':
+            aValue = a.item.nextBuyingPrice || a.item.nbp || a.item.next_cost || a.item.min_cost || a.item.last_po_cost || 0;
+            bValue = b.item.nextBuyingPrice || b.item.nbp || b.item.next_cost || b.item.min_cost || b.item.last_po_cost || 0;
+            break;
+          case 'lowestComp':
+            aValue = a.item.bestCompetitorPrice || a.item.lowestMarketPrice || a.item.Nupharm || a.item.AAH2 || a.item.LEXON2 || 0;
+            bValue = b.item.bestCompetitorPrice || b.item.lowestMarketPrice || b.item.Nupharm || b.item.AAH2 || b.item.LEXON2 || 0;
+            break;
+          case 'price':
+            aValue = a.item.AVER || 0; bValue = b.item.AVER || 0; break;
+          case 'sdt':
+            aValue = a.item.SDT || 0; bValue = b.item.SDT || 0; break;
+          case 'edt':
+            aValue = a.item.EDT || 0; bValue = b.item.EDT || 0; break;
+          default:
+            aValue = a.item.stockcode; bValue = b.item.stockcode;
         }
         
         if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -354,6 +389,18 @@ const PriorityIssuesAnalysis: React.FC<{
     }
   };
 
+  const getCategoryColor = (category: number | 'N/A') => {
+    if (category === 'N/A') return 'text-gray-400';
+    switch (category) {
+      case 1: return 'text-green-400';
+      case 2: return 'text-blue-400';
+      case 3: return 'text-yellow-400';
+      case 4: return 'text-orange-400';
+      case 5: return 'text-red-400';
+      default: return 'text-gray-400';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -362,6 +409,19 @@ const PriorityIssuesAnalysis: React.FC<{
           {filteredIssues.length} issues found
         </div>
       </div>
+
+      {/* Issue Type Key */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <h4 className="text-sm font-medium text-white mb-2">Issue Type Key:</h4>
+          <div className="text-xs text-gray-400 space-y-1">
+            <div><span className="font-medium">Out of Stock:</span> No available inventory</div>
+            <div><span className="font-medium">Overstock:</span> Excessive inventory levels</div>
+            <div><span className="font-medium">Cost Disadvantage:</span> Higher costs than competitors</div>
+            <div><span className="font-medium">Margin Opportunity:</span> Potential for increased margins</div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Search */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -379,26 +439,75 @@ const PriorityIssuesAnalysis: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="max-h-[600px] overflow-y-auto">
-            <table className="w-full min-w-[1200px]">
+            <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('type')}>
                     Issue Type {sortField === 'type' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('severity')}>
-                    Severity {sortField === 'severity' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <th className="text-center p-3 text-gray-300">
+                    <TooltipProvider>
+                      <UITooltip>
+                        <TooltipTrigger asChild>
+                          <button className="cursor-pointer hover:text-white" onClick={() => handleSort('severity')}>
+                            Severity {sortField === 'severity' && (sortDirection === 'asc' ? '↑' : '↓')}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                          <div className="text-sm">Issue priority level: Critical &gt; High &gt; Medium &gt; Low</div>
+                        </TooltipContent>
+                      </UITooltip>
+                    </TooltipProvider>
                   </th>
-                  <th className="text-left p-3 text-gray-300">
-                    Description
+                  <th className="text-right p-3 text-gray-300">
+                    <TooltipProvider>
+                      <UITooltip>
+                        <TooltipTrigger asChild>
+                          <button className="cursor-pointer hover:text-white" onClick={() => handleSort('impactValue')}>
+                            Impact Value {sortField === 'impactValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                          <div className="text-sm">Financial impact of the issue (stock value at risk or opportunity value)</div>
+                        </TooltipContent>
+                      </UITooltip>
+                    </TooltipProvider>
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('impactValue')}>
-                    Impact Value {sortField === 'impactValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-left p-3 text-gray-300">
-                    Recommendation
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                    On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                    Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
+                    Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-center p-3 text-gray-300">
+                    Watch
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                    Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                    Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300">
                     Star
@@ -408,7 +517,7 @@ const PriorityIssuesAnalysis: React.FC<{
               <tbody>
                 {filteredIssues.map((issue) => (
                   <tr key={issue.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
                       <div>
                         <div className="font-medium text-white">{issue.item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{issue.item.description}</div>
@@ -422,14 +531,112 @@ const PriorityIssuesAnalysis: React.FC<{
                         {issue.severity}
                       </span>
                     </td>
-                    <td className="p-3 text-gray-300 max-w-xs">
-                      {issue.description}
-                    </td>
                     <td className="p-3 text-right text-red-400 font-semibold">
                       {formatCurrency(issue.impactValue)}
                     </td>
-                    <td className="p-3 text-gray-300 max-w-xs">
-                      {issue.recommendation}
+                    <td className="p-3 text-right text-gray-300">
+                      {issue.item.avg_cost ? formatCurrency(issue.item.avg_cost) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {(issue.item.currentStock || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {(issue.item.quantity_on_order || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-center">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`cursor-help ${issue.item.monthsOfStock && issue.item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
+                              {issue.item.monthsOfStock === 999.9 ? '∞' : issue.item.monthsOfStock ? issue.item.monthsOfStock.toFixed(1) : 'N/A'}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">{issue.item.averageUsage || issue.item.packs_sold_avg_last_six_months ? (issue.item.averageUsage || issue.item.packs_sold_avg_last_six_months).toFixed(0) : 'No'} packs/month</div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className={`p-3 text-center font-semibold ${getCategoryColor(issue.item.velocityCategory)}`}>
+                      {typeof issue.item.velocityCategory === 'number' ? issue.item.velocityCategory : 'N/A'}
+                    </td>
+                    <td className="p-3 text-center">
+                      <span className={issue.item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
+                        {issue.item.watchlist || '−'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right text-purple-400 font-semibold">
+                      {issue.item.AVER ? formatCurrency(issue.item.AVER) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-green-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {issue.item.nextBuyingPrice ? formatCurrency(issue.item.nextBuyingPrice) : 
+                               (issue.item.nbp ? formatCurrency(issue.item.nbp) : 
+                                (issue.item.next_cost ? formatCurrency(issue.item.next_cost) : 
+                                 (issue.item.min_cost ? formatCurrency(issue.item.min_cost) : 
+                                  (issue.item.last_po_cost ? formatCurrency(issue.item.last_po_cost) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="space-y-1">
+                              {issue.item.next_cost && issue.item.next_cost > 0 && (
+                                <div className="text-sm">Next Cost: {formatCurrency(issue.item.next_cost)}</div>
+                              )}
+                              {issue.item.min_cost && issue.item.min_cost > 0 && (
+                                <div className="text-sm">Min Cost: {formatCurrency(issue.item.min_cost)}</div>
+                              )}
+                              {issue.item.last_po_cost && issue.item.last_po_cost > 0 && (
+                                <div className="text-sm">Last PO Cost: {formatCurrency(issue.item.last_po_cost)}</div>
+                              )}
+                              {!issue.item.next_cost && !issue.item.min_cost && !issue.item.last_po_cost && (
+                                <div className="text-sm">No NBP data available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-blue-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {issue.item.bestCompetitorPrice ? formatCurrency(issue.item.bestCompetitorPrice) : 
+                               (issue.item.lowestMarketPrice ? formatCurrency(issue.item.lowestMarketPrice) : 
+                                (issue.item.Nupharm ? formatCurrency(issue.item.Nupharm) : 
+                                 (issue.item.AAH2 ? formatCurrency(issue.item.AAH2) : 
+                                  (issue.item.LEXON2 ? formatCurrency(issue.item.LEXON2) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                            <div className="space-y-1">
+                              {[
+                                { name: 'Nupharm', price: issue.item.Nupharm },
+                                { name: 'AAH2', price: issue.item.AAH2 },
+                                { name: 'ETH_LIST', price: issue.item.ETH_LIST },
+                                { name: 'ETH_NET', price: issue.item.ETH_NET },
+                                { name: 'LEXON2', price: issue.item.LEXON2 }
+                              ].filter(comp => comp.price && comp.price > 0)
+                               .sort((a, b) => a.price - b.price)
+                               .map((comp, idx) => (
+                                <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
+                              ))}
+                              {![issue.item.Nupharm, issue.item.AAH2, issue.item.ETH_LIST, issue.item.ETH_NET, issue.item.LEXON2].some(price => price && price > 0) && (
+                                <div className="text-sm">No competitor pricing available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {issue.item.SDT ? formatCurrency(issue.item.SDT) : '-'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {issue.item.EDT ? formatCurrency(issue.item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center">
                       <button
@@ -482,12 +689,32 @@ const WatchlistAnalysis: React.FC<{
         switch (sortField) {
           case 'stockValue':
             aValue = a.stockValue; bValue = b.stockValue; break;
+          case 'averageCost':
+            aValue = a.avg_cost || 0; bValue = b.avg_cost || 0; break;
           case 'monthsOfStock':
             aValue = a.monthsOfStock; bValue = b.monthsOfStock; break;
           case 'velocityCategory':
             aValue = typeof a.velocityCategory === 'number' ? a.velocityCategory : 999;
             bValue = typeof b.velocityCategory === 'number' ? b.velocityCategory : 999;
             break;
+          case 'currentStock':
+            aValue = a.currentStock; bValue = b.currentStock; break;
+          case 'onOrder':
+            aValue = a.quantity_on_order || 0; bValue = b.quantity_on_order || 0; break;
+          case 'nbp':
+            aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
+            bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
+            break;
+          case 'lowestComp':
+            aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
+            bValue = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2 || 0;
+            break;
+          case 'price':
+            aValue = a.AVER || 0; bValue = b.AVER || 0; break;
+          case 'sdt':
+            aValue = a.SDT || 0; bValue = b.SDT || 0; break;
+          case 'edt':
+            aValue = a.EDT || 0; bValue = b.EDT || 0; break;
           default:
             aValue = a.stockcode; bValue = b.stockcode;
         }
@@ -548,14 +775,23 @@ const WatchlistAnalysis: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="max-h-[600px] overflow-y-auto">
-            <table className="w-full min-w-[1000px]">
+            <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                    On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -563,8 +799,23 @@ const WatchlistAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
                     Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300">
-                    Current Stock
+                  <th className="text-center p-3 text-gray-300">
+                    Watch
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                    Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                    Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300">
                     Star
@@ -574,7 +825,7 @@ const WatchlistAnalysis: React.FC<{
               <tbody>
                 {watchlistItems.map((item) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
@@ -583,16 +834,109 @@ const WatchlistAnalysis: React.FC<{
                     <td className="p-3 text-right text-white font-semibold">
                       {formatCurrency(item.stockValue)}
                     </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {(item.currentStock || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {(item.quantity_on_order || 0).toLocaleString()}
+                    </td>
                     <td className="p-3 text-center">
-                      <span className={`${item.monthsOfStock && item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
-                        {item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
-                      </span>
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`cursor-help ${item.monthsOfStock && item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
+                              {item.monthsOfStock === 999.9 ? '∞' : item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">{item.averageUsage || item.packs_sold_avg_last_six_months ? (item.averageUsage || item.packs_sold_avg_last_six_months).toFixed(0) : 'No'} packs/month</div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </td>
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
                       {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
+                    <td className="p-3 text-center">
+                      <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
+                        {item.watchlist || '−'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right text-purple-400 font-semibold">
+                      {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-green-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
+                               (item.nbp ? formatCurrency(item.nbp) : 
+                                (item.next_cost ? formatCurrency(item.next_cost) : 
+                                 (item.min_cost ? formatCurrency(item.min_cost) : 
+                                  (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="space-y-1">
+                              {item.next_cost && item.next_cost > 0 && (
+                                <div className="text-sm">Next Cost: {formatCurrency(item.next_cost)}</div>
+                              )}
+                              {item.min_cost && item.min_cost > 0 && (
+                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
+                              )}
+                              {item.last_po_cost && item.last_po_cost > 0 && (
+                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
+                              )}
+                              {!item.next_cost && !item.min_cost && !item.last_po_cost && (
+                                <div className="text-sm">No NBP data available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-blue-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.bestCompetitorPrice ? formatCurrency(item.bestCompetitorPrice) : 
+                               (item.lowestMarketPrice ? formatCurrency(item.lowestMarketPrice) : 
+                                (item.Nupharm ? formatCurrency(item.Nupharm) : 
+                                 (item.AAH2 ? formatCurrency(item.AAH2) : 
+                                  (item.LEXON2 ? formatCurrency(item.LEXON2) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                            <div className="space-y-1">
+                              {[
+                                { name: 'Nupharm', price: item.Nupharm },
+                                { name: 'AAH2', price: item.AAH2 },
+                                { name: 'ETH_LIST', price: item.ETH_LIST },
+                                { name: 'ETH_NET', price: item.ETH_NET },
+                                { name: 'LEXON2', price: item.LEXON2 }
+                              ].filter(comp => comp.price && comp.price > 0)
+                               .sort((a, b) => a.price - b.price)
+                               .map((comp, idx) => (
+                                <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
+                              ))}
+                              {![item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].some(price => price && price > 0) && (
+                                <div className="text-sm">No competitor pricing available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
                     <td className="p-3 text-right text-gray-300">
-                      {(item.currentStock || 0).toLocaleString()}
+                      {item.SDT ? formatCurrency(item.SDT) : '-'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center">
                       <button
@@ -645,12 +989,32 @@ const StarredItemsAnalysis: React.FC<{
         switch (sortField) {
           case 'stockValue':
             aValue = a.stockValue; bValue = b.stockValue; break;
+          case 'averageCost':
+            aValue = a.avg_cost || 0; bValue = b.avg_cost || 0; break;
           case 'monthsOfStock':
             aValue = a.monthsOfStock; bValue = b.monthsOfStock; break;
           case 'velocityCategory':
             aValue = typeof a.velocityCategory === 'number' ? a.velocityCategory : 999;
             bValue = typeof b.velocityCategory === 'number' ? b.velocityCategory : 999;
             break;
+          case 'currentStock':
+            aValue = a.currentStock; bValue = b.currentStock; break;
+          case 'onOrder':
+            aValue = a.quantity_on_order || 0; bValue = b.quantity_on_order || 0; break;
+          case 'nbp':
+            aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
+            bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
+            break;
+          case 'lowestComp':
+            aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
+            bValue = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2 || 0;
+            break;
+          case 'price':
+            aValue = a.AVER || 0; bValue = b.AVER || 0; break;
+          case 'sdt':
+            aValue = a.SDT || 0; bValue = b.SDT || 0; break;
+          case 'edt':
+            aValue = a.EDT || 0; bValue = b.EDT || 0; break;
           default:
             aValue = a.stockcode; bValue = b.stockcode;
         }
@@ -711,14 +1075,23 @@ const StarredItemsAnalysis: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="max-h-[600px] overflow-y-auto">
-            <table className="w-full min-w-[1000px]">
+            <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                    On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -726,11 +1099,23 @@ const StarredItemsAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
                     Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300">
-                    Current Stock
-                  </th>
                   <th className="text-center p-3 text-gray-300">
-                    Watchlist
+                    Watch
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                    Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                    Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300">
                     Star
@@ -740,7 +1125,7 @@ const StarredItemsAnalysis: React.FC<{
               <tbody>
                 {starredItemsList.map((item) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
@@ -749,21 +1134,109 @@ const StarredItemsAnalysis: React.FC<{
                     <td className="p-3 text-right text-white font-semibold">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-center">
-                      <span className={`${item.monthsOfStock && item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
-                        {item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
-                      </span>
-                    </td>
-                    <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
-                      {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
+                    <td className="p-3 text-right text-gray-300">
+                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
                     </td>
                     <td className="p-3 text-right text-gray-300">
                       {(item.currentStock || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {(item.quantity_on_order || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-center">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`cursor-help ${item.monthsOfStock && item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
+                              {item.monthsOfStock === 999.9 ? '∞' : item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">{item.averageUsage || item.packs_sold_avg_last_six_months ? (item.averageUsage || item.packs_sold_avg_last_six_months).toFixed(0) : 'No'} packs/month</div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
+                      {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
                     <td className="p-3 text-center">
                       <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
                         {item.watchlist || '−'}
                       </span>
+                    </td>
+                    <td className="p-3 text-right text-purple-400 font-semibold">
+                      {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-green-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
+                               (item.nbp ? formatCurrency(item.nbp) : 
+                                (item.next_cost ? formatCurrency(item.next_cost) : 
+                                 (item.min_cost ? formatCurrency(item.min_cost) : 
+                                  (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="space-y-1">
+                              {item.next_cost && item.next_cost > 0 && (
+                                <div className="text-sm">Next Cost: {formatCurrency(item.next_cost)}</div>
+                              )}
+                              {item.min_cost && item.min_cost > 0 && (
+                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
+                              )}
+                              {item.last_po_cost && item.last_po_cost > 0 && (
+                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
+                              )}
+                              {!item.next_cost && !item.min_cost && !item.last_po_cost && (
+                                <div className="text-sm">No NBP data available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-blue-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.bestCompetitorPrice ? formatCurrency(item.bestCompetitorPrice) : 
+                               (item.lowestMarketPrice ? formatCurrency(item.lowestMarketPrice) : 
+                                (item.Nupharm ? formatCurrency(item.Nupharm) : 
+                                 (item.AAH2 ? formatCurrency(item.AAH2) : 
+                                  (item.LEXON2 ? formatCurrency(item.LEXON2) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                            <div className="space-y-1">
+                              {[
+                                { name: 'Nupharm', price: item.Nupharm },
+                                { name: 'AAH2', price: item.AAH2 },
+                                { name: 'ETH_LIST', price: item.ETH_LIST },
+                                { name: 'ETH_NET', price: item.ETH_NET },
+                                { name: 'LEXON2', price: item.LEXON2 }
+                              ].filter(comp => comp.price && comp.price > 0)
+                               .sort((a, b) => a.price - b.price)
+                               .map((comp, idx) => (
+                                <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
+                              ))}
+                              {![item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].some(price => price && price > 0) && (
+                                <div className="text-sm">No competitor pricing available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {item.SDT ? formatCurrency(item.SDT) : '-'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center">
                       <button
@@ -829,6 +1302,8 @@ const AllItemsAnalysis: React.FC<{
       switch (sortField) {
         case 'stockValue':
           aValue = a.stockValue; bValue = b.stockValue; break;
+        case 'averageCost':
+          aValue = a.avg_cost || 0; bValue = b.avg_cost || 0; break;
         case 'monthsOfStock':
           aValue = a.monthsOfStock; bValue = b.monthsOfStock; break;
         case 'velocityCategory':
@@ -837,6 +1312,22 @@ const AllItemsAnalysis: React.FC<{
           break;
         case 'currentStock':
           aValue = a.currentStock; bValue = b.currentStock; break;
+        case 'onOrder':
+          aValue = a.quantity_on_order || 0; bValue = b.quantity_on_order || 0; break;
+        case 'nbp':
+          aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
+          bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
+          break;
+        case 'lowestComp':
+          aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
+          bValue = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2 || 0;
+          break;
+        case 'price':
+          aValue = a.AVER || 0; bValue = b.AVER || 0; break;
+        case 'sdt':
+          aValue = a.SDT || 0; bValue = b.SDT || 0; break;
+        case 'edt':
+          aValue = a.EDT || 0; bValue = b.EDT || 0; break;
         default:
           aValue = a.stockcode; bValue = b.stockcode;
       }
@@ -924,17 +1415,23 @@ const AllItemsAnalysis: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="max-h-[600px] overflow-y-auto">
-            <table className="w-full min-w-[1200px]">
+            <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                    On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -943,10 +1440,22 @@ const AllItemsAnalysis: React.FC<{
                     Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300">
-                    Trend
-                  </th>
-                  <th className="text-center p-3 text-gray-300">
                     Watch
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                    Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                    Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300">
                     Star
@@ -956,7 +1465,7 @@ const AllItemsAnalysis: React.FC<{
               <tbody>
                 {filteredItems.map((item) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
@@ -966,27 +1475,108 @@ const AllItemsAnalysis: React.FC<{
                       {formatCurrency(item.stockValue)}
                     </td>
                     <td className="p-3 text-right text-gray-300">
+                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
                       {(item.currentStock || 0).toLocaleString()}
                     </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {(item.quantity_on_order || 0).toLocaleString()}
+                    </td>
                     <td className="p-3 text-center">
-                      <span className={`${item.monthsOfStock && item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
-                        {item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
-                      </span>
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`cursor-help ${item.monthsOfStock && item.monthsOfStock > 6 ? 'text-red-400 font-semibold' : 'text-gray-300'}`}>
+                              {item.monthsOfStock === 999.9 ? '∞' : item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">{item.averageUsage || item.packs_sold_avg_last_six_months ? (item.averageUsage || item.packs_sold_avg_last_six_months).toFixed(0) : 'No'} packs/month</div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </td>
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
                       {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
                     <td className="p-3 text-center">
-                      <span className={`text-lg font-bold ${getTrendColor(item.trendDirection)}`}>
-                        {item.trendDirection === 'UP' ? '↑' :
-                         item.trendDirection === 'DOWN' ? '↓' :
-                         item.trendDirection === 'STABLE' ? '−' : '?'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-center">
                       <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
                         {item.watchlist || '−'}
                       </span>
+                    </td>
+                    <td className="p-3 text-right text-purple-400 font-semibold">
+                      {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-green-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
+                               (item.nbp ? formatCurrency(item.nbp) : 
+                                (item.next_cost ? formatCurrency(item.next_cost) : 
+                                 (item.min_cost ? formatCurrency(item.min_cost) : 
+                                  (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="space-y-1">
+                              {item.next_cost && item.next_cost > 0 && (
+                                <div className="text-sm">Next Cost: {formatCurrency(item.next_cost)}</div>
+                              )}
+                              {item.min_cost && item.min_cost > 0 && (
+                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
+                              )}
+                              {item.last_po_cost && item.last_po_cost > 0 && (
+                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
+                              )}
+                              {!item.next_cost && !item.min_cost && !item.last_po_cost && (
+                                <div className="text-sm">No NBP data available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-blue-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.bestCompetitorPrice ? formatCurrency(item.bestCompetitorPrice) : 
+                               (item.lowestMarketPrice ? formatCurrency(item.lowestMarketPrice) : 
+                                (item.Nupharm ? formatCurrency(item.Nupharm) : 
+                                 (item.AAH2 ? formatCurrency(item.AAH2) : 
+                                  (item.LEXON2 ? formatCurrency(item.LEXON2) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                            <div className="space-y-1">
+                              {[
+                                { name: 'Nupharm', price: item.Nupharm },
+                                { name: 'AAH2', price: item.AAH2 },
+                                { name: 'ETH_LIST', price: item.ETH_LIST },
+                                { name: 'ETH_NET', price: item.ETH_NET },
+                                { name: 'LEXON2', price: item.LEXON2 }
+                              ].filter(comp => comp.price && comp.price > 0)
+                               .sort((a, b) => a.price - b.price)
+                               .map((comp, idx) => (
+                                <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
+                              ))}
+                              {![item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].some(price => price && price > 0) && (
+                                <div className="text-sm">No competitor pricing available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {item.SDT ? formatCurrency(item.SDT) : '-'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center">
                       <button
@@ -1039,6 +1629,8 @@ const OverstockAnalysis: React.FC<{
         switch (sortField) {
           case 'stockValue':
             aValue = a.stockValue; bValue = b.stockValue; break;
+          case 'averageCost':
+            aValue = a.avg_cost || 0; bValue = b.avg_cost || 0; break;
           case 'monthsOfStock':
             aValue = a.monthsOfStock; bValue = b.monthsOfStock; break;
           case 'velocityCategory':
@@ -1047,6 +1639,22 @@ const OverstockAnalysis: React.FC<{
             break;
           case 'currentStock':
             aValue = a.currentStock; bValue = b.currentStock; break;
+          case 'onOrder':
+            aValue = a.quantity_on_order || 0; bValue = b.quantity_on_order || 0; break;
+          case 'nbp':
+            aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
+            bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
+            break;
+          case 'lowestComp':
+            aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
+            bValue = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2 || 0;
+            break;
+          case 'price':
+            aValue = a.AVER || 0; bValue = b.AVER || 0; break;
+          case 'sdt':
+            aValue = a.SDT || 0; bValue = b.SDT || 0; break;
+          case 'edt':
+            aValue = a.EDT || 0; bValue = b.EDT || 0; break;
           default:
             aValue = a.stockcode; bValue = b.stockcode;
         }
@@ -1116,17 +1724,23 @@ const OverstockAnalysis: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="max-h-[600px] overflow-y-auto">
-            <table className="w-full min-w-[1200px]">
+            <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                    On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -1135,10 +1749,22 @@ const OverstockAnalysis: React.FC<{
                     Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300">
-                    Trend
-                  </th>
-                  <th className="text-center p-3 text-gray-300">
                     Watch
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                    Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                    Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300">
                     Star
@@ -1148,7 +1774,7 @@ const OverstockAnalysis: React.FC<{
               <tbody>
                 {overstockItems.map((item) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
@@ -1158,27 +1784,108 @@ const OverstockAnalysis: React.FC<{
                       {formatCurrency(item.stockValue)}
                     </td>
                     <td className="p-3 text-right text-gray-300">
+                      {item.avg_cost ? formatCurrency(item.avg_cost) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
                       {(item.currentStock || 0).toLocaleString()}
                     </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {(item.quantity_on_order || 0).toLocaleString()}
+                    </td>
                     <td className="p-3 text-center">
-                      <span className="text-red-400 font-semibold">
-                        {item.monthsOfStock === 999.9 ? '∞' : item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
-                      </span>
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help text-red-400 font-semibold">
+                              {item.monthsOfStock === 999.9 ? '∞' : item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A'}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">{item.averageUsage || item.packs_sold_avg_last_six_months ? (item.averageUsage || item.packs_sold_avg_last_six_months).toFixed(0) : 'No'} packs/month</div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </td>
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
                       {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
                     <td className="p-3 text-center">
-                      <span className={`text-lg font-bold ${getTrendColor(item.trendDirection)}`}>
-                        {item.trendDirection === 'UP' ? '↑' :
-                         item.trendDirection === 'DOWN' ? '↓' :
-                         item.trendDirection === 'STABLE' ? '−' : '?'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-center">
                       <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
                         {item.watchlist || '−'}
                       </span>
+                    </td>
+                    <td className="p-3 text-right text-purple-400 font-semibold">
+                      {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className="p-3 text-right text-green-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
+                               (item.nbp ? formatCurrency(item.nbp) : 
+                                (item.next_cost ? formatCurrency(item.next_cost) : 
+                                 (item.min_cost ? formatCurrency(item.min_cost) : 
+                                  (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="space-y-1">
+                              {item.next_cost && item.next_cost > 0 && (
+                                <div className="text-sm">Next Cost: {formatCurrency(item.next_cost)}</div>
+                              )}
+                              {item.min_cost && item.min_cost > 0 && (
+                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
+                              )}
+                              {item.last_po_cost && item.last_po_cost > 0 && (
+                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
+                              )}
+                              {!item.next_cost && !item.min_cost && !item.last_po_cost && (
+                                <div className="text-sm">No NBP data available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-blue-400 font-semibold">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {item.bestCompetitorPrice ? formatCurrency(item.bestCompetitorPrice) : 
+                               (item.lowestMarketPrice ? formatCurrency(item.lowestMarketPrice) : 
+                                (item.Nupharm ? formatCurrency(item.Nupharm) : 
+                                 (item.AAH2 ? formatCurrency(item.AAH2) : 
+                                  (item.LEXON2 ? formatCurrency(item.LEXON2) : 'N/A'))))}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                            <div className="space-y-1">
+                              {[
+                                { name: 'Nupharm', price: item.Nupharm },
+                                { name: 'AAH2', price: item.AAH2 },
+                                { name: 'ETH_LIST', price: item.ETH_LIST },
+                                { name: 'ETH_NET', price: item.ETH_NET },
+                                { name: 'LEXON2', price: item.LEXON2 }
+                              ].filter(comp => comp.price && comp.price > 0)
+                               .sort((a, b) => a.price - b.price)
+                               .map((comp, idx) => (
+                                <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
+                              ))}
+                              {![item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].some(price => price && price > 0) && (
+                                <div className="text-sm">No competitor pricing available</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {item.SDT ? formatCurrency(item.SDT) : '-'}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center">
                       <button
@@ -1867,7 +2574,7 @@ const MetricFilteredView: React.FC<{
       let matchesFilter = false;
       switch (filterType) {
         case 'out-of-stock':
-          matchesFilter = item.quantity_available === 0 && item.quantity_ringfenced === 0 && item.quantity_on_order === 0;
+          matchesFilter = (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0;
           break;
         case 'margin-opportunity':
           matchesFilter = item.lowestMarketPrice && item.avg_cost < (item.lowestMarketPrice * 0.9);
@@ -1931,6 +2638,10 @@ const MetricFilteredView: React.FC<{
         case 'currentStock':
           aValue = a.currentStock || 0;
           bValue = b.currentStock || 0;
+          break;
+        case 'onOrder':
+          aValue = a.quantity_on_order || 0;
+          bValue = b.quantity_on_order || 0;
           break;
         case 'monthsOfStock':
           aValue = a.monthsOfStock || 0;
@@ -2246,53 +2957,57 @@ const MetricFilteredView: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
           <div className="max-h-[600px] overflow-y-auto">
-            <table className="w-full min-w-[1400px]">
-              <thead className="bg-gray-900/90 sticky top-0 z-10">
-                <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('item')}>
-                    Item {sortField === 'item' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
-                    Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
-                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
-                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
-                    Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories())}
-                  {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections())}
-                  <th className="text-center p-3 text-gray-300">
-                    Watch
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
-                    Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
-                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
-                    Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
-                    SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
-                    EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-center p-3 text-gray-300">
-                    Star
-                  </th>
-                </tr>
-              </thead>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1400px]">
+                <thead className="bg-gray-900/90 sticky top-0 z-10">
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('item')}>
+                      Item {sortField === 'item' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
+                      Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                      Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                      Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                      On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                      Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories())}
+                    {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections())}
+                    <th className="text-center p-3 text-gray-300">
+                      Watch
+                    </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                      Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                      NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                      Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                      SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                      EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="text-center p-3 text-gray-300">
+                      Star
+                    </th>
+                  </tr>
+                </thead>
               <tbody>
                 {filteredItems.map((item, index) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
@@ -2306,6 +3021,9 @@ const MetricFilteredView: React.FC<{
                     </td>
                     <td className="p-3 text-right text-gray-300">
                       {(item.currentStock || item.stock || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-right text-gray-300">
+                      {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
                     <td className="p-3 text-center">
                       <TooltipProvider>
@@ -2422,7 +3140,8 @@ const MetricFilteredView: React.FC<{
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
           
           {filteredItems.length === 0 && (
