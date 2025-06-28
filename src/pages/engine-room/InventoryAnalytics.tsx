@@ -582,18 +582,9 @@ const PriorityIssuesAnalysis: React.FC<{
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              {issue.item.next_cost !== undefined && issue.item.next_cost !== null && (
-                                <div className="text-sm">New Cost: {formatCurrency(issue.item.next_cost)}</div>
-                              )}
-                              {issue.item.min_cost !== undefined && issue.item.min_cost !== null && (
-                                <div className="text-sm">Min Cost: {formatCurrency(issue.item.min_cost)}</div>
-                              )}
-                              {issue.item.last_po_cost !== undefined && issue.item.last_po_cost !== null && (
-                                <div className="text-sm">Last PO Cost: {formatCurrency(issue.item.last_po_cost)}</div>
-                              )}
-                              {(issue.item.next_cost === undefined || issue.item.next_cost === null) && (issue.item.min_cost === undefined || issue.item.min_cost === null) && (issue.item.last_po_cost === undefined || issue.item.last_po_cost === null) && (
-                                <div className="text-sm">No NBP data available</div>
-                              )}
+                              <div className="text-sm">New Cost: {issue.item.next_cost && issue.item.next_cost > 0 ? formatCurrency(issue.item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Min Cost: {issue.item.min_cost && issue.item.min_cost > 0 ? formatCurrency(issue.item.min_cost) : 'N/A'}</div>
+                              <div className="text-sm">Last PO Cost: {issue.item.last_po_cost && issue.item.last_po_cost > 0 ? formatCurrency(issue.item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
@@ -882,18 +873,9 @@ const WatchlistAnalysis: React.FC<{
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              {item.next_cost !== undefined && item.next_cost !== null && (
-                                <div className="text-sm">New Cost: {formatCurrency(item.next_cost)}</div>
-                              )}
-                              {item.min_cost !== undefined && item.min_cost !== null && (
-                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
-                              )}
-                              {item.last_po_cost !== undefined && item.last_po_cost !== null && (
-                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
-                              )}
-                              {(item.next_cost === undefined || item.next_cost === null) && (item.min_cost === undefined || item.min_cost === null) && (item.last_po_cost === undefined || item.last_po_cost === null) && (
-                                <div className="text-sm">No NBP data available</div>
-                              )}
+                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
+                              <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
@@ -1182,18 +1164,9 @@ const StarredItemsAnalysis: React.FC<{
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              {item.next_cost !== undefined && item.next_cost !== null && (
-                                <div className="text-sm">New Cost: {formatCurrency(item.next_cost)}</div>
-                              )}
-                              {item.min_cost !== undefined && item.min_cost !== null && (
-                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
-                              )}
-                              {item.last_po_cost !== undefined && item.last_po_cost !== null && (
-                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
-                              )}
-                              {(item.next_cost === undefined || item.next_cost === null) && (item.min_cost === undefined || item.min_cost === null) && (item.last_po_cost === undefined || item.last_po_cost === null) && (
-                                <div className="text-sm">No NBP data available</div>
-                              )}
+                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
+                              <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
@@ -1522,18 +1495,9 @@ const AllItemsAnalysis: React.FC<{
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              {item.next_cost !== undefined && item.next_cost !== null && (
-                                <div className="text-sm">New Cost: {formatCurrency(item.next_cost)}</div>
-                              )}
-                              {item.min_cost !== undefined && item.min_cost !== null && (
-                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
-                              )}
-                              {item.last_po_cost !== undefined && item.last_po_cost !== null && (
-                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
-                              )}
-                              {(item.next_cost === undefined || item.next_cost === null) && (item.min_cost === undefined || item.min_cost === null) && (item.last_po_cost === undefined || item.last_po_cost === null) && (
-                                <div className="text-sm">No NBP data available</div>
-                              )}
+                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
+                              <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
@@ -1831,18 +1795,9 @@ const OverstockAnalysis: React.FC<{
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              {item.next_cost !== undefined && item.next_cost !== null && (
-                                <div className="text-sm">New Cost: {formatCurrency(item.next_cost)}</div>
-                              )}
-                              {item.min_cost !== undefined && item.min_cost !== null && (
-                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
-                              )}
-                              {item.last_po_cost !== undefined && item.last_po_cost !== null && (
-                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
-                              )}
-                              {(item.next_cost === undefined || item.next_cost === null) && (item.min_cost === undefined || item.min_cost === null) && (item.last_po_cost === undefined || item.last_po_cost === null) && (
-                                <div className="text-sm">No NBP data available</div>
-                              )}
+                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
+                              <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
@@ -3070,18 +3025,9 @@ const MetricFilteredView: React.FC<{
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              {item.next_cost !== undefined && item.next_cost !== null && (
-                                <div className="text-sm">New Cost: {formatCurrency(item.next_cost)}</div>
-                              )}
-                              {item.min_cost !== undefined && item.min_cost !== null && (
-                                <div className="text-sm">Min Cost: {formatCurrency(item.min_cost)}</div>
-                              )}
-                              {item.last_po_cost !== undefined && item.last_po_cost !== null && (
-                                <div className="text-sm">Last PO Cost: {formatCurrency(item.last_po_cost)}</div>
-                              )}
-                              {(item.next_cost === undefined || item.next_cost === null) && (item.min_cost === undefined || item.min_cost === null) && (item.last_po_cost === undefined || item.last_po_cost === null) && (
-                                <div className="text-sm">No NBP data available</div>
-                              )}
+                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
+                              <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
