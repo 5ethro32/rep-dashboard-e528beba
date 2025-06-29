@@ -2389,12 +2389,12 @@ const AllItemsAnalysis: React.FC<{
                         : 'bg-gray-800/50 text-gray-400 hover:bg-orange-500/10 hover:text-orange-300 border border-gray-700/50'
                     }`}
                   >
-                    ⚡ Urgent Buy
+                    ⚡ Uncompetitive Cost
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
-                    <div className="font-medium mb-1">Urgent Sourcing Required</div>
+                    <div className="font-medium mb-1">Uncompetitive Cost Alert</div>
                     <div>Products where our cost is 5%+ above market average with stable/rising trends. No price relief coming.</div>
                   </div>
                 </TooltipContent>
