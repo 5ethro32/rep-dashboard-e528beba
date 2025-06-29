@@ -10,6 +10,7 @@ export interface InventoryItem {
   packs_sold_avg_last_six_months: number;
   avg_cost: number;
   next_cost?: number;
+  calculated_next_avg_cost?: number; // Column J - Calculated New Average Cost (blended cost when new stock on order)
   min_cost?: number;
   last_po_cost?: number;
   group: number; // Watchlist indicator (1 = problem line)
@@ -161,6 +162,17 @@ const generateInventoryColumnMapping = (headers: string[]) => {
     ],
     avg_cost: ['avg_cost', 'average cost', 'cost', 'unit cost'],
     next_cost: ['next_cost', 'next cost', 'future cost', 'next buying price'],
+    calculated_next_avg_cost: [
+      'calculated_next_avg_cost', 
+      'calculated next avg cost', 
+      'calculated next average cost',
+      'blended avg cost',
+      'blended average cost',
+      'weighted avg cost',
+      'weighted average cost',
+      'new avg cost',
+      'new average cost'
+    ],
     min_cost: ['min_cost', 'minimum cost', 'min price'],
     last_po_cost: ['last_po_cost', 'last po cost', 'last purchase cost', 'previous cost'],
     group: ['group', 'watchlist', 'flag'],
@@ -235,6 +247,9 @@ const transformInventoryRow = (row: any, mapping: Record<string, string>): Inven
   // Add optional fields
   if (mapping.next_cost && row[mapping.next_cost] !== undefined) {
     transformed.next_cost = Number(row[mapping.next_cost] || 0);
+  }
+  if (mapping.calculated_next_avg_cost && row[mapping.calculated_next_avg_cost] !== undefined) {
+    transformed.calculated_next_avg_cost = Number(row[mapping.calculated_next_avg_cost] || 0);
   }
   if (mapping.min_cost && row[mapping.min_cost] !== undefined) {
     transformed.min_cost = Number(row[mapping.min_cost] || 0);
@@ -834,6 +849,7 @@ export const exportInventoryAnalysisToExcel = (data: ProcessedInventoryData): vo
     'On Order Value': item.onOrderValue,
     'Total Potential Value': item.totalPotentialValue,
     'Avg Cost': item.avg_cost,
+    'Calculated Next Avg Cost': (item as any).calculated_next_avg_cost || 'N/A',
     'NBP': item.nbp || 'N/A',
     'NBP Source': item.nbpSource,
     'Trend Direction': item.trendDirection,

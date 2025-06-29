@@ -40,22 +40,23 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 // Helper functions for average cost display logic
-// Use calculated next cost (Column J) when meaningful, otherwise use avg_cost
+// Use calculated next average cost (Column J) when meaningful, otherwise use avg_cost
+// Column J contains blended average cost when new stock is on order at different prices
 const getDisplayedAverageCost = (item: ProcessedInventoryItem): number | null => {
-  // Use next_cost if it has a meaningful value (>0), otherwise use avg_cost
-  if (item.next_cost && item.next_cost > 0) {
-    return item.next_cost;
+  // Use calculated_next_avg_cost (Column J) if it has a meaningful value (>0), otherwise use avg_cost (Column G)
+  if ((item as any).calculated_next_avg_cost && (item as any).calculated_next_avg_cost > 0) {
+    return (item as any).calculated_next_avg_cost;
   }
   return item.avg_cost || null;
 };
 
 const shouldShowAverageCostTooltip = (item: ProcessedInventoryItem): boolean => {
-  // Show tooltip when using next_cost instead of avg_cost
-  return !!(item.next_cost && item.next_cost > 0 && item.avg_cost && item.avg_cost > 0);
+  // Show tooltip when using calculated_next_avg_cost (Column J) instead of avg_cost (Column G)
+  return !!((item as any).calculated_next_avg_cost && (item as any).calculated_next_avg_cost > 0 && item.avg_cost && item.avg_cost > 0);
 };
 
 const getAverageCostTooltip = (item: ProcessedInventoryItem): string => {
-  // Show original avg_cost when displaying next_cost
+  // Show original avg_cost (Column G) when displaying calculated_next_avg_cost (Column J)
   if (item.avg_cost && item.avg_cost > 0) {
     return `Original Avg Cost: ${new Intl.NumberFormat('en-GB', {
       style: 'currency',
@@ -623,7 +624,7 @@ const PriorityIssuesAnalysis: React.FC<{
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              <div className="text-sm">New Cost: {issue.item.next_cost && issue.item.next_cost > 0 ? formatCurrency(issue.item.next_cost) : 'N/A'}</div>
+
                               <div className="text-sm">Min Cost: {issue.item.min_cost && issue.item.min_cost > 0 ? formatCurrency(issue.item.min_cost) : 'N/A'}</div>
                               <div className="text-sm">Last PO Cost: {issue.item.last_po_cost && issue.item.last_po_cost > 0 ? formatCurrency(issue.item.last_po_cost) : 'N/A'}</div>
                             </div>
