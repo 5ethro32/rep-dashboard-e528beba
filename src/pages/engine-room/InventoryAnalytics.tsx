@@ -329,15 +329,50 @@ const PriorityIssuesAnalysis: React.FC<{
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('impactValue');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Column filter states
+  const [columnFilters, setColumnFilters] = useState<{
+    type: string[];
+    severity: string[];
+    velocityCategory: string[];
+  }>({
+    type: [],
+    severity: [],
+    velocityCategory: []
+  });
+  
+  // Filter dropdown search states
+  const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
+    type: string;
+    severity: string;
+    velocityCategory: string;
+  }>({
+    type: '',
+    severity: '',
+    velocityCategory: ''
+  });
 
   // Filter and sort priority issues
   const filteredIssues = useMemo(() => {
     return data.priorityIssues
-      .filter(issue => 
-        issue.item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        issue.item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        issue.description.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      .filter(issue => {
+        const matchesSearch = 
+          issue.item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          issue.item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          issue.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+        // Apply column filters
+        const matchesTypeFilter = columnFilters.type.length === 0 || 
+          columnFilters.type.includes(issue.type);
+        
+        const matchesSeverityFilter = columnFilters.severity.length === 0 || 
+          columnFilters.severity.includes(issue.severity);
+        
+        const matchesVelocityFilter = columnFilters.velocityCategory.length === 0 || 
+          columnFilters.velocityCategory.includes(typeof issue.item.velocityCategory === 'number' ? issue.item.velocityCategory.toString() : 'N/A');
+
+        return matchesSearch && matchesTypeFilter && matchesSeverityFilter && matchesVelocityFilter;
+      })
       .sort((a, b) => {
         let aValue: any, bValue: any;
         
@@ -388,7 +423,7 @@ const PriorityIssuesAnalysis: React.FC<{
         
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       });
-  }, [data.priorityIssues, searchTerm, sortField, sortDirection]);
+  }, [data.priorityIssues, searchTerm, sortField, sortDirection, columnFilters]);
 
   const handleSort = (field: string) => {
     if (field === sortField) {
@@ -426,6 +461,146 @@ const PriorityIssuesAnalysis: React.FC<{
       case 5: return 'text-red-400';
       default: return 'text-gray-400';
     }
+  };
+
+  // Helper function to capitalize first letter
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Column filter functions
+  const handleColumnFilterChange = (column: keyof typeof columnFilters, values: string[]) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [column]: values
+    }));
+  };
+
+  const handleFilterDropdownSearchChange = (column: keyof typeof filterDropdownSearch, value: string) => {
+    setFilterDropdownSearch(prev => ({
+      ...prev,
+      [column]: value
+    }));
+  };
+
+  // Get unique values for column filters
+  const getUniqueTypes = () => {
+    const types = [...new Set(data.priorityIssues.map(issue => issue.type))];
+    return types.sort();
+  };
+
+  const getUniqueSeverities = () => {
+    const severities = [...new Set(data.priorityIssues.map(issue => issue.severity))];
+    return severities.sort((a, b) => {
+      const order = { 'critical': 1, 'high': 2, 'medium': 3, 'low': 4 };
+      return (order[a as keyof typeof order] || 5) - (order[b as keyof typeof order] || 5);
+    });
+  };
+
+  const getUniqueVelocityCategories = () => {
+    const categories = [...new Set(data.priorityIssues.map(issue => 
+      typeof issue.item.velocityCategory === 'number' ? issue.item.velocityCategory.toString() : 'N/A'
+    ))];
+    return categories.sort((a, b) => {
+      if (a === 'N/A') return 1;
+      if (b === 'N/A') return -1;
+      return parseInt(a) - parseInt(b);
+    });
+  };
+
+  // Render column header with optional filter
+  const renderColumnHeader = (
+    title: string,
+    sortKey: string,
+    filterColumn?: keyof typeof columnFilters,
+    filterOptions?: string[],
+    alignment: 'left' | 'center' | 'right' = 'left'
+  ) => {
+    const hasActiveFilter = filterColumn && columnFilters[filterColumn].length > 0;
+    const alignmentClass = alignment === 'center' ? 'text-center' : alignment === 'right' ? 'text-right' : 'text-left';
+    const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
+    
+    return (
+      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+        <div className={`flex items-center gap-2 ${justifyClass}`}>
+          <button
+            onClick={() => handleSort(sortKey)}
+            className="hover:text-white cursor-pointer flex items-center gap-1"
+          >
+            {title}
+            {sortField === sortKey && (
+              <span className="text-xs">
+                {sortDirection === 'asc' ? '↑' : '↓'}
+              </span>
+            )}
+          </button>
+          
+          {filterColumn && filterOptions && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={`p-1 rounded hover:bg-gray-700 ${hasActiveFilter ? 'text-blue-400' : 'text-gray-400'}`}>
+                  <Filter className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-gray-800 border-gray-700">
+                <div className="p-2">
+                  <Input
+                    placeholder="Search..."
+                    value={filterDropdownSearch[filterColumn]}
+                    onChange={(e) => handleFilterDropdownSearchChange(filterColumn, e.target.value)}
+                    className="h-8 bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="p-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={columnFilters[filterColumn].length === 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleColumnFilterChange(filterColumn, []);
+                        }
+                      }}
+                      className="rounded border-gray-600 bg-gray-700"
+                    />
+                    <span className="text-sm text-white">Select All</span>
+                  </label>
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="max-h-48 overflow-y-auto">
+                  {filterOptions
+                    .filter(option => 
+                      filterDropdownSearch[filterColumn] === '' ||
+                      option.toLowerCase().includes(filterDropdownSearch[filterColumn].toLowerCase())
+                    )
+                    .map((option) => (
+                      <div key={option} className="p-2">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={columnFilters[filterColumn].includes(option)}
+                            onChange={(e) => {
+                              const currentFilters = columnFilters[filterColumn];
+                              if (e.target.checked) {
+                                handleColumnFilterChange(filterColumn, [...currentFilters, option]);
+                              } else {
+                                handleColumnFilterChange(filterColumn, currentFilters.filter(f => f !== option));
+                              }
+                            }}
+                            className="rounded border-gray-600 bg-gray-700"
+                          />
+                          <span className="text-sm text-white">{option === 'N/A' ? option : capitalizeFirst(option)}</span>
+                        </label>
+                      </div>
+                    ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </th>
+    );
   };
 
   return (
@@ -472,16 +647,14 @@ const PriorityIssuesAnalysis: React.FC<{
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('type')}>
-                    Issue Type {sortField === 'type' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Issue Type', 'type', 'type', getUniqueTypes())}
                   <th className="text-center p-3 text-gray-300">
                     <TooltipProvider>
                       <UITooltip>
                         <TooltipTrigger asChild>
-                          <button className="cursor-pointer hover:text-white" onClick={() => handleSort('severity')}>
-                            Severity {sortField === 'severity' && (sortDirection === 'asc' ? '↑' : '↓')}
-                          </button>
+                          <div>
+                            {renderColumnHeader('Severity', 'severity', 'severity', getUniqueSeverities(), 'center')}
+                          </div>
                         </TooltipTrigger>
                         <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                           <div className="text-sm">Issue priority level: Critical &gt; High &gt; Medium &gt; Low</div>
@@ -515,9 +688,7 @@ const PriorityIssuesAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
-                    Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
                   <th className="text-center p-3 text-gray-300">
                     Watch
                   </th>
@@ -707,15 +878,36 @@ const WatchlistAnalysis: React.FC<{
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('stockValue');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Column filter states
+  const [columnFilters, setColumnFilters] = useState<{
+    velocityCategory: string[];
+  }>({
+    velocityCategory: []
+  });
+  
+  // Filter dropdown search states
+  const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
+    velocityCategory: string;
+  }>({
+    velocityCategory: ''
+  });
 
   // Filter watchlist items
   const watchlistItems = useMemo(() => {
     return data.analyzedItems
       .filter(item => item.watchlist === '⚠️')
-      .filter(item => 
-        item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      .filter(item => {
+        const matchesSearch = 
+          item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+        // Apply column filters
+        const matchesVelocityFilter = columnFilters.velocityCategory.length === 0 || 
+          columnFilters.velocityCategory.includes(typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A');
+
+        return matchesSearch && matchesVelocityFilter;
+      })
       .sort((a, b) => {
         let aValue: any, bValue: any;
         
@@ -758,7 +950,7 @@ const WatchlistAnalysis: React.FC<{
         
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       });
-  }, [data.analyzedItems, searchTerm, sortField, sortDirection]);
+  }, [data.analyzedItems, searchTerm, sortField, sortDirection, columnFilters]);
 
   const handleSort = (field: string) => {
     if (field === sortField) {
@@ -781,6 +973,134 @@ const WatchlistAnalysis: React.FC<{
     if (category <= 2) return 'text-green-400';
     if (category <= 4) return 'text-yellow-400';
     return 'text-red-400';
+  };
+
+  // Helper function to capitalize first letter
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Column filter functions
+  const handleColumnFilterChange = (column: keyof typeof columnFilters, values: string[]) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [column]: values
+    }));
+  };
+
+  const handleFilterDropdownSearchChange = (column: keyof typeof filterDropdownSearch, value: string) => {
+    setFilterDropdownSearch(prev => ({
+      ...prev,
+      [column]: value
+    }));
+  };
+
+  // Get unique values for column filters
+  const getUniqueVelocityCategories = () => {
+    const categories = [...new Set(data.analyzedItems
+      .filter(item => item.watchlist === '⚠️')
+      .map(item => typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A')
+    )];
+    return categories.sort((a, b) => {
+      if (a === 'N/A') return 1;
+      if (b === 'N/A') return -1;
+      return parseInt(a) - parseInt(b);
+    });
+  };
+
+  // Render column header with optional filter
+  const renderColumnHeader = (
+    title: string,
+    sortKey: string,
+    filterColumn?: keyof typeof columnFilters,
+    filterOptions?: string[],
+    alignment: 'left' | 'center' | 'right' = 'left'
+  ) => {
+    const hasActiveFilter = filterColumn && columnFilters[filterColumn].length > 0;
+    const alignmentClass = alignment === 'center' ? 'text-center' : alignment === 'right' ? 'text-right' : 'text-left';
+    const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
+    
+    return (
+      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+        <div className={`flex items-center gap-2 ${justifyClass}`}>
+          <button
+            onClick={() => handleSort(sortKey)}
+            className="hover:text-white cursor-pointer flex items-center gap-1"
+          >
+            {title}
+            {sortField === sortKey && (
+              <span className="text-xs">
+                {sortDirection === 'asc' ? '↑' : '↓'}
+              </span>
+            )}
+          </button>
+          
+          {filterColumn && filterOptions && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={`p-1 rounded hover:bg-gray-700 ${hasActiveFilter ? 'text-blue-400' : 'text-gray-400'}`}>
+                  <Filter className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-gray-800 border-gray-700">
+                <div className="p-2">
+                  <Input
+                    placeholder="Search..."
+                    value={filterDropdownSearch[filterColumn]}
+                    onChange={(e) => handleFilterDropdownSearchChange(filterColumn, e.target.value)}
+                    className="h-8 bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="p-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={columnFilters[filterColumn].length === 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleColumnFilterChange(filterColumn, []);
+                        }
+                      }}
+                      className="rounded border-gray-600 bg-gray-700"
+                    />
+                    <span className="text-sm text-white">Select All</span>
+                  </label>
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="max-h-48 overflow-y-auto">
+                  {filterOptions
+                    .filter(option => 
+                      filterDropdownSearch[filterColumn] === '' ||
+                      option.toLowerCase().includes(filterDropdownSearch[filterColumn].toLowerCase())
+                    )
+                    .map((option) => (
+                      <div key={option} className="p-2">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={columnFilters[filterColumn].includes(option)}
+                            onChange={(e) => {
+                              const currentFilters = columnFilters[filterColumn];
+                              if (e.target.checked) {
+                                handleColumnFilterChange(filterColumn, [...currentFilters, option]);
+                              } else {
+                                handleColumnFilterChange(filterColumn, currentFilters.filter(f => f !== option));
+                              }
+                            }}
+                            className="rounded border-gray-600 bg-gray-700"
+                          />
+                          <span className="text-sm text-white">{option === 'N/A' ? option : capitalizeFirst(option)}</span>
+                        </label>
+                      </div>
+                    ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </th>
+    );
   };
 
   return (
@@ -829,9 +1149,7 @@ const WatchlistAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
-                    Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
                   <th className="text-center p-3 text-gray-300">
                     Watch
                   </th>
@@ -1013,15 +1331,36 @@ const StarredItemsAnalysis: React.FC<{
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('stockValue');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Column filter states
+  const [columnFilters, setColumnFilters] = useState<{
+    velocityCategory: string[];
+  }>({
+    velocityCategory: []
+  });
+  
+  // Filter dropdown search states
+  const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
+    velocityCategory: string;
+  }>({
+    velocityCategory: ''
+  });
 
   // Filter starred items
   const starredItemsList = useMemo(() => {
     return data.analyzedItems
       .filter(item => starredItems.has(item.id))
-      .filter(item => 
-        item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      .filter(item => {
+        const matchesSearch = 
+          item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+        // Apply column filters
+        const matchesVelocityFilter = columnFilters.velocityCategory.length === 0 || 
+          columnFilters.velocityCategory.includes(typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A');
+
+        return matchesSearch && matchesVelocityFilter;
+      })
       .sort((a, b) => {
         let aValue: any, bValue: any;
         
@@ -1064,7 +1403,7 @@ const StarredItemsAnalysis: React.FC<{
         
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       });
-  }, [data.analyzedItems, starredItems, searchTerm, sortField, sortDirection]);
+  }, [data.analyzedItems, starredItems, searchTerm, sortField, sortDirection, columnFilters]);
 
   const handleSort = (field: string) => {
     if (field === sortField) {
@@ -1087,6 +1426,134 @@ const StarredItemsAnalysis: React.FC<{
     if (category <= 2) return 'text-green-400';
     if (category <= 4) return 'text-yellow-400';
     return 'text-red-400';
+  };
+
+  // Helper function to capitalize first letter
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Column filter functions
+  const handleColumnFilterChange = (column: keyof typeof columnFilters, values: string[]) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [column]: values
+    }));
+  };
+
+  const handleFilterDropdownSearchChange = (column: keyof typeof filterDropdownSearch, value: string) => {
+    setFilterDropdownSearch(prev => ({
+      ...prev,
+      [column]: value
+    }));
+  };
+
+  // Get unique values for column filters
+  const getUniqueVelocityCategories = () => {
+    const categories = [...new Set(data.analyzedItems
+      .filter(item => starredItems.has(item.id))
+      .map(item => typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A')
+    )];
+    return categories.sort((a, b) => {
+      if (a === 'N/A') return 1;
+      if (b === 'N/A') return -1;
+      return parseInt(a) - parseInt(b);
+    });
+  };
+
+  // Render column header with optional filter
+  const renderColumnHeader = (
+    title: string,
+    sortKey: string,
+    filterColumn?: keyof typeof columnFilters,
+    filterOptions?: string[],
+    alignment: 'left' | 'center' | 'right' = 'left'
+  ) => {
+    const hasActiveFilter = filterColumn && columnFilters[filterColumn].length > 0;
+    const alignmentClass = alignment === 'center' ? 'text-center' : alignment === 'right' ? 'text-right' : 'text-left';
+    const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
+    
+    return (
+      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+        <div className={`flex items-center gap-2 ${justifyClass}`}>
+          <button
+            onClick={() => handleSort(sortKey)}
+            className="hover:text-white cursor-pointer flex items-center gap-1"
+          >
+            {title}
+            {sortField === sortKey && (
+              <span className="text-xs">
+                {sortDirection === 'asc' ? '↑' : '↓'}
+              </span>
+            )}
+          </button>
+          
+          {filterColumn && filterOptions && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={`p-1 rounded hover:bg-gray-700 ${hasActiveFilter ? 'text-blue-400' : 'text-gray-400'}`}>
+                  <Filter className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-gray-800 border-gray-700">
+                <div className="p-2">
+                  <Input
+                    placeholder="Search..."
+                    value={filterDropdownSearch[filterColumn]}
+                    onChange={(e) => handleFilterDropdownSearchChange(filterColumn, e.target.value)}
+                    className="h-8 bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="p-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={columnFilters[filterColumn].length === 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleColumnFilterChange(filterColumn, []);
+                        }
+                      }}
+                      className="rounded border-gray-600 bg-gray-700"
+                    />
+                    <span className="text-sm text-white">Select All</span>
+                  </label>
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="max-h-48 overflow-y-auto">
+                  {filterOptions
+                    .filter(option => 
+                      filterDropdownSearch[filterColumn] === '' ||
+                      option.toLowerCase().includes(filterDropdownSearch[filterColumn].toLowerCase())
+                    )
+                    .map((option) => (
+                      <div key={option} className="p-2">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={columnFilters[filterColumn].includes(option)}
+                            onChange={(e) => {
+                              const currentFilters = columnFilters[filterColumn];
+                              if (e.target.checked) {
+                                handleColumnFilterChange(filterColumn, [...currentFilters, option]);
+                              } else {
+                                handleColumnFilterChange(filterColumn, currentFilters.filter(f => f !== option));
+                              }
+                            }}
+                            className="rounded border-gray-600 bg-gray-700"
+                          />
+                          <span className="text-sm text-white">{option === 'N/A' ? option : capitalizeFirst(option)}</span>
+                        </label>
+                      </div>
+                    ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </th>
+    );
   };
 
   return (
@@ -1135,9 +1602,7 @@ const StarredItemsAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
-                    Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
                   <th className="text-center p-3 text-gray-300">
                     Watch
                   </th>
@@ -1319,6 +1784,24 @@ const AllItemsAnalysis: React.FC<{
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('stockValue');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Column filter states
+  const [columnFilters, setColumnFilters] = useState<{
+    velocityCategory: string[];
+    trendDirection: string[];
+  }>({
+    velocityCategory: [],
+    trendDirection: []
+  });
+  
+  // Filter dropdown search states
+  const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
+    velocityCategory: string;
+    trendDirection: string;
+  }>({
+    velocityCategory: '',
+    trendDirection: ''
+  });
   const [filterType, setFilterType] = useState<string>('all');
 
   // Filter and sort all items
@@ -1339,6 +1822,19 @@ const AllItemsAnalysis: React.FC<{
       item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Apply column filters
+    const matchesVelocityFilter = (item: any) => {
+      return columnFilters.velocityCategory.length === 0 || 
+        columnFilters.velocityCategory.includes(typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A');
+    };
+
+    const matchesTrendFilter = (item: any) => {
+      return columnFilters.trendDirection.length === 0 || 
+        columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
+    };
+
+    items = items.filter(item => matchesVelocityFilter(item) && matchesTrendFilter(item));
 
     // Sort items
     return items.sort((a, b) => {
@@ -1383,7 +1879,7 @@ const AllItemsAnalysis: React.FC<{
       
       return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
     });
-  }, [data.analyzedItems, searchTerm, sortField, sortDirection, filterType]);
+  }, [data.analyzedItems, searchTerm, sortField, sortDirection, filterType, columnFilters]);
 
   const handleSort = (field: string) => {
     if (field === sortField) {
@@ -1415,6 +1911,138 @@ const AllItemsAnalysis: React.FC<{
       case 'STABLE': return 'text-yellow-400';
       default: return 'text-gray-400';
     }
+  };
+
+  // Helper function to capitalize first letter
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Column filter functions
+  const handleColumnFilterChange = (column: keyof typeof columnFilters, values: string[]) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [column]: values
+    }));
+  };
+
+  const handleFilterDropdownSearchChange = (column: keyof typeof filterDropdownSearch, value: string) => {
+    setFilterDropdownSearch(prev => ({
+      ...prev,
+      [column]: value
+    }));
+  };
+
+  // Get unique values for column filters
+  const getUniqueVelocityCategories = () => {
+    const categories = [...new Set(data.analyzedItems
+      .map(item => typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A')
+    )];
+    return categories.sort((a, b) => {
+      if (a === 'N/A') return 1;
+      if (b === 'N/A') return -1;
+      return parseInt(a) - parseInt(b);
+    });
+  };
+
+  const getUniqueTrendDirections = () => {
+    const trends = [...new Set(data.analyzedItems.map(item => item.trendDirection || 'N/A'))];
+    return trends.sort();
+  };
+
+  // Render column header with optional filter
+  const renderColumnHeader = (
+    title: string,
+    sortKey: string,
+    filterColumn?: keyof typeof columnFilters,
+    filterOptions?: string[],
+    alignment: 'left' | 'center' | 'right' = 'left'
+  ) => {
+    const hasActiveFilter = filterColumn && columnFilters[filterColumn].length > 0;
+    const alignmentClass = alignment === 'center' ? 'text-center' : alignment === 'right' ? 'text-right' : 'text-left';
+    const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
+    
+    return (
+      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+        <div className={`flex items-center gap-2 ${justifyClass}`}>
+          <button
+            onClick={() => handleSort(sortKey)}
+            className="hover:text-white cursor-pointer flex items-center gap-1"
+          >
+            {title}
+            {sortField === sortKey && (
+              <span className="text-xs">
+                {sortDirection === 'asc' ? '↑' : '↓'}
+              </span>
+            )}
+          </button>
+          
+          {filterColumn && filterOptions && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={`p-1 rounded hover:bg-gray-700 ${hasActiveFilter ? 'text-blue-400' : 'text-gray-400'}`}>
+                  <Filter className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-gray-800 border-gray-700">
+                <div className="p-2">
+                  <Input
+                    placeholder="Search..."
+                    value={filterDropdownSearch[filterColumn]}
+                    onChange={(e) => handleFilterDropdownSearchChange(filterColumn, e.target.value)}
+                    className="h-8 bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="p-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={columnFilters[filterColumn].length === 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleColumnFilterChange(filterColumn, []);
+                        }
+                      }}
+                      className="rounded border-gray-600 bg-gray-700"
+                    />
+                    <span className="text-sm text-white">Select All</span>
+                  </label>
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="max-h-48 overflow-y-auto">
+                  {filterOptions
+                    .filter(option => 
+                      filterDropdownSearch[filterColumn] === '' ||
+                      option.toLowerCase().includes(filterDropdownSearch[filterColumn].toLowerCase())
+                    )
+                    .map((option) => (
+                      <div key={option} className="p-2">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={columnFilters[filterColumn].includes(option)}
+                            onChange={(e) => {
+                              const currentFilters = columnFilters[filterColumn];
+                              if (e.target.checked) {
+                                handleColumnFilterChange(filterColumn, [...currentFilters, option]);
+                              } else {
+                                handleColumnFilterChange(filterColumn, currentFilters.filter(f => f !== option));
+                              }
+                            }}
+                            className="rounded border-gray-600 bg-gray-700"
+                          />
+                          <span className="text-sm text-white">{option === 'N/A' ? option : capitalizeFirst(option)}</span>
+                        </label>
+                      </div>
+                    ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </th>
+    );
   };
 
   return (
@@ -1481,9 +2109,7 @@ const AllItemsAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
-                    Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
                   <th className="text-center p-3 text-gray-300">
                     Watch
                   </th>
@@ -1666,14 +2292,42 @@ const OverstockAnalysis: React.FC<{
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<string>('stockValue');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Column filter states
+  const [columnFilters, setColumnFilters] = useState<{
+    velocityCategory: string[];
+    trendDirection: string[];
+  }>({
+    velocityCategory: [],
+    trendDirection: []
+  });
+  
+  // Filter dropdown search states
+  const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
+    velocityCategory: string;
+    trendDirection: string;
+  }>({
+    velocityCategory: '',
+    trendDirection: ''
+  });
 
   // Filter overstock items
   const overstockItems = useMemo(() => {
     return data.overstockItems
-      .filter(item => 
-        item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      .filter(item => {
+        const matchesSearch = 
+          item.stockcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+        // Apply column filters
+        const matchesVelocityFilter = columnFilters.velocityCategory.length === 0 || 
+          columnFilters.velocityCategory.includes(typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A');
+
+        const matchesTrendFilter = columnFilters.trendDirection.length === 0 || 
+          columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter;
+      })
       .sort((a, b) => {
         let aValue: any, bValue: any;
         
@@ -1716,7 +2370,7 @@ const OverstockAnalysis: React.FC<{
         
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       });
-  }, [data.overstockItems, searchTerm, sortField, sortDirection]);
+  }, [data.overstockItems, searchTerm, sortField, sortDirection, columnFilters]);
 
   const handleSort = (field: string) => {
     if (field === sortField) {
@@ -1748,6 +2402,138 @@ const OverstockAnalysis: React.FC<{
       case 'STABLE': return 'text-yellow-400';
       default: return 'text-gray-400';
     }
+  };
+
+  // Helper function to capitalize first letter
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  // Column filter functions
+  const handleColumnFilterChange = (column: keyof typeof columnFilters, values: string[]) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [column]: values
+    }));
+  };
+
+  const handleFilterDropdownSearchChange = (column: keyof typeof filterDropdownSearch, value: string) => {
+    setFilterDropdownSearch(prev => ({
+      ...prev,
+      [column]: value
+    }));
+  };
+
+  // Get unique values for column filters
+  const getUniqueVelocityCategories = () => {
+    const categories = [...new Set(data.overstockItems
+      .map(item => typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A')
+    )];
+    return categories.sort((a, b) => {
+      if (a === 'N/A') return 1;
+      if (b === 'N/A') return -1;
+      return parseInt(a) - parseInt(b);
+    });
+  };
+
+  const getUniqueTrendDirections = () => {
+    const trends = [...new Set(data.overstockItems.map(item => item.trendDirection || 'N/A'))];
+    return trends.sort();
+  };
+
+  // Render column header with optional filter
+  const renderColumnHeader = (
+    title: string,
+    sortKey: string,
+    filterColumn?: keyof typeof columnFilters,
+    filterOptions?: string[],
+    alignment: 'left' | 'center' | 'right' = 'left'
+  ) => {
+    const hasActiveFilter = filterColumn && columnFilters[filterColumn].length > 0;
+    const alignmentClass = alignment === 'center' ? 'text-center' : alignment === 'right' ? 'text-right' : 'text-left';
+    const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
+    
+    return (
+      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+        <div className={`flex items-center gap-2 ${justifyClass}`}>
+          <button
+            onClick={() => handleSort(sortKey)}
+            className="hover:text-white cursor-pointer flex items-center gap-1"
+          >
+            {title}
+            {sortField === sortKey && (
+              <span className="text-xs">
+                {sortDirection === 'asc' ? '↑' : '↓'}
+              </span>
+            )}
+          </button>
+          
+          {filterColumn && filterOptions && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={`p-1 rounded hover:bg-gray-700 ${hasActiveFilter ? 'text-blue-400' : 'text-gray-400'}`}>
+                  <Filter className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-gray-800 border-gray-700">
+                <div className="p-2">
+                  <Input
+                    placeholder="Search..."
+                    value={filterDropdownSearch[filterColumn]}
+                    onChange={(e) => handleFilterDropdownSearchChange(filterColumn, e.target.value)}
+                    className="h-8 bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="p-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={columnFilters[filterColumn].length === 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleColumnFilterChange(filterColumn, []);
+                        }
+                      }}
+                      className="rounded border-gray-600 bg-gray-700"
+                    />
+                    <span className="text-sm text-white">Select All</span>
+                  </label>
+                </div>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <div className="max-h-48 overflow-y-auto">
+                  {filterOptions
+                    .filter(option => 
+                      filterDropdownSearch[filterColumn] === '' ||
+                      option.toLowerCase().includes(filterDropdownSearch[filterColumn].toLowerCase())
+                    )
+                    .map((option) => (
+                      <div key={option} className="p-2">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={columnFilters[filterColumn].includes(option)}
+                            onChange={(e) => {
+                              const currentFilters = columnFilters[filterColumn];
+                              if (e.target.checked) {
+                                handleColumnFilterChange(filterColumn, [...currentFilters, option]);
+                              } else {
+                                handleColumnFilterChange(filterColumn, currentFilters.filter(f => f !== option));
+                              }
+                            }}
+                            className="rounded border-gray-600 bg-gray-700"
+                          />
+                          <span className="text-sm text-white">{option === 'N/A' ? option : capitalizeFirst(option)}</span>
+                        </label>
+                      </div>
+                    ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </th>
+    );
   };
 
   return (
@@ -1796,9 +2582,7 @@ const OverstockAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('velocityCategory')}>
-                    Velocity {sortField === 'velocityCategory' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
                   <th className="text-center p-3 text-gray-300">
                     Watch
                   </th>
