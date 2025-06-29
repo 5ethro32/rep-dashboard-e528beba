@@ -403,6 +403,12 @@ const PriorityIssuesAnalysis: React.FC<{
             aValue = a.item.nextBuyingPrice || a.item.nbp || a.item.next_cost || a.item.min_cost || a.item.last_po_cost || 0;
             bValue = b.item.nextBuyingPrice || b.item.nbp || b.item.next_cost || b.item.min_cost || b.item.last_po_cost || 0;
             break;
+          case 'winning':
+            const aLowestComp = a.item.bestCompetitorPrice || a.item.lowestMarketPrice || a.item.Nupharm || a.item.AAH2 || a.item.LEXON2;
+            const bLowestComp = b.item.bestCompetitorPrice || b.item.lowestMarketPrice || b.item.Nupharm || b.item.AAH2 || b.item.LEXON2;
+            aValue = (a.item.AVER && aLowestComp && a.item.AVER < aLowestComp) ? 1 : 0;
+            bValue = (b.item.AVER && bLowestComp && b.item.AVER < bLowestComp) ? 1 : 0;
+            break;
           case 'lowestComp':
             aValue = a.item.bestCompetitorPrice || a.item.lowestMarketPrice || a.item.Nupharm || a.item.AAH2 || a.item.LEXON2 || 0;
             bValue = b.item.bestCompetitorPrice || b.item.lowestMarketPrice || b.item.Nupharm || b.item.AAH2 || b.item.LEXON2 || 0;
@@ -606,7 +612,6 @@ const PriorityIssuesAnalysis: React.FC<{
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-white">Priority Issues Analysis</h3>
         <div className="text-sm text-gray-400">
           {filteredIssues.length} issues found
         </div>
@@ -698,6 +703,9 @@ const PriorityIssuesAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
+                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -786,22 +794,29 @@ const PriorityIssuesAnalysis: React.FC<{
                         <UITooltip>
                           <TooltipTrigger asChild>
                             <span className="cursor-help underline decoration-dotted">
-                              {issue.item.nextBuyingPrice ? formatCurrency(issue.item.nextBuyingPrice) : 
-                               (issue.item.nbp ? formatCurrency(issue.item.nbp) : 
-                                (issue.item.next_cost ? formatCurrency(issue.item.next_cost) : 
-                                 (issue.item.min_cost ? formatCurrency(issue.item.min_cost) : 
-                                  (issue.item.last_po_cost ? formatCurrency(issue.item.last_po_cost) : 'N/A'))))}
+                              {issue.item.min_cost && issue.item.min_cost > 0 ? formatCurrency(issue.item.min_cost) : 'OOS'}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-
+                              <div className="text-sm">Next Cost: {issue.item.next_cost && issue.item.next_cost > 0 ? formatCurrency(issue.item.next_cost) : 'N/A'}</div>
                               <div className="text-sm">Min Cost: {issue.item.min_cost && issue.item.min_cost > 0 ? formatCurrency(issue.item.min_cost) : 'N/A'}</div>
                               <div className="text-sm">Last PO Cost: {issue.item.last_po_cost && issue.item.last_po_cost > 0 ? formatCurrency(issue.item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-center font-semibold">
+                      {(() => {
+                        const lowestComp = issue.item.bestCompetitorPrice || issue.item.lowestMarketPrice || issue.item.Nupharm || issue.item.AAH2 || issue.item.LEXON2;
+                        const isWinning = issue.item.AVER && lowestComp && issue.item.AVER < lowestComp;
+                        return (
+                          <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
+                            {isWinning ? 'Y' : 'No'}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="p-3 text-right text-blue-400 font-semibold">
                       <TooltipProvider>
@@ -929,6 +944,12 @@ const WatchlistAnalysis: React.FC<{
           case 'nbp':
             aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
             bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
+            break;
+          case 'winning':
+            const aLowestComp = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2;
+            const bLowestComp = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2;
+            aValue = (a.AVER && aLowestComp && a.AVER < aLowestComp) ? 1 : 0;
+            bValue = (b.AVER && bLowestComp && b.AVER < bLowestComp) ? 1 : 0;
             break;
           case 'lowestComp':
             aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
@@ -1159,6 +1180,9 @@ const WatchlistAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
+                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -1239,22 +1263,29 @@ const WatchlistAnalysis: React.FC<{
                         <UITooltip>
                           <TooltipTrigger asChild>
                             <span className="cursor-help underline decoration-dotted">
-                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
-                               (item.nbp ? formatCurrency(item.nbp) : 
-                                (item.next_cost ? formatCurrency(item.next_cost) : 
-                                 (item.min_cost ? formatCurrency(item.min_cost) : 
-                                  (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                              {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'OOS'}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Next Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
                               <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
                               <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-center font-semibold">
+                      {(() => {
+                        const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+                        const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
+                        return (
+                          <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
+                            {isWinning ? 'Y' : 'No'}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="p-3 text-right text-blue-400 font-semibold">
                       <TooltipProvider>
@@ -1382,6 +1413,12 @@ const StarredItemsAnalysis: React.FC<{
           case 'nbp':
             aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
             bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
+            break;
+          case 'winning':
+            const aLowestComp = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2;
+            const bLowestComp = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2;
+            aValue = (a.AVER && aLowestComp && a.AVER < aLowestComp) ? 1 : 0;
+            bValue = (b.AVER && bLowestComp && b.AVER < bLowestComp) ? 1 : 0;
             break;
           case 'lowestComp':
             aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
@@ -1612,6 +1649,9 @@ const StarredItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
+                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -1692,22 +1732,29 @@ const StarredItemsAnalysis: React.FC<{
                         <UITooltip>
                           <TooltipTrigger asChild>
                             <span className="cursor-help underline decoration-dotted">
-                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
-                               (item.nbp ? formatCurrency(item.nbp) : 
-                                (item.next_cost ? formatCurrency(item.next_cost) : 
-                                 (item.min_cost ? formatCurrency(item.min_cost) : 
-                                  (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                              {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'OOS'}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Next Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
                               <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
                               <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-center font-semibold">
+                      {(() => {
+                        const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+                        const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
+                        return (
+                          <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
+                            {isWinning ? 'Y' : 'No'}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="p-3 text-right text-blue-400 font-semibold">
                       <TooltipProvider>
@@ -1858,6 +1905,12 @@ const AllItemsAnalysis: React.FC<{
         case 'nbp':
           aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
           bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
+          break;
+        case 'winning':
+          const aLowestComp = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2;
+          const bLowestComp = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2;
+          aValue = (a.AVER && aLowestComp && a.AVER < aLowestComp) ? 1 : 0;
+          bValue = (b.AVER && bLowestComp && b.AVER < bLowestComp) ? 1 : 0;
           break;
         case 'lowestComp':
           aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
@@ -2119,6 +2172,9 @@ const AllItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
+                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -2199,22 +2255,29 @@ const AllItemsAnalysis: React.FC<{
                         <UITooltip>
                           <TooltipTrigger asChild>
                             <span className="cursor-help underline decoration-dotted">
-                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
-                               (item.nbp ? formatCurrency(item.nbp) : 
-                                (item.next_cost ? formatCurrency(item.next_cost) : 
-                                 (item.min_cost ? formatCurrency(item.min_cost) : 
-                                  (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                              {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'OOS'}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Next Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
                               <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
                               <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-center font-semibold">
+                      {(() => {
+                        const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+                        const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
+                        return (
+                          <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
+                            {isWinning ? 'Y' : 'No'}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="p-3 text-right text-blue-400 font-semibold">
                       <TooltipProvider>
@@ -2349,6 +2412,12 @@ const OverstockAnalysis: React.FC<{
           case 'nbp':
             aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
             bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
+            break;
+          case 'winning':
+            const aLowestComp = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2;
+            const bLowestComp = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2;
+            aValue = (a.AVER && aLowestComp && a.AVER < aLowestComp) ? 1 : 0;
+            bValue = (b.AVER && bLowestComp && b.AVER < bLowestComp) ? 1 : 0;
             break;
           case 'lowestComp':
             aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
@@ -2592,6 +2661,9 @@ const OverstockAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
+                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -2672,22 +2744,29 @@ const OverstockAnalysis: React.FC<{
                         <UITooltip>
                           <TooltipTrigger asChild>
                             <span className="cursor-help underline decoration-dotted">
-                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
-                               (item.nbp ? formatCurrency(item.nbp) : 
-                                (item.next_cost ? formatCurrency(item.next_cost) : 
-                                 (item.min_cost ? formatCurrency(item.min_cost) : 
-                                  (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                              {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'OOS'}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Next Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
                               <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
                               <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-center font-semibold">
+                      {(() => {
+                        const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+                        const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
+                        return (
+                          <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
+                            {isWinning ? 'Y' : 'No'}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="p-3 text-right text-blue-400 font-semibold">
                       <TooltipProvider>
@@ -3502,6 +3581,12 @@ const MetricFilteredView: React.FC<{
           aValue = a.nextBuyingPrice || a.nbp || a.next_cost || a.min_cost || a.last_po_cost || 0;
           bValue = b.nextBuyingPrice || b.nbp || b.next_cost || b.min_cost || b.last_po_cost || 0;
           break;
+        case 'winning':
+          const aLowestComp = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2;
+          const bLowestComp = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2;
+          aValue = (a.AVER && aLowestComp && a.AVER < aLowestComp) ? 1 : 0;
+          bValue = (b.AVER && bLowestComp && b.AVER < bLowestComp) ? 1 : 0;
+          break;
         case 'lowestComp':
           aValue = a.bestCompetitorPrice || a.lowestMarketPrice || a.Nupharm || a.AAH2 || a.LEXON2 || 0;
           bValue = b.bestCompetitorPrice || b.lowestMarketPrice || b.Nupharm || b.AAH2 || b.LEXON2 || 0;
@@ -3830,6 +3915,9 @@ const MetricFilteredView: React.FC<{
                     <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
                       NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
+                    <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
+                      Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
                     <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                       Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
@@ -3917,22 +4005,29 @@ const MetricFilteredView: React.FC<{
                         <UITooltip>
                           <TooltipTrigger asChild>
                             <span className="cursor-help underline decoration-dotted">
-                              {item.nextBuyingPrice ? formatCurrency(item.nextBuyingPrice) : 
-                               (item.nbp ? formatCurrency(item.nbp) : 
-                                (item.next_cost ? formatCurrency(item.next_cost) : 
-                                 (item.min_cost ? formatCurrency(item.min_cost) : 
-                                  (item.last_po_cost ? formatCurrency(item.last_po_cost) : 'N/A'))))}
+                              {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'OOS'}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
                             <div className="space-y-1">
-                              <div className="text-sm">New Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
+                              <div className="text-sm">Next Cost: {item.next_cost && item.next_cost > 0 ? formatCurrency(item.next_cost) : 'N/A'}</div>
                               <div className="text-sm">Min Cost: {item.min_cost && item.min_cost > 0 ? formatCurrency(item.min_cost) : 'N/A'}</div>
                               <div className="text-sm">Last PO Cost: {item.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A'}</div>
                             </div>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
+                    </td>
+                    <td className="p-3 text-center font-semibold">
+                      {(() => {
+                        const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+                        const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
+                        return (
+                          <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
+                            {isWinning ? 'Y' : 'No'}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="p-3 text-right text-blue-400 font-semibold">
                       <TooltipProvider>
