@@ -1993,6 +1993,48 @@ const AllItemsAnalysis: React.FC<{
       items = items.filter(item => typeof item.velocityCategory === 'number' && item.velocityCategory <= 3);
     } else if (filterType === 'high-value') {
       items = items.filter(item => item.stockValue > 1000);
+    } else if (filterType === 'cost-disadvantage-down') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
+        return item.avg_cost > maxCompPrice && item.trendDirection === 'DOWN' && maxCompPrice > 0;
+      });
+    } else if (filterType === 'margin-opportunity') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        const marketLow = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+        return item.avg_cost < marketLow && item.AVER && item.AVER < marketLow && marketLow > 0;
+      });
+    } else if (filterType === 'urgent-sourcing') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        if (competitorPrices.length === 0) return false;
+        const avgCompPrice = competitorPrices.reduce((sum, p) => sum + p, 0) / competitorPrices.length;
+        const maxCompPrice = Math.max(...competitorPrices);
+        // Show items where our cost is >5% above average competitor price OR >any competitor with stable/rising trend
+        return (item.avg_cost > avgCompPrice * 1.05 || item.avg_cost > maxCompPrice) && ['STABLE', 'UP'].includes(item.trendDirection);
+      });
+    } else if (filterType === 'high-impact-margin') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        const marketLow = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+        const hasMarginOpportunity = item.avg_cost < marketLow && item.AVER && item.AVER < marketLow && marketLow > 0;
+        return hasMarginOpportunity && typeof item.velocityCategory === 'number' && item.velocityCategory <= 3 && item.stockValue > 500;
+      });
+    } else if (filterType === 'price-war-opportunity') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        const marketLow = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+        const isWinning = item.AVER && marketLow > 0 && item.AVER < marketLow;
+        return isWinning && item.trendDirection === 'UP';
+      });
+    } else if (filterType === 'dead-stock-alert') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
+        const hasCostDisadvantage = item.avg_cost > maxCompPrice && maxCompPrice > 0;
+        return hasCostDisadvantage && item.trendDirection === 'DOWN' && item.monthsOfStock && item.monthsOfStock > 6;
+      });
     }
 
     // Apply search filter
@@ -2262,6 +2304,12 @@ const AllItemsAnalysis: React.FC<{
                 <SelectItem value="watchlist" className="text-gray-300">Watchlist Only</SelectItem>
                 <SelectItem value="fast-movers" className="text-gray-300">Fast Movers (Cat 1-3)</SelectItem>
                 <SelectItem value="high-value" className="text-gray-300">High Value (&gt;£1,000)</SelectItem>
+                <SelectItem value="cost-disadvantage-down" className="text-red-300">🔻 Cost Disadvantage + Down Trend</SelectItem>
+                <SelectItem value="margin-opportunity" className="text-green-300">💰 Margin Opportunity</SelectItem>
+                <SelectItem value="urgent-sourcing" className="text-orange-300">⚡ Urgent Sourcing Required</SelectItem>
+                <SelectItem value="high-impact-margin" className="text-blue-300">🎯 High Impact Margin Wins</SelectItem>
+                <SelectItem value="price-war-opportunity" className="text-purple-300">📈 Price War Opportunities</SelectItem>
+                <SelectItem value="dead-stock-alert" className="text-red-400">☠️ Dead Stock Alert</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
@@ -2278,6 +2326,162 @@ const AllItemsAnalysis: React.FC<{
           </CardContent>
         </Card>
       </div>
+
+      {/* Strategic Filters */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <h4 className="text-sm font-medium text-gray-300 mb-3">Strategic Filters</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('cost-disadvantage-down')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'cost-disadvantage-down' 
+                        ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+                    }`}
+                  >
+                    🔻 Cost Risk
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Cost Disadvantage + Falling Prices</div>
+                    <div>Products where our cost exceeds all competitors AND market prices are falling. Urgent clearance needed.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('margin-opportunity')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'margin-opportunity' 
+                        ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
+                    }`}
+                  >
+                    💰 Margin Win
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Immediate Margin Opportunities</div>
+                    <div>Products where our cost is below market minimum. Can increase price while staying cheapest.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('urgent-sourcing')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'urgent-sourcing' 
+                        ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-orange-500/10 hover:text-orange-300 border border-gray-700/50'
+                    }`}
+                  >
+                    ⚡ Urgent Buy
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Urgent Sourcing Required</div>
+                    <div>Products where our cost is 5%+ above market average with stable/rising trends. No price relief coming.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('high-impact-margin')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'high-impact-margin' 
+                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-blue-500/10 hover:text-blue-300 border border-gray-700/50'
+                    }`}
+                  >
+                    🎯 High Impact
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">High Impact Margin Wins</div>
+                    <div>Fast-moving, high-value products (Cat 1-3, &gt;£500) with margin opportunities. Biggest revenue impact.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('price-war-opportunity')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'price-war-opportunity' 
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-purple-500/10 hover:text-purple-300 border border-gray-700/50'
+                    }`}
+                  >
+                    📈 Price Up
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Price War Opportunities</div>
+                    <div>Products where we're winning (cheapest) but market trend is UP. Can we increase price and maintain lead?</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('dead-stock-alert')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'dead-stock-alert' 
+                        ? 'bg-red-600/20 text-red-400 border border-red-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-600/10 hover:text-red-400 border border-gray-700/50'
+                    }`}
+                  >
+                    ☠️ Dead Stock
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Dead Stock Alert</div>
+                    <div>High cost + falling prices + overstocked (&gt;6 months). Critical clearance priority to minimize losses.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          </div>
+          {filterType !== 'all' && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={() => setFilterType('all')}
+                className="text-xs text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-1"
+              >
+                ← Clear Filter
+              </button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Data Table with Sticky Headers */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -3047,10 +3251,10 @@ const InventoryAnalyticsContent: React.FC = () => {
             fileName: processedData.fileName,
             totalProducts: processedData.totalProducts,
             summaryStats: processedData.summaryStats,
-            // Store only first 100 items for display
-            analyzedItems: processedData.analyzedItems.slice(0, 100),
-            overstockItems: processedData.overstockItems.slice(0, 50),
-            priorityIssues: processedData.priorityIssues.slice(0, 50),
+            // Full data for complete analysis
+            analyzedItems: processedData.analyzedItems,
+            overstockItems: processedData.overstockItems,
+            priorityIssues: processedData.priorityIssues,
             velocityBreakdown: processedData.velocityBreakdown,
             trendBreakdown: processedData.trendBreakdown,
             strategyBreakdown: processedData.strategyBreakdown
