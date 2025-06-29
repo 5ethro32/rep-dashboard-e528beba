@@ -780,7 +780,7 @@ const PriorityIssuesAnalysis: React.FC<{
                     <td className="p-3 text-right text-red-400 font-semibold">
                       {formatCurrency(issue.impactValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 font-bold">
                       {shouldShowAverageCostTooltip(issue.item) ? (
                         <TooltipProvider>
                           <UITooltip>
