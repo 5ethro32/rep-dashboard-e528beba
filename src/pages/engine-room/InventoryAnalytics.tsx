@@ -335,10 +335,12 @@ const PriorityIssuesAnalysis: React.FC<{
     type: string[];
     severity: string[];
     velocityCategory: string[];
+    trendDirection: string[];
   }>({
     type: [],
     severity: [],
-    velocityCategory: []
+    velocityCategory: [],
+    trendDirection: []
   });
   
   // Filter dropdown search states
@@ -346,10 +348,12 @@ const PriorityIssuesAnalysis: React.FC<{
     type: string;
     severity: string;
     velocityCategory: string;
+    trendDirection: string;
   }>({
     type: '',
     severity: '',
-    velocityCategory: ''
+    velocityCategory: '',
+    trendDirection: ''
   });
 
   // Filter and sort priority issues
@@ -371,7 +375,10 @@ const PriorityIssuesAnalysis: React.FC<{
         const matchesVelocityFilter = columnFilters.velocityCategory.length === 0 || 
           columnFilters.velocityCategory.includes(typeof issue.item.velocityCategory === 'number' ? issue.item.velocityCategory.toString() : 'N/A');
 
-        return matchesSearch && matchesTypeFilter && matchesSeverityFilter && matchesVelocityFilter;
+        const matchesTrendFilter = columnFilters.trendDirection.length === 0 || 
+          columnFilters.trendDirection.includes(issue.item.trendDirection || 'N/A');
+
+        return matchesSearch && matchesTypeFilter && matchesSeverityFilter && matchesVelocityFilter && matchesTrendFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -398,6 +405,12 @@ const PriorityIssuesAnalysis: React.FC<{
           case 'velocityCategory':
             aValue = typeof a.item.velocityCategory === 'number' ? a.item.velocityCategory : 999;
             bValue = typeof b.item.velocityCategory === 'number' ? b.item.velocityCategory : 999;
+            break;
+          case 'trendDirection':
+            // Custom sorting for trend: DOWN > STABLE > UP > N/A
+            const trendOrder = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
+            aValue = trendOrder[a.item.trendDirection as keyof typeof trendOrder] || 4;
+            bValue = trendOrder[b.item.trendDirection as keyof typeof trendOrder] || 4;
             break;
           case 'nbp':
             aValue = a.item.nextBuyingPrice || a.item.nbp || a.item.next_cost || a.item.min_cost || a.item.last_po_cost || 0;
@@ -469,6 +482,15 @@ const PriorityIssuesAnalysis: React.FC<{
     }
   };
 
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'UP': return 'text-green-400';
+      case 'DOWN': return 'text-red-400';
+      case 'STABLE': return 'text-yellow-400';
+      default: return 'text-gray-400';
+    }
+  };
+
   // Helper function to capitalize first letter
   const capitalizeFirst = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -511,6 +533,14 @@ const PriorityIssuesAnalysis: React.FC<{
       if (a === 'N/A') return 1;
       if (b === 'N/A') return -1;
       return parseInt(a) - parseInt(b);
+    });
+  };
+
+  const getUniqueTrendDirections = () => {
+    const trends = [...new Set(data.priorityIssues.map(issue => issue.item.trendDirection || 'N/A'))];
+    return trends.sort((a, b) => {
+      const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
+      return (order[a as keyof typeof order] || 4) - (order[b as keyof typeof order] || 4);
     });
   };
 
@@ -688,12 +718,13 @@ const PriorityIssuesAnalysis: React.FC<{
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
-                    On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↓' : '↑')}
                   </th>
                   <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
+                  {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections(), 'center')}
                   <th className="text-center p-3 text-gray-300">
                     Watch
                   </th>
@@ -780,6 +811,11 @@ const PriorityIssuesAnalysis: React.FC<{
                     </td>
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(issue.item.velocityCategory)}`}>
                       {typeof issue.item.velocityCategory === 'number' ? issue.item.velocityCategory : 'N/A'}
+                    </td>
+                    <td className={`p-3 text-center font-semibold ${getTrendColor(issue.item.trendDirection)}`}>
+                      {issue.item.trendDirection === 'UP' ? '↑' : 
+                       issue.item.trendDirection === 'DOWN' ? '↓' : 
+                       issue.item.trendDirection === 'STABLE' ? '−' : '?'}
                     </td>
                     <td className="p-3 text-center">
                       <span className={issue.item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
@@ -897,15 +933,19 @@ const WatchlistAnalysis: React.FC<{
   // Column filter states
   const [columnFilters, setColumnFilters] = useState<{
     velocityCategory: string[];
+    trendDirection: string[];
   }>({
-    velocityCategory: []
+    velocityCategory: [],
+    trendDirection: []
   });
   
   // Filter dropdown search states
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
     velocityCategory: string;
+    trendDirection: string;
   }>({
-    velocityCategory: ''
+    velocityCategory: '',
+    trendDirection: ''
   });
 
   // Filter watchlist items
@@ -921,7 +961,10 @@ const WatchlistAnalysis: React.FC<{
         const matchesVelocityFilter = columnFilters.velocityCategory.length === 0 || 
           columnFilters.velocityCategory.includes(typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A');
 
-        return matchesSearch && matchesVelocityFilter;
+        const matchesTrendFilter = columnFilters.trendDirection.length === 0 || 
+          columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -996,6 +1039,15 @@ const WatchlistAnalysis: React.FC<{
     return 'text-red-400';
   };
 
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'UP': return 'text-green-400';
+      case 'DOWN': return 'text-red-400';
+      case 'STABLE': return 'text-yellow-400';
+      default: return 'text-gray-400';
+    }
+  };
+
   // Helper function to capitalize first letter
   const capitalizeFirst = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -1026,6 +1078,16 @@ const WatchlistAnalysis: React.FC<{
       if (a === 'N/A') return 1;
       if (b === 'N/A') return -1;
       return parseInt(a) - parseInt(b);
+    });
+  };
+
+  const getUniqueTrendDirections = () => {
+    const trends = [...new Set(data.analyzedItems
+      .filter(item => item.watchlist === '⚠️')
+      .map(item => item.trendDirection || 'N/A'))];
+    return trends.sort((a, b) => {
+      const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
+      return (order[a as keyof typeof order] || 4) - (order[b as keyof typeof order] || 4);
     });
   };
 
@@ -1366,15 +1428,19 @@ const StarredItemsAnalysis: React.FC<{
   // Column filter states
   const [columnFilters, setColumnFilters] = useState<{
     velocityCategory: string[];
+    trendDirection: string[];
   }>({
-    velocityCategory: []
+    velocityCategory: [],
+    trendDirection: []
   });
   
   // Filter dropdown search states
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
     velocityCategory: string;
+    trendDirection: string;
   }>({
-    velocityCategory: ''
+    velocityCategory: '',
+    trendDirection: ''
   });
 
   // Filter starred items
@@ -1390,7 +1456,10 @@ const StarredItemsAnalysis: React.FC<{
         const matchesVelocityFilter = columnFilters.velocityCategory.length === 0 || 
           columnFilters.velocityCategory.includes(typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A');
 
-        return matchesSearch && matchesVelocityFilter;
+        const matchesTrendFilter = columnFilters.trendDirection.length === 0 || 
+          columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -1465,6 +1534,15 @@ const StarredItemsAnalysis: React.FC<{
     return 'text-red-400';
   };
 
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'UP': return 'text-green-400';
+      case 'DOWN': return 'text-red-400';
+      case 'STABLE': return 'text-yellow-400';
+      default: return 'text-gray-400';
+    }
+  };
+
   // Helper function to capitalize first letter
   const capitalizeFirst = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -1495,6 +1573,16 @@ const StarredItemsAnalysis: React.FC<{
       if (a === 'N/A') return 1;
       if (b === 'N/A') return -1;
       return parseInt(a) - parseInt(b);
+    });
+  };
+
+  const getUniqueTrendDirections = () => {
+    const trends = [...new Set(data.analyzedItems
+      .filter(item => starredItems.has(item.id))
+      .map(item => item.trendDirection || 'N/A'))];
+    return trends.sort((a, b) => {
+      const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
+      return (order[a as keyof typeof order] || 4) - (order[b as keyof typeof order] || 4);
     });
   };
 
