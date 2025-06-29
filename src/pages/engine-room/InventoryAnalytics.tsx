@@ -336,11 +336,13 @@ const PriorityIssuesAnalysis: React.FC<{
     severity: string[];
     velocityCategory: string[];
     trendDirection: string[];
+    winning: string[];
   }>({
     type: [],
     severity: [],
     velocityCategory: [],
-    trendDirection: []
+    trendDirection: [],
+    winning: []
   });
   
   // Filter dropdown search states
@@ -349,11 +351,13 @@ const PriorityIssuesAnalysis: React.FC<{
     severity: string;
     velocityCategory: string;
     trendDirection: string;
+    winning: string;
   }>({
     type: '',
     severity: '',
     velocityCategory: '',
-    trendDirection: ''
+    trendDirection: '',
+    winning: ''
   });
 
   // Filter and sort priority issues
@@ -378,7 +382,10 @@ const PriorityIssuesAnalysis: React.FC<{
         const matchesTrendFilter = columnFilters.trendDirection.length === 0 || 
           columnFilters.trendDirection.includes(issue.item.trendDirection || 'N/A');
 
-        return matchesSearch && matchesTypeFilter && matchesSeverityFilter && matchesVelocityFilter && matchesTrendFilter;
+        const matchesWinningFilter = columnFilters.winning.length === 0 || 
+          columnFilters.winning.includes(issue.item.AVER ? 'Y' : 'N');
+
+        return matchesSearch && matchesTypeFilter && matchesSeverityFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -542,6 +549,10 @@ const PriorityIssuesAnalysis: React.FC<{
       const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
       return (order[a as keyof typeof order] || 4) - (order[b as keyof typeof order] || 4);
     });
+  };
+
+  const getUniqueWinningValues = () => {
+    return ['Y', 'N'];
   };
 
   // Render column header with optional filter
@@ -712,7 +723,7 @@ const PriorityIssuesAnalysis: React.FC<{
                     </TooltipProvider>
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
-                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    <span className="font-bold">Avg Cost</span> {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -734,9 +745,7 @@ const PriorityIssuesAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
-                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -849,7 +858,7 @@ const PriorityIssuesAnalysis: React.FC<{
                         const isWinning = issue.item.AVER && lowestComp && issue.item.AVER < lowestComp;
                         return (
                           <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
-                            {isWinning ? 'Y' : 'No'}
+                            {isWinning ? 'Y' : 'N'}
                           </span>
                         );
                       })()}
@@ -934,18 +943,22 @@ const WatchlistAnalysis: React.FC<{
   const [columnFilters, setColumnFilters] = useState<{
     velocityCategory: string[];
     trendDirection: string[];
+    winning: string[];
   }>({
     velocityCategory: [],
-    trendDirection: []
+    trendDirection: [],
+    winning: []
   });
   
   // Filter dropdown search states
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
     velocityCategory: string;
     trendDirection: string;
+    winning: string;
   }>({
     velocityCategory: '',
-    trendDirection: ''
+    trendDirection: '',
+    winning: ''
   });
 
   // Filter watchlist items
@@ -964,7 +977,10 @@ const WatchlistAnalysis: React.FC<{
         const matchesTrendFilter = columnFilters.trendDirection.length === 0 || 
           columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
 
-        return matchesSearch && matchesVelocityFilter && matchesTrendFilter;
+        const matchesWinningFilter = columnFilters.winning.length === 0 || 
+          columnFilters.winning.includes(item.AVER ? 'Y' : 'N');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -1089,6 +1105,10 @@ const WatchlistAnalysis: React.FC<{
       const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
       return (order[a as keyof typeof order] || 4) - (order[b as keyof typeof order] || 4);
     });
+  };
+
+  const getUniqueWinningValues = () => {
+    return ['Y', 'N'];
   };
 
   // Render column header with optional filter
@@ -1221,7 +1241,7 @@ const WatchlistAnalysis: React.FC<{
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
-                    Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    <span className="font-bold">Avg Cost</span> {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -1344,7 +1364,7 @@ const WatchlistAnalysis: React.FC<{
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
                         return (
                           <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
-                            {isWinning ? 'Y' : 'No'}
+                            {isWinning ? 'Y' : 'N'}
                           </span>
                         );
                       })()}
@@ -1429,18 +1449,22 @@ const StarredItemsAnalysis: React.FC<{
   const [columnFilters, setColumnFilters] = useState<{
     velocityCategory: string[];
     trendDirection: string[];
+    winning: string[];
   }>({
     velocityCategory: [],
-    trendDirection: []
+    trendDirection: [],
+    winning: []
   });
   
   // Filter dropdown search states
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
     velocityCategory: string;
     trendDirection: string;
+    winning: string;
   }>({
     velocityCategory: '',
-    trendDirection: ''
+    trendDirection: '',
+    winning: ''
   });
 
   // Filter starred items
@@ -1459,7 +1483,10 @@ const StarredItemsAnalysis: React.FC<{
         const matchesTrendFilter = columnFilters.trendDirection.length === 0 || 
           columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
 
-        return matchesSearch && matchesVelocityFilter && matchesTrendFilter;
+        const matchesWinningFilter = columnFilters.winning.length === 0 || 
+          columnFilters.winning.includes(item.AVER ? 'Y' : 'N');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -1839,7 +1866,7 @@ const StarredItemsAnalysis: React.FC<{
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
                         return (
                           <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
-                            {isWinning ? 'Y' : 'No'}
+                            {isWinning ? 'Y' : 'N'}
                           </span>
                         );
                       })()}
@@ -2362,7 +2389,7 @@ const AllItemsAnalysis: React.FC<{
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
                         return (
                           <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
-                            {isWinning ? 'Y' : 'No'}
+                            {isWinning ? 'Y' : 'N'}
                           </span>
                         );
                       })()}
@@ -2448,18 +2475,22 @@ const OverstockAnalysis: React.FC<{
   const [columnFilters, setColumnFilters] = useState<{
     velocityCategory: string[];
     trendDirection: string[];
+    winning: string[];
   }>({
     velocityCategory: [],
-    trendDirection: []
+    trendDirection: [],
+    winning: []
   });
   
   // Filter dropdown search states
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
     velocityCategory: string;
     trendDirection: string;
+    winning: string;
   }>({
     velocityCategory: '',
-    trendDirection: ''
+    trendDirection: '',
+    winning: ''
   });
 
   // Filter overstock items
@@ -2477,7 +2508,10 @@ const OverstockAnalysis: React.FC<{
         const matchesTrendFilter = columnFilters.trendDirection.length === 0 || 
           columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
 
-        return matchesSearch && matchesVelocityFilter && matchesTrendFilter;
+        const matchesWinningFilter = columnFilters.winning.length === 0 || 
+          columnFilters.winning.includes(item.AVER ? 'Y' : 'N');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -2851,7 +2885,7 @@ const OverstockAnalysis: React.FC<{
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
                         return (
                           <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
-                            {isWinning ? 'Y' : 'No'}
+                            {isWinning ? 'Y' : 'N'}
                           </span>
                         );
                       })()}
@@ -3558,18 +3592,22 @@ const MetricFilteredView: React.FC<{
   const [columnFilters, setColumnFilters] = useState<{
     velocityCategory: string[];
     trendDirection: string[];
+    winning: string[];
   }>({
     velocityCategory: [],
-    trendDirection: []
+    trendDirection: [],
+    winning: []
   });
   
   // Filter dropdown search states
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
     velocityCategory: string;
     trendDirection: string;
+    winning: string;
   }>({
     velocityCategory: '',
-    trendDirection: ''
+    trendDirection: '',
+    winning: ''
   });
 
   // Get filtered items based on metric type
@@ -3622,7 +3660,10 @@ const MetricFilteredView: React.FC<{
       const matchesTrendFilter = columnFilters.trendDirection.length === 0 || 
         columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
 
-      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter;
+      const matchesWinningFilter = columnFilters.winning.length === 0 || 
+        columnFilters.winning.includes(item.AVER ? 'Y' : 'N');
+
+      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
     });
 
     // Sort items
@@ -4112,7 +4153,7 @@ const MetricFilteredView: React.FC<{
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
                         return (
                           <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
-                            {isWinning ? 'Y' : 'No'}
+                            {isWinning ? 'Y' : 'N'}
                           </span>
                         );
                       })()}
