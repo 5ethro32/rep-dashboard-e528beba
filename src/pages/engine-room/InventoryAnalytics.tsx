@@ -1124,7 +1124,7 @@ const WatchlistAnalysis: React.FC<{
     const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
     
     return (
-      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+      <th className={`${alignmentClass} p-3 text-gray-300 relative text-sm`}>
         <div className={`flex items-center gap-2 ${justifyClass}`}>
           <button
             onClick={() => handleSort(sortKey)}
@@ -1634,7 +1634,7 @@ const StarredItemsAnalysis: React.FC<{
     const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
     
     return (
-      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+      <th className={`${alignmentClass} p-3 text-gray-300 relative text-sm`}>
         <div className={`flex items-center gap-2 ${justifyClass}`}>
           <button
             onClick={() => handleSort(sortKey)}
@@ -2200,7 +2200,7 @@ const AllItemsAnalysis: React.FC<{
     const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
     
     return (
-      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+      <th className={`${alignmentClass} p-3 text-gray-300 relative text-sm`}>
         <div className={`flex items-center gap-2 ${justifyClass}`}>
           <button
             onClick={() => handleSort(sortKey)}
@@ -2346,7 +2346,7 @@ const AllItemsAnalysis: React.FC<{
                     🔻 Cost Risk
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
                     <div className="font-medium mb-1">Cost Disadvantage + Falling Prices</div>
                     <div>Products where our cost exceeds all competitors AND market prices are falling. Urgent clearance needed.</div>
@@ -2369,7 +2369,7 @@ const AllItemsAnalysis: React.FC<{
                     💰 Margin Win
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
                     <div className="font-medium mb-1">Immediate Margin Opportunities</div>
                     <div>Products where our cost is below market minimum. Can increase price while staying cheapest.</div>
@@ -2392,7 +2392,7 @@ const AllItemsAnalysis: React.FC<{
                     ⚡ Urgent Buy
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
                     <div className="font-medium mb-1">Urgent Sourcing Required</div>
                     <div>Products where our cost is 5%+ above market average with stable/rising trends. No price relief coming.</div>
@@ -2415,7 +2415,7 @@ const AllItemsAnalysis: React.FC<{
                     🎯 High Impact
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
                     <div className="font-medium mb-1">High Impact Margin Wins</div>
                     <div>Fast-moving, high-value products (Cat 1-3, &gt;£500) with margin opportunities. Biggest revenue impact.</div>
@@ -2438,7 +2438,7 @@ const AllItemsAnalysis: React.FC<{
                     📈 Price Up
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
                     <div className="font-medium mb-1">Price War Opportunities</div>
                     <div>Products where we're winning (cheapest) but market trend is UP. Can we increase price and maintain lead?</div>
@@ -2461,7 +2461,7 @@ const AllItemsAnalysis: React.FC<{
                     ☠️ Dead Stock
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
                     <div className="font-medium mb-1">Dead Stock Alert</div>
                     <div>High cost + falling prices + overstocked (&gt;6 months). Critical clearance priority to minimize losses.</div>
@@ -2884,7 +2884,7 @@ const OverstockAnalysis: React.FC<{
     const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
     
     return (
-      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+      <th className={`${alignmentClass} p-3 text-gray-300 relative text-sm`}>
         <div className={`flex items-center gap-2 ${justifyClass}`}>
           <button
             onClick={() => handleSort(sortKey)}
@@ -4048,7 +4048,7 @@ const MetricFilteredView: React.FC<{
     const hasActiveFilter = filterColumn && columnFilters[filterColumn].length > 0;
     
     return (
-      <th className="text-center p-3 text-gray-300 relative">
+      <th className="text-center p-3 text-gray-300 relative text-sm">
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => handleSort(sortKey)}
