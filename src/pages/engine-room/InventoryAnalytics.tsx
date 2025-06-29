@@ -568,7 +568,7 @@ const PriorityIssuesAnalysis: React.FC<{
     const justifyClass = alignment === 'center' ? 'justify-center' : alignment === 'right' ? 'justify-end' : 'justify-start';
     
     return (
-      <th className={`${alignmentClass} p-3 text-gray-300 relative`}>
+      <th className={`${alignmentClass} p-3 text-gray-300 relative text-sm`}>
         <div className={`flex items-center gap-2 ${justifyClass}`}>
           <button
             onClick={() => handleSort(sortKey)}
@@ -690,11 +690,11 @@ const PriorityIssuesAnalysis: React.FC<{
             <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Issue Type', 'type', 'type', getUniqueTypes())}
-                  <th className="text-center p-3 text-gray-300">
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     <TooltipProvider>
                       <UITooltip>
                         <TooltipTrigger asChild>
@@ -708,7 +708,7 @@ const PriorityIssuesAnalysis: React.FC<{
                       </UITooltip>
                     </TooltipProvider>
                   </th>
-                  <th className="text-right p-3 text-gray-300">
+                  <th className="text-right p-3 text-gray-300 text-sm">
                     <TooltipProvider>
                       <UITooltip>
                         <TooltipTrigger asChild>
@@ -722,40 +722,40 @@ const PriorityIssuesAnalysis: React.FC<{
                       </UITooltip>
                     </TooltipProvider>
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     <span className="font-bold">Avg Cost</span> {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↓' : '↑')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
                   {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections(), 'center')}
-                  <th className="text-center p-3 text-gray-300">
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300">
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Star
                   </th>
                 </tr>
@@ -763,24 +763,24 @@ const PriorityIssuesAnalysis: React.FC<{
               <tbody>
                 {filteredIssues.map((issue) => (
                   <tr key={issue.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px] text-sm">
                       <div>
                         <div className="font-medium text-white">{issue.item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{issue.item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-gray-300">
+                    <td className="p-3 text-gray-300 text-sm">
                       {issue.type.replace(/_/g, ' ')}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <span className={`font-semibold ${getSeverityColor(issue.severity)} capitalize`}>
                         {issue.severity}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-red-400 font-semibold">
+                    <td className="p-3 text-right text-red-400 font-semibold text-sm">
                       {formatCurrency(issue.impactValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300 font-bold">
+                    <td className="p-3 text-right text-gray-300 font-bold text-sm">
                       {shouldShowAverageCostTooltip(issue.item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -798,13 +798,13 @@ const PriorityIssuesAnalysis: React.FC<{
                         getDisplayedAverageCost(issue.item) ? formatCurrency(getDisplayedAverageCost(issue.item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(issue.item.currentStock || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(issue.item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -826,15 +826,15 @@ const PriorityIssuesAnalysis: React.FC<{
                        issue.item.trendDirection === 'DOWN' ? '↓' : 
                        issue.item.trendDirection === 'STABLE' ? '−' : '?'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <span className={issue.item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
                         {issue.item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold">
+                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {issue.item.AVER ? formatCurrency(issue.item.AVER) : 'N/A'}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold">
+                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -852,7 +852,7 @@ const PriorityIssuesAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-center font-semibold">
+                    <td className="p-3 text-center font-semibold text-sm">
                       {(() => {
                         const lowestComp = issue.item.bestCompetitorPrice || issue.item.lowestMarketPrice || issue.item.Nupharm || issue.item.AAH2 || issue.item.LEXON2;
                         const isWinning = issue.item.AVER && lowestComp && issue.item.AVER < lowestComp;
@@ -863,7 +863,7 @@ const PriorityIssuesAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold">
+                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -896,13 +896,13 @@ const PriorityIssuesAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {issue.item.SDT ? formatCurrency(issue.item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {issue.item.EDT ? formatCurrency(issue.item.EDT) : '-'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <button
                         onClick={() => onToggleStar(issue.item.id)}
                         className={`p-1 rounded hover:bg-gray-700 ${
@@ -1234,47 +1234,46 @@ const WatchlistAnalysis: React.FC<{
             <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     <span className="font-bold">Avg Cost</span> {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
-                  <th className="text-center p-3 text-gray-300">
+                  {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections(), 'center')}
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
-                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                  {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300">
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Star
                   </th>
                 </tr>
@@ -1282,16 +1281,16 @@ const WatchlistAnalysis: React.FC<{
               <tbody>
                 {watchlistItems.map((item) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px] text-sm">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-white font-semibold">
+                    <td className="p-3 text-right text-white font-semibold text-sm">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {shouldShowAverageCostTooltip(item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -1309,13 +1308,13 @@ const WatchlistAnalysis: React.FC<{
                         getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.currentStock || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1332,15 +1331,20 @@ const WatchlistAnalysis: React.FC<{
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
                       {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className={`p-3 text-center font-semibold ${getTrendColor(item.trendDirection)}`}>
+                      {item.trendDirection === 'UP' ? '↑' : 
+                       item.trendDirection === 'DOWN' ? '↓' : 
+                       item.trendDirection === 'STABLE' ? '−' : '?'}
+                    </td>
+                    <td className="p-3 text-center text-sm">
                       <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold">
+                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold">
+                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1358,7 +1362,7 @@ const WatchlistAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-center font-semibold">
+                    <td className="p-3 text-center font-semibold text-sm">
                       {(() => {
                         const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
@@ -1369,7 +1373,7 @@ const WatchlistAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold">
+                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1402,13 +1406,13 @@ const WatchlistAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.SDT ? formatCurrency(item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <button
                         onClick={() => onToggleStar(item.id)}
                         className={`p-1 rounded hover:bg-gray-700 ${
@@ -1613,6 +1617,10 @@ const StarredItemsAnalysis: React.FC<{
     });
   };
 
+  const getUniqueWinningValues = () => {
+    return ['Y', 'N'];
+  };
+
   // Render column header with optional filter
   const renderColumnHeader = (
     title: string,
@@ -1736,47 +1744,46 @@ const StarredItemsAnalysis: React.FC<{
             <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
-                  <th className="text-center p-3 text-gray-300">
+                  {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections(), 'center')}
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
-                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                  {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300">
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Star
                   </th>
                 </tr>
@@ -1784,16 +1791,16 @@ const StarredItemsAnalysis: React.FC<{
               <tbody>
                 {starredItemsList.map((item) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px] text-sm">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-white font-semibold">
+                    <td className="p-3 text-right text-white font-semibold text-sm">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {shouldShowAverageCostTooltip(item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -1811,13 +1818,13 @@ const StarredItemsAnalysis: React.FC<{
                         getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.currentStock || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1834,15 +1841,20 @@ const StarredItemsAnalysis: React.FC<{
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
                       {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className={`p-3 text-center font-semibold ${getTrendColor(item.trendDirection)}`}>
+                      {item.trendDirection === 'UP' ? '↑' : 
+                       item.trendDirection === 'DOWN' ? '↓' : 
+                       item.trendDirection === 'STABLE' ? '−' : '?'}
+                    </td>
+                    <td className="p-3 text-center text-sm">
                       <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold">
+                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold">
+                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1860,7 +1872,7 @@ const StarredItemsAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-center font-semibold">
+                    <td className="p-3 text-center font-semibold text-sm">
                       {(() => {
                         const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
@@ -1871,7 +1883,7 @@ const StarredItemsAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold">
+                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1904,13 +1916,13 @@ const StarredItemsAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.SDT ? formatCurrency(item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <button
                         onClick={() => onToggleStar(item.id)}
                         className={`p-1 rounded hover:bg-gray-700 ${
@@ -1951,18 +1963,22 @@ const AllItemsAnalysis: React.FC<{
   const [columnFilters, setColumnFilters] = useState<{
     velocityCategory: string[];
     trendDirection: string[];
+    winning: string[];
   }>({
     velocityCategory: [],
-    trendDirection: []
+    trendDirection: [],
+    winning: []
   });
   
   // Filter dropdown search states
   const [filterDropdownSearch, setFilterDropdownSearch] = useState<{
     velocityCategory: string;
     trendDirection: string;
+    winning: string;
   }>({
     velocityCategory: '',
-    trendDirection: ''
+    trendDirection: '',
+    winning: ''
   });
   const [filterType, setFilterType] = useState<string>('all');
 
@@ -1996,7 +2012,14 @@ const AllItemsAnalysis: React.FC<{
         columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
     };
 
-    items = items.filter(item => matchesVelocityFilter(item) && matchesTrendFilter(item));
+    const matchesWinningFilter = (item: any) => {
+      if (columnFilters.winning.length === 0) return true;
+      const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+      const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
+      return columnFilters.winning.includes(isWinning ? 'Y' : 'N');
+    };
+
+    items = items.filter(item => matchesVelocityFilter(item) && matchesTrendFilter(item) && matchesWinningFilter(item));
 
     // Sort items
     return items.sort((a, b) => {
@@ -2116,6 +2139,10 @@ const AllItemsAnalysis: React.FC<{
   const getUniqueTrendDirections = () => {
     const trends = [...new Set(data.analyzedItems.map(item => item.trendDirection || 'N/A'))];
     return trends.sort();
+  };
+
+  const getUniqueWinningValues = () => {
+    return ['Y', 'N'];
   };
 
   // Render column header with optional filter
@@ -2259,47 +2286,46 @@ const AllItemsAnalysis: React.FC<{
             <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
-                  <th className="text-center p-3 text-gray-300">
+                  {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections(), 'center')}
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
-                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                  {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300">
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Star
                   </th>
                 </tr>
@@ -2307,16 +2333,16 @@ const AllItemsAnalysis: React.FC<{
               <tbody>
                 {filteredItems.map((item) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px] text-sm">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-white font-semibold">
+                    <td className="p-3 text-right text-white font-semibold text-sm">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {shouldShowAverageCostTooltip(item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -2334,13 +2360,13 @@ const AllItemsAnalysis: React.FC<{
                         getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.currentStock || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2357,15 +2383,20 @@ const AllItemsAnalysis: React.FC<{
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
                       {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className={`p-3 text-center font-semibold ${getTrendColor(item.trendDirection)}`}>
+                      {item.trendDirection === 'UP' ? '↑' : 
+                       item.trendDirection === 'DOWN' ? '↓' : 
+                       item.trendDirection === 'STABLE' ? '−' : '?'}
+                    </td>
+                    <td className="p-3 text-center text-sm">
                       <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold">
+                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold">
+                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2383,7 +2414,7 @@ const AllItemsAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-center font-semibold">
+                    <td className="p-3 text-center font-semibold text-sm">
                       {(() => {
                         const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
@@ -2394,7 +2425,7 @@ const AllItemsAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold">
+                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2427,13 +2458,13 @@ const AllItemsAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.SDT ? formatCurrency(item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <button
                         onClick={() => onToggleStar(item.id)}
                         className={`p-1 rounded hover:bg-gray-700 ${
@@ -2632,6 +2663,10 @@ const OverstockAnalysis: React.FC<{
     return trends.sort();
   };
 
+  const getUniqueWinningValues = () => {
+    return ['Y', 'N'];
+  };
+
   // Render column header with optional filter
   const renderColumnHeader = (
     title: string,
@@ -2755,47 +2790,46 @@ const OverstockAnalysis: React.FC<{
             <table className="w-full min-w-[1400px]">
               <thead className="bg-gray-900/90 sticky top-0 z-10">
                 <tr className="border-b border-gray-700">
-                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('stockcode')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
                     Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
-                  <th className="text-center p-3 text-gray-300">
+                  {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections(), 'center')}
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
                     NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
-                    Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                  {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300">
+                  <th className="text-center p-3 text-gray-300 text-sm">
                     Star
                   </th>
                 </tr>
@@ -2803,16 +2837,16 @@ const OverstockAnalysis: React.FC<{
               <tbody>
                 {overstockItems.map((item) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px] text-sm">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-white font-semibold">
+                    <td className="p-3 text-right text-white font-semibold text-sm">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {shouldShowAverageCostTooltip(item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -2830,13 +2864,13 @@ const OverstockAnalysis: React.FC<{
                         getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.currentStock || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2853,15 +2887,20 @@ const OverstockAnalysis: React.FC<{
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
                       {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className={`p-3 text-center font-semibold ${getTrendColor(item.trendDirection)}`}>
+                      {item.trendDirection === 'UP' ? '↑' : 
+                       item.trendDirection === 'DOWN' ? '↓' : 
+                       item.trendDirection === 'STABLE' ? '−' : '?'}
+                    </td>
+                    <td className="p-3 text-center text-sm">
                       <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold">
+                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold">
+                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2879,7 +2918,7 @@ const OverstockAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-center font-semibold">
+                    <td className="p-3 text-center font-semibold text-sm">
                       {(() => {
                         const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
@@ -2890,7 +2929,7 @@ const OverstockAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold">
+                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2923,13 +2962,13 @@ const OverstockAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.SDT ? formatCurrency(item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <button
                         onClick={() => onToggleStar(item.id)}
                         className={`p-1 rounded hover:bg-gray-700 ${
@@ -3791,6 +3830,10 @@ const MetricFilteredView: React.FC<{
     });
   };
 
+  const getUniqueWinningValues = () => {
+    return ['Y', 'N'];
+  };
+
   // Render column header with optional filter
   const renderColumnHeader = (
     title: string,
@@ -4015,48 +4058,46 @@ const MetricFilteredView: React.FC<{
             <table className="w-full min-w-[1400px]">
                 <thead className="bg-gray-900/90 sticky top-0 z-10">
                   <tr className="border-b border-gray-700">
-                    <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px]" onClick={() => handleSort('item')}>
+                    <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('item')}>
                       Item {sortField === 'item' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('stockValue')}>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
                       Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('averageCost')}>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                       Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('currentStock')}>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
                       Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('onOrder')}>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                       On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('monthsOfStock')}>
+                    <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
                       Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
                     {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories())}
                     {renderColumnHeader('Trend', 'trendDirection', 'trendDirection', getUniqueTrendDirections())}
-                    <th className="text-center p-3 text-gray-300">
+                    <th className="text-center p-3 text-gray-300 text-sm">
                       Watch
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('price')}>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                       Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('nbp')}>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
                       NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('winning')}>
-                      Winning {sortField === 'winning' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('lowestComp')}>
+                    {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues())}
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                       Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('sdt')}>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                       SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white" onClick={() => handleSort('edt')}>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                       EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-center p-3 text-gray-300">
+                    <th className="text-center p-3 text-gray-300 text-sm">
                       Star
                     </th>
                   </tr>
@@ -4064,16 +4105,16 @@ const MetricFilteredView: React.FC<{
               <tbody>
                 {filteredItems.map((item, index) => (
                   <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800/30">
-                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px]">
+                    <td className="p-3 sticky left-0 bg-gray-950/95 backdrop-blur-sm border-r border-gray-700 min-w-[200px] text-sm">
                       <div>
                         <div className="font-medium text-white">{item.stockcode}</div>
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-white font-semibold">
+                    <td className="p-3 text-right text-white font-semibold text-sm">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {shouldShowAverageCostTooltip(item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -4091,13 +4132,13 @@ const MetricFilteredView: React.FC<{
                         getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.currentStock || item.stock || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -4114,22 +4155,22 @@ const MetricFilteredView: React.FC<{
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
                       {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <span className={`text-lg font-bold ${getTrendColor(item.trendDirection)}`}>
                         {item.trendDirection === 'UP' ? '↑' :
                          item.trendDirection === 'DOWN' ? '↓' :
                          item.trendDirection === 'STABLE' ? '−' : '?'}
                       </span>
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold">
+                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold">
+                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -4147,7 +4188,7 @@ const MetricFilteredView: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-center font-semibold">
+                    <td className="p-3 text-center font-semibold text-sm">
                       {(() => {
                         const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
                         const isWinning = item.AVER && lowestComp && item.AVER < lowestComp;
@@ -4158,7 +4199,7 @@ const MetricFilteredView: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold">
+                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -4191,13 +4232,13 @@ const MetricFilteredView: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.SDT ? formatCurrency(item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300">
+                    <td className="p-3 text-right text-gray-300 text-sm">
                       {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center text-sm">
                       <button
                         onClick={() => onToggleStar(item.id)}
                         className={`text-lg hover:scale-110 transition-transform ${
