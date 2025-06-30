@@ -2066,12 +2066,9 @@ const AllItemsAnalysis: React.FC<{
         // Show items where our cost is >5% above average competitor price OR >any competitor with stable/rising trend
         return (item.avg_cost > avgCompPrice * 1.05 || item.avg_cost > maxCompPrice) && ['STABLE', 'UP'].includes(item.trendDirection);
       });
-    } else if (filterType === 'high-impact-margin') {
+    } else if (filterType === 'below-cost-lines') {
       items = items.filter(item => {
-        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
-        const marketLow = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
-        const hasMarginOpportunity = item.avg_cost < marketLow && item.AVER && item.AVER < marketLow && marketLow > 0;
-        return hasMarginOpportunity && typeof item.velocityCategory === 'number' && item.velocityCategory <= 3 && item.stockValue > 500;
+        return item.AVER && item.avg_cost && item.AVER < item.avg_cost;
       });
     } else if (filterType === 'price-war-opportunity') {
       items = items.filter(item => {
@@ -2370,7 +2367,7 @@ const AllItemsAnalysis: React.FC<{
                 <SelectItem value="cost-disadvantage-down" className="text-red-300">🔻 Cost Disadvantage + Down Trend</SelectItem>
                 <SelectItem value="margin-opportunity" className="text-green-300">💰 Margin Opportunity</SelectItem>
                 <SelectItem value="urgent-sourcing" className="text-orange-300">⚡ Urgent Sourcing Required</SelectItem>
-                <SelectItem value="high-impact-margin" className="text-blue-300">🎯 High Impact Margin Wins</SelectItem>
+                <SelectItem value="below-cost-lines" className="text-red-300">📉 Below Cost Lines</SelectItem>
                 <SelectItem value="price-war-opportunity" className="text-purple-300">📈 Price War Opportunities</SelectItem>
                 <SelectItem value="dead-stock-alert" className="text-red-400">☠️ Dead Stock Alert</SelectItem>
               </SelectContent>
@@ -2458,7 +2455,7 @@ const AllItemsAnalysis: React.FC<{
                 <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
                     <div className="font-medium mb-1">Uncompetitive Cost Alert</div>
-                    <div>Products where our cost is 5%+ above market average with stable/rising trends. No price relief coming.</div>
+                    <div>Products where our cost is above market low with stable/rising trends. No price relief coming.</div>
                   </div>
                 </TooltipContent>
               </UITooltip>
@@ -2468,20 +2465,20 @@ const AllItemsAnalysis: React.FC<{
               <UITooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => setFilterType('high-impact-margin')}
+                    onClick={() => setFilterType('below-cost-lines')}
                     className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'high-impact-margin' 
-                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-blue-500/10 hover:text-blue-300 border border-gray-700/50'
+                      filterType === 'below-cost-lines' 
+                        ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
                     }`}
                   >
-                    🎯 High Impact
+                    📉 Below Cost
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
-                    <div className="font-medium mb-1">High Impact Margin Wins</div>
-                    <div>Fast-moving, high-value products (Cat 1-3, &gt;£500) with margin opportunities. Biggest revenue impact.</div>
+                    <div className="font-medium mb-1">Below Cost Lines</div>
+                    <div>Products where our selling price is below average cost. Items selling at a loss requiring immediate attention.</div>
                   </div>
                 </TooltipContent>
               </UITooltip>
@@ -4602,24 +4599,7 @@ const MetricFilteredView: React.FC<{
           matchesFilter = item.lowestMarketPrice && item.avg_cost < (item.lowestMarketPrice * 0.9);
           break;
         case 'cost-disadvantage':
-          if (!item.lowestMarketPrice) {
-            matchesFilter = false;
-            break;
-          }
-          const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'ETH_NET', 'LEXON2'];
-          const prices: number[] = [];
-          competitors.forEach(competitor => {
-            const price = item[competitor as keyof typeof item] as number;
-            if (price && price > 0) {
-              prices.push(price);
-            }
-          });
-          if (prices.length === 0) {
-            matchesFilter = false;
-            break;
-          }
-          const highestPrice = Math.max(...prices);
-          matchesFilter = item.avg_cost > (highestPrice * 1.05);
+          matchesFilter = item.lowestMarketPrice && item.avg_cost > item.lowestMarketPrice;
           break;
         case 'stock-risk':
           matchesFilter = item.packs_sold_avg_last_six_months > 0 && 
@@ -4911,7 +4891,7 @@ const MetricFilteredView: React.FC<{
     switch (filterType) {
       case 'out-of-stock': return 'Items with 0 available, 0 ringfenced, and 0 on order';
       case 'margin-opportunity': return 'Items where our cost is >10% below lowest market price';
-      case 'cost-disadvantage': return 'Items where our cost is >5% above highest market price';
+              case 'cost-disadvantage': return 'Items where our cost is above market low';
       case 'stock-risk': return 'Items with less than 2 weeks supply based on usage';
       default: return 'Filtered view of inventory items';
     }
