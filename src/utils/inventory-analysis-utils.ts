@@ -175,7 +175,7 @@ const generateInventoryColumnMapping = (headers: string[]) => {
     ],
     min_cost: ['min_cost', 'minimum cost', 'min price'],
     last_po_cost: ['last_po_cost', 'last po cost', 'last purchase cost', 'previous cost'],
-    group: ['group', 'watchlist', 'flag'],
+    group: ['grp'],
     Nupharm: ['nupharm', 'nu pharm', 'nupharm price'],
     AAH2: ['aah2', 'aah 2', 'aah2 price'],
     ETH_LIST: ['eth_list', 'eth list', 'eth list price'],
