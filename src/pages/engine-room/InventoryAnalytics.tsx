@@ -2351,41 +2351,17 @@ const AllItemsAnalysis: React.FC<{
         </div>
       </div>
 
-      {/* Filters and Search */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="all" className="text-gray-300">All Items</SelectItem>
-                <SelectItem value="watchlist" className="text-gray-300">Watchlist Only</SelectItem>
-                <SelectItem value="fast-movers" className="text-gray-300">Fast Movers (Cat 1-3)</SelectItem>
-                <SelectItem value="high-value" className="text-gray-300">High Value (&gt;£1,000)</SelectItem>
-                <SelectItem value="cost-disadvantage-down" className="text-red-300">🔻 Cost Disadvantage + Down Trend</SelectItem>
-                <SelectItem value="margin-opportunity" className="text-green-300">💰 Margin Opportunity</SelectItem>
-                <SelectItem value="urgent-sourcing" className="text-orange-300">⚡ Urgent Sourcing Required</SelectItem>
-                <SelectItem value="below-cost-lines" className="text-red-300">📉 Below Cost Lines</SelectItem>
-                <SelectItem value="price-war-opportunity" className="text-purple-300">📈 Price War Opportunities</SelectItem>
-                <SelectItem value="dead-stock-alert" className="text-red-400">☠️ Dead Stock Alert</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-        
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <Input
-              placeholder="Search by stock code or description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white"
-            />
-          </CardContent>
-        </Card>
-      </div>
+      {/* Search */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <Input
+            placeholder="Search by stock code or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-gray-800 border-gray-700 text-white"
+          />
+        </CardContent>
+      </Card>
 
       {/* Strategic Filters */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
