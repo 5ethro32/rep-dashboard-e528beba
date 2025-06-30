@@ -464,7 +464,7 @@ const PriorityIssuesAnalysis: React.FC<{
             const aLowestComp = a.item.bestCompetitorPrice || a.item.lowestMarketPrice || a.item.Nupharm || a.item.AAH2 || a.item.LEXON2;
             const bLowestComp = b.item.bestCompetitorPrice || b.item.lowestMarketPrice || b.item.Nupharm || b.item.AAH2 || b.item.LEXON2;
             aValue = (a.item.AVER && aLowestComp && a.item.AVER < aLowestComp) ? 1 : 0;
-            bValue = (b.item.AVER && bLowestComp && b.item.AVER < bLowestComp) ? 1 : 0;
+                          bValue = (b.item.AVER && bLowestComp && b.item.AVER < bLowestComp) ? 1 : 0;
             break;
           case 'lowestComp':
             aValue = a.item.bestCompetitorPrice || a.item.lowestMarketPrice || a.item.Nupharm || a.item.AAH2 || a.item.LEXON2 || 0;
@@ -472,6 +472,11 @@ const PriorityIssuesAnalysis: React.FC<{
             break;
           case 'price':
             aValue = a.item.AVER || 0; bValue = b.item.AVER || 0; break;
+          case 'margin':
+            // Calculate gross margin percentage: ((price - cost) / price) * 100
+            aValue = (a.item.AVER && a.item.avg_cost && a.item.AVER > 0) ? ((a.item.AVER - a.item.avg_cost) / a.item.AVER) * 100 : -999;
+            bValue = (b.item.AVER && b.item.avg_cost && b.item.AVER > 0) ? ((b.item.AVER - b.item.avg_cost) / b.item.AVER) * 100 : -999;
+            break;
           case 'sdt':
             aValue = a.item.SDT || 0; bValue = b.item.SDT || 0; break;
           case 'edt':
@@ -502,6 +507,27 @@ const PriorityIssuesAnalysis: React.FC<{
       style: 'currency',
       currency: 'GBP'
     }).format(value);
+  };
+
+  // Calculate and format margin percentage
+  const calculateMargin = (item: any): number | null => {
+    if (!item.AVER || !item.avg_cost || item.AVER <= 0) {
+      return null;
+    }
+    return ((item.AVER - item.avg_cost) / item.AVER) * 100;
+  };
+
+  const formatMargin = (margin: number | null): string => {
+    if (margin === null) return 'N/A';
+    return `${margin.toFixed(1)}%`;
+  };
+
+  const getMarginColor = (margin: number | null): string => {
+    if (margin === null) return 'text-gray-400';
+    if (margin < 0) return 'text-red-400';
+    if (margin < 10) return 'text-orange-400';
+    if (margin < 20) return 'text-yellow-400';
+    return 'text-green-400';
   };
 
   const getSeverityColor = (severity: string) => {
@@ -785,6 +811,9 @@ const PriorityIssuesAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                    Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
@@ -887,6 +916,9 @@ const PriorityIssuesAnalysis: React.FC<{
                     </td>
                     <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {issue.item.AVER ? formatCurrency(issue.item.AVER) : 'N/A'}
+                    </td>
+                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(issue.item))}`}>
+                      {formatMargin(calculateMargin(issue.item))}
                     </td>
                     <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
@@ -1151,6 +1183,27 @@ const WatchlistAnalysis: React.FC<{
   };
 
   // Get unique values for column filters
+  // Calculate and format margin percentage
+  const calculateMargin = (item: any): number | null => {
+    if (!item.AVER || !item.avg_cost || item.AVER <= 0) {
+      return null;
+    }
+    return ((item.AVER - item.avg_cost) / item.AVER) * 100;
+  };
+
+  const formatMargin = (margin: number | null): string => {
+    if (margin === null) return 'N/A';
+    return `${margin.toFixed(1)}%`;
+  };
+
+  const getMarginColor = (margin: number | null): string => {
+    if (margin === null) return 'text-gray-400';
+    if (margin < 0) return 'text-red-400';
+    if (margin < 10) return 'text-orange-400';
+    if (margin < 20) return 'text-yellow-400';
+    return 'text-green-400';
+  };
+
   const getUniqueVelocityCategories = () => {
     const categories = [...new Set(data.analyzedItems
       .filter(item => item.watchlist === '⚠️')
@@ -1332,6 +1385,9 @@ const WatchlistAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                    Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
@@ -1426,6 +1482,9 @@ const WatchlistAnalysis: React.FC<{
                     </td>
                     <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
+                      {formatMargin(calculateMargin(item))}
                     </td>
                     <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
@@ -1692,6 +1751,27 @@ const StarredItemsAnalysis: React.FC<{
   };
 
   // Get unique values for column filters
+  // Calculate and format margin percentage
+  const calculateMargin = (item: any): number | null => {
+    if (!item.AVER || !item.avg_cost || item.AVER <= 0) {
+      return null;
+    }
+    return ((item.AVER - item.avg_cost) / item.AVER) * 100;
+  };
+
+  const formatMargin = (margin: number | null): string => {
+    if (margin === null) return 'N/A';
+    return `${margin.toFixed(1)}%`;
+  };
+
+  const getMarginColor = (margin: number | null): string => {
+    if (margin === null) return 'text-gray-400';
+    if (margin < 0) return 'text-red-400';
+    if (margin < 10) return 'text-orange-400';
+    if (margin < 20) return 'text-yellow-400';
+    return 'text-green-400';
+  };
+
   const getUniqueVelocityCategories = () => {
     const categories = [...new Set(data.analyzedItems
       .filter(item => starredItems.has(item.id))
@@ -1873,6 +1953,9 @@ const StarredItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                    Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
@@ -1967,6 +2050,9 @@ const StarredItemsAnalysis: React.FC<{
                     </td>
                     <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
+                      {formatMargin(calculateMargin(item))}
                     </td>
                     <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
@@ -2229,6 +2315,11 @@ const AllItemsAnalysis: React.FC<{
           break;
         case 'price':
           aValue = a.AVER || 0; bValue = b.AVER || 0; break;
+        case 'margin':
+          // Calculate gross margin percentage: ((price - cost) / price) * 100
+          aValue = (a.AVER && a.avg_cost && a.AVER > 0) ? ((a.AVER - a.avg_cost) / a.AVER) * 100 : -999;
+          bValue = (b.AVER && b.avg_cost && b.AVER > 0) ? ((b.AVER - b.avg_cost) / b.AVER) * 100 : -999;
+          break;
         case 'sdt':
           aValue = a.SDT || 0; bValue = b.SDT || 0; break;
         case 'edt':
@@ -2259,6 +2350,27 @@ const AllItemsAnalysis: React.FC<{
       style: 'currency',
       currency: 'GBP'
     }).format(value);
+  };
+
+  // Calculate and format margin percentage
+  const calculateMargin = (item: any): number | null => {
+    if (!item.AVER || !item.avg_cost || item.AVER <= 0) {
+      return null;
+    }
+    return ((item.AVER - item.avg_cost) / item.AVER) * 100;
+  };
+
+  const formatMargin = (margin: number | null): string => {
+    if (margin === null) return 'N/A';
+    return `${margin.toFixed(1)}%`;
+  };
+
+  const getMarginColor = (margin: number | null): string => {
+    if (margin === null) return 'text-gray-400';
+    if (margin < 0) return 'text-red-400';
+    if (margin < 10) return 'text-orange-400';
+    if (margin < 20) return 'text-yellow-400';
+    return 'text-green-400';
   };
 
   const getCategoryColor = (category: number | 'N/A') => {
@@ -2629,6 +2741,9 @@ const AllItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                    Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
@@ -2679,14 +2794,12 @@ const AllItemsAnalysis: React.FC<{
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
-                            <span className="cursor-default">
-                              {(item.currentStock || 0).toLocaleString()}
+                            <span className="cursor-help underline decoration-dotted">
+                              {(item.currentStock || item.stock || 0).toLocaleString()}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-gray-700 text-white">
-                            <div className="text-sm">
-                              Ringfenced: {(item.quantity_ringfenced || 0).toLocaleString()}
-                            </div>
+                            <div className="text-sm">Ringfenced: {(item.quantity_ringfenced || 0).toLocaleString()}</div>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
@@ -2725,6 +2838,9 @@ const AllItemsAnalysis: React.FC<{
                     </td>
                     <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
+                      {formatMargin(calculateMargin(item))}
                     </td>
                     <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
@@ -2993,6 +3109,27 @@ const OverstockAnalysis: React.FC<{
   };
 
   // Get unique values for column filters
+  // Calculate and format margin percentage
+  const calculateMargin = (item: any): number | null => {
+    if (!item.AVER || !item.avg_cost || item.AVER <= 0) {
+      return null;
+    }
+    return ((item.AVER - item.avg_cost) / item.AVER) * 100;
+  };
+
+  const formatMargin = (margin: number | null): string => {
+    if (margin === null) return 'N/A';
+    return `${margin.toFixed(1)}%`;
+  };
+
+  const getMarginColor = (margin: number | null): string => {
+    if (margin === null) return 'text-gray-400';
+    if (margin < 0) return 'text-red-400';
+    if (margin < 10) return 'text-orange-400';
+    if (margin < 20) return 'text-yellow-400';
+    return 'text-green-400';
+  };
+
   const getUniqueVelocityCategories = () => {
     const categories = [...new Set(data.overstockItems
       .map(item => typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A')
@@ -3168,6 +3305,9 @@ const OverstockAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                    Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
                   {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
@@ -3262,6 +3402,9 @@ const OverstockAnalysis: React.FC<{
                     </td>
                     <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
+                      {formatMargin(calculateMargin(item))}
                     </td>
                     <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
@@ -4976,6 +5119,27 @@ const MetricFilteredView: React.FC<{
     return 'text-red-400';
   };
 
+  // Calculate and format margin percentage
+  const calculateMargin = (item: any): number | null => {
+    if (!item.AVER || !item.avg_cost || item.AVER <= 0) {
+      return null;
+    }
+    return ((item.AVER - item.avg_cost) / item.AVER) * 100;
+  };
+
+  const formatMargin = (margin: number | null): string => {
+    if (margin === null) return 'N/A';
+    return `${margin.toFixed(1)}%`;
+  };
+
+  const getMarginColor = (margin: number | null): string => {
+    if (margin === null) return 'text-gray-400';
+    if (margin < 0) return 'text-red-400';
+    if (margin < 10) return 'text-orange-400';
+    if (margin < 20) return 'text-yellow-400';
+    return 'text-green-400';
+  };
+
   const getFilterTitle = () => {
     switch (filterType) {
       case 'out-of-stock': return 'Out of Stock Items';
@@ -5134,6 +5298,9 @@ const MetricFilteredView: React.FC<{
                     <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                       Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
+                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                      Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
                     {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                     {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                     <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
@@ -5228,6 +5395,9 @@ const MetricFilteredView: React.FC<{
                     </td>
                     <td className="p-3 text-right text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
+                    </td>
+                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
+                      {formatMargin(calculateMargin(item))}
                     </td>
                     <td className="p-3 text-right text-green-400 font-semibold text-sm">
                       <TooltipProvider>
