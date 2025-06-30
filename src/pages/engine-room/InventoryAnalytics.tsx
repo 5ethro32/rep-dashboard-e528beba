@@ -361,13 +361,15 @@ const PriorityIssuesAnalysis: React.FC<{
     trendDirection: string[];
     winning: string[];
     nbp: string[];
+    stockQty: string[];
   }>({
     type: [],
     severity: [],
     velocityCategory: [],
     trendDirection: [],
     winning: [],
-    nbp: []
+    nbp: [],
+    stockQty: []
   });
   
   // Filter dropdown search states
@@ -378,13 +380,15 @@ const PriorityIssuesAnalysis: React.FC<{
     trendDirection: string;
     winning: string;
     nbp: string;
+    stockQty: string;
   }>({
     type: '',
     severity: '',
     velocityCategory: '',
     trendDirection: '',
     winning: '',
-    nbp: ''
+    nbp: '',
+    stockQty: ''
   });
 
   // Filter and sort priority issues
@@ -415,7 +419,10 @@ const PriorityIssuesAnalysis: React.FC<{
         const matchesNbpFilter = columnFilters.nbp.length === 0 || 
           columnFilters.nbp.includes(issue.item.min_cost && issue.item.min_cost > 0 ? 'Available' : 'N/A');
 
-        return matchesSearch && matchesTypeFilter && matchesSeverityFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
+        const matchesStockQtyFilter = columnFilters.stockQty.length === 0 || 
+          columnFilters.stockQty.includes((issue.item.currentStock || 0) > 0 ? 'In Stock' : 'OOS');
+
+        return matchesSearch && matchesTypeFilter && matchesSeverityFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -449,9 +456,9 @@ const PriorityIssuesAnalysis: React.FC<{
             aValue = trendOrder[a.item.trendDirection as keyof typeof trendOrder] || 4;
             bValue = trendOrder[b.item.trendDirection as keyof typeof trendOrder] || 4;
             break;
-          case 'nbp':
-            aValue = a.item.nextBuyingPrice || a.item.nbp || a.item.next_cost || a.item.min_cost || a.item.last_po_cost || 0;
-            bValue = b.item.nextBuyingPrice || b.item.nbp || b.item.next_cost || b.item.min_cost || b.item.last_po_cost || 0;
+                      case 'nbp':
+              aValue = a.item.nextBuyingPrice || a.item.nbp || a.item.next_cost || a.item.min_cost || a.item.last_po_cost || 0;
+              bValue = b.item.nextBuyingPrice || b.item.nbp || b.item.next_cost || b.item.min_cost || b.item.last_po_cost || 0;
             break;
           case 'winning':
             const aLowestComp = a.item.bestCompetitorPrice || a.item.lowestMarketPrice || a.item.Nupharm || a.item.AAH2 || a.item.LEXON2;
@@ -587,6 +594,10 @@ const PriorityIssuesAnalysis: React.FC<{
 
   const getUniqueNbpValues = () => {
     return ['Available', 'N/A'];
+  };
+
+  const getUniqueStockQtyValues = () => {
+    return ['In Stock', 'OOS'];
   };
 
   // Render column header with optional filter
@@ -759,9 +770,7 @@ const PriorityIssuesAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     <span className="font-bold">Avg Cost</span> {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
-                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↓' : '↑')}
                   </th>
@@ -831,7 +840,20 @@ const PriorityIssuesAnalysis: React.FC<{
                       )}
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
-                      {(issue.item.currentStock || 0).toLocaleString()}
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-default">
+                              {(issue.item.currentStock || 0).toLocaleString()}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">
+                              Ringfenced: {(issue.item.quantity_ringfenced || 0).toLocaleString()}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
                       {(issue.item.quantity_on_order || 0).toLocaleString()}
@@ -975,11 +997,13 @@ const WatchlistAnalysis: React.FC<{
     trendDirection: string[];
     winning: string[];
     nbp: string[];
+    stockQty: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
     winning: [],
-    nbp: []
+    nbp: [],
+    stockQty: []
   });
   
   // Filter dropdown search states
@@ -988,11 +1012,13 @@ const WatchlistAnalysis: React.FC<{
     trendDirection: string;
     winning: string;
     nbp: string;
+    stockQty: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
     winning: '',
-    nbp: ''
+    nbp: '',
+    stockQty: ''
   });
 
   // Filter watchlist items
@@ -1017,7 +1043,10 @@ const WatchlistAnalysis: React.FC<{
         const matchesNbpFilter = columnFilters.nbp.length === 0 || 
           columnFilters.nbp.includes(item.min_cost && item.min_cost > 0 ? 'Available' : 'N/A');
 
-        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
+        const matchesStockQtyFilter = columnFilters.stockQty.length === 0 || 
+          columnFilters.stockQty.includes((item.currentStock || 0) > 0 ? 'In Stock' : 'OOS');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -1152,6 +1181,10 @@ const WatchlistAnalysis: React.FC<{
     return ['Available', 'N/A'];
   };
 
+  const getUniqueStockQtyValues = () => {
+    return ['In Stock', 'OOS'];
+  };
+
   // Render column header with optional filter
   const renderColumnHeader = (
     title: string,
@@ -1284,9 +1317,7 @@ const WatchlistAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     <span className="font-bold">Avg Cost</span> {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
-                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -1348,7 +1379,20 @@ const WatchlistAnalysis: React.FC<{
                       )}
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
-                      {(item.currentStock || 0).toLocaleString()}
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-default">
+                              {(item.currentStock || 0).toLocaleString()}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">
+                              Ringfenced: {(item.quantity_ringfenced || 0).toLocaleString()}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
@@ -1494,11 +1538,13 @@ const StarredItemsAnalysis: React.FC<{
     trendDirection: string[];
     winning: string[];
     nbp: string[];
+    stockQty: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
     winning: [],
-    nbp: []
+    nbp: [],
+    stockQty: []
   });
   
   // Filter dropdown search states
@@ -1507,11 +1553,13 @@ const StarredItemsAnalysis: React.FC<{
     trendDirection: string;
     winning: string;
     nbp: string;
+    stockQty: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
     winning: '',
-    nbp: ''
+    nbp: '',
+    stockQty: ''
   });
 
   // Filter starred items
@@ -1536,7 +1584,10 @@ const StarredItemsAnalysis: React.FC<{
         const matchesNbpFilter = columnFilters.nbp.length === 0 || 
           columnFilters.nbp.includes(item.min_cost && item.min_cost > 0 ? 'Available' : 'N/A');
 
-        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
+        const matchesStockQtyFilter = columnFilters.stockQty.length === 0 || 
+          columnFilters.stockQty.includes((item.currentStock || 0) > 0 ? 'In Stock' : 'OOS');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -1671,6 +1722,10 @@ const StarredItemsAnalysis: React.FC<{
     return ['Available', 'N/A'];
   };
 
+  const getUniqueStockQtyValues = () => {
+    return ['In Stock', 'OOS'];
+  };
+
   // Render column header with optional filter
   const renderColumnHeader = (
     title: string,
@@ -1803,9 +1858,7 @@ const StarredItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
-                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -1867,7 +1920,20 @@ const StarredItemsAnalysis: React.FC<{
                       )}
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
-                      {(item.currentStock || 0).toLocaleString()}
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-default">
+                              {(item.currentStock || 0).toLocaleString()}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">
+                              Ringfenced: {(item.quantity_ringfenced || 0).toLocaleString()}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
@@ -2013,11 +2079,13 @@ const AllItemsAnalysis: React.FC<{
     trendDirection: string[];
     winning: string[];
     nbp: string[];
+    stockQty: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
     winning: [],
-    nbp: []
+    nbp: [],
+    stockQty: []
   });
   
   // Filter dropdown search states
@@ -2026,11 +2094,13 @@ const AllItemsAnalysis: React.FC<{
     trendDirection: string;
     winning: string;
     nbp: string;
+    stockQty: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
     winning: '',
-    nbp: ''
+    nbp: '',
+    stockQty: ''
   });
   const [filterType, setFilterType] = useState<string>('all');
 
@@ -2117,7 +2187,12 @@ const AllItemsAnalysis: React.FC<{
       return columnFilters.nbp.includes(nbpStatus);
     };
 
-    items = items.filter(item => matchesVelocityFilter(item) && matchesTrendFilter(item) && matchesWinningFilter(item) && matchesNbpFilter(item));
+    const matchesStockQtyFilter = (item: any) => {
+      return columnFilters.stockQty.length === 0 || 
+        columnFilters.stockQty.includes((item.currentStock || 0) > 0 ? 'In Stock' : 'OOS');
+    };
+
+    items = items.filter(item => matchesVelocityFilter(item) && matchesTrendFilter(item) && matchesWinningFilter(item) && matchesNbpFilter(item) && matchesStockQtyFilter(item));
 
     // Sort items
     return items.sort((a, b) => {
@@ -2245,6 +2320,10 @@ const AllItemsAnalysis: React.FC<{
 
   const getUniqueNbpValues = () => {
     return ['Available', 'N/A'];
+  };
+
+  const getUniqueStockQtyValues = () => {
+    return ['In Stock', 'OOS'];
   };
 
   // Render column header with optional filter
@@ -2535,9 +2614,7 @@ const AllItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
-                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -2599,7 +2676,20 @@ const AllItemsAnalysis: React.FC<{
                       )}
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
-                      {(item.currentStock || 0).toLocaleString()}
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-default">
+                              {(item.currentStock || 0).toLocaleString()}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">
+                              Ringfenced: {(item.quantity_ringfenced || 0).toLocaleString()}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
@@ -2748,11 +2838,13 @@ const OverstockAnalysis: React.FC<{
     trendDirection: string[];
     winning: string[];
     nbp: string[];
+    stockQty: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
     winning: [],
-    nbp: []
+    nbp: [],
+    stockQty: []
   });
   
   // Filter dropdown search states
@@ -2761,11 +2853,13 @@ const OverstockAnalysis: React.FC<{
     trendDirection: string;
     winning: string;
     nbp: string;
+    stockQty: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
     winning: '',
-    nbp: ''
+    nbp: '',
+    stockQty: ''
   });
 
   // Filter overstock items
@@ -2791,7 +2885,10 @@ const OverstockAnalysis: React.FC<{
             (item.min_cost && item.min_cost > 0) ? 'Y' : 'N'
           );
 
-        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
+        const matchesStockQtyFilter = columnFilters.stockQty.length === 0 || 
+          columnFilters.stockQty.includes((item.currentStock || 0) > 0 ? 'In Stock' : 'OOS');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -2918,6 +3015,10 @@ const OverstockAnalysis: React.FC<{
 
   const getUniqueNbpValues = () => {
     return ['Y', 'N'];
+  };
+
+  const getUniqueStockQtyValues = () => {
+    return ['In Stock', 'OOS'];
   };
 
   // Render column header with optional filter
@@ -3052,9 +3153,7 @@ const OverstockAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
-                    Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -3116,7 +3215,20 @@ const OverstockAnalysis: React.FC<{
                       )}
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
-                      {(item.currentStock || 0).toLocaleString()}
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-default">
+                              {(item.currentStock || 0).toLocaleString()}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">
+                              Ringfenced: {(item.quantity_ringfenced || 0).toLocaleString()}
+                            </div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
@@ -4539,11 +4651,13 @@ const MetricFilteredView: React.FC<{
     trendDirection: string[];
     winning: string[];
     nbp: string[];
+    stockQty: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
     winning: [],
-    nbp: []
+    nbp: [],
+    stockQty: []
   });
   
   // Filter dropdown search states
@@ -4552,11 +4666,13 @@ const MetricFilteredView: React.FC<{
     trendDirection: string;
     winning: string;
     nbp: string;
+    stockQty: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
     winning: '',
-    nbp: ''
+    nbp: '',
+    stockQty: ''
   });
 
   // Get filtered items based on metric type
@@ -4600,7 +4716,10 @@ const MetricFilteredView: React.FC<{
           (item.min_cost && item.min_cost > 0) ? 'Available' : 'N/A'
         );
 
-      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
+      const matchesStockQtyFilter = columnFilters.stockQty.length === 0 || 
+        columnFilters.stockQty.includes((item.currentStock || 0) > 0 ? 'In Stock' : 'OOS');
+
+      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter;
     });
 
     // Sort items
@@ -4734,6 +4853,10 @@ const MetricFilteredView: React.FC<{
 
   const getUniqueNbpValues = () => {
     return ['Available', 'N/A'];
+  };
+
+  const getUniqueStockQtyValues = () => {
+    return ['In Stock', 'OOS'];
   };
 
   // Render column header with optional filter
@@ -4996,9 +5119,7 @@ const MetricFilteredView: React.FC<{
                     <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                       Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('currentStock')}>
-                      Stock Qty {sortField === 'currentStock' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
+                    {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
                     <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                       On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
@@ -5060,7 +5181,18 @@ const MetricFilteredView: React.FC<{
                       )}
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
-                      {(item.currentStock || item.stock || 0).toLocaleString()}
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help underline decoration-dotted">
+                              {(item.currentStock || item.stock || 0).toLocaleString()}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-gray-800 border-gray-700 text-white">
+                            <div className="text-sm">Ringfenced: {(item.quantity_ringfenced || 0).toLocaleString()}</div>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
                     </td>
                     <td className="p-3 text-right text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
