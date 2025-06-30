@@ -1015,7 +1015,7 @@ const WatchlistAnalysis: React.FC<{
           columnFilters.winning.includes(getWinningStatus(item));
 
         const matchesNbpFilter = columnFilters.nbp.length === 0 || 
-          columnFilters.nbp.includes((item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) && (item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) > 0 ? 'Available' : 'N/A');
+          columnFilters.nbp.includes(item.min_cost && item.min_cost > 0 ? 'Available' : 'N/A');
 
         return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
       })
@@ -1534,7 +1534,7 @@ const StarredItemsAnalysis: React.FC<{
           columnFilters.winning.includes(getWinningStatus(item));
 
         const matchesNbpFilter = columnFilters.nbp.length === 0 || 
-          columnFilters.nbp.includes((item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) && (item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) > 0 ? 'Available' : 'N/A');
+          columnFilters.nbp.includes(item.min_cost && item.min_cost > 0 ? 'Available' : 'N/A');
 
         return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
       })
@@ -2112,8 +2112,8 @@ const AllItemsAnalysis: React.FC<{
 
     const matchesNbpFilter = (item: any) => {
       if (columnFilters.nbp.length === 0) return true;
-      const nbpValue = item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost;
-      const nbpStatus = nbpValue && nbpValue > 0 ? 'Available' : 'N/A';
+      // Align with display logic: NBP is "Available" only if min_cost exists and > 0
+      const nbpStatus = (item.min_cost && item.min_cost > 0) ? 'Available' : 'N/A';
       return columnFilters.nbp.includes(nbpStatus);
     };
 
@@ -2812,7 +2812,7 @@ const OverstockAnalysis: React.FC<{
 
         const matchesNbpFilter = columnFilters.nbp.length === 0 || 
           columnFilters.nbp.includes(
-            (item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) ? 'Y' : 'N'
+            (item.min_cost && item.min_cost > 0) ? 'Y' : 'N'
           );
 
         return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
@@ -3623,7 +3623,7 @@ const InventoryAnalyticsContent: React.FC = () => {
                 item.min_cost && item.min_cost > 0
               ).length;
               
-              // Calculate monthly lost revenue for replenishable items (using same logic as detailed view)
+              // Calculate monthly lost profit for replenishable items (using same logic as detailed view)
               const monthlyLostRevenue = inventoryData.analyzedItems
                 .filter(item => (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0)
                 .reduce((sum, item) => {
@@ -4621,7 +4621,7 @@ const MetricFilteredView: React.FC<{
 
       const matchesNbpFilter = columnFilters.nbp.length === 0 || 
         columnFilters.nbp.includes(
-          (item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) ? 'Available' : 'N/A'
+          (item.min_cost && item.min_cost > 0) ? 'Available' : 'N/A'
         );
 
       return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
@@ -4966,7 +4966,7 @@ const MetricFilteredView: React.FC<{
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-white">{formatCurrency(filteredStats.totalValue)}</div>
             <div className="text-sm text-gray-400">
-              {filterType === 'out-of-stock' ? 'Monthly Lost Revenue' : 'Total Value'}
+              {filterType === 'out-of-stock' ? 'Monthly Lost Profit' : 'Total Value'}
             </div>
           </CardContent>
         </Card>
