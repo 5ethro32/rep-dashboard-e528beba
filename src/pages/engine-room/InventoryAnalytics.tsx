@@ -11,7 +11,7 @@ import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger }
 import { 
   UploadCloud, 
   Package, 
-  DollarSign, 
+  PoundSterling, 
   TrendingUp, 
   AlertTriangle,
   BarChart3,
@@ -21,7 +21,8 @@ import {
   Clock,
   Flag,
   TrendingDown,
-  Filter
+  Filter,
+  RotateCcw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import MetricCard from '@/components/MetricCard';
@@ -34,7 +35,7 @@ import {
 import { formatCurrency } from '@/utils/formatting-utils';
 
 // Import chart components from existing charts
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, LineChart, Line, ComposedChart } from 'recharts';
 
 // Add imports for dropdown components at the top
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -64,6 +65,28 @@ const getAverageCostTooltip = (item: ProcessedInventoryItem): string => {
     }).format(item.avg_cost)}`;
   }
   return '';
+};
+
+// Helper function to determine winning status: Y (strict win), N (losing), - (tie)
+const getWinningStatus = (item: ProcessedInventoryItem): 'Y' | 'N' | '-' => {
+  if (!item.AVER || item.AVER <= 0) return 'N';
+  
+  // Get all competitor prices
+  const competitorPrices = [
+    item.Nupharm,
+    item.AAH2, 
+    item.ETH_LIST,
+    item.ETH_NET,
+    item.LEXON2
+  ].filter(price => price && price > 0);
+  
+  if (competitorPrices.length === 0) return '-'; // No competitor data
+  
+  const lowestCompetitorPrice = Math.min(...competitorPrices);
+  
+  if (item.AVER < lowestCompetitorPrice) return 'Y'; // We win strictly
+  if (item.AVER === lowestCompetitorPrice) return '-'; // Tie
+  return 'N'; // We lose
 };
 
 // Sticky Horizontal Scroll Table Component
@@ -337,12 +360,14 @@ const PriorityIssuesAnalysis: React.FC<{
     velocityCategory: string[];
     trendDirection: string[];
     winning: string[];
+    nbp: string[];
   }>({
     type: [],
     severity: [],
     velocityCategory: [],
     trendDirection: [],
-    winning: []
+    winning: [],
+    nbp: []
   });
   
   // Filter dropdown search states
@@ -352,12 +377,14 @@ const PriorityIssuesAnalysis: React.FC<{
     velocityCategory: string;
     trendDirection: string;
     winning: string;
+    nbp: string;
   }>({
     type: '',
     severity: '',
     velocityCategory: '',
     trendDirection: '',
-    winning: ''
+    winning: '',
+    nbp: ''
   });
 
   // Filter and sort priority issues
@@ -383,9 +410,12 @@ const PriorityIssuesAnalysis: React.FC<{
           columnFilters.trendDirection.includes(issue.item.trendDirection || 'N/A');
 
         const matchesWinningFilter = columnFilters.winning.length === 0 || 
-          columnFilters.winning.includes(issue.item.AVER ? 'Y' : 'N');
+          columnFilters.winning.includes(getWinningStatus(issue.item));
 
-        return matchesSearch && matchesTypeFilter && matchesSeverityFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
+        const matchesNbpFilter = columnFilters.nbp.length === 0 || 
+          columnFilters.nbp.includes(issue.item.min_cost && issue.item.min_cost > 0 ? 'Available' : 'N/A');
+
+        return matchesSearch && matchesTypeFilter && matchesSeverityFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -552,7 +582,11 @@ const PriorityIssuesAnalysis: React.FC<{
   };
 
   const getUniqueWinningValues = () => {
-    return ['Y', 'N'];
+    return ['Y', 'N', '-'];
+  };
+
+  const getUniqueNbpValues = () => {
+    return ['Available', 'N/A'];
   };
 
   // Render column header with optional filter
@@ -742,9 +776,7 @@ const PriorityIssuesAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
-                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -853,15 +885,13 @@ const PriorityIssuesAnalysis: React.FC<{
                       </TooltipProvider>
                     </td>
                     <td className="p-3 text-center font-semibold text-sm">
-                      {(() => {
-                        const lowestComp = issue.item.bestCompetitorPrice || issue.item.lowestMarketPrice || issue.item.Nupharm || issue.item.AAH2 || issue.item.LEXON2;
-                        const isWinning = issue.item.AVER && lowestComp && issue.item.AVER < lowestComp;
-                        return (
-                          <span className={isWinning ? 'text-green-400' : 'text-red-400'}>
-                            {isWinning ? 'Y' : 'N'}
-                          </span>
-                        );
-                      })()}
+                      <span className={
+                        getWinningStatus(issue.item) === 'Y' ? 'text-green-400' : 
+                        getWinningStatus(issue.item) === 'N' ? 'text-red-400' :
+                        'text-gray-400'
+                      }>
+                        {getWinningStatus(issue.item)}
+                      </span>
                     </td>
                     <td className="p-3 text-right text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
@@ -944,10 +974,12 @@ const WatchlistAnalysis: React.FC<{
     velocityCategory: string[];
     trendDirection: string[];
     winning: string[];
+    nbp: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
-    winning: []
+    winning: [],
+    nbp: []
   });
   
   // Filter dropdown search states
@@ -955,10 +987,12 @@ const WatchlistAnalysis: React.FC<{
     velocityCategory: string;
     trendDirection: string;
     winning: string;
+    nbp: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
-    winning: ''
+    winning: '',
+    nbp: ''
   });
 
   // Filter watchlist items
@@ -978,9 +1012,12 @@ const WatchlistAnalysis: React.FC<{
           columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
 
         const matchesWinningFilter = columnFilters.winning.length === 0 || 
-          columnFilters.winning.includes(item.AVER ? 'Y' : 'N');
+          columnFilters.winning.includes(getWinningStatus(item));
 
-        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
+        const matchesNbpFilter = columnFilters.nbp.length === 0 || 
+          columnFilters.nbp.includes((item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) && (item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) > 0 ? 'Available' : 'N/A');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -1108,7 +1145,11 @@ const WatchlistAnalysis: React.FC<{
   };
 
   const getUniqueWinningValues = () => {
-    return ['Y', 'N'];
+    return ['Y', 'N', '-'];
+  };
+
+  const getUniqueNbpValues = () => {
+    return ['Available', 'N/A'];
   };
 
   // Render column header with optional filter
@@ -1260,9 +1301,7 @@ const WatchlistAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
-                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -1454,10 +1493,12 @@ const StarredItemsAnalysis: React.FC<{
     velocityCategory: string[];
     trendDirection: string[];
     winning: string[];
+    nbp: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
-    winning: []
+    winning: [],
+    nbp: []
   });
   
   // Filter dropdown search states
@@ -1465,10 +1506,12 @@ const StarredItemsAnalysis: React.FC<{
     velocityCategory: string;
     trendDirection: string;
     winning: string;
+    nbp: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
-    winning: ''
+    winning: '',
+    nbp: ''
   });
 
   // Filter starred items
@@ -1488,9 +1531,12 @@ const StarredItemsAnalysis: React.FC<{
           columnFilters.trendDirection.includes(item.trendDirection || 'N/A');
 
         const matchesWinningFilter = columnFilters.winning.length === 0 || 
-          columnFilters.winning.includes(item.AVER ? 'Y' : 'N');
+          columnFilters.winning.includes(getWinningStatus(item));
 
-        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
+        const matchesNbpFilter = columnFilters.nbp.length === 0 || 
+          columnFilters.nbp.includes((item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) && (item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) > 0 ? 'Available' : 'N/A');
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -1618,7 +1664,11 @@ const StarredItemsAnalysis: React.FC<{
   };
 
   const getUniqueWinningValues = () => {
-    return ['Y', 'N'];
+    return ['Y', 'N', '-'];
+  };
+
+  const getUniqueNbpValues = () => {
+    return ['Available', 'N/A'];
   };
 
   // Render column header with optional filter
@@ -1770,9 +1820,7 @@ const StarredItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
-                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -1964,10 +2012,12 @@ const AllItemsAnalysis: React.FC<{
     velocityCategory: string[];
     trendDirection: string[];
     winning: string[];
+    nbp: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
-    winning: []
+    winning: [],
+    nbp: []
   });
   
   // Filter dropdown search states
@@ -1975,10 +2025,12 @@ const AllItemsAnalysis: React.FC<{
     velocityCategory: string;
     trendDirection: string;
     winning: string;
+    nbp: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
-    winning: ''
+    winning: '',
+    nbp: ''
   });
   const [filterType, setFilterType] = useState<string>('all');
 
@@ -2061,7 +2113,14 @@ const AllItemsAnalysis: React.FC<{
       return columnFilters.winning.includes(isWinning ? 'Y' : 'N');
     };
 
-    items = items.filter(item => matchesVelocityFilter(item) && matchesTrendFilter(item) && matchesWinningFilter(item));
+    const matchesNbpFilter = (item: any) => {
+      if (columnFilters.nbp.length === 0) return true;
+      const nbpValue = item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost;
+      const nbpStatus = nbpValue && nbpValue > 0 ? 'Available' : 'N/A';
+      return columnFilters.nbp.includes(nbpStatus);
+    };
+
+    items = items.filter(item => matchesVelocityFilter(item) && matchesTrendFilter(item) && matchesWinningFilter(item) && matchesNbpFilter(item));
 
     // Sort items
     return items.sort((a, b) => {
@@ -2184,7 +2243,11 @@ const AllItemsAnalysis: React.FC<{
   };
 
   const getUniqueWinningValues = () => {
-    return ['Y', 'N'];
+    return ['Y', 'N', '-'];
+  };
+
+  const getUniqueNbpValues = () => {
+    return ['Available', 'N/A'];
   };
 
   // Render column header with optional filter
@@ -2516,9 +2579,7 @@ const AllItemsAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
-                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -2587,10 +2648,12 @@ const AllItemsAnalysis: React.FC<{
                     <td className={`p-3 text-center font-semibold ${getCategoryColor(item.velocityCategory)}`}>
                       {typeof item.velocityCategory === 'number' ? item.velocityCategory : 'N/A'}
                     </td>
-                    <td className={`p-3 text-center font-semibold ${getTrendColor(item.trendDirection)}`}>
-                      {item.trendDirection === 'UP' ? '↑' : 
-                       item.trendDirection === 'DOWN' ? '↓' : 
-                       item.trendDirection === 'STABLE' ? '−' : '?'}
+                    <td className="p-3 text-center text-sm">
+                      <span className={`text-lg font-bold ${getTrendColor(item.trendDirection)}`}>
+                        {item.trendDirection === 'UP' ? '↑' :
+                         item.trendDirection === 'DOWN' ? '↓' :
+                         item.trendDirection === 'STABLE' ? '−' : '?'}
+                      </span>
                     </td>
                     <td className="p-3 text-center text-sm">
                       <span className={item.watchlist === '⚠️' ? 'text-orange-400' : 'text-gray-600'}>
@@ -2711,10 +2774,12 @@ const OverstockAnalysis: React.FC<{
     velocityCategory: string[];
     trendDirection: string[];
     winning: string[];
+    nbp: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
-    winning: []
+    winning: [],
+    nbp: []
   });
   
   // Filter dropdown search states
@@ -2722,10 +2787,12 @@ const OverstockAnalysis: React.FC<{
     velocityCategory: string;
     trendDirection: string;
     winning: string;
+    nbp: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
-    winning: ''
+    winning: '',
+    nbp: ''
   });
 
   // Filter overstock items
@@ -2746,7 +2813,12 @@ const OverstockAnalysis: React.FC<{
         const matchesWinningFilter = columnFilters.winning.length === 0 || 
           columnFilters.winning.includes(item.AVER ? 'Y' : 'N');
 
-        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
+        const matchesNbpFilter = columnFilters.nbp.length === 0 || 
+          columnFilters.nbp.includes(
+            (item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) ? 'Y' : 'N'
+          );
+
+        return matchesSearch && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
       })
       .sort((a, b) => {
         let aValue: any, bValue: any;
@@ -2868,6 +2940,10 @@ const OverstockAnalysis: React.FC<{
   };
 
   const getUniqueWinningValues = () => {
+    return ['Y', 'N', '-'];
+  };
+
+  const getUniqueNbpValues = () => {
     return ['Y', 'N'];
   };
 
@@ -3020,9 +3096,7 @@ const OverstockAnalysis: React.FC<{
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
-                    NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </th>
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                   <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -3509,16 +3583,14 @@ const InventoryAnalyticsContent: React.FC = () => {
           subtitle={`${inventoryData.summaryStats.totalOverstockItems} overstocked`}
           icon={<Package className="h-5 w-5" />}
           iconPosition="right"
-          flippable={true}
         />
         
         <MetricCard 
           title="Stock Value"
           value={formatCurrency(inventoryData.summaryStats.totalStockValue)}
           subtitle="Physical inventory"
-          icon={<DollarSign className="h-5 w-5" />}
+          icon={<PoundSterling className="h-5 w-5" />}
           iconPosition="right"
-          flippable={true}
         />
         
         <MetricCard 
@@ -3527,7 +3599,6 @@ const InventoryAnalyticsContent: React.FC = () => {
           subtitle="Future commitments"
           icon={<TrendingUp className="h-5 w-5" />}
           iconPosition="right"
-          flippable={true}
         />
         
         <MetricCard 
@@ -3540,7 +3611,6 @@ const InventoryAnalyticsContent: React.FC = () => {
             value: `${inventoryData.summaryStats.overstockPercentage.toFixed(1)}%`,
             type: inventoryData.summaryStats.overstockPercentage > 20 ? 'decrease' : 'neutral'
           }}
-          flippable={true}
         />
       </div>
 
@@ -3550,13 +3620,38 @@ const InventoryAnalyticsContent: React.FC = () => {
           <MetricCard 
             title="Out of Stock"
             value={(inventoryData.summaryStats.outOfStockItems || 0).toLocaleString()}
-            subtitle={`${inventoryData.summaryStats.outOfStockFastMovers || 0} fast movers`}
+            subtitle={(() => {
+              const replenishableCount = inventoryData.analyzedItems.filter(item => 
+                (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0 &&
+                item.min_cost && item.min_cost > 0
+              ).length;
+              
+              // Calculate monthly lost revenue for replenishable items (using same logic as detailed view)
+              const monthlyLostRevenue = inventoryData.analyzedItems
+                .filter(item => (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0)
+                .reduce((sum, item) => {
+                  if (!item.min_cost || item.min_cost <= 0) return sum;
+                  const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+                  if (!lowestComp || lowestComp <= 0) return sum;
+                  const monthlyUsage = item.averageUsage || item.packs_sold_avg_last_six_months || 0;
+                  if (monthlyUsage <= 0) return sum;
+                  const monthlyLostProfit = (lowestComp - item.min_cost) * monthlyUsage;
+                  return sum + Math.max(0, monthlyLostProfit);
+                }, 0);
+              
+              return `${replenishableCount} can be replenished (${formatCurrency(monthlyLostRevenue)}/month lost)`;
+            })()}
             icon={<AlertTriangle className="h-5 w-5 text-red-500" />}
             iconPosition="right"
-            flippable={false}
             change={{
-              value: (inventoryData.summaryStats.outOfStockFastMovers || 0) > 0 ? 'Critical' : 'OK',
-              type: (inventoryData.summaryStats.outOfStockFastMovers || 0) > 0 ? 'decrease' : 'increase'
+              value: inventoryData.analyzedItems.filter(item => 
+                (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0 &&
+                item.min_cost && item.min_cost > 0
+              ).length > 0 ? 'Action Needed' : 'OK',
+              type: inventoryData.analyzedItems.filter(item => 
+                (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0 &&
+                item.min_cost && item.min_cost > 0
+              ).length > 0 ? 'increase' : 'neutral'
             }}
           />
         </div>
@@ -3568,7 +3663,6 @@ const InventoryAnalyticsContent: React.FC = () => {
             subtitle={`${formatCurrency(inventoryData.summaryStats.marginOpportunityValue || 0)} potential`}
             icon={<TrendingUp className="h-5 w-5 text-green-500" />}
             iconPosition="right"
-            flippable={false}
             change={{
               value: (inventoryData.summaryStats.marginOpportunityValue || 0) > 0 ? 'Revenue+' : 'None',
               type: (inventoryData.summaryStats.marginOpportunityValue || 0) > 0 ? 'increase' : 'neutral'
@@ -3583,7 +3677,6 @@ const InventoryAnalyticsContent: React.FC = () => {
             subtitle={`${formatCurrency(inventoryData.summaryStats.costDisadvantageValue || 0)} at risk`}
             icon={<AlertTriangle className="h-5 w-5 text-orange-500" />}
             iconPosition="right"
-            flippable={false}
             change={{
               value: (inventoryData.summaryStats.costDisadvantageValue || 0) > 0 ? 'Risk' : 'OK',
               type: (inventoryData.summaryStats.costDisadvantageValue || 0) > 0 ? 'decrease' : 'increase'
@@ -3598,7 +3691,6 @@ const InventoryAnalyticsContent: React.FC = () => {
             subtitle={`${formatCurrency(inventoryData.summaryStats.stockRiskValue || 0)} <2wks supply`}
             icon={<Clock className="h-5 w-5 text-yellow-500" />}
             iconPosition="right"
-            flippable={false}
             change={{
               value: (inventoryData.summaryStats.stockRiskItems || 0) > 0 ? 'Action Needed' : 'OK',
               type: (inventoryData.summaryStats.stockRiskItems || 0) > 0 ? 'decrease' : 'increase'
@@ -3708,7 +3800,321 @@ const InventoryOverview: React.FC<{
   starredItems: Set<string>; 
   onClearFilter: () => void; 
 }> = ({ data, activeMetricFilter, onToggleStar, starredItems, onClearFilter }) => {
-  const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16'];
+  // State for flip functionality - MUST be called before any conditional returns
+  const [marginMatrixView, setMarginMatrixView] = useState<'chart' | 'table'>('chart');
+
+  // Professional color palette for supplier analysis
+  const SUPPLIER_COLORS: Record<string, string> = {
+    'Our Price': '#22C55E',      // Green - we want this to stand out positively
+    'Nupharm': '#3B82F6',       // Blue
+    'AAH': '#F59E0B',           // Orange
+    'Ethics (List)': '#8B5CF6', // Purple
+    'Ethics (Net)': '#EC4899',  // Pink
+    'Lexon': '#06B6D4',         // Cyan
+    'No Data': '#6B7280'        // Gray
+  };
+
+  // Prepare data for Price Comparison Analysis (Multi-Line Chart)
+  const priceComparisonData = useMemo(() => {
+    const comparison: Array<{
+      category: string;
+      velocityCategory: number;
+      ourPrice: number;
+      lowestMarketPrice: number;
+      averageMarketPrice: number;
+      itemCount: number;
+    }> = [];
+
+    // Group by velocity category and calculate average prices
+    const groupedData = data.analyzedItems.reduce((acc, item) => {
+      if (typeof item.velocityCategory === 'number' && item.AVER && item.AVER > 0) {
+        const key = item.velocityCategory;
+        if (!acc[key]) {
+          acc[key] = { 
+            ourPrices: [], 
+            lowestPrices: [], 
+            allCompetitorPrices: [],
+            itemCount: 0 
+          };
+        }
+        
+        // Add our price
+        acc[key].ourPrices.push(item.AVER);
+        acc[key].itemCount += 1;
+
+        // Add lowest market price if available
+        const lowestPrice = item.bestCompetitorPrice || item.lowestMarketPrice;
+        if (lowestPrice && lowestPrice > 0) {
+          acc[key].lowestPrices.push(lowestPrice);
+        }
+
+        // Collect all competitor prices for market average
+        const suppliers = ['Nupharm', 'AAH2', 'ETH_LIST', 'ETH_NET', 'LEXON2'];
+        suppliers.forEach(supplier => {
+          const price = item[supplier as keyof typeof item] as number;
+          if (price && price > 0) {
+            acc[key].allCompetitorPrices.push(price);
+          }
+        });
+      }
+      return acc;
+    }, {} as Record<number, { 
+      ourPrices: number[]; 
+      lowestPrices: number[]; 
+      allCompetitorPrices: number[];
+      itemCount: number;
+    }>);
+
+    // Calculate averages for each velocity category
+    Object.entries(groupedData).forEach(([category, groupData]) => {
+      const catNum = parseInt(category);
+      
+      const ourAvgPrice = groupData.ourPrices.length > 0 
+        ? groupData.ourPrices.reduce((sum, price) => sum + price, 0) / groupData.ourPrices.length 
+        : 0;
+
+      const lowestAvgPrice = groupData.lowestPrices.length > 0 
+        ? groupData.lowestPrices.reduce((sum, price) => sum + price, 0) / groupData.lowestPrices.length 
+        : 0;
+
+      const marketAvgPrice = groupData.allCompetitorPrices.length > 0 
+        ? groupData.allCompetitorPrices.reduce((sum, price) => sum + price, 0) / groupData.allCompetitorPrices.length 
+        : 0;
+
+      if (ourAvgPrice > 0) {
+        // Calculate total stock value for this group using the main data reference
+        const stockValue = data.analyzedItems
+          .filter(item => typeof item.velocityCategory === 'number' && item.velocityCategory === catNum)
+          .reduce((sum, item) => sum + (item.stockValue || 0), 0);
+
+        const comparisonItem = {
+          category: `Group ${catNum}`,
+          velocityCategory: catNum,
+          ourPrice: ourAvgPrice,
+          lowestMarketPrice: lowestAvgPrice || ourAvgPrice, // Fallback to our price if no competitor data
+          averageMarketPrice: marketAvgPrice || ourAvgPrice, // Fallback to our price if no competitor data
+          itemCount: groupData.itemCount,
+          stockValue: stockValue
+        };
+        
+        comparison.push(comparisonItem as any);
+      }
+    });
+
+    return comparison.sort((a, b) => a.velocityCategory - b.velocityCategory);
+  }, [data.analyzedItems]);
+
+  // Prepare data for Supplier Split Analysis (Strict Wins Only)
+  const supplierSplitData = useMemo(() => {
+    const supplierCounts: Record<string, number> = {
+      'Our Price': 0,
+      'Nupharm': 0,
+      'AAH': 0,
+      'Eth (List)': 0,
+      'Eth (Net)': 0,
+      'Lexon': 0,
+      'No Data': 0
+    };
+
+    // Clean supplier name mapping
+    const supplierMapping: Record<string, string> = {
+      'AAH2': 'AAH',
+      'ETH_LIST': 'Eth (List)',
+      'ETH_NET': 'Eth (Net)',
+      'LEXON2': 'Lexon',
+      'Nupharm': 'Nupharm'
+    };
+
+    // For each item, only count STRICT wins (no ties)
+    data.analyzedItems.forEach(item => {
+      const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'ETH_NET', 'LEXON2'];
+      
+      // Check if we have our price
+      if (item.AVER && item.AVER > 0) {
+        // Get all valid competitor prices
+        const competitorPrices: Array<{ source: string; price: number }> = [];
+        competitors.forEach(supplier => {
+          const price = item[supplier as keyof typeof item] as number;
+          if (price && price > 0) {
+            const cleanName = supplierMapping[supplier] || supplier;
+            competitorPrices.push({ source: cleanName, price });
+          }
+        });
+
+        if (competitorPrices.length > 0) {
+          // Find the lowest competitor price
+          const lowestCompetitorPrice = Math.min(...competitorPrices.map(c => c.price));
+          
+          // Check if we strictly win (our price < lowest competitor)
+          if (item.AVER < lowestCompetitorPrice) {
+            supplierCounts['Our Price'] += 1;
+          } else {
+            // Find which competitor has the lowest price (strict wins only)
+            const lowestCompetitor = competitorPrices.find(c => c.price === lowestCompetitorPrice);
+            
+            // Only count if this competitor is strictly better than our price
+            if (lowestCompetitor && lowestCompetitor.price < item.AVER) {
+              supplierCounts[lowestCompetitor.source] += 1;
+            } else {
+              // It's a tie or we only have our price - count as no clear winner
+              supplierCounts['No Data'] += 1;
+            }
+          }
+        } else {
+          // No competitor data available
+          supplierCounts['No Data'] += 1;
+        }
+      } else {
+        // No pricing data available
+        supplierCounts['No Data'] += 1;
+      }
+    });
+
+    // Convert to pie chart data format with better colors
+    const pieData = Object.entries(supplierCounts)
+      .filter(([_, count]) => count > 0)
+      .map(([supplier, count]) => ({
+        name: supplier,
+        value: count,
+        percentage: ((count / data.analyzedItems.length) * 100).toFixed(1)
+      }));
+
+    return pieData;
+  }, [data.analyzedItems]);
+
+  // Prepare data for Margin Opportunity Matrix (Heat Map Style) - REAL opportunities only
+  const marginOpportunityData = useMemo(() => {
+    const opportunities: Array<{
+      category: string;
+      opportunityValue: number;
+      itemCount: number;
+      averageMargin: number;
+      priority: 'Critical' | 'High' | 'Medium' | 'Low';
+      color: string;
+    }> = [];
+
+    // Group by velocity and calculate REAL margin opportunities
+    const grouped = data.analyzedItems.reduce((acc, item) => {
+      // Must have a velocity category
+      if (typeof item.velocityCategory !== 'number') return acc;
+      
+      // Must have min_cost available (suppliers have stock)
+      if (!item.min_cost || item.min_cost <= 0) return acc;
+      
+      // Calculate lowest competitor price
+      const competitors = ['AAH', 'AAH2', 'ETH_LIST', 'ETH_NET', 'LEXON2', 'Nupharm'];
+      const competitorPrices = competitors
+        .map(comp => item[comp as keyof typeof item] as number)
+        .filter(price => price && price > 0);
+      
+      if (competitorPrices.length === 0) return acc;
+      
+      const lowestCompPrice = Math.min(...competitorPrices);
+      
+      // Only include if min_cost < lowest competitor price (real arbitrage opportunity)
+      if (item.min_cost < lowestCompPrice) {
+        const marginOpportunity = ((lowestCompPrice - item.min_cost) / item.min_cost) * 100;
+        
+        // Only include if > 5% margin opportunity
+        if (marginOpportunity > 5) {
+          const key = item.velocityCategory <= 2 ? 'Ultra Fast' :
+                     item.velocityCategory <= 4 ? 'Fast' : 'Slow';
+          
+          if (!acc[key]) {
+            acc[key] = { totalOpportunity: 0, items: 0, margins: [] };
+          }
+
+          // Calculate opportunity value based on buying at min_cost and selling at competitor price
+          const potentialRevenue = lowestCompPrice * (item.quantity_available || 0);
+          const currentCost = item.min_cost * (item.quantity_available || 0);
+          const opportunityValue = potentialRevenue - currentCost;
+          
+          acc[key].totalOpportunity += opportunityValue;
+          acc[key].items += 1;
+          acc[key].margins.push(marginOpportunity);
+        }
+      }
+      return acc;
+    }, {} as Record<string, { totalOpportunity: number; items: number; margins: number[] }>);
+
+    // Create opportunity data with priority classification
+    Object.entries(grouped).forEach(([category, data]) => {
+      const avgMargin = data.margins.reduce((sum, m) => sum + m, 0) / data.margins.length;
+      
+      let priority: 'Critical' | 'High' | 'Medium' | 'Low' = 'Low';
+      let color = '#06B6D4';
+
+      // Priority based on opportunity value and velocity
+      if (data.totalOpportunity > 100000 && category === 'Ultra Fast') {
+        priority = 'Critical';
+        color = '#DC2626'; // Dark red
+      } else if (data.totalOpportunity > 50000 || category === 'Ultra Fast') {
+        priority = 'High';
+        color = '#EF4444'; // Red
+      } else if (data.totalOpportunity > 25000) {
+        priority = 'Medium';
+        color = '#F59E0B'; // Orange
+      } else {
+        priority = 'Low';
+        color = '#10B981'; // Green
+      }
+
+      opportunities.push({
+        category,
+        opportunityValue: data.totalOpportunity,
+        itemCount: data.items,
+        averageMargin: avgMargin,
+        priority,
+        color
+      });
+    });
+
+    return opportunities.sort((a, b) => b.opportunityValue - a.opportunityValue);
+  }, [data.analyzedItems]);
+
+  // Get margin opportunity items for table view - REAL opportunities only
+  const marginOpportunityItems = useMemo(() => {
+    return data.analyzedItems.filter(item => {
+      // Must have a velocity category
+      if (typeof item.velocityCategory !== 'number') return false;
+      
+      // Must have min_cost available (suppliers have stock)
+      if (!item.min_cost || item.min_cost <= 0) return false;
+      
+      // Calculate lowest competitor price
+      const competitors = ['AAH', 'AAH2', 'ETH_LIST', 'ETH_NET', 'LEXON2', 'Nupharm'];
+      const competitorPrices = competitors
+        .map(comp => item[comp as keyof typeof item] as number)
+        .filter(price => price && price > 0);
+      
+      if (competitorPrices.length === 0) return false;
+      
+      const lowestCompPrice = Math.min(...competitorPrices);
+      
+      // Only include if min_cost < lowest competitor price (real arbitrage opportunity)
+      const isRealOpportunity = item.min_cost < lowestCompPrice;
+      
+      // Calculate margin opportunity percentage
+      if (isRealOpportunity) {
+        const marginOpportunity = ((lowestCompPrice - item.min_cost) / item.min_cost) * 100;
+        // Store this for sorting - add it to the item temporarily
+        (item as any).realMarginOpportunity = marginOpportunity;
+        return marginOpportunity > 5; // Only include if > 5% margin opportunity
+      }
+      
+      return false;
+    }).sort((a, b) => ((b as any).realMarginOpportunity || 0) - ((a as any).realMarginOpportunity || 0));
+  }, [data.analyzedItems]);
+
+  // Format currency function
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
 
   // If a metric filter is active, show filtered data table
   if (activeMetricFilter) {
@@ -3721,100 +4127,423 @@ const InventoryOverview: React.FC<{
     />;
   }
 
-  // Default static overview with charts
+  // Enhanced overview with modern analytics
   return (
     <div className="space-y-6">
-      {/* Velocity Distribution Chart */}
+      {/* Price Comparison Analysis - Strategic Pricing Framework */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Velocity Category Analysis
+            <TrendingUp className="h-5 w-5" />
+            Price Comparison Analysis
           </CardTitle>
+          <p className="text-sm text-gray-400">
+            Compare our pricing against market lowest and average by velocity category
+          </p>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.velocityBreakdown}>
+            <ComposedChart data={priceComparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="category" 
                 stroke="#9CA3AF"
-                tickFormatter={(value) => `Cat ${value}`}
+                angle={-45}
+                textAnchor="end"
+                height={60}
               />
-              <YAxis stroke="#9CA3AF" />
+              {/* Left Y-Axis for Prices */}
+              <YAxis 
+                yAxisId="price"
+                stroke="#9CA3AF"
+                tickFormatter={(value) => `£${value.toFixed(2)}`}
+                domain={['dataMin - 0.5', 'dataMax + 0.5']}
+                allowDecimals={true}
+              />
+              {/* Right Y-Axis for Stock Values */}
+              <YAxis 
+                yAxisId="stock"
+                orientation="right"
+                stroke="#374151"
+                tickFormatter={(value) => `£${(value / 1000).toFixed(0)}k`}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+              />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#1F2937', 
                   border: '1px solid #374151',
                   borderRadius: '8px'
                 }}
-                formatter={(value, name) => [
-                  name === 'itemCount' ? `${value} items` : formatCurrency(value as number),
-                  name === 'itemCount' ? 'Items' : 'Stock Value'
-                ]}
+                formatter={(value, name) => {
+                  if (name === 'stockValue') return [`£${(value as number / 1000).toFixed(0)}k`, 'Stock Value'];
+                  const price = `£${(value as number).toFixed(2)}`;
+                  if (name === 'ourPrice') return [price, 'Our Average Price'];
+                  if (name === 'lowestMarketPrice') return [price, 'Lowest Market Price'];
+                  if (name === 'averageMarketPrice') return [price, 'Average Market Price'];
+                  return [price, name];
+                }}
+                labelFormatter={(label) => {
+                  const item = priceComparisonData.find(d => d.category === label);
+                  return `${label} (${item?.itemCount || 0} items)`;
+                }}
               />
-              <Bar dataKey="itemCount" fill="#10B981" name="itemCount" />
-              <Bar dataKey="stockValue" fill="#F59E0B" name="stockValue" />
-            </BarChart>
+              
+              {/* Background Stock Value Bars - Almost Transparent */}
+              <Bar 
+                yAxisId="stock"
+                dataKey="stockValue" 
+                fill="#374151"
+                fillOpacity={0.4}
+                stroke="none"
+                name="stockValue"
+                maxBarSize={50}
+              />
+              
+              {/* Our Price Line - Blue */}
+              <Line 
+                yAxisId="price"
+                type="monotone"
+                dataKey="ourPrice" 
+                stroke="#3B82F6"
+                strokeWidth={3}
+                dot={{ fill: '#3B82F6', strokeWidth: 2, r: 6 }}
+                activeDot={{ r: 8, fill: '#3B82F6' }}
+                name="ourPrice"
+              />
+              
+              {/* Lowest Market Price Line - Green */}
+              <Line 
+                yAxisId="price"
+                type="monotone"
+                dataKey="lowestMarketPrice" 
+                stroke="#10B981"
+                strokeWidth={3}
+                dot={{ fill: '#10B981', strokeWidth: 2, r: 6 }}
+                activeDot={{ r: 8, fill: '#10B981' }}
+                name="lowestMarketPrice"
+              />
+              
+              {/* Average Market Price Line - Orange */}
+              <Line 
+                yAxisId="price"
+                type="monotone"
+                dataKey="averageMarketPrice" 
+                stroke="#F59E0B"
+                strokeWidth={3}
+                dot={{ fill: '#F59E0B', strokeWidth: 2, r: 6 }}
+                activeDot={{ r: 8, fill: '#F59E0B' }}
+                name="averageMarketPrice"
+              />
+            </ComposedChart>
           </ResponsiveContainer>
+          <div className="mt-4 flex flex-wrap gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded"></div>
+              <span className="text-gray-300">Our Average Price</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded"></div>
+              <span className="text-gray-300">Lowest Market Price</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-orange-500 rounded"></div>
+              <span className="text-gray-300">Average Market Price</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Trend Distribution */}
+        {/* Supplier Split Analysis */}
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>Price Trend Distribution</CardTitle>
+            <CardTitle>Competitive Positioning Analysis</CardTitle>
+            <p className="text-sm text-gray-400">
+              Market share of lowest prices - who wins each product line?
+            </p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
-                  data={data.trendBreakdown}
+                  data={supplierSplitData}
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
+                  labelLine={false}
+                  outerRadius={90}
+                  innerRadius={30}
                   fill="#8884d8"
-                  dataKey="itemCount"
-                  nameKey="direction"
+                  dataKey="value"
+                  stroke="#1F2937"
+                  strokeWidth={2}
                 >
-                  {data.trendBreakdown.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {supplierSplitData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={SUPPLIER_COLORS[entry.name] || '#6B7280'} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${value} items`, 'Count']} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1F2937', 
+                    border: '1px solid #374151',
+                    borderRadius: '8px',
+                    color: '#F9FAFB'
+                  }}
+                  formatter={(value, name) => {
+                    const percentage = supplierSplitData.find(d => d.name === name)?.percentage || '0';
+                    return [`${value} items (${percentage}%)`, name];
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              {supplierSplitData.map((entry, index) => (
+                <div key={entry.name} className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded" 
+                    style={{ backgroundColor: SUPPLIER_COLORS[entry.name] || '#6B7280' }}
+                  ></div>
+                  <span className="text-gray-300">{entry.name}: {entry.percentage}%</span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Strategy Distribution */}
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>Pricing Strategy Distribution</CardTitle>
+        {/* Enhanced Margin Opportunity Matrix with Flip */}
+        <Card className="border border-white/10 bg-gradient-to-br from-gray-950/60 to-gray-900/40 backdrop-blur-sm hover:border-white/20 transition-all duration-300">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                  <TrendingUp className="h-6 w-6 text-orange-400" />
+                  Real Margin Opportunities
+                </CardTitle>
+                <p className="text-sm text-gray-400 mt-1">
+                  {marginMatrixView === 'chart' 
+                    ? 'Products where suppliers have stock & our cost < competitor prices'
+                    : `${marginOpportunityItems.length} actionable opportunities where we can source below market price`
+                  }
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMarginMatrixView(marginMatrixView === 'chart' ? 'table' : 'chart')}
+                className="text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={data.strategyBreakdown}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="stockValue"
-                  nameKey="strategy"
-                >
-                  {data.strategyBreakdown.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [formatCurrency(value as number), 'Stock Value']} />
-              </PieChart>
-            </ResponsiveContainer>
+            {marginMatrixView === 'chart' ? (
+              <>
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={marginOpportunityData} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis 
+                      dataKey="category" 
+                      stroke="#9CA3AF" 
+                      fontSize={12}
+                      tick={{ fill: '#9CA3AF' }}
+                    />
+                    <YAxis 
+                      stroke="#9CA3AF" 
+                      fontSize={12}
+                      tick={{ fill: '#9CA3AF' }}
+                      tickFormatter={(value) => {
+                        if (value >= 1000000) return `£${(value / 1000000).toFixed(1)}M`;
+                        if (value >= 1000) return `£${(value / 1000).toFixed(0)}k`;
+                        return `£${value}`;
+                      }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1F2937', 
+                        border: '1px solid #374151',
+                        borderRadius: '12px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+                      }}
+                      formatter={(value, name) => {
+                        if (name === 'opportunityValue') {
+                          const val = value as number;
+                          const formatted = val >= 1000000 ? `£${(val / 1000000).toFixed(1)}M` :
+                                          val >= 1000 ? `£${(val / 1000).toFixed(0)}k` :
+                                          `£${val}`;
+                          return [formatted, 'Opportunity Value'];
+                        }
+                        if (name === 'averageMargin') return [`${(value as number).toFixed(1)}%`, 'Avg Margin Opportunity'];
+                        return [value, name];
+                      }}
+                      labelFormatter={(label) => {
+                        const item = marginOpportunityData.find(d => d.category === label);
+                        return `${label} (${item?.priority} Priority - ${item?.itemCount} items)`;
+                      }}
+                    />
+                    <Bar 
+                      dataKey="opportunityValue" 
+                      fill="#8884d8"
+                      name="opportunityValue"
+                      radius={[4, 4, 0, 0]}
+                    >
+                      {marginOpportunityData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-4 flex flex-wrap gap-4 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-600 rounded-full shadow-sm"></div>
+                    <span className="text-gray-300 font-medium">Critical</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full shadow-sm"></div>
+                    <span className="text-gray-300 font-medium">High</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full shadow-sm"></div>
+                    <span className="text-gray-300 font-medium">Medium</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
+                    <span className="text-gray-300 font-medium">Low</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="max-h-80 overflow-y-auto overflow-x-auto">
+                <table className="w-full text-sm min-w-max">
+                  <thead className="sticky top-0 bg-gray-900/90 backdrop-blur">
+                    <tr className="border-b border-gray-700">
+                      <th className="text-left p-2 text-gray-300 font-medium min-w-32">Product</th>
+                      <th className="text-center p-2 text-gray-300 font-medium">Group</th>
+                      <th className="text-right p-2 text-gray-300 font-medium">Min Cost</th>
+                      <th className="text-right p-2 text-gray-300 font-medium">Our Price</th>
+                      <th className="text-right p-2 text-gray-300 font-medium">Lowest Comp</th>
+                      <th className="text-right p-2 text-gray-300 font-medium">Margin Opp</th>
+                      <th className="text-center p-2 text-gray-300 font-medium">Market Rank</th>
+                      <th className="text-right p-2 text-gray-300 font-medium">Stock Value</th>
+                      <th className="text-center p-2 text-gray-300 font-medium">Priority</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {marginOpportunityItems.slice(0, 50).map((item, index) => {
+                      const velocityGroup = typeof item.velocityCategory === 'number' && item.velocityCategory <= 2 ? 'Ultra Fast' :
+                                           typeof item.velocityCategory === 'number' && item.velocityCategory <= 4 ? 'Fast' : 'Slow';
+                      const priority = (item.stockValue || 0) > 50000 && velocityGroup === 'Ultra Fast' ? 'Critical' :
+                                      (item.stockValue || 0) > 25000 || velocityGroup === 'Ultra Fast' ? 'High' :
+                                      (item.stockValue || 0) > 10000 ? 'Medium' : 'Low';
+                      const priorityColor = priority === 'Critical' ? 'text-red-400' :
+                                           priority === 'High' ? 'text-red-300' :
+                                           priority === 'Medium' ? 'text-orange-400' : 'text-green-400';
+                      
+                      // Calculate competitive data
+                      const minCost = item.min_cost || 0; // What suppliers charge us
+                      const ourPrice = item.AVER || 0; // What we sell for
+                      const competitors = ['AAH', 'AAH2', 'ETH_LIST', 'ETH_NET', 'LEXON2', 'Nupharm'];
+                      const competitorPrices = competitors
+                        .map(comp => item[comp as keyof typeof item] as number)
+                        .filter(price => price && price > 0);
+                      
+                      const lowestCompPrice = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+                      const marginOpportunity = (item as any).realMarginOpportunity || 0;
+                      
+                      // Calculate current margin if we have both min cost and our price
+                      const currentMargin = minCost > 0 && ourPrice > 0 ? 
+                        ((ourPrice - minCost) / minCost * 100) : 0;
+                      
+                      // Calculate market rank
+                      const allPrices = ourPrice > 0 ? [ourPrice, ...competitorPrices] : competitorPrices;
+                      const sortedPrices = [...allPrices].sort((a, b) => a - b);
+                      const ourRank = ourPrice > 0 ? sortedPrices.indexOf(ourPrice) + 1 : 0;
+                      const totalCompetitors = allPrices.length;
+                      
+                      return (
+                        <tr key={item.stockcode} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                          <td className="p-2">
+                            <div className="font-medium text-white text-xs">{item.stockcode}</div>
+                            <div className="text-gray-400 text-xs truncate max-w-32">{item.description}</div>
+                          </td>
+                          <td className="text-center p-2 text-gray-300 text-xs">{velocityGroup}</td>
+                          <td className="text-right p-2 text-green-400 text-xs font-medium" title="Supplier/Manufacturer Price">
+                            {minCost > 0 ? `£${minCost.toFixed(2)}` : 'N/A'}
+                          </td>
+                          <td className="text-right p-2 text-blue-400 text-xs font-medium" title={`Current Margin: ${currentMargin.toFixed(1)}%`}>
+                            {ourPrice > 0 ? `£${ourPrice.toFixed(2)}` : 'N/A'}
+                          </td>
+                          <td className="text-right p-2 text-red-400 text-xs font-medium" title="Cheapest Competitor Price">
+                            {lowestCompPrice > 0 ? `£${lowestCompPrice.toFixed(2)}` : 'N/A'}
+                          </td>
+                          <td className="text-right p-2 font-medium text-orange-400 text-xs" title="Potential margin if we price just below lowest competitor">
+                            {marginOpportunity.toFixed(1)}%
+                          </td>
+                          <td className="text-center p-2 text-xs">
+                            {ourRank > 0 && totalCompetitors > 0 ? (
+                              <span className={`font-medium ${
+                                ourRank === 1 ? 'text-green-400' :
+                                ourRank === 2 ? 'text-yellow-400' :
+                                ourRank === 3 ? 'text-orange-400' : 'text-red-400'
+                              }`}>
+                                {ourRank}/{totalCompetitors}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">N/A</span>
+                            )}
+                          </td>
+                          <td className="text-right p-2 text-gray-300 text-xs">
+                            {(item.stockValue || 0) >= 1000 ? `£${((item.stockValue || 0) / 1000).toFixed(0)}k` : `£${(item.stockValue || 0).toFixed(0)}`}
+                          </td>
+                          <td className={`text-center p-2 text-xs font-medium ${priorityColor}`}>
+                            {priority}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {marginOpportunityItems.length > 50 && (
+                  <div className="text-center text-gray-400 text-xs mt-2">
+                    Showing top 50 of {marginOpportunityItems.length} opportunities
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Enhanced Analytics Summary */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle>Strategic Insights Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+              <div className="text-2xl font-bold text-green-400">
+                {priceComparisonData.filter(item => item.ourPrice <= item.lowestMarketPrice).length}
+              </div>
+              <div className="text-sm text-gray-300">Competitive Categories</div>
+              <div className="text-xs text-gray-400">Categories where we match/beat market</div>
+            </div>
+            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-400">
+                {(supplierSplitData.find(item => item.name === 'Our Price')?.percentage || '0')}%
+              </div>
+              <div className="text-sm text-gray-300">Our Market Leadership</div>
+              <div className="text-xs text-gray-400">Items where we have lowest price</div>
+            </div>
+            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+              <div className="text-2xl font-bold text-orange-400">
+                {formatCurrency(marginOpportunityData.reduce((sum, item) => sum + item.opportunityValue, 0))}
+              </div>
+              <div className="text-sm text-gray-300">Margin Opportunity</div>
+              <div className="text-xs text-gray-400">Potential additional revenue</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
@@ -3836,10 +4565,12 @@ const MetricFilteredView: React.FC<{
     velocityCategory: string[];
     trendDirection: string[];
     winning: string[];
+    nbp: string[];
   }>({
     velocityCategory: [],
     trendDirection: [],
-    winning: []
+    winning: [],
+    nbp: []
   });
   
   // Filter dropdown search states
@@ -3847,10 +4578,12 @@ const MetricFilteredView: React.FC<{
     velocityCategory: string;
     trendDirection: string;
     winning: string;
+    nbp: string;
   }>({
     velocityCategory: '',
     trendDirection: '',
-    winning: ''
+    winning: '',
+    nbp: ''
   });
 
   // Get filtered items based on metric type
@@ -3906,7 +4639,12 @@ const MetricFilteredView: React.FC<{
       const matchesWinningFilter = columnFilters.winning.length === 0 || 
         columnFilters.winning.includes(item.AVER ? 'Y' : 'N');
 
-      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter;
+      const matchesNbpFilter = columnFilters.nbp.length === 0 || 
+        columnFilters.nbp.includes(
+          (item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost) ? 'Available' : 'N/A'
+        );
+
+      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter;
     });
 
     // Sort items
@@ -4035,7 +4773,11 @@ const MetricFilteredView: React.FC<{
   };
 
   const getUniqueWinningValues = () => {
-    return ['Y', 'N'];
+    return ['Y', 'N', '-'];
+  };
+
+  const getUniqueNbpValues = () => {
+    return ['Available', 'N/A'];
   };
 
   // Render column header with optional filter
@@ -4043,7 +4785,8 @@ const MetricFilteredView: React.FC<{
     title: string,
     sortKey: string,
     filterColumn?: keyof typeof columnFilters,
-    filterOptions?: string[]
+    filterOptions?: string[],
+    alignment: 'left' | 'center' | 'right' = 'center'
   ) => {
     const hasActiveFilter = filterColumn && columnFilters[filterColumn].length > 0;
     
@@ -4176,7 +4919,31 @@ const MetricFilteredView: React.FC<{
 
   // Calculate summary stats for filtered items
   const filteredStats = useMemo(() => {
-    const totalValue = filteredItems.reduce((sum, item) => sum + (item.stockValue || 0), 0);
+    let totalValue;
+    
+    if (filterType === 'out-of-stock') {
+      // Calculate lost revenue opportunity for out-of-stock items that can be replenished
+      totalValue = filteredItems.reduce((sum, item) => {
+        // Only calculate for items with min_cost (can be replenished)
+        if (!item.min_cost || item.min_cost <= 0) return sum;
+        
+        // Get lowest competitor price
+        const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+        if (!lowestComp || lowestComp <= 0) return sum;
+        
+        // Get average monthly usage
+        const monthlyUsage = item.averageUsage || item.packs_sold_avg_last_six_months || 0;
+        if (monthlyUsage <= 0) return sum;
+        
+        // Calculate monthly lost profit: (selling_price - cost) * monthly_usage
+        const monthlyLostProfit = (lowestComp - item.min_cost) * monthlyUsage;
+        return sum + Math.max(0, monthlyLostProfit); // Only add positive profits
+      }, 0);
+    } else {
+      // Default calculation for other filter types
+      totalValue = filteredItems.reduce((sum, item) => sum + (item.stockValue || 0), 0);
+    }
+    
     const fastMovers = filteredItems.filter(item => typeof item.velocityCategory === 'number' && item.velocityCategory <= 3);
     const potentialRevenue = filteredItems.reduce((sum, item) => {
       if (filterType === 'margin-opportunity' && item.lowestMarketPrice) {
@@ -4218,7 +4985,9 @@ const MetricFilteredView: React.FC<{
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-white">{formatCurrency(filteredStats.totalValue)}</div>
-            <div className="text-sm text-gray-400">Total Value</div>
+            <div className="text-sm text-gray-400">
+              {filterType === 'out-of-stock' ? 'Monthly Lost Revenue' : 'Total Value'}
+            </div>
           </CardContent>
         </Card>
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -4288,10 +5057,8 @@ const MetricFilteredView: React.FC<{
                     <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                       Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('nbp')}>
-                      NBP {sortField === 'nbp' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues())}
+                    {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
+                    {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
                     <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                       Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>

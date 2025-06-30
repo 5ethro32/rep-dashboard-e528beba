@@ -276,8 +276,48 @@ export const processEngineExcelFile = async (file: File): Promise<ProcessedEngin
           processedData.changeHistory = [];
         }
         
-        // Store the data in localStorage for persistence
-        localStorage.setItem('engineRoomData', JSON.stringify(processedData));
+        // Store the data in localStorage for persistence (with error handling for quota exceeded)
+        try {
+          localStorage.setItem('engineRoomData', JSON.stringify(processedData));
+        } catch (error) {
+          console.warn('Failed to store full data in localStorage (quota exceeded):', error);
+          // Clear any existing data and try storing only essential data
+          localStorage.removeItem('engineRoomData');
+          try {
+            // Create a reduced dataset with only essential information
+            const essentialData = {
+              fileName: processedData.fileName,
+              totalItems: processedData.totalItems,
+              activeItems: processedData.activeItems,
+              totalRevenue: processedData.totalRevenue,
+              totalCost: processedData.totalCost,
+              totalProfit: processedData.totalProfit,
+              overallMargin: processedData.overallMargin,
+              avgCostLessThanMLCount: processedData.avgCostLessThanMLCount,
+              rule1Flags: processedData.rule1Flags,
+              rule2Flags: processedData.rule2Flags,
+              profitDelta: processedData.profitDelta,
+              marginLift: processedData.marginLift,
+              currentAvgMargin: processedData.currentAvgMargin,
+              proposedAvgMargin: processedData.proposedAvgMargin,
+              currentProfit: processedData.currentProfit,
+              proposedProfit: processedData.proposedProfit,
+              // Store only flagged items and a subset of all items to reduce size
+              items: processedData.items.slice(0, 1000), // Limit to first 1000 items
+              flaggedItems: processedData.flaggedItems, // Keep all flagged items for analysis
+              chartData: processedData.chartData,
+              ruleConfig: processedData.ruleConfig,
+              changeHistory: processedData.changeHistory || [],
+              currentUser: processedData.currentUser,
+              isReducedDataset: true // Flag to indicate this is a reduced dataset
+            };
+            localStorage.setItem('engineRoomData', JSON.stringify(essentialData));
+            console.log('Stored reduced dataset due to size constraints');
+          } catch (secondError) {
+            console.warn('Failed to store even essential data, proceeding without localStorage persistence');
+            // Continue without localStorage - the application will still work but won't persist data
+          }
+        }
         
         resolve(processedData);
       } catch (error) {

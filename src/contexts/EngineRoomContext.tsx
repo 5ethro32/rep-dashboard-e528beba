@@ -40,6 +40,28 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [modifiedItems, setModifiedItems] = useState<Set<string>>(new Set());
   const [userRole, setUserRole] = useState<'analyst' | 'manager' | 'admin'>('manager');
 
+  // Helper function to safely store data in localStorage with quota handling
+  const safeStoreEngineData = useCallback((data: any) => {
+    try {
+      localStorage.setItem('engineRoomData', JSON.stringify(data));
+    } catch (error) {
+      console.warn('Failed to store data in localStorage (quota exceeded):', error);
+      // Clear existing data and try storing essential data only
+      localStorage.removeItem('engineRoomData');
+      try {
+        const essentialData = {
+          ...data,
+          items: data.items?.slice(0, 1000) || [], // Limit to first 1000 items
+          isReducedDataset: true
+        };
+        localStorage.setItem('engineRoomData', JSON.stringify(essentialData));
+        console.log('Stored reduced dataset due to size constraints');
+      } catch (secondError) {
+        console.warn('Failed to store even essential data, continuing without persistence');
+      }
+    }
+  }, []);
+
   // Get cached data if available
   const { data: engineData, isLoading, error } = useQuery({
     queryKey: ['engineRoomData'],
@@ -50,6 +72,18 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         // This ensures any fixes to calculation formulas are applied to cached data
         try {
           const parsedData = JSON.parse(cachedData);
+          
+          // Check if this is a reduced dataset due to size constraints
+          if (parsedData && parsedData.isReducedDataset) {
+            console.warn('Loading reduced dataset due to previous storage constraints');
+            // Show a warning toast to inform the user
+            setTimeout(() => {
+              if (typeof window !== 'undefined') {
+                // Use a simple setTimeout to show the toast after component mount
+                console.log('Dataset was reduced to fit storage constraints. Some items may not be visible.');
+              }
+            }, 1000);
+          }
           
           // If data exists, recalculate key margin and profit metrics 
           // using the CORRECTED formula: (price - cost) / price
@@ -235,7 +269,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const dataWithMetrics = recalculateEngineMetrics(processedData);
       
       // Update cache and trigger UI update
-      localStorage.setItem('engineRoomData', JSON.stringify(dataWithMetrics));
+      safeStoreEngineData(dataWithMetrics);
       await queryClient.invalidateQueries({ queryKey: ['engineRoomData'] });
       
       clearInterval(progressInterval);
@@ -434,7 +468,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
     
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    safeStoreEngineData(dataWithUpdatedMetrics);
     queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     // Track modified items
@@ -450,7 +484,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       title: "Price updated",
       description: `Updated price for ${item.description} to £${newPrice.toFixed(2)}${rationale ? ` (${PRICE_RATIONALES[rationale]})` : ''}`,
     });
-  }, [engineData, queryClient, toast, recalculateEngineMetrics]);
+  }, [engineData, queryClient, toast, recalculateEngineMetrics, safeStoreEngineData]);
 
   // Handle reset changes
   const handleResetChanges = useCallback(() => {
@@ -487,7 +521,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
     
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    safeStoreEngineData(dataWithUpdatedMetrics);
     queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     // Clear modified items
@@ -497,7 +531,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       title: "Changes reset",
       description: "All price changes have been reset to calculated values"
     });
-  }, [engineData, queryClient, toast, recalculateEngineMetrics]);
+  }, [engineData, queryClient, toast, recalculateEngineMetrics, safeStoreEngineData]);
 
   // Handle save changes - Updated to properly preserve price changes and rationales
   const handleSaveChanges = useCallback(() => {
@@ -544,7 +578,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
     
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    safeStoreEngineData(dataWithUpdatedMetrics);
     queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     // Clear modified items
@@ -562,7 +596,7 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       marginLift: dataWithUpdatedMetrics.marginLift,
       profitDelta: dataWithUpdatedMetrics.profitDelta
     });
-  }, [engineData, modifiedItems.size, queryClient, toast, recalculateEngineMetrics]);
+  }, [engineData, modifiedItems.size, queryClient, toast, recalculateEngineMetrics, safeStoreEngineData]);
 
   // Handle submit for approval - Updated to track in change history
   const handleSubmitForApproval = useCallback(() => {
@@ -607,14 +641,14 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
     
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    safeStoreEngineData(dataWithUpdatedMetrics);
     queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     toast({
       title: "Submitted for approval",
       description: `${modifiedItems.size} price changes have been submitted for approval`
     });
-  }, [engineData, modifiedItems.size, queryClient, toast, recalculateEngineMetrics]);
+  }, [engineData, modifiedItems.size, queryClient, toast, recalculateEngineMetrics, safeStoreEngineData]);
 
   // Handle approve items
   const handleApproveItems = useCallback((itemIds: string[], comment?: string) => {
@@ -657,14 +691,14 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
     
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    safeStoreEngineData(dataWithUpdatedMetrics);
     queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     toast({
       title: "Items approved",
       description: `Approved ${itemIds.length} price changes`
     });
-  }, [engineData, queryClient, toast, recalculateEngineMetrics]);
+  }, [engineData, queryClient, toast, recalculateEngineMetrics, safeStoreEngineData]);
 
   // Handle reject items
   const handleRejectItems = useCallback((itemIds: string[], comment: string) => {
@@ -718,14 +752,14 @@ export const EngineRoomProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const dataWithUpdatedMetrics = recalculateEngineMetrics(updatedData);
     
     // Update the local storage and query cache
-    localStorage.setItem('engineRoomData', JSON.stringify(dataWithUpdatedMetrics));
+    safeStoreEngineData(dataWithUpdatedMetrics);
     queryClient.setQueryData(['engineRoomData'], dataWithUpdatedMetrics);
     
     toast({
       title: "Items rejected",
       description: `Rejected ${itemIds.length} price changes with comment`
     });
-  }, [engineData, queryClient, toast, recalculateEngineMetrics]);
+  }, [engineData, queryClient, toast, recalculateEngineMetrics, safeStoreEngineData]);
 
   // Update handleExport to include rationale in the export
   const handleExport = useCallback(() => {
