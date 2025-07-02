@@ -426,7 +426,7 @@ const PriorityIssuesAGGrid: React.FC<{
       width: 150,
       valueFormatter: (params: any) => params.value || 'N/A',
       cellStyle: {
-        textAlign: 'center' as const,
+        textAlign: 'center !important' as const,
         color: '#c084fc', // purple-400
         fontWeight: 'bold'
       },
@@ -447,7 +447,7 @@ const PriorityIssuesAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const severity = params.value || '';
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           color: getSeverityColor(severity),
           fontWeight: 'bold'
         };
@@ -464,11 +464,12 @@ const PriorityIssuesAGGrid: React.FC<{
       width: 80,
       valueGetter: (params: any) => params.data.item?.watchlist || '−',
       valueFormatter: (params: any) => params.value || '−',
+      cellClass: 'text-center',
       cellStyle: (params: any) => {
         const watchlist = params.value || '';
         const hasWarning = watchlist.includes('⚠️') || watchlist.includes('❗');
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           color: hasWarning ? '#fb923c' : '#6b7280',
           fontSize: '16px'
         };
@@ -494,6 +495,7 @@ const PriorityIssuesAGGrid: React.FC<{
       headerName: 'Group',
       field: 'velocityCategory',
       width: 90,
+      cellClass: 'text-center',
       valueGetter: (params: any) => params.data.item?.velocityCategory,
       valueFormatter: (params: any) => {
         const category = params.value;
@@ -508,7 +510,7 @@ const PriorityIssuesAGGrid: React.FC<{
           else color = '#f87171';
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -527,7 +529,7 @@ const PriorityIssuesAGGrid: React.FC<{
         const value = params.value || 0;
         return formatCurrency(value);
       },
-      cellClass: 'text-right text-white',
+      cellClass: 'text-left text-white',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -558,10 +560,10 @@ const PriorityIssuesAGGrid: React.FC<{
         }
         
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           color: '#d1d5db',
           backgroundImage: backgroundImage,
-          paddingRight: '8px'
+          paddingLeft: '8px'
         };
       },
       sortable: true,
@@ -599,7 +601,7 @@ const PriorityIssuesAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -615,7 +617,7 @@ const PriorityIssuesAGGrid: React.FC<{
       width: 110,
       valueGetter: (params: any) => params.data.item?.quantity_on_order || 0,
       valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
-      cellClass: 'text-right text-gray-300',
+      cellClass: 'text-left text-gray-300',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -633,7 +635,7 @@ const PriorityIssuesAGGrid: React.FC<{
       tooltipValueGetter: (params: any) => {
         return shouldShowAverageCostTooltip(params.data.item) ? getAverageCostTooltip(params.data.item) : null;
       },
-      cellClass: 'text-right text-gray-300 font-bold',
+      cellClass: 'text-left text-gray-300 font-bold',
       sortable: true,
       resizable: true,
       suppressSizeToFit: true
@@ -678,7 +680,7 @@ const PriorityIssuesAGGrid: React.FC<{
           case 'STABLE': color = '#facc15'; break;
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontSize: '18px',
           fontWeight: 'bold',
           color: color
@@ -755,7 +757,7 @@ const PriorityIssuesAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -824,7 +826,7 @@ const PriorityIssuesAGGrid: React.FC<{
         const isStarred = starredItems.has(params.data.item?.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           cursor: 'pointer'
         };
       },
@@ -1412,7 +1414,7 @@ const PriorityIssuesAnalysis: React.FC<{
                       </UITooltip>
                     </TooltipProvider>
                   </th>
-                  <th className="text-right p-3 text-gray-300 text-sm">
+                  <th className="text-left p-3 text-gray-300 text-sm">
                     <TooltipProvider>
                       <UITooltip>
                         <TooltipTrigger asChild>
@@ -1426,14 +1428,14 @@ const PriorityIssuesAnalysis: React.FC<{
                       </UITooltip>
                     </TooltipProvider>
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     <span className="font-bold">Avg Cost</span> {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'left')}
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↓' : '↑')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort("monthsOfStock")}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
@@ -1441,21 +1443,21 @@ const PriorityIssuesAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
                     Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'left')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300 text-sm">
@@ -1480,10 +1482,10 @@ const PriorityIssuesAnalysis: React.FC<{
                         {issue.severity}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-red-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-red-400 font-semibold text-sm">
                       {formatCurrency(issue.impactValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300 font-bold text-sm">
+                    <td className="p-3 text-left text-gray-300 font-bold text-sm">
                       {shouldShowAverageCostTooltip(issue.item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -1501,7 +1503,7 @@ const PriorityIssuesAnalysis: React.FC<{
                         getDisplayedAverageCost(issue.item) ? formatCurrency(getDisplayedAverageCost(issue.item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1517,7 +1519,7 @@ const PriorityIssuesAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {(issue.item.quantity_on_order || 0).toLocaleString()}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -1547,13 +1549,13 @@ const PriorityIssuesAnalysis: React.FC<{
                         {issue.item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-purple-400 font-semibold text-sm">
                       {issue.item.AVER ? formatCurrency(issue.item.AVER) : 'N/A'}
                     </td>
-                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(issue.item))}`}>
+                    <td className={`p-3 text-left font-semibold text-sm ${getMarginColor(calculateMargin(issue.item))}`}>
                       {formatMargin(calculateMargin(issue.item))}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1580,7 +1582,7 @@ const PriorityIssuesAnalysis: React.FC<{
                         {getWinningStatus(issue.item)}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -1613,10 +1615,10 @@ const PriorityIssuesAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {issue.item.SDT ? formatCurrency(issue.item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {issue.item.EDT ? formatCurrency(issue.item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -1709,11 +1711,12 @@ const WatchlistAGGrid: React.FC<{
       pinned: 'left',
       width: 80,
       valueFormatter: (params: any) => params.value || '−',
+      cellClass: 'text-center',
       cellStyle: (params: any) => {
         const watchlist = params.value || '';
         const hasWarning = watchlist.includes('⚠️') || watchlist.includes('❗');
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           color: hasWarning ? '#fb923c' : '#6b7280',
           fontSize: '16px'
         };
@@ -1752,7 +1755,7 @@ const WatchlistAGGrid: React.FC<{
           else color = '#f87171';
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -1770,7 +1773,7 @@ const WatchlistAGGrid: React.FC<{
         const value = params.value || 0;
         return formatCurrency(value);
       },
-      cellClass: 'text-right text-white',
+      cellClass: 'text-left text-white',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -1801,10 +1804,10 @@ const WatchlistAGGrid: React.FC<{
         }
         
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           color: '#d1d5db',
           backgroundImage: backgroundImage,
-          paddingRight: '8px'
+          paddingLeft: '8px'
         };
       },
       sortable: true,
@@ -1840,7 +1843,7 @@ const WatchlistAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -1855,7 +1858,7 @@ const WatchlistAGGrid: React.FC<{
       field: 'quantity_on_order',
       width: 110,
       valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
-      cellClass: 'text-right text-gray-300',
+      cellClass: 'text-left text-gray-300',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -1873,7 +1876,7 @@ const WatchlistAGGrid: React.FC<{
       tooltipValueGetter: (params: any) => {
         return shouldShowAverageCostTooltip(params.data) ? getAverageCostTooltip(params.data) : null;
       },
-      cellClass: 'text-right text-gray-300 font-bold',
+      cellClass: 'text-left text-gray-300 font-bold',
       sortable: true,
       resizable: true,
       suppressSizeToFit: true
@@ -1916,7 +1919,7 @@ const WatchlistAGGrid: React.FC<{
           case 'STABLE': color = '#facc15'; break;
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontSize: '18px',
           fontWeight: 'bold',
           color: color
@@ -1990,7 +1993,7 @@ const WatchlistAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -2057,7 +2060,7 @@ const WatchlistAGGrid: React.FC<{
         const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           cursor: 'pointer'
         };
       },
@@ -2562,17 +2565,17 @@ const WatchlistAnalysis: React.FC<{
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     <span className="font-bold">Avg Cost</span> {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'left')}
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort("monthsOfStock")}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
@@ -2580,21 +2583,21 @@ const WatchlistAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
                     Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'left')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300 text-sm">
@@ -2611,10 +2614,10 @@ const WatchlistAnalysis: React.FC<{
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-white font-semibold text-sm">
+                    <td className="p-3 text-left text-white font-semibold text-sm">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {shouldShowAverageCostTooltip(item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -2632,7 +2635,7 @@ const WatchlistAnalysis: React.FC<{
                         getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2648,7 +2651,7 @@ const WatchlistAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -2678,13 +2681,13 @@ const WatchlistAnalysis: React.FC<{
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
-                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
+                    <td className={`p-3 text-left font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
                       {formatMargin(calculateMargin(item))}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2713,7 +2716,7 @@ const WatchlistAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2746,10 +2749,10 @@ const WatchlistAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {item.SDT ? formatCurrency(item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -2842,11 +2845,12 @@ const StarredItemsAGGrid: React.FC<{
       pinned: 'left',
       width: 80,
       valueFormatter: (params: any) => params.value || '−',
+      cellClass: 'text-center',
       cellStyle: (params: any) => {
         const watchlist = params.value || '';
         const hasWarning = watchlist.includes('⚠️') || watchlist.includes('❗');
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           color: hasWarning ? '#fb923c' : '#6b7280',
           fontSize: '16px'
         };
@@ -2885,7 +2889,7 @@ const StarredItemsAGGrid: React.FC<{
           else color = '#f87171';
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -2903,7 +2907,7 @@ const StarredItemsAGGrid: React.FC<{
         const value = params.value || 0;
         return formatCurrency(value);
       },
-      cellClass: 'text-right text-white',
+      cellClass: 'text-left text-white',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -2934,10 +2938,10 @@ const StarredItemsAGGrid: React.FC<{
         }
         
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           color: '#d1d5db',
           backgroundImage: backgroundImage,
-          paddingRight: '8px'
+          paddingLeft: '8px'
         };
       },
       sortable: true,
@@ -2973,7 +2977,7 @@ const StarredItemsAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -2988,7 +2992,7 @@ const StarredItemsAGGrid: React.FC<{
       field: 'quantity_on_order',
       width: 110,
       valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
-      cellClass: 'text-right text-gray-300',
+      cellClass: 'text-left text-gray-300',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -3006,7 +3010,7 @@ const StarredItemsAGGrid: React.FC<{
       tooltipValueGetter: (params: any) => {
         return shouldShowAverageCostTooltip(params.data) ? getAverageCostTooltip(params.data) : null;
       },
-      cellClass: 'text-right text-gray-300 font-bold',
+      cellClass: 'text-left text-gray-300 font-bold',
       sortable: true,
       resizable: true,
       suppressSizeToFit: true
@@ -3049,7 +3053,7 @@ const StarredItemsAGGrid: React.FC<{
           case 'STABLE': color = '#facc15'; break;
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontSize: '18px',
           fontWeight: 'bold',
           color: color
@@ -3123,7 +3127,7 @@ const StarredItemsAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -3190,7 +3194,7 @@ const StarredItemsAGGrid: React.FC<{
         const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           cursor: 'pointer'
         };
       },
@@ -3695,17 +3699,17 @@ const StarredItemsAnalysis: React.FC<{
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'left')}
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort("monthsOfStock")}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
@@ -3713,21 +3717,21 @@ const StarredItemsAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
                     Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'left')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300 text-sm">
@@ -3744,10 +3748,10 @@ const StarredItemsAnalysis: React.FC<{
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-white font-semibold text-sm">
+                    <td className="p-3 text-left text-white font-semibold text-sm">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {shouldShowAverageCostTooltip(item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -3765,7 +3769,7 @@ const StarredItemsAnalysis: React.FC<{
                         getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -3781,7 +3785,7 @@ const StarredItemsAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -3811,13 +3815,13 @@ const StarredItemsAnalysis: React.FC<{
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
-                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
+                    <td className={`p-3 text-left font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
                       {formatMargin(calculateMargin(item))}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -3846,7 +3850,7 @@ const StarredItemsAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -3879,10 +3883,10 @@ const StarredItemsAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {item.SDT ? formatCurrency(item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -3989,19 +3993,37 @@ const AllItemsAnalysis: React.FC<{
       items = items.filter(item => {
         return item.AVER && item.avg_cost && item.AVER < item.avg_cost;
       });
-    } else if (filterType === 'price-war-opportunity') {
-      items = items.filter(item => {
-        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
-        const marketLow = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
-        const isWinning = item.AVER && marketLow > 0 && item.AVER < marketLow;
-        return isWinning && item.trendDirection === 'UP';
-      });
     } else if (filterType === 'dead-stock-alert') {
       items = items.filter(item => {
         const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
         const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
         const hasCostDisadvantage = item.avg_cost > maxCompPrice && maxCompPrice > 0;
         return hasCostDisadvantage && item.trendDirection === 'DOWN' && item.monthsOfStock && item.monthsOfStock > 6;
+      });
+    } else if (filterType === 'eth-oos') {
+      // ETH OOS - items that have the ❗ symbol
+      items = items.filter(item => {
+        return item.watchlist === '❗';
+      });
+    } else if (filterType === 'second-best-price') {
+      // Second Best Price - our price is second best among competitors (one competitor beats us)
+      items = items.filter(item => {
+        if (!item.AVER || item.AVER <= 0) return false;
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        if (competitorPrices.length === 0) return false;
+        
+        // Sort prices (including ours) to find ranking
+        const allPrices = [...competitorPrices, item.AVER].sort((a, b) => a - b);
+        const ourRank = allPrices.indexOf(item.AVER) + 1; // 1-based ranking
+        
+        // We are second best if our rank is 2 (only 1 competitor beats us)
+        return ourRank === 2;
+      });
+    } else if (filterType === 'ringfence') {
+      // Ringfence - items that have ringfenced quantity > 0
+      items = items.filter(item => {
+        const ringfenced = item.quantity_ringfenced || 0;
+        return ringfenced > 0;
       });
     }
 
@@ -4324,7 +4346,7 @@ const AllItemsAnalysis: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-4">
           <h4 className="text-sm font-medium text-gray-300 mb-3">Strategic Filters</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-2">
             <TooltipProvider>
               <UITooltip>
                 <TooltipTrigger asChild>
@@ -4421,29 +4443,6 @@ const AllItemsAnalysis: React.FC<{
               <UITooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => setFilterType('price-war-opportunity')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'price-war-opportunity' 
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-purple-500/10 hover:text-purple-300 border border-gray-700/50'
-                    }`}
-                  >
-                    📈 Price Up
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">Price War Opportunities</div>
-                    <div>Products where we're winning (cheapest) but market trend is UP. Can we increase price and maintain lead?</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
                     onClick={() => setFilterType('dead-stock-alert')}
                     className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                       filterType === 'dead-stock-alert' 
@@ -4458,6 +4457,75 @@ const AllItemsAnalysis: React.FC<{
                   <div className="text-sm">
                     <div className="font-medium mb-1">Dead Stock Alert</div>
                     <div>High cost + falling prices + overstocked (&gt;6 months). Critical clearance priority to minimize losses.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('eth-oos')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'eth-oos' 
+                        ? 'bg-red-600/20 text-red-400 border border-red-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-600/10 hover:text-red-400 border border-gray-700/50'
+                    }`}
+                  >
+                    ❗ ETH OOS
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">ETH OOS</div>
+                    <div>Items that have the ❗ symbol</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('second-best-price')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'second-best-price' 
+                        ? 'bg-green-600/20 text-green-400 border border-green-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-green-600/10 hover:text-green-400 border border-gray-700/50'
+                    }`}
+                  >
+                    🥈 Second Best Price
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Second Best Price</div>
+                    <div>Our price is second best among competitors (one competitor beats us)</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('ringfence')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'ringfence' 
+                        ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-blue-600/10 hover:text-blue-400 border border-gray-700/50'
+                    }`}
+                  >
+                    🛡️ Ringfence
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Ringfence</div>
+                    <div>Items with ringfenced stock quantity greater than 0</div>
                   </div>
                 </TooltipContent>
               </UITooltip>
@@ -4486,17 +4554,17 @@ const AllItemsAnalysis: React.FC<{
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'left')}
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort("monthsOfStock")}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
@@ -4504,21 +4572,21 @@ const AllItemsAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
                     Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'left')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300 text-sm">
@@ -4535,10 +4603,10 @@ const AllItemsAnalysis: React.FC<{
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-white font-semibold text-sm">
+                    <td className="p-3 text-left text-white font-semibold text-sm">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {shouldShowAverageCostTooltip(item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -4556,7 +4624,7 @@ const AllItemsAnalysis: React.FC<{
                         getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -4570,7 +4638,7 @@ const AllItemsAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -4602,13 +4670,13 @@ const AllItemsAnalysis: React.FC<{
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
-                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
+                    <td className={`p-3 text-left font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
                       {formatMargin(calculateMargin(item))}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -4637,7 +4705,7 @@ const AllItemsAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -4670,10 +4738,10 @@ const AllItemsAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {item.SDT ? formatCurrency(item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -4769,12 +4837,13 @@ const AllItemsAGGrid: React.FC<{
       pinned: 'left',
       width: 80,
       valueFormatter: (params: any) => params.value || '−',
+      cellClass: 'text-center',
       cellStyle: (params: any) => {
         const watchlist = params.value || '';
         // Show orange if any warning icon is present
         const hasWarning = watchlist.includes('⚠️') || watchlist.includes('❗');
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           color: hasWarning ? '#fb923c' : '#6b7280',
           fontSize: '16px'
         };
@@ -4813,7 +4882,7 @@ const AllItemsAGGrid: React.FC<{
           else color = '#f87171'; // red
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -4831,7 +4900,7 @@ const AllItemsAGGrid: React.FC<{
         const value = params.value || 0;
         return formatCurrency(value);
       },
-      cellClass: 'text-right text-white',
+      cellClass: 'text-left text-white',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -4869,7 +4938,7 @@ const AllItemsAGGrid: React.FC<{
         }
         
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           color: '#d1d5db', // gray-300
           backgroundImage: backgroundImage,
           paddingRight: '8px'
@@ -4908,7 +4977,7 @@ const AllItemsAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center' as const,
+          textAlign: 'left' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -4923,7 +4992,7 @@ const AllItemsAGGrid: React.FC<{
       field: 'quantity_on_order',
       width: 110,
       valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
-      cellClass: 'text-right text-gray-300',
+      cellClass: 'text-left text-gray-300',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -4941,7 +5010,7 @@ const AllItemsAGGrid: React.FC<{
       tooltipValueGetter: (params: any) => {
         return shouldShowAverageCostTooltip(params.data) ? getAverageCostTooltip(params.data) : null;
       },
-      cellClass: 'text-right text-gray-300 font-bold',
+      cellClass: 'text-left text-gray-300 font-bold',
       sortable: true,
       resizable: true,
       suppressSizeToFit: true
@@ -4961,7 +5030,7 @@ const AllItemsAGGrid: React.FC<{
         const lastPoCost = data.last_po_cost && data.last_po_cost > 0 ? formatCurrency(data.last_po_cost) : 'N/A';
         return `Next Cost: ${nextCost}\nMin Cost: ${minCost}\nLast PO Cost: ${lastPoCost}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#3b82f6', fontWeight: 'bold' }, // blue-500
+      cellStyle: { textAlign: 'left' as const, color: '#3b82f6', fontWeight: 'bold' }, // blue-500
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -4984,7 +5053,7 @@ const AllItemsAGGrid: React.FC<{
           case 'STABLE': color = '#facc15'; break; // yellow
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontSize: '18px',
           fontWeight: 'bold',
           color: color
@@ -5008,7 +5077,7 @@ const AllItemsAGGrid: React.FC<{
         const reva = data.reva && data.reva > 0 ? formatCurrency(data.reva) : 'N/A';
         return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#c084fc', fontWeight: 'bold' }, // purple-400
+      cellStyle: { textAlign: 'left' as const, color: '#c084fc', fontWeight: 'bold' }, // purple-400
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -5041,7 +5110,7 @@ const AllItemsAGGrid: React.FC<{
         
         return competitors.map(comp => `${comp.name}: ${formatCurrency(comp.price)}`).join('\n');
       },
-      cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -5058,7 +5127,7 @@ const AllItemsAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -5084,7 +5153,7 @@ const AllItemsAGGrid: React.FC<{
           else color = '#4ade80'; // green
         }
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -5099,7 +5168,7 @@ const AllItemsAGGrid: React.FC<{
       field: 'SDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -5110,7 +5179,7 @@ const AllItemsAGGrid: React.FC<{
       field: 'EDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -5125,7 +5194,7 @@ const AllItemsAGGrid: React.FC<{
         const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           cursor: 'pointer'
         };
       },
@@ -5175,19 +5244,37 @@ const AllItemsAGGrid: React.FC<{
       items = items.filter(item => {
         return item.AVER && item.avg_cost && item.AVER < item.avg_cost;
       });
-    } else if (filterType === 'price-war-opportunity') {
-      items = items.filter(item => {
-        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
-        const marketLow = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
-        const isWinning = item.AVER && marketLow > 0 && item.AVER < marketLow;
-        return isWinning && item.trendDirection === 'UP';
-      });
     } else if (filterType === 'dead-stock-alert') {
       items = items.filter(item => {
         const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
         const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
         const hasCostDisadvantage = item.avg_cost > maxCompPrice && maxCompPrice > 0;
         return hasCostDisadvantage && item.trendDirection === 'DOWN' && item.monthsOfStock && item.monthsOfStock > 6;
+      });
+    } else if (filterType === 'eth-oos') {
+      // ETH OOS - items that have the ❗ symbol
+      items = items.filter(item => {
+        return item.watchlist === '❗';
+      });
+    } else if (filterType === 'second-best-price') {
+      // Second Best Price - our price is second best among competitors (one competitor beats us)
+      items = items.filter(item => {
+        if (!item.AVER || item.AVER <= 0) return false;
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        if (competitorPrices.length === 0) return false;
+        
+        // Sort prices (including ours) to find ranking
+        const allPrices = [...competitorPrices, item.AVER].sort((a, b) => a - b);
+        const ourRank = allPrices.indexOf(item.AVER) + 1; // 1-based ranking
+        
+        // We are second best if our rank is 2 (only 1 competitor beats us)
+        return ourRank === 2;
+      });
+    } else if (filterType === 'ringfence') {
+      // Ringfence - items that have ringfenced quantity > 0
+      items = items.filter(item => {
+        const ringfenced = item.quantity_ringfenced || 0;
+        return ringfenced > 0;
       });
     }
 
@@ -5286,7 +5373,7 @@ const AllItemsAGGrid: React.FC<{
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-4">
           <h4 className="text-sm font-medium text-gray-300 mb-3">Strategic Filters</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-2">
             <TooltipProvider>
               <UITooltip>
                 <TooltipTrigger asChild>
@@ -5383,29 +5470,6 @@ const AllItemsAGGrid: React.FC<{
               <UITooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => setFilterType('price-war-opportunity')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'price-war-opportunity' 
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-purple-500/10 hover:text-purple-300 border border-gray-700/50'
-                    }`}
-                  >
-                    📈 Price Up
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">Price War Opportunities</div>
-                    <div>Products where we're winning (cheapest) but market trend is UP. Can we increase price and maintain lead?</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
                     onClick={() => setFilterType('dead-stock-alert')}
                     className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                       filterType === 'dead-stock-alert' 
@@ -5420,6 +5484,75 @@ const AllItemsAGGrid: React.FC<{
                   <div className="text-sm">
                     <div className="font-medium mb-1">Dead Stock Alert</div>
                     <div>High cost + falling prices + overstocked (&gt;6 months). Critical clearance priority to minimize losses.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('eth-oos')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'eth-oos' 
+                        ? 'bg-red-600/20 text-red-400 border border-red-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-600/10 hover:text-red-400 border border-gray-700/50'
+                    }`}
+                  >
+                    ❗ ETH OOS
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">ETH OOS</div>
+                    <div>Items that have the ❗ symbol</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('second-best-price')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'second-best-price' 
+                        ? 'bg-green-600/20 text-green-400 border border-green-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-green-600/10 hover:text-green-400 border border-gray-700/50'
+                    }`}
+                  >
+                    🥈 Second Best Price
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Second Best Price</div>
+                    <div>Our price is second best among competitors (one competitor beats us)</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('ringfence')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'ringfence' 
+                        ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-blue-600/10 hover:text-blue-400 border border-gray-700/50'
+                    }`}
+                  >
+                    🛡️ Ringfence
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Ringfence</div>
+                    <div>Items with ringfenced stock quantity greater than 0</div>
                   </div>
                 </TooltipContent>
               </UITooltip>
@@ -5554,12 +5687,13 @@ const OverstockAGGrid: React.FC<{
       pinned: 'left',
       width: 80,
       valueFormatter: (params: any) => params.value || '−',
+      cellClass: 'text-center',
       cellStyle: (params: any) => {
         const watchlist = params.value || '';
         // Show orange if any warning icon is present
         const hasWarning = watchlist.includes('⚠️') || watchlist.includes('❗');
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           color: hasWarning ? '#fb923c' : '#6b7280',
           fontSize: '16px'
         };
@@ -5598,7 +5732,7 @@ const OverstockAGGrid: React.FC<{
           else color = '#f87171'; // red
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -5616,7 +5750,7 @@ const OverstockAGGrid: React.FC<{
         const value = params.value || 0;
         return formatCurrency(value);
       },
-      cellClass: 'text-right text-white',
+      cellClass: 'text-left text-white',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -5654,7 +5788,7 @@ const OverstockAGGrid: React.FC<{
         }
         
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           color: '#d1d5db', // gray-300
           backgroundImage: backgroundImage,
           paddingRight: '8px'
@@ -5693,7 +5827,7 @@ const OverstockAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -5708,7 +5842,7 @@ const OverstockAGGrid: React.FC<{
       field: 'quantity_on_order',
       width: 110,
       valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
-      cellClass: 'text-right text-gray-300',
+      cellClass: 'text-left text-gray-300',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -5726,7 +5860,7 @@ const OverstockAGGrid: React.FC<{
       tooltipValueGetter: (params: any) => {
         return shouldShowAverageCostTooltip(params.data) ? getAverageCostTooltip(params.data) : null;
       },
-      cellClass: 'text-right text-gray-300 font-bold',
+      cellClass: 'text-left text-gray-300 font-bold',
       sortable: true,
       resizable: true,
       suppressSizeToFit: true
@@ -5769,7 +5903,7 @@ const OverstockAGGrid: React.FC<{
           case 'STABLE': color = '#facc15'; break; // yellow
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontSize: '18px',
           fontWeight: 'bold',
           color: color
@@ -5843,7 +5977,7 @@ const OverstockAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -5910,7 +6044,7 @@ const OverstockAGGrid: React.FC<{
         const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           cursor: 'pointer'
         };
       },
@@ -6414,17 +6548,17 @@ const OverstockAnalysis: React.FC<{
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white sticky left-0 bg-gray-900/95 backdrop-blur-sm border-r border-gray-700 z-20 min-w-[200px] text-sm" onClick={() => handleSort('stockcode')}>
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
                     Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'right')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
+                  {renderColumnHeader('Stock Qty', 'currentStock', 'stockQty', getUniqueStockQtyValues(), 'left')}
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('onOrder')}>
                     On Order {sortField === 'onOrder' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-center p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('monthsOfStock')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort("monthsOfStock")}>
                     Months {sortField === 'monthsOfStock' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   {renderColumnHeader('Velocity', 'velocityCategory', 'velocityCategory', getUniqueVelocityCategories(), 'center')}
@@ -6432,21 +6566,21 @@ const OverstockAnalysis: React.FC<{
                   <th className="text-center p-3 text-gray-300 text-sm">
                     Watch
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('price')}>
                     Price {sortField === 'price' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('margin')}>
                     Margin {sortField === 'margin' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'right')}
+                  {renderColumnHeader('NBP', 'nbp', 'nbp', getUniqueNbpValues(), 'left')}
                   {renderColumnHeader('Winning', 'winning', 'winning', getUniqueWinningValues(), 'center')}
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('lowestComp')}>
                     Lowest Comp {sortField === 'lowestComp' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('sdt')}>
                     SDT {sortField === 'sdt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th className="text-right p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('edt')}>
                     EDT {sortField === 'edt' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-center p-3 text-gray-300 text-sm">
@@ -6463,10 +6597,10 @@ const OverstockAnalysis: React.FC<{
                         <div className="text-sm text-gray-400 truncate max-w-xs">{item.description}</div>
                       </div>
                     </td>
-                    <td className="p-3 text-right text-white font-semibold text-sm">
+                    <td className="p-3 text-left text-white font-semibold text-sm">
                       {formatCurrency(item.stockValue)}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {shouldShowAverageCostTooltip(item) ? (
                         <TooltipProvider>
                           <UITooltip>
@@ -6484,7 +6618,7 @@ const OverstockAnalysis: React.FC<{
                         getDisplayedAverageCost(item) ? formatCurrency(getDisplayedAverageCost(item)!) : 'N/A'
                       )}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -6500,7 +6634,7 @@ const OverstockAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -6530,13 +6664,13 @@ const OverstockAnalysis: React.FC<{
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-purple-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-purple-400 font-semibold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
-                    <td className={`p-3 text-right font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
+                    <td className={`p-3 text-left font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
                       {formatMargin(calculateMargin(item))}
                     </td>
-                    <td className="p-3 text-right text-green-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-green-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -6565,7 +6699,7 @@ const OverstockAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-blue-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-blue-400 font-semibold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -6598,10 +6732,10 @@ const OverstockAnalysis: React.FC<{
                         </UITooltip>
                       </TooltipProvider>
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {item.SDT ? formatCurrency(item.SDT) : '-'}
                     </td>
-                    <td className="p-3 text-right text-gray-300 text-sm">
+                    <td className="p-3 text-left text-gray-300 text-sm">
                       {item.EDT ? formatCurrency(item.EDT) : '-'}
                     </td>
                     <td className="p-3 text-center text-sm">
@@ -7797,12 +7931,12 @@ const InventoryOverview: React.FC<{
                     <tr className="border-b border-gray-700">
                       <th className="text-left p-2 text-gray-300 font-medium min-w-32">Product</th>
                       <th className="text-center p-2 text-gray-300 font-medium">Group</th>
-                      <th className="text-right p-2 text-gray-300 font-medium">Min Cost</th>
-                      <th className="text-right p-2 text-gray-300 font-medium">Our Price</th>
-                      <th className="text-right p-2 text-gray-300 font-medium">Lowest Comp</th>
-                      <th className="text-right p-2 text-gray-300 font-medium">Margin Opp</th>
+                      <th className="text-left p-2 text-gray-300 font-medium">Min Cost</th>
+                      <th className="text-left p-2 text-gray-300 font-medium">Our Price</th>
+                      <th className="text-left p-2 text-gray-300 font-medium">Lowest Comp</th>
+                      <th className="text-left p-2 text-gray-300 font-medium">Margin Opp</th>
                       <th className="text-center p-2 text-gray-300 font-medium">Market Rank</th>
-                      <th className="text-right p-2 text-gray-300 font-medium">Stock Value</th>
+                      <th className="text-left p-2 text-gray-300 font-medium">Stock Value</th>
                       <th className="text-center p-2 text-gray-300 font-medium">Priority</th>
                     </tr>
                   </thead>
@@ -7845,16 +7979,16 @@ const InventoryOverview: React.FC<{
                             <div className="text-gray-400 text-xs truncate max-w-32">{item.description}</div>
                           </td>
                           <td className="text-center p-2 text-gray-300 text-xs">{velocityGroup}</td>
-                          <td className="text-right p-2 text-green-400 text-xs font-medium" title="Supplier/Manufacturer Price">
+                          <td className="text-left p-2 text-green-400 text-xs font-medium" title="Supplier/Manufacturer Price">
                             {minCost > 0 ? `£${minCost.toFixed(2)}` : 'N/A'}
                           </td>
-                          <td className="text-right p-2 text-blue-400 text-xs font-medium" title={`Current Margin: ${currentMargin.toFixed(1)}%`}>
+                          <td className="text-left p-2 text-blue-400 text-xs font-medium" title={`Current Margin: ${currentMargin.toFixed(1)}%`}>
                             {ourPrice > 0 ? `£${ourPrice.toFixed(2)}` : 'N/A'}
                           </td>
-                          <td className="text-right p-2 text-red-400 text-xs font-medium" title="Cheapest Competitor Price">
+                          <td className="text-left p-2 text-red-400 text-xs font-medium" title="Cheapest Competitor Price">
                             {lowestCompPrice > 0 ? `£${lowestCompPrice.toFixed(2)}` : 'N/A'}
                           </td>
-                          <td className="text-right p-2 font-medium text-orange-400 text-xs" title="Potential margin if we price just below lowest competitor">
+                          <td className="text-left p-2 font-medium text-orange-400 text-xs" title="Potential margin if we price just below lowest competitor">
                             {marginOpportunity.toFixed(1)}%
                           </td>
                           <td className="text-center p-2 text-xs">
@@ -7870,7 +8004,7 @@ const InventoryOverview: React.FC<{
                               <span className="text-gray-400">N/A</span>
                             )}
                           </td>
-                          <td className="text-right p-2 text-gray-300 text-xs">
+                          <td className="text-left p-2 text-gray-300 text-xs">
                             {(item.stockValue || 0) >= 1000 ? `£${((item.stockValue || 0) / 1000).toFixed(0)}k` : `£${(item.stockValue || 0).toFixed(0)}`}
                           </td>
                           <td className={`text-center p-2 text-xs font-medium ${priorityColor}`}>
@@ -7975,11 +8109,12 @@ const MetricFilteredAGGrid: React.FC<{
       pinned: 'left',
       width: 80,
       valueFormatter: (params: any) => params.value || '−',
+      cellClass: 'text-center',
       cellStyle: (params: any) => {
         const watchlist = params.value || '';
         const hasWarning = watchlist.includes('⚠️') || watchlist.includes('❗');
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           color: hasWarning ? '#fb923c' : '#6b7280',
           fontSize: '16px'
         };
@@ -8017,7 +8152,7 @@ const MetricFilteredAGGrid: React.FC<{
           else color = '#f87171';
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -8035,7 +8170,7 @@ const MetricFilteredAGGrid: React.FC<{
         const value = params.value || 0;
         return formatCurrency(value);
       },
-      cellClass: 'text-right text-white',
+      cellClass: 'text-left text-white',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -8066,10 +8201,10 @@ const MetricFilteredAGGrid: React.FC<{
         }
         
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           color: '#d1d5db',
           backgroundImage: backgroundImage,
-          paddingRight: '8px'
+          paddingLeft: '8px'
         };
       },
       sortable: true,
@@ -8082,7 +8217,7 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'quantity_on_order',
       width: 110,
       valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
-      cellClass: 'text-right text-gray-300',
+      cellClass: 'text-left text-gray-300',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -8117,7 +8252,7 @@ const MetricFilteredAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -8139,7 +8274,7 @@ const MetricFilteredAGGrid: React.FC<{
       tooltipValueGetter: (params: any) => {
         return shouldShowAverageCostTooltip(params.data) ? getAverageCostTooltip(params.data) : null;
       },
-      cellClass: 'text-right text-gray-300 font-bold',
+      cellClass: 'text-left text-gray-300 font-bold',
       sortable: true,
       resizable: true,
       suppressSizeToFit: true
@@ -8161,7 +8296,7 @@ const MetricFilteredAGGrid: React.FC<{
           case 'STABLE': color = '#facc15'; break;
         }
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontSize: '18px',
           fontWeight: 'bold',
           color: color
@@ -8243,7 +8378,7 @@ const MetricFilteredAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -8318,7 +8453,7 @@ const MetricFilteredAGGrid: React.FC<{
         const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'center' as const,
+          textAlign: 'center !important' as const,
           cursor: 'pointer'
         };
       },
@@ -8956,3 +9091,37 @@ const MetricFilteredView: React.FC<{
 const InventoryAnalytics: React.FC = () => <InventoryAnalyticsContent />;
 
 export default InventoryAnalytics; 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
