@@ -4381,7 +4381,7 @@ const InventoryAnalyticsContent: React.FC = () => {
       
       toast({
         title: "File processed successfully",
-        description: `Analyzed ${processedData.totalProducts} products with ${processedData.priorityIssues.length} priority issues identified.`
+        description: `Analysed ${processedData.totalProducts} products with ${processedData.priorityIssues.length} priority issues identified.`
       });
 
       // Show additional message if localStorage storage was limited
@@ -4593,11 +4593,27 @@ const InventoryAnalyticsContent: React.FC = () => {
   // Main analytics dashboard with data
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Header with actions */}
-      <div className="flex justify-between items-center mb-6">
+      {/* Mobile: Compact header above metrics */}
+      <div className="lg:hidden mb-4">
+        <h1 className="text-sm font-medium text-white mb-1">Inventory Analysis Results</h1>
+        <p className="text-xs text-gray-400 mb-3">{inventoryData.fileName} • {inventoryData.totalProducts.toLocaleString()} products analysed</p>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport} className="flex items-center gap-2 text-xs px-3 py-2">
+            <Download className="h-3 w-3" />
+            Export
+          </Button>
+          <Button onClick={handleNewUpload} className="flex items-center gap-2 text-xs px-3 py-2">
+            <UploadCloud className="h-3 w-3" />
+            New Upload
+          </Button>
+        </div>
+      </div>
+
+      {/* Desktop: Original header layout */}
+      <div className="hidden lg:flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white mb-1">Inventory Analysis Results</h1>
-          <p className="text-gray-400">{inventoryData.fileName} • {inventoryData.totalProducts.toLocaleString()} products analyzed</p>
+          <p className="text-base text-gray-400">{inventoryData.fileName} • {inventoryData.totalProducts.toLocaleString()} products analysed</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExport} className="flex items-center gap-2">
@@ -4737,44 +4753,49 @@ const InventoryAnalyticsContent: React.FC = () => {
 
       {/* Main Content Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mt-8">
-        <TabsList className="grid grid-cols-6 w-full">
-          <TabsTrigger value="overview" className="flex gap-2">
+        <TabsList className="flex flex-wrap lg:grid lg:grid-cols-6 w-full gap-1 lg:gap-0">
+          <TabsTrigger value="overview" className="flex gap-2 flex-1 min-w-[120px] lg:min-w-0 justify-center">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="all" className="flex gap-2">
-            All Items
-            <Badge variant="secondary" className="bg-blue-500 text-white rounded-full">
+          <TabsTrigger value="all" className="flex gap-1 flex-1 min-w-[120px] lg:min-w-0 justify-center">
+            <span className="hidden sm:inline">All Items</span>
+            <span className="sm:hidden">All</span>
+            <Badge variant="secondary" className="bg-blue-500 text-white rounded-full text-xs">
               {inventoryData.totalProducts.toLocaleString()}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="overstock" className="flex gap-2">
-            Overstock
-            <Badge variant="secondary" className="bg-amber-500 text-white rounded-full">
+          <TabsTrigger value="overstock" className="flex gap-1 flex-1 min-w-[120px] lg:min-w-0 justify-center">
+            <span className="hidden sm:inline">Overstock</span>
+            <span className="sm:hidden">Over</span>
+            <Badge variant="secondary" className="bg-amber-500 text-white rounded-full text-xs">
               {inventoryData.summaryStats.totalOverstockItems}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="priority" className="flex gap-2">
-            Priority Issues
-            <Badge variant="secondary" className="bg-red-500 text-white rounded-full">
+          <TabsTrigger value="priority" className="flex gap-1 flex-1 min-w-[120px] lg:min-w-0 justify-center">
+            <span className="hidden sm:inline">Priority Issues</span>
+            <span className="sm:hidden">Issues</span>
+            <Badge variant="secondary" className="bg-red-500 text-white rounded-full text-xs">
               {inventoryData.priorityIssues.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="watchlist" className="flex gap-2">
-            Watchlist
-            <Badge variant="secondary" className="bg-orange-500 text-white rounded-full">
+          <TabsTrigger value="watchlist" className="flex gap-1 flex-1 min-w-[120px] lg:min-w-0 justify-center">
+            <span className="hidden sm:inline">Watchlist</span>
+            <span className="sm:hidden">Watch</span>
+            <Badge variant="secondary" className="bg-orange-500 text-white rounded-full text-xs">
               {inventoryData.summaryStats.watchlistCount}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="starred" className="flex gap-2">
-            <Star className="h-4 w-4" />
-            Starred
-            <Badge variant="secondary" className="bg-yellow-500 text-white rounded-full">
+          <TabsTrigger value="starred" className="flex gap-1 flex-1 min-w-[120px] lg:min-w-0 justify-center">
+            <Star className="h-3 w-3 lg:h-4 lg:w-4" />
+            <span className="hidden sm:inline">Starred</span>
+            <span className="sm:hidden">Star</span>
+            <Badge variant="secondary" className="bg-yellow-500 text-white rounded-full text-xs">
               {starredItems.size}
             </Badge>
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-6 mt-12 lg:mt-6">
           <InventoryOverview 
             data={inventoryData} 
             activeMetricFilter={activeMetricFilter}
@@ -4784,7 +4805,7 @@ const InventoryAnalyticsContent: React.FC = () => {
           />
         </TabsContent>
         
-        <TabsContent value="all" className="space-y-6">
+        <TabsContent value="all" className="space-y-6 mt-12 lg:mt-6">
           <AllItemsAGGrid 
             data={inventoryData} 
             onToggleStar={handleToggleStar} 
@@ -4792,7 +4813,7 @@ const InventoryAnalyticsContent: React.FC = () => {
           />
         </TabsContent>
         
-        <TabsContent value="overstock" className="space-y-6">
+        <TabsContent value="overstock" className="space-y-6 mt-12 lg:mt-6">
           <OverstockAnalysis 
             data={inventoryData} 
             onToggleStar={handleToggleStar} 
@@ -4800,7 +4821,7 @@ const InventoryAnalyticsContent: React.FC = () => {
           />
         </TabsContent>
         
-        <TabsContent value="priority" className="space-y-6">
+        <TabsContent value="priority" className="space-y-6 mt-12 lg:mt-6">
           <PriorityIssuesAnalysis 
             data={inventoryData} 
             onToggleStar={handleToggleStar} 
@@ -4808,7 +4829,7 @@ const InventoryAnalyticsContent: React.FC = () => {
           />
         </TabsContent>
         
-        <TabsContent value="watchlist" className="space-y-6">
+        <TabsContent value="watchlist" className="space-y-6 mt-12 lg:mt-6">
           <WatchlistAnalysis 
             data={inventoryData} 
             onToggleStar={handleToggleStar} 
@@ -4816,7 +4837,7 @@ const InventoryAnalyticsContent: React.FC = () => {
           />
         </TabsContent>
         
-        <TabsContent value="starred" className="space-y-6">
+        <TabsContent value="starred" className="space-y-6 mt-12 lg:mt-6">
           <StarredItemsAnalysis 
             data={inventoryData} 
             onToggleStar={handleToggleStar} 
