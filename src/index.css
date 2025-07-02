@@ -552,3 +552,683 @@
     animation-play-state: paused;
   }
 }
+
+/* AG Grid Dark Theme Customizations - Force Dark Theme */
+.ag-theme-alpine-dark {
+  --ag-background-color: #111827 !important;
+  --ag-header-background-color: #1f2937 !important;  
+  --ag-odd-row-background-color: #111827 !important;
+  --ag-even-row-background-color: #111827 !important;
+  --ag-row-hover-color: rgba(31, 41, 55, 0.5) !important;
+  --ag-selected-row-background-color: rgba(59, 130, 246, 0.2) !important;
+  --ag-border-color: #4b5563 !important;
+  --ag-header-column-separator-color: #4b5563 !important;
+  --ag-font-size: 14px !important;
+  --ag-foreground-color: inherit !important; /* Changed to inherit */
+  --ag-secondary-foreground-color: #9ca3af !important;
+  --ag-data-color: inherit !important; /* Changed to inherit */
+  --ag-header-foreground-color: #d1d5db !important;
+  --ag-disabled-foreground-color: #6b7280 !important;
+  --ag-chip-background-color: #3b82f6 !important;
+  --ag-input-focus-border-color: #8b5cf6 !important;
+  background-color: #111827 !important;
+}
+
+/* Force the data color variable to not override our styles */
+.ag-theme-alpine-dark.ag-theme-alpine-dark {
+  --ag-data-color: inherit !important;
+  --ag-foreground-color: inherit !important;
+}
+
+/* Default text color for cells without specific colors */
+.ag-theme-alpine-dark .ag-cell {
+  color: #f3f4f6 !important;
+}
+
+/* But allow styled cells to override with their custom colors */
+.ag-theme-alpine-dark .ag-cell[style*="color"] {
+  color: inherit !important;
+}
+
+/* This rule is now handled above */
+
+/* Ensure AG Grid doesn't override our custom colors */
+.ag-theme-alpine-dark .ag-cell .ag-cell-wrapper {
+  color: inherit !important;
+}
+
+.ag-theme-alpine-dark .ag-cell .ag-cell-value {
+  color: inherit !important;
+}
+
+/* Force colors for our custom styled cells */
+.ag-theme-alpine-dark .ag-cell[style*="#4ade80"] {
+  color: #4ade80 !important;
+}
+
+.ag-theme-alpine-dark .ag-cell[style*="#f87171"] {
+  color: #f87171 !important;
+}
+
+.ag-theme-alpine-dark .ag-cell[style*="#facc15"] {
+  color: #facc15 !important;
+}
+
+.ag-theme-alpine-dark .ag-cell[style*="#fb923c"] {
+  color: #fb923c !important;
+}
+
+.ag-theme-alpine-dark .ag-cell[style*="#60a5fa"] {
+  color: #60a5fa !important;
+}
+
+.ag-theme-alpine-dark .ag-cell[style*="#d1d5db"] {
+  color: #d1d5db !important;
+}
+
+/* Ultimate color preservation - override everything */
+.ag-theme-alpine-dark .ag-cell[style*="color:"] {
+  color: inherit !important;
+}
+
+.ag-theme-alpine-dark .ag-cell[style*="color:"] span,
+.ag-theme-alpine-dark .ag-cell[style*="color:"] div,
+.ag-theme-alpine-dark .ag-cell[style*="color:"] * {
+  color: inherit !important;
+}
+
+/* Specific color overrides for common values */
+.ag-theme-alpine-dark .ag-row .ag-cell[style*="color: rgb(74, 222, 128)"],
+.ag-theme-alpine-dark .ag-row .ag-cell[style*="color:#4ade80"] {
+  color: #4ade80 !important;
+}
+
+.ag-theme-alpine-dark .ag-row .ag-cell[style*="color: rgb(248, 113, 113)"],
+.ag-theme-alpine-dark .ag-row .ag-cell[style*="color:#f87171"] {
+  color: #f87171 !important;
+}
+
+.ag-theme-alpine-dark .ag-row .ag-cell[style*="color: rgb(250, 204, 21)"],
+.ag-theme-alpine-dark .ag-row .ag-cell[style*="color:#facc15"] {
+  color: #facc15 !important;
+}
+
+.ag-theme-alpine-dark .ag-root-wrapper {
+  border: 1px solid #4b5563 !important;
+  border-radius: 8px !important; /* Slightly more rounded */
+  background-color: #111827 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important; /* Subtle shadow */
+  overflow: hidden !important; /* Clean edges */
+}
+
+.ag-theme-alpine-dark .ag-header {
+  background-color: #1f2937 !important;
+  color: #d1d5db !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid #4b5563 !important; /* Thicker header border */
+}
+
+.ag-theme-alpine-dark .ag-header-cell {
+  background-color: #1f2937 !important;
+  color: #d1d5db !important;
+  border-right: 1px solid #4b5563 !important;
+  padding: 10px !important; /* Clean header padding */
+  font-size: 13px !important; /* Slightly larger font */
+}
+
+.ag-theme-alpine-dark .ag-row {
+  background-color: #111827 !important;
+  border-bottom: 1px solid #374151 !important;
+  transition: all 0.2s ease !important; /* Smooth transitions */
+}
+
+.ag-theme-alpine-dark .ag-row-even {
+  background-color: #111827 !important; /* Even rows - darker */
+}
+
+.ag-theme-alpine-dark .ag-row-odd {
+  background-color: #1f2937 !important; /* Odd rows - lighter for zebra effect */
+}
+
+.ag-theme-alpine-dark .ag-row:hover {
+  background-color: rgba(59, 130, 246, 0.15) !important; /* Better hover color */
+  box-shadow: inset 3px 0 0 #3b82f6 !important; /* Blue accent without affecting width */
+}
+
+.ag-theme-alpine-dark .ag-cell {
+  background-color: transparent !important;
+  border-right: 1px solid #4b5563 !important;
+  padding: 8px 10px !important; /* Better padding without height conflicts */
+  line-height: 1.4 !important; /* Better line height */
+  display: flex !important; /* Use flexbox for centering */
+  align-items: center !important; /* Vertical center */
+}
+
+/* Preserve text alignment with flexbox */
+.ag-theme-alpine-dark .ag-cell-wrapper {
+  width: 100% !important;
+}
+
+.ag-theme-alpine-dark .ag-cell.text-right .ag-cell-wrapper {
+  text-align: right !important;
+}
+
+.ag-theme-alpine-dark .ag-cell.text-center .ag-cell-wrapper {
+  text-align: center !important;
+}
+
+.ag-theme-alpine-dark .ag-cell.text-left .ag-cell-wrapper {
+  text-align: left !important;
+}
+
+/* Fix filter dropdowns and page size selector readability */
+.ag-theme-alpine-dark .ag-filter-wrapper {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+.ag-theme-alpine-dark .ag-menu {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+.ag-theme-alpine-dark .ag-menu-option {
+  color: #f3f4f6 !important;
+}
+
+.ag-theme-alpine-dark .ag-menu-option:hover {
+  background-color: #374151 !important;
+}
+
+.ag-theme-alpine-dark .ag-popup {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+.ag-theme-alpine-dark .ag-select {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+.ag-theme-alpine-dark .ag-list-item {
+  color: #f3f4f6 !important;
+}
+
+.ag-theme-alpine-dark .ag-list-item:hover {
+  background-color: #374151 !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-page-summary-panel {
+  color: #f3f4f6 !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-row-summary-panel {
+  color: #f3f4f6 !important;
+}
+
+/* AG Grid Tooltip Styling */
+.ag-theme-alpine-dark .ag-tooltip {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  max-width: 300px !important;
+  white-space: pre-line !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.ag-theme-alpine-dark .ag-tooltip-custom {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+/* Remove vertical grid lines */
+.ag-theme-alpine-dark .ag-cell {
+  border-right: none !important;
+}
+
+.ag-theme-alpine-dark .ag-header-cell {
+  border-right: none !important;
+}
+
+/* Add dotted underlines for hoverable cells */
+.ag-theme-alpine-dark .ag-cell[title]:not([title=""]) {
+  text-decoration: underline !important;
+  text-decoration-style: dotted !important;
+  text-underline-offset: 2px !important;
+}
+
+/* Clean up row borders for better appearance */
+.ag-theme-alpine-dark .ag-row {
+  border-bottom: 1px solid rgba(75, 85, 99, 0.3) !important;
+}
+
+.ag-theme-alpine-dark .ag-row:hover {
+  background-color: rgba(75, 85, 99, 0.2) !important;
+}
+
+.ag-theme-alpine-dark .ag-pinned-left-cols-container {
+  border-right: 2px solid rgb(139 92 246); /* purple-500 */
+  background-color: rgb(17 24 39 / 0.95); /* gray-900 with opacity */
+}
+
+.ag-theme-alpine-dark .ag-cell-focus {
+  border: 2px solid rgb(139 92 246) !important; /* purple-500 */
+}
+
+.ag-theme-alpine-dark .ag-paging-panel {
+  background-color: #1f2937 !important;
+  border-top: 2px solid #4b5563 !important; /* Thicker top border */
+  color: #d1d5db !important;
+  padding: 12px 16px !important; /* Better padding */
+  min-height: 48px !important; /* Taller pagination */
+}
+
+/* Fix Filter popup styling - dark mode with no borders */
+.ag-theme-alpine-dark .ag-filter-popup,
+.ag-theme-alpine-dark .ag-filter-body,
+.ag-theme-alpine-dark .ag-filter-condition,
+.ag-theme-alpine-dark .ag-filter-condition-panel,
+.ag-theme-alpine-dark .ag-filter-wrapper {
+  background: #1f2937 !important; /* dark background */
+  background-color: #1f2937 !important;
+  border: none !important; /* Remove all borders */
+  outline: none !important;
+  box-shadow: none !important;
+  color: #f3f4f6 !important;
+}
+
+/* Fix the "Equals" dropdown specifically - remove all borders aggressively */
+.ag-theme-alpine-dark .ag-filter-condition .ag-select,
+.ag-theme-alpine-dark .ag-filter-condition select,
+.ag-theme-alpine-dark .ag-select-wrapper,
+.ag-theme-alpine-dark .ag-picker-field-wrapper,
+.ag-theme-alpine-dark .ag-picker-field,
+.ag-theme-alpine-dark .ag-filter-popup .ag-select,
+.ag-theme-alpine-dark .ag-picker-field-display,
+.ag-theme-alpine-dark .ag-filter-popup .ag-picker-field,
+.ag-theme-alpine-dark .ag-filter-condition .ag-picker-field-wrapper,
+.ag-theme-alpine-dark .ag-filter-condition .ag-picker-field {
+  background: #374151 !important; /* dark gray background */
+  background-color: #374151 !important;
+  border: none !important; /* Remove border */
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  outline: none !important; /* Remove outline */
+  box-shadow: none !important; /* Remove box shadow */
+  color: #f3f4f6 !important;
+  border-radius: 4px !important;
+}
+
+/* Fix filter input field - remove all borders and outlines */
+.ag-theme-alpine-dark .ag-filter-condition .ag-input-field-input,
+.ag-theme-alpine-dark .ag-filter-body .ag-input-field-input,
+.ag-theme-alpine-dark .ag-filter-condition .ag-input-wrapper input,
+.ag-theme-alpine-dark .ag-filter-body .ag-input-wrapper input,
+.ag-theme-alpine-dark .ag-filter-condition input[type="text"],
+.ag-theme-alpine-dark .ag-filter-body input[type="text"],
+.ag-theme-alpine-dark .ag-filter-popup input,
+.ag-theme-alpine-dark .ag-input-field {
+  background: #374151 !important;
+  background-color: #374151 !important;
+  border: none !important; /* Remove border */
+  outline: none !important; /* Remove outline */
+  box-shadow: none !important; /* Remove box shadow */
+  color: #f3f4f6 !important;
+  padding-left: 12px !important; /* Add left padding to avoid icon overlap */
+  border-radius: 4px !important;
+  position: relative !important;
+}
+
+/* Completely hide magnifying glass icon - comprehensive approach */
+.ag-theme-alpine-dark .ag-filter-condition .ag-input-field-input::before,
+.ag-theme-alpine-dark .ag-filter-body .ag-input-field-input::before,
+.ag-theme-alpine-dark .ag-input-field-input-wrap::before,
+.ag-theme-alpine-dark .ag-input-field-input-wrap .ag-input-field-input::before,
+.ag-theme-alpine-dark .ag-filter-popup::before,
+.ag-theme-alpine-dark .ag-filter-body::before {
+  display: none !important;
+  content: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Hide any potential icon elements within filter */
+.ag-theme-alpine-dark .ag-filter-condition .ag-icon,
+.ag-theme-alpine-dark .ag-filter-body .ag-icon,
+.ag-theme-alpine-dark .ag-filter-popup .ag-icon-filter {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Remove wrapper interference and borders */
+.ag-theme-alpine-dark .ag-input-field-input-wrap,
+.ag-theme-alpine-dark .ag-input-wrapper,
+.ag-theme-alpine-dark .ag-filter-wrapper {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Beautiful AND/OR buttons styling - functional version */
+.ag-theme-alpine-dark .ag-filter-condition-panel {
+  padding: 12px 0 !important;
+}
+
+.ag-theme-alpine-dark .ag-filter-condition-panel label {
+  background: #374151 !important;
+  border: 2px solid #4b5563 !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  margin: 4px 6px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  min-width: 80px !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.ag-theme-alpine-dark .ag-filter-condition-panel label:hover {
+  background: #4b5563 !important;
+  border-color: #8b5cf6 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.2) !important;
+}
+
+.ag-theme-alpine-dark .ag-filter-condition-panel input[type="radio"]:checked + label,
+.ag-theme-alpine-dark .ag-filter-condition-panel label.ag-checked {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7) !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3) !important;
+}
+
+.ag-theme-alpine-dark .ag-filter-condition-panel input[type="radio"] {
+  margin-right: 8px !important;
+  width: 16px !important;
+  height: 16px !important;
+  pointer-events: auto !important;
+}
+
+.ag-theme-alpine-dark .ag-filter-condition-panel span {
+  color: #f3f4f6 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.5px !important;
+  pointer-events: none !important;
+}
+
+.ag-theme-alpine-dark .ag-filter-condition-panel input[type="radio"]:checked + label span,
+.ag-theme-alpine-dark .ag-filter-condition-panel label.ag-checked span {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Fix Page Size dropdown styling - aggressive override */
+.ag-theme-alpine-dark .ag-paging-page-summary-panel,
+.ag-theme-alpine-dark .ag-paging-page-summary-panel * {
+  color: #d1d5db !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-page-summary-panel select,
+.ag-theme-alpine-dark .ag-paging-page-summary-panel .ag-select,
+.ag-theme-alpine-dark .ag-paging-page-summary-panel input {
+  background: transparent !important; /* Completely transparent */
+  background-color: transparent !important;
+  border: none !important; /* Remove border completely */
+  color: #f3f4f6 !important; /* light text */
+  border-radius: 0 !important; /* Remove rounded corners */
+  padding: 4px 8px !important;
+  box-shadow: none !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-page-summary-panel option {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Target the specific paging elements more aggressively */
+.ag-theme-alpine-dark .ag-paging-panel * {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-panel select,
+.ag-theme-alpine-dark .ag-paging-panel input[type="text"] {
+  background: #374151 !important;
+  background-color: #374151 !important;
+  border: 1px solid #4b5563 !important;
+  color: #f3f4f6 !important;
+  border-radius: 4px !important;
+}
+
+/* Remove all borders from paging panel container */
+.ag-theme-alpine-dark .ag-paging-panel {
+  border: none !important;
+  outline: none !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-page-summary-panel {
+  border: none !important;
+  outline: none !important;
+}
+
+/* Fix dropdown and filter readability */
+.ag-theme-alpine-dark .ag-menu,
+.ag-theme-alpine-dark .ag-popup,
+.ag-theme-alpine-dark .ag-select-list {
+  background-color: #1f2937 !important;
+  border: 1px solid #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.ag-theme-alpine-dark .ag-menu-option,
+.ag-theme-alpine-dark .ag-virtual-list-item {
+  color: #f3f4f6 !important;
+  background-color: #1f2937 !important;
+}
+
+.ag-theme-alpine-dark .ag-menu-option:hover,
+.ag-theme-alpine-dark .ag-virtual-list-item:hover {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+}
+
+.ag-theme-alpine-dark .ag-filter-toolpanel,
+.ag-theme-alpine-dark .ag-column-drop {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+}
+
+.ag-theme-alpine-dark .ag-input-field-input,
+.ag-theme-alpine-dark .ag-picker-field-display {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid #4b5563 !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-page-summary-panel {
+  color: #d1d5db !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-button {
+  color: #9ca3af !important;
+  background-color: transparent !important;
+  padding: 4px 8px !important; /* Reduced padding */
+  border-radius: 4px !important; /* Rounded buttons */
+  transition: background-color 0.2s ease !important; /* Only transition colors */
+}
+
+.ag-theme-alpine-dark .ag-paging-button:hover {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+}
+
+.ag-theme-alpine-dark .ag-filter-toolpanel-search {
+  background-color: rgb(55 65 81); /* gray-700 */
+  border: 1px solid rgb(75 85 99); /* gray-600 */
+  color: rgb(243 244 246); /* gray-100 */
+}
+
+.ag-theme-alpine-dark .ag-input-field-input {
+  background-color: rgb(55 65 81); /* gray-700 */
+  border: 1px solid rgb(75 85 99); /* gray-600 */
+  color: rgb(243 244 246); /* gray-100 */
+}
+
+.ag-theme-alpine-dark .ag-popup {
+  background-color: rgb(31 41 55); /* gray-800 */
+  border: 1px solid rgb(75 85 99); /* gray-600 */
+  color: rgb(243 244 246); /* gray-100 */
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+}
+
+.ag-theme-alpine-dark .ag-menu {
+  background-color: rgb(31 41 55); /* gray-800 */
+  border: 1px solid rgb(75 85 99); /* gray-600 */
+}
+
+.ag-theme-alpine-dark .ag-menu-option:hover {
+  background-color: rgb(55 65 81); /* gray-700 */
+}
+
+/* Custom star button styling */
+.ag-theme-alpine-dark .star-btn {
+  transition: all 0.2s ease;
+}
+
+.ag-theme-alpine-dark .star-btn:hover {
+  background-color: rgb(55 65 81) !important; /* gray-700 */
+  transform: scale(1.1);
+}
+
+/* Scrollbar styling for AG Grid */
+.ag-theme-alpine-dark .ag-body-horizontal-scroll::-webkit-scrollbar,
+.ag-theme-alpine-dark .ag-body-vertical-scroll::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.ag-theme-alpine-dark .ag-body-horizontal-scroll::-webkit-scrollbar-track,
+.ag-theme-alpine-dark .ag-body-vertical-scroll::-webkit-scrollbar-track {
+  background: rgb(31 41 55); /* gray-800 */
+  border-radius: 6px;
+}
+
+.ag-theme-alpine-dark .ag-body-horizontal-scroll::-webkit-scrollbar-thumb,
+.ag-theme-alpine-dark .ag-body-vertical-scroll::-webkit-scrollbar-thumb {
+  background: rgb(139 92 246); /* purple-500 */
+  border-radius: 6px;
+  border: 2px solid rgb(31 41 55); /* gray-800 */
+}
+
+.ag-theme-alpine-dark .ag-body-horizontal-scroll::-webkit-scrollbar-thumb:hover,
+.ag-theme-alpine-dark .ag-body-vertical-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(167 139 250); /* purple-400 */
+}
+
+/* Additional AG Grid dark theme overrides */
+.ag-theme-alpine-dark .ag-center-cols-clipper,
+.ag-theme-alpine-dark .ag-center-cols-viewport,
+.ag-theme-alpine-dark .ag-body-viewport {
+  background-color: #111827 !important;
+}
+
+.ag-theme-alpine-dark .ag-pinned-left-cols-container {
+  background: linear-gradient(90deg, #111827 0%, #1f2937 100%) !important; /* Subtle gradient */
+  border-right: 3px solid #8b5cf6 !important; /* Thicker purple border */
+  box-shadow: 2px 0 8px rgba(139, 92, 246, 0.2) !important; /* Purple glow */
+}
+
+.ag-theme-alpine-dark .ag-pinned-right-cols-container {
+  background: linear-gradient(270deg, #111827 0%, #1f2937 100%) !important; /* Reverse gradient */
+  border-left: 3px solid #8b5cf6 !important;
+  box-shadow: -2px 0 8px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Zebra striping handled above - removed duplicate rule */
+
+.ag-theme-alpine-dark .ag-row-selected {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Force data colors to persist through AG Grid updates */
+.ag-theme-alpine-dark {
+  --ag-data-color: inherit !important;
+  --ag-foreground-color: inherit !important;
+}
+
+/* Prevent AG Grid from overriding our styled cells */
+.ag-theme-alpine-dark .ag-cell[style] {
+  color: inherit !important;
+}
+
+.ag-theme-alpine-dark .ag-cell[style] * {
+  color: inherit !important;
+}
+
+.ag-theme-alpine-dark .ag-header-group-cell,
+.ag-theme-alpine-dark .ag-header-cell-label {
+  color: #d1d5db !important;
+}
+
+/* Ensure all text elements are readable */
+.ag-theme-alpine-dark .ag-cell-wrapper,
+.ag-theme-alpine-dark .ag-group-cell-entire-row,
+.ag-theme-alpine-dark .ag-cell-value,
+.ag-theme-alpine-dark span,
+.ag-theme-alpine-dark div:not([style*="color"]) {
+  color: #f3f4f6 !important;
+}
+
+/* Override for elements with explicit colors */
+.ag-theme-alpine-dark [style*="color"] {
+  color: inherit !important;
+}
+
+.ag-theme-alpine-dark [style*="color"] span,
+.ag-theme-alpine-dark [style*="color"] div {
+  color: inherit !important;
+}
+
+/* Specific fix for Price column purple color - multiple formats */
+.ag-theme-alpine-dark .ag-cell[style*="#c084fc"],
+.ag-theme-alpine-dark .ag-cell[style*="c084fc"],
+.ag-theme-alpine-dark .ag-cell[style*="rgb(192, 132, 252)"],
+.ag-theme-alpine-dark .ag-cell[style*="192, 132, 252"] {
+  color: #c084fc !important;
+}
+
+.ag-theme-alpine-dark .ag-cell[style*="#c084fc"] *,
+.ag-theme-alpine-dark .ag-cell[style*="c084fc"] *,
+.ag-theme-alpine-dark .ag-cell[style*="rgb(192, 132, 252)"] *,
+.ag-theme-alpine-dark .ag-cell[style*="192, 132, 252"] * {
+  color: #c084fc !important;
+}
+
+/* Fallback: Target Price column by field name */
+.ag-theme-alpine-dark .ag-cell[col-id="AVER"] {
+  color: #c084fc !important;
+}
+
+.ag-theme-alpine-dark .ag-cell[col-id="AVER"] * {
+  color: #c084fc !important;
+}

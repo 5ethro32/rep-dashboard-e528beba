@@ -40,6 +40,16 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 // Add imports for dropdown components at the top
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
+// AG Grid imports
+import { AgGridReact } from 'ag-grid-react';
+import { ColDef, GridApi, ModuleRegistry } from 'ag-grid-community';
+import { AllCommunityModule } from 'ag-grid-community';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
+
+// Register AG Grid modules
+ModuleRegistry.registerModules([AllCommunityModule]);
+
 // Helper functions for average cost display logic
 // Use calculated next average cost (Column J) when meaningful, otherwise use avg_cost
 // Column J contains blended average cost when new stock is on order at different prices
@@ -596,8 +606,9 @@ const PriorityIssuesAnalysis: React.FC<{
   };
 
   const getUniqueVelocityCategories = () => {
-    const categories = [...new Set(data.priorityIssues.map(issue => 
-      typeof issue.item.velocityCategory === 'number' ? issue.item.velocityCategory.toString() : 'N/A'
+    // Get velocity categories from all analyzed items for comprehensive filter options
+    const categories = [...new Set(data.analyzedItems.map(item => 
+      typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A'
     ))];
     return categories.sort((a, b) => {
       if (a === 'N/A') return 1;
@@ -607,7 +618,8 @@ const PriorityIssuesAnalysis: React.FC<{
   };
 
   const getUniqueTrendDirections = () => {
-    const trends = [...new Set(data.priorityIssues.map(issue => issue.item.trendDirection || 'N/A'))];
+    // Get trend directions from all analyzed items for comprehensive filter options
+    const trends = [...new Set(data.analyzedItems.map(item => item.trendDirection || 'N/A'))];
     return trends.sort((a, b) => {
       const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
       return (order[a as keyof typeof order] || 4) - (order[b as keyof typeof order] || 4);
@@ -1205,8 +1217,8 @@ const WatchlistAnalysis: React.FC<{
   };
 
   const getUniqueVelocityCategories = () => {
+    // Get velocity categories from all analyzed items for comprehensive filter options
     const categories = [...new Set(data.analyzedItems
-      .filter(item => item.watchlist === '⚠️')
       .map(item => typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A')
     )];
     return categories.sort((a, b) => {
@@ -1217,8 +1229,8 @@ const WatchlistAnalysis: React.FC<{
   };
 
   const getUniqueTrendDirections = () => {
+    // Get trend directions from all analyzed items for comprehensive filter options
     const trends = [...new Set(data.analyzedItems
-      .filter(item => item.watchlist === '⚠️')
       .map(item => item.trendDirection || 'N/A'))];
     return trends.sort((a, b) => {
       const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
@@ -1773,8 +1785,8 @@ const StarredItemsAnalysis: React.FC<{
   };
 
   const getUniqueVelocityCategories = () => {
+    // Get velocity categories from all analyzed items for comprehensive filter options
     const categories = [...new Set(data.analyzedItems
-      .filter(item => starredItems.has(item.id))
       .map(item => typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A')
     )];
     return categories.sort((a, b) => {
@@ -1785,8 +1797,8 @@ const StarredItemsAnalysis: React.FC<{
   };
 
   const getUniqueTrendDirections = () => {
+    // Get trend directions from all analyzed items for comprehensive filter options
     const trends = [...new Set(data.analyzedItems
-      .filter(item => starredItems.has(item.id))
       .map(item => item.trendDirection || 'N/A'))];
     return trends.sort((a, b) => {
       const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
@@ -2423,7 +2435,10 @@ const AllItemsAnalysis: React.FC<{
 
   const getUniqueTrendDirections = () => {
     const trends = [...new Set(data.analyzedItems.map(item => item.trendDirection || 'N/A'))];
-    return trends.sort();
+    return trends.sort((a, b) => {
+      const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
+      return (order[a as keyof typeof order] || 4) - (order[b as keyof typeof order] || 4);
+    });
   };
 
   const getUniqueWinningValues = () => {
@@ -2938,6 +2953,794 @@ const AllItemsAnalysis: React.FC<{
   );
 };
 
+// AG Grid All Items Analysis Component
+const AllItemsAGGrid: React.FC<{ 
+  data: ProcessedInventoryData; 
+  onToggleStar: (id: string) => void; 
+  starredItems: Set<string>; 
+}> = ({ data, onToggleStar, starredItems }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
+  const [gridApi, setGridApi] = useState<GridApi | null>(null);
+
+  // Format currency function  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP'
+    }).format(value);
+  };
+
+  // Calculate and format margin percentage
+  const calculateMargin = (item: any): number | null => {
+    if (!item.AVER || !item.avg_cost || item.AVER <= 0) {
+      return null;
+    }
+    return ((item.AVER - item.avg_cost) / item.AVER) * 100;
+  };
+
+  const formatMargin = (margin: number | null): string => {
+    if (margin === null) return 'N/A';
+    return `${margin.toFixed(1)}%`;
+  };
+
+  const getMarginColor = (margin: number | null): string => {
+    if (margin === null) return 'text-gray-400';
+    if (margin < 0) return 'text-red-400';
+    if (margin < 10) return 'text-orange-400';
+    if (margin < 20) return 'text-yellow-400';
+    return 'text-green-400';
+  };
+
+  const getCategoryColor = (category: number | 'N/A') => {
+    if (typeof category !== 'number') return 'text-gray-400';
+    if (category <= 2) return 'text-green-400';
+    if (category <= 4) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'UP': return 'text-green-400';
+      case 'DOWN': return 'text-red-400';
+      case 'STABLE': return 'text-yellow-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+
+
+  // Column definitions for AG Grid
+  const columnDefs: ColDef[] = [
+    {
+      headerName: 'Watch',
+      field: 'watchlist',
+      pinned: 'left',
+      width: 80,
+      valueFormatter: (params: any) => params.value || '−',
+      cellStyle: (params: any) => {
+        const watchlist = params.value || '';
+        // Show orange if any warning icon is present
+        const hasWarning = watchlist.includes('⚠️') || watchlist.includes('❗');
+        return {
+          textAlign: 'center' as const,
+          color: hasWarning ? '#fb923c' : '#6b7280',
+          fontSize: '16px'
+        };
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Item',
+      field: 'stockcode',
+      pinned: 'left',
+      width: 300,
+      valueGetter: (params: any) => params.data.stockcode,
+      cellRenderer: 'itemCellRenderer',
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Group',
+      field: 'velocityCategory',
+      width: 90,
+      valueFormatter: (params: any) => {
+        const category = params.value;
+        return typeof category === 'number' ? category.toString() : 'N/A';
+      },
+      cellStyle: (params: any) => {
+        const category = params.value;
+        let color = '#9ca3af'; // default gray
+        if (typeof category === 'number') {
+          if (category <= 2) color = '#4ade80'; // green
+          else if (category <= 4) color = '#facc15'; // yellow
+          else color = '#f87171'; // red
+        }
+        return {
+          textAlign: 'center' as const,
+          fontWeight: 'bold',
+          color: color
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Stock £',
+      field: 'stockValue',
+      width: 110,
+      valueFormatter: (params: any) => {
+        const value = params.value || 0;
+        return formatCurrency(value);
+      },
+      cellClass: 'text-right text-white',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Stock Qty',
+      field: 'currentStock',
+      width: 110,
+      valueGetter: (params: any) => params.data.currentStock || params.data.stock || 0,
+      valueFormatter: (params: any) => params.value.toLocaleString(),
+      tooltipValueGetter: (params: any) => {
+        const ringfenced = params.data.quantity_ringfenced || 0;
+        return `RF: ${ringfenced.toLocaleString()}`;
+      },
+      cellStyle: (params: any) => {
+        const currentStock = params.value || 0;
+        const ringfenced = params.data.quantity_ringfenced || 0;
+        
+        // Calculate ringfenced percentage (0-100%)
+        const ringfencedPercent = currentStock > 0 ? Math.min((ringfenced / currentStock) * 100, 100) : 0;
+        
+        // Create transparent fill that's proportional to ringfenced percentage
+        let backgroundImage = 'none';
+        
+        if (ringfencedPercent > 0) {
+          // Determine color based on ringfenced percentage
+          let fillColor = '#fbbf24'; // yellow-400 (default)
+          if (ringfencedPercent >= 25 && ringfencedPercent < 50) fillColor = '#f97316'; // orange-500
+          else if (ringfencedPercent >= 50 && ringfencedPercent < 75) fillColor = '#dc2626'; // red-600
+          else if (ringfencedPercent >= 75) fillColor = '#991b1b'; // red-800
+          
+          // Create fill that's exactly proportional to ringfenced percentage (transparent)
+          backgroundImage = `linear-gradient(to top, ${fillColor}15 0%, ${fillColor}15 ${ringfencedPercent}%, transparent ${ringfencedPercent}%, transparent 100%)`;
+        }
+        
+        return {
+          textAlign: 'right' as const,
+          color: '#d1d5db', // gray-300
+          backgroundImage: backgroundImage,
+          paddingRight: '8px'
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Months',
+      field: 'monthsOfStock',
+      width: 90,
+      valueFormatter: (params: any) => {
+        const months = params.value;
+        return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const usage = params.data.averageUsage || params.data.packs_sold_avg_last_six_months;
+        const last30Days = params.data.packs_sold_last_30_days;
+        const revaLast30Days = params.data.packs_sold_reva_last_30_days;
+        
+        let tooltip = usage ? `${usage.toFixed(0)} packs/month (6mo avg)` : 'No usage data (6mo avg)';
+        
+        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
+          tooltip += `\nLast 30 days: ${Number(last30Days).toFixed(0)} packs`;
+        }
+        
+        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
+          tooltip += `\nReva last 30 days: ${Number(revaLast30Days).toFixed(0)} packs`;
+        }
+        
+        return tooltip;
+      },
+      cellStyle: (params: any) => {
+        const months = params.value;
+        return {
+          textAlign: 'center' as const,
+          fontWeight: months && months > 6 ? 'bold' : 'normal',
+          color: months && months > 6 ? '#f87171' : '#d1d5db'
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'On Order',
+      field: 'quantity_on_order',
+      width: 110,
+      valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
+      cellClass: 'text-right text-gray-300',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Avg Cost',
+      field: 'avg_cost',
+      width: 110,
+      valueGetter: (params: any) => getDisplayedAverageCost(params.data),
+      valueFormatter: (params: any) => {
+        const value = params.value;
+        return value ? formatCurrency(value) : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        return shouldShowAverageCostTooltip(params.data) ? getAverageCostTooltip(params.data) : null;
+      },
+      cellClass: 'text-right text-gray-300 font-bold',
+      sortable: true,
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'NBP',
+      field: 'min_cost',
+      width: 110,
+      valueFormatter: (params: any) => {
+        const minCost = params.value;
+        return minCost && minCost > 0 ? formatCurrency(minCost) : 'OOS';
+      },
+      tooltipValueGetter: (params: any) => {
+        const data = params.data;
+        const nextCost = data.next_cost && data.next_cost > 0 ? formatCurrency(data.next_cost) : 'N/A';
+        const minCost = data.min_cost && data.min_cost > 0 ? formatCurrency(data.min_cost) : 'N/A';
+        const lastPoCost = data.last_po_cost && data.last_po_cost > 0 ? formatCurrency(data.last_po_cost) : 'N/A';
+        return `Next Cost: ${nextCost}\nMin Cost: ${minCost}\nLast PO Cost: ${lastPoCost}`;
+      },
+      cellStyle: { textAlign: 'right' as const, color: '#3b82f6', fontWeight: 'bold' }, // blue-500
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Trend',
+      field: 'trendDirection',
+      width: 90,
+      valueFormatter: (params: any) => {
+        const trend = params.value;
+        return trend === 'UP' ? '↑' : trend === 'DOWN' ? '↓' : trend === 'STABLE' ? '−' : '?';
+      },
+      cellStyle: (params: any) => {
+        const trend = params.value;
+        let color = '#9ca3af'; // default gray
+        switch (trend) {
+          case 'UP': color = '#4ade80'; break; // green
+          case 'DOWN': color = '#f87171'; break; // red
+          case 'STABLE': color = '#facc15'; break; // yellow
+        }
+        return {
+          textAlign: 'center' as const,
+          fontSize: '18px',
+          fontWeight: 'bold',
+          color: color
+        };
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Price',
+      field: 'AVER',
+      width: 110,
+      valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : 'N/A',
+      tooltipValueGetter: (params: any) => {
+        const data = params.data;
+        const mclean = data.MCLEAN && data.MCLEAN > 0 ? formatCurrency(data.MCLEAN) : 'N/A';
+        const apple = data.APPLE && data.APPLE > 0 ? formatCurrency(data.APPLE) : 'N/A';
+        const davidson = data.DAVIDSON && data.DAVIDSON > 0 ? formatCurrency(data.DAVIDSON) : 'N/A';
+        const reva = data.reva && data.reva > 0 ? formatCurrency(data.reva) : 'N/A';
+        return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
+      },
+      cellStyle: { textAlign: 'right' as const, color: '#c084fc', fontWeight: 'bold' }, // purple-400
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Market',
+      field: 'lowestComp',
+      width: 110,
+      valueGetter: (params: any) => {
+        return params.data.bestCompetitorPrice || params.data.lowestMarketPrice || params.data.Nupharm || params.data.AAH2 || params.data.LEXON2 || 0;
+      },
+      valueFormatter: (params: any) => {
+        return params.value > 0 ? formatCurrency(params.value) : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data;
+        const competitors = [
+          { name: 'PHX', price: item.Nupharm },
+          { name: 'AAH', price: item.AAH2 },
+          { name: 'ETHL', price: item.ETH_LIST },
+          { name: 'ETHN', price: item.ETH_NET },
+          { name: 'LEX', price: item.LEXON2 }
+        ].filter(comp => comp.price && comp.price > 0)
+         .sort((a, b) => a.price - b.price);
+        
+        if (competitors.length === 0) {
+          return 'No competitor pricing available';
+        }
+        
+        return competitors.map(comp => `${comp.name}: ${formatCurrency(comp.price)}`).join('\n');
+      },
+      cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Winning',
+      field: 'winning',
+      width: 90,
+      valueGetter: (params: any) => {
+        const lowestComp = params.data.bestCompetitorPrice || params.data.lowestMarketPrice || params.data.Nupharm || params.data.AAH2 || params.data.LEXON2;
+        const isWinning = params.data.AVER && lowestComp && params.data.AVER < lowestComp;
+        return isWinning ? 'Y' : 'N';
+      },
+      cellStyle: (params: any) => {
+        return {
+          textAlign: 'center' as const,
+          fontWeight: 'bold',
+          color: params.value === 'Y' ? '#4ade80' : '#f87171'
+        };
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Margin',
+      field: 'margin',
+      width: 110,
+      valueGetter: (params: any) => calculateMargin(params.data),
+      valueFormatter: (params: any) => formatMargin(params.value),
+      cellStyle: (params: any) => {
+        const margin = params.value;
+        let color = '#9ca3af'; // default gray
+        if (margin !== null) {
+          if (margin < 0) color = '#f87171'; // red
+          else if (margin < 10) color = '#fb923c'; // orange
+          else if (margin < 20) color = '#facc15'; // yellow
+          else color = '#4ade80'; // green
+        }
+        return {
+          textAlign: 'right' as const,
+          fontWeight: 'bold',
+          color: color
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'SDT',
+      field: 'SDT',
+      width: 90,
+      valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
+      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'EDT',
+      field: 'EDT',
+      width: 90,
+      valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
+      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Star',
+      field: 'starred',
+      width: 60,
+      valueGetter: (params: any) => starredItems.has(params.data.id) ? '★' : '☆',
+      cellStyle: (params: any) => {
+        const isStarred = starredItems.has(params.data.id);
+        return {
+          color: isStarred ? '#facc15' : '#6b7280',
+          textAlign: 'center' as const,
+          cursor: 'pointer'
+        };
+      },
+      onCellClicked: (params: any) => {
+        onToggleStar(params.data.id);
+      },
+      sortable: false,
+      filter: false,
+      resizable: false,
+      suppressHeaderMenuButton: true,
+      suppressSizeToFit: true
+    }
+  ];
+
+  // Apply strategic filters (same logic as current AllItemsAnalysis)
+  const filteredData = useMemo(() => {
+    let items = [...data.analyzedItems];
+
+    // Apply strategic filters
+    if (filterType === 'watchlist') {
+      items = items.filter(item => item.watchlist === '⚠️');
+    } else if (filterType === 'fast-movers') {
+      items = items.filter(item => typeof item.velocityCategory === 'number' && item.velocityCategory <= 3);
+    } else if (filterType === 'high-value') {
+      items = items.filter(item => item.stockValue > 1000);
+    } else if (filterType === 'cost-disadvantage-down') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
+        return item.avg_cost > maxCompPrice && item.trendDirection === 'DOWN' && maxCompPrice > 0;
+      });
+    } else if (filterType === 'margin-opportunity') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        const marketLow = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+        return item.avg_cost < marketLow && item.AVER && item.AVER < marketLow && marketLow > 0;
+      });
+    } else if (filterType === 'urgent-sourcing') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        if (competitorPrices.length === 0) return false;
+        const avgCompPrice = competitorPrices.reduce((sum, p) => sum + p, 0) / competitorPrices.length;
+        const maxCompPrice = Math.max(...competitorPrices);
+        return (item.avg_cost > avgCompPrice * 1.05 || item.avg_cost > maxCompPrice) && ['STABLE', 'UP'].includes(item.trendDirection);
+      });
+    } else if (filterType === 'below-cost-lines') {
+      items = items.filter(item => {
+        return item.AVER && item.avg_cost && item.AVER < item.avg_cost;
+      });
+    } else if (filterType === 'price-war-opportunity') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        const marketLow = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+        const isWinning = item.AVER && marketLow > 0 && item.AVER < marketLow;
+        return isWinning && item.trendDirection === 'UP';
+      });
+    } else if (filterType === 'dead-stock-alert') {
+      items = items.filter(item => {
+        const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
+        const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
+        const hasCostDisadvantage = item.avg_cost > maxCompPrice && maxCompPrice > 0;
+        return hasCostDisadvantage && item.trendDirection === 'DOWN' && item.monthsOfStock && item.monthsOfStock > 6;
+      });
+    }
+
+        return items;
+  }, [data.analyzedItems, filterType]);
+
+
+  
+  // Apply quick filter when search term changes
+  useEffect(() => {
+    if (gridApi) {
+      gridApi.setGridOption('quickFilterText', searchTerm);
+    }
+  }, [searchTerm, gridApi]);
+
+  const onGridReady = (params: any) => {
+    setGridApi(params.api);
+  };
+
+  // Custom cell renderer component for Item column
+  const ItemCellRenderer = (params: any) => {
+    if (!params.data) return null;
+    const stockcode = params.data.stockcode || '';
+    const description = params.data.description || params.data.Description || '';
+    
+    console.log('Item data:', { stockcode, description, data: params.data }); // Debug log
+    
+    const [isHovered, setIsHovered] = React.useState(false);
+    
+    return (
+      <div 
+        style={{ 
+          lineHeight: '1.3',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '6px 4px',
+          minHeight: '50px',
+          cursor: 'pointer'
+        }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div style={{ 
+          fontWeight: '600', 
+          color: '#ffffff',
+          fontSize: '13px',
+          marginBottom: isHovered ? '3px' : '0px',
+          maxWidth: '280px', 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis', 
+          whiteSpace: 'nowrap',
+          transition: 'margin-bottom 0.2s ease'
+        }}>
+          {description || 'No description available'}
+        </div>
+        <div style={{ 
+          fontSize: '11px', 
+          color: '#9ca3af', 
+          opacity: isHovered ? 1 : 0,
+          display: 'block',
+          height: isHovered ? 'auto' : '0px',
+          overflow: 'hidden',
+          transition: 'opacity 0.2s ease, height 0.2s ease'
+        }}>
+          {stockcode}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Same header as current */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-white">All Items Analysis</h3>
+        <div className="text-sm text-gray-400">
+          {filteredData.length.toLocaleString()} items
+        </div>
+      </div>
+
+      {/* Same search component */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <Input
+            placeholder="Search by stock code or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-gray-800 border-gray-700 text-white"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Same strategic filters */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <h4 className="text-sm font-medium text-gray-300 mb-3">Strategic Filters</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('cost-disadvantage-down')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'cost-disadvantage-down' 
+                        ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+                    }`}
+                  >
+                    🔻 Cost Risk
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Cost Disadvantage + Falling Prices</div>
+                    <div>Products where our cost exceeds all competitors AND market prices are falling. Urgent clearance needed.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('margin-opportunity')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'margin-opportunity' 
+                        ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
+                    }`}
+                  >
+                    💰 Margin Win
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Immediate Margin Opportunities</div>
+                    <div>Products where our cost is below market minimum. Can increase price while staying cheapest.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('urgent-sourcing')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'urgent-sourcing' 
+                        ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-orange-500/10 hover:text-orange-300 border border-gray-700/50'
+                    }`}
+                  >
+                    ⚡ Uncompetitive Cost
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Uncompetitive Cost Alert</div>
+                    <div>Products where our cost is above market low with stable/rising trends. No price relief coming.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('below-cost-lines')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'below-cost-lines' 
+                        ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+                    }`}
+                  >
+                    📉 Below Cost
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Below Cost Lines</div>
+                    <div>Products where our selling price is below average cost. Items selling at a loss requiring immediate attention.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('price-war-opportunity')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'price-war-opportunity' 
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-purple-500/10 hover:text-purple-300 border border-gray-700/50'
+                    }`}
+                  >
+                    📈 Price Up
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Price War Opportunities</div>
+                    <div>Products where we're winning (cheapest) but market trend is UP. Can we increase price and maintain lead?</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setFilterType('dead-stock-alert')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      filterType === 'dead-stock-alert' 
+                        ? 'bg-red-600/20 text-red-400 border border-red-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-600/10 hover:text-red-400 border border-gray-700/50'
+                    }`}
+                  >
+                    ☠️ Dead Stock
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Dead Stock Alert</div>
+                    <div>High cost + falling prices + overstocked (&gt;6 months). Critical clearance priority to minimize losses.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          </div>
+          {filterType !== 'all' && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={() => setFilterType('all')}
+                className="text-xs text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-1"
+              >
+                ← Clear Filter
+              </button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* AG Grid Table */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-0">
+          {filteredData.length === 0 ? (
+            <div className="p-8 text-center text-gray-400">
+              <div className="text-lg font-medium">No data available</div>
+              <div className="text-sm mt-1">Check your data upload or filters</div>
+            </div>
+          ) : (
+            <div 
+              className="ag-theme-alpine-dark" 
+              style={{ 
+                height: '600px', 
+                width: '100%'
+              }}
+            >
+                            <AgGridReact
+                columnDefs={columnDefs}
+                rowData={filteredData}
+                onGridReady={onGridReady}
+                components={{
+                  itemCellRenderer: ItemCellRenderer
+                }}
+                defaultColDef={{
+                  resizable: true,
+                  sortable: true,
+                  filter: true,
+                  minWidth: 80
+                }}
+                rowHeight={64}
+                headerHeight={56}
+                suppressRowClickSelection={true}
+                rowSelection="multiple"
+                pagination={true}
+                paginationPageSize={50}
+                paginationPageSizeSelector={[25, 50, 100, 200, 500, 1000]}
+                suppressPaginationPanel={false}
+                enableRangeSelection={true}
+                suppressMenuHide={false}
+                animateRows={true}
+                suppressCellFocus={true}
+                enableCellTextSelection={true}
+                tooltipShowDelay={500}
+                tooltipHideDelay={2000}
+                domLayout="normal"
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 // Overstock Analysis Component
 const OverstockAnalysis: React.FC<{ 
   data: ProcessedInventoryData; 
@@ -3131,7 +3934,8 @@ const OverstockAnalysis: React.FC<{
   };
 
   const getUniqueVelocityCategories = () => {
-    const categories = [...new Set(data.overstockItems
+    // Get velocity categories from all analyzed items for comprehensive filter options
+    const categories = [...new Set(data.analyzedItems
       .map(item => typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A')
     )];
     return categories.sort((a, b) => {
@@ -3142,8 +3946,12 @@ const OverstockAnalysis: React.FC<{
   };
 
   const getUniqueTrendDirections = () => {
-    const trends = [...new Set(data.overstockItems.map(item => item.trendDirection || 'N/A'))];
-    return trends.sort();
+    // Get trend directions from all analyzed items for comprehensive filter options
+    const trends = [...new Set(data.analyzedItems.map(item => item.trendDirection || 'N/A'))];
+    return trends.sort((a, b) => {
+      const order = { 'DOWN': 1, 'STABLE': 2, 'UP': 3, 'N/A': 4 };
+      return (order[a as keyof typeof order] || 4) - (order[b as keyof typeof order] || 4);
+    });
   };
 
   const getUniqueWinningValues = () => {
@@ -3977,7 +4785,7 @@ const InventoryAnalyticsContent: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="all" className="space-y-6">
-          <AllItemsAnalysis 
+          <AllItemsAGGrid 
             data={inventoryData} 
             onToggleStar={handleToggleStar} 
             starredItems={starredItems} 

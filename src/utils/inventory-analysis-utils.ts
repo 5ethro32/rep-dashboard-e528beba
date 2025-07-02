@@ -20,9 +20,16 @@ export interface InventoryItem {
   ETH_LIST?: number;
   ETH_NET?: number;
   LEXON2?: number;
+  MCLEAN?: number;
+  APPLE?: number;
+  DAVIDSON?: number;
   AVER?: number; // Our selling price
+  reva?: number; // Reva price
+  eth_OOS?: string; // ETH Out of Stock indicator
   SDT?: number; // Scottish Drug Tariff
   EDT?: number; // English Drug Tariff
+  packs_sold_last_30_days?: number; // Column M - Last 30 days sales
+  packs_sold_reva_last_30_days?: number; // Column L - Reva last 30 days sales
 }
 
 export interface ProcessedInventoryItem extends InventoryItem {
@@ -60,7 +67,7 @@ export interface ProcessedInventoryItem extends InventoryItem {
   competitorCount: number;
   
   // Flags and indicators
-  watchlist: '⚠️' | '-';
+  watchlist: string;
   
   // Unique identifier
   id: string;
@@ -181,9 +188,35 @@ const generateInventoryColumnMapping = (headers: string[]) => {
     ETH_LIST: ['eth_list', 'eth list', 'eth list price'],
     ETH_NET: ['eth_net', 'eth net', 'eth net price'],
     LEXON2: ['lexon2', 'lexon 2', 'lexon2 price'],
+    MCLEAN: ['mclean', 'mc lean', 'mclean price'],
+    APPLE: ['apple', 'apple price'],
+    DAVIDSON: ['davidson', 'davidson price'],
     AVER: ['aver', 'our price', 'selling price', 'current price'],
+    reva: ['reva', 'reva price'],
+    eth_OOS: ['eth_oos', 'eth oos', 'eth out of stock', 'oos'],
     SDT: ['sdt', 'scottish drug tariff', 'scottish tariff', 'scotland tariff'],
-    EDT: ['edt', 'english drug tariff', 'english tariff', 'england tariff']
+    EDT: ['edt', 'english drug tariff', 'english tariff', 'england tariff'],
+    packs_sold_last_30_days: [
+      'packs_sold_last_30_days', 
+      'packs sold last 30 days',
+      'last 30 days',
+      'last_30_days',
+      '30 days sales',
+      'thirty days sales',
+      'M', // Column M
+      'column M',
+      'col M'
+    ],
+    packs_sold_reva_last_30_days: [
+      'packs_sold_reva_last_30_days',
+      'packs sold reva last 30 days', 
+      'reva last 30 days',
+      'reva_last_30_days',
+      'reva 30 days',
+      'L', // Column L
+      'column L',
+      'col L'
+    ]
   };
   
   // Find matches for each field
@@ -274,14 +307,35 @@ const transformInventoryRow = (row: any, mapping: Record<string, string>): Inven
   if (mapping.LEXON2 && row[mapping.LEXON2] !== undefined) {
     transformed.LEXON2 = Number(row[mapping.LEXON2] || 0);
   }
+  if (mapping.MCLEAN && row[mapping.MCLEAN] !== undefined) {
+    transformed.MCLEAN = Number(row[mapping.MCLEAN] || 0);
+  }
+  if (mapping.APPLE && row[mapping.APPLE] !== undefined) {
+    transformed.APPLE = Number(row[mapping.APPLE] || 0);
+  }
+  if (mapping.DAVIDSON && row[mapping.DAVIDSON] !== undefined) {
+    transformed.DAVIDSON = Number(row[mapping.DAVIDSON] || 0);
+  }
   if (mapping.AVER && row[mapping.AVER] !== undefined) {
     transformed.AVER = Number(row[mapping.AVER] || 0);
+  }
+  if (mapping.reva && row[mapping.reva] !== undefined) {
+    transformed.reva = Number(row[mapping.reva] || 0);
+  }
+  if (mapping.eth_OOS && row[mapping.eth_OOS] !== undefined) {
+    transformed.eth_OOS = String(row[mapping.eth_OOS] || '').toUpperCase();
   }
   if (mapping.SDT && row[mapping.SDT] !== undefined) {
     transformed.SDT = Number(row[mapping.SDT] || 0);
   }
   if (mapping.EDT && row[mapping.EDT] !== undefined) {
     transformed.EDT = Number(row[mapping.EDT] || 0);
+  }
+  if (mapping.packs_sold_last_30_days && row[mapping.packs_sold_last_30_days] !== undefined) {
+    transformed.packs_sold_last_30_days = Number(row[mapping.packs_sold_last_30_days] || 0);
+  }
+  if (mapping.packs_sold_reva_last_30_days && row[mapping.packs_sold_reva_last_30_days] !== undefined) {
+    transformed.packs_sold_reva_last_30_days = Number(row[mapping.packs_sold_reva_last_30_days] || 0);
   }
   
   return transformed;
@@ -441,7 +495,15 @@ export const analyzeInventoryItem = (
   const velocityCategory = (velocityInfo?.category as 1 | 2 | 3 | 4 | 5 | 6) || 'N/A' as const;
   
   // Watchlist status
-  const watchlist = item.group === 1 ? '⚠️' : '-' as const;
+  // Build watchlist indicators
+  let watchlist = '';
+  if (item.group === 1) {
+    watchlist += '⚠️';
+  }
+  if (item.eth_OOS === 'Y') {
+    watchlist += '❗';
+  }
+  const finalWatchlist = watchlist || '-' as const;
   
   // NBP and trend analysis
   const { nbp, source: nbpSource } = calculateNBP(item);
@@ -479,7 +541,7 @@ export const analyzeInventoryItem = (
     marginVsLowest,
     pricingStrategy: pricingStrategy as 'Profitable' | 'Marginal' | 'Loss Required' | 'Unknown',
     competitorCount,
-    watchlist
+    watchlist: finalWatchlist
   };
 };
 
