@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { GradientAvatar, GradientAvatarFallback } from '@/components/ui/gradient-avatar';
@@ -6,6 +5,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { LogOut, Settings, User, Moon, Sun } from 'lucide-react';
+
+// Helper function to generate initials from email or name
+const generateInitials = (email: string): string => {
+  if (!email) return 'U';
+  
+  // Extract username from email (part before @)
+  const username = email.split('@')[0];
+  
+  // Split by common separators and take first letter of each part
+  const parts = username.split(/[._-]/).filter(part => part.length > 0);
+  
+  if (parts.length > 1) {
+    // If multiple parts, take first letter of first two parts
+    return parts
+      .slice(0, 2)
+      .map(part => part.charAt(0))
+      .join('')
+      .toUpperCase();
+  } else {
+    // If single part, take first letter
+    return username.charAt(0).toUpperCase();
+  }
+};
 
 const UserProfileDropdown = () => {
   const { user, signOut } = useAuth();
@@ -43,9 +65,9 @@ const UserProfileDropdown = () => {
   
   if (!user) return null;
   
-  // Get user email and initials
+  // Get user email and generate proper initials
   const email = user.email || 'user@example.com';
-  const userInitials = "J";
+  const userInitials = generateInitials(email);
   
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -6,6 +5,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LogOut } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// Helper function to generate initials from email or name
+const generateInitials = (email: string): string => {
+  if (!email) return 'U';
+  
+  // Extract username from email (part before @)
+  const username = email.split('@')[0];
+  
+  // Split by common separators and take first letter of each part
+  const parts = username.split(/[._-]/).filter(part => part.length > 0);
+  
+  if (parts.length > 1) {
+    // If multiple parts, take first letter of first two parts
+    return parts
+      .slice(0, 2)
+      .map(part => part.charAt(0))
+      .join('')
+      .toUpperCase();
+  } else {
+    // If single part, take first letter
+    return username.charAt(0).toUpperCase();
+  }
+};
 
 const UserProfileButton = () => {
   const { user, signOut } = useAuth();
@@ -34,8 +56,8 @@ const UserProfileButton = () => {
   
   if (!user) return null;
   
-  // Just use the initial without displaying email
-  const userInitials = "J";
+  // Generate proper initials from user's email
+  const userInitials = generateInitials(user.email || '');
   
   return (
     <div className="flex items-center gap-4">
