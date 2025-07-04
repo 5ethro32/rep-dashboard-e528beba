@@ -249,6 +249,7 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
           previousTable = "June_Data_Comparison";
           break;
         case 'June 2':
+        case 'July MTD':
           currentTable = "July_Data";
           previousTable = "July_Data_Comparison";
           break;
