@@ -631,7 +631,7 @@ const PriorityIssuesAGGrid: React.FC<{
       pinned: 'left',
       width: 300,
       valueGetter: (params: any) => params.data.item?.stockcode || '',
-      cellRenderer: 'itemCellRenderer',
+      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
@@ -1917,7 +1917,7 @@ const WatchlistAGGrid: React.FC<{
       pinned: 'left',
       width: 300,
       valueGetter: (params: any) => params.data.stockcode,
-      cellRenderer: 'itemCellRenderer',
+      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
@@ -3081,7 +3081,7 @@ const StarredItemsAGGrid: React.FC<{
       pinned: 'left',
       width: 300,
       valueGetter: (params: any) => params.data.stockcode,
-      cellRenderer: 'itemCellRenderer',
+      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
@@ -5111,7 +5111,7 @@ const AllItemsAGGrid: React.FC<{
       pinned: 'left',
       width: 300,
       valueGetter: (params: any) => params.data.stockcode,
-      cellRenderer: 'itemCellRenderer',
+      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
@@ -5872,6 +5872,9 @@ const AllItemsAGGrid: React.FC<{
                 columnDefs={columnDefs}
                 rowData={filteredData}
                 onGridReady={onGridReady}
+                masterDetail={true}
+                detailCellRenderer={DetailCellRenderer}
+                detailRowHeight={400}
                 components={{
                   itemCellRenderer: ItemCellRenderer
                 }}
@@ -5991,7 +5994,7 @@ const OverstockAGGrid: React.FC<{
       pinned: 'left',
       width: 300,
       valueGetter: (params: any) => params.data.stockcode,
-      cellRenderer: 'itemCellRenderer',
+      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
@@ -8450,7 +8453,7 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
-      cellRenderer: 'itemCellRenderer',
+      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
