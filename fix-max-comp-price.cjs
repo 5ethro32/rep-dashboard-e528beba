@@ -4,13 +4,13 @@ const fs = require('fs');
 const filePath = './src/pages/engine-room/InventoryAnalytics.tsx';
 const content = fs.readFileSync(filePath, 'utf8');
 
-// Remove all instances of the cellRenderer line
+// Fix the remaining maxCompPrice references to minCompPrice
 const fixedContent = content.replace(
-  /\s*cellRenderer: 'agGroupCellRenderer',\s*\/\/ Enable expand\/collapse functionality\n/g,
-  ''
+  /item\.avg_cost > maxCompPrice && maxCompPrice > 0/g,
+  'item.avg_cost > minCompPrice && minCompPrice > 0'
 );
 
 // Write back to file
 fs.writeFileSync(filePath, fixedContent);
 
-console.log('Fixed all agGroupCellRenderer instances'); 
+console.log('Fixed remaining maxCompPrice references'); 

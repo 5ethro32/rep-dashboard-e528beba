@@ -223,6 +223,107 @@ const getLexonTrendTooltip = (item: ProcessedInventoryItem): string => {
   return `${trendSymbol} ${changeSign}${Math.round(trend.percentageChange)}%`;
 };
 
+// Calculate market trend based on competitor price movements from yesterday
+const getMarketTrend = (item: ProcessedInventoryItem): { direction: 'UP' | 'DOWN' | 'STABLE' | 'MIXED' | 'N/A', percentage: number } => {
+  const competitors = [
+    { name: 'PHX', current: item.Nupharm, yesterday: item.Nupharm_yesterday },
+    { name: 'AAH', current: item.AAH2, yesterday: item.AAH_yesterday },
+    { name: 'ETHN', current: item.ETH_NET, yesterday: item.ETH_NET_yesterday },
+    { name: 'LEX', current: item.LEXON2, yesterday: item.LEXON2_yesterday }
+  ];
+
+  // Filter to only include competitors with both current and yesterday data
+  const validCompetitors = competitors.filter(comp => 
+    comp.current && comp.current > 0 && comp.yesterday && comp.yesterday > 0
+  );
+
+  if (validCompetitors.length === 0) {
+    return { direction: 'N/A', percentage: 0 };
+  }
+
+  // Calculate percentage changes for each competitor
+  const changes = validCompetitors.map(comp => {
+    const change = ((comp.current - comp.yesterday) / comp.yesterday) * 100;
+    return {
+      name: comp.name,
+      change: change,
+      direction: change > 0.5 ? 'UP' : change < -0.5 ? 'DOWN' : 'STABLE'
+    };
+  });
+
+  // Count directions
+  const upCount = changes.filter(c => c.direction === 'UP').length;
+  const downCount = changes.filter(c => c.direction === 'DOWN').length;
+  const stableCount = changes.filter(c => c.direction === 'STABLE').length;
+
+  // Calculate weighted average change
+  const avgChange = changes.reduce((sum, c) => sum + c.change, 0) / changes.length;
+
+  // Determine overall direction
+  let direction: 'UP' | 'DOWN' | 'STABLE' | 'MIXED' | 'N/A';
+  if (upCount > downCount && upCount > stableCount) {
+    direction = 'UP';
+  } else if (downCount > upCount && downCount > stableCount) {
+    direction = 'DOWN';
+  } else if (stableCount >= upCount && stableCount >= downCount) {
+    direction = 'STABLE';
+  } else {
+    direction = 'MIXED';
+  }
+
+  return { direction, percentage: avgChange };
+};
+
+const getMarketTrendDisplay = (item: ProcessedInventoryItem): string => {
+  const trend = getMarketTrend(item);
+  switch (trend.direction) {
+    case 'UP': return '↗️';
+    case 'DOWN': return '↘️';
+    case 'STABLE': return '→';
+    case 'MIXED': return '↕️';
+    default: return '?';
+  }
+};
+
+const getMarketTrendColor = (item: ProcessedInventoryItem): string => {
+  const trend = getMarketTrend(item);
+  switch (trend.direction) {
+    case 'UP': return '#4ade80';
+    case 'DOWN': return '#f87171';
+    case 'STABLE': return '#facc15';
+    case 'MIXED': return '#a78bfa';
+    default: return '#9ca3af';
+  }
+};
+
+const getMarketTrendTooltip = (item: ProcessedInventoryItem): string => {
+  const competitors = [
+    { name: 'PHX', current: item.Nupharm, yesterday: item.Nupharm_yesterday },
+    { name: 'AAH', current: item.AAH2, yesterday: item.AAH_yesterday },
+    { name: 'ETHN', current: item.ETH_NET, yesterday: item.ETH_NET_yesterday },
+    { name: 'LEX', current: item.LEXON2, yesterday: item.LEXON2_yesterday }
+  ];
+
+  const validCompetitors = competitors.filter(comp => 
+    comp.current && comp.current > 0 && comp.yesterday && comp.yesterday > 0
+  );
+
+  if (validCompetitors.length === 0) {
+    return 'No competitor trend data available';
+  }
+
+  const changes = validCompetitors.map(comp => {
+    const change = ((comp.current - comp.yesterday) / comp.yesterday) * 100;
+    const direction = change > 0.5 ? '↗️' : change < -0.5 ? '↘️' : '→';
+    return `${comp.name}: ${direction} ${change.toFixed(1)}%`;
+  });
+
+  const trend = getMarketTrend(item);
+  const summary = `Market Trend: ${trend.direction} (avg: ${trend.percentage.toFixed(1)}%)`;
+  
+  return [summary, ...changes].join('\n');
+};
+
 // Helper function to determine winning status: Y (strict win), N (losing), - (tie)
 const getWinningStatus = (item: ProcessedInventoryItem): 'Y' | 'N' | '-' => {
   if (!item.AVER || item.AVER <= 0) return 'N';
@@ -631,7 +732,6 @@ const PriorityIssuesAGGrid: React.FC<{
       pinned: 'left',
       width: 300,
       valueGetter: (params: any) => params.data.item?.stockcode || '',
-      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
@@ -809,9 +909,9 @@ const PriorityIssuesAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Trend',
+      headerName: 'Buying Trend',
       field: 'trendDirection',
-      width: 90,
+      width: 110,
       valueGetter: (params: any) => params.data.item?.trendDirection,
       valueFormatter: (params: any) => {
         const trend = params.value;
@@ -921,6 +1021,32 @@ const PriorityIssuesAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Market Trend',
+      field: 'marketTrend',
+      width: 110,
+      valueGetter: (params: any) => {
+        const item = params.data.item;
+        return getMarketTrendDisplay(item);
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data.item;
+        return getMarketTrendTooltip(item);
+      },
+      cellStyle: (params: any) => {
+        const item = params.data.item;
+        return {
+          textAlign: 'center !important' as const,
+          fontSize: '18px',
+          fontWeight: 'bold',
+          color: getMarketTrendColor(item)
+        };
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+{
       headerName: 'Winning',
       field: 'winning',
       width: 90,
@@ -1916,9 +2042,7 @@ const WatchlistAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
-      valueGetter: (params: any) => params.data.stockcode,
-      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
-      sortable: true,
+      valueGetter: (params: any) => params.data.stockcode,      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
@@ -2088,9 +2212,9 @@ const WatchlistAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Trend',
+      headerName: 'Buying Trend',
       field: 'trendDirection',
-      width: 90,
+      width: 110,
       valueFormatter: (params: any) => {
         const trend = params.value;
         return trend === 'UP' ? '↑' : trend === 'DOWN' ? '↓' : trend === 'STABLE' ? '−' : '?';
@@ -2197,6 +2321,32 @@ const WatchlistAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Market Trend',
+      field: 'marketTrend',
+      width: 110,
+      valueGetter: (params: any) => {
+        const item = params.data.item;
+        return getMarketTrendDisplay(item);
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data.item;
+        return getMarketTrendTooltip(item);
+      },
+      cellStyle: (params: any) => {
+        const item = params.data.item;
+        return {
+          textAlign: 'center !important' as const,
+          fontSize: '18px',
+          fontWeight: 'bold',
+          color: getMarketTrendColor(item)
+        };
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+{
       headerName: 'Winning',
       field: 'winning',
       width: 90,
@@ -3080,9 +3230,7 @@ const StarredItemsAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
-      valueGetter: (params: any) => params.data.stockcode,
-      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
-      sortable: true,
+      valueGetter: (params: any) => params.data.stockcode,      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
@@ -3252,9 +3400,9 @@ const StarredItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Trend',
+      headerName: 'Buying Trend',
       field: 'trendDirection',
-      width: 90,
+      width: 110,
       valueFormatter: (params: any) => {
         const trend = params.value;
         return trend === 'UP' ? '↑' : trend === 'DOWN' ? '↓' : trend === 'STABLE' ? '−' : '?';
@@ -3361,6 +3509,32 @@ const StarredItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Market Trend',
+      field: 'marketTrend',
+      width: 110,
+      valueGetter: (params: any) => {
+        const item = params.data.item;
+        return getMarketTrendDisplay(item);
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data.item;
+        return getMarketTrendTooltip(item);
+      },
+      cellStyle: (params: any) => {
+        const item = params.data.item;
+        return {
+          textAlign: 'center !important' as const,
+          fontSize: '18px',
+          fontWeight: 'bold',
+          color: getMarketTrendColor(item)
+        };
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+{
       headerName: 'Winning',
       field: 'winning',
       width: 90,
@@ -4216,8 +4390,8 @@ const AllItemsAnalysis: React.FC<{
     } else if (filterType === 'cost-disadvantage-down') {
       items = items.filter(item => {
         const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
-        const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
-        return item.avg_cost > maxCompPrice && item.trendDirection === 'DOWN' && maxCompPrice > 0;
+        const minCompPrice = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+        return item.avg_cost > minCompPrice && item.trendDirection === 'DOWN' && minCompPrice > 0;
       });
     } else if (filterType === 'margin-opportunity') {
       items = items.filter(item => {
@@ -4241,8 +4415,8 @@ const AllItemsAnalysis: React.FC<{
     } else if (filterType === 'dead-stock-alert') {
       items = items.filter(item => {
         const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
-        const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
-        const hasCostDisadvantage = item.avg_cost > maxCompPrice && maxCompPrice > 0;
+        const minCompPrice = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+        const hasCostDisadvantage = item.avg_cost > minCompPrice && minCompPrice > 0;
         return hasCostDisadvantage && item.trendDirection === 'DOWN' && item.monthsOfStock && item.monthsOfStock > 6;
       });
     } else if (filterType === 'eth-oos') {
@@ -4609,7 +4783,7 @@ const AllItemsAnalysis: React.FC<{
                 <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
                     <div className="font-medium mb-1">Cost Disadvantage + Falling Prices</div>
-                    <div>Products where our cost exceeds all competitors AND market prices are falling. Urgent clearance needed.</div>
+                    <div>Products where our cost exceeds lowest competitor AND market prices are falling. Risk of being undercut.</div>
                   </div>
                 </TooltipContent>
               </UITooltip>
@@ -5110,9 +5284,7 @@ const AllItemsAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
-      valueGetter: (params: any) => params.data.stockcode,
-      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
-      sortable: true,
+      valueGetter: (params: any) => params.data.stockcode,      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
@@ -5289,9 +5461,9 @@ const AllItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Trend',
+      headerName: 'Buying Trend',
       field: 'trendDirection',
-      width: 90,
+      width: 110,
       valueFormatter: (params: any) => {
         const trend = params.value;
         return trend === 'UP' ? '↑' : trend === 'DOWN' ? '↓' : trend === 'STABLE' ? '−' : '?';
@@ -5504,8 +5676,8 @@ const AllItemsAGGrid: React.FC<{
     } else if (filterType === 'cost-disadvantage-down') {
       items = items.filter(item => {
         const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
-        const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
-        return item.avg_cost > maxCompPrice && item.trendDirection === 'DOWN' && maxCompPrice > 0;
+        const minCompPrice = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+        return item.avg_cost > minCompPrice && item.trendDirection === 'DOWN' && minCompPrice > 0;
       });
     } else if (filterType === 'margin-opportunity') {
       items = items.filter(item => {
@@ -5528,8 +5700,8 @@ const AllItemsAGGrid: React.FC<{
     } else if (filterType === 'dead-stock-alert') {
       items = items.filter(item => {
         const competitorPrices = [item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].filter(p => p && p > 0);
-        const maxCompPrice = competitorPrices.length > 0 ? Math.max(...competitorPrices) : 0;
-        const hasCostDisadvantage = item.avg_cost > maxCompPrice && maxCompPrice > 0;
+        const minCompPrice = competitorPrices.length > 0 ? Math.min(...competitorPrices) : 0;
+        const hasCostDisadvantage = item.avg_cost > minCompPrice && minCompPrice > 0;
         return hasCostDisadvantage && item.trendDirection === 'DOWN' && item.monthsOfStock && item.monthsOfStock > 6;
       });
     } else if (filterType === 'eth-oos') {
@@ -5672,7 +5844,7 @@ const AllItemsAGGrid: React.FC<{
                 <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
                   <div className="text-sm">
                     <div className="font-medium mb-1">Cost Disadvantage + Falling Prices</div>
-                    <div>Products where our cost exceeds all competitors AND market prices are falling. Urgent clearance needed.</div>
+                    <div>Products where our cost exceeds lowest competitor AND market prices are falling. Risk of being undercut.</div>
                   </div>
                 </TooltipContent>
               </UITooltip>
@@ -5872,9 +6044,6 @@ const AllItemsAGGrid: React.FC<{
                 columnDefs={columnDefs}
                 rowData={filteredData}
                 onGridReady={onGridReady}
-                masterDetail={true}
-                detailCellRenderer={DetailCellRenderer}
-                detailRowHeight={400}
                 components={{
                   itemCellRenderer: ItemCellRenderer
                 }}
@@ -5993,9 +6162,7 @@ const OverstockAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
-      valueGetter: (params: any) => params.data.stockcode,
-      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
-      sortable: true,
+      valueGetter: (params: any) => params.data.stockcode,      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
@@ -6172,9 +6339,9 @@ const OverstockAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Trend',
+      headerName: 'Buying Trend',
       field: 'trendDirection',
-      width: 90,
+      width: 110,
       valueFormatter: (params: any) => {
         const trend = params.value;
         return trend === 'UP' ? '↑' : trend === 'DOWN' ? '↓' : trend === 'STABLE' ? '−' : '?';
@@ -6281,6 +6448,32 @@ const OverstockAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Market Trend',
+      field: 'marketTrend',
+      width: 110,
+      valueGetter: (params: any) => {
+        const item = params.data.item;
+        return getMarketTrendDisplay(item);
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data.item;
+        return getMarketTrendTooltip(item);
+      },
+      cellStyle: (params: any) => {
+        const item = params.data.item;
+        return {
+          textAlign: 'center !important' as const,
+          fontSize: '18px',
+          fontWeight: 'bold',
+          color: getMarketTrendColor(item)
+        };
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+{
       headerName: 'Winning',
       field: 'winning',
       width: 90,
@@ -8452,9 +8645,7 @@ const MetricFilteredAGGrid: React.FC<{
       headerName: 'Item',
       field: 'stockcode',
       pinned: 'left',
-      width: 300,
-      cellRenderer: 'agGroupCellRenderer', // Enable expand/collapse functionality
-      sortable: true,
+      width: 300,      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
@@ -8604,9 +8795,9 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Trend',
+      headerName: 'Buying Trend',
       field: 'trendDirection',
-      width: 90,
+      width: 110,
       valueFormatter: (params: any) => {
         const trend = params.value;
         return trend === 'UP' ? '↑' : trend === 'DOWN' ? '↓' : trend === 'STABLE' ? '−' : '?';
