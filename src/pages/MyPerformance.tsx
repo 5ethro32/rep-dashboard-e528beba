@@ -1594,9 +1594,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
             <DropdownMenuContent className="bg-gray-950/95 backdrop-blur-sm border border-white/5 z-50">
               <DropdownMenuItem 
                 className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
-                onClick={() => setSelectedMonth('July')}
+                onClick={() => setSelectedMonth('July MTD')}
               >
-                July 2025
+                July MTD 2025
               </DropdownMenuItem>
               <DropdownMenuItem 
                 className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
