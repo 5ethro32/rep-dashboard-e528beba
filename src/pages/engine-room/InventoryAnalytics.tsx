@@ -77,6 +77,152 @@ const getAverageCostTooltip = (item: ProcessedInventoryItem): string => {
   return '';
 };
 
+// AAH price trend tooltip helper functions
+const shouldShowAAHTrendTooltip = (item: ProcessedInventoryItem): boolean => {
+  // Show tooltip if we have AAH trend data with valid current and yesterday prices
+  return !!(item.aahTrend && 
+           item.aahTrend.current && 
+           item.aahTrend.current > 0 &&
+           item.aahTrend.yesterday && 
+           item.aahTrend.yesterday > 0 &&
+           item.aahTrend.trend !== 'UNKNOWN' &&
+           item.aahTrend.trend !== 'NEW');
+};
+
+const getAAHTrendTooltip = (item: ProcessedInventoryItem): string => {
+  if (!item.aahTrend) return '';
+  
+  const trend = item.aahTrend;
+  if (trend.trend === 'UNKNOWN') return '';
+
+  // Use just directional arrows without colored circles for cleaner display
+  let trendSymbol = '';
+  
+  if (trend.trend === 'UP') {
+    trendSymbol = '📈'; // chart increasing (green)
+  } else if (trend.trend === 'DOWN') {
+    trendSymbol = '📉'; // chart decreasing (red)
+  } else {
+    trendSymbol = '➖'; // minus for stable
+  }
+  
+  // Handle case where percentageChange is null or 0
+  if (trend.percentageChange === null || trend.percentageChange === undefined) {
+    return `${trendSymbol} 0%`;
+  }
+  
+  const changeSign = trend.changeAmount && trend.changeAmount > 0 ? '+' : '';
+  return `${trendSymbol} ${changeSign}${Math.round(trend.percentageChange)}%`;
+};
+
+// Helper function to check if Nupharm trend tooltip should be shown
+const shouldShowNupharmTrendTooltip = (item: ProcessedInventoryItem): boolean => {
+  return !!(item.nupharmTrend && 
+           item.nupharmTrend.current && 
+           item.nupharmTrend.current > 0 &&
+           item.nupharmTrend.yesterday && 
+           item.nupharmTrend.yesterday > 0 &&
+           item.nupharmTrend.trend !== 'UNKNOWN' &&
+           item.nupharmTrend.trend !== 'NEW');
+};
+
+// Helper function to format Nupharm trend tooltip
+const getNupharmTrendTooltip = (item: ProcessedInventoryItem): string => {
+  if (!item.nupharmTrend) return '';
+  
+  const trend = item.nupharmTrend;
+  if (trend.trend === 'UNKNOWN') return '';
+
+  let trendSymbol = '';
+  
+  if (trend.trend === 'UP') {
+    trendSymbol = '📈'; // chart increasing (green)
+  } else if (trend.trend === 'DOWN') {
+    trendSymbol = '📉'; // chart decreasing (red)
+  } else {
+    trendSymbol = '➖'; // minus for stable
+  }
+  
+  if (trend.percentageChange === null || trend.percentageChange === undefined) {
+    return `${trendSymbol} 0%`;
+  }
+  
+  const changeSign = trend.changeAmount && trend.changeAmount > 0 ? '+' : '';
+  return `${trendSymbol} ${changeSign}${Math.round(trend.percentageChange)}%`;
+};
+
+// Helper function to check if ETH NET trend tooltip should be shown
+const shouldShowETHNetTrendTooltip = (item: ProcessedInventoryItem): boolean => {
+  return !!(item.ethNetTrend && 
+           item.ethNetTrend.current && 
+           item.ethNetTrend.current > 0 &&
+           item.ethNetTrend.yesterday && 
+           item.ethNetTrend.yesterday > 0 &&
+           item.ethNetTrend.trend !== 'UNKNOWN' &&
+           item.ethNetTrend.trend !== 'NEW');
+};
+
+// Helper function to format ETH NET trend tooltip
+const getETHNetTrendTooltip = (item: ProcessedInventoryItem): string => {
+  if (!item.ethNetTrend) return '';
+  
+  const trend = item.ethNetTrend;
+  if (trend.trend === 'UNKNOWN') return '';
+
+  let trendSymbol = '';
+  
+  if (trend.trend === 'UP') {
+    trendSymbol = '📈'; // chart increasing (green)
+  } else if (trend.trend === 'DOWN') {
+    trendSymbol = '📉'; // chart decreasing (red)
+  } else {
+    trendSymbol = '➖'; // minus for stable
+  }
+  
+  if (trend.percentageChange === null || trend.percentageChange === undefined) {
+    return `${trendSymbol} 0%`;
+  }
+  
+  const changeSign = trend.changeAmount && trend.changeAmount > 0 ? '+' : '';
+  return `${trendSymbol} ${changeSign}${Math.round(trend.percentageChange)}%`;
+};
+
+// Helper function to check if LEXON trend tooltip should be shown
+const shouldShowLexonTrendTooltip = (item: ProcessedInventoryItem): boolean => {
+  return !!(item.lexonTrend && 
+           item.lexonTrend.current && 
+           item.lexonTrend.current > 0 &&
+           item.lexonTrend.yesterday && 
+           item.lexonTrend.yesterday > 0 &&
+           item.lexonTrend.trend !== 'UNKNOWN' &&
+           item.lexonTrend.trend !== 'NEW');
+};
+
+// Helper function to format LEXON trend tooltip
+const getLexonTrendTooltip = (item: ProcessedInventoryItem): string => {
+  if (!item.lexonTrend) return '';
+  
+  const trend = item.lexonTrend;
+  if (trend.trend === 'UNKNOWN') return '';
+
+  let trendSymbol = '';
+  
+  if (trend.trend === 'UP') {
+    trendSymbol = '📈'; // chart increasing (green)
+  } else if (trend.trend === 'DOWN') {
+    trendSymbol = '📉'; // chart decreasing (red)
+  } else {
+    trendSymbol = '➖'; // minus for stable
+  }
+  
+  if (trend.percentageChange === null || trend.percentageChange === undefined) {
+    return `${trendSymbol} 0%`;
+  }
+  
+  const changeSign = trend.changeAmount && trend.changeAmount > 0 ? '+' : '';
+  return `${trendSymbol} ${changeSign}${Math.round(trend.percentageChange)}%`;
+};
+
 // Helper function to determine winning status: Y (strict win), N (losing), - (tie)
 const getWinningStatus = (item: ProcessedInventoryItem): 'Y' | 'N' | '-' => {
   if (!item.AVER || item.AVER <= 0) return 'N';
@@ -727,7 +873,6 @@ const PriorityIssuesAGGrid: React.FC<{
         const competitors = [
           { name: 'PHX', price: item?.Nupharm },
           { name: 'AAH', price: item?.AAH2 },
-          { name: 'ETHL', price: item?.ETH_LIST },
           { name: 'ETHN', price: item?.ETH_NET },
           { name: 'LEX', price: item?.LEXON2 }
         ].filter(comp => comp.price && comp.price > 0)
@@ -737,7 +882,37 @@ const PriorityIssuesAGGrid: React.FC<{
           return 'No competitor pricing available';
         }
         
-        return competitors.map(comp => `${comp.name}: ${formatCurrency(comp.price)}`).join('\n');
+        // Build tooltip with competitor prices and trend information
+        let tooltipLines = competitors.map(comp => {
+          let line = `${comp.name}: ${formatCurrency(comp.price)}`;
+          
+          // Add trend information for each competitor if available
+          if (comp.name === 'AAH' && shouldShowAAHTrendTooltip(item)) {
+            const trendInfo = getAAHTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'PHX' && shouldShowNupharmTrendTooltip(item)) {
+            const trendInfo = getNupharmTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'ETHN' && shouldShowETHNetTrendTooltip(item)) {
+            const trendInfo = getETHNetTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'LEX' && shouldShowLexonTrendTooltip(item)) {
+            const trendInfo = getLexonTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          }
+          
+          return line;
+        });
+        
+        return tooltipLines.join('\n');
       },
       cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
@@ -965,7 +1140,8 @@ const PriorityIssuesAGGrid: React.FC<{
                 suppressCellFocus={true}
                 enableCellTextSelection={true}
                 tooltipShowDelay={500}
-                tooltipHideDelay={2000}
+                tooltipHideDelay={10000}
+                tooltipMouseTrack={true}
                 domLayout="normal"
               />
             </div>
@@ -1414,7 +1590,7 @@ const PriorityIssuesAnalysis: React.FC<{
                       </UITooltip>
                     </TooltipProvider>
                   </th>
-                  <th className="text-left p-3 text-gray-300 text-sm">
+                  <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('impactValue')}>
                     <TooltipProvider>
                       <UITooltip>
                         <TooltipTrigger asChild>
@@ -1605,7 +1781,16 @@ const PriorityIssuesAnalysis: React.FC<{
                               ].filter(comp => comp.price && comp.price > 0)
                                .sort((a, b) => a.price - b.price)
                                .map((comp, idx) => (
-                                <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
+                                <div key={idx} className="text-sm">
+                                  {comp.name}: {formatCurrency(comp.price)}
+                                  {comp.name === 'AAH2' && shouldShowAAHTrendTooltip(issue.item) && (
+                                    <div className="text-xs text-gray-300 mt-1 pl-2 border-l border-gray-600">
+                                      {getAAHTrendTooltip(issue.item).split('\n').map((line, lineIdx) => (
+                                        <div key={lineIdx}>{line}</div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               ))}
                               {![issue.item.Nupharm, issue.item.AAH2, issue.item.ETH_LIST, issue.item.ETH_NET, issue.item.LEXON2].some(price => price && price > 0) && (
                                 <div className="text-sm">No competitor pricing available</div>
@@ -1964,7 +2149,6 @@ const WatchlistAGGrid: React.FC<{
         const competitors = [
           { name: 'PHX', price: item.Nupharm },
           { name: 'AAH', price: item.AAH2 },
-          { name: 'ETHL', price: item.ETH_LIST },
           { name: 'ETHN', price: item.ETH_NET },
           { name: 'LEX', price: item.LEXON2 }
         ].filter(comp => comp.price && comp.price > 0)
@@ -1974,7 +2158,37 @@ const WatchlistAGGrid: React.FC<{
           return 'No competitor pricing available';
         }
         
-        return competitors.map(comp => `${comp.name}: ${formatCurrency(comp.price)}`).join('\n');
+        // Build tooltip with competitor prices and trend information
+        let tooltipLines = competitors.map(comp => {
+          let line = `${comp.name}: ${formatCurrency(comp.price)}`;
+          
+          // Add trend information for each competitor if available
+          if (comp.name === 'AAH' && shouldShowAAHTrendTooltip(item)) {
+            const trendInfo = getAAHTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'PHX' && shouldShowNupharmTrendTooltip(item)) {
+            const trendInfo = getNupharmTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'ETHN' && shouldShowETHNetTrendTooltip(item)) {
+            const trendInfo = getETHNetTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'LEX' && shouldShowLexonTrendTooltip(item)) {
+            const trendInfo = getLexonTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          }
+          
+          return line;
+        });
+        
+        return tooltipLines.join('\n');
       },
       cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
@@ -2204,7 +2418,8 @@ const WatchlistAGGrid: React.FC<{
                 suppressCellFocus={true}
                 enableCellTextSelection={true}
                 tooltipShowDelay={500}
-                tooltipHideDelay={2000}
+                tooltipHideDelay={10000}
+                tooltipMouseTrack={true}
                 domLayout="normal"
               />
             </div>
@@ -3098,7 +3313,6 @@ const StarredItemsAGGrid: React.FC<{
         const competitors = [
           { name: 'PHX', price: item.Nupharm },
           { name: 'AAH', price: item.AAH2 },
-          { name: 'ETHL', price: item.ETH_LIST },
           { name: 'ETHN', price: item.ETH_NET },
           { name: 'LEX', price: item.LEXON2 }
         ].filter(comp => comp.price && comp.price > 0)
@@ -3108,7 +3322,37 @@ const StarredItemsAGGrid: React.FC<{
           return 'No competitor pricing available';
         }
         
-        return competitors.map(comp => `${comp.name}: ${formatCurrency(comp.price)}`).join('\n');
+        // Build tooltip with competitor prices and trend information
+        let tooltipLines = competitors.map(comp => {
+          let line = `${comp.name}: ${formatCurrency(comp.price)}`;
+          
+          // Add trend information for each competitor if available
+          if (comp.name === 'AAH' && shouldShowAAHTrendTooltip(item)) {
+            const trendInfo = getAAHTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'PHX' && shouldShowNupharmTrendTooltip(item)) {
+            const trendInfo = getNupharmTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'ETHN' && shouldShowETHNetTrendTooltip(item)) {
+            const trendInfo = getETHNetTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'LEX' && shouldShowLexonTrendTooltip(item)) {
+            const trendInfo = getLexonTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          }
+          
+          return line;
+        });
+        
+        return tooltipLines.join('\n');
       },
       cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
@@ -3338,7 +3582,8 @@ const StarredItemsAGGrid: React.FC<{
                 suppressCellFocus={true}
                 enableCellTextSelection={true}
                 tooltipShowDelay={500}
-                tooltipHideDelay={2000}
+                tooltipHideDelay={10000}
+                tooltipMouseTrack={true}
                 domLayout="normal"
               />
             </div>
@@ -4728,7 +4973,16 @@ const AllItemsAnalysis: React.FC<{
                               ].filter(comp => comp.price && comp.price > 0)
                                .sort((a, b) => a.price - b.price)
                                .map((comp, idx) => (
-                                <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
+                                <div key={idx} className="text-sm">
+                                  {comp.name}: {formatCurrency(comp.price)}
+                                  {comp.name === 'AAH2' && shouldShowAAHTrendTooltip(item) && (
+                                    <div className="text-xs text-gray-300 mt-1 pl-2 border-l border-gray-600">
+                                      {getAAHTrendTooltip(item).split('\n').map((line, lineIdx) => (
+                                        <div key={lineIdx}>{line}</div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               ))}
                               {![item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].some(price => price && price > 0) && (
                                 <div className="text-sm">No competitor pricing available</div>
@@ -4826,8 +5080,6 @@ const AllItemsAGGrid: React.FC<{
       default: return 'text-gray-400';
     }
   };
-
-
 
   // Column definitions for AG Grid
   const columnDefs: ColDef[] = [
@@ -5098,7 +5350,6 @@ const AllItemsAGGrid: React.FC<{
         const competitors = [
           { name: 'PHX', price: item.Nupharm },
           { name: 'AAH', price: item.AAH2 },
-          { name: 'ETHL', price: item.ETH_LIST },
           { name: 'ETHN', price: item.ETH_NET },
           { name: 'LEX', price: item.LEXON2 }
         ].filter(comp => comp.price && comp.price > 0)
@@ -5108,7 +5359,37 @@ const AllItemsAGGrid: React.FC<{
           return 'No competitor pricing available';
         }
         
-        return competitors.map(comp => `${comp.name}: ${formatCurrency(comp.price)}`).join('\n');
+        // Build tooltip with competitor prices and trend information
+        let tooltipLines = competitors.map(comp => {
+          let line = `${comp.name}: ${formatCurrency(comp.price)}`;
+          
+          // Add trend information for each competitor if available
+          if (comp.name === 'AAH' && shouldShowAAHTrendTooltip(item)) {
+            const trendInfo = getAAHTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'PHX' && shouldShowNupharmTrendTooltip(item)) {
+            const trendInfo = getNupharmTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'ETHN' && shouldShowETHNetTrendTooltip(item)) {
+            const trendInfo = getETHNetTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'LEX' && shouldShowLexonTrendTooltip(item)) {
+            const trendInfo = getLexonTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          }
+          
+          return line;
+        });
+        
+        return tooltipLines.join('\n');
       },
       cellStyle: { textAlign: 'left' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
@@ -5614,7 +5895,8 @@ const AllItemsAGGrid: React.FC<{
                 suppressCellFocus={true}
                 enableCellTextSelection={true}
                 tooltipShowDelay={500}
-                tooltipHideDelay={2000}
+                tooltipHideDelay={10000}
+                tooltipMouseTrack={true}
                 domLayout="normal"
               />
             </div>
@@ -5948,7 +6230,6 @@ const OverstockAGGrid: React.FC<{
         const competitors = [
           { name: 'PHX', price: item.Nupharm },
           { name: 'AAH', price: item.AAH2 },
-          { name: 'ETHL', price: item.ETH_LIST },
           { name: 'ETHN', price: item.ETH_NET },
           { name: 'LEX', price: item.LEXON2 }
         ].filter(comp => comp.price && comp.price > 0)
@@ -5958,7 +6239,37 @@ const OverstockAGGrid: React.FC<{
           return 'No competitor pricing available';
         }
         
-        return competitors.map(comp => `${comp.name}: ${formatCurrency(comp.price)}`).join('\n');
+        // Build tooltip with competitor prices and trend information
+        let tooltipLines = competitors.map(comp => {
+          let line = `${comp.name}: ${formatCurrency(comp.price)}`;
+          
+          // Add trend information for each competitor if available
+          if (comp.name === 'AAH' && shouldShowAAHTrendTooltip(item)) {
+            const trendInfo = getAAHTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'PHX' && shouldShowNupharmTrendTooltip(item)) {
+            const trendInfo = getNupharmTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'ETHN' && shouldShowETHNetTrendTooltip(item)) {
+            const trendInfo = getETHNetTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'LEX' && shouldShowLexonTrendTooltip(item)) {
+            const trendInfo = getLexonTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          }
+          
+          return line;
+        });
+        
+        return tooltipLines.join('\n');
       },
       cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
@@ -6186,7 +6497,8 @@ const OverstockAGGrid: React.FC<{
                 suppressCellFocus={true}
                 enableCellTextSelection={true}
                 tooltipShowDelay={500}
-                tooltipHideDelay={2000}
+                tooltipHideDelay={10000}
+                tooltipMouseTrack={true}
                 domLayout="normal"
               />
             </div>
@@ -6722,7 +7034,16 @@ const OverstockAnalysis: React.FC<{
                               ].filter(comp => comp.price && comp.price > 0)
                                .sort((a, b) => a.price - b.price)
                                .map((comp, idx) => (
-                                <div key={idx} className="text-sm">{comp.name}: {formatCurrency(comp.price)}</div>
+                                <div key={idx} className="text-sm">
+                                  {comp.name}: {formatCurrency(comp.price)}
+                                  {comp.name === 'AAH2' && shouldShowAAHTrendTooltip(item) && (
+                                    <div className="text-xs text-gray-300 mt-1 pl-2 border-l border-gray-600">
+                                      {getAAHTrendTooltip(item).split('\n').map((line, lineIdx) => (
+                                        <div key={lineIdx}>{line}</div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               ))}
                               {![item.Nupharm, item.AAH2, item.ETH_LIST, item.ETH_NET, item.LEXON2].some(price => price && price > 0) && (
                                 <div className="text-sm">No competitor pricing available</div>
@@ -7008,7 +7329,7 @@ const InventoryAnalyticsContent: React.FC = () => {
                 Required columns: stockcode, description, quantity_available, packs_sold_avg_last_six_months, avg_cost
               </p>
               <p className="text-xs text-muted-foreground">
-                Optional: next_cost, min_cost, last_po_cost, competitor prices (Nupharm, AAH2, ETH_LIST, ETH_NET, LEXON2, AVER), tariffs (SDT, EDT)
+                Optional: quantity_ringfenced, quantity_on_order, next_cost, competitor prices (Nupharm, AAH2, ETH_LIST, ETH_NET, LEXON2, AVER), tariffs (SDT, EDT)
               </p>
             </div>
           </div>
@@ -8404,7 +8725,6 @@ const MetricFilteredAGGrid: React.FC<{
         const competitors = [
           { name: 'PHX', price: item?.Nupharm },
           { name: 'AAH', price: item?.AAH2 },
-          { name: 'ETHL', price: item?.ETH_LIST },
           { name: 'ETHN', price: item?.ETH_NET },
           { name: 'LEX', price: item?.LEXON2 }
         ].filter(comp => comp.price && comp.price > 0)
@@ -8414,7 +8734,37 @@ const MetricFilteredAGGrid: React.FC<{
           return 'No competitor pricing available';
         }
         
-        return competitors.map(comp => `${comp.name}: ${formatCurrency(comp.price)}`).join('\n');
+        // Build tooltip with competitor prices and trend information
+        let tooltipLines = competitors.map(comp => {
+          let line = `${comp.name}: ${formatCurrency(comp.price)}`;
+          
+          // Add trend information for each competitor if available
+          if (comp.name === 'AAH' && shouldShowAAHTrendTooltip(item)) {
+            const trendInfo = getAAHTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'PHX' && shouldShowNupharmTrendTooltip(item)) {
+            const trendInfo = getNupharmTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'ETHN' && shouldShowETHNetTrendTooltip(item)) {
+            const trendInfo = getETHNetTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          } else if (comp.name === 'LEX' && shouldShowLexonTrendTooltip(item)) {
+            const trendInfo = getLexonTrendTooltip(item);
+            if (trendInfo) {
+              line += ` - ${trendInfo}`;
+            }
+          }
+          
+          return line;
+        });
+        
+        return tooltipLines.join('\n');
       },
       cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
@@ -8565,7 +8915,8 @@ const MetricFilteredAGGrid: React.FC<{
         suppressCellFocus={true}
         enableCellTextSelection={true}
         tooltipShowDelay={500}
-        tooltipHideDelay={2000}
+        tooltipHideDelay={10000}
+        tooltipMouseTrack={true}
         domLayout="normal"
         quickFilterText={searchTerm}
       />
