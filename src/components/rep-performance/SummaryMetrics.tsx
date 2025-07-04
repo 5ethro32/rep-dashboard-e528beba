@@ -44,8 +44,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // Calculate filtered change indicators based on current toggle state
   const [filteredChanges, setFilteredChanges] = useState(summaryChanges);
 
-  // Only show change indicators if we're viewing March, April, May, or June data (compared to previous month)
-  const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April' || selectedMonth === 'May' || selectedMonth === 'June';
+  // Only show change indicators if we're viewing March, April, May, June, June 2, or July data (compared to previous month)
+  const showChangeIndicators = selectedMonth === 'March' || selectedMonth === 'April' || selectedMonth === 'May' || selectedMonth === 'June' || selectedMonth === 'June 2' || selectedMonth === 'July';
 
   useEffect(() => {
     // Recalculate changes whenever toggle states change
@@ -71,7 +71,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
   // Function to get comparison values - use actual values when available, calculated for others
   const getComparisonValue = (metricKey: keyof typeof summary): number => {
     // For months with actual comparison data available, use actual values
-    if ((selectedMonth === 'June' || selectedMonth === 'May' || selectedMonth === 'April') && comparisonSummary) {
+    if ((selectedMonth === 'June' || selectedMonth === 'June 2' || selectedMonth === 'May' || selectedMonth === 'April' || selectedMonth === 'July') && comparisonSummary) {
       return comparisonSummary[metricKey] || 0;
     }
     
@@ -87,6 +87,8 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     if (selectedMonth === 'April') return 'March';
     if (selectedMonth === 'May') return 'April';
     if (selectedMonth === 'June') return 'May'; // Display name - actual data comes from June_Data_Comparison
+    if (selectedMonth === 'June 2') return 'May'; // Display name - actual data comes from June_Data_Comparison (same as June)
+    if (selectedMonth === 'July') return 'June'; // Display name - actual data comes from July_Data_Comparison
     return 'Previous';
   };
 

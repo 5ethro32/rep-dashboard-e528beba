@@ -26,8 +26,8 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
   formatPercent,
   onMonthChange,
   onCompareMonthChange,
-  selectedMonth = 'June',
-  compareMonth = 'April'
+  selectedMonth = 'July',
+  compareMonth = 'June'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'admin-starred' | 'user-starred'>('all');
@@ -255,6 +255,9 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
+                <DropdownMenuItem onClick={() => handleMonthChange('July')} className="cursor-pointer">
+                  July
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleMonthChange('June')} className="cursor-pointer">
                   June
                 </DropdownMenuItem>
@@ -280,6 +283,9 @@ const AccountHealthSection: React.FC<AccountHealthSectionProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-gray-900 border-white/10 text-white">
+                <DropdownMenuItem onClick={() => handleCompareMonthChange('July')} className="cursor-pointer">
+                  July
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleCompareMonthChange('June')} className="cursor-pointer">
                   June
                 </DropdownMenuItem>

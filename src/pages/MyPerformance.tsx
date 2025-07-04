@@ -29,7 +29,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   selectedUserName: propSelectedUserName 
 }) => {
   const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState<string>('June');
+  const [selectedMonth, setSelectedMonth] = useState<string>('July');
   
   // Set dynamic page title
   usePageTitle();
@@ -41,8 +41,8 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(propSelectedUserId || null);
   const [selectedUserDisplayName, setSelectedUserDisplayName] = useState<string>(propSelectedUserName || 'My Data');
   const [userFirstName, setUserFirstName] = useState<string>('');
-  const [compareMonth, setCompareMonth] = useState<string>('May');
-  const [accountHealthMonth, setAccountHealthMonth] = useState<string>('June');
+  const [compareMonth, setCompareMonth] = useState<string>('June');
+  const [accountHealthMonth, setAccountHealthMonth] = useState<string>('July');
   const [repComparisonData, setRepComparisonData] = useState<any[]>([]);
   const [teamAverageData, setTeamAverageData] = useState<any>({
     profit: [],
@@ -171,6 +171,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let currentTable;
         let previousTable;
         switch (selectedMonth) {
+          case 'July':
+            currentTable = 'July_Data';
+            previousTable = 'July_Data_Comparison'; // July comparison data (June data)
+            break;
           case 'June':
             currentTable = 'June_Data';
             previousTable = 'June_Data_Comparison'; // June comparison data (NOT May_Data)
@@ -307,6 +311,10 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       let currentTable;
       let previousTable;
       switch (selectedMonth) {
+        case 'July':
+          currentTable = 'July_Data';
+          previousTable = 'July_Data_Comparison'; // July comparison data (June data)
+          break;
         case 'June':
           currentTable = 'June_Data';
           previousTable = 'June_Data_Comparison'; // June comparison data (NOT May_Data)
@@ -422,6 +430,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     // Determine current data table based on selected month
     let tableName;
     switch (selectedMonth) {
+      case 'July':
+        tableName = 'July_Data';
+        break;
       case 'June':
         tableName = 'June_Data';
         break;
@@ -555,13 +566,14 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   const fetchRepComparisonData = async () => {
     try {
       // Fetch monthly data for all reps
-      const months = ['February', 'March', 'April', 'May', 'June'];
+      const months = ['February', 'March', 'April', 'May', 'June', 'July'];
       const monthlyTables = [
         'sales_data_februrary',
         'sales_data',
         'mtd_daily',
         'May_Data',
-        'June_Data'
+        'June_Data',
+        'July_Data'
       ];
       
       // Get data for each month
@@ -943,6 +955,9 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       // Determine current month data source
       let currentMonthTableName: string;
       switch (accountHealthMonth) {
+        case 'July':
+          currentMonthTableName = 'July_Data';
+          break;
         case 'June':
           currentMonthTableName = 'June_Data';
           break;
@@ -959,14 +974,17 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
           currentMonthTableName = 'sales_data_februrary';
           break;
         default:
-          currentMonthTableName = 'June_Data';
+          currentMonthTableName = 'July_Data';
       }
       
       // Determine comparison data source based on compareMonth selection
       let compareMonthTableName: string;
       switch (compareMonth) {
+        case 'July':
+          compareMonthTableName = compareMonth === accountHealthMonth ? 'July_Data_Comparison' : 'July_Data';
+          break;
         case 'June':
-          compareMonthTableName = compareMonth === accountHealthMonth ? 'May_Data' : 'June_Data';
+          compareMonthTableName = compareMonth === accountHealthMonth ? 'June_Data_Comparison' : 'June_Data';
           break;
         case 'May':
           compareMonthTableName = 'May_Data';
@@ -1104,6 +1122,18 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let query;
         
         switch (tableName) {
+          case 'July_Data':
+            query = supabase
+              .from('July_Data' as any)
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'July_Data_Comparison':
+            query = supabase
+              .from('July_Data_Comparison' as any)
+              .select('*')
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
           case 'June_Data':
             query = supabase
               .from('June_Data')
@@ -1191,6 +1221,20 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let query;
         
         switch (tableName) {
+          case 'July_Data':
+            query = supabase
+              .from('July_Data' as any)
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
+          case 'July_Data_Comparison':
+            query = supabase
+              .from('July_Data_Comparison' as any)
+              .select('*')
+              .or(`Rep.ilike.%${matchName}%,Sub-Rep.ilike.%${matchName}%`)
+              .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+            break;
           case 'June_Data':
             query = supabase
               .from('June_Data')
@@ -1548,6 +1592,12 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
               <span>Month: {selectedMonth}</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-gray-950/95 backdrop-blur-sm border border-white/5 z-50">
+              <DropdownMenuItem 
+                className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
+                onClick={() => setSelectedMonth('July')}
+              >
+                July 2025
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
                 onClick={() => setSelectedMonth('June')}

@@ -20,6 +20,7 @@ interface TrendLineChartProps {
   aprilSummary: SummaryData;
   maySummary: SummaryData;
   juneSummary: SummaryData;
+  julySummary: SummaryData;
   isLoading: boolean;
   repDataProp: {
     february: any[];
@@ -27,6 +28,7 @@ interface TrendLineChartProps {
     april: any[];
     may: any[];
     june: any[];
+    july: any[];
   };
   includeRetail: boolean;
   includeReva: boolean;
@@ -51,7 +53,8 @@ const MONTH_ORDER = {
   'Mar': 2,
   'Apr': 3,
   'May': 4,
-  'Jun': 5
+  'Jun': 5,
+  'Jul': 6
 };
 
 const CHART_COLORS = {
@@ -70,6 +73,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   aprilSummary,
   maySummary,
   juneSummary,
+  julySummary,
   isLoading,
   repDataProp,
   includeRetail,
@@ -100,7 +104,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     const allReps = new Set<string>();
     
     // Collect unique rep names from all months
-    ['february', 'march', 'april', 'may', 'june'].forEach(month => {
+    ['february', 'march', 'april', 'may', 'june', 'july'].forEach(month => {
       if (repDataProp && repDataProp[month]) {
         repDataProp[month].forEach(item => {
           if (item.rep) {
@@ -116,7 +120,7 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
   // Add isMobile hook for responsive design
   const isMobile = useIsMobile();
 
-  // Create actual chart data for February through May
+  // Create actual chart data for February through June
   const actualChartData = useMemo(() => {
     return [
       {
@@ -158,18 +162,28 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         activeAccounts: maySummary.activeAccounts || 0,
         isProjected: false,
         isTrajectory: false
+      },
+      {
+        month: 'Jun',
+        profit: juneSummary.totalProfit || 0,
+        spend: juneSummary.totalSpend || 0,
+        packs: juneSummary.totalPacks || 0,
+        margin: juneSummary.averageMargin || 0,
+        activeAccounts: juneSummary.activeAccounts || 0,
+        isProjected: false,
+        isTrajectory: false
       }
     ];
-  }, [febSummary, marchSummary, aprilSummary, maySummary]);
+  }, [febSummary, marchSummary, aprilSummary, maySummary, juneSummary]);
   
-  // Calculate projected June values based on MTD data, with adjusted working day percentage
-  const projectedJuneValues = useMemo(() => {
-    const projectedProfit = projectMonthlyValue(juneSummary.totalProfit || 0, workingDayPercentage);
-    const projectedSpend = projectMonthlyValue(juneSummary.totalSpend || 0, workingDayPercentage);
-    const projectedPacks = projectMonthlyValue(juneSummary.totalPacks || 0, workingDayPercentage);
-    const projectedAccounts = projectMonthlyValue(juneSummary.activeAccounts || 0, workingDayPercentage);
+  // Calculate projected July values based on MTD data, with adjusted working day percentage
+  const projectedJulyValues = useMemo(() => {
+    const projectedProfit = projectMonthlyValue(julySummary.totalProfit || 0, workingDayPercentage);
+    const projectedSpend = projectMonthlyValue(julySummary.totalSpend || 0, workingDayPercentage);
+    const projectedPacks = projectMonthlyValue(julySummary.totalPacks || 0, workingDayPercentage);
+    const projectedAccounts = projectMonthlyValue(julySummary.activeAccounts || 0, workingDayPercentage);
     // Margin doesn't need projection as it's a ratio
-    const projectedMargin = juneSummary.averageMargin || 0;
+    const projectedMargin = julySummary.averageMargin || 0;
     
     return {
       profit: projectedProfit,
@@ -178,34 +192,34 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       margin: projectedMargin,
       activeAccounts: projectedAccounts
     };
-  }, [juneSummary, workingDayPercentage]);
+  }, [julySummary, workingDayPercentage]);
 
-  // Create trajectory data point for June
-  const juneTrajectoryPoint = useMemo(() => {
+  // Create trajectory data point for July
+  const julyTrajectoryPoint = useMemo(() => {
     return {
-      month: 'Jun',
-      profit: projectedJuneValues.profit,
-      spend: projectedJuneValues.spend,
-      packs: projectedJuneValues.packs,
-      margin: projectedJuneValues.margin,
-      activeAccounts: projectedJuneValues.activeAccounts,
+      month: 'Jul',
+      profit: projectedJulyValues.profit,
+      spend: projectedJulyValues.spend,
+      packs: projectedJulyValues.packs,
+      margin: projectedJulyValues.margin,
+      activeAccounts: projectedJulyValues.activeAccounts,
       isProjected: true,
       isTrajectory: true
     };
-  }, [projectedJuneValues]);
+  }, [projectedJulyValues]);
 
-  // Create the final display data by adding June trajectory point
+  // Create the final display data by adding July trajectory point
   const displayData = useMemo(() => {
-    // Add June projection to the actual data
+    // Add July projection to the actual data
     return [
       ...actualChartData,
-      juneTrajectoryPoint
+      julyTrajectoryPoint
     ];
-  }, [actualChartData, juneTrajectoryPoint]);
+  }, [actualChartData, julyTrajectoryPoint]);
 
   // Calculate min and max margin values for the Y-axis domain
   const marginDomain = useMemo(() => {
-    const allData = [...actualChartData, juneTrajectoryPoint];
+    const allData = [...actualChartData, julyTrajectoryPoint];
     const margins = allData.map(item => item.margin).filter(Boolean);
     if (!margins.length) return [0, 100]; // Default range
     
@@ -221,21 +235,22 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
     }
     
     return [Math.floor(minMargin), Math.ceil(maxMargin)];
-  }, [actualChartData, juneTrajectoryPoint]);
+  }, [actualChartData, julyTrajectoryPoint]);
 
-  // Create rep-specific data with the same approach - actuals for Feb-May and trajectory for June
+  // Create rep-specific data with the same approach - actuals for Feb-June and trajectory for July
   const repChartData = useMemo(() => {
     if (!selectedReps.length) return [];
     
     return selectedReps.map((rep, repIndex) => {
       const repActualData: any[] = [];
       
-      // Get rep data for Feb-May
+      // Get rep data for Feb-June
       const febRepData = repDataProp.february ? repDataProp.february.find(r => r.rep === rep) : null;
       const marRepData = repDataProp.march ? repDataProp.march.find(r => r.rep === rep) : null;
       const aprRepData = repDataProp.april ? repDataProp.april.find(r => r.rep === rep) : null;
       const mayRepData = repDataProp.may ? repDataProp.may.find(r => r.rep === rep) : null;
       const juneRepData = repDataProp.june ? repDataProp.june.find(r => r.rep === rep) : null;
+      const julyRepData = repDataProp.july ? repDataProp.july.find(r => r.rep === rep) : null;
       
       // Add February data
       if (febRepData) {
@@ -293,19 +308,33 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
         });
       }
 
-      // Add June trajectory point
-      let juneTrajectoryPoint = null;
+      // Add June data (actual)
       if (juneRepData) {
-        const projectedProfit = projectMonthlyValue(juneRepData.profit || 0, workingDayPercentage);
-        const projectedSpend = projectMonthlyValue(juneRepData.spend || 0, workingDayPercentage);
-        const projectedPacks = projectMonthlyValue(juneRepData.packs || 0, workingDayPercentage);
-        
-        juneTrajectoryPoint = {
+        repActualData.push({
           month: 'Jun',
+          value: juneRepData.profit || 0,
+          spend: juneRepData.spend || 0,
+          packs: juneRepData.packs || 0,
+          margin: juneRepData.margin || 0,
+          rep: rep,
+          isProjected: false,
+          isTrajectory: false
+        });
+      }
+
+      // Add July trajectory point
+      let julyTrajectoryPoint = null;
+      if (julyRepData) {
+        const projectedProfit = projectMonthlyValue(julyRepData.profit || 0, workingDayPercentage);
+        const projectedSpend = projectMonthlyValue(julyRepData.spend || 0, workingDayPercentage);
+        const projectedPacks = projectMonthlyValue(julyRepData.packs || 0, workingDayPercentage);
+        
+        julyTrajectoryPoint = {
+          month: 'Jul',
           value: projectedProfit,
           spend: projectedSpend,
           packs: projectedPacks,
-          margin: juneRepData.margin || 0,
+          margin: julyRepData.margin || 0,
           rep: rep,
           isProjected: true,
           isTrajectory: true
@@ -316,8 +345,8 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({
       return {
         rep,
         color: CHART_COLORS[`rep${repIndex + 1}` as keyof typeof CHART_COLORS],
-        // Create a single array with all data points including June trajectory
-        data: juneTrajectoryPoint ? [...repActualData, juneTrajectoryPoint] : repActualData
+        // Create a single array with all data points including July trajectory
+        data: julyTrajectoryPoint ? [...repActualData, julyTrajectoryPoint] : repActualData
       };
     });
   }, [selectedReps, repDataProp, workingDayPercentage]);

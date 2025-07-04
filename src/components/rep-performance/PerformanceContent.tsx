@@ -162,6 +162,7 @@ const PerformanceContent: React.FC<PerformanceContentProps> = ({
                   isLoading={isLoading}
                   getFebValue={getFebValue}
                   showChangeIndicators={showChangeIndicators}
+                  selectedMonth={selectedMonth}
                 />
               </div>
             </div>

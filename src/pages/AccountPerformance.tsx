@@ -38,7 +38,7 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
   selectedUserId: propSelectedUserId, 
   selectedUserName: propSelectedUserName 
 }) => {
-  const [selectedMonth, setSelectedMonth] = useState<string>('June');
+  const [selectedMonth, setSelectedMonth] = useState<string>('July');
   
   // Set dynamic page title
   usePageTitle();
@@ -237,12 +237,20 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
   const fetchComparisonData = async () => {
     setIsLoading(true);
     try {
-      let currentTable: AllowedTable;
-      let previousTable: AllowedTable | null;
+      let currentTable: AllowedTable | any;
+      let previousTable: AllowedTable | any | null;
       switch (selectedMonth) {
+        case 'July':
+          currentTable = "July_Data";
+          previousTable = "July_Data_Comparison";
+          break;
         case 'June':
           currentTable = "June_Data";
           previousTable = "June_Data_Comparison";
+          break;
+        case 'June 2':
+          currentTable = "July_Data";
+          previousTable = "July_Data_Comparison";
           break;
         case 'May':
           currentTable = "May_Data";

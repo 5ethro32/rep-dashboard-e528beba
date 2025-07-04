@@ -18,6 +18,7 @@ import {
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
 import { debugJuneComparisonData } from '@/utils/debug-june-data';
 import { debugMayData } from '@/utils/debug-may-data';
+import { debugJulyComparisonData } from '@/utils/debug-july-data';
 
 export const useRepPerformanceData = () => {
   const [includeRetail, setIncludeRetail] = useState(true);
@@ -26,7 +27,7 @@ export const useRepPerformanceData = () => {
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState('June');
+  const [selectedMonth, setSelectedMonth] = useState('July');
   
   const [overallData, setOverallData] = useState(defaultOverallData);
   const [repData, setRepData] = useState(defaultRepData);
@@ -58,12 +59,28 @@ export const useRepPerformanceData = () => {
   const [junRevaValues, setJunRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [junWholesaleValues, setJunWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
+  // June 2 data states (copy of June structure)
+  const [jun2RepData, setJun2RepData] = useState(defaultRepData);
+  const [jun2RevaData, setJun2RevaData] = useState(defaultRevaData);
+  const [jun2WholesaleData, setJun2WholesaleData] = useState(defaultWholesaleData);
+  const [jun2BaseSummary, setJun2BaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [jun2RevaValues, setJun2RevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [jun2WholesaleValues, setJun2WholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  
   const [mayRepData, setMayRepData] = useState(defaultRepData);
   const [mayRevaData, setMayRevaData] = useState(defaultRevaData);
   const [mayWholesaleData, setMayWholesaleData] = useState(defaultWholesaleData);
   const [mayBaseSummary, setMayBaseSummary] = useState<SummaryData>(defaultBaseSummary);
   const [mayRevaValues, setMayRevaValues] = useState<SummaryData>(defaultRevaValues);
   const [mayWholesaleValues, setMayWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
+  
+  // July data states
+  const [julRepData, setJulRepData] = useState(defaultRepData);
+  const [julRevaData, setJulRevaData] = useState(defaultRevaData);
+  const [julWholesaleData, setJulWholesaleData] = useState(defaultWholesaleData);
+  const [julBaseSummary, setJulBaseSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [julRevaValues, setJulRevaValues] = useState<SummaryData>(defaultRevaValues);
+  const [julWholesaleValues, setJulWholesaleValues] = useState<SummaryData>(defaultWholesaleValues);
   
   const [summaryChanges, setSummaryChanges] = useState(defaultSummaryChanges);
   const [repChanges, setRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
@@ -81,6 +98,22 @@ export const useRepPerformanceData = () => {
   const [juneComparisonRetailSummary, setJuneComparisonRetailSummary] = useState<SummaryData>(defaultBaseSummary);
   const [juneComparisonRevaSummary, setJuneComparisonRevaSummary] = useState<SummaryData>(defaultRevaValues);
   const [juneComparisonWholesaleSummary, setJuneComparisonWholesaleSummary] = useState<SummaryData>(defaultWholesaleValues);
+  
+  // June 2 comparison state variables (copy of June structure)
+  const [june2ComparisonSummary, setJune2ComparisonSummary] = useState<SummaryData | null>(null);
+  const [june2SummaryChanges, setJune2SummaryChanges] = useState(defaultSummaryChanges);
+  const [june2RepChanges, setJune2RepChanges] = useState<RepChangesRecord>(defaultRepChanges);
+  const [june2ComparisonRetailSummary, setJune2ComparisonRetailSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [june2ComparisonRevaSummary, setJune2ComparisonRevaSummary] = useState<SummaryData>(defaultRevaValues);
+  const [june2ComparisonWholesaleSummary, setJune2ComparisonWholesaleSummary] = useState<SummaryData>(defaultWholesaleValues);
+  
+  // July comparison state variables
+  const [julyComparisonSummary, setJulyComparisonSummary] = useState<SummaryData | null>(null);
+  const [julySummaryChanges, setJulySummaryChanges] = useState(defaultSummaryChanges);
+  const [julyRepChanges, setJulyRepChanges] = useState<RepChangesRecord>(defaultRepChanges);
+  const [julyComparisonRetailSummary, setJulyComparisonRetailSummary] = useState<SummaryData>(defaultBaseSummary);
+  const [julyComparisonRevaSummary, setJulyComparisonRevaSummary] = useState<SummaryData>(defaultRevaValues);
+  const [julyComparisonWholesaleSummary, setJulyComparisonWholesaleSummary] = useState<SummaryData>(defaultWholesaleValues);
   
   // May comparison department summaries for toggle filtering (April data from Prior_Month_Rolling)
   const [mayComparisonRetailSummary, setMayComparisonRetailSummary] = useState<SummaryData>(defaultBaseSummary);
@@ -133,12 +166,44 @@ export const useRepPerformanceData = () => {
       setJunBaseSummary(storedData.junBaseSummary || defaultBaseSummary);
       setJunRevaValues(storedData.junRevaValues || defaultRevaValues);
       setJunWholesaleValues(storedData.junWholesaleValues || defaultWholesaleValues);
+      
+      // Load June 2 data and comparison summaries
+      setJun2RepData(storedData.jun2RepData || defaultRepData);
+      setJun2RevaData(storedData.jun2RevaData || defaultRevaData);
+      setJun2WholesaleData(storedData.jun2WholesaleData || defaultWholesaleData);
+      setJun2BaseSummary(storedData.jun2BaseSummary || defaultBaseSummary);
+      setJun2RevaValues(storedData.jun2RevaValues || defaultRevaValues);
+      setJun2WholesaleValues(storedData.jun2WholesaleValues || defaultWholesaleValues);
+      
+      // Load July data
+      setJulRepData(storedData.julRepData || defaultRepData);
+      setJulRevaData(storedData.julRevaData || defaultRevaData);
+      setJulWholesaleData(storedData.julWholesaleData || defaultWholesaleData);
+      setJulBaseSummary(storedData.julBaseSummary || defaultBaseSummary);
+      setJulRevaValues(storedData.julRevaValues || defaultRevaValues);
+      setJulWholesaleValues(storedData.julWholesaleValues || defaultWholesaleValues);
       setJuneComparisonSummary(storedData.juneComparisonSummary || null);
       setJuneSummaryChanges(storedData.juneSummaryChanges || defaultSummaryChanges);
       setJuneRepChanges(storedData.juneRepChanges || defaultRepChanges);
       setJuneComparisonRetailSummary(storedData.juneComparisonRetailSummary || defaultBaseSummary);
       setJuneComparisonRevaSummary(storedData.juneComparisonRevaSummary || defaultRevaValues);
       setJuneComparisonWholesaleSummary(storedData.juneComparisonWholesaleSummary || defaultWholesaleValues);
+      
+      // Load June 2 comparison data
+      setJune2ComparisonSummary(storedData.june2ComparisonSummary || null);
+      setJune2SummaryChanges(storedData.june2SummaryChanges || defaultSummaryChanges);
+      setJune2RepChanges(storedData.june2RepChanges || defaultRepChanges);
+      setJune2ComparisonRetailSummary(storedData.june2ComparisonRetailSummary || defaultBaseSummary);
+      setJune2ComparisonRevaSummary(storedData.june2ComparisonRevaSummary || defaultRevaValues);
+      setJune2ComparisonWholesaleSummary(storedData.june2ComparisonWholesaleSummary || defaultWholesaleValues);
+      
+      // Load July comparison data
+      setJulyComparisonSummary(storedData.julyComparisonSummary || null);
+      setJulySummaryChanges(storedData.julySummaryChanges || defaultSummaryChanges);
+      setJulyRepChanges(storedData.julyRepChanges || defaultRepChanges);
+      setJulyComparisonRetailSummary(storedData.julyComparisonRetailSummary || defaultBaseSummary);
+      setJulyComparisonRevaSummary(storedData.julyComparisonRevaSummary || defaultRevaValues);
+      setJulyComparisonWholesaleSummary(storedData.julyComparisonWholesaleSummary || defaultWholesaleValues);
       
       // Load May comparison department summaries
       setMayComparisonRetailSummary(storedData.priorRollingRetailSummary || defaultBaseSummary);
@@ -173,7 +238,7 @@ export const useRepPerformanceData = () => {
     console.log("Recalculating combined data based on toggle changes:", { includeRetail, includeReva, includeWholesale, selectedMonth });
     
     // Clear comparison summary when switching months to prevent cross-contamination
-    if (selectedMonth !== 'June' && selectedMonth !== 'May' && selectedMonth !== 'April') {
+    if (selectedMonth !== 'June' && selectedMonth !== 'June 2' && selectedMonth !== 'May' && selectedMonth !== 'April' && selectedMonth !== 'July') {
       setComparisonSummary(null);
     }
 
@@ -197,6 +262,14 @@ export const useRepPerformanceData = () => {
       currentRepData = junRepData;
       currentRevaData = junRevaData;
       currentWholesaleData = junWholesaleData;
+    } else if (selectedMonth === 'June 2') {
+      currentRepData = jun2RepData;
+      currentRevaData = jun2RevaData;
+      currentWholesaleData = jun2WholesaleData;
+    } else if (selectedMonth === 'July') {
+      currentRepData = julRepData;
+      currentRevaData = julRevaData;
+      currentWholesaleData = julWholesaleData;
     }
     
     const combinedData = getCombinedRepData(
@@ -315,7 +388,7 @@ export const useRepPerformanceData = () => {
       
       // Clear comparison summary for March (it doesn't use comparisonSummary like June)
       setComparisonSummary(null);
-    } else if (selectedMonth === 'April' || selectedMonth === 'May' || selectedMonth === 'June') {
+          } else if (selectedMonth === 'April' || selectedMonth === 'May' || selectedMonth === 'June' || selectedMonth === 'June 2' || selectedMonth === 'July') {
       if (repChanges) {
         setRepChanges(repChanges);
       }
@@ -414,6 +487,116 @@ export const useRepPerformanceData = () => {
         // Rep changes should also be filtered, but this is more complex
         // For now, use the stored rep changes
         setRepChanges(juneRepChanges);
+      } else if (selectedMonth === 'June 2' && june2ComparisonSummary) {
+        console.log('Recalculating June 2 comparison data based on toggles:', { includeRetail, includeReva, includeWholesale });
+        
+        // Use stored June 2 department summaries from state (EXACTLY like June)
+        if (june2ComparisonRetailSummary && june2ComparisonRevaSummary && june2ComparisonWholesaleSummary) {
+          // Recalculate comparison summary with current toggles
+          const filteredComparisonSummary = calculateSummary(
+            june2ComparisonRetailSummary,
+            june2ComparisonRevaSummary,
+            june2ComparisonWholesaleSummary,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate June 2 current summary with current toggles
+          const filteredJune2Summary = calculateSummary(
+            jun2BaseSummary,
+            jun2RevaValues,
+            jun2WholesaleValues,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate summary changes with filtered data
+          const recalculatedSummaryChanges = {
+            totalSpend: filteredComparisonSummary.totalSpend > 0 ? 
+              ((filteredJune2Summary.totalSpend - filteredComparisonSummary.totalSpend) / filteredComparisonSummary.totalSpend) * 100 : 0,
+            totalProfit: filteredComparisonSummary.totalProfit > 0 ? 
+              ((filteredJune2Summary.totalProfit - filteredComparisonSummary.totalProfit) / filteredComparisonSummary.totalProfit) * 100 : 0,
+            averageMargin: filteredJune2Summary.averageMargin - filteredComparisonSummary.averageMargin,
+            totalPacks: filteredComparisonSummary.totalPacks > 0 ? 
+              ((filteredJune2Summary.totalPacks - filteredComparisonSummary.totalPacks) / filteredComparisonSummary.totalPacks) * 100 : 0,
+            totalAccounts: filteredComparisonSummary.totalAccounts > 0 ? 
+              ((filteredJune2Summary.totalAccounts - filteredComparisonSummary.totalAccounts) / filteredComparisonSummary.totalAccounts) * 100 : 0,
+            activeAccounts: filteredComparisonSummary.activeAccounts > 0 ? 
+              ((filteredJune2Summary.activeAccounts - filteredComparisonSummary.activeAccounts) / filteredComparisonSummary.activeAccounts) * 100 : 0
+          };
+          
+          console.log('Recalculated June 2 comparison summary:', filteredComparisonSummary);
+          console.log('Recalculated June 2 summary changes:', recalculatedSummaryChanges);
+          
+          setComparisonSummary(filteredComparisonSummary);
+          setSummaryChanges(recalculatedSummaryChanges);
+        } else {
+          // Fallback to original stored data
+          console.log('Using original June 2 comparison summary:', june2ComparisonSummary);
+          console.log('Using original June 2 summary changes:', june2SummaryChanges);
+          setComparisonSummary(june2ComparisonSummary);
+          setSummaryChanges(june2SummaryChanges);
+        }
+        
+        // Use the stored rep changes (EXACTLY like June)
+        setRepChanges(june2RepChanges);
+      } else if (selectedMonth === 'July') {
+        console.log('Recalculating July comparison data based on toggles:', { includeRetail, includeReva, includeWholesale });
+        
+        // Use stored July department summaries from state (EXACTLY like June)
+        if (julyComparisonRetailSummary && julyComparisonRevaSummary && julyComparisonWholesaleSummary) {
+          // Recalculate comparison summary with current toggles
+          const filteredComparisonSummary = calculateSummary(
+            julyComparisonRetailSummary,
+            julyComparisonRevaSummary,
+            julyComparisonWholesaleSummary,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate July current summary with current toggles
+          const filteredJulySummary = calculateSummary(
+            julBaseSummary,
+            julRevaValues,
+            julWholesaleValues,
+            includeRetail,
+            includeReva,
+            includeWholesale
+          );
+          
+          // Recalculate summary changes with filtered data
+          const recalculatedSummaryChanges = {
+            totalSpend: filteredComparisonSummary.totalSpend > 0 ? 
+              ((filteredJulySummary.totalSpend - filteredComparisonSummary.totalSpend) / filteredComparisonSummary.totalSpend) * 100 : 0,
+            totalProfit: filteredComparisonSummary.totalProfit > 0 ? 
+              ((filteredJulySummary.totalProfit - filteredComparisonSummary.totalProfit) / filteredComparisonSummary.totalProfit) * 100 : 0,
+            averageMargin: filteredJulySummary.averageMargin - filteredComparisonSummary.averageMargin,
+            totalPacks: filteredComparisonSummary.totalPacks > 0 ? 
+              ((filteredJulySummary.totalPacks - filteredComparisonSummary.totalPacks) / filteredComparisonSummary.totalPacks) * 100 : 0,
+            totalAccounts: filteredComparisonSummary.totalAccounts > 0 ? 
+              ((filteredJulySummary.totalAccounts - filteredComparisonSummary.totalAccounts) / filteredComparisonSummary.totalAccounts) * 100 : 0,
+            activeAccounts: filteredComparisonSummary.activeAccounts > 0 ? 
+              ((filteredJulySummary.activeAccounts - filteredComparisonSummary.activeAccounts) / filteredComparisonSummary.activeAccounts) * 100 : 0
+          };
+          
+          console.log('Recalculated July comparison summary:', filteredComparisonSummary);
+          console.log('Recalculated July summary changes:', recalculatedSummaryChanges);
+          
+          setComparisonSummary(filteredComparisonSummary);
+          setSummaryChanges(recalculatedSummaryChanges);
+        } else {
+          // Fallback to original stored data
+          console.log('Using original July comparison summary:', julyComparisonSummary);
+          console.log('Using original July summary changes:', julySummaryChanges);
+          setComparisonSummary(julyComparisonSummary);
+          setSummaryChanges(julySummaryChanges);
+        }
+        
+        // Use the stored rep changes (EXACTLY like June)
+        setRepChanges(julyRepChanges);
       } else if (selectedMonth === 'May') {
         console.log('Recalculating May comparison data based on toggles:', { includeRetail, includeReva, includeWholesale });
         console.log('May comparison summaries from state:', {
@@ -533,9 +716,13 @@ export const useRepPerformanceData = () => {
   }, [includeRetail, includeReva, includeWholesale, selectedMonth, repData, revaData, wholesaleData, 
       febRepData, febRevaData, febWholesaleData, aprRepData, aprRevaData, aprWholesaleData,
       mayRepData, mayRevaData, mayWholesaleData, junRepData, junRevaData, junWholesaleData, 
+      julRepData, julRevaData, julWholesaleData,
       juneComparisonSummary, juneSummaryChanges, juneRepChanges,
       junBaseSummary, junRevaValues, junWholesaleValues,
+      julBaseSummary, julRevaValues, julWholesaleValues,
       juneComparisonRetailSummary, juneComparisonRevaSummary, juneComparisonWholesaleSummary,
+      julyComparisonSummary, julySummaryChanges, julyRepChanges,
+      julyComparisonRetailSummary, julyComparisonRevaSummary, julyComparisonWholesaleSummary,
       mayBaseSummary, mayRevaValues, mayWholesaleValues,
       mayComparisonRetailSummary, mayComparisonRevaSummary, mayComparisonWholesaleSummary,
       aprBaseSummary, aprRevaValues, aprWholesaleValues,
@@ -789,10 +976,10 @@ export const useRepPerformanceData = () => {
        const comparisonRevaRepData = transformData(comparisonRevaData, true);
        const comparisonWholesaleRepData = transformData(comparisonWholesaleData, true);
        
-       // Calculate comparison summaries
-       const comparisonRetailSummary = calculateDeptSummary(comparisonRetailData);
-       const comparisonRevaSummary = calculateDeptSummary(comparisonRevaData);
-       const comparisonWholesaleSummary = calculateDeptSummary(comparisonWholesaleData);
+             // Calculate comparison summaries
+      const comparisonRetailSummary = calculateDeptSummary(comparisonRetailData);
+      const comparisonRevaSummary = calculateDeptSummary(comparisonRevaData);
+      const comparisonWholesaleSummary = calculateDeptSummary(comparisonWholesaleData);
        
        // Calculate combined summary for comparison data
        const calculateSummary = (retail: SummaryData, reva: SummaryData, wholesale: SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean) => {
@@ -995,6 +1182,863 @@ export const useRepPerformanceData = () => {
        return true;
     } catch (error) {
       console.error('Error loading June data:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load June 2 Data function (copy of loadJuneData for testing July structure)
+  const loadJune2Data = async () => {
+    setIsLoading(true);
+    try {
+      console.log('Starting to fetch June 2 data from July_Data table...'); // Now use July tables
+      
+      // First, check if there's any data in the July_Data table
+      const { count, error: countError } = await supabase
+        .from('July_Data' as any)
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) throw new Error(`Error getting count: ${countError.message}`);
+      
+      if (!count || count === 0) {
+        console.log('No data found in the July_Data table - setting empty June 2 data');
+        
+        // Create empty/zero summary values for June 2
+        const emptySummary = {
+          totalSpend: 0,
+          totalProfit: 0,
+          totalPacks: 0,
+          totalAccounts: 0,
+          activeAccounts: 0,
+          averageMargin: 0
+        };
+        
+        // Set all June 2 data states to empty/zero values
+        setJun2RepData([]);
+        setJun2RevaData([]);
+        setJun2WholesaleData([]);
+        setJun2BaseSummary(emptySummary);
+        setJun2RevaValues(emptySummary);
+        setJun2WholesaleValues(emptySummary);
+        
+        setIsLoading(false);
+        return true; // Return true to indicate successful handling of empty data
+      }
+      
+      console.log(`Found ${count} total records in July_Data table for June 2`);
+      
+      // Fetch all records from July_Data using pagination
+      let allRecords = [];
+      const pageSize = 1000;
+      const pages = Math.ceil(count / pageSize);
+      
+      for (let page = 0; page < pages; page++) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('July_Data' as any)
+          .select('*')
+          .range(from, to);
+        
+        if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
+        if (pageData) allRecords = [...allRecords, ...pageData];
+        
+        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records from July_Data for June 2`);
+      }
+      
+      const june2Data = allRecords;
+      console.log('Fetched June 2 records total count:', june2Data.length);
+      
+      // Use July_Data_Comparison for comparison data
+      console.log('Fetching June 2 comparison data from July_Data_Comparison table...');
+      
+      const { count: comparisonCount, error: comparisonCountError } = await supabase
+        .from('July_Data_Comparison' as any)
+        .select('*', { count: 'exact', head: true });
+        
+      if (comparisonCountError) throw new Error(`Error getting June 2 comparison count: ${comparisonCountError.message}`);
+        
+      let comparisonRecords = [];
+      if (comparisonCount && comparisonCount > 0) {
+        const comparisonPages = Math.ceil(comparisonCount / pageSize);
+        
+        for (let page = 0; page < comparisonPages; page++) {
+          const from = page * pageSize;
+          const to = from + pageSize - 1;
+          
+          const { data: pageData, error: pageError } = await supabase
+            .from('July_Data_Comparison' as any)
+            .select('*')
+            .range(from, to);
+          
+          if (pageError) throw new Error(`Error fetching June 2 comparison page ${page}: ${pageError.message}`);
+          if (pageData) comparisonRecords = [...comparisonRecords, ...pageData];
+        }
+      }
+      
+      console.log('Fetched June 2 comparison records:', comparisonRecords.length);
+      
+      // Process June 2 data by department
+      const june2RetailData = june2Data.filter(item => item.Department === 'RETAIL');
+      const june2RevaData = june2Data.filter(item => item.Department === 'REVA');
+      const june2WholesaleData = june2Data.filter(item => item.Department === 'Wholesale' || item.Department === 'WHOLESALE');
+      
+      // Process June 2 comparison data by department
+      const comparisonRetailData = comparisonRecords.filter(item => item.Department === 'RETAIL');
+      const comparisonRevaData = comparisonRecords.filter(item => item.Department === 'REVA');
+      const comparisonWholesaleData = comparisonRecords.filter(item => item.Department === 'Wholesale' || item.Department === 'WHOLESALE');
+      
+      console.log('June 2 data breakdown:', {
+        retail: june2RetailData.length,
+        reva: june2RevaData.length,
+        wholesale: june2WholesaleData.length
+      });
+      
+      // Transform data function (same as in loadJuneData)
+      const transformData = (data: any[], isDepartmentData = false): RepData[] => {
+        const repMap = new Map<string, {
+          rep: string;
+          spend: number;
+          profit: number;
+          packs: number;
+          activeAccounts: Set<string>;
+          totalAccounts: Set<string>;
+          profitPerActiveShop: number;
+          profitPerPack: number;
+          activeRatio: number;
+        }>();
+        
+        data.forEach(item => {
+          let repName;
+          
+          if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+            repName = item['Sub-Rep'];
+          } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
+            return;
+          } else {
+            repName = item.Rep;
+          }
+          
+          if (!repName) return;
+          
+          if (!repMap.has(repName)) {
+            repMap.set(repName, {
+              rep: repName,
+              spend: 0,
+              profit: 0,
+              packs: 0,
+              activeAccounts: new Set(),
+              totalAccounts: new Set(),
+              profitPerActiveShop: 0,
+              profitPerPack: 0,
+              activeRatio: 0
+            });
+          }
+          
+          const currentRep = repMap.get(repName)!;
+          
+          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          
+          currentRep.spend += spend;
+          currentRep.profit += profit;
+          currentRep.packs += packs;
+          
+          if (item["Account Ref"]) {
+            currentRep.totalAccounts.add(item["Account Ref"]);
+            if (spend > 0) {
+              currentRep.activeAccounts.add(item["Account Ref"]);
+            }
+          }
+          
+          repMap.set(repName, currentRep);
+        });
+        
+        return Array.from(repMap.values()).map(rep => {
+          const margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
+          
+          return {
+            rep: rep.rep,
+            spend: rep.spend,
+            profit: rep.profit,
+            margin: margin,
+            packs: rep.packs,
+            activeAccounts: rep.activeAccounts.size,
+            totalAccounts: rep.totalAccounts.size,
+            profitPerActiveShop: rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0,
+            profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
+            activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
+          };
+        }).filter(rep => {
+          return rep.spend > 0 || rep.profit > 0 || rep.packs > 0 || rep.activeAccounts > 0;
+        });
+      };
+
+      // Calculate summary function
+      const calculateDeptSummary = (data: any[]) => {
+        const totalProfit = data.reduce((sum, item) => {
+          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+          return sum + profit;
+        }, 0);
+      
+        const totalSpend = data.reduce((sum, item) => {
+          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+          return sum + spend;
+        }, 0);
+      
+        const totalPacks = data.reduce((sum, item) => {
+          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          return sum + packs;
+        }, 0);
+      
+        const uniqueAccounts = new Set();
+        const activeAccounts = new Set();
+      
+        data.forEach(item => {
+          if (item["Account Ref"]) {
+            uniqueAccounts.add(item["Account Ref"]);
+            
+            const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+            if (spend > 0) {
+              activeAccounts.add(item["Account Ref"]);
+            }
+          }
+        });
+      
+        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+      
+        return {
+          totalProfit,
+          totalSpend,
+          totalPacks,
+          totalAccounts: uniqueAccounts.size,
+          activeAccounts: activeAccounts.size,
+          averageMargin
+        };
+      };
+      
+      // Transform and aggregate June 2 data
+      const processedJune2Retail = transformData(june2RetailData);
+      const processedJune2Reva = transformData(june2RevaData, true);
+      const processedJune2Wholesale = transformData(june2WholesaleData, true);
+      
+      // Calculate summaries
+      const june2Summary = calculateDeptSummary(june2RetailData);
+      const june2RevaSummary = calculateDeptSummary(june2RevaData);
+      const june2WholesaleSummary = calculateDeptSummary(june2WholesaleData);
+      
+      // Transform comparison data (June_Data_Comparison data)
+      const comparisonRetailRepData = transformData(comparisonRetailData);
+      const comparisonRevaRepData = transformData(comparisonRevaData, true);
+      const comparisonWholesaleRepData = transformData(comparisonWholesaleData, true);
+      
+      // Calculate comparison summaries
+      const comparisonRetailSummary = calculateDeptSummary(comparisonRetailData);
+      const comparisonRevaSummary = calculateDeptSummary(comparisonRevaData);
+      const comparisonWholesaleSummary = calculateDeptSummary(comparisonWholesaleData);
+      
+      // Calculate combined summary for comparison data
+      const calculateSummary = (retail: SummaryData, reva: SummaryData, wholesale: SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean) => {
+        const totalSpend = (includeRetail ? retail.totalSpend : 0) + 
+                          (includeReva ? reva.totalSpend : 0) + 
+                          (includeWholesale ? wholesale.totalSpend : 0);
+        
+        const totalProfit = (includeRetail ? retail.totalProfit : 0) + 
+                           (includeReva ? reva.totalProfit : 0) + 
+                           (includeWholesale ? wholesale.totalProfit : 0);
+        
+        const totalPacks = (includeRetail ? retail.totalPacks : 0) + 
+                          (includeReva ? reva.totalPacks : 0) + 
+                          (includeWholesale ? wholesale.totalPacks : 0);
+        
+        const totalAccounts = (includeRetail ? retail.totalAccounts : 0) + 
+                             (includeReva ? reva.totalAccounts : 0) + 
+                             (includeWholesale ? wholesale.totalAccounts : 0);
+        
+        const activeAccounts = (includeRetail ? retail.activeAccounts : 0) + 
+                              (includeReva ? reva.activeAccounts : 0) + 
+                              (includeWholesale ? wholesale.activeAccounts : 0);
+        
+        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+        
+        return {
+          totalSpend,
+          totalProfit,
+          totalPacks,
+          totalAccounts,
+          activeAccounts,
+          averageMargin
+        };
+      };
+      
+      const june2CombinedSummary = calculateSummary(
+        june2Summary,
+        june2RevaSummary,
+        june2WholesaleSummary,
+        true, true, true
+      );
+      
+      const comparisonSummary = calculateSummary(
+        comparisonRetailSummary,
+        comparisonRevaSummary,
+        comparisonWholesaleSummary,
+        true, true, true
+      );
+      
+      // Calculate summary percentage changes for metric cards
+      const june2SummaryChanges = {
+        totalSpend: comparisonSummary.totalSpend > 0 ? 
+          ((june2CombinedSummary.totalSpend - comparisonSummary.totalSpend) / comparisonSummary.totalSpend) * 100 : 0,
+        totalProfit: comparisonSummary.totalProfit > 0 ? 
+          ((june2CombinedSummary.totalProfit - comparisonSummary.totalProfit) / comparisonSummary.totalProfit) * 100 : 0,
+        averageMargin: june2CombinedSummary.averageMargin - comparisonSummary.averageMargin,
+        totalPacks: comparisonSummary.totalPacks > 0 ? 
+          ((june2CombinedSummary.totalPacks - comparisonSummary.totalPacks) / comparisonSummary.totalPacks) * 100 : 0,
+        totalAccounts: comparisonSummary.totalAccounts > 0 ? 
+          ((june2CombinedSummary.totalAccounts - comparisonSummary.totalAccounts) / comparisonSummary.totalAccounts) * 100 : 0,
+        activeAccounts: comparisonSummary.activeAccounts > 0 ? 
+          ((june2CombinedSummary.activeAccounts - comparisonSummary.activeAccounts) / comparisonSummary.activeAccounts) * 100 : 0
+      };
+      
+      // Calculate individual rep changes for the table
+      const calculateChanges = (june2Data: RepData[], comparisonData: RepData[]): RepChangesRecord => {
+        const changes: RepChangesRecord = {};
+        
+        june2Data.forEach(june2Rep => {
+          const comparisonRep = comparisonData.find(r => r.rep === june2Rep.rep);
+          
+          if (comparisonRep) {
+            changes[june2Rep.rep] = {
+              profit: comparisonRep.profit > 0 ? ((june2Rep.profit - comparisonRep.profit) / comparisonRep.profit) * 100 : 0,
+              spend: comparisonRep.spend > 0 ? ((june2Rep.spend - comparisonRep.spend) / comparisonRep.spend) * 100 : 0,
+              margin: june2Rep.margin - comparisonRep.margin,
+              packs: comparisonRep.packs > 0 ? ((june2Rep.packs - comparisonRep.packs) / comparisonRep.packs) * 100 : 0,
+              activeAccounts: comparisonRep.activeAccounts > 0 ? ((june2Rep.activeAccounts - comparisonRep.activeAccounts) / comparisonRep.activeAccounts) * 100 : 0,
+              totalAccounts: comparisonRep.totalAccounts > 0 ? ((june2Rep.totalAccounts - comparisonRep.totalAccounts) / comparisonRep.totalAccounts) * 100 : 0,
+              profitPerActiveShop: comparisonRep.profitPerActiveShop > 0 ? 
+                ((june2Rep.profitPerActiveShop - comparisonRep.profitPerActiveShop) / comparisonRep.profitPerActiveShop) * 100 : 0,
+              profitPerPack: comparisonRep.profitPerPack > 0 ? 
+                ((june2Rep.profitPerPack - comparisonRep.profitPerPack) / comparisonRep.profitPerPack) * 100 : 0,
+              activeRatio: comparisonRep.activeRatio > 0 ? 
+                june2Rep.activeRatio - comparisonRep.activeRatio : 0
+            };
+          }
+        });
+        
+        return changes;
+      };
+      
+      // Create combined data for all departments
+      const june2AllData = getCombinedRepData(
+        processedJune2Retail,
+        processedJune2Reva,
+        processedJune2Wholesale,
+        true, true, true
+      );
+      
+      const comparisonAllData = getCombinedRepData(
+        comparisonRetailRepData,
+        comparisonRevaRepData,
+        comparisonWholesaleRepData,
+        true, true, true
+      );
+      
+      const june2RepChanges = calculateChanges(june2AllData, comparisonAllData);
+      console.log('Calculated June 2 rep changes:', june2RepChanges);
+      
+      // Store June 2 rep changes for later use
+      setJune2RepChanges(june2RepChanges);
+      console.log('Stored June 2 rep changes for later use:', june2RepChanges);
+      
+      // Set June 2 data
+      setJun2RepData(processedJune2Retail);
+      setJun2RevaData(processedJune2Reva);
+      setJun2WholesaleData(processedJune2Wholesale);
+      setJun2BaseSummary(june2Summary);
+      setJun2RevaValues(june2RevaSummary);
+      setJun2WholesaleValues(june2WholesaleSummary);
+      
+      // Store the June 2 comparison summary for later use
+      setJune2ComparisonSummary(comparisonSummary);
+      console.log('Stored June 2 comparison summary for later use:', comparisonSummary);
+      
+      // Store June 2 summary changes for later use
+      setJune2SummaryChanges(june2SummaryChanges);
+      console.log('Stored June 2 summary changes for later use:', june2SummaryChanges);
+      
+      // Store individual department comparison summaries for toggle filtering
+      setJune2ComparisonRetailSummary(comparisonRetailSummary);
+      setJune2ComparisonRevaSummary(comparisonRevaSummary);
+      setJune2ComparisonWholesaleSummary(comparisonWholesaleSummary);
+      console.log('Stored June 2 comparison department summaries for toggle filtering');
+      
+      // Update the state if June 2 is currently selected
+      if (selectedMonth === 'June 2') {
+        console.log('June 2 is currently selected - setting active data');
+        setSummaryChanges(june2SummaryChanges);
+        setComparisonSummary(comparisonSummary);
+        setRepChanges(june2RepChanges);
+        
+        // Create combined data based on selected toggles
+        const combinedJune2Data = getCombinedRepData(
+          processedJune2Retail,
+          processedJune2Reva,
+          processedJune2Wholesale,
+          includeRetail,
+          includeReva,
+          includeWholesale
+        );
+        
+        setOverallData(combinedJune2Data);
+      }
+      
+      // Save the data to localStorage (using june2 keys)
+      const currentData = loadStoredRepPerformanceData() || {};
+      saveRepPerformanceData({
+        ...currentData,
+        jun2RepData: processedJune2Retail,
+        jun2RevaData: processedJune2Reva,
+        jun2WholesaleData: processedJune2Wholesale,
+        jun2BaseSummary: june2Summary,
+        jun2RevaValues: june2RevaSummary,
+        jun2WholesaleValues: june2WholesaleSummary,
+        june2ComparisonSummary: comparisonSummary,
+        june2SummaryChanges: june2SummaryChanges,
+        june2RepChanges: june2RepChanges,
+        june2ComparisonRetailSummary: comparisonRetailSummary,
+        june2ComparisonRevaSummary: comparisonRevaSummary,
+        june2ComparisonWholesaleSummary: comparisonWholesaleSummary
+      });
+      
+      console.log('June 2 data loading completed successfully');
+      return true;
+    } catch (error) {
+      console.error('Error loading June 2 data:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadJulyData = async () => {
+    setIsLoading(true);
+    try {
+      console.log('🟡 JULY DEBUG: Starting to fetch July data from July_Data table...');
+      console.log('🟡 JULY DEBUG: Current selectedMonth:', selectedMonth);
+      
+      // First, check if there's any data in the July_Data table
+      const { count, error: countError } = await supabase
+        .from('July_Data' as any)
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) {
+        console.error('🔴 JULY DEBUG: Error getting count:', countError);
+        throw new Error(`Error getting count: ${countError.message}`);
+      }
+      
+      console.log('🟡 JULY DEBUG: Count result:', count);
+      
+      if (!count || count === 0) {
+        console.log('🔴 JULY DEBUG: No data found in the July_Data table - setting empty July data');
+        
+        // Create empty/zero summary values for July
+        const emptySummary = {
+          totalSpend: 0,
+          totalProfit: 0,
+          totalPacks: 0,
+          totalAccounts: 0,
+          activeAccounts: 0,
+          averageMargin: 0
+        };
+        
+        // Set all July data states to empty/zero values
+        setJulRepData([]);
+        setJulRevaData([]);
+        setJulWholesaleData([]);
+        setJulBaseSummary(emptySummary);
+        setJulRevaValues(emptySummary);
+        setJulWholesaleValues(emptySummary);
+        
+        setIsLoading(false);
+        return true; // Return true to indicate successful handling of empty data
+      }
+      
+      console.log(`🟢 JULY DEBUG: Found ${count} total records in July_Data table`);
+      
+      // Fetch all records from July_Data using pagination
+      let allRecords = [];
+      const pageSize = 1000;
+      const pages = Math.ceil(count / pageSize);
+      
+      for (let page = 0; page < pages; page++) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('July_Data' as any)
+          .select('*')
+          .range(from, to);
+        
+        if (pageError) throw new Error(`Error fetching page ${page}: ${pageError.message}`);
+        if (pageData) allRecords = [...allRecords, ...pageData];
+        
+        console.log(`Fetched page ${page + 1}/${pages} with ${pageData?.length || 0} records from July_Data`);
+      }
+      
+      const julyData = allRecords;
+      console.log('🟢 JULY DEBUG: Fetched July records total count:', julyData.length);
+      console.log('🟢 JULY DEBUG: Sample July record:', julyData[0]);
+      
+      // Use July_Data_Comparison for comparison data
+      console.log('🟢 JULY DEBUG: Fetching July comparison data from July_Data_Comparison table...');
+      
+      const { count: comparisonCount, error: comparisonCountError } = await supabase
+        .from('July_Data_Comparison' as any)
+        .select('*', { count: 'exact', head: true });
+        
+      if (comparisonCountError) throw new Error(`Error getting July comparison count: ${comparisonCountError.message}`);
+        
+      let comparisonRecords = [];
+      if (comparisonCount && comparisonCount > 0) {
+        console.log(`🟢 JULY DEBUG: Found ${comparisonCount} comparison records in July_Data_Comparison table`);
+        const comparisonPages = Math.ceil(comparisonCount / pageSize);
+        
+        for (let page = 0; page < comparisonPages; page++) {
+          const from = page * pageSize;
+          const to = from + pageSize - 1;
+          
+          const { data: pageData, error: pageError } = await supabase
+            .from('July_Data_Comparison' as any)
+            .select('*')
+            .range(from, to);
+          
+          if (pageError) throw new Error(`Error fetching July comparison page ${page}: ${pageError.message}`);
+          if (pageData) comparisonRecords = [...comparisonRecords, ...pageData];
+        }
+      } else {
+        console.log('🔴 JULY DEBUG: No comparison data found in July_Data_Comparison table');
+      }
+      
+      console.log('🟢 JULY DEBUG: Fetched July comparison records:', comparisonRecords.length);
+      
+      // Process July data by department
+      const julyRetailData = julyData.filter(item => item.Department === 'RETAIL');
+      const julyRevaData = julyData.filter(item => item.Department === 'REVA');
+      const julyWholesaleData = julyData.filter(item => item.Department === 'Wholesale' || item.Department === 'WHOLESALE');
+      
+      // Process July comparison data by department
+      const comparisonRetailData = comparisonRecords.filter(item => item.Department === 'RETAIL');
+      const comparisonRevaData = comparisonRecords.filter(item => item.Department === 'REVA');
+      const comparisonWholesaleData = comparisonRecords.filter(item => item.Department === 'Wholesale' || item.Department === 'WHOLESALE');
+      
+      console.log('July data breakdown:', {
+        retail: julyRetailData.length,
+        reva: julyRevaData.length,
+        wholesale: julyWholesaleData.length
+      });
+      
+      // Transform data function (same as in other load functions)
+      const transformData = (data: any[], isDepartmentData = false): RepData[] => {
+        const repMap = new Map<string, {
+          rep: string;
+          spend: number;
+          profit: number;
+          packs: number;
+          activeAccounts: Set<string>;
+          totalAccounts: Set<string>;
+          profitPerActiveShop: number;
+          profitPerPack: number;
+          activeRatio: number;
+        }>();
+        
+        data.forEach(item => {
+          let repName;
+          
+          if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+            repName = item['Sub-Rep'];
+          } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
+            return;
+          } else {
+            repName = item.Rep;
+          }
+          
+          if (!repName) return;
+          
+          if (!repMap.has(repName)) {
+            repMap.set(repName, {
+              rep: repName,
+              spend: 0,
+              profit: 0,
+              packs: 0,
+              activeAccounts: new Set(),
+              totalAccounts: new Set(),
+              profitPerActiveShop: 0,
+              profitPerPack: 0,
+              activeRatio: 0
+            });
+          }
+          
+          const currentRep = repMap.get(repName)!;
+          
+          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          
+          currentRep.spend += spend;
+          currentRep.profit += profit;
+          currentRep.packs += packs;
+          
+          if (item["Account Ref"]) {
+            currentRep.totalAccounts.add(item["Account Ref"]);
+            if (spend > 0) {
+              currentRep.activeAccounts.add(item["Account Ref"]);
+            }
+          }
+          
+          repMap.set(repName, currentRep);
+        });
+        
+        return Array.from(repMap.values()).map(rep => {
+          const margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
+          
+          return {
+            rep: rep.rep,
+            spend: rep.spend,
+            profit: rep.profit,
+            margin: margin,
+            packs: rep.packs,
+            activeAccounts: rep.activeAccounts.size,
+            totalAccounts: rep.totalAccounts.size,
+            profitPerActiveShop: rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0,
+            profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
+            activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
+          };
+        });
+      };
+      
+      // Calculate department summary function
+      const calculateDeptSummary = (data: any[]) => {
+        const totalSpend = data.reduce((sum, item) => {
+          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+          return sum + spend;
+        }, 0);
+        
+        const totalProfit = data.reduce((sum, item) => {
+          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+          return sum + profit;
+        }, 0);
+        
+        const totalPacks = data.reduce((sum, item) => {
+          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          return sum + packs;
+        }, 0);
+        
+        const uniqueAccounts = new Set(data.map(item => item['Account Ref']).filter(Boolean));
+        const activeAccounts = new Set(data.filter(item => {
+          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+          return spend > 0;
+        }).map(item => item['Account Ref']).filter(Boolean));
+        
+        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+        
+        return {
+          totalSpend,
+          totalProfit,
+          totalPacks,
+          totalAccounts: uniqueAccounts.size,
+          activeAccounts: activeAccounts.size,
+          averageMargin
+        };
+      };
+      
+      // Process July data
+      const processedJulyRetail = transformData(julyRetailData, false);
+      const processedJulyReva = transformData(julyRevaData, true);
+      const processedJulyWholesale = transformData(julyWholesaleData, true);
+      
+      // Process July comparison data
+      const processedComparisonRetail = transformData(comparisonRetailData, false);
+      const processedComparisonReva = transformData(comparisonRevaData, true);
+      const processedComparisonWholesale = transformData(comparisonWholesaleData, true);
+      
+      // Calculate July summaries
+      const julySummary = calculateDeptSummary(julyRetailData);
+      const julyRevaSummary = calculateDeptSummary(julyRevaData);
+      const julyWholesaleSummary = calculateDeptSummary(julyWholesaleData);
+      
+      // Calculate July comparison summaries
+      const comparisonRetailSummary = calculateDeptSummary(comparisonRetailData);
+      const comparisonRevaSummary = calculateDeptSummary(comparisonRevaData);
+      const comparisonWholesaleSummary = calculateDeptSummary(comparisonWholesaleData);
+      
+      // Calculate summary function
+      const calculateSummary = (retail: SummaryData, reva: SummaryData, wholesale: SummaryData, includeRetail: boolean, includeReva: boolean, includeWholesale: boolean) => {
+        let totalSpend = 0;
+        let totalProfit = 0;
+        let totalPacks = 0;
+        let totalAccounts = 0;
+        let activeAccounts = 0;
+        
+        if (includeRetail) {
+          totalSpend += retail.totalSpend;
+          totalProfit += retail.totalProfit;
+          totalPacks += retail.totalPacks;
+          totalAccounts += retail.totalAccounts;
+          activeAccounts += retail.activeAccounts;
+        }
+        
+        if (includeReva) {
+          totalSpend += reva.totalSpend;
+          totalProfit += reva.totalProfit;
+          totalPacks += reva.totalPacks;
+          totalAccounts += reva.totalAccounts;
+          activeAccounts += reva.activeAccounts;
+        }
+        
+        if (includeWholesale) {
+          totalSpend += wholesale.totalSpend;
+          totalProfit += wholesale.totalProfit;
+          totalPacks += wholesale.totalPacks;
+          totalAccounts += wholesale.totalAccounts;
+          activeAccounts += wholesale.activeAccounts;
+        }
+        
+        const averageMargin = totalSpend > 0 ? (totalProfit / totalSpend) * 100 : 0;
+        
+        return {
+          totalSpend,
+          totalProfit,
+          totalPacks,
+          totalAccounts,
+          activeAccounts,
+          averageMargin
+        };
+      };
+      
+      // Calculate changes function
+      const calculateChanges = (julyData: RepData[], comparisonData: RepData[]): RepChangesRecord => {
+        const changes: RepChangesRecord = {};
+        
+        julyData.forEach(julyRep => {
+          const comparisonRep = comparisonData.find(r => r.rep === julyRep.rep);
+          
+          if (comparisonRep) {
+            changes[julyRep.rep] = {
+              profit: comparisonRep.profit > 0 ? ((julyRep.profit - comparisonRep.profit) / comparisonRep.profit) * 100 : 0,
+              spend: comparisonRep.spend > 0 ? ((julyRep.spend - comparisonRep.spend) / comparisonRep.spend) * 100 : 0,
+              margin: julyRep.margin - comparisonRep.margin,
+              packs: comparisonRep.packs > 0 ? ((julyRep.packs - comparisonRep.packs) / comparisonRep.packs) * 100 : 0,
+              activeAccounts: comparisonRep.activeAccounts > 0 ? ((julyRep.activeAccounts - comparisonRep.activeAccounts) / comparisonRep.activeAccounts) * 100 : 0,
+              totalAccounts: comparisonRep.totalAccounts > 0 ? ((julyRep.totalAccounts - comparisonRep.totalAccounts) / comparisonRep.totalAccounts) * 100 : 0,
+              profitPerActiveShop: comparisonRep.profitPerActiveShop > 0 ? 
+                ((julyRep.profitPerActiveShop - comparisonRep.profitPerActiveShop) / comparisonRep.profitPerActiveShop) * 100 : 0,
+              profitPerPack: comparisonRep.profitPerPack > 0 ? 
+                ((julyRep.profitPerPack - comparisonRep.profitPerPack) / comparisonRep.profitPerPack) * 100 : 0,
+              activeRatio: comparisonRep.activeRatio > 0 ? 
+                julyRep.activeRatio - comparisonRep.activeRatio : 0
+            };
+          }
+        });
+        
+        return changes;
+      };
+      
+      // Calculate all July rep changes
+      const allJulyReps = [...processedJulyRetail, ...processedJulyReva, ...processedJulyWholesale];
+      const allComparisonReps = [...processedComparisonRetail, ...processedComparisonReva, ...processedComparisonWholesale];
+      const julyRepChanges = calculateChanges(allJulyReps, allComparisonReps);
+      
+      // Calculate July summary changes
+      const julyTotalSummary = calculateSummary(julySummary, julyRevaSummary, julyWholesaleSummary, true, true, true);
+      const comparisonTotalSummary = calculateSummary(comparisonRetailSummary, comparisonRevaSummary, comparisonWholesaleSummary, true, true, true);
+      
+      const julySummaryChanges = {
+        totalSpend: comparisonTotalSummary.totalSpend > 0 ? 
+          ((julyTotalSummary.totalSpend - comparisonTotalSummary.totalSpend) / comparisonTotalSummary.totalSpend) * 100 : 0,
+        totalProfit: comparisonTotalSummary.totalProfit > 0 ? 
+          ((julyTotalSummary.totalProfit - comparisonTotalSummary.totalProfit) / comparisonTotalSummary.totalProfit) * 100 : 0,
+        averageMargin: julyTotalSummary.averageMargin - comparisonTotalSummary.averageMargin,
+        totalPacks: comparisonTotalSummary.totalPacks > 0 ? 
+          ((julyTotalSummary.totalPacks - comparisonTotalSummary.totalPacks) / comparisonTotalSummary.totalPacks) * 100 : 0,
+        totalAccounts: comparisonTotalSummary.totalAccounts > 0 ? 
+          ((julyTotalSummary.totalAccounts - comparisonTotalSummary.totalAccounts) / comparisonTotalSummary.totalAccounts) * 100 : 0,
+        activeAccounts: comparisonTotalSummary.activeAccounts > 0 ? 
+          ((julyTotalSummary.activeAccounts - comparisonTotalSummary.activeAccounts) / comparisonTotalSummary.activeAccounts) * 100 : 0
+      };
+      
+      // Update July data states
+      console.log('🟢 JULY DEBUG: Setting July data states...');
+      console.log('🟢 JULY DEBUG: julySummary:', julySummary);
+      console.log('🟢 JULY DEBUG: processedJulyRetail count:', processedJulyRetail.length);
+      
+      setJulRepData(processedJulyRetail);
+      setJulRevaData(processedJulyReva);
+      setJulWholesaleData(processedJulyWholesale);
+      setJulBaseSummary(julySummary);
+      setJulRevaValues(julyRevaSummary);
+      setJulWholesaleValues(julyWholesaleSummary);
+      
+      console.log('🟢 JULY DEBUG: Comparison summary values:', {
+        totalSpend: comparisonTotalSummary.totalSpend,
+        totalProfit: comparisonTotalSummary.totalProfit,
+        averageMargin: comparisonTotalSummary.averageMargin,
+        totalPacks: comparisonTotalSummary.totalPacks
+      });
+      
+      // Set July comparison state variables
+      setJulyComparisonSummary(comparisonTotalSummary);
+      setJulySummaryChanges(julySummaryChanges);
+      setJulyRepChanges(julyRepChanges);
+      setJulyComparisonRetailSummary(comparisonRetailSummary);
+      setJulyComparisonRevaSummary(comparisonRevaSummary);
+      setJulyComparisonWholesaleSummary(comparisonWholesaleSummary);
+      
+      // Update the state if July is currently selected
+      if (selectedMonth === 'July') {
+        console.log('🔧 JULY: July is currently selected - loading current data only');
+        console.log('🔧 JULY: Comparison data will be loaded by useEffect when needed');
+        
+        // Create combined data based on selected toggles (current month data only)
+        const combinedJulyData = getCombinedRepData(
+          processedJulyRetail,
+          processedJulyReva,
+          processedJulyWholesale,
+          includeRetail,
+          includeReva,
+          includeWholesale
+        );
+        
+        setOverallData(combinedJulyData);
+        
+        console.log('✅ JULY: July current data loaded, comparison will be handled separately');
+      }
+      
+      // Store July data in localStorage
+      const existingData = loadStoredRepPerformanceData() || {};
+      saveRepPerformanceData({
+        ...existingData,
+        julRepData: processedJulyRetail,
+        julRevaData: processedJulyReva,
+        julWholesaleData: processedJulyWholesale,
+        julBaseSummary: julySummary,
+        julRevaValues: julyRevaSummary,
+        julWholesaleValues: julyWholesaleSummary,
+        julyComparisonSummary: comparisonTotalSummary,
+        julySummaryChanges: julySummaryChanges,
+        julyRepChanges: julyRepChanges,
+        // Store individual department comparison summaries for toggle filtering
+        julyComparisonRetailSummary: comparisonRetailSummary,
+        julyComparisonRevaSummary: comparisonRevaSummary,
+        julyComparisonWholesaleSummary: comparisonWholesaleSummary
+      });
+      
+      console.log('🟢 JULY DEBUG: July data loading completed successfully');
+      return true;
+    } catch (error) {
+      console.error('🔴 JULY DEBUG: Error loading July data:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -1206,8 +2250,21 @@ export const useRepPerformanceData = () => {
       
       // Calculate summary data
       const calculateDeptSummary = (data: any[]) => {
+        console.log('🔍 JULY DEBUG: calculateDeptSummary called with', data.length, 'records');
+        
         const totalProfit = data.reduce((sum, item) => {
           const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+          
+          // Log suspicious values
+          if (profit > 1000000) {
+            console.log('🚨 JULY DEBUG: Suspicious profit value found:', {
+              profit: profit,
+              item: item,
+              rep: item.Rep,
+              department: item.Department
+            });
+          }
+          
           return sum + profit;
         }, 0);
       
@@ -1773,6 +2830,10 @@ export const useRepPerformanceData = () => {
         return await loadMayData();
       } else if (selectedMonth === 'June') {
         return await loadJuneData();
+      } else if (selectedMonth === 'June 2') {
+        return await loadJune2Data();
+      } else if (selectedMonth === 'July') {
+        return await loadJulyData();
       }
       
       const data = await fetchRepPerformanceData();
@@ -1899,11 +2960,17 @@ export const useRepPerformanceData = () => {
         await loadMayData();
       } else if (selectedMonth === 'June') {
         await loadJuneData();
+      } else if (selectedMonth === 'June 2') {
+        await loadJune2Data();
+      } else if (selectedMonth === 'July') {
+        await loadJulyData();
       } else {
         // For March and February, load all additional months for chart data
         await loadAprilData();
         await loadMayData();
         await loadJuneData();
+        await loadJune2Data();
+        await loadJulyData();
       }
       
       console.log("Successfully loaded data from Supabase");
@@ -1940,6 +3007,14 @@ export const useRepPerformanceData = () => {
       currentRepData = junRepData;
       currentRevaData = junRevaData;
       currentWholesaleData = junWholesaleData;
+    } else if (monthToUse === 'June 2') {
+      currentRepData = jun2RepData;
+      currentRevaData = jun2RevaData;
+      currentWholesaleData = jun2WholesaleData;
+    } else if (monthToUse === 'July') {
+      currentRepData = julRepData;
+      currentRevaData = julRevaData;
+      currentWholesaleData = julWholesaleData;
     }
     
     // Determine which data to return based on the tab value
@@ -1959,17 +3034,23 @@ export const useRepPerformanceData = () => {
             monthToUse === 'February' ? febRepData :
             monthToUse === 'April' ? aprRepData :
             monthToUse === 'May' ? mayRepData :
-            monthToUse === 'June' ? junRepData : repData,
+            monthToUse === 'June' ? junRepData :
+            monthToUse === 'June 2' ? jun2RepData :
+            monthToUse === 'July' ? julRepData : repData,
             
             monthToUse === 'February' ? febRevaData :
             monthToUse === 'April' ? aprRevaData :
             monthToUse === 'May' ? mayRevaData :
-            monthToUse === 'June' ? junRevaData : revaData,
+            monthToUse === 'June' ? junRevaData :
+            monthToUse === 'June 2' ? jun2RevaData :
+            monthToUse === 'July' ? julRevaData : revaData,
             
             monthToUse === 'February' ? febWholesaleData :
             monthToUse === 'April' ? aprWholesaleData :
             monthToUse === 'May' ? mayWholesaleData :
-            monthToUse === 'June' ? junWholesaleData : wholesaleData,
+            monthToUse === 'June' ? junWholesaleData :
+            monthToUse === 'June 2' ? jun2WholesaleData :
+            monthToUse === 'July' ? julWholesaleData : wholesaleData,
             
             includeRetail,
             includeReva,
@@ -1993,27 +3074,46 @@ export const useRepPerformanceData = () => {
     return sortRepData(data, sortBy, sortOrder);
   };
 
-  // Updated summary calculation to include June data
+  // Updated summary calculation to include July data
   const summary = calculateSummary(
     selectedMonth === 'March' ? baseSummary : 
     selectedMonth === 'February' ? febBaseSummary : 
     selectedMonth === 'April' ? aprBaseSummary : 
-    selectedMonth === 'May' ? mayBaseSummary : junBaseSummary,
+    selectedMonth === 'May' ? mayBaseSummary : 
+    selectedMonth === 'June' ? junBaseSummary : 
+    selectedMonth === 'June 2' ? jun2BaseSummary : 
+    selectedMonth === 'July' ? julBaseSummary : baseSummary,
     
     selectedMonth === 'March' ? revaValues : 
     selectedMonth === 'February' ? febRevaValues : 
     selectedMonth === 'April' ? aprRevaValues : 
-    selectedMonth === 'May' ? mayRevaValues : junRevaValues,
+    selectedMonth === 'May' ? mayRevaValues : 
+    selectedMonth === 'June' ? junRevaValues : 
+    selectedMonth === 'June 2' ? jun2RevaValues : 
+    selectedMonth === 'July' ? julRevaValues : revaValues,
     
     selectedMonth === 'March' ? wholesaleValues : 
     selectedMonth === 'February' ? febWholesaleValues :
     selectedMonth === 'April' ? aprWholesaleValues : 
-    selectedMonth === 'May' ? mayWholesaleValues : junWholesaleValues,
+    selectedMonth === 'May' ? mayWholesaleValues : 
+    selectedMonth === 'June' ? junWholesaleValues : 
+    selectedMonth === 'June 2' ? jun2WholesaleValues : 
+    selectedMonth === 'July' ? julWholesaleValues : wholesaleValues,
     
     includeRetail,
     includeReva, 
     includeWholesale
   );
+
+  // Debug logging for July summary calculation
+  if (selectedMonth === 'July') {
+    console.log('🔍 JULY SUMMARY DEBUG:');
+    console.log('selectedMonth:', selectedMonth);
+    console.log('julBaseSummary:', julBaseSummary);
+    console.log('julRevaValues:', julRevaValues);
+    console.log('julWholesaleValues:', julWholesaleValues);
+    console.log('Final calculated summary:', summary);
+  }
 
   // Debug logging for May summary calculation
   if (selectedMonth === 'May') {
@@ -2058,6 +3158,502 @@ export const useRepPerformanceData = () => {
     await debugMayData();
   };
 
+  // Add debug function for July comparison table
+  const queryJulyComparisonTable = async () => {
+    console.log('🧪 Running July comparison table query...');
+    const { queryJulyComparisonTable } = await import('@/utils/debug-july-data');
+    await queryJulyComparisonTable();
+  };
+
+  // Add function to clear July localStorage data and force recalculation
+  const clearJulyDataAndRecalculate = async () => {
+    console.log('🧹 Clearing July localStorage data and forcing recalculation...');
+    
+    // Get current localStorage data
+    const currentData = loadStoredRepPerformanceData() || {};
+    
+    // Remove all July-related data
+    delete currentData.julRepData;
+    delete currentData.julRevaData;
+    delete currentData.julWholesaleData;
+    delete currentData.julBaseSummary;
+    delete currentData.julRevaValues;
+    delete currentData.julWholesaleValues;
+    delete currentData.julyComparisonSummary;
+    delete currentData.julySummaryChanges;
+    delete currentData.julyRepChanges;
+    delete currentData.julyComparisonRetailSummary;
+    delete currentData.julyComparisonRevaSummary;
+    delete currentData.julyComparisonWholesaleSummary;
+    
+    // Save the cleaned data back to localStorage
+    saveRepPerformanceData(currentData);
+    
+    console.log('🧹 Cleared July data from localStorage');
+    
+    // Reset all July state variables to defaults
+    setJulRepData(defaultRepData);
+    setJulRevaData(defaultRevaData);
+    setJulWholesaleData(defaultWholesaleData);
+    setJulBaseSummary(defaultBaseSummary);
+    setJulRevaValues(defaultRevaValues);
+    setJulWholesaleValues(defaultWholesaleValues);
+    setJulyComparisonSummary(null);
+    setJulySummaryChanges(defaultSummaryChanges);
+    setJulyRepChanges(defaultRepChanges);
+    setJulyComparisonRetailSummary(defaultBaseSummary);
+    setJulyComparisonRevaSummary(defaultRevaValues);
+    setJulyComparisonWholesaleSummary(defaultWholesaleValues);
+    
+    console.log('🔄 Reset all July state variables to defaults');
+    
+    // Force reload July data with corrected calculations
+    await loadJulyData();
+    
+    console.log('🔄 July data reloaded with corrected calculations');
+  };
+
+  // Add comprehensive July cache clearing and refresh function
+  const clearJulyDataAndRefresh = async () => {
+    console.log('🧹 COMPREHENSIVE JULY DATA REFRESH STARTING...');
+    
+    // Step 1: Clear localStorage completely
+    const currentData = loadStoredRepPerformanceData() || {};
+    const keysToDelete = [
+      'julRepData', 'julRevaData', 'julWholesaleData', 
+      'julBaseSummary', 'julRevaValues', 'julWholesaleValues',
+      'julyComparisonSummary', 'julySummaryChanges', 'julyRepChanges',
+      'julyComparisonRetailSummary', 'julyComparisonRevaSummary', 'julyComparisonWholesaleSummary'
+    ];
+    
+    keysToDelete.forEach(key => delete currentData[key]);
+    saveRepPerformanceData(currentData);
+    console.log('🧹 Cleared all July data from localStorage');
+    
+    // Step 2: Reset all state variables to defaults
+    setJulRepData(defaultRepData);
+    setJulRevaData(defaultRevaData);
+    setJulWholesaleData(defaultWholesaleData);
+    setJulBaseSummary(defaultBaseSummary);
+    setJulRevaValues(defaultRevaValues);
+    setJulWholesaleValues(defaultWholesaleValues);
+    setJulyComparisonSummary(null);
+    setJulySummaryChanges(defaultSummaryChanges);
+    setJulyRepChanges(defaultRepChanges);
+    setJulyComparisonRetailSummary(defaultBaseSummary);
+    setJulyComparisonRevaSummary(defaultRevaValues);
+    setJulyComparisonWholesaleSummary(defaultWholesaleValues);
+    console.log('🔄 Reset all July state variables');
+    
+    // Step 3: Clear comparison summary if July is selected
+    if (selectedMonth === 'July') {
+      setComparisonSummary(null);
+      setSummaryChanges(defaultSummaryChanges);
+      setRepChanges(defaultRepChanges);
+      console.log('🔄 Cleared current comparison data for July');
+    }
+    
+    // Step 4: Force fresh data load
+    setIsLoading(true);
+    try {
+      await loadJulyData();
+      console.log('✅ July data reloaded successfully');
+      
+      // Step 5: If July is currently selected, refresh the active data
+      if (selectedMonth === 'July') {
+        // Trigger a recalculation of the combined data
+        const combinedData = getCombinedRepData(
+          julRepData,
+          julRevaData,
+          julWholesaleData,
+          includeRetail,
+          includeReva,
+          includeWholesale
+        );
+        setOverallData(combinedData);
+        console.log('🔄 Refreshed active July data');
+      }
+    } catch (error) {
+      console.error('❌ Error reloading July data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+    
+    console.log('✅ COMPREHENSIVE JULY DATA REFRESH COMPLETED');
+  };
+
+  // Add comprehensive test function for July data consistency
+  const testJulyDataConsistency = async () => {
+    console.log('🧪 TESTING JULY DATA CONSISTENCY...');
+    
+    // Test 1: Check if July data is loaded
+    console.log('📊 Test 1: July Data Loading Check');
+    console.log('July Rep Data count:', julRepData.length);
+    console.log('July REVA Data count:', julRevaData.length);
+    console.log('July Wholesale Data count:', julWholesaleData.length);
+    console.log('July Comparison Summary:', julyComparisonSummary);
+    console.log('July Rep Changes count:', Object.keys(julyRepChanges).length);
+    
+    // Test 2: Check specific rep data
+    console.log('📊 Test 2: Specific Rep Data Check');
+    const testReps = ['Michael McKay', 'Pete Dhillon', 'Stuart Geddes'];
+    testReps.forEach(repName => {
+      const repData = julRepData.find(r => r.rep === repName);
+      const repChanges = julyRepChanges[repName];
+      
+      console.log(`${repName} July data:`, {
+        found: !!repData,
+        profit: repData?.profit,
+        spend: repData?.spend,
+        changeData: repChanges,
+        profitChange: repChanges?.profit,
+        spendChange: repChanges?.spend
+      });
+    });
+    
+    // Test 3: Check if percentages are reasonable
+    console.log('📊 Test 3: Percentage Reasonableness Check');
+    const unreasonableChanges = Object.entries(julyRepChanges).filter(([repName, changes]) => {
+      return Math.abs(changes.profit) > 500 || Math.abs(changes.spend) > 500;
+    });
+    
+    if (unreasonableChanges.length > 0) {
+      console.log('⚠️ Found unreasonable percentage changes:', unreasonableChanges);
+    } else {
+      console.log('✅ All percentage changes appear reasonable');
+    }
+    
+    // Test 4: Check data consistency with June pattern
+    console.log('📊 Test 4: June vs July Pattern Consistency');
+    console.log('June Rep Changes count:', Object.keys(juneRepChanges).length);
+    console.log('July Rep Changes count:', Object.keys(julyRepChanges).length);
+    console.log('June Comparison Summary exists:', !!juneComparisonSummary);
+    console.log('July Comparison Summary exists:', !!julyComparisonSummary);
+    
+    // Test 5: Check if current month data is being used correctly
+    console.log('📊 Test 5: Current Month Data Usage Check');
+    if (selectedMonth === 'July') {
+      console.log('Current selected month is July');
+      console.log('Current repChanges being used:', Object.keys(repChanges).length);
+      console.log('July-specific repChanges available:', Object.keys(julyRepChanges).length);
+      
+      // Check if we're using July-specific data
+      const usingJulyData = Object.keys(repChanges).length === Object.keys(julyRepChanges).length;
+      console.log('Using July-specific data:', usingJulyData);
+      
+      // CRITICAL: Test if the repChanges match the July-specific ones
+      const testRepChangesMatch = testReps.every(repName => {
+        const currentChange = repChanges[repName];
+        const julyChange = julyRepChanges[repName];
+        return JSON.stringify(currentChange) === JSON.stringify(julyChange);
+      });
+      
+      console.log('Current repChanges match July-specific ones:', testRepChangesMatch);
+      
+      // Show detailed comparison for problematic reps
+      testReps.forEach(repName => {
+        console.log(`🔍 ${repName} comparison:`, {
+          current: repChanges[repName],
+          july: julyRepChanges[repName],
+          match: JSON.stringify(repChanges[repName]) === JSON.stringify(julyRepChanges[repName])
+        });
+      });
+    }
+    
+    console.log('✅ JULY DATA CONSISTENCY TEST COMPLETED');
+  };
+
+  // Add new function to verify July comparison data source
+  const verifyJulyComparisonDataSource = async () => {
+    console.log('🔍 VERIFYING JULY COMPARISON DATA SOURCE...');
+    
+    try {
+      // Check July_Data_Comparison table directly
+      const { data: julyComparisonData, error: julyComparisonError } = await supabase
+        .from('July_Data_Comparison' as any)
+        .select('*')
+        .limit(10);
+      
+      if (julyComparisonError) {
+        console.error('❌ Error fetching July_Data_Comparison:', julyComparisonError);
+        return;
+      }
+      
+      console.log('✅ July_Data_Comparison sample data:', julyComparisonData);
+      
+      // Check if our stored comparison data matches the source
+      const storedData = localStorage.getItem('repPerformanceData');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        console.log('📊 Stored July comparison summary:', parsedData.julyComparisonSummary);
+        console.log('📊 Stored July rep changes sample:', {
+          'Michael McKay': parsedData.julyRepChanges?.['Michael McKay'],
+          'Pete Dhillon': parsedData.julyRepChanges?.['Pete Dhillon'],
+          'Stuart Geddes': parsedData.julyRepChanges?.['Stuart Geddes']
+        });
+      }
+      
+      // Verify the data is from June (previous month)
+      const { data: juneData, error: juneError } = await supabase
+        .from('June_Data')
+        .select('*')
+        .limit(10);
+      
+      if (!juneError && juneData) {
+        console.log('✅ June_Data sample data:', juneData);
+        console.log('🔍 Comparing July_Data_Comparison vs June_Data structure...');
+        
+        // Compare structure
+        const julyKeys = Object.keys(julyComparisonData[0] || {});
+        const juneKeys = Object.keys(juneData[0] || {});
+        
+        console.log('July_Data_Comparison keys:', julyKeys);
+        console.log('June_Data keys:', juneKeys);
+        console.log('Keys match:', JSON.stringify(julyKeys.sort()) === JSON.stringify(juneKeys.sort()));
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in verifyJulyComparisonDataSource:', error);
+    }
+  };
+
+  // NEW: Proper July comparison data loading function
+  const loadJulyComparisonDataProperly = async () => {
+    console.log('🆕 JULY REBUILD: Loading July comparison data properly...');
+    
+    try {
+      // Step 1: Fetch current July data from July_Data table WITH PAGINATION
+      console.log('📊 Step 1: Fetching current July data with pagination...');
+      
+      // Get count first
+      const { count: julyCurrentCount, error: julyCurrentCountError } = await supabase
+        .from('July_Data' as any)
+        .select('*', { count: 'exact', head: true });
+        
+      if (julyCurrentCountError) {
+        console.error('❌ Error getting July current count:', julyCurrentCountError);
+        return false;
+      }
+      
+      console.log(`📊 Found ${julyCurrentCount || 0} total July current records`);
+      
+      // Paginate through all current records
+      let julyCurrentData = [];
+      const pageSize = 1000;
+      const currentPages = Math.ceil((julyCurrentCount || 0) / pageSize);
+      
+      for (let page = 0; page < currentPages; page++) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('July_Data' as any)
+          .select('*')
+          .range(from, to);
+        
+        if (pageError) {
+          console.error(`❌ Error fetching July current page ${page}:`, pageError);
+          return false;
+        }
+        
+        if (pageData) {
+          julyCurrentData = [...julyCurrentData, ...pageData];
+        }
+        
+        console.log(`📊 Fetched July current page ${page + 1}/${currentPages} with ${pageData?.length || 0} records`);
+      }
+      
+      console.log('✅ July current data fetched with pagination:', julyCurrentData.length, 'total records');
+      
+      // Step 2: Fetch comparison data from July_Data_Comparison table WITH PAGINATION
+      console.log('📊 Step 2: Fetching July comparison data with pagination...');
+      
+      // Get comparison count first
+      const { count: julyComparisonCount, error: julyComparisonCountError } = await supabase
+        .from('July_Data_Comparison' as any)
+        .select('*', { count: 'exact', head: true });
+        
+      if (julyComparisonCountError) {
+        console.error('❌ Error getting July comparison count:', julyComparisonCountError);
+        return false;
+      }
+      
+      console.log(`📊 Found ${julyComparisonCount || 0} total July comparison records`);
+      
+      // Paginate through all comparison records
+      let julyComparisonData = [];
+      const comparisonPages = Math.ceil((julyComparisonCount || 0) / pageSize);
+      
+      for (let page = 0; page < comparisonPages; page++) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        
+        const { data: pageData, error: pageError } = await supabase
+          .from('July_Data_Comparison' as any)
+          .select('*')
+          .range(from, to);
+        
+        if (pageError) {
+          console.error(`❌ Error fetching July comparison page ${page}:`, pageError);
+          return false;
+        }
+        
+        if (pageData) {
+          julyComparisonData = [...julyComparisonData, ...pageData];
+        }
+        
+        console.log(`📊 Fetched July comparison page ${page + 1}/${comparisonPages} with ${pageData?.length || 0} records`);
+      }
+      
+      console.log('✅ July comparison data fetched with pagination:', julyComparisonData.length, 'total records');
+      
+      // Step 3: Transform and process both datasets using the same logic
+      const transformData = (data: any[], isDepartmentData = false) => {
+        const repMap = new Map<string, {
+          rep: string;
+          spend: number;
+          profit: number;
+          packs: number;
+          activeAccounts: Set<string>;
+          totalAccounts: Set<string>;
+        }>();
+        
+        data.forEach(item => {
+          let repName;
+          
+          if (isDepartmentData && item['Sub-Rep'] && item['Sub-Rep'].trim() !== '') {
+            repName = item['Sub-Rep'];
+          } else if (item.Rep === 'REVA' || item.Rep === 'Wholesale' || item.Rep === 'WHOLESALE') {
+            return;
+          } else {
+            repName = item.Rep;
+          }
+          
+          if (!repName) return;
+          
+          if (!repMap.has(repName)) {
+            repMap.set(repName, {
+              rep: repName,
+              spend: 0,
+              profit: 0,
+              packs: 0,
+              activeAccounts: new Set(),
+              totalAccounts: new Set()
+            });
+          }
+          
+          const currentRep = repMap.get(repName)!;
+          
+          const spend = typeof item.Spend === 'string' ? parseFloat(item.Spend) : Number(item.Spend || 0);
+          const profit = typeof item.Profit === 'string' ? parseFloat(item.Profit) : Number(item.Profit || 0);
+          const packs = typeof item.Packs === 'string' ? parseInt(item.Packs as string) : Number(item.Packs || 0);
+          
+          currentRep.spend += spend;
+          currentRep.profit += profit;
+          currentRep.packs += packs;
+          
+          if (item["Account Ref"]) {
+            currentRep.totalAccounts.add(item["Account Ref"]);
+            if (spend > 0) {
+              currentRep.activeAccounts.add(item["Account Ref"]);
+            }
+          }
+        });
+        
+        return Array.from(repMap.values()).map(rep => {
+          const margin = rep.spend > 0 ? (rep.profit / rep.spend) * 100 : 0;
+          
+          return {
+            rep: rep.rep,
+            spend: rep.spend,
+            profit: rep.profit,
+            margin: margin,
+            packs: rep.packs,
+            activeAccounts: rep.activeAccounts.size,
+            totalAccounts: rep.totalAccounts.size,
+            profitPerActiveShop: rep.activeAccounts.size > 0 ? rep.profit / rep.activeAccounts.size : 0,
+            profitPerPack: rep.packs > 0 ? rep.profit / rep.packs : 0,
+            activeRatio: rep.totalAccounts.size > 0 ? (rep.activeAccounts.size / rep.totalAccounts.size) * 100 : 0
+          };
+        });
+      };
+      
+      // Step 4: Process current July data
+      const julyRetailCurrent = julyCurrentData?.filter((item: any) => item.Department === 'RETAIL') || [];
+      const processedJulyCurrentRetail = transformData(julyRetailCurrent, false);
+      
+      // Step 5: Process comparison data (June from July_Data_Comparison)
+      const julyRetailComparison = julyComparisonData?.filter((item: any) => item.Department === 'RETAIL') || [];
+      const processedJulyComparisonRetail = transformData(julyRetailComparison, false);
+      
+      // Step 6: Calculate proper rep changes
+      const calculateProperRepChanges = (currentData: any[], comparisonData: any[]) => {
+        const changes: any = {};
+        
+        currentData.forEach(currentRep => {
+          const comparisonRep = comparisonData.find(r => r.rep === currentRep.rep);
+          
+          if (comparisonRep) {
+            // Calculate percentage changes properly
+            changes[currentRep.rep] = {
+              profit: comparisonRep.profit > 0 ? 
+                ((currentRep.profit - comparisonRep.profit) / comparisonRep.profit) * 100 : 0,
+              spend: comparisonRep.spend > 0 ? 
+                ((currentRep.spend - comparisonRep.spend) / comparisonRep.spend) * 100 : 0,
+              margin: currentRep.margin - comparisonRep.margin, // Direct difference for margin
+              packs: comparisonRep.packs > 0 ? 
+                ((currentRep.packs - comparisonRep.packs) / comparisonRep.packs) * 100 : 0,
+              activeAccounts: comparisonRep.activeAccounts > 0 ? 
+                ((currentRep.activeAccounts - comparisonRep.activeAccounts) / comparisonRep.activeAccounts) * 100 : 0,
+              totalAccounts: comparisonRep.totalAccounts > 0 ? 
+                ((currentRep.totalAccounts - comparisonRep.totalAccounts) / comparisonRep.totalAccounts) * 100 : 0
+            };
+            
+            // Debug logging for specific reps
+            const problematicReps = ['Michael McKay', 'Pete Dhillon', 'Stuart Geddes'];
+            if (problematicReps.includes(currentRep.rep)) {
+              console.log(`🔍 ${currentRep.rep} calculation:`, {
+                current: { profit: currentRep.profit, spend: currentRep.spend },
+                comparison: { profit: comparisonRep.profit, spend: comparisonRep.spend },
+                changes: changes[currentRep.rep]
+              });
+            }
+          }
+        });
+        
+        return changes;
+      };
+      
+      // Step 7: Calculate rep changes
+      const properJulyRepChanges = calculateProperRepChanges(
+        processedJulyCurrentRetail, 
+        processedJulyComparisonRetail
+      );
+      
+      console.log('✅ Proper July rep changes calculated for', Object.keys(properJulyRepChanges).length, 'reps');
+      
+      // Step 8: Store the results (but don't apply them yet - we'll do this manually)
+      console.log('📊 Proper July comparison data ready');
+      console.log('Sample proper changes:', {
+        'Michael McKay': properJulyRepChanges['Michael McKay'],
+        'Pete Dhillon': properJulyRepChanges['Pete Dhillon'],
+        'Stuart Geddes': properJulyRepChanges['Stuart Geddes']
+      });
+      
+      return {
+        currentData: processedJulyCurrentRetail,
+        comparisonData: processedJulyComparisonRetail,
+        repChanges: properJulyRepChanges
+      };
+      
+    } catch (error) {
+      console.error('❌ Error in loadJulyComparisonDataProperly:', error);
+      return false;
+    }
+  };
+
+
+
   return {
     includeRetail,
     setIncludeRetail,
@@ -2093,9 +3689,26 @@ export const useRepPerformanceData = () => {
     junBaseSummary,
     junRevaValues,
     junWholesaleValues,
+    jun2BaseSummary,
+    jun2RevaValues,
+    jun2WholesaleValues,
+    julBaseSummary,
+    julRevaValues,
+    julWholesaleValues,
     comparisonSummary,
     debugJuneData,
     debugMayDataTable,
+    debugJulyComparisonData,
+    queryJulyComparisonTable,
     juneRepChanges,
+    june2RepChanges,
+    june2SummaryChanges,
+    june2ComparisonSummary,
+    julyRepChanges,
+    clearJulyDataAndRecalculate,
+    clearJulyDataAndRefresh,
+    testJulyDataConsistency,
+          verifyJulyComparisonDataSource,
+      loadJulyComparisonDataProperly
   };
 };

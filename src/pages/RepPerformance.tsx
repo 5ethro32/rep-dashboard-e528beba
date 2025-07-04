@@ -59,10 +59,26 @@ const RepPerformance = () => {
     junBaseSummary,
     junRevaValues,
     junWholesaleValues,
+    jun2BaseSummary,
+    jun2RevaValues,
+    jun2WholesaleValues,
+    julBaseSummary,
+    julRevaValues,
+    julWholesaleValues,
     comparisonSummary,
     debugJuneData,
     debugMayDataTable,
-    juneRepChanges
+    queryJulyComparisonTable,
+    juneRepChanges,
+    june2RepChanges,
+    june2SummaryChanges,
+    june2ComparisonSummary,
+    julyRepChanges,
+    clearJulyDataAndRecalculate,
+    clearJulyDataAndRefresh,
+    testJulyDataConsistency,
+    verifyJulyComparisonDataSource,
+    loadJulyComparisonDataProperly
   } = useRepPerformanceData();
 
   // Clear auto-refreshed status after a delay
@@ -115,18 +131,19 @@ const RepPerformance = () => {
       window.repPerformanceRefresh = handleRefresh;
       
       // Also expose rep changes data for the announcement banner
-      // Use June-specific rep changes when June is selected for accurate comparison data
-      const monthSpecificRepChanges = selectedMonth === 'June' ? juneRepChanges : repChanges;
+      // Use month-specific rep changes when June or July is selected for accurate comparison data
+      const monthSpecificRepChanges = selectedMonth === 'June' ? juneRepChanges : selectedMonth === 'June 2' ? june2RepChanges : selectedMonth === 'July' ? julyRepChanges : repChanges;
       
       console.log('Exposing rep changes data for announcement banner:', {
         selectedMonth,
         usingJuneSpecificData: selectedMonth === 'June',
+        usingJulySpecificData: selectedMonth === 'July',
         repChangesCount: Object.keys(monthSpecificRepChanges).length
       });
       
       // Add specific debugging for Michael McKay
       if (selectedMonth === 'June') {
-        console.log('🔍 MICHAEL MCKAY DEBUGGING:');
+        console.log('🔍 MICHAEL MCKAY DEBUGGING (JUNE):');
         console.log('June rep changes data for Michael McKay:', juneRepChanges['Michael McKay']);
         console.log('Regular rep changes data for Michael McKay:', repChanges['Michael McKay']);
         console.log('Full juneRepChanges object keys:', Object.keys(juneRepChanges));
@@ -142,10 +159,35 @@ const RepPerformance = () => {
         console.log('Actual data being exposed to announcement banner:', actualDataToUse['Michael McKay']);
       }
       
+      if (selectedMonth === 'July') {
+        console.log('🔍 MICHAEL MCKAY DEBUGGING (JULY):');
+        console.log('July rep changes data for Michael McKay:', julyRepChanges['Michael McKay']);
+        console.log('Regular rep changes data for Michael McKay:', repChanges['Michael McKay']);
+        console.log('Full julyRepChanges object keys:', Object.keys(julyRepChanges));
+        console.log('Full repChanges object keys:', Object.keys(repChanges));
+        
+        // Check if we're using default data
+        if (Object.keys(julyRepChanges).length === 0) {
+          console.log('⚠️ WARNING: julyRepChanges is empty! This might cause fallback to default data.');
+        }
+        
+        // Show what data is actually being passed to announcement banner
+        const actualDataToUse = Object.keys(monthSpecificRepChanges).length > 0 ? monthSpecificRepChanges : repChanges;
+        console.log('Actual data being exposed to announcement banner:', actualDataToUse['Michael McKay']);
+      }
+      
       window.repPerformanceData = {
         repChanges: monthSpecificRepChanges,
         selectedMonth: selectedMonth
       };
+      
+      // Expose debug functions for July investigation
+      window.queryJulyComparisonTable = queryJulyComparisonTable;
+      window.clearJulyDataAndRecalculate = clearJulyDataAndRecalculate;
+      window.clearJulyDataAndRefresh = clearJulyDataAndRefresh;
+      window.testJulyDataConsistency = testJulyDataConsistency;
+      window.verifyJulyComparisonDataSource = verifyJulyComparisonDataSource;
+      window.loadJulyComparisonDataProperly = loadJulyComparisonDataProperly;
     }
     return () => {
       // Cleanup when component unmounts
@@ -157,7 +199,7 @@ const RepPerformance = () => {
         delete window.repPerformanceData;
       }
     };
-  }, [location.pathname, selectedMonth, repChanges, juneRepChanges, handleRefresh]); // Add handleRefresh to dependencies and make sure we update whenever data changes
+  }, [location.pathname, selectedMonth, repChanges, juneRepChanges, julyRepChanges, handleRefresh]); // Add handleRefresh to dependencies and make sure we update whenever data changes
 
   const activeData = getActiveData('overall');
 
@@ -167,14 +209,18 @@ const RepPerformance = () => {
   const filteredAprSummary: SummaryData = calculateSummary(aprBaseSummary, aprRevaValues, aprWholesaleValues, includeRetail, includeReva, includeWholesale);
   const filteredMaySummary: SummaryData = calculateSummary(mayBaseSummary, mayRevaValues, mayWholesaleValues, includeRetail, includeReva, includeWholesale);
   const filteredJunSummary: SummaryData = calculateSummary(junBaseSummary, junRevaValues, junWholesaleValues, includeRetail, includeReva, includeWholesale);
+  const filteredJun2Summary: SummaryData = calculateSummary(jun2BaseSummary, jun2RevaValues, jun2WholesaleValues, includeRetail, includeReva, includeWholesale);
+  const filteredJulSummary: SummaryData = calculateSummary(julBaseSummary, julRevaValues, julWholesaleValues, includeRetail, includeReva, includeWholesale);
 
   // Create the rep data object for the chart with month-specific data
   const repData = {
-          february: getActiveData('rep', 'February'),
+      february: getActiveData('rep', 'February'),
       march: getActiveData('rep', 'March'),
       april: getActiveData('rep', 'April'),
       may: getActiveData('rep', 'May'),
-      june: getActiveData('rep', 'June')
+      june: getActiveData('rep', 'June'),
+      june2: getActiveData('rep', 'June 2'),
+      july: getActiveData('rep', 'July')
   };
 
   // Add debugging logs to verify we're getting different data for each month
@@ -237,6 +283,7 @@ const RepPerformance = () => {
           aprilSummary={filteredAprSummary} 
           maySummary={filteredMaySummary} 
           juneSummary={filteredJunSummary}
+          julySummary={filteredJulSummary}
           isLoading={isLoading} 
           repDataProp={repData} 
           includeRetail={includeRetail} 
@@ -265,7 +312,7 @@ const RepPerformance = () => {
         sortBy={sortBy} 
         sortOrder={sortOrder} 
         handleSort={handleSort} 
-        repChanges={repChanges} 
+        repChanges={selectedMonth === 'June' ? juneRepChanges : selectedMonth === 'June 2' ? june2RepChanges : repChanges} 
         formatCurrency={formatCurrency} 
         formatPercent={formatPercent} 
         formatNumber={formatNumber} 
@@ -280,9 +327,9 @@ const RepPerformance = () => {
         includeRetail={includeRetail} 
         includeReva={includeReva} 
         includeWholesale={includeWholesale} 
-        baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : selectedMonth === 'May' ? mayBaseSummary : selectedMonth === 'June' ? junBaseSummary : baseSummary} 
-        revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : selectedMonth === 'May' ? mayRevaValues : selectedMonth === 'June' ? junRevaValues : revaValues} 
-        wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : selectedMonth === 'May' ? mayWholesaleValues : selectedMonth === 'June' ? junWholesaleValues : wholesaleValues} 
+        baseSummary={selectedMonth === 'March' ? baseSummary : selectedMonth === 'February' ? febBaseSummary : selectedMonth === 'April' ? aprBaseSummary : selectedMonth === 'May' ? mayBaseSummary : selectedMonth === 'June' ? junBaseSummary : selectedMonth === 'June 2' ? jun2BaseSummary : selectedMonth === 'July' ? julBaseSummary : baseSummary} 
+        revaValues={selectedMonth === 'March' ? revaValues : selectedMonth === 'February' ? febRevaValues : selectedMonth === 'April' ? aprRevaValues : selectedMonth === 'May' ? mayRevaValues : selectedMonth === 'June' ? junRevaValues : selectedMonth === 'June 2' ? jun2RevaValues : selectedMonth === 'July' ? julRevaValues : revaValues} 
+        wholesaleValues={selectedMonth === 'March' ? wholesaleValues : selectedMonth === 'February' ? febWholesaleValues : selectedMonth === 'April' ? aprWholesaleValues : selectedMonth === 'May' ? mayWholesaleValues : selectedMonth === 'June' ? junWholesaleValues : selectedMonth === 'June 2' ? jun2WholesaleValues : selectedMonth === 'July' ? julWholesaleValues : wholesaleValues} 
       />
     </div>
   );
@@ -296,6 +343,12 @@ declare global {
       repChanges: any;
       selectedMonth: string;
     };
+    queryJulyComparisonTable?: () => Promise<void>;
+    clearJulyDataAndRecalculate?: () => Promise<void>;
+    clearJulyDataAndRefresh?: () => Promise<void>;
+    testJulyDataConsistency?: () => Promise<void>;
+    verifyJulyComparisonDataSource?: () => Promise<void>;
+    loadJulyComparisonDataProperly?: () => Promise<any>;
   }
 }
 

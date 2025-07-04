@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Loader2, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import {
   Table,
@@ -28,9 +28,10 @@ interface PerformanceTableProps {
   isLoading?: boolean;
   getFebValue: (repName: string, metricType: string, currentValue: number, changePercent: number) => string;
   showChangeIndicators?: boolean;
+  selectedMonth?: string;
 }
 
-const PerformanceTable: React.FC<PerformanceTableProps> = ({
+  const PerformanceTable: React.FC<PerformanceTableProps> = ({
   displayData,
   repChanges,
   sortBy,
@@ -42,11 +43,76 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
   renderChangeIndicator,
   isLoading,
   getFebValue,
-  showChangeIndicators = true
+  showChangeIndicators = true,
+  selectedMonth
 }) => {
+  
+  // Disable comparison indicators for July as a quick fix for inflated comparison data
+  const shouldShowChangeIndicators = showChangeIndicators && selectedMonth !== 'July';
+  
+  // Add debugging for July rep changes
+  useEffect(() => {
+    // Check if we're likely on July (look for inflated values)
+    const problematicReps = ['Michael McKay', 'Pete Dhillon', 'Stuart Geddes'];
+    const hasInflatedValues = problematicReps.some(repName => {
+      const change = repChanges[repName];
+      return change && (Math.abs(change.profit) > 1000 || Math.abs(change.spend) > 1000);
+    });
+    
+    if (hasInflatedValues || Object.keys(repChanges).length > 0) {
+      console.log('🔍 PERFORMANCE TABLE DEBUG:');
+      console.log('Total rep changes received:', Object.keys(repChanges).length);
+      console.log('Full repChanges object:', repChanges);
+      
+      problematicReps.forEach(repName => {
+        if (repChanges[repName]) {
+          console.log(`🔍 ${repName} rep changes in table:`, repChanges[repName]);
+        }
+      });
+      
+      // Check if we have inflated values
+      if (hasInflatedValues) {
+        console.log('⚠️ DETECTED INFLATED VALUES IN TABLE - investigating...');
+        
+        // Log sample calculations
+        problematicReps.forEach(repName => {
+          const repData = displayData.find(r => r.rep === repName);
+          const change = repChanges[repName];
+          if (repData && change) {
+            console.log(`🧮 ${repName} calculation check:`, {
+              currentProfit: repData.profit,
+              changePercent: change.profit,
+              calculatedPreviousProfit: repData.profit / (1 + (change.profit || 0) / 100),
+              changeSpend: change.spend,
+              currentSpend: repData.spend,
+              calculatedPreviousSpend: repData.spend / (1 + (change.spend || 0) / 100)
+            });
+          }
+        });
+      } else {
+        // Log normal values for July debugging
+        console.log('✅ Normal values detected in table');
+        problematicReps.forEach(repName => {
+          const repData = displayData.find(r => r.rep === repName);
+          const change = repChanges[repName];
+          if (repData && change) {
+            console.log(`✅ ${repName} normal calculation:`, {
+              currentProfit: repData.profit,
+              changePercent: change.profit,
+              calculatedPreviousProfit: repData.profit / (1 + (change.profit || 0) / 100),
+              changeSpend: change.spend,
+              currentSpend: repData.spend,
+              calculatedPreviousSpend: repData.spend / (1 + (change.spend || 0) / 100)
+            });
+          }
+        });
+      }
+    }
+  }, [repChanges, displayData]);
+
   // Calculate the previous month's ranking based on the same sort criteria
   const prevRankings = useMemo(() => {
-    if (!displayData.length || !showChangeIndicators) return {};
+    if (!displayData.length || !shouldShowChangeIndicators) return {};
     
     // Deep clone the data to avoid mutation
     const clonedData = JSON.parse(JSON.stringify(displayData));
@@ -77,7 +143,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
       acc[item.rep] = index + 1;
       return acc;
     }, {});
-  }, [displayData, repChanges, sortBy, sortOrder, showChangeIndicators]);
+  }, [displayData, repChanges, sortBy, sortOrder, shouldShowChangeIndicators]);
   
   return (
     <div className="overflow-x-auto w-full -mx-3 md:mx-0">
@@ -148,7 +214,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                     <TableCell className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap text-xs md:text-sm font-medium sticky left-0 z-10 bg-gray-900/90 backdrop-blur-sm border-r border-white/5">
                       <div className="flex items-center">
                         <span>{item.rep}</span>
-                        {showChangeIndicators && rankChange !== 0 ? (
+                        {shouldShowChangeIndicators && rankChange !== 0 ? (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -169,7 +235,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                        ) : showChangeIndicators ? (
+                        ) : shouldShowChangeIndicators ? (
                           <span className="ml-1.5 font-bold text-finance-gray">
                             <Minus className="h-4 w-4" />
                           </span>
@@ -182,14 +248,14 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           <TooltipTrigger asChild>
                             <div className="flex items-center">
                               {formatCurrency(item.spend)}
-                              {showChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].spend) >= 0.1 ? (
+                              {shouldShowChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].spend) >= 0.1 ? (
                                 <div className="flex items-center ml-1">
                                   {renderChangeIndicator(repChanges[item.rep].spend, 'small')}
                                   <span className="text-2xs ml-1 text-finance-gray">
                                     {formatCurrency(item.spend / (1 + (repChanges[item.rep]?.spend || 0) / 100), 0)}
                                   </span>
                                 </div>
-                              ) : showChangeIndicators ? (
+                              ) : shouldShowChangeIndicators ? (
                                 <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                   <Minus className="h-4 w-4" />
                                 </span>
@@ -198,7 +264,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-white/10 text-white">
                             <p>
-                              {showChangeIndicators ? (
+                              {shouldShowChangeIndicators ? (
                                 <>
                                   Previous: {formatCurrency(item.spend / (1 + (repChanges[item.rep]?.spend || 0) / 100))}
                                   {repChanges[item.rep]?.spend ? ` (${repChanges[item.rep].spend > 0 ? '+' : ''}${repChanges[item.rep].spend.toFixed(1)}%)` : ''}
@@ -215,14 +281,14 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           <TooltipTrigger asChild>
                             <div className="flex items-center">
                               {formatCurrency(item.profit)}
-                              {showChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].profit) >= 0.1 ? (
+                              {shouldShowChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].profit) >= 0.1 ? (
                                 <div className="flex items-center ml-1">
                                   {renderChangeIndicator(repChanges[item.rep].profit, 'small')}
                                   <span className="text-2xs ml-1 text-finance-gray">
                                     {formatCurrency(item.profit / (1 + (repChanges[item.rep]?.profit || 0) / 100), 0)}
                                   </span>
                                 </div>
-                              ) : showChangeIndicators ? (
+                              ) : shouldShowChangeIndicators ? (
                                 <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                   <Minus className="h-4 w-4" />
                                 </span>
@@ -231,7 +297,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-white/10 text-white">
                             <p>
-                              {showChangeIndicators ? (
+                              {shouldShowChangeIndicators ? (
                                 <>
                                   Previous: {formatCurrency(item.profit / (1 + (repChanges[item.rep]?.profit || 0) / 100))}
                                   {repChanges[item.rep]?.profit ? ` (${repChanges[item.rep].profit > 0 ? '+' : ''}${repChanges[item.rep].profit.toFixed(1)}%)` : ''}
@@ -248,14 +314,14 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           <TooltipTrigger asChild>
                             <div className="flex items-center">
                               {formatPercent(item.margin)}
-                              {showChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].margin) >= 0.1 ? (
+                              {shouldShowChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].margin) >= 0.1 ? (
                                 <div className="flex items-center ml-1">
                                   {renderChangeIndicator(repChanges[item.rep].margin, 'small')}
                                   <span className="text-2xs ml-1 text-finance-gray">
                                     {formatPercent(item.margin - (repChanges[item.rep]?.margin || 0))}
                                   </span>
                                 </div>
-                              ) : showChangeIndicators ? (
+                              ) : shouldShowChangeIndicators ? (
                                 <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                   <Minus className="h-4 w-4" />
                                 </span>
@@ -264,7 +330,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-white/10 text-white">
                             <p>
-                              {showChangeIndicators ? (
+                              {shouldShowChangeIndicators ? (
                                 <>
                                   Previous: {formatPercent(item.margin - (repChanges[item.rep]?.margin || 0))}
                                   {repChanges[item.rep]?.margin ? ` (${repChanges[item.rep].margin > 0 ? '+' : ''}${repChanges[item.rep].margin.toFixed(1)}%)` : ''}
@@ -283,7 +349,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                               <span className="text-emerald-500">{formatNumber(item.activeAccounts)}</span>
                               <span className="text-finance-gray mx-1"> / </span>
                               <span>{formatNumber(item.totalAccounts)}</span>
-                              {showChangeIndicators && (
+                              {shouldShowChangeIndicators && (
                                 accountsMatch ? (
                                   <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                     <Minus className="h-4 w-4" />
@@ -307,7 +373,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-white/10 text-white">
                             <p>
-                              {showChangeIndicators ? (
+                              {shouldShowChangeIndicators ? (
                                 <>
                                   Previous: {formatNumber(Math.round(item.activeAccounts / (1 + (repChanges[item.rep]?.activeAccounts || 0) / 100)))}
                                   {repChanges[item.rep]?.activeAccounts ? ` (${repChanges[item.rep].activeAccounts > 0 ? '+' : ''}${repChanges[item.rep].activeAccounts.toFixed(1)}%)` : ''}
@@ -324,14 +390,14 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           <TooltipTrigger asChild>
                             <div className="flex items-center">
                               {formatNumber(item.packs)}
-                              {showChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].packs) >= 0.1 ? (
+                              {shouldShowChangeIndicators && repChanges[item.rep] && Math.abs(repChanges[item.rep].packs) >= 0.1 ? (
                                 <div className="flex items-center ml-1">
                                   {renderChangeIndicator(repChanges[item.rep].packs, 'small')}
                                   <span className="text-2xs ml-1 text-finance-gray">
                                     {formatNumber(Math.round(item.packs / (1 + (repChanges[item.rep]?.packs || 0) / 100)))}
                                   </span>
                                 </div>
-                              ) : showChangeIndicators ? (
+                              ) : shouldShowChangeIndicators ? (
                                 <span className="inline-flex items-center ml-1 text-finance-gray font-bold">
                                   <Minus className="h-4 w-4" />
                                 </span>
@@ -340,7 +406,7 @@ const PerformanceTable: React.FC<PerformanceTableProps> = ({
                           </TooltipTrigger>
                           <TooltipContent className="bg-gray-800 border-white/10 text-white">
                             <p>
-                              {showChangeIndicators ? (
+                              {shouldShowChangeIndicators ? (
                                 <>
                                   Previous: {formatNumber(Math.round(item.packs / (1 + (repChanges[item.rep]?.packs || 0) / 100)))}
                                   {repChanges[item.rep]?.packs ? ` (${repChanges[item.rep].packs > 0 ? '+' : ''}${repChanges[item.rep].packs.toFixed(1)}%)` : ''}
