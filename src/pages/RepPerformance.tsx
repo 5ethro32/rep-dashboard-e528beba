@@ -132,7 +132,7 @@ const RepPerformance = () => {
       
       // Also expose rep changes data for the announcement banner
       // Use month-specific rep changes when June or July is selected for accurate comparison data
-      const monthSpecificRepChanges = selectedMonth === 'June' ? juneRepChanges : selectedMonth === 'June 2' ? june2RepChanges : selectedMonth === 'July' ? julyRepChanges : repChanges;
+      const monthSpecificRepChanges = selectedMonth === 'June' ? juneRepChanges : (selectedMonth === 'June 2' || selectedMonth === 'July MTD') ? june2RepChanges : selectedMonth === 'July' ? julyRepChanges : repChanges;
       
       console.log('Exposing rep changes data for announcement banner:', {
         selectedMonth,
@@ -312,7 +312,7 @@ const RepPerformance = () => {
         sortBy={sortBy} 
         sortOrder={sortOrder} 
         handleSort={handleSort} 
-        repChanges={selectedMonth === 'June' ? juneRepChanges : selectedMonth === 'June 2' ? june2RepChanges : repChanges} 
+        repChanges={selectedMonth === 'June' ? juneRepChanges : (selectedMonth === 'June 2' || selectedMonth === 'July MTD') ? june2RepChanges : repChanges} 
         formatCurrency={formatCurrency} 
         formatPercent={formatPercent} 
         formatNumber={formatNumber} 

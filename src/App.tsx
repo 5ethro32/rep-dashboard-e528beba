@@ -35,7 +35,7 @@ const AppLayoutWrapper = () => {
   const location = useLocation();
   const [selectedUserId, setSelectedUserId] = useState<string | null>("all");
   const [selectedUserName, setSelectedUserName] = useState<string>("All Data");
-  const [selectedMonth, setSelectedMonth] = useState<string>("July");
+  const [selectedMonth, setSelectedMonth] = useState<string>("July MTD");
   const [isLoading, setIsLoading] = useState(false);
   
   // Handle user selection that gets passed to the header

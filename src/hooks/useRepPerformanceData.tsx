@@ -27,7 +27,7 @@ export const useRepPerformanceData = () => {
   const [sortBy, setSortBy] = useState('profit');
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState('July');
+  const [selectedMonth, setSelectedMonth] = useState('July MTD');
   
   const [overallData, setOverallData] = useState(defaultOverallData);
   const [repData, setRepData] = useState(defaultRepData);
@@ -262,7 +262,7 @@ export const useRepPerformanceData = () => {
       currentRepData = junRepData;
       currentRevaData = junRevaData;
       currentWholesaleData = junWholesaleData;
-    } else if (selectedMonth === 'June 2') {
+    } else if (selectedMonth === 'June 2' || selectedMonth === 'July MTD') {
       currentRepData = jun2RepData;
       currentRevaData = jun2RevaData;
       currentWholesaleData = jun2WholesaleData;
@@ -388,7 +388,7 @@ export const useRepPerformanceData = () => {
       
       // Clear comparison summary for March (it doesn't use comparisonSummary like June)
       setComparisonSummary(null);
-          } else if (selectedMonth === 'April' || selectedMonth === 'May' || selectedMonth === 'June' || selectedMonth === 'June 2' || selectedMonth === 'July') {
+          } else if (selectedMonth === 'April' || selectedMonth === 'May' || selectedMonth === 'June' || selectedMonth === 'June 2' || selectedMonth === 'July MTD' || selectedMonth === 'July') {
       if (repChanges) {
         setRepChanges(repChanges);
       }
@@ -487,7 +487,7 @@ export const useRepPerformanceData = () => {
         // Rep changes should also be filtered, but this is more complex
         // For now, use the stored rep changes
         setRepChanges(juneRepChanges);
-      } else if (selectedMonth === 'June 2' && june2ComparisonSummary) {
+      } else if ((selectedMonth === 'June 2' || selectedMonth === 'July MTD') && june2ComparisonSummary) {
         console.log('Recalculating June 2 comparison data based on toggles:', { includeRetail, includeReva, includeWholesale });
         
         // Use stored June 2 department summaries from state (EXACTLY like June)
@@ -1575,8 +1575,8 @@ export const useRepPerformanceData = () => {
       setJune2ComparisonWholesaleSummary(comparisonWholesaleSummary);
       console.log('Stored June 2 comparison department summaries for toggle filtering');
       
-      // Update the state if June 2 is currently selected
-      if (selectedMonth === 'June 2') {
+      // Update the state if June 2 or July MTD is currently selected
+      if (selectedMonth === 'June 2' || selectedMonth === 'July MTD') {
         console.log('June 2 is currently selected - setting active data');
         setSummaryChanges(june2SummaryChanges);
         setComparisonSummary(comparisonSummary);
@@ -2830,7 +2830,7 @@ export const useRepPerformanceData = () => {
         return await loadMayData();
       } else if (selectedMonth === 'June') {
         return await loadJuneData();
-      } else if (selectedMonth === 'June 2') {
+      } else if (selectedMonth === 'June 2' || selectedMonth === 'July MTD') {
         return await loadJune2Data();
       } else if (selectedMonth === 'July') {
         return await loadJulyData();
@@ -2960,7 +2960,7 @@ export const useRepPerformanceData = () => {
         await loadMayData();
       } else if (selectedMonth === 'June') {
         await loadJuneData();
-      } else if (selectedMonth === 'June 2') {
+      } else if (selectedMonth === 'June 2' || selectedMonth === 'July MTD') {
         await loadJune2Data();
       } else if (selectedMonth === 'July') {
         await loadJulyData();
@@ -3007,7 +3007,7 @@ export const useRepPerformanceData = () => {
       currentRepData = junRepData;
       currentRevaData = junRevaData;
       currentWholesaleData = junWholesaleData;
-    } else if (monthToUse === 'June 2') {
+    } else if (monthToUse === 'June 2' || monthToUse === 'July MTD') {
       currentRepData = jun2RepData;
       currentRevaData = jun2RevaData;
       currentWholesaleData = jun2WholesaleData;
@@ -3081,7 +3081,7 @@ export const useRepPerformanceData = () => {
     selectedMonth === 'April' ? aprBaseSummary : 
     selectedMonth === 'May' ? mayBaseSummary : 
     selectedMonth === 'June' ? junBaseSummary : 
-    selectedMonth === 'June 2' ? jun2BaseSummary : 
+    (selectedMonth === 'June 2' || selectedMonth === 'July MTD') ? jun2BaseSummary : 
     selectedMonth === 'July' ? julBaseSummary : baseSummary,
     
     selectedMonth === 'March' ? revaValues : 
@@ -3089,7 +3089,7 @@ export const useRepPerformanceData = () => {
     selectedMonth === 'April' ? aprRevaValues : 
     selectedMonth === 'May' ? mayRevaValues : 
     selectedMonth === 'June' ? junRevaValues : 
-    selectedMonth === 'June 2' ? jun2RevaValues : 
+    (selectedMonth === 'June 2' || selectedMonth === 'July MTD') ? jun2RevaValues : 
     selectedMonth === 'July' ? julRevaValues : revaValues,
     
     selectedMonth === 'March' ? wholesaleValues : 
@@ -3097,7 +3097,7 @@ export const useRepPerformanceData = () => {
     selectedMonth === 'April' ? aprWholesaleValues : 
     selectedMonth === 'May' ? mayWholesaleValues : 
     selectedMonth === 'June' ? junWholesaleValues : 
-    selectedMonth === 'June 2' ? jun2WholesaleValues : 
+    (selectedMonth === 'June 2' || selectedMonth === 'July MTD') ? jun2WholesaleValues : 
     selectedMonth === 'July' ? julWholesaleValues : wholesaleValues,
     
     includeRetail,

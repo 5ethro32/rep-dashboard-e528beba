@@ -29,7 +29,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
   selectedUserName: propSelectedUserName 
 }) => {
   const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState<string>('July');
+  const [selectedMonth, setSelectedMonth] = useState<string>('July MTD');
   
   // Set dynamic page title
   usePageTitle();

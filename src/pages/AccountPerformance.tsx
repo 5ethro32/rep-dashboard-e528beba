@@ -38,7 +38,7 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
   selectedUserId: propSelectedUserId, 
   selectedUserName: propSelectedUserName 
 }) => {
-  const [selectedMonth, setSelectedMonth] = useState<string>('July');
+  const [selectedMonth, setSelectedMonth] = useState<string>('July MTD');
   
   // Set dynamic page title
   usePageTitle();
@@ -315,8 +315,8 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
           const accountRef = item["Account Ref"] || item.account_ref || '';
           const accountName = item["Account Name"] || item.account_name || '';
           
-          // For June, July, and June 2 data, use name as fallback when ref is missing or empty
-          if (selectedMonth === 'June' || selectedMonth === 'July' || selectedMonth === 'June 2') {
+          // For June, July, July MTD, and June 2 data, use name as fallback when ref is missing or empty
+          if (selectedMonth === 'June' || selectedMonth === 'July' || selectedMonth === 'July MTD' || selectedMonth === 'June 2') {
             return accountRef && accountRef.trim() ? accountRef : accountName.trim().toLowerCase();
           }
           
