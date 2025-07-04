@@ -30,6 +30,12 @@ export interface InventoryItem {
   EDT?: number; // English Drug Tariff
   packs_sold_last_30_days?: number; // Column M - Last 30 days sales
   packs_sold_reva_last_30_days?: number; // Column L - Reva last 30 days sales
+  
+  // Yesterday's prices for trend analysis
+  AAH_yesterday?: number; // Column AU - Yesterday's AAH price
+  Nupharm_yesterday?: number; // Column AO - Yesterday's Nupharm price (NU)
+  ETH_NET_yesterday?: number; // Column AK - Yesterday's ETH NET price (ETH)
+  LEXON2_yesterday?: number; // Column AR - Yesterday's LEXON price (LEXON)
 }
 
 export interface ProcessedInventoryItem extends InventoryItem {
@@ -65,6 +71,39 @@ export interface ProcessedInventoryItem extends InventoryItem {
   marginVsLowest: number | null;
   pricingStrategy: 'Profitable' | 'Marginal' | 'Loss Required' | 'Unknown';
   competitorCount: number;
+  
+  // Competitor price trend analysis
+  aahTrend: {
+    current: number | null;
+    yesterday: number | null;
+    trend: 'UP' | 'DOWN' | 'STABLE' | 'NEW' | 'UNKNOWN';
+    percentageChange: number | null;
+    changeAmount: number | null;
+  };
+  
+  nupharmTrend: {
+    current: number | null;
+    yesterday: number | null;
+    trend: 'UP' | 'DOWN' | 'STABLE' | 'NEW' | 'UNKNOWN';
+    percentageChange: number | null;
+    changeAmount: number | null;
+  };
+  
+  ethNetTrend: {
+    current: number | null;
+    yesterday: number | null;
+    trend: 'UP' | 'DOWN' | 'STABLE' | 'NEW' | 'UNKNOWN';
+    percentageChange: number | null;
+    changeAmount: number | null;
+  };
+  
+  lexonTrend: {
+    current: number | null;
+    yesterday: number | null;
+    trend: 'UP' | 'DOWN' | 'STABLE' | 'NEW' | 'UNKNOWN';
+    percentageChange: number | null;
+    changeAmount: number | null;
+  };
   
   // Flags and indicators
   watchlist: string;
@@ -216,6 +255,48 @@ const generateInventoryColumnMapping = (headers: string[]) => {
       'L', // Column L
       'column L',
       'col L'
+    ],
+    // Yesterday's prices for trend analysis
+    AAH_yesterday: [
+      'aah', // Column AU - This is the key mapping
+      'aah_yesterday',
+      'aah yesterday', 
+      'aah prev',
+      'aah previous',
+      'aah_prev',
+      'AU', // Column AU directly
+      'column AU',
+      'col AU'
+    ],
+    Nupharm_yesterday: [
+      'nu', // Column AO - This is the key mapping
+      'nupharm_yesterday',
+      'nupharm yesterday',
+      'nu_yesterday',
+      'nu yesterday',
+      'AO', // Column AO directly
+      'column AO',
+      'col AO'
+    ],
+    ETH_NET_yesterday: [
+      'eth', // Column AK - Updated to match your Excel structure  
+      'eth_net_yesterday',
+      'eth net yesterday',
+      'eth_yesterday',
+      'eth yesterday',
+      'AK', // Column AK directly (was EK before)
+      'column AK',
+      'col AK'
+    ],
+    LEXON2_yesterday: [
+      'lexon', // Column AR - This is the key mapping
+      'lexon_yesterday',
+      'lexon yesterday',
+      'lexon2_yesterday',
+      'lexon2 yesterday',
+      'AR', // Column AR directly
+      'column AR',
+      'col AR'
     ]
   };
   
@@ -336,6 +417,48 @@ const transformInventoryRow = (row: any, mapping: Record<string, string>): Inven
   }
   if (mapping.packs_sold_reva_last_30_days && row[mapping.packs_sold_reva_last_30_days] !== undefined) {
     transformed.packs_sold_reva_last_30_days = Number(row[mapping.packs_sold_reva_last_30_days] || 0);
+  }
+  
+  // Add yesterday's pricing data for trend analysis
+  if (mapping.AAH_yesterday && row[mapping.AAH_yesterday] !== undefined) {
+    const rawValue = row[mapping.AAH_yesterday];
+    // Handle various data types that might come from Excel
+    if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+      const numValue = Number(rawValue);
+      if (!isNaN(numValue) && numValue > 0) {
+        transformed.AAH_yesterday = numValue;
+      }
+    }
+  }
+  
+  if (mapping.Nupharm_yesterday && row[mapping.Nupharm_yesterday] !== undefined) {
+    const rawValue = row[mapping.Nupharm_yesterday];
+    if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+      const numValue = Number(rawValue);
+      if (!isNaN(numValue) && numValue > 0) {
+        transformed.Nupharm_yesterday = numValue;
+      }
+    }
+  }
+  
+  if (mapping.ETH_NET_yesterday && row[mapping.ETH_NET_yesterday] !== undefined) {
+    const rawValue = row[mapping.ETH_NET_yesterday];
+    if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+      const numValue = Number(rawValue);
+      if (!isNaN(numValue) && numValue > 0) {
+        transformed.ETH_NET_yesterday = numValue;
+      }
+    }
+  }
+  
+  if (mapping.LEXON2_yesterday && row[mapping.LEXON2_yesterday] !== undefined) {
+    const rawValue = row[mapping.LEXON2_yesterday];
+    if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+      const numValue = Number(rawValue);
+      if (!isNaN(numValue) && numValue > 0) {
+        transformed.LEXON2_yesterday = numValue;
+      }
+    }
   }
   
   return transformed;
@@ -464,6 +587,128 @@ const calculatePricingStrategy = (lowestMarketPrice: number, avgCost: number): s
   }
 };
 
+// Calculate AAH price trend analysis
+export const calculateAAHTrend = (item: InventoryItem): {
+  current: number | null;
+  yesterday: number | null;
+  trend: 'UP' | 'DOWN' | 'STABLE' | 'NEW' | 'UNKNOWN';
+  percentageChange: number | null;
+  changeAmount: number | null;
+} => {
+  return calculateCompetitorTrend(item.AAH2, item.AAH_yesterday, 'AAH', item.stockcode);
+};
+
+// Calculate Nupharm price trend analysis
+export const calculateNupharmTrend = (item: InventoryItem): {
+  current: number | null;
+  yesterday: number | null;
+  trend: 'UP' | 'DOWN' | 'STABLE' | 'NEW' | 'UNKNOWN';
+  percentageChange: number | null;
+  changeAmount: number | null;
+} => {
+  return calculateCompetitorTrend(item.Nupharm, item.Nupharm_yesterday, 'Nupharm', item.stockcode);
+};
+
+// Calculate ETH NET price trend analysis
+export const calculateETHNetTrend = (item: InventoryItem): {
+  current: number | null;
+  yesterday: number | null;
+  trend: 'UP' | 'DOWN' | 'STABLE' | 'NEW' | 'UNKNOWN';
+  percentageChange: number | null;
+  changeAmount: number | null;
+} => {
+  return calculateCompetitorTrend(item.ETH_NET, item.ETH_NET_yesterday, 'ETH_NET', item.stockcode);
+};
+
+// Calculate LEXON price trend analysis
+export const calculateLexonTrend = (item: InventoryItem): {
+  current: number | null;
+  yesterday: number | null;
+  trend: 'UP' | 'DOWN' | 'STABLE' | 'NEW' | 'UNKNOWN';
+  percentageChange: number | null;
+  changeAmount: number | null;
+} => {
+  return calculateCompetitorTrend(item.LEXON2, item.LEXON2_yesterday, 'LEXON', item.stockcode);
+};
+
+// Generic competitor price trend calculator
+const calculateCompetitorTrend = (
+  current: number | null,
+  yesterday: number | null,
+  competitorName?: string,
+  stockcode?: string
+): {
+  current: number | null;
+  yesterday: number | null;
+  trend: 'UP' | 'DOWN' | 'STABLE' | 'NEW' | 'UNKNOWN';
+  percentageChange: number | null;
+  changeAmount: number | null;
+} => {
+  // Validate and parse current price
+  const validCurrent = current && typeof current === 'number' && current > 0 ? Number(current) : null;
+  
+  // Validate and parse yesterday price
+  const validYesterday = yesterday && typeof yesterday === 'number' && yesterday > 0 ? Number(yesterday) : null;
+  
+  // If no current price, unknown status
+  if (!validCurrent) {
+    return {
+      current: null,
+      yesterday: validYesterday,
+      trend: 'UNKNOWN',
+      percentageChange: null,
+      changeAmount: null,
+    };
+  }
+  
+  // If current price but no yesterday price, it's new
+  if (!validYesterday) {
+    return {
+      current: validCurrent,
+      yesterday: null,
+      trend: 'NEW',
+      percentageChange: null,
+      changeAmount: null,
+    };
+  }
+  
+  // Calculate change with higher precision
+  const changeAmount = validCurrent - validYesterday;
+  const percentageChange = (changeAmount / validYesterday) * 100;
+  
+  // Debug logging for troubleshooting (random sample)
+  if (stockcode && competitorName && Math.random() < 0.01) {
+    console.log(`${competitorName} Trend Debug for ${stockcode}:`, {
+      current: validCurrent,
+      yesterday: validYesterday, 
+      changeAmount: changeAmount,
+      percentageChange: percentageChange
+    });
+  }
+  
+  // Round to 2 decimal places for calculation
+  const roundedPercentageChange = Math.round(percentageChange * 100) / 100;
+  const roundedChangeAmount = Math.round(changeAmount * 100) / 100;
+  
+  // Determine trend (using 0.05% threshold for stability)
+  let trend: 'UP' | 'DOWN' | 'STABLE';
+  if (Math.abs(roundedPercentageChange) < 0.05) {
+    trend = 'STABLE';
+  } else if (changeAmount > 0) {
+    trend = 'UP';
+  } else {
+    trend = 'DOWN';
+  }
+  
+  return {
+    current: validCurrent,
+    yesterday: validYesterday,
+    trend,
+    percentageChange: roundedPercentageChange,
+    changeAmount: roundedChangeAmount,
+  };
+};
+
 // Analyze individual inventory item
 export const analyzeInventoryItem = (
   item: InventoryItem, 
@@ -517,6 +762,12 @@ export const analyzeInventoryItem = (
     competitorCount
   } = getCompetitivePricing(item);
   
+  // Competitor price trend analysis
+  const aahTrend = calculateAAHTrend(item);
+  const nupharmTrend = calculateNupharmTrend(item);
+  const ethNetTrend = calculateETHNetTrend(item);
+  const lexonTrend = calculateLexonTrend(item);
+  
   return {
     ...item,
     id: `inv_${item.stockcode}_${Date.now()}`, // Unique identifier
@@ -541,6 +792,10 @@ export const analyzeInventoryItem = (
     marginVsLowest,
     pricingStrategy: pricingStrategy as 'Profitable' | 'Marginal' | 'Loss Required' | 'Unknown',
     competitorCount,
+    aahTrend,
+    nupharmTrend,
+    ethNetTrend,
+    lexonTrend,
     watchlist: finalWatchlist
   };
 };
