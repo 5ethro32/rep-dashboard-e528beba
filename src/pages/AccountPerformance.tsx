@@ -9,6 +9,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { exportAccountPerformanceData } from '@/utils/account-performance-export-utils';
 
 interface AccountPerformanceProps {
   selectedUserId?: string | null;
@@ -406,6 +409,44 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
     }
   };
 
+  // Handle export functionality
+  const handleExport = () => {
+    try {
+      if (!currentMonthRawData || currentMonthRawData.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "Please ensure there is data loaded before exporting.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const result = exportAccountPerformanceData(
+        currentMonthRawData,
+        previousMonthRawData,
+        {
+          selectedMonth,
+          selectedUser: selectedUserName,
+          includeRetail,
+          includeReva,
+          includeWholesale
+        }
+      );
+
+      toast({
+        title: "Export successful",
+        description: `Exported ${result.exportedCount} account records to ${result.fileName}`
+      });
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: "Export failed",
+        description: "An error occurred while exporting the data",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Helper function to generate heading with white text username
   const renderPageHeading = () => {
     if (selectedUserId === "all") {
@@ -439,17 +480,32 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
   // Use a div instead of AppLayout
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Add PerformanceFilters component - keep this as it contains the month selector */}
-      <PerformanceFilters
-        includeRetail={includeRetail}
-        setIncludeRetail={setIncludeRetail}
-        includeReva={includeReva}
-        setIncludeReva={setIncludeReva}
-        includeWholesale={includeWholesale}
-        setIncludeWholesale={setIncludeWholesale}
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-      />
+      {/* Header section with filters and export button */}
+      <div className="flex flex-col lg:flex-row gap-4 mb-6">
+        <div className="flex-1">
+          <PerformanceFilters
+            includeRetail={includeRetail}
+            setIncludeRetail={setIncludeRetail}
+            includeReva={includeReva}
+            setIncludeReva={setIncludeReva}
+            includeWholesale={includeWholesale}
+            setIncludeWholesale={setIncludeWholesale}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+          />
+        </div>
+        <div className="flex-shrink-0">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={isLoading || !currentMonthRawData || currentMonthRawData.length === 0}
+            className="bg-gray-900/40 backdrop-blur-sm border-white/10 hover:bg-gray-800/60 text-white"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export Data
+          </Button>
+        </div>
+      </div>
       
       {/* Update Card - remove the p-0 and fix the padding in CardContent */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
