@@ -111,7 +111,7 @@ const PerformanceFilters: React.FC<PerformanceFiltersProps> = ({
               className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
               onClick={() => setSelectedMonth('June 2')}
             >
-              June 2 2025
+              June MTD 2025
             </DropdownMenuItem>
             <DropdownMenuItem 
               className="text-white hover:bg-white/5 focus:bg-white/5 cursor-pointer" 
