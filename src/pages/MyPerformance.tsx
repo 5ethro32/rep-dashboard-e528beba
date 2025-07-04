@@ -172,6 +172,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
         let previousTable;
         switch (selectedMonth) {
           case 'July':
+          case 'July MTD':
             currentTable = 'July_Data';
             previousTable = 'July_Data_Comparison'; // July comparison data (June data)
             break;
@@ -312,6 +313,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       let previousTable;
       switch (selectedMonth) {
         case 'July':
+        case 'July MTD':
           currentTable = 'July_Data';
           previousTable = 'July_Data_Comparison'; // July comparison data (June data)
           break;
@@ -431,6 +433,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
     let tableName;
     switch (selectedMonth) {
       case 'July':
+      case 'July MTD':
         tableName = 'July_Data';
         break;
       case 'June':
@@ -956,6 +959,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       let currentMonthTableName: string;
       switch (accountHealthMonth) {
         case 'July':
+        case 'July MTD':
           currentMonthTableName = 'July_Data';
           break;
         case 'June':
@@ -981,6 +985,7 @@ const MyPerformance: React.FC<MyPerformanceProps> = ({
       let compareMonthTableName: string;
       switch (compareMonth) {
         case 'July':
+        case 'July MTD':
           compareMonthTableName = compareMonth === accountHealthMonth ? 'July_Data_Comparison' : 'July_Data';
           break;
         case 'June':
