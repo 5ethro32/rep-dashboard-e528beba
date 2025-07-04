@@ -310,13 +310,13 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
         const currentAccountMap = new Map();
         const previousAccountMap = new Map();
 
-        // Helper function to create account key with fallback for June data
+        // Helper function to create account key with fallback for June, July, and June 2 data
         const createAccountKey = (item: DataItem) => {
           const accountRef = item["Account Ref"] || item.account_ref || '';
           const accountName = item["Account Name"] || item.account_name || '';
           
-          // For June data, use name as fallback when ref is missing or empty
-          if (selectedMonth === 'June') {
+          // For June, July, and June 2 data, use name as fallback when ref is missing or empty
+          if (selectedMonth === 'June' || selectedMonth === 'July' || selectedMonth === 'June 2') {
             return accountRef && accountRef.trim() ? accountRef : accountName.trim().toLowerCase();
           }
           
@@ -339,6 +339,7 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
             previousAccountMap.set(accountKey, spend);
           }
         });
+        
         let increasingCount = 0;
         let decreasingCount = 0;
 
@@ -355,9 +356,16 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
             }
           }
         });
+        
         setAccountsTrendData({
           increasing: increasingCount,
           decreasing: decreasingCount
+        });
+      } else {
+        // Reset to zero if no data for comparison
+        setAccountsTrendData({
+          increasing: 0,
+          decreasing: 0
         });
       }
 
