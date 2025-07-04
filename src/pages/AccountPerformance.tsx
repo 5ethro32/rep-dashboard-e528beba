@@ -480,32 +480,17 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
   // Use a div instead of AppLayout
   return (
     <div className="container max-w-7xl mx-auto px-4 md:px-6 pt-8 bg-transparent overflow-x-hidden">
-      {/* Header section with filters and export button */}
-      <div className="flex flex-col lg:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <PerformanceFilters
-            includeRetail={includeRetail}
-            setIncludeRetail={setIncludeRetail}
-            includeReva={includeReva}
-            setIncludeReva={setIncludeReva}
-            includeWholesale={includeWholesale}
-            setIncludeWholesale={setIncludeWholesale}
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-          />
-        </div>
-        <div className="flex-shrink-0">
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            disabled={isLoading || !currentMonthRawData || currentMonthRawData.length === 0}
-            className="bg-gray-900/40 backdrop-blur-sm border-white/10 hover:bg-gray-800/60 text-white"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Export Data
-          </Button>
-        </div>
-      </div>
+      {/* Add PerformanceFilters component - keep this as it contains the month selector */}
+      <PerformanceFilters
+        includeRetail={includeRetail}
+        setIncludeRetail={setIncludeRetail}
+        includeReva={includeReva}
+        setIncludeReva={setIncludeReva}
+        includeWholesale={includeWholesale}
+        setIncludeWholesale={setIncludeWholesale}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+      />
       
       {/* Update Card - remove the p-0 and fix the padding in CardContent */}
       <Card className="bg-gray-900/40 backdrop-blur-sm border-white/10 mb-6">
@@ -513,6 +498,19 @@ const AccountPerformance: React.FC<AccountPerformanceProps> = ({
           <AccountSummaryCards currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} accountsTrendData={accountsTrendData} />
         </CardContent>
       </Card>
+      
+      {/* Export button just above the table */}
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          disabled={isLoading || !currentMonthRawData || currentMonthRawData.length === 0}
+          className="bg-gray-900/40 backdrop-blur-sm border-white/10 hover:bg-gray-800/60 text-white"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export Data
+        </Button>
+      </div>
       
       <div className="mb-12">
         <AccountPerformanceComparison currentMonthData={currentMonthRawData} previousMonthData={previousMonthRawData} isLoading={isLoading} selectedMonth={selectedMonth} formatCurrency={formatCurrency} selectedUser={selectedUserId !== "all" ? selectedUserName : undefined} />
