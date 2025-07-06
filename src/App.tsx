@@ -28,6 +28,9 @@ import Auth from "@/pages/Auth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import DailyRepPerformance from "@/pages/DailyRepPerformance";
 import DailyRepPerformanceDemo from "@/pages/DailyRepPerformanceDemo";
+import ChartTest from "@/pages/ChartTest";
+import SimpleChartTest from "@/pages/SimpleChartTest";
+import DonutChartTest from "@/pages/DonutChartTest";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -72,6 +75,12 @@ const AppLayoutWrapper = () => {
         return <DailyRepPerformance />;
       case '/daily-rep-performance-demo':
         return <DailyRepPerformanceDemo />;
+      case '/chart-test':
+        return <ChartTest />;
+      case '/simple-chart-test':
+        return <SimpleChartTest />;
+      case '/donut-chart-test':
+        return <DonutChartTest />;
       case '/account-performance':
         return <AccountPerformance selectedUserId={selectedUserId} selectedUserName={selectedUserName} />;
       case '/ai-vera':
