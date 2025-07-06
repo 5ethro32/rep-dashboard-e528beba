@@ -26,6 +26,8 @@ import PricingAnalytics from "@/pages/engine-room/PricingAnalytics";
 import InventoryAnalytics from "@/pages/engine-room/InventoryAnalytics";
 import Auth from "@/pages/Auth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import DailyRepPerformance from "@/pages/DailyRepPerformance";
+import DailyRepPerformanceDemo from "@/pages/DailyRepPerformanceDemo";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -66,6 +68,10 @@ const AppLayoutWrapper = () => {
         return <Navigate to="/rep-performance" replace />;
       case '/rep-performance':
         return <RepPerformance />;
+      case '/daily-rep-performance':
+        return <DailyRepPerformance />;
+      case '/daily-rep-performance-demo':
+        return <DailyRepPerformanceDemo />;
       case '/account-performance':
         return <AccountPerformance selectedUserId={selectedUserId} selectedUserName={selectedUserName} />;
       case '/ai-vera':
