@@ -1,0 +1,144 @@
+import React from 'react';
+import DonutChart from '@/components/DonutChart';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Loader2 } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+interface DailyDepartmentProfitShareProps {
+  data: any[];
+  filters: {
+    includeRetail: boolean;
+    includeReva: boolean;
+    includeWholesale: boolean;
+  };
+  isLoading?: boolean;
+}
+
+const DailyDepartmentProfitShare: React.FC<DailyDepartmentProfitShareProps> = ({ 
+  data,
+  filters,
+  isLoading
+}) => {
+  const isMobile = useIsMobile();
+  
+  // Filter data based on active department filters
+  const filteredData = data.filter(dept => {
+    if (dept.department === 'Retail' && !filters.includeRetail) return false;
+    if (dept.department === 'REVA' && !filters.includeReva) return false;
+    if (dept.department === 'Wholesale' && !filters.includeWholesale) return false;
+    return true;
+  });
+  
+  // Calculate total profit from filtered data
+  const totalProfit = filteredData.reduce((sum, dept) => sum + dept.profit, 0);
+  
+  // Colors to match the original design
+  const colors = {
+    Retail: "#ef4444",      // Primary red
+    REVA: "#f87171",        // Light red/pink
+    Wholesale: "#dc2626"    // Darker red
+  };
+  
+  // Prepare data for the donut chart
+  const chartData = filteredData.map(dept => {
+    const percentage = totalProfit > 0 ? (dept.profit / totalProfit) * 100 : 0;
+    
+    return {
+      name: dept.department,
+      value: Math.round(percentage),
+      color: colors[dept.department as keyof typeof colors] || "#6b7280",
+      profit: dept.profit
+    };
+  });
+  
+  // Sort data to show largest first
+  chartData.sort((a, b) => b.value - a.value);
+  
+  // Format the total profit for display
+  const formattedProfit = totalProfit.toLocaleString('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    maximumFractionDigits: 0
+  });
+  
+  // Render a legend item
+  const renderLegendItem = (item: any, index: number) => (
+    <div key={index} className="flex items-center text-2xs md:text-xs py-1">
+      <div 
+        className="w-2 h-2 md:w-3 md:h-3 rounded-full mr-1 flex-shrink-0" 
+        style={{ backgroundColor: item.color }}
+      />
+      <div className="truncate">
+        <span className="font-medium">{item.name}</span> 
+        <span className="text-finance-gray ml-1">({item.value}%)</span>
+      </div>
+    </div>
+  );
+  
+  return (
+    <div className="bg-gray-900/40 rounded-lg border border-white/10 p-3 md:p-6 backdrop-blur-sm shadow-lg h-full flex flex-col">
+      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4 text-white/90">Profit Share By Department</h3>
+      {isLoading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-8 w-8 animate-spin mb-2" />
+            <span className="text-sm text-finance-gray">Loading data...</span>
+          </div>
+        </div>
+      ) : chartData.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-sm text-finance-gray">No departments selected</span>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col h-full">
+          {/* Desktop layout */}
+          {!isMobile && (
+            <div className="flex h-full">
+              {/* Left side legend */}
+              <div className="w-1/3 pr-2 flex flex-col justify-center">
+                <ScrollArea className="h-full">
+                  <div className="pr-2 space-y-1">
+                    {chartData.map((item, index) => renderLegendItem(item, index))}
+                  </div>
+                </ScrollArea>
+              </div>
+              
+              {/* Right side chart */}
+              <div className="w-2/3">
+                <div className="h-full">
+                  <DonutChart 
+                    data={chartData}
+                    innerValue={formattedProfit}
+                    innerLabel="Total Profit"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Mobile layout */}
+          {isMobile && (
+            <>
+              <div className="h-48 mb-2">
+                <DonutChart 
+                  data={chartData}
+                  innerValue={formattedProfit}
+                  innerLabel="Total Profit"
+                />
+              </div>
+              
+              {/* Legend for mobile */}
+              <div className="mt-auto overflow-y-auto max-h-40 scrollbar-none">
+                <div className="grid grid-cols-2 gap-2">
+                  {chartData.map((item, index) => renderLegendItem(item, index))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DailyDepartmentProfitShare;
