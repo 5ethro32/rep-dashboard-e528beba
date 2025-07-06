@@ -31,6 +31,7 @@ import DailyRepPerformanceDemo from "@/pages/DailyRepPerformanceDemo";
 import ChartTest from "@/pages/ChartTest";
 import SimpleChartTest from "@/pages/SimpleChartTest";
 import DonutChartTest from "@/pages/DonutChartTest";
+import TestBasic from "@/pages/TestBasic";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -81,6 +82,8 @@ const AppLayoutWrapper = () => {
         return <SimpleChartTest />;
       case '/donut-chart-test':
         return <DonutChartTest />;
+      case '/test-basic':
+        return <TestBasic />;
       case '/account-performance':
         return <AccountPerformance selectedUserId={selectedUserId} selectedUserName={selectedUserName} />;
       case '/ai-vera':
@@ -129,6 +132,14 @@ const router = createBrowserRouter([
   {
     path: "/auth",
     element: <Auth />,
+  },
+  {
+    path: "/test-basic",
+    element: <TestBasic />,
+  },
+  {
+    path: "/demo-no-auth",
+    element: <DailyRepPerformanceDemo />,
   },
   {
     path: "/*",

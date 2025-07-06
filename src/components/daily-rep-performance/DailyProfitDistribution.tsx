@@ -21,6 +21,7 @@ const DailyProfitDistribution: React.FC<DailyProfitDistributionProps> = ({
   isLoading,
   showChangeIndicators = true
 }) => {
+  console.log('DailyProfitDistribution rendered with data:', data);
   const isMobile = useIsMobile();
   
   // Sort by profit (highest to lowest) and limit to top 10
