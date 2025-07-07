@@ -6226,6 +6226,57 @@ const AllItemsAGGrid: React.FC<{
     }
   ];
 
+  // Calculate competitor filter counts
+  const competitorCounts = useMemo(() => {
+    const items = [...data.analyzedItems];
+    
+    const counts = {
+      'overall-avg': 0,
+      'eth-up': 0,
+      'eth-down': 0,
+      'aah-up': 0,
+      'aah-down': 0,
+      'phx-up': 0,
+      'phx-down': 0,
+      'lex-up': 0,
+      'lex-down': 0
+    };
+    
+    items.forEach(item => {
+      const movements = getCompetitorMovements(item);
+      
+      if (movements.average !== null && Math.abs(movements.average) > 0.1) {
+        counts['overall-avg']++;
+      }
+      if (movements.eth !== null && movements.eth > 0.1) {
+        counts['eth-up']++;
+      }
+      if (movements.eth !== null && movements.eth < -0.1) {
+        counts['eth-down']++;
+      }
+      if (movements.aah !== null && movements.aah > 0.1) {
+        counts['aah-up']++;
+      }
+      if (movements.aah !== null && movements.aah < -0.1) {
+        counts['aah-down']++;
+      }
+      if (movements.phx !== null && movements.phx > 0.1) {
+        counts['phx-up']++;
+      }
+      if (movements.phx !== null && movements.phx < -0.1) {
+        counts['phx-down']++;
+      }
+      if (movements.lex !== null && movements.lex > 0.1) {
+        counts['lex-up']++;
+      }
+      if (movements.lex !== null && movements.lex < -0.1) {
+        counts['lex-down']++;
+      }
+    });
+    
+    return counts;
+  }, [data.analyzedItems]);
+
   // Apply strategic filters (same logic as current AllItemsAnalysis)
   const filteredData = useMemo(() => {
     let items = [...data.analyzedItems];
@@ -6680,7 +6731,7 @@ const AllItemsAGGrid: React.FC<{
                         : 'bg-gray-800/50 text-gray-400 hover:bg-blue-500/10 hover:text-blue-300 border border-gray-700/50'
                     }`}
                   >
-                    📊 Overall
+                    📊 Overall ({competitorCounts['overall-avg']})
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
@@ -6704,7 +6755,7 @@ const AllItemsAGGrid: React.FC<{
                           : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
                       }`}
                     >
-                      ETH ↑
+                      ETH ↑ ({competitorCounts['eth-up']})
                     </button>
                     <button
                       onClick={() => setCompetitorFilter('eth-down')}
@@ -6714,7 +6765,7 @@ const AllItemsAGGrid: React.FC<{
                           : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
                       }`}
                     >
-                      ETH ↓
+                      ETH ↓ ({competitorCounts['eth-down']})
                     </button>
                   </div>
                 </TooltipTrigger>
@@ -6739,7 +6790,7 @@ const AllItemsAGGrid: React.FC<{
                           : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
                       }`}
                     >
-                      AAH ↑
+                      AAH ↑ ({competitorCounts['aah-up']})
                     </button>
                     <button
                       onClick={() => setCompetitorFilter('aah-down')}
@@ -6749,7 +6800,7 @@ const AllItemsAGGrid: React.FC<{
                           : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
                       }`}
                     >
-                      AAH ↓
+                      AAH ↓ ({competitorCounts['aah-down']})
                     </button>
                   </div>
                 </TooltipTrigger>
@@ -6774,7 +6825,7 @@ const AllItemsAGGrid: React.FC<{
                           : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
                       }`}
                     >
-                      PHX ↑
+                      PHX ↑ ({competitorCounts['phx-up']})
                     </button>
                     <button
                       onClick={() => setCompetitorFilter('phx-down')}
@@ -6784,7 +6835,7 @@ const AllItemsAGGrid: React.FC<{
                           : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
                       }`}
                     >
-                      PHX ↓
+                      PHX ↓ ({competitorCounts['phx-down']})
                     </button>
                   </div>
                 </TooltipTrigger>
@@ -6809,7 +6860,7 @@ const AllItemsAGGrid: React.FC<{
                           : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
                       }`}
                     >
-                      LEX ↑
+                      LEX ↑ ({competitorCounts['lex-up']})
                     </button>
                     <button
                       onClick={() => setCompetitorFilter('lex-down')}
@@ -6819,7 +6870,7 @@ const AllItemsAGGrid: React.FC<{
                           : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
                       }`}
                     >
-                      LEX ↓
+                      LEX ↓ ({competitorCounts['lex-down']})
                     </button>
                   </div>
                 </TooltipTrigger>
