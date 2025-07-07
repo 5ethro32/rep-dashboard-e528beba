@@ -9207,7 +9207,8 @@ const MetricFilteredAGGrid: React.FC<{
       headerName: 'Item',
       field: 'stockcode',
       pinned: 'left',
-      width: 300,      sortable: true,
+      width: 300,
+      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
@@ -9473,7 +9474,7 @@ const MetricFilteredAGGrid: React.FC<{
         const lastPoCost = item?.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A';
         return `Next Cost: ${nextCost}\nMin Cost: ${minCost}\nLast PO Cost: ${lastPoCost}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#3b82f6', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#3b82f6', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -9558,7 +9559,7 @@ const MetricFilteredAGGrid: React.FC<{
         
         return tooltipLines.join('\n');
       },
-      cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
