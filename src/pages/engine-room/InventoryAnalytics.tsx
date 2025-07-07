@@ -1258,7 +1258,7 @@ const PriorityIssuesAGGrid: React.FC<{
         const lastPoCost = item?.last_po_cost && item.last_po_cost > 0 ? formatCurrency(item.last_po_cost) : 'N/A';
         return `Next Cost: ${nextCost}\nMin Cost: ${minCost}\nLast PO Cost: ${lastPoCost}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#3b82f6', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#3b82f6', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -1307,7 +1307,7 @@ const PriorityIssuesAGGrid: React.FC<{
         const reva = item?.reva && item.reva > 0 ? formatCurrency(item.reva) : 'N/A';
         return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#c084fc', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#c084fc', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -1370,7 +1370,7 @@ const PriorityIssuesAGGrid: React.FC<{
         
         return tooltipLines.join('\n');
       },
-      cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -1440,7 +1440,7 @@ const PriorityIssuesAGGrid: React.FC<{
           else color = '#4ade80';
         }
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -1456,7 +1456,7 @@ const PriorityIssuesAGGrid: React.FC<{
       width: 90,
       valueGetter: (params: any) => params.data.item?.SDT,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -1468,7 +1468,7 @@ const PriorityIssuesAGGrid: React.FC<{
       width: 90,
       valueGetter: (params: any) => params.data.item?.EDT,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -2188,7 +2188,7 @@ const PriorityIssuesAnalysis: React.FC<{
                     <td className="p-3 text-left text-gray-300 text-sm">
                       {(issue.item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center text-sm">
+                    <td className="p-3 text-left text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -2378,7 +2378,7 @@ const WatchlistAGGrid: React.FC<{
     }
   };
 
-  // Column definitions for AG Grid (same as AllItemsAGGrid)
+  // Column definitions for AG Grid - matches the metric filtered view table
   const columnDefs: ColDef[] = [
     {
       headerName: 'Watch',
@@ -2554,7 +2554,7 @@ const WatchlistAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -2607,7 +2607,7 @@ const WatchlistAGGrid: React.FC<{
         const lastPoCost = data.last_po_cost && data.last_po_cost > 0 ? formatCurrency(data.last_po_cost) : 'N/A';
         return `Next Cost: ${nextCost}\nMin Cost: ${minCost}\nLast PO Cost: ${lastPoCost}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#3b82f6', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#3b82f6', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -2654,7 +2654,7 @@ const WatchlistAGGrid: React.FC<{
         const reva = data.reva && data.reva > 0 ? formatCurrency(data.reva) : 'N/A';
         return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#c084fc', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#c084fc', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -2716,7 +2716,7 @@ const WatchlistAGGrid: React.FC<{
         
         return tooltipLines.join('\n');
       },
-      cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -2759,7 +2759,7 @@ const WatchlistAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -2785,7 +2785,7 @@ const WatchlistAGGrid: React.FC<{
           else color = '#4ade80';
         }
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -2800,7 +2800,7 @@ const WatchlistAGGrid: React.FC<{
       field: 'SDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -2811,7 +2811,7 @@ const WatchlistAGGrid: React.FC<{
       field: 'EDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -3421,7 +3421,7 @@ const WatchlistAnalysis: React.FC<{
                     <td className="p-3 text-left text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center text-sm">
+                    <td className="p-3 text-left text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -3448,13 +3448,13 @@ const WatchlistAnalysis: React.FC<{
                         {item.watchlist || '−'}
                       </span>
                     </td>
-                    <td className="p-3 text-left text-purple-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-purple-400 font-bold text-sm">
                       {item.AVER ? formatCurrency(item.AVER) : 'N/A'}
                     </td>
                     <td className={`p-3 text-left font-semibold text-sm ${getMarginColor(calculateMargin(item))}`}>
                       {formatMargin(calculateMargin(item))}
                     </td>
-                    <td className="p-3 text-left text-green-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-green-400 font-bold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -3780,7 +3780,7 @@ const StarredItemsAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -3833,7 +3833,7 @@ const StarredItemsAGGrid: React.FC<{
         const lastPoCost = data.last_po_cost && data.last_po_cost > 0 ? formatCurrency(data.last_po_cost) : 'N/A';
         return `Next Cost: ${nextCost}\nMin Cost: ${minCost}\nLast PO Cost: ${lastPoCost}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#3b82f6', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#3b82f6', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -3880,7 +3880,7 @@ const StarredItemsAGGrid: React.FC<{
         const reva = data.reva && data.reva > 0 ? formatCurrency(data.reva) : 'N/A';
         return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#c084fc', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#c084fc', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -3942,7 +3942,7 @@ const StarredItemsAGGrid: React.FC<{
         
         return tooltipLines.join('\n');
       },
-      cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -3985,7 +3985,7 @@ const StarredItemsAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -4011,7 +4011,7 @@ const StarredItemsAGGrid: React.FC<{
           else color = '#4ade80';
         }
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -4026,7 +4026,7 @@ const StarredItemsAGGrid: React.FC<{
       field: 'SDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -4037,7 +4037,7 @@ const StarredItemsAGGrid: React.FC<{
       field: 'EDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -4647,7 +4647,7 @@ const StarredItemsAnalysis: React.FC<{
                     <td className="p-3 text-left text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center text-sm">
+                    <td className="p-3 text-left text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -5500,7 +5500,7 @@ const AllItemsAnalysis: React.FC<{
                     <td className="p-3 text-left text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center text-sm">
+                    <td className="p-3 text-left text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -6091,7 +6091,7 @@ const AllItemsAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -6818,7 +6818,7 @@ const OverstockAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -6871,7 +6871,7 @@ const OverstockAGGrid: React.FC<{
         const lastPoCost = data.last_po_cost && data.last_po_cost > 0 ? formatCurrency(data.last_po_cost) : 'N/A';
         return `Next Cost: ${nextCost}\nMin Cost: ${minCost}\nLast PO Cost: ${lastPoCost}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#3b82f6', fontWeight: 'bold' }, // blue-500
+      cellStyle: { textAlign: 'left' as const, color: '#3b82f6', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -6918,7 +6918,7 @@ const OverstockAGGrid: React.FC<{
         const reva = data.reva && data.reva > 0 ? formatCurrency(data.reva) : 'N/A';
         return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#c084fc', fontWeight: 'bold' }, // purple-400
+      cellStyle: { textAlign: 'left' as const, color: '#c084fc', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -6980,7 +6980,7 @@ const OverstockAGGrid: React.FC<{
         
         return tooltipLines.join('\n');
       },
-      cellStyle: { textAlign: 'right' as const, color: '#60a5fa', fontWeight: 'bold' },
+      cellStyle: { textAlign: 'left' as const, color: '#60a5fa', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -7001,7 +7001,7 @@ const OverstockAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const item = params.data.item;
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontSize: '18px',
           fontWeight: 'bold',
           color: getMarketTrendColor(item)
@@ -7023,7 +7023,7 @@ const OverstockAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -7049,7 +7049,7 @@ const OverstockAGGrid: React.FC<{
           else color = '#4ade80'; // green
         }
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: color
         };
@@ -7064,7 +7064,7 @@ const OverstockAGGrid: React.FC<{
       field: 'SDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -7075,7 +7075,7 @@ const OverstockAGGrid: React.FC<{
       field: 'EDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -7090,7 +7090,7 @@ const OverstockAGGrid: React.FC<{
         const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           cursor: 'pointer'
         };
       },
@@ -7684,7 +7684,7 @@ const OverstockAnalysis: React.FC<{
                     <td className="p-3 text-left text-gray-300 text-sm">
                       {(item.quantity_on_order || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center text-sm">
+                    <td className="p-3 text-left text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -9366,7 +9366,7 @@ const MetricFilteredAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -9492,7 +9492,7 @@ const MetricFilteredAGGrid: React.FC<{
       },
       cellStyle: (params: any) => {
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: params.value === 'Y' ? '#4ade80' : '#f87171'
         };
@@ -9570,7 +9570,7 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'SDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -9581,7 +9581,7 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'EDT',
       width: 90,
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -9596,7 +9596,7 @@ const MetricFilteredAGGrid: React.FC<{
         const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           cursor: 'pointer'
         };
       },
