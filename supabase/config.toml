@@ -26,8 +26,5 @@ enabled = true
 [auth]
 enabled = true
 
-[edge-functions]
-enabled = true
-
 [functions.rep-chat]
 verify_jwt = false

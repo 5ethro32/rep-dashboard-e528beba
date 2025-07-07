@@ -12,6 +12,7 @@ import { EngineRoomProvider } from "@/contexts/EngineRoomContext";
 import AppLayout from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import RepPerformance from "@/pages/RepPerformance";
+import DailyRepPerformance from "@/pages/DailyRepPerformance";
 import AccountPerformance from "@/pages/AccountPerformance";
 import AIVera from "@/pages/AIVera";
 import RepTracker from "@/pages/RepTracker";
@@ -66,6 +67,8 @@ const AppLayoutWrapper = () => {
         return <Navigate to="/rep-performance" replace />;
       case '/rep-performance':
         return <RepPerformance />;
+      case '/daily-rep-performance':
+        return <DailyRepPerformance />;
       case '/account-performance':
         return <AccountPerformance selectedUserId={selectedUserId} selectedUserName={selectedUserName} />;
       case '/ai-vera':

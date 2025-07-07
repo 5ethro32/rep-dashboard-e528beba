@@ -89,6 +89,57 @@ export type Database = {
           },
         ]
       }
+      Daily_Data: {
+        Row: {
+          id: string
+          Rep: string
+          "Sub-Rep": string | null
+          Department: string | null
+          "Account Ref": string | null
+          "Account Name": string | null
+          Spend: number | null
+          Cost: number | null
+          Credit: number | null
+          Profit: number | null
+          Margin: number | null
+          Packs: number | null
+          Method: string | null
+          Date_Time: string | null
+        }
+        Insert: {
+          id?: string
+          Rep: string
+          "Sub-Rep"?: string | null
+          Department?: string | null
+          "Account Ref"?: string | null
+          "Account Name"?: string | null
+          Spend?: number | null
+          Cost?: number | null
+          Credit?: number | null
+          Profit?: number | null
+          Margin?: number | null
+          Packs?: number | null
+          Method?: string | null
+          Date_Time?: string | null
+        }
+        Update: {
+          id?: string
+          Rep?: string
+          "Sub-Rep"?: string | null
+          Department?: string | null
+          "Account Ref"?: string | null
+          "Account Name"?: string | null
+          Spend?: number | null
+          Cost?: number | null
+          Credit?: number | null
+          Profit?: number | null
+          Margin?: number | null
+          Packs?: number | null
+          Method?: string | null
+          Date_Time?: string | null
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           active: boolean | null
@@ -918,6 +969,165 @@ export type Database = {
       replace_mtd_daily: {
         Args: { data: Json }
         Returns: undefined
+      }
+      get_daily_aggregated_data: {
+        Args: {
+          start_date: string
+          end_date: string
+          department_filter?: string[]
+          method_filter?: string
+        }
+        Returns: {
+          period_start: string
+          period_end: string
+          period_label: string
+          total_spend: number
+          total_cost: number
+          total_credit: number
+          total_profit: number
+          avg_margin: number
+          total_packs: number
+          unique_accounts: number
+          record_count: number
+        }[]
+      }
+      get_daily_summary_metrics: {
+        Args: {
+          start_date: string
+          end_date: string
+          department_filter?: string[]
+          method_filter?: string
+        }
+        Returns: {
+          total_spend: number
+          total_cost: number
+          total_credit: number
+          total_profit: number
+          avg_margin: number
+          total_packs: number
+          unique_accounts: number
+          total_records: number
+        }[]
+      }
+      get_daily_comparison_metrics: {
+        Args: {
+          current_start: string
+          current_end: string
+          comparison_start: string
+          comparison_end: string
+          department_filter?: string[]
+          method_filter?: string
+        }
+        Returns: {
+          current_spend: number
+          current_profit: number
+          current_margin: number
+          current_accounts: number
+          comparison_spend: number
+          comparison_profit: number
+          comparison_margin: number
+          comparison_accounts: number
+          spend_change: number
+          profit_change: number
+          margin_change: number
+          accounts_change: number
+        }[]
+      }
+      get_monthly_trends_data: {
+        Args: {
+          time_range_type: string
+          department_filter?: string[]
+          method_filter?: string
+          end_date?: string
+        }
+        Returns: {
+          period_start: string
+          period_end: string
+          period_label: string
+          full_period_label: string
+          total_spend: number
+          total_profit: number
+          avg_margin: number
+          unique_accounts: number
+          is_projected: boolean
+          is_partial: boolean
+          period_date: string
+          record_count: number
+        }[]
+      }
+      get_daily_rep_performance: {
+        Args: {
+          start_date: string
+          end_date: string
+          department_filter?: string[]
+          method_filter?: string
+        }
+        Returns: {
+          rep_name: string
+          total_spend: number
+          total_profit: number
+          avg_margin: number
+          active_accounts: number
+          total_accounts: number
+          total_telesales_profit: number
+          telesales_profit_percentage: number
+          record_count: number
+        }[]
+      }
+      get_daily_rep_performance_comparison: {
+        Args: {
+          current_start: string
+          current_end: string
+          comparison_start: string
+          comparison_end: string
+          department_filter?: string[]
+          method_filter?: string
+        }
+        Returns: {
+          rep_name: string
+          current_spend: number
+          current_profit: number
+          current_margin: number
+          current_active_accounts: number
+          current_total_accounts: number
+          current_telesales_profit: number
+          current_telesales_percentage: number
+          comparison_spend: number
+          comparison_profit: number
+          comparison_margin: number
+          comparison_active_accounts: number
+          comparison_total_accounts: number
+          comparison_telesales_profit: number
+          comparison_telesales_percentage: number
+          spend_change_percent: number
+          profit_change_percent: number
+          margin_change_percent: number
+          active_accounts_change_percent: number
+          total_accounts_change_percent: number
+          telesales_percentage_change_percent: number
+        }[]
+      }
+      get_monthly_trends_projection: {
+        Args: {
+          time_range_type: string
+          department_filter?: string
+          method_filter?: string
+          end_date?: string
+        }
+        Returns: {
+          period_start: string
+          period_end: string
+          period_label: string
+          full_period_label: string
+          total_spend: number
+          total_profit: number
+          avg_margin: number
+          unique_accounts: number
+          is_projected: boolean
+          is_partial: boolean
+          period_date: string
+          record_count: number
+        }[]
       }
     }
     Enums: {

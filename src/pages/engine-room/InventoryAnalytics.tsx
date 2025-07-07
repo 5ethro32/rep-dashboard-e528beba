@@ -5255,6 +5255,33 @@ const AllItemsAGGrid: React.FC<{
     }
   };
 
+  // Handler for price changes - captures and logs the change
+  const handlePriceChange = (params: any) => {
+    const { data, oldValue, newValue } = params;
+    console.log('Price changed for item:', {
+      stockcode: data.stockcode,
+      description: data.description || data.Description,
+      oldPrice: oldValue,
+      newPrice: newValue,
+      change: newValue - oldValue
+    });
+    
+    // Here you could add logic to:
+    // - Update the backend/database
+    // - Show a notification
+    // - Update related calculations
+    // - Trigger other updates
+  };
+
+  // Parse currency input - removes currency symbols and converts to number
+  const parseCurrencyInput = (value: string): number => {
+    if (!value) return 0;
+    // Remove currency symbols, commas, and extra spaces
+    const cleanValue = value.replace(/[£$€,\s]/g, '');
+    const numValue = parseFloat(cleanValue);
+    return isNaN(numValue) ? 0 : numValue;
+  };
+
   // Column definitions for AG Grid
   const columnDefs: ColDef[] = [
     {
@@ -5492,20 +5519,45 @@ const AllItemsAGGrid: React.FC<{
       headerName: 'Price',
       field: 'AVER',
       width: 110,
+      editable: true,
+      cellEditor: 'agNumberCellEditor',
+      cellEditorParams: {
+        min: 0,
+        max: 999999,
+        precision: 2,
+        step: 0.01,
+        showStepperButtons: true
+      },
       valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : 'N/A',
+      valueSetter: (params: any) => {
+        const newValue = typeof params.newValue === 'string' ? parseCurrencyInput(params.newValue) : params.newValue;
+        if (newValue !== params.data.AVER) {
+          params.data.AVER = newValue;
+          return true;
+        }
+        return false;
+      },
       tooltipValueGetter: (params: any) => {
         const data = params.data;
         const mclean = data.MCLEAN && data.MCLEAN > 0 ? formatCurrency(data.MCLEAN) : 'N/A';
         const apple = data.APPLE && data.APPLE > 0 ? formatCurrency(data.APPLE) : 'N/A';
         const davidson = data.DAVIDSON && data.DAVIDSON > 0 ? formatCurrency(data.DAVIDSON) : 'N/A';
         const reva = data.reva && data.reva > 0 ? formatCurrency(data.reva) : 'N/A';
-        return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
+        return `EDITABLE: Double-click to edit price\n\nCurrent Branch Prices:\nMCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}\n\nTip: Use Enter to save, Escape to cancel`;
       },
-      cellStyle: { textAlign: 'left' as const, color: '#c084fc', fontWeight: 'bold' }, // purple-400
+      cellStyle: (params: any) => ({
+        textAlign: 'left' as const,
+        color: '#c084fc',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        border: '1px solid #c084fc20',
+        backgroundColor: params.node.rowIndex % 2 === 0 ? '#c084fc05' : '#c084fc08'
+      }),
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
-      suppressSizeToFit: true
+      suppressSizeToFit: true,
+      onCellValueChanged: handlePriceChange
     },
     {
       headerName: 'Market',
@@ -6044,6 +6096,7 @@ const AllItemsAGGrid: React.FC<{
                 columnDefs={columnDefs}
                 rowData={filteredData}
                 onGridReady={onGridReady}
+                onCellValueChanged={handlePriceChange}
                 components={{
                   itemCellRenderer: ItemCellRenderer
                 }}
@@ -6064,7 +6117,7 @@ const AllItemsAGGrid: React.FC<{
                 enableRangeSelection={true}
                 suppressMenuHide={false}
                 animateRows={true}
-                suppressCellFocus={true}
+                suppressCellFocus={false}
                 enableCellTextSelection={true}
                 tooltipShowDelay={500}
                 tooltipHideDelay={10000}
