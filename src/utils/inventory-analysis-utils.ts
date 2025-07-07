@@ -972,21 +972,9 @@ export const generateInventorySummaryStats = (items: ProcessedInventoryItem[]): 
     return sum;
   }, 0);
   
-  // Cost Disadvantage: avg_cost > (highest_competitor_price * 1.05) - 5% above market
+  // Cost Disadvantage: avg_cost > lowestMarketPrice - where our cost is above market low
   const costDisadvantageItems = items.filter(item => {
-    if (!item.lowestMarketPrice) return false;
-    // Get highest competitor price from available competitors
-    const competitors = ['Nupharm', 'AAH2', 'ETH_LIST', 'ETH_NET', 'LEXON2'];
-    const prices: number[] = [];
-    competitors.forEach(competitor => {
-      const price = item[competitor as keyof typeof item] as number;
-      if (price && price > 0) {
-        prices.push(price);
-      }
-    });
-    if (prices.length === 0) return false;
-    const highestPrice = Math.max(...prices);
-    return item.avg_cost > (highestPrice * 1.05);
+    return item.lowestMarketPrice && item.avg_cost > item.lowestMarketPrice;
   });
   const costDisadvantageValue = costDisadvantageItems.reduce((sum, item) => sum + item.stockValue, 0);
   

@@ -1,6 +1,288 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { 
+  ClientSideRowModelModule,
+  ModuleRegistry,
+  TextFilterModule,
+  NumberFilterModule,
+  DateFilterModule,
+  ValidationModule,
+  QuickFilterModule,
+  TooltipModule,
+  CellStyleModule
+} from 'ag-grid-community';
+
+// Register AG Grid modules
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  TextFilterModule,
+  NumberFilterModule,
+  DateFilterModule,
+  QuickFilterModule,
+  TooltipModule,
+  CellStyleModule,
+  ...(process.env.NODE_ENV !== 'production' ? [ValidationModule] : [])
+]);
+
+// Custom CSS for AG Grid Filter Styling
+const agGridFilterStyles = `
+  /* Clean filter panel layout */
+  .ag-theme-alpine-dark .ag-filter-wrapper {
+    padding: 16px !important;
+    background-color: #111827 !important;
+    border-radius: 8px !important;
+    border: 1px solid #374151 !important;
+  }
+
+  .ag-theme-alpine-dark .ag-filter-body-wrapper {
+    background-color: transparent !important;
+  }
+
+  /* Remove nested boxes and borders from filter containers */
+  .ag-theme-alpine-dark .ag-filter-condition-body,
+  .ag-theme-alpine-dark .ag-filter-condition-body-wrapper,
+  .ag-theme-alpine-dark .ag-filter-apply-panel {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* MODERN dropdown styling - remove button appearance */
+  .ag-theme-alpine-dark .ag-filter-select,
+  .ag-theme-alpine-dark select {
+    background-color: #374151 !important;
+    border: 2px solid #3B82F6 !important;
+    border-radius: 8px !important;
+    padding: 10px 32px 10px 12px !important;
+    color: #F9FAFB !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+    outline: none !important;
+    appearance: none !important;
+    width: 100% !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233B82F6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+    background-position: right 10px center !important;
+    background-repeat: no-repeat !important;
+    background-size: 18px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* MODERN input field styling - darker to match dropdown */
+  .ag-theme-alpine-dark .ag-input-field-input,
+  .ag-theme-alpine-dark .ag-input-field input,
+  .ag-theme-alpine-dark input[type="text"] {
+    background-color: #374151 !important;
+    border: 2px solid #3B82F6 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    color: #F9FAFB !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    outline: none !important;
+    width: 100% !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Beautiful DRAMATIC blue glow on focus/click - only for input */
+  .ag-theme-alpine-dark .ag-input-field-input:focus,
+  .ag-theme-alpine-dark .ag-input-field input:focus,
+  .ag-theme-alpine-dark input[type="text"]:focus {
+    border-color: #3B82F6 !important;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 20px rgba(59, 130, 246, 0.4) !important;
+    background-color: #1F2937 !important;
+    transform: scale(1.02) !important;
+  }
+
+  /* Subtle focus for dropdown */
+  .ag-theme-alpine-dark .ag-filter-select:focus,
+  .ag-theme-alpine-dark select:focus {
+    border-color: #4B5563 !important;
+    background-color: #1F2937 !important;
+  }
+
+  /* Hover effects */
+  .ag-theme-alpine-dark .ag-filter-select:hover,
+  .ag-theme-alpine-dark .ag-input-field-input:hover,
+  .ag-theme-alpine-dark .ag-input-field input:hover,
+  .ag-theme-alpine-dark input[type="text"]:hover,
+  .ag-theme-alpine-dark select:hover {
+    border-color: #4B5563 !important;
+    background-color: #1F2937 !important;
+  }
+
+  /* Placeholder styling - more visible */
+  .ag-theme-alpine-dark .ag-input-field-input::placeholder,
+  .ag-theme-alpine-dark .ag-input-field input::placeholder,
+  .ag-theme-alpine-dark input[type="text"]::placeholder {
+    color: #D1D5DB !important;
+    font-weight: 500 !important;
+  }
+
+  /* Remove default input field wrapper borders and fix black bits */
+  .ag-theme-alpine-dark .ag-input-field {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Remove any extra wrapper styling */
+  .ag-theme-alpine-dark .ag-input-wrapper,
+  .ag-theme-alpine-dark .ag-picker-field-wrapper,
+  .ag-theme-alpine-dark .ag-wrapper {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Remove left/right decorations that cause black bits */
+  .ag-theme-alpine-dark .ag-input-field::before,
+  .ag-theme-alpine-dark .ag-input-field::after,
+  .ag-theme-alpine-dark .ag-picker-field::before,
+  .ag-theme-alpine-dark .ag-picker-field::after {
+    display: none !important;
+  }
+
+  /* Fix filter layout - remove gaps and nested styling */
+  .ag-theme-alpine-dark .ag-filter-condition {
+    margin-bottom: 8px !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .ag-theme-alpine-dark .ag-filter-condition:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  /* Ensure condition operators and values don't have nested boxes */
+  .ag-theme-alpine-dark .ag-filter-condition-operator-wrapper,
+  .ag-theme-alpine-dark .ag-filter-condition-value-wrapper {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Clean condition panel */
+  .ag-theme-alpine-dark .ag-filter-condition-panel-description {
+    color: #D1D5DB !important;
+    font-size: 13px !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Ensure proper spacing and alignment - target specific elements */
+  .ag-theme-alpine-dark .ag-filter .ag-filter-condition .ag-filter-condition-operator,
+  .ag-theme-alpine-dark .ag-filter .ag-filter-condition .ag-filter-condition-value {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Override any inherited AG Grid input styling */
+  .ag-theme-alpine-dark .ag-picker-field-display {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  /* Fix any remaining black borders/backgrounds */
+  .ag-theme-alpine-dark .ag-picker-field,
+  .ag-theme-alpine-dark .ag-picker {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  /* Beautiful AND/OR Radio Button Styling */
+  .ag-theme-alpine-dark .ag-filter-condition-operator {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding: 12px 0 !important;
+    margin: 8px 0 !important;
+  }
+
+  .ag-theme-alpine-dark .ag-radio-button-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+  }
+
+  .ag-theme-alpine-dark .ag-radio-button-wrapper:hover {
+    background-color: #374151 !important;
+  }
+
+  .ag-theme-alpine-dark .ag-radio-button-input-wrapper {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .ag-theme-alpine-dark .ag-radio-button-input {
+    appearance: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    border: 2px solid #6B7280 !important;
+    border-radius: 50% !important;
+    background-color: #374151 !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+  }
+
+  .ag-theme-alpine-dark .ag-radio-button-input:checked {
+    border-color: #3B82F6 !important;
+    background-color: #3B82F6 !important;
+  }
+
+  .ag-theme-alpine-dark .ag-radio-button-input:checked::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    background-color: white !important;
+  }
+
+  .ag-theme-alpine-dark .ag-radio-button-label {
+    color: #F9FAFB !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+  }
+
+  /* Make filter input darker to match the beautiful design */
+  .ag-theme-alpine-dark .ag-input-field-input,
+  .ag-theme-alpine-dark .ag-input-field input,
+  .ag-theme-alpine-dark input[type="text"] {
+    background-color: #1F2937 !important;
+    border: 2px solid #3B82F6 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    color: #F9FAFB !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    outline: none !important;
+    width: 100% !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+
+`;
+
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -40,15 +322,18 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 // Add imports for dropdown components at the top
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
-// AG Grid imports
+// AG Grid imports - enhanced with proper filter modules
 import { AgGridReact } from 'ag-grid-react';
-import { ColDef, GridApi, ModuleRegistry } from 'ag-grid-community';
-import { AllCommunityModule } from 'ag-grid-community';
+import { 
+  ColDef, 
+  GridApi, 
+  GridOptions,
+  IDateFilterParams,
+  INumberFilterParams,
+  ITextFilterParams
+} from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-
-// Register AG Grid modules
-ModuleRegistry.registerModules([AllCommunityModule]);
 
 // Helper functions for average cost display logic
 // Use calculated next average cost (Column J) when meaningful, otherwise use avg_cost
@@ -63,7 +348,7 @@ const getDisplayedAverageCost = (item: ProcessedInventoryItem): number | null =>
 
 const shouldShowAverageCostTooltip = (item: ProcessedInventoryItem): boolean => {
   // Show tooltip when using calculated_next_avg_cost (Column J) instead of avg_cost (Column G)
-  return !!((item as any).calculated_next_avg_cost && (item as any).calculated_next_avg_cost > 0 && item.avg_cost && item.avg_cost > 0);
+  return !!(item as any).calculated_next_avg_cost && (item as any).calculated_next_avg_cost > 0 && item.avg_cost && item.avg_cost > 0;
 };
 
 const getAverageCostTooltip = (item: ProcessedInventoryItem): string => {
@@ -92,27 +377,22 @@ const shouldShowAAHTrendTooltip = (item: ProcessedInventoryItem): boolean => {
 const getAAHTrendTooltip = (item: ProcessedInventoryItem): string => {
   if (!item.aahTrend) return '';
   
-  const trend = item.aahTrend;
-  if (trend.trend === 'UNKNOWN') return '';
-
-  // Use just directional arrows without colored circles for cleaner display
-  let trendSymbol = '';
+  const formatPrice = (price: number) => new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP'
+  }).format(price);
   
-  if (trend.trend === 'UP') {
-    trendSymbol = '📈'; // chart increasing (green)
-  } else if (trend.trend === 'DOWN') {
-    trendSymbol = '📉'; // chart decreasing (red)
-  } else {
-    trendSymbol = '➖'; // minus for stable
-  }
+  const formatChange = (change: number) => {
+    const sign = change > 0 ? '+' : '';
+    return `${sign}${formatPrice(change)}`;
+  };
   
-  // Handle case where percentageChange is null or 0
-  if (trend.percentageChange === null || trend.percentageChange === undefined) {
-    return `${trendSymbol} 0%`;
-  }
+  const formatPercentage = (percentage: number) => {
+    const sign = percentage > 0 ? '+' : '';
+    return `${sign}${percentage.toFixed(1)}%`;
+  };
   
-  const changeSign = trend.changeAmount && trend.changeAmount > 0 ? '+' : '';
-  return `${trendSymbol} ${changeSign}${Math.round(trend.percentageChange)}%`;
+  return `AAH Trend:\nYesterday: ${formatPrice(item.aahTrend.yesterday)}\nToday: ${formatPrice(item.aahTrend.current)}\nChange: ${formatChange(item.aahTrend.changeAmount)} (${formatPercentage(item.aahTrend.percentageChange)})`;
 };
 
 // Helper function to check if Nupharm trend tooltip should be shown
@@ -622,6 +902,27 @@ const PriorityIssuesAGGrid: React.FC<{
   const [searchTerm, setSearchTerm] = useState('');
   const [gridApi, setGridApi] = useState<GridApi | null>(null);
 
+  // Inject custom AG Grid filter styles
+  useEffect(() => {
+    const styleElement = document.createElement('style');
+    styleElement.setAttribute('data-priority-issues-filters', 'true');
+    styleElement.textContent = agGridFilterStyles;
+    document.head.appendChild(styleElement);
+
+    // Force immediate application
+    setTimeout(() => {
+      if (gridApi) {
+        gridApi.refreshHeader();
+      }
+    }, 100);
+
+    return () => {
+      if (document.head.contains(styleElement)) {
+        document.head.removeChild(styleElement);
+      }
+    };
+  }, [gridApi]);
+
   // Format currency function  
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-GB', {
@@ -692,6 +993,10 @@ const PriorityIssuesAGGrid: React.FC<{
       },
       sortable: true,
       filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        suppressAndOrCondition: true
+      } as ITextFilterParams,
       resizable: true,
       suppressSizeToFit: true
     },
@@ -714,6 +1019,10 @@ const PriorityIssuesAGGrid: React.FC<{
       },
       sortable: true,
       filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        suppressAndOrCondition: true
+      } as ITextFilterParams,
       resizable: true,
       suppressSizeToFit: true
     },
@@ -736,6 +1045,10 @@ const PriorityIssuesAGGrid: React.FC<{
       },
       sortable: true,
       filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        suppressAndOrCondition: true
+      } as ITextFilterParams,
       resizable: true,
       suppressSizeToFit: true
     },
@@ -747,6 +1060,10 @@ const PriorityIssuesAGGrid: React.FC<{
       valueGetter: (params: any) => params.data.item?.stockcode || '',
       sortable: true,
       filter: 'agTextColumnFilter',
+      filterParams: {
+        defaultOption: 'contains',
+        suppressAndOrCondition: true
+      } as ITextFilterParams,
       resizable: true,
       suppressSizeToFit: true
     },
@@ -776,6 +1093,10 @@ const PriorityIssuesAGGrid: React.FC<{
       },
       sortable: true,
       filter: 'agNumberColumnFilter',
+      filterParams: {
+        defaultOption: 'equals',
+        suppressAndOrCondition: true
+      } as INumberFilterParams,
       resizable: true,
       suppressSizeToFit: true
     },
@@ -791,6 +1112,10 @@ const PriorityIssuesAGGrid: React.FC<{
       cellClass: 'text-left text-white',
       sortable: true,
       filter: 'agNumberColumnFilter',
+      filterParams: {
+        defaultOption: 'greaterThan',
+        suppressAndOrCondition: true
+      } as INumberFilterParams,
       resizable: true,
       suppressSizeToFit: true
     },
@@ -1220,7 +1545,7 @@ const PriorityIssuesAGGrid: React.FC<{
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-white">Priority Issues Analysis</h3>
+        <h3 className="text-lg font-semibold text-blue-400">🎯 Priority Issues Analysis - NEW MODERN FILTERS</h3>
         <div className="text-sm text-gray-400">
           {data.priorityIssues.length.toLocaleString()} priority issues
         </div>
@@ -1253,6 +1578,7 @@ const PriorityIssuesAGGrid: React.FC<{
               }}
             >
               <AgGridReact
+                key="priority-issues-updated-filters-v2"
                 columnDefs={columnDefs}
                 rowData={data.priorityIssues}
                 onGridReady={onGridReady}
@@ -1260,10 +1586,17 @@ const PriorityIssuesAGGrid: React.FC<{
                   itemCellRenderer: ItemCellRenderer
                 }}
                 defaultColDef={{
+                  flex: 1,
+                  minWidth: 150,
                   resizable: true,
                   sortable: true,
-                  filter: true,
-                  minWidth: 80
+                  filter: 'agTextColumnFilter',
+                  filterParams: {
+                    defaultOption: 'contains',
+                    suppressAndOrCondition: true
+                  } as ITextFilterParams,
+                  suppressHeaderMenuButton: true,
+                  suppressHeaderContextMenu: true
                 }}
                 rowHeight={64}
                 headerHeight={56}
@@ -5705,17 +6038,6 @@ const AllItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'SDT',
-      field: 'SDT',
-      width: 90,
-      valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
-      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
       headerName: 'EDT',
       field: 'EDT',
       width: 90,
@@ -7387,6 +7709,21 @@ const InventoryAnalyticsContent: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Inject custom AG Grid filter styles
+  useEffect(() => {
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = agGridFilterStyles;
+    document.head.appendChild(styleSheet);
+    
+    return () => {
+      try {
+        document.head.removeChild(styleSheet);
+      } catch (e) {
+        // Style sheet might have been removed already
+      }
+    };
+  }, []);
+
   // Handle file upload
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.csv')) {
@@ -7693,46 +8030,54 @@ const InventoryAnalyticsContent: React.FC = () => {
 
       {/* Summary Metrics - Row 1 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <MetricCard 
-          title="Total Products"
-          value={inventoryData.summaryStats.totalProducts.toLocaleString()}
-          subtitle={`${inventoryData.summaryStats.totalOverstockItems} overstocked`}
-          icon={<Package className="h-5 w-5" />}
-          iconPosition="right"
-        />
+        <div className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg opacity-60">
+          <MetricCard 
+            title="Total Products"
+            value={inventoryData.summaryStats.totalProducts.toLocaleString()}
+            subtitle={`${inventoryData.summaryStats.totalOverstockItems} overstocked`}
+            icon={<Package className="h-5 w-5" />}
+            iconPosition="right"
+          />
+        </div>
         
-        <MetricCard 
-          title="Stock Value"
-          value={formatCurrency(inventoryData.summaryStats.totalStockValue)}
-          subtitle="Physical inventory"
-          icon={<PoundSterling className="h-5 w-5" />}
-          iconPosition="right"
-        />
+        <div className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg opacity-60">
+          <MetricCard 
+            title="Stock Value"
+            value={formatCurrency(inventoryData.summaryStats.totalStockValue)}
+            subtitle="Physical inventory"
+            icon={<PoundSterling className="h-5 w-5" />}
+            iconPosition="right"
+          />
+        </div>
         
-        <MetricCard 
-          title="On Order Value"
-          value={formatCurrency(inventoryData.summaryStats.totalOnOrderValue)}
-          subtitle="Future commitments"
-          icon={<TrendingUp className="h-5 w-5" />}
-          iconPosition="right"
-        />
+        <div onClick={() => handleMetricCardClick('on-order')} className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg">
+          <MetricCard 
+            title="On Order Value"
+            value={formatCurrency(inventoryData.summaryStats.totalOnOrderValue)}
+            subtitle={`${inventoryData.analyzedItems.reduce((sum, item) => sum + (item.quantity_on_order || 0), 0).toLocaleString()} on order`}
+            icon={<TrendingUp className="h-5 w-5 text-blue-500" />}
+            iconPosition="right"
+          />
+        </div>
         
-        <MetricCard 
-          title="Overstock Value"
-          value={formatCurrency(inventoryData.summaryStats.totalOverstockStockValue)}
-          subtitle={`${inventoryData.summaryStats.overstockPercentage.toFixed(1)}% of total`}
-          icon={<AlertTriangle className="h-5 w-5" />}
-          iconPosition="right"
-          change={{
-            value: `${inventoryData.summaryStats.overstockPercentage.toFixed(1)}%`,
-            type: inventoryData.summaryStats.overstockPercentage > 20 ? 'decrease' : 'neutral'
-          }}
-        />
+        <div onClick={() => handleMetricCardClick('overstock-value')} className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg">
+          <MetricCard 
+            title="Overstock Value"
+            value={formatCurrency(inventoryData.summaryStats.totalOverstockStockValue)}
+            subtitle={`${inventoryData.summaryStats.overstockPercentage.toFixed(1)}% of total`}
+            icon={<AlertTriangle className="h-5 w-5 text-amber-500" />}
+            iconPosition="right"
+            change={{
+              value: `${inventoryData.summaryStats.overstockPercentage.toFixed(1)}%`,
+              type: inventoryData.summaryStats.overstockPercentage > 20 ? 'decrease' : 'neutral'
+            }}
+          />
+        </div>
       </div>
 
       {/* Summary Metrics - Row 2 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div onClick={() => handleMetricCardClick('out-of-stock')} className="cursor-pointer">
+        <div onClick={() => handleMetricCardClick('out-of-stock')} className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg">
           <MetricCard 
             title="Out of Stock"
             value={(inventoryData.summaryStats.outOfStockItems || 0).toLocaleString()}
@@ -7772,7 +8117,7 @@ const InventoryAnalyticsContent: React.FC = () => {
           />
         </div>
         
-        <div onClick={() => handleMetricCardClick('margin-opportunity')} className="cursor-pointer">
+        <div onClick={() => handleMetricCardClick('margin-opportunity')} className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg">
           <MetricCard 
             title="Margin Opportunities"
             value={(inventoryData.summaryStats.marginOpportunityItems || 0).toLocaleString()}
@@ -7786,7 +8131,7 @@ const InventoryAnalyticsContent: React.FC = () => {
           />
         </div>
         
-        <div onClick={() => handleMetricCardClick('cost-disadvantage')} className="cursor-pointer">
+        <div onClick={() => handleMetricCardClick('cost-disadvantage')} className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg">
           <MetricCard 
             title="Cost Disadvantage"
             value={(inventoryData.summaryStats.costDisadvantageItems || 0).toLocaleString()}
@@ -7800,7 +8145,7 @@ const InventoryAnalyticsContent: React.FC = () => {
           />
         </div>
         
-        <div onClick={() => handleMetricCardClick('stock-risk')} className="cursor-pointer">
+        <div onClick={() => handleMetricCardClick('stock-risk')} className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg">
           <MetricCard 
             title="Stock Risk"
             value={(inventoryData.summaryStats.stockRiskItems || 0).toLocaleString()}
@@ -9273,6 +9618,12 @@ const MetricFilteredView: React.FC<{
           matchesFilter = item.packs_sold_avg_last_six_months > 0 && 
                          (item.currentStock / item.packs_sold_avg_last_six_months) < 0.5;
           break;
+        case 'on-order':
+          matchesFilter = (item.quantity_on_order || 0) > 0;
+          break;
+        case 'overstock-value':
+          matchesFilter = item.isOverstocked;
+          break;
         default:
           matchesFilter = true;
       }
@@ -9579,6 +9930,8 @@ const MetricFilteredView: React.FC<{
       case 'margin-opportunity': return 'Margin Opportunity Items';
       case 'cost-disadvantage': return 'Cost Disadvantage Items';
       case 'stock-risk': return 'Stock Risk Items';
+      case 'on-order': return 'On Order Items';
+      case 'overstock-value': return 'Overstock Items';
       default: return 'Filtered Items';
     }
   };
@@ -9587,8 +9940,10 @@ const MetricFilteredView: React.FC<{
     switch (filterType) {
       case 'out-of-stock': return 'Items with 0 available, 0 ringfenced, and 0 on order';
       case 'margin-opportunity': return 'Items where our cost is >10% below lowest market price';
-              case 'cost-disadvantage': return 'Items where our cost is above market low';
+      case 'cost-disadvantage': return 'Items where our cost is above market low';
       case 'stock-risk': return 'Items with less than 2 weeks supply based on usage';
+      case 'on-order': return 'Items with future commitments on order';
+      case 'overstock-value': return 'Items with >6 months stock based on sales data';
       default: return 'Filtered view of inventory items';
     }
   };
