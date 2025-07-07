@@ -224,7 +224,12 @@ const getLexonTrendTooltip = (item: ProcessedInventoryItem): string => {
 };
 
 // Calculate market trend based on competitor price movements from yesterday
-const getMarketTrend = (item: ProcessedInventoryItem): { direction: 'UP' | 'DOWN' | 'STABLE' | 'MIXED' | 'N/A', percentage: number } => {
+const getMarketTrend = (item: ProcessedInventoryItem | null | undefined): { direction: 'UP' | 'DOWN' | 'STABLE' | 'MIXED' | 'N/A', percentage: number } => {
+  // Handle null/undefined item
+  if (!item) {
+    return { direction: 'N/A', percentage: 0 };
+  }
+
   const competitors = [
     { name: 'PHX', current: item.Nupharm, yesterday: item.Nupharm_yesterday },
     { name: 'AAH', current: item.AAH2, yesterday: item.AAH_yesterday },
@@ -274,7 +279,7 @@ const getMarketTrend = (item: ProcessedInventoryItem): { direction: 'UP' | 'DOWN
   return { direction, percentage: avgChange };
 };
 
-const getMarketTrendDisplay = (item: ProcessedInventoryItem): string => {
+const getMarketTrendDisplay = (item: ProcessedInventoryItem | null | undefined): string => {
   const trend = getMarketTrend(item);
   switch (trend.direction) {
     case 'UP': return '↗️';
@@ -285,7 +290,7 @@ const getMarketTrendDisplay = (item: ProcessedInventoryItem): string => {
   }
 };
 
-const getMarketTrendColor = (item: ProcessedInventoryItem): string => {
+const getMarketTrendColor = (item: ProcessedInventoryItem | null | undefined): string => {
   const trend = getMarketTrend(item);
   switch (trend.direction) {
     case 'UP': return '#4ade80';
@@ -296,7 +301,12 @@ const getMarketTrendColor = (item: ProcessedInventoryItem): string => {
   }
 };
 
-const getMarketTrendTooltip = (item: ProcessedInventoryItem): string => {
+const getMarketTrendTooltip = (item: ProcessedInventoryItem | null | undefined): string => {
+  // Handle null/undefined item
+  if (!item) {
+    return 'No data available';
+  }
+
   const competitors = [
     { name: 'PHX', current: item.Nupharm, yesterday: item.Nupharm_yesterday },
     { name: 'AAH', current: item.AAH2, yesterday: item.AAH_yesterday },
@@ -325,7 +335,10 @@ const getMarketTrendTooltip = (item: ProcessedInventoryItem): string => {
 };
 
 // Helper function to determine winning status: Y (strict win), N (losing), - (tie)
-const getWinningStatus = (item: ProcessedInventoryItem): 'Y' | 'N' | '-' => {
+const getWinningStatus = (item: ProcessedInventoryItem | null | undefined): 'Y' | 'N' | '-' => {
+  // Handle null/undefined item
+  if (!item) return 'N';
+  
   if (!item.AVER || item.AVER <= 0) return 'N';
   
   // Get all competitor prices
@@ -2042,7 +2055,9 @@ const WatchlistAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
-      valueGetter: (params: any) => params.data.stockcode,      sortable: true,
+      valueGetter: (params: any) => params.data.stockcode,
+      cellRenderer: 'itemCellRenderer',
+      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
@@ -3230,7 +3245,9 @@ const StarredItemsAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
-      valueGetter: (params: any) => params.data.stockcode,      sortable: true,
+      valueGetter: (params: any) => params.data.stockcode,
+      cellRenderer: 'itemCellRenderer',
+      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
@@ -5311,7 +5328,9 @@ const AllItemsAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
-      valueGetter: (params: any) => params.data.stockcode,      sortable: true,
+      valueGetter: (params: any) => params.data.stockcode,
+      cellRenderer: 'itemCellRenderer',
+      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
@@ -5401,29 +5420,46 @@ const AllItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Usage',
+      field: 'averageUsage',
+      width: 100,
+      valueGetter: (params: any) => {
+        return params.data.averageUsage || params.data.packs_sold_avg_last_six_months;
+      },
+      valueFormatter: (params: any) => {
+        const usage = params.value;
+        return usage ? `${usage.toFixed(0)}` : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const last30Days = params.data.packs_sold_last_30_days;
+        const revaLast30Days = params.data.packs_sold_reva_last_30_days;
+        
+        let tooltip = '';
+        
+        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
+          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
+        }
+        
+        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
+          if (tooltip) tooltip += '\n';
+          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
+        }
+        
+        return tooltip || 'No recent usage data available';
+      },
+      cellClass: 'text-left text-gray-300',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Months',
       field: 'monthsOfStock',
       width: 90,
       valueFormatter: (params: any) => {
         const months = params.value;
         return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        const usage = params.data.averageUsage || params.data.packs_sold_avg_last_six_months;
-        const last30Days = params.data.packs_sold_last_30_days;
-        const revaLast30Days = params.data.packs_sold_reva_last_30_days;
-        
-        let tooltip = usage ? `${usage.toFixed(0)} packs/month (6mo avg)` : 'No usage data (6mo avg)';
-        
-        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
-          tooltip += `\nLast 30 days: ${Number(last30Days).toFixed(0)} packs`;
-        }
-        
-        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
-          tooltip += `\nReva last 30 days: ${Number(revaLast30Days).toFixed(0)} packs`;
-        }
-        
-        return tooltip;
       },
       cellStyle: (params: any) => {
         const months = params.value;
@@ -6215,7 +6251,9 @@ const OverstockAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
-      valueGetter: (params: any) => params.data.stockcode,      sortable: true,
+      valueGetter: (params: any) => params.data.stockcode,
+      cellRenderer: 'itemCellRenderer',
+      sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
