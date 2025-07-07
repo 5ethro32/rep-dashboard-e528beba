@@ -1156,6 +1156,42 @@ const PriorityIssuesAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Usage',
+      field: 'averageUsage',
+      width: 100,
+      valueGetter: (params: any) => {
+        const item = params.data.item;
+        return item?.averageUsage || item?.packs_sold_avg_last_six_months;
+      },
+      valueFormatter: (params: any) => {
+        const usage = params.value;
+        return usage ? `${usage.toFixed(0)}` : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data.item;
+        const last30Days = item?.packs_sold_last_30_days;
+        const revaLast30Days = item?.packs_sold_reva_last_30_days;
+        
+        let tooltip = '';
+        
+        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
+          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
+        }
+        
+        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
+          if (tooltip) tooltip += '\n';
+          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
+        }
+        
+        return tooltip || 'No recent usage data available';
+      },
+      cellClass: 'text-left text-gray-300',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Months',
       field: 'monthsOfStock',
       width: 90,
@@ -1164,28 +1200,10 @@ const PriorityIssuesAGGrid: React.FC<{
         const months = params.value;
         return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
       },
-      tooltipValueGetter: (params: any) => {
-        const item = params.data.item;
-        const usage = item?.averageUsage || item?.packs_sold_avg_last_six_months;
-        const last30Days = item?.packs_sold_last_30_days;
-        const revaLast30Days = item?.packs_sold_reva_last_30_days;
-        
-        let tooltip = usage ? `${usage.toFixed(0)} packs/month (6mo avg)` : 'No usage data (6mo avg)';
-        
-        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
-          tooltip += `\nLast 30 days: ${Number(last30Days).toFixed(0)} packs`;
-        }
-        
-        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
-          tooltip += `\nReva last 30 days: ${Number(revaLast30Days).toFixed(0)} packs`;
-        }
-        
-        return tooltip;
-      },
       cellStyle: (params: any) => {
         const months = params.value;
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'left' as const,
           fontWeight: months && months > 6 ? 'bold' : 'normal',
           color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
@@ -2473,6 +2491,42 @@ const WatchlistAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Usage',
+      field: 'averageUsage',
+      width: 100,
+      valueGetter: (params: any) => {
+        const item = params.data;
+        return item?.averageUsage || item?.packs_sold_avg_last_six_months;
+      },
+      valueFormatter: (params: any) => {
+        const usage = params.value;
+        return usage ? `${usage.toFixed(0)}` : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data;
+        const last30Days = item?.packs_sold_last_30_days;
+        const revaLast30Days = item?.packs_sold_reva_last_30_days;
+        
+        let tooltip = '';
+        
+        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
+          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
+        }
+        
+        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
+          if (tooltip) tooltip += '\n';
+          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
+        }
+        
+        return tooltip || 'No recent usage data available';
+      },
+      cellClass: 'text-left text-gray-300',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Months',
       field: 'monthsOfStock',
       width: 90,
@@ -3657,6 +3711,42 @@ const StarredItemsAGGrid: React.FC<{
           paddingLeft: '8px'
         };
       },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Usage',
+      field: 'averageUsage',
+      width: 100,
+      valueGetter: (params: any) => {
+        const item = params.data;
+        return item?.averageUsage || item?.packs_sold_avg_last_six_months;
+      },
+      valueFormatter: (params: any) => {
+        const usage = params.value;
+        return usage ? `${usage.toFixed(0)}` : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data;
+        const last30Days = item?.packs_sold_last_30_days;
+        const revaLast30Days = item?.packs_sold_reva_last_30_days;
+        
+        let tooltip = '';
+        
+        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
+          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
+        }
+        
+        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
+          if (tooltip) tooltip += '\n';
+          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
+        }
+        
+        return tooltip || 'No recent usage data available';
+      },
+      cellClass: 'text-left text-gray-300',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -6665,6 +6755,42 @@ const OverstockAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Usage',
+      field: 'averageUsage',
+      width: 100,
+      valueGetter: (params: any) => {
+        const item = params.data;
+        return item?.averageUsage || item?.packs_sold_avg_last_six_months;
+      },
+      valueFormatter: (params: any) => {
+        const usage = params.value;
+        return usage ? `${usage.toFixed(0)}` : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data;
+        const last30Days = item?.packs_sold_last_30_days;
+        const revaLast30Days = item?.packs_sold_reva_last_30_days;
+        
+        let tooltip = '';
+        
+        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
+          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
+        }
+        
+        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
+          if (tooltip) tooltip += '\n';
+          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
+        }
+        
+        return tooltip || 'No recent usage data available';
+      },
+      cellClass: 'text-left text-gray-300',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Months',
       field: 'monthsOfStock',
       width: 90,
@@ -9168,6 +9294,42 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'quantity_on_order',
       width: 110,
       valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
+      cellClass: 'text-left text-gray-300',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Usage',
+      field: 'averageUsage',
+      width: 100,
+      valueGetter: (params: any) => {
+        const item = params.data;
+        return item?.averageUsage || item?.packs_sold_avg_last_six_months;
+      },
+      valueFormatter: (params: any) => {
+        const usage = params.value;
+        return usage ? `${usage.toFixed(0)}` : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data;
+        const last30Days = item?.packs_sold_last_30_days;
+        const revaLast30Days = item?.packs_sold_reva_last_30_days;
+        
+        let tooltip = '';
+        
+        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
+          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
+        }
+        
+        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
+          if (tooltip) tooltip += '\n';
+          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
+        }
+        
+        return tooltip || 'No recent usage data available';
+      },
       cellClass: 'text-left text-gray-300',
       sortable: true,
       filter: 'agNumberColumnFilter',
