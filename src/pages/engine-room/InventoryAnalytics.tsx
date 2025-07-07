@@ -9433,7 +9433,7 @@ const MetricFilteredAGGrid: React.FC<{
         const reva = item?.reva && item.reva > 0 ? formatCurrency(item.reva) : 'N/A';
         return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
       },
-      cellStyle: { textAlign: 'right' as const, color: '#c084fc', fontWeight: 'bold' },
+      cellClass: 'text-left text-purple-400 font-bold',
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -9448,7 +9448,7 @@ const MetricFilteredAGGrid: React.FC<{
       cellStyle: (params: any) => {
         const margin = params.value;
         return {
-          textAlign: 'right' as const,
+          textAlign: 'left' as const,
           fontWeight: 'bold',
           color: getMarginColor(margin)
         };
