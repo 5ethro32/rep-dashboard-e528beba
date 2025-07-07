@@ -506,6 +506,55 @@ const getLexonTrendTooltip = (item: ProcessedInventoryItem): string => {
   return `${trendSymbol} ${changeSign}${Math.round(trend.percentageChange)}%`;
 };
 
+// Competitor Price Movement Analysis Helper Functions
+const calculateCompetitorPriceMovement = (current: number | null | undefined, yesterday: number | null | undefined): number | null => {
+  if (!current || !yesterday || current <= 0 || yesterday <= 0) return null;
+  return ((current - yesterday) / yesterday) * 100;
+};
+
+const getCompetitorMovements = (item: ProcessedInventoryItem): {
+  phx: number | null;
+  aah: number | null; 
+  eth: number | null;
+  lex: number | null;
+  average: number | null;
+  maxAbsolute: number | null;
+  hasMovement: boolean;
+} => {
+  const phxMovement = calculateCompetitorPriceMovement(item.Nupharm, item.Nupharm_yesterday);
+  const aahMovement = calculateCompetitorPriceMovement(item.AAH2, item.AAH_yesterday);
+  const ethMovement = calculateCompetitorPriceMovement(item.ETH_NET, item.ETH_NET_yesterday);
+  const lexMovement = calculateCompetitorPriceMovement(item.LEXON2, item.LEXON2_yesterday);
+  
+  const validMovements = [phxMovement, aahMovement, ethMovement, lexMovement].filter(m => m !== null) as number[];
+  
+  const average = validMovements.length > 0 ? validMovements.reduce((sum, m) => sum + m, 0) / validMovements.length : null;
+  const maxAbsolute = validMovements.length > 0 ? validMovements.reduce((max, m) => Math.abs(m) > Math.abs(max) ? m : max, validMovements[0]) : null;
+  const hasMovement = validMovements.some(m => Math.abs(m) > 0.1); // At least 0.1% movement
+  
+  return {
+    phx: phxMovement,
+    aah: aahMovement,
+    eth: ethMovement,
+    lex: lexMovement,
+    average,
+    maxAbsolute,
+    hasMovement
+  };
+};
+
+const formatMovementDisplay = (movement: number | null): string => {
+  if (movement === null) return 'N/A';
+  const sign = movement > 0 ? '+' : '';
+  return `${sign}${movement.toFixed(1)}%`;
+};
+
+const getMovementColor = (movement: number | null): string => {
+  if (movement === null) return '#9ca3af'; // gray
+  if (Math.abs(movement) < 0.5) return '#facc15'; // yellow for stable
+  return movement > 0 ? '#4ade80' : '#f87171'; // green for up, red for down
+};
+
 // Calculate market trend based on competitor price movements from yesterday
 const getMarketTrend = (item: ProcessedInventoryItem | null | undefined): { direction: 'UP' | 'DOWN' | 'STABLE' | 'MIXED' | 'N/A', percentage: number } => {
   // Handle null/undefined item
@@ -5651,6 +5700,7 @@ const AllItemsAGGrid: React.FC<{
 }> = ({ data, onToggleStar, starredItems }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [competitorFilter, setCompetitorFilter] = useState<string>('none');
   const [gridApi, setGridApi] = useState<GridApi | null>(null);
 
   // Format currency function  
@@ -6245,8 +6295,84 @@ const AllItemsAGGrid: React.FC<{
       });
     }
 
+    // Apply competitor price movement filters
+    if (competitorFilter !== 'none') {
+      items = items.filter(item => {
+        const movements = getCompetitorMovements(item);
+        
+        switch (competitorFilter) {
+          case 'overall-avg':
+            return movements.average !== null && Math.abs(movements.average) > 0.1;
+          case 'overall-max':
+            return movements.maxAbsolute !== null && Math.abs(movements.maxAbsolute) > 0.1;
+          case 'eth-up':
+            return movements.eth !== null && movements.eth > 0.1;
+          case 'eth-down':
+            return movements.eth !== null && movements.eth < -0.1;
+          case 'aah-up':
+            return movements.aah !== null && movements.aah > 0.1;
+          case 'aah-down':
+            return movements.aah !== null && movements.aah < -0.1;
+          case 'phx-up':
+            return movements.phx !== null && movements.phx > 0.1;
+          case 'phx-down':
+            return movements.phx !== null && movements.phx < -0.1;
+          case 'lex-up':
+            return movements.lex !== null && movements.lex > 0.1;
+          case 'lex-down':
+            return movements.lex !== null && movements.lex < -0.1;
+          default:
+            return true;
+        }
+      });
+
+      // Sort by movement magnitude for competitor filters
+      if (competitorFilter !== 'none') {
+        items.sort((a, b) => {
+          const aMovements = getCompetitorMovements(a);
+          const bMovements = getCompetitorMovements(b);
+          
+          let aValue = 0;
+          let bValue = 0;
+          
+          switch (competitorFilter) {
+            case 'overall-avg':
+              aValue = Math.abs(aMovements.average || 0);
+              bValue = Math.abs(bMovements.average || 0);
+              break;
+            case 'overall-max':
+              aValue = Math.abs(aMovements.maxAbsolute || 0);
+              bValue = Math.abs(bMovements.maxAbsolute || 0);
+              break;
+            case 'eth-up':
+            case 'eth-down':
+              aValue = Math.abs(aMovements.eth || 0);
+              bValue = Math.abs(bMovements.eth || 0);
+              break;
+            case 'aah-up':
+            case 'aah-down':
+              aValue = Math.abs(aMovements.aah || 0);
+              bValue = Math.abs(bMovements.aah || 0);
+              break;
+            case 'phx-up':
+            case 'phx-down':
+              aValue = Math.abs(aMovements.phx || 0);
+              bValue = Math.abs(bMovements.phx || 0);
+              break;
+            case 'lex-up':
+            case 'lex-down':
+              aValue = Math.abs(aMovements.lex || 0);
+              bValue = Math.abs(bMovements.lex || 0);
+              break;
+          }
+          
+          return bValue - aValue; // Sort by highest movement first
+        });
+      }
+    }
+
         return items;
-  }, [data.analyzedItems, filterType]);
+  }, [data.analyzedItems, filterType, competitorFilter]);
 
 
   
@@ -6532,6 +6658,187 @@ const AllItemsAGGrid: React.FC<{
                 className="text-xs text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-1"
               >
                 ← Clear Filter
+              </button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Competitors Price Movement Filters */}
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <h4 className="text-sm font-medium text-gray-300 mb-3">Competitors</h4>
+          <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-2">
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setCompetitorFilter('overall-avg')}
+                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      competitorFilter === 'overall-avg' 
+                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-blue-500/10 hover:text-blue-300 border border-gray-700/50'
+                    }`}
+                  >
+                    📊 Overall
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">Overall Price Movement</div>
+                    <div>Shows products where the average competitor movement is significant. Indicates broad market trends.</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setCompetitorFilter('eth-up')}
+                      className={`flex-1 p-2 rounded-l-lg text-xs font-medium transition-all duration-200 ${
+                        competitorFilter === 'eth-up' 
+                          ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
+                      }`}
+                    >
+                      ETH ↑
+                    </button>
+                    <button
+                      onClick={() => setCompetitorFilter('eth-down')}
+                      className={`flex-1 p-2 rounded-r-lg text-xs font-medium transition-all duration-200 ${
+                        competitorFilter === 'eth-down' 
+                          ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+                      }`}
+                    >
+                      ETH ↓
+                    </button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">ETH Price Movement</div>
+                    <div>ETH ↑: Price increases (sales opportunity)<br/>ETH ↓: Price decreases (review pricing)</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setCompetitorFilter('aah-up')}
+                      className={`flex-1 p-2 rounded-l-lg text-xs font-medium transition-all duration-200 ${
+                        competitorFilter === 'aah-up' 
+                          ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
+                      }`}
+                    >
+                      AAH ↑
+                    </button>
+                    <button
+                      onClick={() => setCompetitorFilter('aah-down')}
+                      className={`flex-1 p-2 rounded-r-lg text-xs font-medium transition-all duration-200 ${
+                        competitorFilter === 'aah-down' 
+                          ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+                      }`}
+                    >
+                      AAH ↓
+                    </button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">AAH Price Movement</div>
+                    <div>AAH ↑: Price increases (sales opportunity)<br/>AAH ↓: Price decreases (review pricing)</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setCompetitorFilter('phx-up')}
+                      className={`flex-1 p-2 rounded-l-lg text-xs font-medium transition-all duration-200 ${
+                        competitorFilter === 'phx-up' 
+                          ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
+                      }`}
+                    >
+                      PHX ↑
+                    </button>
+                    <button
+                      onClick={() => setCompetitorFilter('phx-down')}
+                      className={`flex-1 p-2 rounded-r-lg text-xs font-medium transition-all duration-200 ${
+                        competitorFilter === 'phx-down' 
+                          ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+                      }`}
+                    >
+                      PHX ↓
+                    </button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">PHX Price Movement</div>
+                    <div>PHX ↑: Price increases (sales opportunity)<br/>PHX ↓: Price decreases (review pricing)</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setCompetitorFilter('lex-up')}
+                      className={`flex-1 p-2 rounded-l-lg text-xs font-medium transition-all duration-200 ${
+                        competitorFilter === 'lex-up' 
+                          ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
+                      }`}
+                    >
+                      LEX ↑
+                    </button>
+                    <button
+                      onClick={() => setCompetitorFilter('lex-down')}
+                      className={`flex-1 p-2 rounded-r-lg text-xs font-medium transition-all duration-200 ${
+                        competitorFilter === 'lex-down' 
+                          ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+                      }`}
+                    >
+                      LEX ↓
+                    </button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                  <div className="text-sm">
+                    <div className="font-medium mb-1">LEX Price Movement</div>
+                    <div>LEX ↑: Price increases (sales opportunity)<br/>LEX ↓: Price decreases (review pricing)</div>
+                  </div>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          </div>
+          {competitorFilter !== 'none' && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={() => setCompetitorFilter('none')}
+                className="text-xs text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-1"
+              >
+                ← Clear Competitor Filter
               </button>
             </div>
           )}
