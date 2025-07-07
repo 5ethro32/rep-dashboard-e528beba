@@ -377,22 +377,25 @@ const shouldShowAAHTrendTooltip = (item: ProcessedInventoryItem): boolean => {
 const getAAHTrendTooltip = (item: ProcessedInventoryItem): string => {
   if (!item.aahTrend) return '';
   
-  const formatPrice = (price: number) => new Intl.NumberFormat('en-GB', {
-    style: 'currency',
-    currency: 'GBP'
-  }).format(price);
+  const trend = item.aahTrend;
+  if (trend.trend === 'UNKNOWN') return '';
+
+  let trendSymbol = '';
   
-  const formatChange = (change: number) => {
-    const sign = change > 0 ? '+' : '';
-    return `${sign}${formatPrice(change)}`;
-  };
+  if (trend.trend === 'UP') {
+    trendSymbol = '📈'; // chart increasing (green)
+  } else if (trend.trend === 'DOWN') {
+    trendSymbol = '📉'; // chart decreasing (red)
+  } else {
+    trendSymbol = '➖'; // minus for stable
+  }
   
-  const formatPercentage = (percentage: number) => {
-    const sign = percentage > 0 ? '+' : '';
-    return `${sign}${percentage.toFixed(1)}%`;
-  };
+  if (trend.percentageChange === null || trend.percentageChange === undefined) {
+    return `${trendSymbol} 0%`;
+  }
   
-  return `AAH Trend:\nYesterday: ${formatPrice(item.aahTrend.yesterday)}\nToday: ${formatPrice(item.aahTrend.current)}\nChange: ${formatChange(item.aahTrend.changeAmount)} (${formatPercentage(item.aahTrend.percentageChange)})`;
+  const changeSign = trend.changeAmount && trend.changeAmount > 0 ? '+' : '';
+  return `${trendSymbol} ${changeSign}${Math.round(trend.percentageChange)}%`;
 };
 
 // Helper function to check if Nupharm trend tooltip should be shown
