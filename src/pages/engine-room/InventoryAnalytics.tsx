@@ -6128,6 +6128,17 @@ const AllItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'SDT',
+      field: 'SDT',
+      width: 90,
+      valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : '-',
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db' },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'EDT',
       field: 'EDT',
       width: 90,
