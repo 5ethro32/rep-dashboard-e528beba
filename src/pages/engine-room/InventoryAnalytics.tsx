@@ -10349,7 +10349,19 @@ const MetricFilteredView: React.FC<{
         columnFilters.stockQty.includes((item.currentStock || 0) > 0 ? 'In Stock' : 'OOS');
 
       // Apply supplier filter for Out of Stock view
-      const matchesSupplierFilter = supplierFilter === 'none' || item.min_supplier === supplierFilter;
+      const matchesSupplierFilter = (() => {
+        // If no supplier filter is set and no search term, show all items
+        if (supplierFilter === 'none' && !supplierSearchTerm) return true;
+        
+        // If supplier filter is set, check exact match
+        if (supplierFilter !== 'none' && item.min_supplier === supplierFilter) return true;
+        
+        // If search term is provided, check if supplier contains the search term
+        if (supplierSearchTerm && item.min_supplier && item.min_supplier.toLowerCase().includes(supplierSearchTerm.toLowerCase())) return true;
+        
+        // If both filter and search term are provided, need to match both conditions
+        return false;
+      })();
 
       return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter && matchesSupplierFilter;
     });
@@ -10433,7 +10445,7 @@ const MetricFilteredView: React.FC<{
     });
 
     return filtered;
-  }, [data.analyzedItems, filterType, searchTerm, sortField, sortDirection, starredItems, columnFilters, supplierFilter]);
+  }, [data.analyzedItems, filterType, searchTerm, sortField, sortDirection, starredItems, columnFilters, supplierFilter, supplierSearchTerm]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
