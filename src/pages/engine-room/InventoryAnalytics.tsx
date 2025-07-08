@@ -9929,12 +9929,7 @@ const MetricFilteredAGGrid: React.FC<{
     }
   ]; // Simple array instead of useMemo
 
-  // Refresh star column when starred items change
-  useEffect(() => {
-    if (gridApi) {
-      gridApi.refreshCells({ columns: ['starred'] });
-    }
-  }, [starredItems, gridApi]);
+
 
   // Filter out Price and Winning columns for out-of-stock view  
   const filteredColumnDefs = useMemo(() => {
