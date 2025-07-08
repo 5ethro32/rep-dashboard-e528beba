@@ -9616,6 +9616,60 @@ const MetricFilteredAGGrid: React.FC<{
     return '#4ade80';
   };
 
+  // Calculate profit opportunity: (Market Price - NBP) × Average Monthly Usage
+  const calculateProfitOpportunity = (item: any): number | null => {
+    if (!item) return null;
+    
+    // Get NBP (Next Best Price - what we can buy at)
+    const nbp = item?.min_cost;
+    if (!nbp || nbp <= 0) return null;
+    
+    // Get lowest competitor price (market price)
+    const competitorPrices = [
+      item?.Nupharm,
+      item?.AAH2, 
+      item?.ETH_NET,
+      item?.LEXON2
+    ].filter(price => price && price > 0);
+    
+    if (competitorPrices.length === 0) return null;
+    const marketPrice = Math.min(...competitorPrices);
+    
+    // Get average monthly usage
+    const monthlyUsage = item?.averageUsage || item?.packs_sold_avg_last_six_months;
+    if (!monthlyUsage || monthlyUsage <= 0) return null;
+    
+    // Calculate profit opportunity (Market Price - NBP) × Usage
+    // Positive = we can compete profitably, Negative = we're at disadvantage
+    const profitPerUnit = marketPrice - nbp;
+    const monthlyProfitOpp = profitPerUnit * monthlyUsage;
+    
+    return monthlyProfitOpp;
+  };
+
+  // Format profit opportunity for display
+  const formatProfitOpportunity = (profitOpp: number | null): string => {
+    if (profitOpp === null || profitOpp === undefined) return 'N/A';
+    
+    // Show as currency with appropriate formatting
+    if (Math.abs(profitOpp) >= 10000) {
+      return `${profitOpp >= 0 ? '+' : '-'}£${Math.abs(profitOpp / 1000).toFixed(0)}k`;
+    } else if (Math.abs(profitOpp) >= 1000) {
+      return `${profitOpp >= 0 ? '+' : '-'}£${Math.abs(profitOpp / 1000).toFixed(1)}k`;
+    } else {
+      return `${profitOpp >= 0 ? '+' : '-'}£${Math.abs(profitOpp).toFixed(0)}`;
+    }
+  };
+
+  // Get color for profit opportunity
+  const getProfitOpportunityColor = (profitOpp: number | null): string => {
+    if (profitOpp === null) return '#9ca3af';
+    if (profitOpp > 5000) return '#4ade80';  // Green for high opportunity
+    if (profitOpp > 1000) return '#facc15';  // Yellow for medium opportunity  
+    if (profitOpp > 0) return '#60a5fa';     // Blue for small opportunity
+    return '#f87171';                        // Red for negative opportunity
+  };
+
   // Column definitions for AG Grid - matches the metric filtered view table
   const columnDefs: ColDef[] = [
     {
@@ -9794,17 +9848,40 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Margin',
-      field: 'margin',
-      width: 110,
-      valueGetter: (params: any) => calculateMargin(params.data),
-      valueFormatter: (params: any) => formatMargin(params.value),
+      headerName: 'Profit Opp',
+      field: 'profitOpportunity',
+      width: 120,
+      valueGetter: (params: any) => calculateProfitOpportunity(params.data),
+      valueFormatter: (params: any) => formatProfitOpportunity(params.value),
+      tooltipValueGetter: (params: any) => {
+        const item = params.data;
+        const profitOpp = params.value;
+        if (profitOpp === null || profitOpp === undefined) return 'No profit opportunity data available';
+        
+        const nbp = item?.min_cost;
+        const competitorPrices = [
+          item?.Nupharm,
+          item?.AAH2, 
+          item?.ETH_NET,
+          item?.LEXON2
+        ].filter(price => price && price > 0);
+        
+        const marketPrice = competitorPrices.length > 0 ? Math.min(...competitorPrices) : null;
+        const monthlyUsage = item?.averageUsage || item?.packs_sold_avg_last_six_months;
+        const profitPerPack = marketPrice && nbp ? marketPrice - nbp : null;
+        
+        return `Monthly Profit Opportunity: ${formatProfitOpportunity(profitOpp)}\n` +
+               `Market Price: ${marketPrice ? formatCurrency(marketPrice) : 'N/A'}\n` +
+               `NBP (Our Cost): ${nbp ? formatCurrency(nbp) : 'N/A'}\n` +
+               `Profit per Pack: ${profitPerPack !== null ? formatCurrency(profitPerPack) : 'N/A'}\n` +
+               `Monthly Usage: ${monthlyUsage ? monthlyUsage.toFixed(0) : 'N/A'} packs`;
+      },
       cellStyle: (params: any) => {
-        const margin = params.value;
+        const profitOpp = params.value;
         return {
           textAlign: 'left' as const,
           fontWeight: 'bold',
-          color: getMarginColor(margin)
+          color: getProfitOpportunityColor(profitOpp)
         };
       },
       sortable: true,
