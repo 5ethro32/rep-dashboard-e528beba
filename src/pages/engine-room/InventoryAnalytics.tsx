@@ -9736,6 +9736,42 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Usage',
+      field: 'averageUsage',
+      width: 100,
+      valueGetter: (params: any) => {
+        const item = params.data;
+        return item?.averageUsage || item?.packs_sold_avg_last_six_months;
+      },
+      valueFormatter: (params: any) => {
+        const usage = params.value;
+        return usage ? `${usage.toFixed(0)}` : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const item = params.data;
+        const last30Days = item?.packs_sold_last_30_days;
+        const revaLast30Days = item?.packs_sold_reva_last_30_days;
+        
+        let tooltip = '';
+        
+        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
+          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
+        }
+        
+        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
+          if (tooltip) tooltip += '\n';
+          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
+        }
+        
+        return tooltip || 'No recent usage data available';
+      },
+      cellClass: 'text-left text-gray-300',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Months',
       field: 'monthsOfStock',
       width: 90,
