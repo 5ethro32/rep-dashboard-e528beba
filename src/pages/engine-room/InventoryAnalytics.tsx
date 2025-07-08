@@ -9617,7 +9617,8 @@ const MetricFilteredAGGrid: React.FC<{
   };
 
   // Column definitions for AG Grid - matches the metric filtered view table
-  const columnDefs: ColDef[] = [
+  // Make this reactive to starredItems changes
+  const columnDefs: ColDef[] = useMemo(() => [
     {
       headerName: 'Watch',
       field: 'watchlist',
@@ -9659,19 +9660,10 @@ const MetricFilteredAGGrid: React.FC<{
         };
       },
       onCellClicked: (params: any) => {
-        console.log('MetricFilteredAGGrid Star clicked!', { 
-          data: params.data, 
-          id: params.data?.id, 
-          stockcode: params.data?.stockcode,
-          hasId: !!params.data?.id 
-        });
-        
         // Try both id and stockcode as fallback
         const itemId = params.data?.id || params.data?.stockcode;
         if (itemId) {
           onToggleStar(itemId);
-        } else {
-          console.error('No valid ID found for star toggle:', params.data);
         }
       },
       sortable: false,
@@ -9950,7 +9942,7 @@ const MetricFilteredAGGrid: React.FC<{
       resizable: true,
       suppressSizeToFit: true
     }
-  ];
+  ], [starredItems]); // Recreate columns when starred items change
 
   // Filter out Price and Winning columns for out-of-stock view  
   const filteredColumnDefs = useMemo(() => {
@@ -9997,12 +9989,7 @@ const MetricFilteredAGGrid: React.FC<{
     }
       }, [starredItems, gridApi, columnState, restoreColumnState]);
 
-  // Refresh star column when starred items change
-  useEffect(() => {
-    if (gridApi) {
-      gridApi.refreshCells({ columns: ['starred'] });
-    }
-  }, [starredItems, gridApi]);
+
 
  
 
