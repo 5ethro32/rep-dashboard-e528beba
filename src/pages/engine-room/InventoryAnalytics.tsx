@@ -10211,6 +10211,9 @@ const MetricFilteredView: React.FC<{
   const [showSupplierFilters, setShowSupplierFilters] = useState<boolean>(false);
   const [supplierSearchTerm, setSupplierSearchTerm] = useState<string>('');
   
+  // Add starred supplier filter state
+  const [starredSupplierFilter, setStarredSupplierFilter] = useState<string>('none');
+  
   // Debug effect to track gridFilteredData changes
   useEffect(() => {
     console.log('gridFilteredData updated:', gridFilteredData.length, 'items');
@@ -10311,7 +10314,17 @@ const MetricFilteredView: React.FC<{
         return false;
       })();
 
-      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter && matchesSupplierFilter;
+      // Apply starred supplier filter (only show starred items from specific supplier)
+      const matchesStarredSupplierFilter = (() => {
+        if (starredSupplierFilter === 'none') return true;
+        
+        // Only show items that are:
+        // 1. Starred AND
+        // 2. From the selected supplier
+        return starredItems.has(item.id) && item.min_supplier === starredSupplierFilter;
+      })();
+
+      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter && matchesSupplierFilter && matchesStarredSupplierFilter;
     });
 
     // Sort items
@@ -10393,7 +10406,7 @@ const MetricFilteredView: React.FC<{
     });
 
     return filtered;
-  }, [data.analyzedItems, filterType, searchTerm, sortField, sortDirection, starredItems, columnFilters, supplierFilter, supplierSearchTerm]);
+  }, [data.analyzedItems, filterType, searchTerm, sortField, sortDirection, starredItems, columnFilters, supplierFilter, supplierSearchTerm, starredSupplierFilter]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -10768,6 +10781,29 @@ const MetricFilteredView: React.FC<{
     );
   };
 
+  // Get suppliers that have starred items in the current filtered data
+  const getStarredSuppliers = useMemo(() => {
+    // Use grid-filtered data when available, otherwise fall back to filteredItems
+    const dataToUse = gridFilteredData.length > 0 ? gridFilteredData : filteredItems;
+    
+    // Get all starred items from the current filtered data
+    const starredItemsInView = dataToUse.filter(item => starredItems.has(item.id));
+    
+    // Group by supplier and count
+    const supplierCounts: Record<string, number> = {};
+    starredItemsInView.forEach(item => {
+      const supplier = item.min_supplier || 'N/A';
+      if (supplier !== 'N/A') {
+        supplierCounts[supplier] = (supplierCounts[supplier] || 0) + 1;
+      }
+    });
+    
+    // Convert to array and sort by supplier name
+    return Object.entries(supplierCounts)
+      .map(([supplier, count]) => ({ supplier, count }))
+      .sort((a, b) => a.supplier.localeCompare(b.supplier));
+  }, [filteredItems, gridFilteredData, starredItems]);
+
   return (
     <div className="space-y-6">
       {/* Header with clear filter button */}
@@ -10917,6 +10953,61 @@ const MetricFilteredView: React.FC<{
                   )}
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Starred Supplier Filter for Out of Stock view */}
+      {filterType === 'out-of-stock' && getStarredSuppliers.length > 0 && (
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="flex flex-col gap-3">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-medium text-gray-300">Starred Items by Supplier</h4>
+                  {starredSupplierFilter !== 'none' && (
+                    <span className="text-xs bg-yellow-600/20 text-yellow-400 px-2 py-1 rounded-full">
+                      {starredSupplierFilter}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-400">
+                  {getStarredSuppliers.reduce((sum, supplier) => sum + supplier.count, 0)} starred items
+                </div>
+              </div>
+              
+              <div className="text-xs text-gray-400 mb-2">
+                Star items in the table above, then click a supplier to filter to those starred items
+              </div>
+              
+              {/* Starred Supplier Filter Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setStarredSupplierFilter('none')}
+                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                    starredSupplierFilter === 'none' 
+                      ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
+                      : 'bg-gray-800/50 text-gray-400 hover:bg-blue-600/10 hover:text-blue-400 border border-gray-700/50'
+                  }`}
+                >
+                  ⭐ Show All
+                </button>
+                {getStarredSuppliers.map(({ supplier, count }) => (
+                  <button
+                    key={supplier}
+                    onClick={() => setStarredSupplierFilter(supplier)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      starredSupplierFilter === supplier 
+                        ? 'bg-yellow-600/20 text-yellow-400 border border-yellow-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-yellow-600/10 hover:text-yellow-400 border border-gray-700/50'
+                    }`}
+                  >
+                    ⭐ {supplier} ({count})
+                  </button>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
