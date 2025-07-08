@@ -9617,8 +9617,7 @@ const MetricFilteredAGGrid: React.FC<{
   };
 
   // Column definitions for AG Grid - matches the metric filtered view table
-  // Make this reactive to starredItems changes
-  const columnDefs: ColDef[] = useMemo(() => [
+  const columnDefs: ColDef[] = [
     {
       headerName: 'Watch',
       field: 'watchlist',
@@ -9645,36 +9644,22 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'starred',
       pinned: 'left',
       width: 60,
-      valueGetter: (params: any) => {
-        const itemId = params.data?.id || params.data?.stockcode;
-        return starredItems.has(itemId) ? '★' : '☆';
-      },
+      valueGetter: (params: any) => starredItems.has(params.data.id) ? '★' : '☆',
       cellStyle: (params: any) => {
-        const itemId = params.data?.id || params.data?.stockcode;
-        const isStarred = starredItems.has(itemId);
+        const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
           textAlign: 'center !important' as const,
-          cursor: 'pointer',
-          fontSize: '16px'
+          cursor: 'pointer'
         };
       },
       onCellClicked: (params: any) => {
-        // Try both id and stockcode as fallback
-        const itemId = params.data?.id || params.data?.stockcode;
-        if (itemId) {
-          onToggleStar(itemId);
-        }
+        onToggleStar(params.data.id);
       },
       sortable: false,
-      filter: 'agSetColumnFilter',
-      filterParams: {
-        values: ['★', '☆'],
-        suppressSelectAll: true,
-        suppressMiniFilter: true
-      },
+      filter: false,
       resizable: false,
-      suppressHeaderMenuButton: false,
+      suppressHeaderMenuButton: true,
       suppressSizeToFit: true
     },
     {
@@ -9942,7 +9927,14 @@ const MetricFilteredAGGrid: React.FC<{
       resizable: true,
       suppressSizeToFit: true
     }
-  ], [starredItems]); // Recreate columns when starred items change
+  ]; // Simple array instead of useMemo
+
+  // Refresh star column when starred items change
+  useEffect(() => {
+    if (gridApi) {
+      gridApi.refreshCells({ columns: ['starred'] });
+    }
+  }, [starredItems, gridApi]);
 
   // Filter out Price and Winning columns for out-of-stock view  
   const filteredColumnDefs = useMemo(() => {
@@ -9952,7 +9944,7 @@ const MetricFilteredAGGrid: React.FC<{
       );
     }
     return columnDefs;
-  }, [filterType]);
+  }, [filterType, columnDefs]);
 
   // Apply quick filter when search term changes
   useEffect(() => {
