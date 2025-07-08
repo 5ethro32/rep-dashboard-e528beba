@@ -9637,7 +9637,9 @@ const MetricFilteredAGGrid: React.FC<{
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
-      suppressSizeToFit: true
+      suppressSizeToFit: true,
+      lockPinned: true,
+      suppressMovable: true
     },
     {
       headerName: 'Star',
@@ -9670,7 +9672,9 @@ const MetricFilteredAGGrid: React.FC<{
       },
       resizable: false,
       suppressHeaderMenuButton: false,
-      suppressSizeToFit: true
+      suppressSizeToFit: true,
+      lockPinned: true,
+      suppressMovable: true
     },
     {
       headerName: 'Item',
@@ -9681,7 +9685,9 @@ const MetricFilteredAGGrid: React.FC<{
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
-      suppressSizeToFit: true
+      suppressSizeToFit: true,
+      lockPinned: true,
+      suppressMovable: true
     },
     {
       headerName: 'Group',
@@ -10118,30 +10124,36 @@ const MetricFilteredAGGrid: React.FC<{
           resizable: true,
           sortable: true,
           filter: true,
-          minWidth: 80
+          minWidth: 80,
+          lockPinned: true,
+          suppressMovable: false
         }}
         rowHeight={64}
         headerHeight={56}
-              suppressRowClickSelection={true}
-      rowSelection="multiple"
-      pagination={true}
-      paginationPageSize={50}
-      paginationPageSizeSelector={[25, 50, 100, 200, 500, 1000]}
-      suppressPaginationPanel={false}
-      enableRangeSelection={true}
-      suppressMenuHide={false}
-      animateRows={true}
-      suppressCellFocus={true}
-      enableCellTextSelection={true}
-      tooltipShowDelay={500}
-      tooltipHideDelay={10000}
-      tooltipMouseTrack={true}
-      domLayout="normal"
-      quickFilterText={searchTerm}
-      maintainColumnOrder={true}
-      suppressDragLeaveHidesColumns={true}
-      suppressMovableColumns={false}
-      />
+        suppressRowClickSelection={true}
+        rowSelection="multiple"
+        pagination={true}
+        paginationPageSize={50}
+        paginationPageSizeSelector={[25, 50, 100, 200, 500, 1000]}
+        suppressPaginationPanel={false}
+        enableRangeSelection={true}
+        suppressMenuHide={false}
+        animateRows={false}
+        suppressCellFocus={true}
+        enableCellTextSelection={true}
+        tooltipShowDelay={500}
+        tooltipHideDelay={10000}
+        tooltipMouseTrack={true}
+        domLayout="normal"
+        quickFilterText={searchTerm}
+        maintainColumnOrder={false}
+        suppressDragLeaveHidesColumns={true}
+        suppressMovableColumns={false}
+        suppressColumnMoveAnimation={true}
+        suppressAnimationFrame={false}
+        debounceVerticalScrollbar={true}
+        suppressColumnVirtualisation={false}
+        />
     </div>
   );
 };
