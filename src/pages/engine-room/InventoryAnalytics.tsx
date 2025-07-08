@@ -10741,7 +10741,7 @@ const MetricFilteredView: React.FC<{
     }, 0);
     
     // Count starred items in the current filtered data
-    const starredInFiltered = dataToUse.filter(item => starredItems.has(item.stockcode)).length;
+    const starredInFiltered = dataToUse.filter(item => starredItems.has(item.id)).length;
     
     return {
       totalItems: dataToUse.length,
