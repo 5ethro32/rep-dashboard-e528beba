@@ -9711,31 +9711,6 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Stock £',
-      field: 'stockValue',
-      width: 110,
-      valueFormatter: (params: any) => {
-        const value = params.value || 0;
-        return formatCurrency(value);
-      },
-      cellClass: 'text-left text-white',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'On Order',
-      field: 'quantity_on_order',
-      width: 110,
-      valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
-      cellClass: 'text-left text-gray-300',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
       headerName: 'Usage',
       field: 'averageUsage',
       width: 100,
