@@ -10,7 +10,8 @@ import {
   ValidationModule,
   QuickFilterModule,
   TooltipModule,
-  CellStyleModule
+  CellStyleModule,
+  ColumnApiModule
 } from 'ag-grid-community';
 
 // Register AG Grid modules
@@ -22,6 +23,7 @@ ModuleRegistry.registerModules([
   QuickFilterModule,
   TooltipModule,
   CellStyleModule,
+  ColumnApiModule,
   ...(process.env.NODE_ENV !== 'production' ? [ValidationModule] : [])
 ]);
 
@@ -9575,15 +9577,22 @@ const MetricFilteredAGGrid: React.FC<{
   // Handle filter changes from AG Grid
   const handleFilterChanged = useCallback(() => {
     if (gridApi && onGridFilterChange) {
-      const filteredData: any[] = [];
-      gridApi.forEachNodeAfterFilter(node => {
-        if (node.data) {
-          filteredData.push(node.data);
-        }
-      });
-      console.log('AG Grid filtered data count:', filteredData.length); // Debug log
-      console.log('Calling onGridFilterChange with:', filteredData.length, 'items'); // Debug log
-      onGridFilterChange(filteredData);
+      try {
+        const filteredData: any[] = [];
+        gridApi.forEachNodeAfterFilter(node => {
+          if (node.data) {
+            filteredData.push(node.data);
+          }
+        });
+        console.log('AG Grid filtered data count:', filteredData.length); // Debug log
+        console.log('Sample filtered item:', filteredData[0]); // Debug log
+        console.log('Calling onGridFilterChange with:', filteredData.length, 'items'); // Debug log
+        onGridFilterChange(filteredData);
+      } catch (error) {
+        console.error('Error in handleFilterChanged:', error);
+      }
+    } else {
+      console.log('Missing gridApi or onGridFilterChange:', { hasGridApi: !!gridApi, hasCallback: !!onGridFilterChange });
     }
   }, [gridApi, onGridFilterChange]);
 
@@ -10088,6 +10097,15 @@ const MetricFilteredAGGrid: React.FC<{
     }
   }, [filteredItems, gridApi, onGridFilterChange, handleFilterChanged]);
 
+  // Trigger filter change when search term changes
+  useEffect(() => {
+    if (gridApi && onGridFilterChange) {
+      console.log('Search term changed to:', searchTerm);
+      // Small delay to ensure grid is updated with new search
+      setTimeout(() => handleFilterChanged(), 100);
+    }
+  }, [searchTerm, gridApi, onGridFilterChange, handleFilterChanged]);
+
   // Restore column state when starred items change (after re-render)
   useEffect(() => {
     if (gridApi && columnState && Array.isArray(columnState) && columnState.length > 0) {
@@ -10100,9 +10118,11 @@ const MetricFilteredAGGrid: React.FC<{
 
   const onGridReady = (params: any) => {
     setGridApi(params.api);
+    console.log('Grid ready, setting up event listeners');
     
     // Set up filter change listener and initial data
     if (onGridFilterChange) {
+      console.log('Setting up filter change listeners');
       // Add multiple event listeners to catch all filter changes
       params.api.addEventListener('filterChanged', handleFilterChanged);
       params.api.addEventListener('sortChanged', handleFilterChanged);
