@@ -9566,9 +9566,23 @@ const MetricFilteredAGGrid: React.FC<{
   onToggleStar: (id: string) => void;
   starredItems: Set<string>;
   filteredItems: any[];
-}> = ({ data, filterType, onToggleStar, starredItems, filteredItems }) => {
+  onGridFilterChange?: (filteredData: any[]) => void;
+}> = ({ data, filterType, onToggleStar, starredItems, filteredItems, onGridFilterChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [gridApi, setGridApi] = useState<GridApi | null>(null);
+
+  // Handle filter changes from AG Grid
+  const handleFilterChanged = useCallback(() => {
+    if (gridApi && onGridFilterChange) {
+      const filteredData: any[] = [];
+      gridApi.forEachNodeAfterFilter(node => {
+        if (node.data) {
+          filteredData.push(node.data);
+        }
+      });
+      onGridFilterChange(filteredData);
+    }
+  }, [gridApi, onGridFilterChange]);
 
   // Format currency function  
   const formatCurrency = (value: number) => {
@@ -10039,6 +10053,13 @@ const MetricFilteredAGGrid: React.FC<{
 
   const onGridReady = (params: any) => {
     setGridApi(params.api);
+    
+    // Set up filter change listener and initial data
+    if (onGridFilterChange) {
+      params.api.addEventListener('filterChanged', handleFilterChanged);
+      // Call immediately to set initial filtered data
+      setTimeout(() => handleFilterChanged(), 0);
+    }
   };
 
   // Custom cell renderer component for Item column
@@ -10104,6 +10125,7 @@ const MetricFilteredAGGrid: React.FC<{
         columnDefs={columnDefs}
         rowData={filteredItems}
         onGridReady={onGridReady}
+        onFilterChanged={handleFilterChanged}
         components={{
           itemCellRenderer: ItemCellRenderer
         }}
@@ -10147,6 +10169,7 @@ const MetricFilteredView: React.FC<{
   const [sortField, setSortField] = useState<string>('stockValue');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [searchTerm, setSearchTerm] = useState('');
+  const [gridFilteredData, setGridFilteredData] = useState<any[]>([]);
   
   // Column filter states
   const [columnFilters, setColumnFilters] = useState<{
@@ -10518,6 +10541,86 @@ const MetricFilteredView: React.FC<{
     }
   };
 
+  // Export function to convert filtered data to CSV
+  const handleExport = () => {
+    // Use grid filtered data if available, otherwise fall back to component filtered items
+    const dataToExport = gridFilteredData.length > 0 ? gridFilteredData : filteredItems;
+    
+    if (dataToExport.length === 0) {
+      return;
+    }
+
+    // Define CSV headers
+    const headers = [
+      'Stock Code',
+      'Description',
+      'Group',
+      'Stock Value (£)',
+      'Stock Qty',
+      'On Order',
+      'Usage',
+      'Months',
+      'Avg Cost (£)',
+      'NBP (£)',
+      'Buying Trend',
+      'Price (£)',
+      'Margin (%)',
+      'Winning',
+      'Market (£)',
+      'Market Trend'
+    ];
+
+    // Convert filtered data to CSV rows
+    const csvRows = dataToExport.map(item => {
+      const margin = calculateMargin(item);
+      const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+      const nbp = item.nextBuyingPrice || item.nbp || item.next_cost || item.min_cost || item.last_po_cost;
+      const marketTrend = getMarketTrendDisplay(item);
+      const winningStatus = getWinningStatus(item);
+      
+      return [
+        item.stockcode || '',
+        item.description || '',
+        typeof item.velocityCategory === 'number' ? item.velocityCategory.toString() : 'N/A',
+        item.stockValue ? item.stockValue.toFixed(2) : '0.00',
+        (item.currentStock || 0).toString(),
+        (item.quantity_on_order || 0).toString(),
+        item.averageUsage || item.packs_sold_avg_last_six_months ? (item.averageUsage || item.packs_sold_avg_last_six_months).toFixed(0) : 'N/A',
+        item.monthsOfStock === 999.9 ? '∞' : item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A',
+        getDisplayedAverageCost(item) ? getDisplayedAverageCost(item)!.toFixed(2) : 'N/A',
+        nbp && nbp > 0 ? nbp.toFixed(2) : 'N/A',
+        item.trendDirection || 'N/A',
+        item.AVER ? item.AVER.toFixed(2) : 'N/A',
+        margin ? margin.toFixed(1) : 'N/A',
+        winningStatus,
+        lowestComp && lowestComp > 0 ? lowestComp.toFixed(2) : 'N/A',
+        marketTrend
+      ];
+    });
+
+    // Combine headers and rows
+    const csvContent = [headers, ...csvRows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    // Generate filename with current date and filter type
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const filename = `${getFilterTitle().replace(/\s+/g, '_')}_${dateStr}.csv`;
+    link.setAttribute('download', filename);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const getFilterDescription = () => {
     switch (filterType) {
       case 'out-of-stock': return 'Items with 0 available, 0 ringfenced, and 0 on order';
@@ -10637,6 +10740,22 @@ const MetricFilteredView: React.FC<{
         </CardContent>
       </Card>
 
+      {/* Export Button */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold text-white">Filtered Data</h3>
+          <p className="text-sm text-gray-400">Export the current filtered results</p>
+        </div>
+        <Button 
+          onClick={handleExport}
+          disabled={filteredItems.length === 0}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Download className="h-4 w-4" />
+          Export to CSV ({gridFilteredData.length > 0 ? gridFilteredData.length : filteredItems.length} items)
+        </Button>
+      </div>
+
       {/* Data Table */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
@@ -10652,6 +10771,7 @@ const MetricFilteredView: React.FC<{
               onToggleStar={onToggleStar}
               starredItems={starredItems}
               filteredItems={filteredItems}
+              onGridFilterChange={setGridFilteredData}
             />
           )}
         </CardContent>
