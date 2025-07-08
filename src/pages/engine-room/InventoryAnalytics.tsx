@@ -9580,6 +9580,7 @@ const MetricFilteredAGGrid: React.FC<{
           filteredData.push(node.data);
         }
       });
+      console.log('AG Grid filtered data count:', filteredData.length); // Debug log
       onGridFilterChange(filteredData);
     }
   }, [gridApi, onGridFilterChange]);
@@ -10050,15 +10051,31 @@ const MetricFilteredAGGrid: React.FC<{
       gridApi.setGridOption('quickFilterText', searchTerm);
     }
   }, [searchTerm, gridApi]);
+  
+  // Trigger filter change when filtered items change (for initial load)
+  useEffect(() => {
+    if (gridApi && onGridFilterChange) {
+      console.log('Filtered items changed, triggering handleFilterChanged'); // Debug log
+      // Small delay to ensure grid is updated
+      setTimeout(() => handleFilterChanged(), 50);
+    }
+  }, [filteredItems, gridApi, onGridFilterChange, handleFilterChanged]);
 
   const onGridReady = (params: any) => {
     setGridApi(params.api);
     
     // Set up filter change listener and initial data
     if (onGridFilterChange) {
+      // Add multiple event listeners to catch all filter changes
       params.api.addEventListener('filterChanged', handleFilterChanged);
+      params.api.addEventListener('sortChanged', handleFilterChanged);
+      params.api.addEventListener('modelUpdated', handleFilterChanged);
+      
       // Call immediately to set initial filtered data
-      setTimeout(() => handleFilterChanged(), 0);
+      setTimeout(() => {
+        console.log('Setting initial filtered data'); // Debug log
+        handleFilterChanged();
+      }, 100);
     }
   };
 
@@ -10170,6 +10187,11 @@ const MetricFilteredView: React.FC<{
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [searchTerm, setSearchTerm] = useState('');
   const [gridFilteredData, setGridFilteredData] = useState<any[]>([]);
+  
+  // Debug effect to log when gridFilteredData changes
+  useEffect(() => {
+    console.log('Grid filtered data updated:', gridFilteredData.length, 'items');
+  }, [gridFilteredData]);
   
   // Column filter states
   const [columnFilters, setColumnFilters] = useState<{
@@ -10545,6 +10567,10 @@ const MetricFilteredView: React.FC<{
   const handleExport = () => {
     // Use grid filtered data if available, otherwise fall back to component filtered items
     const dataToExport = gridFilteredData.length > 0 ? gridFilteredData : filteredItems;
+    
+    console.log('Export - Grid filtered data:', gridFilteredData.length); // Debug log
+    console.log('Export - Component filtered items:', filteredItems.length); // Debug log
+    console.log('Export - Data to export:', dataToExport.length); // Debug log
     
     if (dataToExport.length === 0) {
       return;
