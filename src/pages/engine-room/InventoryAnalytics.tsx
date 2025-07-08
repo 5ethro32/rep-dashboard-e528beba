@@ -9570,6 +9570,7 @@ const MetricFilteredAGGrid: React.FC<{
 }> = ({ data, filterType, onToggleStar, starredItems, filteredItems, onGridFilterChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [gridApi, setGridApi] = useState<GridApi | null>(null);
+  const [columnState, setColumnState] = useState<any[]>([]);
 
   // Handle filter changes from AG Grid
   const handleFilterChanged = useCallback(() => {
@@ -9584,6 +9585,30 @@ const MetricFilteredAGGrid: React.FC<{
       onGridFilterChange(filteredData);
     }
   }, [gridApi, onGridFilterChange]);
+
+  // Save column state when it changes
+  const handleColumnStateChange = useCallback(() => {
+    if (gridApi) {
+      const newColumnState = gridApi.getColumnState();
+      if (newColumnState && Array.isArray(newColumnState)) {
+        setColumnState(newColumnState);
+      }
+    }
+  }, [gridApi]);
+
+  // Restore column state when grid is ready
+  const restoreColumnState = useCallback(() => {
+    if (gridApi && columnState && Array.isArray(columnState) && columnState.length > 0) {
+      try {
+        gridApi.applyColumnState({
+          state: columnState,
+          applyOrder: true
+        });
+      } catch (error) {
+        console.warn('Failed to restore column state:', error);
+      }
+    }
+  }, [gridApi, columnState]);
 
   // Format currency function  
   const formatCurrency = (value: number) => {
@@ -9642,6 +9667,7 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'stockcode',
       pinned: 'left',
       width: 300,
+      cellRenderer: 'itemCellRenderer',
       sortable: true,
       filter: 'agTextColumnFilter',
       resizable: true,
@@ -10061,6 +10087,16 @@ const MetricFilteredAGGrid: React.FC<{
     }
   }, [filteredItems, gridApi, onGridFilterChange, handleFilterChanged]);
 
+  // Restore column state when starred items change (after re-render)
+  useEffect(() => {
+    if (gridApi && columnState && Array.isArray(columnState) && columnState.length > 0) {
+      // Small delay to ensure grid is fully rendered
+      setTimeout(() => {
+        restoreColumnState();
+      }, 100);
+    }
+  }, [starredItems, gridApi, columnState, restoreColumnState]);
+
   const onGridReady = (params: any) => {
     setGridApi(params.api);
     
@@ -10077,6 +10113,19 @@ const MetricFilteredAGGrid: React.FC<{
         handleFilterChanged();
       }, 100);
     }
+
+    // Set up column state persistence
+    params.api.addEventListener('columnMoved', handleColumnStateChange);
+    params.api.addEventListener('columnResized', handleColumnStateChange);
+    params.api.addEventListener('columnVisible', handleColumnStateChange);
+    params.api.addEventListener('columnPinned', handleColumnStateChange);
+    
+    // Restore column state if available (with safety check)
+    setTimeout(() => {
+      if (columnState && Array.isArray(columnState) && columnState.length > 0) {
+        restoreColumnState();
+      }
+    }, 200);
   };
 
   // Custom cell renderer component for Item column
@@ -10143,6 +10192,10 @@ const MetricFilteredAGGrid: React.FC<{
         rowData={filteredItems}
         onGridReady={onGridReady}
         onFilterChanged={handleFilterChanged}
+        onColumnMoved={handleColumnStateChange}
+        onColumnResized={handleColumnStateChange}
+        onColumnVisible={handleColumnStateChange}
+        onColumnPinned={handleColumnStateChange}
         components={{
           itemCellRenderer: ItemCellRenderer
         }}
@@ -10170,6 +10223,7 @@ const MetricFilteredAGGrid: React.FC<{
         tooltipMouseTrack={true}
         domLayout="normal"
         quickFilterText={searchTerm}
+        maintainColumnOrder={true}
       />
     </div>
   );
