@@ -10715,11 +10715,14 @@ const MetricFilteredView: React.FC<{
 
   // Calculate summary stats for filtered items
   const filteredStats = useMemo(() => {
+    // Use grid-filtered data when available, otherwise fall back to filteredItems
+    const dataToUse = gridFilteredData.length > 0 ? gridFilteredData : filteredItems;
+    
     let totalValue;
     
     if (filterType === 'out-of-stock') {
       // Calculate lost revenue opportunity for out-of-stock items that can be replenished
-      totalValue = filteredItems.reduce((sum, item) => {
+      totalValue = dataToUse.reduce((sum, item) => {
         // Only calculate for items with min_cost (can be replenished)
         if (!item.min_cost || item.min_cost <= 0) return sum;
         
@@ -10737,24 +10740,28 @@ const MetricFilteredView: React.FC<{
       }, 0);
     } else {
       // Default calculation for other filter types
-      totalValue = filteredItems.reduce((sum, item) => sum + (item.stockValue || 0), 0);
+      totalValue = dataToUse.reduce((sum, item) => sum + (item.stockValue || 0), 0);
     }
     
-    const fastMovers = filteredItems.filter(item => typeof item.velocityCategory === 'number' && item.velocityCategory <= 3);
-    const potentialRevenue = filteredItems.reduce((sum, item) => {
+    const fastMovers = dataToUse.filter(item => typeof item.velocityCategory === 'number' && item.velocityCategory <= 3);
+    const potentialRevenue = dataToUse.reduce((sum, item) => {
       if (filterType === 'margin-opportunity' && item.lowestMarketPrice) {
         return sum + ((item.lowestMarketPrice - item.avg_cost) * (item.currentStock || 0));
       }
       return sum;
     }, 0);
     
+    // Count starred items in the current filtered data
+    const starredInFiltered = dataToUse.filter(item => starredItems.has(item.stockcode)).length;
+    
     return {
-      totalItems: filteredItems.length,
+      totalItems: dataToUse.length,
       totalValue,
       fastMovers: fastMovers.length,
-      potentialRevenue
+      potentialRevenue,
+      starredInFiltered
     };
-  }, [filteredItems, filterType]);
+  }, [filteredItems, gridFilteredData, filterType, starredItems]);
 
   return (
     <div className="space-y-6">
@@ -10796,7 +10803,7 @@ const MetricFilteredView: React.FC<{
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-yellow-400">
               {filterType === 'margin-opportunity' ? formatCurrency(filteredStats.potentialRevenue) : 
-               starredItems.size.toLocaleString()}
+               filteredStats.starredInFiltered.toLocaleString()}
             </div>
             <div className="text-sm text-gray-400">
               {filterType === 'margin-opportunity' ? 'Potential Revenue' : 'Starred Items'}
