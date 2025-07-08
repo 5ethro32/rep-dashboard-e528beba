@@ -9644,9 +9644,13 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'starred',
       pinned: 'left',
       width: 60,
-      valueGetter: (params: any) => starredItems.has(params.data.id) ? '★' : '☆',
+      valueGetter: (params: any) => {
+        const itemId = params.data?.id || params.data?.stockcode;
+        return starredItems.has(itemId) ? '★' : '☆';
+      },
       cellStyle: (params: any) => {
-        const isStarred = starredItems.has(params.data.id);
+        const itemId = params.data?.id || params.data?.stockcode;
+        const isStarred = starredItems.has(itemId);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
           textAlign: 'center !important' as const,
@@ -9655,8 +9659,19 @@ const MetricFilteredAGGrid: React.FC<{
         };
       },
       onCellClicked: (params: any) => {
-        if (params.data?.id) {
-          onToggleStar(params.data.id);
+        console.log('MetricFilteredAGGrid Star clicked!', { 
+          data: params.data, 
+          id: params.data?.id, 
+          stockcode: params.data?.stockcode,
+          hasId: !!params.data?.id 
+        });
+        
+        // Try both id and stockcode as fallback
+        const itemId = params.data?.id || params.data?.stockcode;
+        if (itemId) {
+          onToggleStar(itemId);
+        } else {
+          console.error('No valid ID found for star toggle:', params.data);
         }
       },
       sortable: false,
