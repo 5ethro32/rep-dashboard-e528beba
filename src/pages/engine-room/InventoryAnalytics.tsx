@@ -5701,6 +5701,7 @@ const AllItemsAGGrid: React.FC<{
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [competitorFilter, setCompetitorFilter] = useState<string>('none');
+  const [strategicTab, setStrategicTab] = useState<string>('risks');
   const [gridApi, setGridApi] = useState<GridApi | null>(null);
 
   // Format currency function  
@@ -6513,213 +6514,242 @@ const AllItemsAGGrid: React.FC<{
         </CardContent>
       </Card>
 
-      {/* Same strategic filters */}
+      {/* Strategic Filters with Tabs */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-4">
           <h4 className="text-sm font-medium text-gray-300 mb-3">Strategic Filters</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-2">
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setFilterType('cost-disadvantage-down')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'cost-disadvantage-down' 
-                        ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
-                    }`}
-                  >
-                    🔻 Cost Risk
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">Cost Disadvantage + Falling Prices</div>
-                    <div>Products where our cost exceeds lowest competitor AND market prices are falling. Risk of being undercut.</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setFilterType('margin-opportunity')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'margin-opportunity' 
-                        ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
-                    }`}
-                  >
-                    💰 Margin Win
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">Immediate Margin Opportunities</div>
-                    <div>Products where our cost is below market minimum. Can increase price while staying cheapest.</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setFilterType('urgent-sourcing')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'urgent-sourcing' 
-                        ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-orange-500/10 hover:text-orange-300 border border-gray-700/50'
-                    }`}
-                  >
-                    ⚡ Uncompetitive Cost
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">Uncompetitive Cost Alert</div>
-                    <div>Products where our cost is above market low with stable/rising trends. No price relief coming.</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setFilterType('below-cost-lines')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'below-cost-lines' 
-                        ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
-                    }`}
-                  >
-                    📉 Below Cost
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">Below Cost Lines</div>
-                    <div>Products where our selling price is below average cost. Items selling at a loss requiring immediate attention.</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setFilterType('dead-stock-alert')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'dead-stock-alert' 
-                        ? 'bg-red-600/20 text-red-400 border border-red-600/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-600/10 hover:text-red-400 border border-gray-700/50'
-                    }`}
-                  >
-                    ☠️ Dead Stock
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">Dead Stock Alert</div>
-                    <div>High cost + falling prices + overstocked (&gt;6 months). Critical clearance priority to minimize losses.</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setFilterType('eth-oos')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'eth-oos' 
-                        ? 'bg-red-600/20 text-red-400 border border-red-600/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-red-600/10 hover:text-red-400 border border-gray-700/50'
-                    }`}
-                  >
-                    ❗ ETH OOS
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">ETH OOS</div>
-                    <div>Items that have the ❗ symbol</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setFilterType('second-best-price')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'second-best-price' 
-                        ? 'bg-green-600/20 text-green-400 border border-green-600/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-green-600/10 hover:text-green-400 border border-gray-700/50'
-                    }`}
-                  >
-                    🥈 Second Best Price
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">Second Best Price</div>
-                    <div>Our price is second best among competitors (one competitor beats us)</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setFilterType('ringfence')}
-                    className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      filterType === 'ringfence' 
-                        ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-blue-600/10 hover:text-blue-400 border border-gray-700/50'
-                    }`}
-                  >
-                    🛡️ Ringfence
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
-                  <div className="text-sm">
-                    <div className="font-medium mb-1">Ringfence</div>
-                    <div>Items with ringfenced stock quantity greater than 0</div>
-                  </div>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
+          
+          {/* Tab Navigation */}
+          <div className="flex gap-1 mb-4">
+            <button
+              onClick={() => setStrategicTab('risks')}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                strategicTab === 'risks' 
+                  ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                  : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+              }`}
+            >
+              Risks
+            </button>
+            <button
+              onClick={() => setStrategicTab('rewards')}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                strategicTab === 'rewards' 
+                  ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                  : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
+              }`}
+            >
+              Rewards
+            </button>
+            <button
+              onClick={() => setStrategicTab('competitors')}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                strategicTab === 'competitors' 
+                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' 
+                  : 'bg-gray-800/50 text-gray-400 hover:bg-blue-500/10 hover:text-blue-300 border border-gray-700/50'
+              }`}
+            >
+              Competitors
+            </button>
           </div>
-          {filterType !== 'all' && (
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                onClick={() => setFilterType('all')}
-                className="text-xs text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-1"
-              >
-                ← Clear Filter
-              </button>
+
+          {/* Risks Tab */}
+          {strategicTab === 'risks' && (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-2">
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setFilterType('cost-disadvantage-down')}
+                      className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        filterType === 'cost-disadvantage-down' 
+                          ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+                      }`}
+                    >
+                      🔻 Cost Risk
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Cost Disadvantage + Falling Prices</div>
+                      <div>Products where our cost exceeds lowest competitor AND market prices are falling. Risk of being undercut.</div>
+                    </div>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setFilterType('urgent-sourcing')}
+                      className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        filterType === 'urgent-sourcing' 
+                          ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-orange-500/10 hover:text-orange-300 border border-gray-700/50'
+                      }`}
+                    >
+                      ⚡ Uncompetitive Cost
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Uncompetitive Cost Alert</div>
+                      <div>Products where our cost is above market low with stable/rising trends. No price relief coming.</div>
+                    </div>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setFilterType('below-cost-lines')}
+                      className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        filterType === 'below-cost-lines' 
+                          ? 'bg-red-500/20 text-red-300 border border-red-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-gray-700/50'
+                      }`}
+                    >
+                      📉 Below Cost
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="center" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Below Cost Lines</div>
+                      <div>Products where our selling price is below average cost. Items selling at a loss requiring immediate attention.</div>
+                    </div>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setFilterType('dead-stock-alert')}
+                      className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        filterType === 'dead-stock-alert' 
+                          ? 'bg-red-600/20 text-red-400 border border-red-600/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-red-600/10 hover:text-red-400 border border-gray-700/50'
+                      }`}
+                    >
+                      ☠️ Dead Stock
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Dead Stock Alert</div>
+                      <div>High cost + falling prices + overstocked (&gt;6 months). Critical clearance priority to minimize losses.</div>
+                    </div>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Competitors Price Movement Filters */}
-      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <h4 className="text-sm font-medium text-gray-300 mb-3">Competitors</h4>
-          <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-2">
+          {/* Rewards Tab */}
+          {strategicTab === 'rewards' && (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-2">
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setFilterType('margin-opportunity')}
+                      className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        filterType === 'margin-opportunity' 
+                          ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-green-500/10 hover:text-green-300 border border-gray-700/50'
+                      }`}
+                    >
+                      💰 Margin Win
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="start" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Immediate Margin Opportunities</div>
+                      <div>Products where our cost is below market minimum. Can increase price while staying cheapest.</div>
+                    </div>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setFilterType('second-best-price')}
+                      className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        filterType === 'second-best-price' 
+                          ? 'bg-green-600/20 text-green-400 border border-green-600/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-green-600/10 hover:text-green-400 border border-gray-700/50'
+                      }`}
+                    >
+                      🥈 Second Best Price
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Second Best Price</div>
+                      <div>Our price is second best among competitors (one competitor beats us)</div>
+                    </div>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setFilterType('eth-oos')}
+                      className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        filterType === 'eth-oos' 
+                          ? 'bg-red-600/20 text-red-400 border border-red-600/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-red-600/10 hover:text-red-400 border border-gray-700/50'
+                      }`}
+                    >
+                      ❗ ETH OOS
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">ETH OOS</div>
+                      <div>Items that have the ❗ symbol</div>
+                    </div>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <UITooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setFilterType('ringfence')}
+                      className={`p-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        filterType === 'ringfence' 
+                          ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-blue-600/10 hover:text-blue-400 border border-gray-700/50'
+                      }`}
+                    >
+                      🛡️ Ringfence
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="end" className="bg-gray-800 border-gray-700 text-white max-w-xs">
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Ringfence</div>
+                      <div>Items with ringfenced stock quantity greater than 0</div>
+                    </div>
+                  </TooltipContent>
+                </UITooltip>
+              </TooltipProvider>
+            </div>
+          )}
+
+          {/* Competitors Tab */}
+          {strategicTab === 'competitors' && (
+            <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-2">
             <TooltipProvider>
               <UITooltip>
                 <TooltipTrigger asChild>
@@ -6883,6 +6913,8 @@ const AllItemsAGGrid: React.FC<{
               </UITooltip>
             </TooltipProvider>
           </div>
+          )}
+
           {competitorFilter !== 'none' && (
             <div className="mt-3 flex items-center gap-2">
               <button
@@ -6890,6 +6922,21 @@ const AllItemsAGGrid: React.FC<{
                 className="text-xs text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-1"
               >
                 ← Clear Competitor Filter
+              </button>
+            </div>
+          )}
+
+          {/* Clear Filter Button */}
+          {(filterType !== 'all' || competitorFilter !== 'none') && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setFilterType('all');
+                  setCompetitorFilter('none');
+                }}
+                className="text-xs text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-1"
+              >
+                ← Clear All Filters
               </button>
             </div>
           )}
