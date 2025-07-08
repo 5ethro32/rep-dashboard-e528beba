@@ -306,7 +306,9 @@ import {
   Flag,
   TrendingDown,
   Filter,
-  RotateCcw
+  RotateCcw,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import MetricCard from '@/components/MetricCard';
@@ -329,9 +331,9 @@ import { AgGridReact } from 'ag-grid-react';
 import { 
   ColDef, 
   GridApi, 
-  GridOptions,
-  IDateFilterParams,
-  INumberFilterParams,
+  GridOptions, 
+  IDateFilterParams, 
+  INumberFilterParams, 
   ITextFilterParams
 } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
@@ -1315,6 +1317,22 @@ const PriorityIssuesAGGrid: React.FC<{
       cellStyle: { textAlign: 'left' as const, color: '#3b82f6', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Min Supplier',
+      field: 'min_supplier',
+      width: 150,
+      valueGetter: (params: any) => params.data.item?.min_supplier || 'N/A',
+      valueFormatter: (params: any) => params.value || 'N/A',
+      tooltipValueGetter: (params: any) => {
+        const supplier = params.data.item?.min_supplier || 'No supplier information available';
+        return supplier;
+      },
+      cellStyle: { textAlign: 'left' as const, color: '#6b7280', fontWeight: 'normal' },
+      sortable: true,
+      filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
     },
@@ -2667,141 +2685,6 @@ const WatchlistAGGrid: React.FC<{
       resizable: true,
       suppressSizeToFit: true
     },
-    {
-      headerName: 'Buying Trend',
-      field: 'trendDirection',
-      width: 110,
-      valueFormatter: (params: any) => {
-        const trend = params.value;
-        return trend === 'UP' ? '↑' : trend === 'DOWN' ? '↓' : trend === 'STABLE' ? '−' : '?';
-      },
-      cellStyle: (params: any) => {
-        const trend = params.value;
-        let color = '#9ca3af';
-        switch (trend) {
-          case 'UP': color = '#4ade80'; break;
-          case 'DOWN': color = '#f87171'; break;
-          case 'STABLE': color = '#facc15'; break;
-        }
-        return {
-          textAlign: 'center !important' as const,
-          fontSize: '18px',
-          fontWeight: 'bold',
-          color: color
-        };
-      },
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Price',
-      field: 'AVER',
-      width: 110,
-      valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : 'N/A',
-      tooltipValueGetter: (params: any) => {
-        const data = params.data;
-        const mclean = data.MCLEAN && data.MCLEAN > 0 ? formatCurrency(data.MCLEAN) : 'N/A';
-        const apple = data.APPLE && data.APPLE > 0 ? formatCurrency(data.APPLE) : 'N/A';
-        const davidson = data.DAVIDSON && data.DAVIDSON > 0 ? formatCurrency(data.DAVIDSON) : 'N/A';
-        const reva = data.reva && data.reva > 0 ? formatCurrency(data.reva) : 'N/A';
-        return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
-      },
-      cellStyle: { textAlign: 'left' as const, color: '#c084fc', fontWeight: 'bold' },
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Market',
-      field: 'lowestComp',
-      width: 110,
-      valueGetter: (params: any) => {
-        return params.data.bestCompetitorPrice || params.data.lowestMarketPrice || params.data.Nupharm || params.data.AAH2 || params.data.LEXON2 || 0;
-      },
-      valueFormatter: (params: any) => {
-        return params.value > 0 ? formatCurrency(params.value) : 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        const item = params.data;
-        const competitors = [
-          { name: 'PHX', price: item.Nupharm },
-          { name: 'AAH', price: item.AAH2 },
-          { name: 'ETHN', price: item.ETH_NET },
-          { name: 'LEX', price: item.LEXON2 }
-        ].filter(comp => comp.price && comp.price > 0)
-         .sort((a, b) => a.price - b.price);
-        
-        if (competitors.length === 0) {
-          return 'No competitor pricing available';
-        }
-        
-        // Build tooltip with competitor prices and trend information
-        let tooltipLines = competitors.map(comp => {
-          let line = `${comp.name}: ${formatCurrency(comp.price)}`;
-          
-          // Add trend information for each competitor if available
-          if (comp.name === 'AAH' && shouldShowAAHTrendTooltip(item)) {
-            const trendInfo = getAAHTrendTooltip(item);
-            if (trendInfo) {
-              line += ` - ${trendInfo}`;
-            }
-          } else if (comp.name === 'PHX' && shouldShowNupharmTrendTooltip(item)) {
-            const trendInfo = getNupharmTrendTooltip(item);
-            if (trendInfo) {
-              line += ` - ${trendInfo}`;
-            }
-          } else if (comp.name === 'ETHN' && shouldShowETHNetTrendTooltip(item)) {
-            const trendInfo = getETHNetTrendTooltip(item);
-            if (trendInfo) {
-              line += ` - ${trendInfo}`;
-            }
-          } else if (comp.name === 'LEX' && shouldShowLexonTrendTooltip(item)) {
-            const trendInfo = getLexonTrendTooltip(item);
-            if (trendInfo) {
-              line += ` - ${trendInfo}`;
-            }
-          }
-          
-          return line;
-        });
-        
-        return tooltipLines.join('\n');
-      },
-      cellStyle: { textAlign: 'left' as const, color: '#60a5fa', fontWeight: 'bold' },
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Market Trend',
-      field: 'marketTrend',
-      width: 110,
-      valueGetter: (params: any) => {
-        const item = params.data.item;
-        return getMarketTrendDisplay(item);
-      },
-      tooltipValueGetter: (params: any) => {
-        const item = params.data.item;
-        return getMarketTrendTooltip(item);
-      },
-      cellStyle: (params: any) => {
-        const item = params.data.item;
-        return {
-          textAlign: 'center !important' as const,
-          fontSize: '18px',
-          fontWeight: 'bold',
-          color: getMarketTrendColor(item)
-        };
-      },
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
 {
       headerName: 'Winning',
       field: 'winning',
@@ -3894,6 +3777,22 @@ const StarredItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Min Supplier',
+      field: 'min_supplier',
+      width: 150,
+      valueGetter: (params: any) => params.data.min_supplier || 'N/A',
+      valueFormatter: (params: any) => params.value || 'N/A',
+      tooltipValueGetter: (params: any) => {
+        const supplier = params.data.min_supplier || 'No supplier information available';
+        return supplier;
+      },
+      cellStyle: { textAlign: 'left' as const, color: '#6b7280', fontWeight: 'normal' },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Buying Trend',
       field: 'trendDirection',
       width: 110,
@@ -4028,7 +3927,7 @@ const StarredItemsAGGrid: React.FC<{
       resizable: true,
       suppressSizeToFit: true
     },
-{
+    {
       headerName: 'Winning',
       field: 'winning',
       width: 90,
@@ -6003,6 +5902,22 @@ const AllItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Min Supplier',
+      field: 'min_supplier',
+      width: 150,
+      valueFormatter: (params: any) => {
+        return params.value || 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        return params.value || 'No supplier information available';
+      },
+      cellStyle: { textAlign: 'left' as const, color: '#6b7280', fontWeight: 'normal' }, // gray-500
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Buying Trend',
       field: 'trendDirection',
       width: 110,
@@ -7299,6 +7214,22 @@ const OverstockAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Min Supplier',
+      field: 'min_supplier',
+      width: 150,
+      valueGetter: (params: any) => params.data.min_supplier || 'N/A',
+      valueFormatter: (params: any) => params.value || 'N/A',
+      tooltipValueGetter: (params: any) => {
+        const supplier = params.data.min_supplier || 'No supplier information available';
+        return supplier;
+      },
+      cellStyle: { textAlign: 'left' as const, color: '#6b7280', fontWeight: 'normal' },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Buying Trend',
       field: 'trendDirection',
       width: 110,
@@ -7433,7 +7364,7 @@ const OverstockAGGrid: React.FC<{
       resizable: true,
       suppressSizeToFit: true
     },
-{
+    {
       headerName: 'Winning',
       field: 'winning',
       width: 90,
@@ -9579,15 +9510,51 @@ const MetricFilteredAGGrid: React.FC<{
     if (gridApi && onGridFilterChange) {
       try {
         const filteredData: any[] = [];
+        
+        // Try different methods to get filtered data
+        console.log('Testing different AG Grid methods:');
+        
+        // Method 1: forEachNodeAfterFilter (current approach)
         gridApi.forEachNodeAfterFilter(node => {
           if (node.data) {
             filteredData.push(node.data);
           }
         });
-        console.log('AG Grid filtered data count:', filteredData.length); // Debug log
-        console.log('Sample filtered item:', filteredData[0]); // Debug log
-        console.log('Calling onGridFilterChange with:', filteredData.length, 'items'); // Debug log
-        onGridFilterChange(filteredData);
+        console.log('Method 1 - forEachNodeAfterFilter:', filteredData.length, 'items');
+        
+        // Method 2: forEachNode with manual filtering check
+        const manualFiltered: any[] = [];
+        gridApi.forEachNode(node => {
+          if (node.data) {
+            manualFiltered.push(node.data);
+          }
+        });
+        console.log('Method 2 - forEachNode (all):', manualFiltered.length, 'items');
+        
+        // Method 3: Check if there are any active filters
+        const filterModel = gridApi.getFilterModel();
+        console.log('Active filter model:', filterModel);
+        
+        const quickFilterText = gridApi.getQuickFilter();
+        console.log('Quick filter text:', quickFilterText);
+        
+        // If we have quick filter but no regular filters, use manual filtering
+        if (quickFilterText && Object.keys(filterModel).length === 0) {
+          console.log('Using manual quick filter approach');
+          const searchLower = quickFilterText.toLowerCase();
+          const manualQuickFiltered = manualFiltered.filter(item => 
+            item.stockcode?.toLowerCase().includes(searchLower) ||
+            item.description?.toLowerCase().includes(searchLower) ||
+            item.Description?.toLowerCase().includes(searchLower)
+          );
+          console.log('Manual quick filter result:', manualQuickFiltered.length, 'items');
+          onGridFilterChange(manualQuickFiltered);
+        } else {
+          // Use the original method result
+          console.log('Using forEachNodeAfterFilter result:', filteredData.length, 'items');
+          onGridFilterChange(filteredData);
+        }
+        
       } catch (error) {
         console.error('Error in handleFilterChanged:', error);
       }
@@ -9951,6 +9918,22 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Min Supplier',
+      field: 'min_supplier',
+      width: 150,
+      valueFormatter: (params: any) => {
+        return params.value || 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        return params.value || 'No supplier information available';
+      },
+      cellStyle: { textAlign: 'left' as const, color: '#6b7280', fontWeight: 'normal' },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Winning',
       field: 'winning',
       width: 90,
@@ -10061,22 +10044,32 @@ const MetricFilteredAGGrid: React.FC<{
       headerName: 'Star',
       field: 'starred',
       width: 60,
-      valueGetter: (params: any) => starredItems.has(params.data.id) ? '★' : '☆',
-      cellStyle: (params: any) => {
+      valueGetter: (params: any) => starredItems.has(params.data.id) ? 'Y' : 'N',
+      cellRenderer: (params: any) => {
         const isStarred = starredItems.has(params.data.id);
-        return {
-          color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'left' as const,
-          cursor: 'pointer'
-        };
+        return (
+          <span 
+            style={{ 
+              color: isStarred ? '#facc15' : '#6b7280',
+              cursor: 'pointer'
+            }}
+          >
+            {isStarred ? '★' : '☆'}
+          </span>
+        );
       },
       onCellClicked: (params: any) => {
         onToggleStar(params.data.id);
       },
       sortable: false,
-      filter: false,
+      filter: 'agSetColumnFilter',
+      filterParams: {
+        values: ['Y', 'N'],
+        suppressSelectAll: true,
+        suppressMiniFilter: true
+      },
       resizable: false,
-      suppressHeaderMenuButton: true,
+      suppressHeaderMenuButton: false,
       suppressSizeToFit: true
     }
   ];
@@ -10228,23 +10221,25 @@ const MetricFilteredAGGrid: React.FC<{
         }}
         rowHeight={64}
         headerHeight={56}
-        suppressRowClickSelection={true}
-        rowSelection="multiple"
-        pagination={true}
-        paginationPageSize={50}
-        paginationPageSizeSelector={[25, 50, 100, 200, 500, 1000]}
-        suppressPaginationPanel={false}
-        enableRangeSelection={true}
-        suppressMenuHide={false}
-        animateRows={true}
-        suppressCellFocus={true}
-        enableCellTextSelection={true}
-        tooltipShowDelay={500}
-        tooltipHideDelay={10000}
-        tooltipMouseTrack={true}
-        domLayout="normal"
-        quickFilterText={searchTerm}
-        maintainColumnOrder={true}
+              suppressRowClickSelection={true}
+      rowSelection="multiple"
+      pagination={true}
+      paginationPageSize={50}
+      paginationPageSizeSelector={[25, 50, 100, 200, 500, 1000]}
+      suppressPaginationPanel={false}
+      enableRangeSelection={true}
+      suppressMenuHide={false}
+      animateRows={true}
+      suppressCellFocus={true}
+      enableCellTextSelection={true}
+      tooltipShowDelay={500}
+      tooltipHideDelay={10000}
+      tooltipMouseTrack={true}
+      domLayout="normal"
+      quickFilterText={searchTerm}
+      maintainColumnOrder={true}
+      suppressDragLeaveHidesColumns={true}
+      suppressMovableColumns={false}
       />
     </div>
   );
@@ -10262,6 +10257,10 @@ const MetricFilteredView: React.FC<{
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [searchTerm, setSearchTerm] = useState('');
   const [gridFilteredData, setGridFilteredData] = useState<any[]>([]);
+  
+  // Add supplier filter state for Out of Stock view
+  const [supplierFilter, setSupplierFilter] = useState<string>('none');
+  const [showSupplierFilters, setShowSupplierFilters] = useState<boolean>(false);
   
   // Debug effect to track gridFilteredData changes
   useEffect(() => {
@@ -10348,7 +10347,10 @@ const MetricFilteredView: React.FC<{
       const matchesStockQtyFilter = columnFilters.stockQty.length === 0 || 
         columnFilters.stockQty.includes((item.currentStock || 0) > 0 ? 'In Stock' : 'OOS');
 
-      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter;
+      // Apply supplier filter for Out of Stock view
+      const matchesSupplierFilter = supplierFilter === 'none' || item.min_supplier === supplierFilter;
+
+      return matchesSearch && matchesFilter && matchesVelocityFilter && matchesTrendFilter && matchesWinningFilter && matchesNbpFilter && matchesStockQtyFilter && matchesSupplierFilter;
     });
 
     // Sort items
@@ -10430,7 +10432,7 @@ const MetricFilteredView: React.FC<{
     });
 
     return filtered;
-  }, [data.analyzedItems, filterType, searchTerm, sortField, sortDirection, starredItems, columnFilters]);
+  }, [data.analyzedItems, filterType, searchTerm, sortField, sortDirection, starredItems, columnFilters, supplierFilter]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -10663,12 +10665,14 @@ const MetricFilteredView: React.FC<{
       'Months',
       'Avg Cost (£)',
       'NBP (£)',
+      'Min Supplier',
       'Buying Trend',
       'Price (£)',
       'Margin (%)',
       'Winning',
       'Market (£)',
-      'Market Trend'
+      'Market Trend',
+      'Starred'
     ];
 
     // Convert filtered data to CSV rows
@@ -10690,12 +10694,14 @@ const MetricFilteredView: React.FC<{
         item.monthsOfStock === 999.9 ? '∞' : item.monthsOfStock ? item.monthsOfStock.toFixed(1) : 'N/A',
         getDisplayedAverageCost(item) ? getDisplayedAverageCost(item)!.toFixed(2) : 'N/A',
         nbp && nbp > 0 ? nbp.toFixed(2) : 'N/A',
+        item.min_supplier || 'N/A',
         item.trendDirection || 'N/A',
         item.AVER ? item.AVER.toFixed(2) : 'N/A',
         margin ? margin.toFixed(1) : 'N/A',
         winningStatus,
         lowestComp && lowestComp > 0 ? lowestComp.toFixed(2) : 'N/A',
-        marketTrend
+        marketTrend,
+        starredItems.has(item.id || item.stockcode) ? 'Y' : 'N'
       ];
     });
 
@@ -10785,6 +10791,12 @@ const MetricFilteredView: React.FC<{
     };
   }, [filteredItems, gridFilteredData, filterType, starredItems]);
 
+  // Get unique suppliers for Out of Stock view
+  const getUniqueSuppliers = () => {
+    const suppliers = [...new Set(data.analyzedItems.map(item => item.min_supplier || 'N/A'))];
+    return suppliers.sort((a, b) => a.localeCompare(b));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with clear filter button */}
@@ -10864,6 +10876,69 @@ const MetricFilteredView: React.FC<{
           Export to CSV ({gridFilteredData.length > 0 ? gridFilteredData.length : filteredItems.length} items)
         </Button>
       </div>
+
+      {/* Supplier Filter Buttons for Out of Stock view */}
+      {filterType === 'out-of-stock' && (
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-medium text-gray-300">Filter by Supplier</h4>
+                  {supplierFilter !== 'none' && (
+                    <span className="text-xs bg-green-600/20 text-green-400 px-2 py-1 rounded-full">
+                      {supplierFilter}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowSupplierFilters(!showSupplierFilters)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-gray-800/50 transition-colors text-xs text-gray-400"
+                >
+                  {showSupplierFilters ? 'Hide' : 'Show'} Suppliers
+                  {showSupplierFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                </button>
+              </div>
+              
+              {showSupplierFilters && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSupplierFilter('none')}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                      supplierFilter === 'none' 
+                        ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
+                        : 'bg-gray-800/50 text-gray-400 hover:bg-blue-600/10 hover:text-blue-400 border border-gray-700/50'
+                    }`}
+                  >
+                    🏢 All Suppliers ({data.analyzedItems.filter(item => 
+                      (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0
+                    ).length})
+                  </button>
+                  {getUniqueSuppliers().filter(supplier => supplier !== 'N/A').map(supplier => {
+                    const count = data.analyzedItems.filter(item => 
+                      (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0 &&
+                      item.min_supplier === supplier
+                    ).length;
+                    return (
+                      <button
+                        key={supplier}
+                        onClick={() => setSupplierFilter(supplier)}
+                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                          supplierFilter === supplier 
+                            ? 'bg-green-600/20 text-green-400 border border-green-600/30' 
+                            : 'bg-gray-800/50 text-gray-400 hover:bg-green-600/10 hover:text-green-400 border border-gray-700/50'
+                        }`}
+                      >
+                        🏭 {supplier} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Data Table */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">

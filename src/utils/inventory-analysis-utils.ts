@@ -36,6 +36,9 @@ export interface InventoryItem {
   Nupharm_yesterday?: number; // Column AO - Yesterday's Nupharm price (NU)
   ETH_NET_yesterday?: number; // Column AK - Yesterday's ETH NET price (ETH)
   LEXON2_yesterday?: number; // Column AR - Yesterday's LEXON price (LEXON)
+  
+  // Min Supplier field
+  min_supplier?: string; // Column BM - Min Supplier information
 }
 
 export interface ProcessedInventoryItem extends InventoryItem {
@@ -297,6 +300,17 @@ const generateInventoryColumnMapping = (headers: string[]) => {
       'AR', // Column AR directly
       'column AR',
       'col AR'
+    ],
+    min_supplier: [
+      'min supplier', // Column BM - Min Supplier
+      'min_supplier',
+      'minsupplier',
+      'supplier',
+      'min supplier name',
+      'minimum supplier',
+      'BM', // Column BM directly
+      'column BM',
+      'col BM'
     ]
   };
   
@@ -458,6 +472,14 @@ const transformInventoryRow = (row: any, mapping: Record<string, string>): Inven
       if (!isNaN(numValue) && numValue > 0) {
         transformed.LEXON2_yesterday = numValue;
       }
+    }
+  }
+  
+  // Add Min Supplier field
+  if (mapping.min_supplier && row[mapping.min_supplier] !== undefined) {
+    const rawValue = row[mapping.min_supplier];
+    if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+      transformed.min_supplier = String(rawValue).trim();
     }
   }
   
@@ -867,6 +889,8 @@ export const processInventoryExcelFile = async (file: File): Promise<ProcessedIn
         
         // Generate column mapping
         const columnMapping = generateInventoryColumnMapping(rawHeaders);
+        
+        // Generate column mapping
         
         // Check for minimum required columns
         const requiredFields = ['stockcode', 'description', 'quantity_available', 'packs_sold_avg_last_six_months', 'avg_cost'];
