@@ -9640,6 +9640,39 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Star',
+      field: 'starred',
+      pinned: 'left',
+      width: 60,
+      valueGetter: (params: any) => starredItems.has(params.data.id) ? 'Y' : 'N',
+      cellRenderer: (params: any) => {
+        const isStarred = starredItems.has(params.data.id);
+        return isStarred ? '★' : '☆';
+      },
+      cellStyle: (params: any) => {
+        const isStarred = starredItems.has(params.data.id);
+        return {
+          color: isStarred ? '#facc15' : '#6b7280',
+          cursor: 'pointer',
+          textAlign: 'center' as const,
+          fontSize: '16px'
+        };
+      },
+      onCellClicked: (params: any) => {
+        onToggleStar(params.data.id);
+      },
+      sortable: false,
+      filter: 'agSetColumnFilter',
+      filterParams: {
+        values: ['Y', 'N'],
+        suppressSelectAll: true,
+        suppressMiniFilter: true
+      },
+      resizable: false,
+      suppressHeaderMenuButton: false,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Item',
       field: 'stockcode',
       pinned: 'left',
@@ -9692,82 +9725,10 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Stock Qty',
-      field: 'currentStock',
-      width: 110,
-      valueGetter: (params: any) => params.data.currentStock || params.data.stock || 0,
-      valueFormatter: (params: any) => params.value.toLocaleString(),
-      tooltipValueGetter: (params: any) => {
-        const ringfenced = params.data.quantity_ringfenced || 0;
-        return `RF: ${ringfenced.toLocaleString()}`;
-      },
-      cellStyle: (params: any) => {
-        const currentStock = params.value || 0;
-        const ringfenced = params.data.quantity_ringfenced || 0;
-        const ringfencedPercent = currentStock > 0 ? Math.min((ringfenced / currentStock) * 100, 100) : 0;
-        
-        let backgroundImage = 'none';
-        if (ringfencedPercent > 0) {
-          let fillColor = '#fbbf24';
-          if (ringfencedPercent >= 25 && ringfencedPercent < 50) fillColor = '#f97316';
-          else if (ringfencedPercent >= 50 && ringfencedPercent < 75) fillColor = '#dc2626';
-          else if (ringfencedPercent >= 75) fillColor = '#991b1b';
-          backgroundImage = `linear-gradient(to top, ${fillColor}15 0%, ${fillColor}15 ${ringfencedPercent}%, transparent ${ringfencedPercent}%, transparent 100%)`;
-        }
-        
-        return {
-          textAlign: 'left' as const,
-          color: '#d1d5db',
-          backgroundImage: backgroundImage,
-          paddingLeft: '8px'
-        };
-      },
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
       headerName: 'On Order',
       field: 'quantity_on_order',
       width: 110,
       valueFormatter: (params: any) => (params.value || 0).toLocaleString(),
-      cellClass: 'text-left text-gray-300',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Usage',
-      field: 'averageUsage',
-      width: 100,
-      valueGetter: (params: any) => {
-        const item = params.data;
-        return item?.averageUsage || item?.packs_sold_avg_last_six_months;
-      },
-      valueFormatter: (params: any) => {
-        const usage = params.value;
-        return usage ? `${usage.toFixed(0)}` : 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        const item = params.data;
-        const last30Days = item?.packs_sold_last_30_days;
-        const revaLast30Days = item?.packs_sold_reva_last_30_days;
-        
-        let tooltip = '';
-        
-        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
-          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
-        }
-        
-        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
-          if (tooltip) tooltip += '\n';
-          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
-        }
-        
-        return tooltip || 'No recent usage data available';
-      },
       cellClass: 'text-left text-gray-300',
       sortable: true,
       filter: 'agNumberColumnFilter',
@@ -10038,38 +9999,6 @@ const MetricFilteredAGGrid: React.FC<{
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Star',
-      field: 'starred',
-      width: 60,
-      valueGetter: (params: any) => starredItems.has(params.data.id) ? 'Y' : 'N',
-      cellRenderer: (params: any) => {
-        const isStarred = starredItems.has(params.data.id);
-        return isStarred ? '★' : '☆';
-      },
-      cellStyle: (params: any) => {
-        const isStarred = starredItems.has(params.data.id);
-        return {
-          color: isStarred ? '#facc15' : '#6b7280',
-          cursor: 'pointer',
-          textAlign: 'center' as const,
-          fontSize: '16px'
-        };
-      },
-      onCellClicked: (params: any) => {
-        onToggleStar(params.data.id);
-      },
-      sortable: false,
-      filter: 'agSetColumnFilter',
-      filterParams: {
-        values: ['Y', 'N'],
-        suppressSelectAll: true,
-        suppressMiniFilter: true
-      },
-      resizable: false,
-      suppressHeaderMenuButton: false,
       suppressSizeToFit: true
     }
   ];
