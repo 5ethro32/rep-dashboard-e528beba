@@ -9567,8 +9567,7 @@ const MetricFilteredAGGrid: React.FC<{
   starredItems: Set<string>;
   filteredItems: any[];
   onGridFilterChange?: (filteredData: any[]) => void;
-  gridApiRef?: React.MutableRefObject<any>;
-}> = ({ data, filterType, onToggleStar, starredItems, filteredItems, onGridFilterChange, gridApiRef }) => {
+}> = ({ data, filterType, onToggleStar, starredItems, filteredItems, onGridFilterChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [gridApi, setGridApi] = useState<GridApi | null>(null);
   const [columnState, setColumnState] = useState<any[]>([]);
@@ -9583,6 +9582,7 @@ const MetricFilteredAGGrid: React.FC<{
         }
       });
       console.log('AG Grid filtered data count:', filteredData.length); // Debug log
+      console.log('Calling onGridFilterChange with:', filteredData.length, 'items'); // Debug log
       onGridFilterChange(filteredData);
     }
   }, [gridApi, onGridFilterChange]);
@@ -10101,11 +10101,6 @@ const MetricFilteredAGGrid: React.FC<{
   const onGridReady = (params: any) => {
     setGridApi(params.api);
     
-    // Set the grid API in the ref if provided
-    if (gridApiRef) {
-      gridApiRef.current = params.api;
-    }
-    
     // Set up filter change listener and initial data
     if (onGridFilterChange) {
       // Add multiple event listeners to catch all filter changes
@@ -10247,85 +10242,11 @@ const MetricFilteredView: React.FC<{
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [searchTerm, setSearchTerm] = useState('');
   const [gridFilteredData, setGridFilteredData] = useState<any[]>([]);
-  const [filteredStats, setFilteredStats] = useState({
-    totalItems: 0,
-    totalValue: 0,
-    fastMovers: 0,
-    potentialRevenue: 0,
-    starredInFiltered: 0
-  });
   
-  // Ref to hold the grid API
-  const gridApiRef = useRef<any>(null);
-  
-  // Function to calculate filtered stats from grid API
-  const calculateFilteredStats = useCallback(() => {
-    if (!gridApiRef.current) return;
-    
-    const filteredData: any[] = [];
-    gridApiRef.current.forEachNodeAfterFilter((node: any) => {
-      if (node.data) {
-        filteredData.push(node.data);
-      }
-    });
-    
-    let totalValue;
-    
-    if (filterType === 'out-of-stock') {
-      // Calculate lost revenue opportunity for out-of-stock items that can be replenished
-      totalValue = filteredData.reduce((sum, item) => {
-        // Only calculate for items with min_cost (can be replenished)
-        if (!item.min_cost || item.min_cost <= 0) return sum;
-        
-        // Get lowest competitor price
-        const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
-        if (!lowestComp || lowestComp <= 0) return sum;
-        
-        // Get average monthly usage
-        const monthlyUsage = item.averageUsage || item.packs_sold_avg_last_six_months || 0;
-        if (monthlyUsage <= 0) return sum;
-        
-        // Calculate monthly lost profit: (selling_price - cost) * monthly_usage
-        const monthlyLostProfit = (lowestComp - item.min_cost) * monthlyUsage;
-        return sum + Math.max(0, monthlyLostProfit); // Only add positive profits
-      }, 0);
-    } else {
-      // Default calculation for other filter types
-      totalValue = filteredData.reduce((sum, item) => sum + (item.stockValue || 0), 0);
-    }
-    
-    const fastMovers = filteredData.filter(item => typeof item.velocityCategory === 'number' && item.velocityCategory <= 3);
-    const potentialRevenue = filteredData.reduce((sum, item) => {
-      if (filterType === 'margin-opportunity' && item.lowestMarketPrice) {
-        return sum + ((item.lowestMarketPrice - item.avg_cost) * (item.currentStock || 0));
-      }
-      return sum;
-    }, 0);
-    
-    // Count starred items in the current filtered data
-    const starredInFiltered = filteredData.filter(item => starredItems.has(item.stockcode)).length;
-    
-    setFilteredStats({
-      totalItems: filteredData.length,
-      totalValue,
-      fastMovers: fastMovers.length,
-      potentialRevenue,
-      starredInFiltered
-    });
-    
-    // Also update the gridFilteredData for export functionality
-    setGridFilteredData(filteredData);
-  }, [filterType, starredItems]);
-  
-  // Trigger calculation when grid is ready or filters change
+  // Debug effect to track gridFilteredData changes
   useEffect(() => {
-    if (gridApiRef.current) {
-      // Add a small delay to ensure grid is fully rendered
-      setTimeout(() => {
-        calculateFilteredStats();
-      }, 100);
-    }
-  }, [calculateFilteredStats]);
+    console.log('gridFilteredData updated:', gridFilteredData.length, 'items');
+  }, [gridFilteredData]);
   
   // Column filter states
   const [columnFilters, setColumnFilters] = useState<{
@@ -10793,14 +10714,56 @@ const MetricFilteredView: React.FC<{
     }
   };
 
-  // Custom callback to trigger stats calculation when grid filters change
-  const handleGridFilterChange = useCallback((filteredData: any[]) => {
-    // This is called by the grid component, but we also calculate directly from the grid API
-    // Just trigger a recalculation
-    setTimeout(() => {
-      calculateFilteredStats();
-    }, 50);
-  }, [calculateFilteredStats]);
+  // Calculate summary stats for filtered items
+  const filteredStats = useMemo(() => {
+    // Use grid-filtered data when available, otherwise fall back to filteredItems
+    const dataToUse = gridFilteredData.length > 0 ? gridFilteredData : filteredItems;
+    console.log('Calculating stats - gridFilteredData length:', gridFilteredData.length, 'filteredItems length:', filteredItems.length, 'using:', dataToUse.length, 'items');
+    
+    let totalValue;
+    
+    if (filterType === 'out-of-stock') {
+      // Calculate lost revenue opportunity for out-of-stock items that can be replenished
+      totalValue = dataToUse.reduce((sum, item) => {
+        // Only calculate for items with min_cost (can be replenished)
+        if (!item.min_cost || item.min_cost <= 0) return sum;
+        
+        // Get lowest competitor price
+        const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+        if (!lowestComp || lowestComp <= 0) return sum;
+        
+        // Get average monthly usage
+        const monthlyUsage = item.averageUsage || item.packs_sold_avg_last_six_months || 0;
+        if (monthlyUsage <= 0) return sum;
+        
+        // Calculate monthly lost profit: (selling_price - cost) * monthly_usage
+        const monthlyLostProfit = (lowestComp - item.min_cost) * monthlyUsage;
+        return sum + Math.max(0, monthlyLostProfit); // Only add positive profits
+      }, 0);
+    } else {
+      // Default calculation for other filter types
+      totalValue = dataToUse.reduce((sum, item) => sum + (item.stockValue || 0), 0);
+    }
+    
+    const fastMovers = dataToUse.filter(item => typeof item.velocityCategory === 'number' && item.velocityCategory <= 3);
+    const potentialRevenue = dataToUse.reduce((sum, item) => {
+      if (filterType === 'margin-opportunity' && item.lowestMarketPrice) {
+        return sum + ((item.lowestMarketPrice - item.avg_cost) * (item.currentStock || 0));
+      }
+      return sum;
+    }, 0);
+    
+    // Count starred items in the current filtered data
+    const starredInFiltered = dataToUse.filter(item => starredItems.has(item.stockcode)).length;
+    
+    return {
+      totalItems: dataToUse.length,
+      totalValue,
+      fastMovers: fastMovers.length,
+      potentialRevenue,
+      starredInFiltered
+    };
+  }, [filteredItems, gridFilteredData, filterType, starredItems]);
 
   return (
     <div className="space-y-6">
@@ -10897,8 +10860,7 @@ const MetricFilteredView: React.FC<{
               onToggleStar={onToggleStar}
               starredItems={starredItems}
               filteredItems={filteredItems}
-              onGridFilterChange={handleGridFilterChange}
-              gridApiRef={gridApiRef}
+              onGridFilterChange={setGridFilteredData}
             />
           )}
         </CardContent>
