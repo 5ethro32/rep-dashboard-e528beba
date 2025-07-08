@@ -9644,27 +9644,25 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'starred',
       pinned: 'left',
       width: 60,
-      valueGetter: (params: any) => starredItems.has(params.data.id) ? 'Y' : 'N',
-      cellRenderer: (params: any) => {
-        const isStarred = starredItems.has(params.data.id);
-        return isStarred ? '★' : '☆';
-      },
+      valueGetter: (params: any) => starredItems.has(params.data.id) ? '★' : '☆',
       cellStyle: (params: any) => {
         const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
+          textAlign: 'center !important' as const,
           cursor: 'pointer',
-          textAlign: 'center' as const,
           fontSize: '16px'
         };
       },
       onCellClicked: (params: any) => {
-        onToggleStar(params.data.id);
+        if (params.data?.id) {
+          onToggleStar(params.data.id);
+        }
       },
       sortable: false,
       filter: 'agSetColumnFilter',
       filterParams: {
-        values: ['Y', 'N'],
+        values: ['★', '☆'],
         suppressSelectAll: true,
         suppressMiniFilter: true
       },
@@ -9680,33 +9678,6 @@ const MetricFilteredAGGrid: React.FC<{
       cellRenderer: 'itemCellRenderer',
       sortable: true,
       filter: 'agTextColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Group',
-      field: 'velocityCategory',
-      width: 90,
-      valueFormatter: (params: any) => {
-        const category = params.value;
-        return typeof category === 'number' ? category.toString() : 'N/A';
-      },
-      cellStyle: (params: any) => {
-        const category = params.value;
-        let color = '#9ca3af';
-        if (typeof category === 'number') {
-          if (category <= 2) color = '#4ade80';
-          else if (category <= 4) color = '#facc15';
-          else color = '#f87171';
-        }
-        return {
-          textAlign: 'center !important' as const,
-          fontWeight: 'bold',
-          color: color
-        };
-      },
-      sortable: true,
-      filter: 'agNumberColumnFilter',
       resizable: true,
       suppressSizeToFit: true
     },
@@ -9747,89 +9718,6 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Avg Cost',
-      field: 'avg_cost',
-      width: 110,
-      valueGetter: (params: any) => getDisplayedAverageCost(params.data),
-      valueFormatter: (params: any) => {
-        const value = params.value;
-        return value ? formatCurrency(value) : 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        return shouldShowAverageCostTooltip(params.data) ? getAverageCostTooltip(params.data) : null;
-      },
-      cellClass: 'text-left text-gray-300 font-bold',
-      sortable: true,
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Buying Trend',
-      field: 'trendDirection',
-      width: 110,
-      valueFormatter: (params: any) => {
-        const trend = params.value;
-        return trend === 'UP' ? '↑' : trend === 'DOWN' ? '↓' : trend === 'STABLE' ? '−' : '?';
-      },
-      cellStyle: (params: any) => {
-        const trend = params.value;
-        let color = '#9ca3af';
-        switch (trend) {
-          case 'UP': color = '#4ade80'; break;
-          case 'DOWN': color = '#f87171'; break;
-          case 'STABLE': color = '#facc15'; break;
-        }
-        return {
-          textAlign: 'center !important' as const,
-          fontSize: '18px',
-          fontWeight: 'bold',
-          color: color
-        };
-      },
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Price',
-      field: 'AVER',
-      width: 110,
-      valueFormatter: (params: any) => params.value ? formatCurrency(params.value) : 'N/A',
-      tooltipValueGetter: (params: any) => {
-        const item = params.data;
-        const mclean = item?.MCLEAN && item.MCLEAN > 0 ? formatCurrency(item.MCLEAN) : 'N/A';
-        const apple = item?.APPLE && item.APPLE > 0 ? formatCurrency(item.APPLE) : 'N/A';
-        const davidson = item?.DAVIDSON && item.DAVIDSON > 0 ? formatCurrency(item.DAVIDSON) : 'N/A';
-        const reva = item?.reva && item.reva > 0 ? formatCurrency(item.reva) : 'N/A';
-        return `MCLEAN: ${mclean}\nAPPLE: ${apple}\nDAVIDSON: ${davidson}\nREVA: ${reva}`;
-      },
-      cellClass: 'text-left text-purple-400 font-bold',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Margin',
-      field: 'margin',
-      width: 110,
-      valueGetter: (params: any) => calculateMargin(params.data),
-      valueFormatter: (params: any) => formatMargin(params.value),
-      cellStyle: (params: any) => {
-        const margin = params.value;
-        return {
-          textAlign: 'left' as const,
-          fontWeight: 'bold',
-          color: getMarginColor(margin)
-        };
-      },
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
       headerName: 'NBP',
       field: 'min_cost',
       width: 110,
@@ -9847,44 +9735,6 @@ const MetricFilteredAGGrid: React.FC<{
       cellStyle: { textAlign: 'left' as const, color: '#3b82f6', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Min Supplier',
-      field: 'min_supplier',
-      width: 150,
-      valueFormatter: (params: any) => {
-        return params.value || 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        return params.value || 'No supplier information available';
-      },
-      cellStyle: { textAlign: 'left' as const, color: '#6b7280', fontWeight: 'normal' },
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Winning',
-      field: 'winning',
-      width: 90,
-      valueGetter: (params: any) => {
-        const item = params.data;
-        const lowestComp = item?.bestCompetitorPrice || item?.lowestMarketPrice || item?.Nupharm || item?.AAH2 || item?.LEXON2;
-        const isWinning = item?.AVER && lowestComp && item.AVER < lowestComp;
-        return isWinning ? 'Y' : 'N';
-      },
-      cellStyle: (params: any) => {
-        return {
-          textAlign: 'left' as const,
-          fontWeight: 'bold',
-          color: params.value === 'Y' ? '#4ade80' : '#f87171'
-        };
-      },
-      sortable: true,
-      filter: 'agTextColumnFilter',
       resizable: true,
       suppressSizeToFit: true
     },
@@ -9952,6 +9802,41 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Margin',
+      field: 'margin',
+      width: 110,
+      valueGetter: (params: any) => calculateMargin(params.data),
+      valueFormatter: (params: any) => formatMargin(params.value),
+      cellStyle: (params: any) => {
+        const margin = params.value;
+        return {
+          textAlign: 'left' as const,
+          fontWeight: 'bold',
+          color: getMarginColor(margin)
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Min Supplier',
+      field: 'min_supplier',
+      width: 150,
+      valueFormatter: (params: any) => {
+        return params.value || 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        return params.value || 'No supplier information available';
+      },
+      cellStyle: { textAlign: 'left' as const, color: '#6b7280', fontWeight: 'normal' },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'SDT',
       field: 'SDT',
       width: 90,
@@ -9972,8 +9857,95 @@ const MetricFilteredAGGrid: React.FC<{
       filter: 'agNumberColumnFilter',
       resizable: true,
       suppressSizeToFit: true
+    },
+    {
+      headerName: 'Buying Trend',
+      field: 'trendDirection',
+      width: 110,
+      valueFormatter: (params: any) => {
+        const trend = params.value;
+        return trend === 'UP' ? '↑' : trend === 'DOWN' ? '↓' : trend === 'STABLE' ? '−' : '?';
+      },
+      cellStyle: (params: any) => {
+        const trend = params.value;
+        let color = '#9ca3af';
+        switch (trend) {
+          case 'UP': color = '#4ade80'; break;
+          case 'DOWN': color = '#f87171'; break;
+          case 'STABLE': color = '#facc15'; break;
+        }
+        return {
+          textAlign: 'center !important' as const,
+          fontSize: '18px',
+          fontWeight: 'bold',
+          color: color
+        };
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Group',
+      field: 'velocityCategory',
+      width: 90,
+      valueFormatter: (params: any) => {
+        const category = params.value;
+        return typeof category === 'number' ? category.toString() : 'N/A';
+      },
+      cellStyle: (params: any) => {
+        const category = params.value;
+        let color = '#9ca3af';
+        if (typeof category === 'number') {
+          if (category <= 2) color = '#4ade80';
+          else if (category <= 4) color = '#facc15';
+          else color = '#f87171';
+        }
+        return {
+          textAlign: 'center !important' as const,
+          fontWeight: 'bold',
+          color: color
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Winning',
+      field: 'winning',
+      width: 90,
+      valueGetter: (params: any) => {
+        const item = params.data;
+        const lowestComp = item?.bestCompetitorPrice || item?.lowestMarketPrice || item?.Nupharm || item?.AAH2 || item?.LEXON2;
+        const isWinning = item?.AVER && lowestComp && item.AVER < lowestComp;
+        return isWinning ? 'Y' : 'N';
+      },
+      cellStyle: (params: any) => {
+        return {
+          textAlign: 'left' as const,
+          fontWeight: 'bold',
+          color: params.value === 'Y' ? '#4ade80' : '#f87171'
+        };
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
     }
   ];
+
+  // Filter out Price and Winning columns for out-of-stock view  
+  const filteredColumnDefs = useMemo(() => {
+    if (filterType === 'out-of-stock') {
+      return columnDefs.filter(col => 
+        col.headerName !== 'Price' && col.headerName !== 'Winning'
+      );
+    }
+    return columnDefs;
+  }, [filterType]);
 
   // Apply quick filter when search term changes
   useEffect(() => {
@@ -10008,7 +9980,16 @@ const MetricFilteredAGGrid: React.FC<{
         restoreColumnState();
       }, 100);
     }
-  }, [starredItems, gridApi, columnState, restoreColumnState]);
+      }, [starredItems, gridApi, columnState, restoreColumnState]);
+
+  // Refresh star column when starred items change
+  useEffect(() => {
+    if (gridApi) {
+      gridApi.refreshCells({ columns: ['starred'] });
+    }
+  }, [starredItems, gridApi]);
+
+ 
 
   const onGridReady = (params: any) => {
     setGridApi(params.api);
@@ -10103,7 +10084,7 @@ const MetricFilteredAGGrid: React.FC<{
       }}
     >
       <AgGridReact
-        columnDefs={columnDefs}
+        columnDefs={filteredColumnDefs}
         rowData={filteredItems}
         onGridReady={onGridReady}
         onFilterChanged={handleFilterChanged}
@@ -10122,30 +10103,25 @@ const MetricFilteredAGGrid: React.FC<{
         }}
         rowHeight={64}
         headerHeight={56}
-              suppressRowClickSelection={true}
-      rowSelection="multiple"
-      pagination={true}
-      paginationPageSize={100}
-      paginationPageSizeSelector={[50, 100, 200, 500, 1000]}
-      suppressPaginationPanel={false}
-      cacheBlockSize={100}
-      maxBlocksInCache={10}
-      enableRangeSelection={true}
-      suppressMenuHide={false}
-      animateRows={true}
-      suppressCellFocus={true}
-      enableCellTextSelection={true}
-      tooltipShowDelay={500}
-      tooltipHideDelay={10000}
-      tooltipMouseTrack={true}
-      domLayout="normal"
-      quickFilterText={searchTerm}
-      maintainColumnOrder={true}
-      suppressDragLeaveHidesColumns={true}
-      suppressMovableColumns={false}
-      rowBuffer={10}
-      debounceVerticalScrollbar={true}
-      suppressScrollOnNewData={true}
+        suppressRowClickSelection={true}
+        rowSelection="multiple"
+        pagination={true}
+        paginationPageSize={50}
+        paginationPageSizeSelector={[25, 50, 100, 200, 500, 1000]}
+        suppressPaginationPanel={false}
+        enableRangeSelection={true}
+        suppressMenuHide={false}
+        animateRows={true}
+        suppressCellFocus={false}
+        enableCellTextSelection={false}
+        tooltipShowDelay={500}
+        tooltipHideDelay={10000}
+        tooltipMouseTrack={true}
+        domLayout="normal"
+        quickFilterText={searchTerm}
+        maintainColumnOrder={true}
+        suppressDragLeaveHidesColumns={true}
+        suppressMovableColumns={false}
       />
     </div>
   );
@@ -10790,21 +10766,7 @@ const MetricFilteredView: React.FC<{
         </CardContent>
       </Card>
 
-      {/* Export Button */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold text-white">Filtered Data</h3>
-          <p className="text-sm text-gray-400">Export the current filtered results</p>
-        </div>
-        <Button 
-          onClick={handleExport}
-          disabled={filteredItems.length === 0}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          <Download className="h-4 w-4" />
-          Export to CSV ({gridFilteredData.length > 0 ? gridFilteredData.length : filteredItems.length} items)
-        </Button>
-      </div>
+
 
       {/* Supplier Filter for Out of Stock view */}
       {filterType === 'out-of-stock' && (
@@ -10914,6 +10876,22 @@ const MetricFilteredView: React.FC<{
           )}
         </CardContent>
       </Card>
+
+      {/* Export Button - Moved below table */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold text-white">Filtered Data</h3>
+          <p className="text-sm text-gray-400">Export the current filtered results</p>
+        </div>
+        <Button 
+          onClick={handleExport}
+          disabled={filteredItems.length === 0}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Download className="h-4 w-4" />
+          Export to CSV ({gridFilteredData.length > 0 ? gridFilteredData.length : filteredItems.length} items)
+        </Button>
+      </div>
     </div>
   );
 };
