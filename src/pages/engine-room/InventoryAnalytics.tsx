@@ -9747,45 +9747,6 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Months',
-      field: 'monthsOfStock',
-      width: 90,
-      valueFormatter: (params: any) => {
-        const months = params.value;
-        return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        const item = params.data;
-        const usage = item?.averageUsage || item?.packs_sold_avg_last_six_months;
-        const last30Days = item?.packs_sold_last_30_days;
-        const revaLast30Days = item?.packs_sold_reva_last_30_days;
-        
-        let tooltip = usage ? `${usage.toFixed(0)} packs/month (6mo avg)` : 'No usage data (6mo avg)';
-        
-        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
-          tooltip += `\nLast 30 days: ${Number(last30Days).toFixed(0)} packs`;
-        }
-        
-        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
-          tooltip += `\nReva last 30 days: ${Number(revaLast30Days).toFixed(0)} packs`;
-        }
-        
-        return tooltip;
-      },
-      cellStyle: (params: any) => {
-        const months = params.value;
-        return {
-          textAlign: 'left' as const,
-          fontWeight: months && months > 6 ? 'bold' : 'normal',
-          color: months && months > 6 ? '#f87171' : '#d1d5db'
-        };
-      },
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
       headerName: 'Avg Cost',
       field: 'avg_cost',
       width: 110,
