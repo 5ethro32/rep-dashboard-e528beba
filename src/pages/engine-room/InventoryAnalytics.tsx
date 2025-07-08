@@ -10125,12 +10125,14 @@ const MetricFilteredAGGrid: React.FC<{
               suppressRowClickSelection={true}
       rowSelection="multiple"
       pagination={true}
-      paginationPageSize={50}
-      paginationPageSizeSelector={[25, 50, 100, 200, 500, 1000]}
+      paginationPageSize={100}
+      paginationPageSizeSelector={[50, 100, 200, 500, 1000]}
       suppressPaginationPanel={false}
+      cacheBlockSize={100}
+      maxBlocksInCache={10}
       enableRangeSelection={true}
       suppressMenuHide={false}
-      animateRows={false}
+      animateRows={true}
       suppressCellFocus={true}
       enableCellTextSelection={true}
       tooltipShowDelay={500}
@@ -10138,11 +10140,12 @@ const MetricFilteredAGGrid: React.FC<{
       tooltipMouseTrack={true}
       domLayout="normal"
       quickFilterText={searchTerm}
-      maintainColumnOrder={false}
+      maintainColumnOrder={true}
       suppressDragLeaveHidesColumns={true}
       suppressMovableColumns={false}
-      suppressColumnMoveAnimation={true}
-      suppressAnimationFrame={false}
+      rowBuffer={10}
+      debounceVerticalScrollbar={true}
+      suppressScrollOnNewData={true}
       />
     </div>
   );
