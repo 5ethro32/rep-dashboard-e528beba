@@ -10047,16 +10047,16 @@ const MetricFilteredAGGrid: React.FC<{
       valueGetter: (params: any) => starredItems.has(params.data.id) ? 'Y' : 'N',
       cellRenderer: (params: any) => {
         const isStarred = starredItems.has(params.data.id);
-        return (
-          <span 
-            style={{ 
-              color: isStarred ? '#facc15' : '#6b7280',
-              cursor: 'pointer'
-            }}
-          >
-            {isStarred ? '★' : '☆'}
-          </span>
-        );
+        return isStarred ? '★' : '☆';
+      },
+      cellStyle: (params: any) => {
+        const isStarred = starredItems.has(params.data.id);
+        return {
+          color: isStarred ? '#facc15' : '#6b7280',
+          cursor: 'pointer',
+          textAlign: 'center' as const,
+          fontSize: '16px'
+        };
       },
       onCellClicked: (params: any) => {
         onToggleStar(params.data.id);
