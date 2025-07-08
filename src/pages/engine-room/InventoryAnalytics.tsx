@@ -10261,6 +10261,7 @@ const MetricFilteredView: React.FC<{
   // Add supplier filter state for Out of Stock view
   const [supplierFilter, setSupplierFilter] = useState<string>('none');
   const [showSupplierFilters, setShowSupplierFilters] = useState<boolean>(false);
+  const [supplierSearchTerm, setSupplierSearchTerm] = useState<string>('');
   
   // Debug effect to track gridFilteredData changes
   useEffect(() => {
@@ -10797,6 +10798,16 @@ const MetricFilteredView: React.FC<{
     return suppliers.sort((a, b) => a.localeCompare(b));
   };
 
+  // Get filtered suppliers based on search term
+  const getFilteredSuppliers = () => {
+    const allSuppliers = getUniqueSuppliers().filter(supplier => supplier !== 'N/A');
+    if (!supplierSearchTerm) return allSuppliers;
+    
+    return allSuppliers.filter(supplier => 
+      supplier.toLowerCase().includes(supplierSearchTerm.toLowerCase())
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with clear filter button */}
@@ -10901,38 +10912,64 @@ const MetricFilteredView: React.FC<{
               </div>
               
               {showSupplierFilters && (
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setSupplierFilter('none')}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      supplierFilter === 'none' 
-                        ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
-                        : 'bg-gray-800/50 text-gray-400 hover:bg-blue-600/10 hover:text-blue-400 border border-gray-700/50'
-                    }`}
-                  >
-                    🏢 All Suppliers ({data.analyzedItems.filter(item => 
-                      (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0
-                    ).length})
-                  </button>
-                  {getUniqueSuppliers().filter(supplier => supplier !== 'N/A').map(supplier => {
-                    const count = data.analyzedItems.filter(item => 
-                      (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0 &&
-                      item.min_supplier === supplier
-                    ).length;
-                    return (
+                <div className="space-y-3">
+                  {/* Supplier Search Input */}
+                  <div className="relative">
+                    <Input
+                      placeholder="Search suppliers..."
+                      value={supplierSearchTerm}
+                      onChange={(e) => setSupplierSearchTerm(e.target.value)}
+                      className="bg-gray-800/50 border-gray-700/50 text-white placeholder-gray-500 text-sm h-9"
+                    />
+                    {supplierSearchTerm && (
                       <button
-                        key={supplier}
-                        onClick={() => setSupplierFilter(supplier)}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                          supplierFilter === supplier 
-                            ? 'bg-green-600/20 text-green-400 border border-green-600/30' 
-                            : 'bg-gray-800/50 text-gray-400 hover:bg-green-600/10 hover:text-green-400 border border-gray-700/50'
-                        }`}
+                        onClick={() => setSupplierSearchTerm('')}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
                       >
-                        🏭 {supplier} ({count})
+                        ✕
                       </button>
-                    );
-                  })}
+                    )}
+                  </div>
+                  
+                  {/* Supplier Filter Buttons */}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setSupplierFilter('none')}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        supplierFilter === 'none' 
+                          ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
+                          : 'bg-gray-800/50 text-gray-400 hover:bg-blue-600/10 hover:text-blue-400 border border-gray-700/50'
+                      }`}
+                    >
+                      🏢 All Suppliers ({data.analyzedItems.filter(item => 
+                        (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0
+                      ).length})
+                    </button>
+                    {getFilteredSuppliers().map(supplier => {
+                      const count = data.analyzedItems.filter(item => 
+                        (item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0 &&
+                        item.min_supplier === supplier
+                      ).length;
+                      return (
+                        <button
+                          key={supplier}
+                          onClick={() => setSupplierFilter(supplier)}
+                          className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                            supplierFilter === supplier 
+                              ? 'bg-green-600/20 text-green-400 border border-green-600/30' 
+                              : 'bg-gray-800/50 text-gray-400 hover:bg-green-600/10 hover:text-green-400 border border-gray-700/50'
+                          }`}
+                        >
+                          🏭 {supplier} ({count})
+                        </button>
+                      );
+                    })}
+                    {getFilteredSuppliers().length === 0 && supplierSearchTerm && (
+                      <div className="text-sm text-gray-500 italic px-3 py-2">
+                        No suppliers found matching "{supplierSearchTerm}"
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
