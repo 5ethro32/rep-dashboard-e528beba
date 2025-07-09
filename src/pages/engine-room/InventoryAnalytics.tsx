@@ -9505,40 +9505,6 @@ const MetricFilteredAGGrid: React.FC<{
   const [gridApi, setGridApi] = useState<GridApi | null>(null);
   const [columnState, setColumnState] = useState<any[]>([]);
 
-  // Add CSS styles for column dividers
-  useEffect(() => {
-    const styleId = 'ag-grid-column-dividers';
-    if (!document.getElementById(styleId)) {
-      const style = document.createElement('style');
-      style.id = styleId;
-      style.innerHTML = `
-        .ag-theme-alpine-dark .ag-header-cell:not(:last-child) {
-          border-right: 1px solid rgba(75, 85, 99, 0.4) !important;
-        }
-        .ag-theme-alpine-dark .ag-header-cell:not(:last-child)::after {
-          content: '';
-          position: absolute;
-          right: 0;
-          top: 25%;
-          bottom: 25%;
-          width: 1px;
-          background: linear-gradient(to bottom, 
-            transparent, 
-            rgba(156, 163, 175, 0.3) 20%, 
-            rgba(156, 163, 175, 0.6) 50%, 
-            rgba(156, 163, 175, 0.3) 80%, 
-            transparent
-          );
-          pointer-events: none;
-        }
-        .ag-theme-alpine-dark .ag-header-cell {
-          position: relative;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-  }, []);
-
   // Handle filter changes from AG Grid
   const handleFilterChanged = useCallback(() => {
     if (gridApi && onGridFilterChange) {
@@ -10195,7 +10161,6 @@ const MetricFilteredAGGrid: React.FC<{
         width: '100%'
       }}
     >
-
       <AgGridReact
         columnDefs={filteredColumnDefs}
         rowData={filteredItems}
