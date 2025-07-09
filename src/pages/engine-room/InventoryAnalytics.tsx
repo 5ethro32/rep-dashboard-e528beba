@@ -10177,7 +10177,7 @@ const MetricFilteredAGGrid: React.FC<{
         suppressPaginationPanel={false}
         enableRangeSelection={true}
         suppressMenuHide={false}
-        animateRows={true}
+        animateRows={false}
         suppressCellFocus={false}
         enableCellTextSelection={false}
         tooltipShowDelay={500}
@@ -10188,6 +10188,12 @@ const MetricFilteredAGGrid: React.FC<{
         maintainColumnOrder={true}
         suppressDragLeaveHidesColumns={true}
         suppressMovableColumns={false}
+        suppressScrollOnNewData={true}
+        suppressAnimationFrame={true}
+        suppressCellSelection={true}
+        suppressRowDeselection={true}
+        suppressAutoSize={true}
+        deltaRowDataMode={true}
       />
     </div>
   );
