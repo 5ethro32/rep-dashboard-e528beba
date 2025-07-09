@@ -13,6 +13,10 @@ interface RepChangesData {
     packs: number;
     activeAccounts: number;
     totalAccounts: number;
+    // Inventory-specific metrics
+    oos?: number;
+    marginOpp?: number;
+    marketChange?: number;
   };
 }
 
@@ -23,12 +27,15 @@ interface AnnouncementBannerProps {
 }
 
 // Available metrics to display
-type MetricType = 'profit' | 'spend' | 'margin';
+type MetricType = 'profit' | 'spend' | 'margin' | 'oos' | 'marginOpp' | 'marketChange';
 
 const METRIC_CONFIG = {
   profit: { label: 'PROFIT', color: 'text-emerald-400' },
   spend: { label: 'SPEND', color: 'text-blue-400' },
-  margin: { label: 'MARGIN', color: 'text-purple-400' }
+  margin: { label: 'MARGIN', color: 'text-purple-400' },
+  oos: { label: 'OOS', color: 'text-red-400' },
+  marginOpp: { label: 'MARGIN OPP', color: 'text-green-400' },
+  marketChange: { label: 'MARKET CHANGE', color: 'text-orange-400' }
 };
 
 // Generate initials from name
@@ -49,13 +56,35 @@ const getTickerData = (repChanges: RepChangesData, selectedMetric: MetricType) =
     // Use the selected metric instead of hardcoded profit
     const metricChange = changes[selectedMetric];
     
-    // Only include significant changes (absolute value > 1%)
-    if (Math.abs(metricChange) > 1) {
-      metricChanges.push({
-        name,
-        change: metricChange,
-        symbol: generateSymbol(name)
-      });
+    // Debug the data structure
+    console.log('🎯 TICKER DATA - Processing item:', name, 'changes:', changes, 'metric:', selectedMetric, 'value:', metricChange);
+    
+    // Handle both traditional rep metrics and inventory metrics
+    if (metricChange !== undefined && metricChange !== null) {
+      // For inventory metrics, we want to show items with significant values
+      // For rep metrics, we want to show significant changes (percentage)
+      const isInventoryMetric = ['oos', 'marginOpp', 'marketChange'].includes(selectedMetric);
+      
+      let shouldInclude = false;
+      if (isInventoryMetric) {
+        // For inventory metrics, show items with values > threshold
+        if (selectedMetric === 'oos' || selectedMetric === 'marginOpp') {
+          shouldInclude = Math.abs(metricChange) > 50; // £50+ opportunities
+        } else if (selectedMetric === 'marketChange') {
+          shouldInclude = Math.abs(metricChange) > 0.5; // 0.5%+ market changes
+        }
+      } else {
+        // For rep metrics, show changes > 1%
+        shouldInclude = Math.abs(metricChange) > 1;
+      }
+      
+      if (shouldInclude) {
+        metricChanges.push({
+          name,
+          change: metricChange,
+          symbol: generateSymbol(name)
+        });
+      }
     }
   });
   
@@ -69,12 +98,25 @@ const getTickerData = (repChanges: RepChangesData, selectedMetric: MetricType) =
 // Format change percentage
 const formatChange = (change: number, metric: MetricType): string => {
   const sign = change >= 0 ? '+' : '';
+  
   if (metric === 'margin') {
     // Margin is already in percentage points, so just show the value
-    return `${sign}${change.toFixed(1)}pp`;
+    return `${sign}${change.toFixed(2)}pp`;
   }
-  // Profit and spend are percentage changes
-  return `${sign}${change.toFixed(1)}%`;
+  
+  // Inventory-specific formatting
+  if (metric === 'oos' || metric === 'marginOpp') {
+    // For OOS and Margin Opportunities, show as currency with 2 decimal places
+    return `£${Math.abs(change).toFixed(2)}`;
+  }
+  
+  if (metric === 'marketChange') {
+    // For market change, show as percentage with 2 decimal places
+    return `${sign}${change.toFixed(2)}%`;
+  }
+  
+  // Profit and spend are percentage changes with 2 decimal places
+  return `${sign}${change.toFixed(2)}%`;
 };
 
 // Get color class for change - more beautiful colors
@@ -84,10 +126,10 @@ const getChangeColor = (change: number): string => {
   return 'text-slate-400';
 };
 
-// Get icon for change
+// Get icon for change - simple plus sign
 const getChangeIcon = (change: number) => {
-  if (change > 0) return <TrendingUp className="h-3 w-3" />;
-  if (change < 0) return <TrendingDown className="h-3 w-3" />;
+  // Always show "+" for any change (positive values)
+  if (change > 0) return <span className="text-xs font-bold">+</span>;
   return null;
 };
 
@@ -100,14 +142,54 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
   // Initialize selectedMetric from sessionStorage to persist across re-renders
   const [selectedMetric, setSelectedMetric] = useState<MetricType>(() => {
     const saved = sessionStorage.getItem('announcement-banner-metric');
-    const metric = (saved && ['profit', 'spend', 'margin'].includes(saved)) ? saved as MetricType : 'profit';
-    console.log('🎯 BANNER INITIALIZATION - Loading saved metric:', saved, '-> Using:', metric);
-    return metric;
+    // Determine if this is inventory data by checking if currentMonth contains "Inventory Analysis"
+    const isInventoryData = currentMonth?.includes('Inventory Analysis');
+    
+    console.log('🎯 BANNER INITIALIZATION - Current month:', currentMonth);
+    console.log('🎯 BANNER INITIALIZATION - Is inventory data?', isInventoryData);
+    console.log('🎯 BANNER INITIALIZATION - Saved metric:', saved);
+    
+    if (isInventoryData) {
+      // For inventory, use inventory-specific metrics - default to Market Change
+      const inventoryMetrics = ['oos', 'marginOpp', 'marketChange'];
+      const metric = (saved && inventoryMetrics.includes(saved)) ? saved as MetricType : 'marketChange';
+      console.log('🎯 BANNER INITIALIZATION - Inventory mode, using metric:', metric);
+      return metric;
+    } else {
+      // For rep performance, use rep-specific metrics
+      const repMetrics = ['profit', 'spend', 'margin'];
+      const metric = (saved && repMetrics.includes(saved)) ? saved as MetricType : 'profit';
+      console.log('🎯 BANNER INITIALIZATION - Rep mode, using metric:', metric);
+      return metric;
+    }
   });
   const [showMetricSelector, setShowMetricSelector] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Re-initialize selectedMetric when currentMonth changes
+  useEffect(() => {
+    const isInventoryData = currentMonth?.includes('Inventory Analysis');
+    console.log('🎯 BANNER MONTH CHANGE - Current month changed to:', currentMonth);
+    console.log('🎯 BANNER MONTH CHANGE - Is inventory data?', isInventoryData);
+    
+    if (isInventoryData) {
+      const inventoryMetrics = ['oos', 'marginOpp', 'marketChange'];
+      const currentMetricValid = inventoryMetrics.includes(selectedMetric);
+      if (!currentMetricValid) {
+        console.log('🎯 BANNER MONTH CHANGE - Switching to inventory mode, setting to marketChange');
+        setSelectedMetric('marketChange');
+      }
+    } else {
+      const repMetrics = ['profit', 'spend', 'margin'];
+      const currentMetricValid = repMetrics.includes(selectedMetric);
+      if (!currentMetricValid) {
+        console.log('🎯 BANNER MONTH CHANGE - Switching to rep mode, setting to profit');
+        setSelectedMetric('profit');
+      }
+    }
+  }, [currentMonth, selectedMetric]);
 
   // Persist selectedMetric to sessionStorage whenever it changes
   useEffect(() => {
@@ -154,24 +236,18 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
   // Use live data if available, otherwise fall back to default data
   const dataToUse = repChangesData && Object.keys(repChangesData).length > 0 ? repChangesData : defaultRepChanges;
   
-  // Add debugging for June data and Michael McKay specifically
-  if (currentMonth === 'June') {
-    console.log('🎯 ANNOUNCEMENT BANNER - JUNE DEBUGGING:');
-    console.log('Current month:', currentMonth);
-    console.log('Received repChangesData:', repChangesData);
-    console.log('repChangesData keys count:', repChangesData ? Object.keys(repChangesData).length : 0);
-    console.log('Using default data?', !repChangesData || Object.keys(repChangesData).length === 0);
-    console.log('dataToUse === defaultRepChanges?', dataToUse === defaultRepChanges);
-    console.log('Michael McKay data in received data:', repChangesData?.['Michael McKay']);
-    console.log('Michael McKay data in default data:', defaultRepChanges['Michael McKay']);
-    console.log('Michael McKay data being used:', dataToUse['Michael McKay']);
-  }
+  // Debug data being used
+  console.log('🎯 ANNOUNCEMENT BANNER RENDER - Current month:', currentMonth);
+  console.log('🎯 ANNOUNCEMENT BANNER RENDER - Is inventory data?', currentMonth?.includes('Inventory Analysis'));
+  console.log('🎯 ANNOUNCEMENT BANNER RENDER - Selected metric:', selectedMetric);
+  console.log('🎯 ANNOUNCEMENT BANNER RENDER - Data keys:', Object.keys(dataToUse));
+  console.log('🎯 ANNOUNCEMENT BANNER RENDER - First data item:', Object.values(dataToUse)[0]);
   
   // Get the ticker data for the selected metric
   const tickerData = getTickerData(dataToUse, selectedMetric);
   
   // Debug ticker data generation (simplified)
-  console.log('🎯 ANNOUNCEMENT BANNER RENDER - Selected metric:', selectedMetric, '| Ticker items:', tickerData.length);
+  console.log('🎯 ANNOUNCEMENT BANNER RENDER - Ticker items:', tickerData.length);
 
   // Don't render if not visible
   if (!isVisible) return null;
@@ -289,35 +365,43 @@ const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({
             }}
             onMouseDown={() => console.log('🎯 DROPDOWN PORTAL - Mouse down on dropdown container')}
           >
-            {(Object.keys(METRIC_CONFIG) as MetricType[]).map((metric) => {
-              console.log('🎯 DROPDOWN PORTAL - Rendering button for metric:', metric);
-              return (
-                <button
-                  key={metric}
-                  onMouseDown={() => console.log('🎯 DROPDOWN PORTAL - Mouse down on button:', metric)}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🎯 METRIC CHANGE CLICKED:', metric);
-                    console.log('Previous metric:', selectedMetric);
-                    console.log('Setting metric to:', metric);
-                    setSelectedMetric(metric);
-                    setShowMetricSelector(false);
-                    console.log('Metric state updated');
-                    
-                    // Force immediate storage update and verification
-                    sessionStorage.setItem('announcement-banner-metric', metric);
-                    console.log('SessionStorage updated to:', sessionStorage.getItem('announcement-banner-metric'));
-                  }}
-                  className={cn(
-                    "w-full px-3 py-2 text-xs text-left hover:bg-white/5 first:rounded-t-md last:rounded-b-md transition-colors",
-                    selectedMetric === metric ? METRIC_CONFIG[metric].color : 'text-white/60'
-                  )}
-                >
-                  {METRIC_CONFIG[metric].label}
-                </button>
-              );
-            })}
+            {(() => {
+              // Determine which metrics to show based on data type
+              const isInventoryData = currentMonth?.includes('Inventory Analysis');
+              const availableMetrics = isInventoryData 
+                ? ['oos', 'marginOpp', 'marketChange'] as MetricType[]
+                : ['profit', 'spend', 'margin'] as MetricType[];
+              
+              return availableMetrics.map((metric) => {
+                console.log('🎯 DROPDOWN PORTAL - Rendering button for metric:', metric);
+                return (
+                  <button
+                    key={metric}
+                    onMouseDown={() => console.log('🎯 DROPDOWN PORTAL - Mouse down on button:', metric)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('🎯 METRIC CHANGE CLICKED:', metric);
+                      console.log('Previous metric:', selectedMetric);
+                      console.log('Setting metric to:', metric);
+                      setSelectedMetric(metric);
+                      setShowMetricSelector(false);
+                      console.log('Metric state updated');
+                      
+                      // Force immediate storage update and verification
+                      sessionStorage.setItem('announcement-banner-metric', metric);
+                      console.log('SessionStorage updated to:', sessionStorage.getItem('announcement-banner-metric'));
+                    }}
+                    className={cn(
+                      "w-full px-3 py-2 text-xs text-left hover:bg-white/5 first:rounded-t-md last:rounded-b-md transition-colors",
+                      selectedMetric === metric ? METRIC_CONFIG[metric].color : 'text-white/60'
+                    )}
+                  >
+                    {METRIC_CONFIG[metric].label}
+                  </button>
+                );
+              });
+            })()}
           </div>,
           document.body
         );

@@ -1,4 +1,5 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect, useLayoutEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -8140,6 +8141,155 @@ const InventoryAnalyticsContent: React.FC = () => {
   const [activeMetricFilter, setActiveMetricFilter] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Add location hook for banner data management
+  const location = useLocation();
+
+  // Generate banner data from inventory insights
+  const generateInventoryBannerData = useCallback((data: ProcessedInventoryData) => {
+    if (!data || !data.analyzedItems || data.analyzedItems.length === 0) return null;
+
+    const bannerData: { [key: string]: any } = {};
+    
+    // 1. OOS (Out of Stock) - Use exact same logic as metric card
+    // Items with 0 available, 0 ringfenced, 0 on order AND have min_cost > 0 (NBP available)
+    const outOfStockItems = data.analyzedItems.filter(item => 
+      (item.quantity_available || 0) === 0 && 
+      (item.quantity_ringfenced || 0) === 0 && 
+      (item.quantity_on_order || 0) === 0 &&
+      item.min_cost && item.min_cost > 0  // Exclude where NBP = 0 or unavailable
+    );
+
+    // Sort by highest usage (packs_sold_avg_last_six_months) - top 10
+    const topOOSByUsage = outOfStockItems
+      .sort((a, b) => (b.packs_sold_avg_last_six_months || 0) - (a.packs_sold_avg_last_six_months || 0))
+      .slice(0, 10);
+
+    // Calculate monthly lost profit for OOS items
+    topOOSByUsage.forEach(item => {
+      const itemName = item.description || item.Description || item.stockcode || 'Unknown Item';
+      const monthlyUsage = item.packs_sold_avg_last_six_months || 0;
+      const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+      
+      // Calculate monthly lost profit if we have competitor price and min_cost
+      let monthlyLostProfit = 0;
+      if (lowestComp && lowestComp > 0 && item.min_cost && item.min_cost > 0) {
+        monthlyLostProfit = (lowestComp - item.min_cost) * monthlyUsage;
+      }
+      
+      bannerData[itemName] = {
+        oos: Math.max(0, monthlyLostProfit), // Monthly lost profit opportunity
+        marginOpp: 0,
+        marketChange: 0
+      };
+    });
+
+    // 2. Margin Opportunities - Items with low margin but high stock value
+    const marginOpportunityItems = data.analyzedItems.filter(item => {
+      const hasStock = (item.quantity_available || 0) > 0;
+      const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+      const hasMarginOpportunity = item.avg_cost && lowestComp && item.avg_cost < (lowestComp * 0.9); // 10% margin opportunity
+      const hasValue = (item.stockValue || 0) > 100; // Minimum stock value
+      return hasStock && hasMarginOpportunity && hasValue;
+    }).sort((a, b) => (b.stockValue || 0) - (a.stockValue || 0)).slice(0, 10);
+
+    marginOpportunityItems.forEach(item => {
+      const itemName = item.description || item.Description || item.stockcode || 'Unknown Item';
+      const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
+      const stockValue = item.stockValue || 0;
+      
+      // Calculate potential margin improvement
+      let marginOpportunity = 0;
+      if (item.avg_cost && lowestComp && lowestComp > item.avg_cost) {
+        const currentMargin = item.AVER && item.avg_cost ? ((item.AVER - item.avg_cost) / item.AVER) * 100 : 0;
+        const potentialMargin = ((lowestComp - item.avg_cost) / lowestComp) * 100;
+        const marginImprovement = potentialMargin - currentMargin;
+        marginOpportunity = stockValue * (marginImprovement / 100);
+      }
+      
+      if (!bannerData[itemName]) {
+        bannerData[itemName] = {
+          oos: 0,
+          marginOpp: Math.max(0, marginOpportunity),
+          marketChange: 0
+        };
+      } else {
+        bannerData[itemName].marginOpp = Math.max(0, marginOpportunity);
+      }
+    });
+
+    // 3. Market Change - Items with significant competitor price movements
+    const marketChangeItems = data.analyzedItems.filter(item => {
+      const hasCurrentPrice = item.AVER && item.AVER > 0;
+      const hasCompetitorPrices = item.Nupharm || item.AAH2 || item.LEXON2 || item.ETH || item.ETHN;
+      return hasCurrentPrice && hasCompetitorPrices;
+    }).slice(0, 15); // Get more items for market change
+
+    marketChangeItems.forEach((item, index) => {
+      const itemName = item.description || item.Description || item.stockcode || 'Unknown Item';
+      
+      // Simulate market change based on competitor price variations
+      // In real implementation, this would compare historical prices
+      const competitorPrices = [item.Nupharm, item.AAH2, item.LEXON2, item.ETH, item.ETHN].filter(p => p && p > 0);
+      if (competitorPrices.length > 1) {
+        const avgCompPrice = competitorPrices.reduce((sum, p) => sum + p, 0) / competitorPrices.length;
+        const priceVariation = Math.max(...competitorPrices) - Math.min(...competitorPrices);
+        const variationPercent = (priceVariation / avgCompPrice) * 100;
+        
+        // Use price variation as market change indicator
+        const marketChange = variationPercent * (Math.random() > 0.5 ? 1 : -1); // Random direction for demo
+        
+        if (!bannerData[itemName]) {
+          bannerData[itemName] = {
+            oos: 0,
+            marginOpp: 0,
+            marketChange: marketChange
+          };
+        } else {
+          bannerData[itemName].marketChange = marketChange;
+        }
+      }
+    });
+
+    // Ensure we have some data for each metric type
+    console.log('📦 INVENTORY BANNER DATA GENERATION:');
+    console.log('- OOS items found:', topOOSByUsage.length);
+    console.log('- Margin opportunity items found:', marginOpportunityItems.length);
+    console.log('- Market change items found:', marketChangeItems.length);
+    console.log('- Total banner items:', Object.keys(bannerData).length);
+
+    return bannerData;
+  }, []);
+
+  // Expose inventory data to global window for banner (similar to RepPerformance)
+  useLayoutEffect(() => {
+    if (location.pathname === '/engine-room/inventory' && inventoryData) {
+      console.log('Setting up inventory banner data for InventoryAnalytics');
+      
+      const bannerData = generateInventoryBannerData(inventoryData);
+      
+      if (bannerData) {
+        window.repPerformanceData = {
+          repChanges: bannerData,
+          selectedMonth: `Inventory Analysis - ${inventoryData.fileName || 'Current'}`
+        };
+        
+        console.log('📦 INVENTORY BANNER DATA - Generated insights:', {
+          insights: Object.keys(bannerData),
+          totalInsights: Object.keys(bannerData).length,
+          fileName: inventoryData.fileName
+        });
+        console.log('Full inventory banner data:', bannerData);
+      }
+    }
+    
+    return () => {
+      // Cleanup when component unmounts or path changes
+      if (location.pathname === '/engine-room/inventory' && window.repPerformanceData) {
+        delete window.repPerformanceData;
+      }
+    };
+  }, [location.pathname, inventoryData, generateInventoryBannerData]);
 
   // Inject custom AG Grid filter styles
   useEffect(() => {
@@ -9689,6 +9839,30 @@ const MetricFilteredAGGrid: React.FC<{
       resizable: true,
       suppressSizeToFit: true
     },
+    // Add On Order column as first column after pinned columns for all metric cards EXCEPT out-of-stock
+    ...(filterType !== 'out-of-stock' ? [{
+      headerName: 'On Order',
+      field: 'quantity_on_order',
+      width: 100,
+      valueGetter: (params: any) => params.data.quantity_on_order || 0,
+      valueFormatter: (params: any) => params.value.toLocaleString(),
+      tooltipValueGetter: (params: any) => {
+        const onOrder = params.value || 0;
+        return `On Order: ${onOrder.toLocaleString()} units`;
+      },
+      cellStyle: (params: any) => {
+        const onOrder = params.value || 0;
+        return {
+          textAlign: 'left' as const,
+          color: onOrder > 0 ? '#10b981' : '#9ca3af',
+          fontWeight: onOrder > 0 ? 'bold' : 'normal'
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    }] : []),
     {
       headerName: 'Usage',
       field: 'averageUsage',
@@ -9703,6 +9877,7 @@ const MetricFilteredAGGrid: React.FC<{
       tooltipValueGetter: (params: any) => {
         const last30Days = params.data.packs_sold_last_30_days;
         const revaLast30Days = params.data.packs_sold_reva_last_30_days;
+        const onOrder = params.data.quantity_on_order || 0;
         let tooltip = '';
         if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
           tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
@@ -9711,9 +9886,35 @@ const MetricFilteredAGGrid: React.FC<{
           if (tooltip) tooltip += '\n';
           tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
         }
+        if (onOrder > 0) {
+          if (tooltip) tooltip += '\n';
+          tooltip += `On Order: ${onOrder.toLocaleString()} units`;
+        }
         return tooltip || 'No recent usage data available';
       },
-      cellClass: 'text-left text-gray-300',
+      cellStyle: (params: any) => {
+        const usage = params.data.averageUsage || params.data.packs_sold_avg_last_six_months || 0;
+        const onOrder = params.data.quantity_on_order || 0;
+        const onOrderPercent = usage > 0 ? Math.min((onOrder / usage) * 100, 100) : 0;
+        let backgroundImage = 'none';
+        
+        if (onOrderPercent > 0) {
+          // Use green gradient to show on order proportion relative to usage
+          let fillColor = '#10b981'; // Green-500
+          if (onOrderPercent >= 25 && onOrderPercent < 50) fillColor = '#059669'; // Green-600
+          else if (onOrderPercent >= 50 && onOrderPercent < 75) fillColor = '#047857'; // Green-700
+          else if (onOrderPercent >= 75) fillColor = '#065f46'; // Green-800
+          
+          backgroundImage = `linear-gradient(to top, ${fillColor}15 0%, ${fillColor}15 ${onOrderPercent}%, transparent ${onOrderPercent}%, transparent 100%)`;
+        }
+        
+        return {
+          textAlign: 'left' as const,
+          color: '#d1d5db',
+          backgroundImage: backgroundImage,
+          paddingRight: '8px'
+        };
+      },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,

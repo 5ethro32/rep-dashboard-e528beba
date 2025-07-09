@@ -33,13 +33,14 @@ const AppLayout = ({
   // Get live rep performance data if available - with periodic updates
   const [repPerformanceData, setRepPerformanceData] = useState((window as any).repPerformanceData);
   
-  // Check for updated data periodically when on rep performance page
+  // Check for updated data periodically when on rep performance or inventory pages
   useEffect(() => {
-    if (location.pathname === '/rep-performance') {
+    if (location.pathname === '/rep-performance' || location.pathname === '/engine-room/inventory') {
       const checkForUpdates = () => {
         const currentData = (window as any).repPerformanceData;
         if (currentData && JSON.stringify(currentData) !== JSON.stringify(repPerformanceData)) {
-          console.log('🔄 AppLayout detected updated rep performance data, refreshing announcement banner');
+          const pageType = location.pathname === '/rep-performance' ? 'rep performance' : 'inventory';
+          console.log(`🔄 AppLayout detected updated ${pageType} data, refreshing announcement banner`);
           setRepPerformanceData(currentData);
         }
       };
