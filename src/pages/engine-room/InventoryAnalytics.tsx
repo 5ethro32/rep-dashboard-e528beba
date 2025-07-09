@@ -10043,7 +10043,7 @@ const MetricFilteredAGGrid: React.FC<{
     }
   }, [searchTerm, gridApi, onGridFilterChange, handleFilterChanged]);
 
-  // Restore column state when starred items change (after re-render)
+  // Restore column state when grid is ready (not when starred items change)
   useEffect(() => {
     if (gridApi && columnState && Array.isArray(columnState) && columnState.length > 0) {
       // Small delay to ensure grid is fully rendered
@@ -10051,7 +10051,7 @@ const MetricFilteredAGGrid: React.FC<{
         restoreColumnState();
       }, 100);
     }
-      }, [starredItems, gridApi, columnState, restoreColumnState]);
+      }, [gridApi, columnState, restoreColumnState]);
 
 
 
