@@ -9789,6 +9789,23 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Avg Cost',
+      field: 'avg_cost',
+      width: 100,
+      valueGetter: (params: any) => getDisplayedAverageCost(params.data),
+      valueFormatter: (params: any) => {
+        return params.value ? formatCurrency(params.value) : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        return shouldShowAverageCostTooltip(params.data) ? getAverageCostTooltip(params.data) : 'Average cost information';
+      },
+      cellStyle: { textAlign: 'left' as const, color: '#10b981', fontWeight: 'bold' },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Price',
       field: 'AVER', // Assuming AVER is the average price per pack
       width: 100,
@@ -10053,7 +10070,7 @@ const MetricFilteredAGGrid: React.FC<{
 
 
 
-  // Filter out Stock £, Stock Qty, Months, Price, and Winning columns for out-of-stock view  
+  // Filter out Stock £, Stock Qty, Months, Price, Avg Cost, and Winning columns for out-of-stock view  
   const filteredColumnDefs = useMemo(() => {
     if (filterType === 'out-of-stock') {
       return columnDefs.filter(col => 
@@ -10061,6 +10078,7 @@ const MetricFilteredAGGrid: React.FC<{
         col.headerName !== 'Stock Qty' &&
         col.headerName !== 'Months' &&
         col.headerName !== 'Price' &&
+        col.headerName !== 'Avg Cost' &&
         col.headerName !== 'Winning'
       );
     }
@@ -10241,7 +10259,6 @@ const MetricFilteredAGGrid: React.FC<{
         suppressAnimationFrame={true}
         suppressRowDeselection={true}
         suppressAutoSize={true}
-        deltaRowDataMode={true}
       />
     </div>
   );
