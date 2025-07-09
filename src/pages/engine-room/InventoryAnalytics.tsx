@@ -9677,6 +9677,7 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'watchlist',
       pinned: 'left',
       width: 80,
+      headerClass: 'text-center',
       valueFormatter: (params: any) => params.value || '−',
       cellClass: 'text-center',
       cellStyle: (params: any) => {
@@ -9701,6 +9702,7 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'starred',
       pinned: 'left',
       width: 60,
+      headerClass: 'text-center',
       valueGetter: (params: any) => starredItems.has(params.data.id) ? '★' : '☆',
       cellStyle: (params: any) => {
         const isStarred = starredItems.has(params.data.id);
@@ -9968,6 +9970,7 @@ const MetricFilteredAGGrid: React.FC<{
       headerName: 'Group',
       field: 'velocityCategory',
       width: 90,
+      headerClass: 'text-center',
       valueFormatter: (params: any) => {
         const category = params.value;
         return typeof category === 'number' ? category.toString() : 'N/A';
