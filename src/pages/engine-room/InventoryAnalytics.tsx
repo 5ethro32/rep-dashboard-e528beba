@@ -1160,7 +1160,6 @@ const PriorityIssuesAGGrid: React.FC<{
       headerName: 'Stock £',
       field: 'stockValue',
       width: 110,
-      valueGetter: (params: any) => params.data.item?.stockValue || 0,
       valueFormatter: (params: any) => {
         const value = params.value || 0;
         return formatCurrency(value);
@@ -1168,10 +1167,6 @@ const PriorityIssuesAGGrid: React.FC<{
       cellClass: 'text-left text-white',
       sortable: true,
       filter: 'agNumberColumnFilter',
-      filterParams: {
-        defaultOption: 'greaterThan',
-        suppressAndOrCondition: true
-      } as INumberFilterParams,
       resizable: true,
       suppressSizeToFit: true
     },
@@ -1179,15 +1174,15 @@ const PriorityIssuesAGGrid: React.FC<{
       headerName: 'Stock Qty',
       field: 'currentStock',
       width: 110,
-      valueGetter: (params: any) => params.data.item?.currentStock || params.data.item?.stock || 0,
+      valueGetter: (params: any) => params.data.currentStock || params.data.stock || 0,
       valueFormatter: (params: any) => params.value.toLocaleString(),
       tooltipValueGetter: (params: any) => {
-        const ringfenced = params.data.item?.quantity_ringfenced || 0;
+        const ringfenced = params.data.quantity_ringfenced || 0;
         return `RF: ${ringfenced.toLocaleString()}`;
       },
       cellStyle: (params: any) => {
         const currentStock = params.value || 0;
-        const ringfenced = params.data.item?.quantity_ringfenced || 0;
+        const ringfenced = params.data.quantity_ringfenced || 0;
         const ringfencedPercent = currentStock > 0 ? Math.min((ringfenced / currentStock) * 100, 100) : 0;
         
         let backgroundImage = 'none';
@@ -1204,6 +1199,27 @@ const PriorityIssuesAGGrid: React.FC<{
           color: '#d1d5db',
           backgroundImage: backgroundImage,
           paddingLeft: '8px'
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Months',
+      field: 'monthsOfStock',
+      width: 90,
+      valueFormatter: (params: any) => {
+        const months = params.value;
+        return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
+      },
+      cellStyle: (params: any) => {
+        const months = params.value;
+        return {
+          textAlign: 'left' as const,
+          fontWeight: months && months > 6 ? 'bold' : 'normal',
+          color: months && months > 6 ? '#f87171' : '#d1d5db'
         };
       },
       sortable: true,
@@ -1242,28 +1258,6 @@ const PriorityIssuesAGGrid: React.FC<{
         return tooltip || 'No recent usage data available';
       },
       cellClass: 'text-left text-gray-300',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Months',
-      field: 'monthsOfStock',
-      width: 90,
-      valueGetter: (params: any) => params.data.item?.monthsOfStock,
-      valueFormatter: (params: any) => {
-        const months = params.value;
-        return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
-      },
-      cellStyle: (params: any) => {
-        const months = params.value;
-        return {
-          textAlign: 'left' as const,
-          fontWeight: months && months > 6 ? 'bold' : 'normal',
-          color: months && months > 6 ? '#f87171' : '#d1d5db'
-        };
-      },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -1566,6 +1560,36 @@ const PriorityIssuesAGGrid: React.FC<{
       filter: false,
       resizable: false,
       suppressHeaderMenuButton: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Usage',
+      field: 'averageUsage',
+      width: 100,
+      valueGetter: (params: any) => {
+        return params.data.averageUsage || params.data.packs_sold_avg_last_six_months;
+      },
+      valueFormatter: (params: any) => {
+        const usage = params.value;
+        return usage ? `${usage.toFixed(0)}` : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        const last30Days = params.data.packs_sold_last_30_days;
+        const revaLast30Days = params.data.packs_sold_reva_last_30_days;
+        let tooltip = '';
+        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
+          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
+        }
+        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
+          if (tooltip) tooltip += '\n';
+          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
+        }
+        return tooltip || 'No recent usage data available';
+      },
+      cellClass: 'text-left text-gray-300',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
       suppressSizeToFit: true
     }
   ];
@@ -3654,6 +3678,27 @@ const StarredItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Months',
+      field: 'monthsOfStock',
+      width: 90,
+      valueFormatter: (params: any) => {
+        const months = params.value;
+        return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
+      },
+      cellStyle: (params: any) => {
+        const months = params.value;
+        return {
+          textAlign: 'left' as const,
+          fontWeight: months && months > 6 ? 'bold' : 'normal',
+          color: months && months > 6 ? '#f87171' : '#d1d5db'
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Usage',
       field: 'averageUsage',
       width: 100,
@@ -3684,44 +3729,6 @@ const StarredItemsAGGrid: React.FC<{
         return tooltip || 'No recent usage data available';
       },
       cellClass: 'text-left text-gray-300',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Months',
-      field: 'monthsOfStock',
-      width: 90,
-      valueFormatter: (params: any) => {
-        const months = params.value;
-        return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        const usage = params.data.averageUsage || params.data.packs_sold_avg_last_six_months;
-        const last30Days = params.data.packs_sold_last_30_days;
-        const revaLast30Days = params.data.packs_sold_reva_last_30_days;
-        
-        let tooltip = usage ? `${usage.toFixed(0)} packs/month (6mo avg)` : 'No usage data (6mo avg)';
-        
-        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
-          tooltip += `\nLast 30 days: ${Number(last30Days).toFixed(0)} packs`;
-        }
-        
-        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
-          tooltip += `\nReva last 30 days: ${Number(revaLast30Days).toFixed(0)} packs`;
-        }
-        
-        return tooltip;
-      },
-      cellStyle: (params: any) => {
-        const months = params.value;
-        return {
-          textAlign: 'left' as const,
-          fontWeight: months && months > 6 ? 'bold' : 'normal',
-          color: months && months > 6 ? '#f87171' : '#d1d5db'
-        };
-      },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -5367,7 +5374,7 @@ const AllItemsAnalysis: React.FC<{
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
-                    Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    Stock £ {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -5798,6 +5805,27 @@ const AllItemsAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Months',
+      field: 'monthsOfStock',
+      width: 90,
+      valueFormatter: (params: any) => {
+        const months = params.value;
+        return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
+      },
+      cellStyle: (params: any) => {
+        const months = params.value;
+        return {
+          textAlign: 'left' as const,
+          fontWeight: months && months > 6 ? 'bold' : 'normal',
+          color: months && months > 6 ? '#f87171' : '#d1d5db'
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Usage',
       field: 'averageUsage',
       width: 100,
@@ -5826,27 +5854,6 @@ const AllItemsAGGrid: React.FC<{
         return tooltip || 'No recent usage data available';
       },
       cellClass: 'text-left text-gray-300',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
-      headerName: 'Months',
-      field: 'monthsOfStock',
-      width: 90,
-      valueFormatter: (params: any) => {
-        const months = params.value;
-        return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
-      },
-      cellStyle: (params: any) => {
-        const months = params.value;
-        return {
-          textAlign: 'left' as const,
-          fontWeight: months && months > 6 ? 'bold' : 'normal',
-          color: months && months > 6 ? '#f87171' : '#d1d5db'
-        };
-      },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -7091,65 +7098,12 @@ const OverstockAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Usage',
-      field: 'averageUsage',
-      width: 100,
-      valueGetter: (params: any) => {
-        const item = params.data;
-        return item?.averageUsage || item?.packs_sold_avg_last_six_months;
-      },
-      valueFormatter: (params: any) => {
-        const usage = params.value;
-        return usage ? `${usage.toFixed(0)}` : 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        const item = params.data;
-        const last30Days = item?.packs_sold_last_30_days;
-        const revaLast30Days = item?.packs_sold_reva_last_30_days;
-        
-        let tooltip = '';
-        
-        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
-          tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
-        }
-        
-        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
-          if (tooltip) tooltip += '\n';
-          tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
-        }
-        
-        return tooltip || 'No recent usage data available';
-      },
-      cellClass: 'text-left text-gray-300',
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
       headerName: 'Months',
       field: 'monthsOfStock',
       width: 90,
       valueFormatter: (params: any) => {
         const months = params.value;
         return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        const usage = params.data.averageUsage || params.data.packs_sold_avg_last_six_months;
-        const last30Days = params.data.packs_sold_last_30_days;
-        const revaLast30Days = params.data.packs_sold_reva_last_30_days;
-        
-        let tooltip = usage ? `${usage.toFixed(0)} packs/month (6mo avg)` : 'No usage data (6mo avg)';
-        
-        if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
-          tooltip += `\nLast 30 days: ${Number(last30Days).toFixed(0)} packs`;
-        }
-        
-        if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
-          tooltip += `\nReva last 30 days: ${Number(revaLast30Days).toFixed(0)} packs`;
-        }
-        
-        return tooltip;
       },
       cellStyle: (params: any) => {
         const months = params.value;
@@ -7948,7 +7902,7 @@ const OverstockAnalysis: React.FC<{
                     Item {sortField === 'stockcode' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('stockValue')}>
-                    Stock Value {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    Stock £ {sortField === 'stockValue' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th className="text-left p-3 text-gray-300 cursor-pointer hover:text-white text-sm" onClick={() => handleSort('averageCost')}>
                     Avg Cost {sortField === 'averageCost' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -9740,32 +9694,111 @@ const MetricFilteredAGGrid: React.FC<{
       field: 'averageUsage',
       width: 100,
       valueGetter: (params: any) => {
-        const item = params.data;
-        return item?.averageUsage || item?.packs_sold_avg_last_six_months;
+        return params.data.averageUsage || params.data.packs_sold_avg_last_six_months;
       },
       valueFormatter: (params: any) => {
         const usage = params.value;
         return usage ? `${usage.toFixed(0)}` : 'N/A';
       },
       tooltipValueGetter: (params: any) => {
-        const item = params.data;
-        const last30Days = item?.packs_sold_last_30_days;
-        const revaLast30Days = item?.packs_sold_reva_last_30_days;
-        
+        const last30Days = params.data.packs_sold_last_30_days;
+        const revaLast30Days = params.data.packs_sold_reva_last_30_days;
         let tooltip = '';
-        
         if (last30Days !== undefined && last30Days !== null && !isNaN(last30Days)) {
           tooltip += `Last 30 days: ${Number(last30Days).toFixed(0)} packs`;
         }
-        
         if (revaLast30Days !== undefined && revaLast30Days !== null && !isNaN(revaLast30Days)) {
           if (tooltip) tooltip += '\n';
           tooltip += `Reva Usage: ${Number(revaLast30Days).toFixed(0)} packs`;
         }
-        
         return tooltip || 'No recent usage data available';
       },
       cellClass: 'text-left text-gray-300',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Stock £',
+      field: 'stockValue',
+      width: 110,
+      valueFormatter: (params: any) => {
+        const value = params.value || 0;
+        return formatCurrency(value);
+      },
+      cellClass: 'text-left text-white',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Stock Qty',
+      field: 'currentStock',
+      width: 110,
+      valueGetter: (params: any) => params.data.currentStock || params.data.stock || 0,
+      valueFormatter: (params: any) => params.value.toLocaleString(),
+      tooltipValueGetter: (params: any) => {
+        const ringfenced = params.data.quantity_ringfenced || 0;
+        return `RF: ${ringfenced.toLocaleString()}`;
+      },
+      cellStyle: (params: any) => {
+        const currentStock = params.value || 0;
+        const ringfenced = params.data.quantity_ringfenced || 0;
+        const ringfencedPercent = currentStock > 0 ? Math.min((ringfenced / currentStock) * 100, 100) : 0;
+        let backgroundImage = 'none';
+        if (ringfencedPercent > 0) {
+          let fillColor = '#fbbf24';
+          if (ringfencedPercent >= 25 && ringfencedPercent < 50) fillColor = '#f97316';
+          else if (ringfencedPercent >= 50 && ringfencedPercent < 75) fillColor = '#dc2626';
+          else if (ringfencedPercent >= 75) fillColor = '#991b1b';
+          backgroundImage = `linear-gradient(to top, ${fillColor}15 0%, ${fillColor}15 ${ringfencedPercent}%, transparent ${ringfencedPercent}%, transparent 100%)`;
+        }
+        return {
+          textAlign: 'left' as const,
+          color: '#d1d5db',
+          backgroundImage: backgroundImage,
+          paddingRight: '8px'
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Months',
+      field: 'monthsOfStock',
+      width: 90,
+      valueFormatter: (params: any) => {
+        const months = params.value;
+        return months === 999.9 ? '∞' : months ? months.toFixed(1) : 'N/A';
+      },
+      cellStyle: (params: any) => {
+        const months = params.value;
+        return {
+          textAlign: 'left' as const,
+          fontWeight: months && months > 6 ? 'bold' : 'normal',
+          color: months && months > 6 ? '#f87171' : '#d1d5db'
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Price',
+      field: 'AVER', // Assuming AVER is the average price per pack
+      width: 100,
+      valueFormatter: (params: any) => {
+        return params.value ? formatCurrency(params.value) : 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        return params.value ? `Average Price: ${formatCurrency(params.value)}` : 'No price data available';
+      },
+      cellStyle: { textAlign: 'left' as const, color: '#facc15', fontWeight: 'bold' },
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
@@ -10020,11 +10053,15 @@ const MetricFilteredAGGrid: React.FC<{
 
 
 
-  // Filter out Price and Winning columns for out-of-stock view  
+  // Filter out Stock £, Stock Qty, Months, Price, and Winning columns for out-of-stock view  
   const filteredColumnDefs = useMemo(() => {
     if (filterType === 'out-of-stock') {
       return columnDefs.filter(col => 
-        col.headerName !== 'Price' && col.headerName !== 'Winning'
+        col.headerName !== 'Stock £' &&
+        col.headerName !== 'Stock Qty' &&
+        col.headerName !== 'Months' &&
+        col.headerName !== 'Price' &&
+        col.headerName !== 'Winning'
       );
     }
     return columnDefs;
@@ -10784,8 +10821,20 @@ const MetricFilteredView: React.FC<{
 
   // Get unique suppliers for Out of Stock view
   const getUniqueSuppliers = () => {
-    const suppliers = [...new Set(data.analyzedItems.map(item => item.min_supplier || 'N/A'))];
-    return suppliers.sort((a, b) => a.localeCompare(b));
+    // Get all suppliers and their OOS item counts
+    const supplierCounts: Record<string, number> = {};
+    data.analyzedItems.forEach(item => {
+      if ((item.quantity_available || 0) === 0 && (item.quantity_ringfenced || 0) === 0 && (item.quantity_on_order || 0) === 0) {
+        const supplier = item.min_supplier || 'N/A';
+        if (supplier !== 'N/A') {
+          supplierCounts[supplier] = (supplierCounts[supplier] || 0) + 1;
+        }
+      }
+    });
+    // Convert to array and sort by count descending, then alphabetically
+    return Object.entries(supplierCounts)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([supplier]) => supplier);
   };
 
   // Get filtered suppliers based on search term
