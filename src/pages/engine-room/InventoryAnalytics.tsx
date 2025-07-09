@@ -9683,13 +9683,16 @@ const MetricFilteredAGGrid: React.FC<{
         const watchlist = params.value || '';
         const hasWarning = watchlist.includes('⚠️') || watchlist.includes('❗');
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'center' as const,
           color: hasWarning ? '#fb923c' : '#6b7280',
-          fontSize: '16px'
+          fontSize: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         };
       },
       sortable: true,
-      filter: 'agTextColumnFilter',
+      filter: false,
       resizable: true,
       suppressSizeToFit: true
     },
@@ -9703,8 +9706,11 @@ const MetricFilteredAGGrid: React.FC<{
         const isStarred = starredItems.has(params.data.id);
         return {
           color: isStarred ? '#facc15' : '#6b7280',
-          textAlign: 'center !important' as const,
-          cursor: 'pointer'
+          textAlign: 'center' as const,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         };
       },
       onCellClicked: (params: any) => {
