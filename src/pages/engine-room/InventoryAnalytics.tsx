@@ -9890,22 +9890,6 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
-      headerName: 'Min Supplier',
-      field: 'min_supplier',
-      width: 150,
-      valueFormatter: (params: any) => {
-        return params.value || 'N/A';
-      },
-      tooltipValueGetter: (params: any) => {
-        return params.value || 'No supplier information available';
-      },
-      cellStyle: { textAlign: 'left' as const, color: '#6b7280', fontWeight: 'normal' },
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      resizable: true,
-      suppressSizeToFit: true
-    },
-    {
       headerName: 'SDT',
       field: 'SDT',
       width: 90,
@@ -9928,6 +9912,22 @@ const MetricFilteredAGGrid: React.FC<{
       suppressSizeToFit: true
     },
     {
+      headerName: 'Min Supplier',
+      field: 'min_supplier',
+      width: 150,
+      valueFormatter: (params: any) => {
+        return params.value || 'N/A';
+      },
+      tooltipValueGetter: (params: any) => {
+        return params.value || 'No supplier information available';
+      },
+      cellStyle: { textAlign: 'left' as const, color: '#6b7280', fontWeight: 'normal' },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
       headerName: 'Buying Trend',
       field: 'trendDirection',
       width: 110,
@@ -9944,10 +9944,13 @@ const MetricFilteredAGGrid: React.FC<{
           case 'STABLE': color = '#facc15'; break;
         }
         return {
-          textAlign: 'center !important' as const,
+          textAlign: 'center' as const,
           fontSize: '18px',
           fontWeight: 'bold',
-          color: color
+          color: color,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         };
       },
       sortable: true,
@@ -10190,7 +10193,6 @@ const MetricFilteredAGGrid: React.FC<{
         suppressMovableColumns={false}
         suppressScrollOnNewData={true}
         suppressAnimationFrame={true}
-        suppressCellSelection={true}
         suppressRowDeselection={true}
         suppressAutoSize={true}
         deltaRowDataMode={true}
