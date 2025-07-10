@@ -8682,7 +8682,7 @@ const InventoryAnalyticsContent: React.FC = () => {
                   return sum + Math.max(0, monthlyLostProfit);
                 }, 0);
               
-              return `${replenishableCount} can be replenished (${formatCurrency(monthlyLostRevenue)}/month lost)`;
+              return `${replenishableCount} can be replenished (${formatCurrency(monthlyLostRevenue)} potential profit)`;
             })()}
             icon={<AlertTriangle className="h-5 w-5 text-red-500" />}
             iconPosition="right"
@@ -11114,7 +11114,7 @@ const MetricFilteredView: React.FC<{
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-white">{formatCurrency(filteredStats.totalValue)}</div>
             <div className="text-sm text-gray-400">
-              {filterType === 'out-of-stock' ? 'Monthly Lost Profit' : 'Total Value'}
+              {filterType === 'out-of-stock' ? 'Potential Profit' : 'Total Value'}
             </div>
           </CardContent>
         </Card>
