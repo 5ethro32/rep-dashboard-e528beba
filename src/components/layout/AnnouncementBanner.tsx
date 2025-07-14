@@ -95,41 +95,46 @@ const getTickerData = (repChanges: RepChangesData, selectedMetric: MetricType) =
   return sortedChanges;
 };
 
-// Format change percentage
-const formatChange = (change: number, metric: MetricType): string => {
-  const sign = change >= 0 ? '+' : '';
+// Format change percentage - NO SIGN, the icon handles the sign
+const formatChange = (change: number | string, metric: MetricType): string => {
+  // Handle case where change might already be a formatted string
+  const numericChange = typeof change === 'string' ? parseFloat(change.replace(/[^-0-9.]/g, '')) : change;
   
   if (metric === 'margin') {
     // Margin is already in percentage points, so just show the value
-    return `${sign}${change.toFixed(2)}pp`;
+    return `${Math.abs(numericChange).toFixed(2)}pp`;
   }
   
   // Inventory-specific formatting
   if (metric === 'oos' || metric === 'marginOpp') {
     // For OOS and Margin Opportunities, show as currency with 2 decimal places
-    return `£${Math.abs(change).toFixed(2)}`;
+    return `£${Math.abs(numericChange).toFixed(2)}`;
   }
   
   if (metric === 'marketChange') {
     // For market change, show as percentage with 2 decimal places
-    return `${sign}${change.toFixed(2)}%`;
+    return `${Math.abs(numericChange).toFixed(2)}%`;
   }
   
   // Profit and spend are percentage changes with 2 decimal places
-  return `${sign}${change.toFixed(2)}%`;
+  return `${Math.abs(numericChange).toFixed(2)}%`;
 };
 
 // Get color class for change - more beautiful colors
-const getChangeColor = (change: number): string => {
-  if (change > 0) return 'text-emerald-400';
-  if (change < 0) return 'text-rose-400';
+const getChangeColor = (change: number | string): string => {
+  // Handle case where change might already be a formatted string
+  const numericChange = typeof change === 'string' ? parseFloat(change.replace(/[^-0-9.]/g, '')) : change;
+  if (numericChange > 0) return 'text-emerald-400';
+  if (numericChange < 0) return 'text-rose-400';
   return 'text-slate-400';
 };
 
 // Get icon for change - simple plus sign
-const getChangeIcon = (change: number) => {
+const getChangeIcon = (change: number | string) => {
+  // Handle case where change might already be a formatted string
+  const numericChange = typeof change === 'string' ? parseFloat(change.replace(/[^-0-9.]/g, '')) : change;
   // Always show "+" for any change (positive values)
-  if (change > 0) return <span className="text-xs font-bold">+</span>;
+  if (numericChange > 0) return <span className="text-xs font-bold">+</span>;
   return null;
 };
 

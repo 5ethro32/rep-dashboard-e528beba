@@ -309,7 +309,10 @@ import {
   Filter,
   RotateCcw,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  MapPin,
+  Target,
+  Archive
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import MetricCard from '@/components/MetricCard';
@@ -694,6 +697,748 @@ const getWinningStatus = (item: ProcessedInventoryItem | null | undefined): 'Y' 
   if (item.AVER < lowestCompetitorPrice) return 'Y'; // We win strictly
   if (item.AVER === lowestCompetitorPrice) return '-'; // Tie
   return 'N'; // We lose
+};
+
+// Bin optimization data processing interfaces
+interface BinOptimizationItem {
+  id: string;
+  stockcode: string;
+  description: string;
+  binLocation: string;
+  currentZone: string;
+  usageRank: number;
+  monthlyUsage: number;
+  recommendedBinLocation: string;
+  recommendedZone: string;
+  isOptimal: boolean;
+  optimalPercentage: number;
+  usageCategory: string;
+  velocityCategory: number;
+  stockValue: number;
+  currentStock: number;
+  zoneCapacityUsed: number;
+  zoneCapacityTotal: number;
+}
+
+interface BinDistributionData {
+  zone: string;
+  currentCount: number;
+  recommendedCount: number;
+  efficiency: number;
+  capacityUsed: number;
+  capacityTotal: number;
+  utilizationRate: number;
+}
+
+interface ZoneAnalysis {
+  zone: string;
+  itemCount: number;
+  averageUsage: number;
+  totalStockValue: number;
+  utilizationRate: number;
+  isOptimal: boolean;
+}
+
+// Helper function to extract zone from bin location
+const extractZoneFromBinLocation = (binLocation: string): string => {
+  if (!binLocation) return 'Unassigned';
+  const match = binLocation.match(/^([A-Z])-/);
+  return match ? match[1] : 'Other';
+};
+
+// Analyze current bin distribution to understand zone capacities
+const analyzeCurrentBinDistribution = (items: any[]): Map<string, ZoneAnalysis> => {
+  const zoneAnalysis = new Map<string, ZoneAnalysis>();
+  
+  // Group items by zone
+  const zoneGroups = items.reduce((groups, item) => {
+    const zone = extractZoneFromBinLocation(item.binLocation || '');
+    if (!groups[zone]) groups[zone] = [];
+    groups[zone].push(item);
+    return groups;
+  }, {} as Record<string, any[]>);
+  
+  // Analyze each zone
+  Object.entries(zoneGroups).forEach(([zone, zoneItems]) => {
+    const typedZoneItems = zoneItems as any[];
+    const itemCount = typedZoneItems.length;
+    const averageUsage = typedZoneItems.reduce((sum, item) => sum + (item.packs_sold_last_30_days || 0), 0) / itemCount;
+    const totalStockValue = typedZoneItems.reduce((sum, item) => sum + (item.stockValue || 0), 0);
+    
+    // Calculate utilization rate based on usage distribution
+    const sortedByUsage = typedZoneItems.sort((a, b) => (b.packs_sold_last_30_days || 0) - (a.packs_sold_last_30_days || 0));
+    const topQuartileUsage = sortedByUsage.slice(0, Math.ceil(itemCount * 0.25));
+    const averageTopUsage = topQuartileUsage.reduce((sum, item) => sum + (item.packs_sold_last_30_days || 0), 0) / topQuartileUsage.length;
+    
+    // Zone is optimal if it has high usage items (top 25% average usage > overall average)
+    const isOptimal = averageTopUsage > averageUsage * 1.5;
+    
+    zoneAnalysis.set(zone, {
+      zone,
+      itemCount,
+      averageUsage,
+      totalStockValue,
+      utilizationRate: (averageUsage / 100) * 100, // Normalize to percentage
+      isOptimal
+    });
+  });
+  
+  return zoneAnalysis;
+};
+
+// Smart bin location recommendation based on usage rank and picking efficiency
+const calculateSmartBinRecommendations = (
+  items: any[],
+  zoneAnalysis: Map<string, ZoneAnalysis>
+): { recommendations: Map<string, string>; sortedBinLocations: string[] } => {
+  const recommendations = new Map<string, string>();
+  
+  // Sort items by usage to get ranks (highest usage first)
+  const sortedByUsage = [...items].sort((a, b) => (b.packs_sold_last_30_days || 0) - (a.packs_sold_last_30_days || 0));
+  
+  // Get all existing bin locations from the data and sort them by picking efficiency
+  const allBinLocations = new Set<string>();
+  items.forEach(item => {
+    if (item.binLocation && item.binLocation !== 'Unassigned' && item.binLocation !== 'Other') {
+      allBinLocations.add(item.binLocation);
+    }
+  });
+  
+  // Convert to array and sort by picking efficiency (A01-01, A01-02, A01-03, etc.)
+  const sortedBinLocations = Array.from(allBinLocations).sort((a, b) => {
+    // Extract zone and number from bin location (e.g., "A01-01" -> zone: "A", number: "01-01")
+    const parseLocation = (location: string) => {
+      const match = location.match(/^([A-Z])(\d+)-(\d+)$/);
+      if (match) {
+        return {
+          zone: match[1],
+          section: parseInt(match[2]),
+          position: parseInt(match[3])
+        };
+      }
+      // Fallback for other formats
+      return {
+        zone: location.charAt(0),
+        section: 999,
+        position: 999
+      };
+    };
+    
+    const locA = parseLocation(a);
+    const locB = parseLocation(b);
+    
+    // Sort by zone first (A < B < C < D...)
+    if (locA.zone !== locB.zone) {
+      return locA.zone.localeCompare(locB.zone);
+    }
+    
+    // Then by section number
+    if (locA.section !== locB.section) {
+      return locA.section - locB.section;
+    }
+    
+    // Finally by position number
+    return locA.position - locB.position;
+  });
+  
+  console.log('🎯 Sorted bin locations by picking efficiency:', sortedBinLocations.slice(0, 20));
+  
+  // Assign bins sequentially based on usage rank
+  const assignedBins = new Set<string>();
+  
+  sortedByUsage.forEach((item, index) => {
+    const usageRank = index + 1;
+    let recommendedBin = item.binLocation || '';
+    
+    // For top performers, try to assign the best available bins
+    if (usageRank <= sortedBinLocations.length) {
+      // Find the best unassigned bin location
+      for (const binLocation of sortedBinLocations) {
+        if (!assignedBins.has(binLocation)) {
+          recommendedBin = binLocation;
+          assignedBins.add(binLocation);
+          break;
+        }
+      }
+    }
+    
+    // If we couldn't find a better bin, keep current location
+    if (!recommendedBin || recommendedBin === 'Other' || recommendedBin === 'Unassigned') {
+      recommendedBin = item.binLocation || 'Unassigned';
+    }
+    
+    recommendations.set(item.stockcode, recommendedBin);
+  });
+  
+  console.log('📊 Bin assignments completed:', {
+    totalItems: sortedByUsage.length,
+    assignedOptimalBins: assignedBins.size,
+    topAssignments: Array.from(recommendations.entries()).slice(0, 10)
+  });
+  
+  return { recommendations, sortedBinLocations };
+};
+
+// Calculate optimal percentage based on how close current location is to recommended location
+const calculateOptimalPercentage = (
+  currentBinLocation: string,
+  recommendedBinLocation: string,
+  usageRank: number,
+  sortedBinLocations: string[]
+): number => {
+  if (!currentBinLocation || !recommendedBinLocation) return 0;
+  
+  // If already in optimal location, return 100%
+  if (currentBinLocation === recommendedBinLocation) return 100;
+  
+  // Find the index positions of current and recommended locations
+  const currentIndex = sortedBinLocations.indexOf(currentBinLocation);
+  const recommendedIndex = sortedBinLocations.indexOf(recommendedBinLocation);
+  
+  // If either location is not found, return 0%
+  if (currentIndex === -1 || recommendedIndex === -1) return 0;
+  
+  // Calculate the distance from optimal position
+  const distance = Math.abs(currentIndex - recommendedIndex);
+  const maxDistance = sortedBinLocations.length - 1;
+  
+  // Calculate percentage based on how close to optimal position
+  // Closer to optimal = higher percentage
+  const percentage = Math.max(0, Math.round(((maxDistance - distance) / maxDistance) * 100));
+  
+  return percentage;
+};
+
+// Process bin optimization data with smart analysis
+const processBinOptimizationData = (data: ProcessedInventoryData): {
+  binOptimizationItems: BinOptimizationItem[];
+  binDistributionData: BinDistributionData[];
+  zoneAnalysis: Map<string, ZoneAnalysis>;
+} => {
+  // Filter items that have bin location data
+  const itemsWithBinData = data.analyzedItems.filter(item => 
+    item.binLocation && 
+    item.packs_sold_last_30_days !== undefined &&
+    item.packs_sold_last_30_days !== null
+  );
+  
+  if (itemsWithBinData.length === 0) {
+    // No bin data available, return empty results
+    return {
+      binOptimizationItems: [],
+      binDistributionData: [],
+      zoneAnalysis: new Map()
+    };
+  }
+  
+  // Analyze current bin distribution
+  const zoneAnalysis = analyzeCurrentBinDistribution(itemsWithBinData);
+  
+  // Get smart zone recommendations
+  const { recommendations: binRecommendations, sortedBinLocations } = calculateSmartBinRecommendations(itemsWithBinData, zoneAnalysis);
+  
+  // Sort by usage (packs_sold_last_30_days) descending to get usage ranks
+  const sortedByUsage = [...itemsWithBinData].sort((a, b) => 
+    (b.packs_sold_last_30_days || 0) - (a.packs_sold_last_30_days || 0)
+  );
+  
+  // Create bin optimization items
+  const binOptimizationItems: BinOptimizationItem[] = sortedByUsage.map((item, index) => {
+    const usageRank = index + 1;
+    const monthlyUsage = item.packs_sold_last_30_days || 0;
+    const currentZone = extractZoneFromBinLocation(item.binLocation || '');
+    const recommendedBinLocation = binRecommendations.get(item.stockcode) || item.binLocation || '';
+    const recommendedZone = extractZoneFromBinLocation(recommendedBinLocation);
+    
+    // Determine usage category based on quartiles
+    const totalItems = sortedByUsage.length;
+    let usageCategory = 'Slow Moving';
+    if (usageRank <= totalItems * 0.25) usageCategory = 'Ultra Fast';
+    else if (usageRank <= totalItems * 0.5) usageCategory = 'Fast';
+    else if (usageRank <= totalItems * 0.75) usageCategory = 'Medium';
+    
+    const isOptimal = item.binLocation === recommendedBinLocation;
+    
+    // Calculate optimal percentage
+    const optimalPercentage = calculateOptimalPercentage(
+      item.binLocation || '',
+      recommendedBinLocation,
+      usageRank,
+      sortedBinLocations
+    );
+    
+    // Get zone capacity info
+    const zoneInfo = zoneAnalysis.get(currentZone);
+    const zoneCapacityUsed = zoneInfo?.itemCount || 0;
+    const zoneCapacityTotal = Math.max(zoneCapacityUsed, Math.floor(totalItems * 0.15)); // Estimate
+    
+    return {
+      id: item.id || item.stockcode || `${index}`,
+      stockcode: item.stockcode || '',
+      description: item.description || '',
+      binLocation: item.binLocation || '',
+      currentZone,
+      usageRank,
+      monthlyUsage,
+      recommendedBinLocation,
+      recommendedZone,
+      isOptimal,
+      optimalPercentage,
+      usageCategory,
+      velocityCategory: typeof item.velocityCategory === 'number' ? item.velocityCategory : 999,
+      stockValue: item.stockValue || 0,
+      currentStock: item.currentStock || item.quantity_available || 0,
+      zoneCapacityUsed,
+      zoneCapacityTotal
+    };
+  });
+  
+  // Create bin distribution data
+  const zones = Array.from(zoneAnalysis.keys());
+  const binDistributionData: BinDistributionData[] = zones.map(zone => {
+    const currentCount = binOptimizationItems.filter(item => item.currentZone === zone).length;
+    const recommendedCount = binOptimizationItems.filter(item => item.recommendedZone === zone).length;
+    const efficiency = currentCount > 0 ? (recommendedCount / currentCount) * 100 : 0;
+    
+    const zoneInfo = zoneAnalysis.get(zone);
+    const capacityUsed = currentCount;
+    const capacityTotal = Math.max(capacityUsed, Math.floor(binOptimizationItems.length * 0.15));
+    const utilizationRate = capacityTotal > 0 ? (capacityUsed / capacityTotal) * 100 : 0;
+    
+    return {
+      zone,
+      currentCount,
+      recommendedCount,
+      efficiency,
+      capacityUsed,
+      capacityTotal,
+      utilizationRate
+    };
+  });
+  
+  return { binOptimizationItems, binDistributionData, zoneAnalysis };
+};
+
+// Bin Optimization Chart Component
+const BinOptimizationChart: React.FC<{ data: BinDistributionData[] }> = ({ data }) => {
+  if (data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-400">
+        <div className="text-center">
+          <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg font-medium">No Bin Location Data Available</p>
+          <p className="text-sm mt-2">Upload a file with bin location information to see optimization recommendations</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <ResponsiveContainer width="100%" height={300}>
+      <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+        <XAxis 
+          dataKey="zone" 
+          stroke="#9CA3AF"
+          tick={{ fill: '#9CA3AF' }}
+        />
+        <YAxis 
+          stroke="#9CA3AF"
+          tick={{ fill: '#9CA3AF' }}
+          tickFormatter={(value) => `${value}`}
+        />
+        <Tooltip 
+          contentStyle={{ 
+            backgroundColor: '#1F2937', 
+            border: '1px solid #374151',
+            borderRadius: '8px',
+            color: '#F9FAFB'
+          }}
+          formatter={(value, name) => {
+            if (name === 'currentCount') return [value, 'Current Items'];
+            if (name === 'recommendedCount') return [value, 'Recommended Items'];
+            if (name === 'utilizationRate') return [`${(value as number).toFixed(1)}%`, 'Utilization Rate'];
+            return [value, name];
+          }}
+          labelFormatter={(label) => `Zone ${label}`}
+        />
+        
+        {/* Current distribution bars */}
+        <Bar 
+          dataKey="currentCount" 
+          fill="#3B82F6"
+          name="currentCount"
+          radius={[4, 4, 0, 0]}
+        />
+        
+        {/* Recommended distribution bars */}
+        <Bar 
+          dataKey="recommendedCount" 
+          fill="#10B981"
+          name="recommendedCount"
+          radius={[4, 4, 0, 0]}
+          fillOpacity={0.7}
+        />
+        
+        {/* Utilization rate line */}
+        <Line 
+          type="monotone"
+          dataKey="utilizationRate" 
+          stroke="#F59E0B"
+          strokeWidth={3}
+          dot={{ fill: '#F59E0B', strokeWidth: 2, r: 4 }}
+          name="utilizationRate"
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+};
+
+// Bin Optimization Table Component
+const BinOptimizationTable: React.FC<{
+  data: BinOptimizationItem[];
+  onToggleStar: (id: string) => void;
+  starredItems: Set<string>;
+}> = ({ data, onToggleStar, starredItems }) => {
+  const [gridApi, setGridApi] = useState<GridApi | null>(null);
+
+  if (data.length === 0) {
+    return (
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-8">
+          <div className="text-center text-gray-400">
+            <Package className="h-16 w-16 mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-medium mb-2">No Bin Location Data Found</h3>
+            <p className="text-sm">
+              To enable bin optimisation analysis, ensure your Excel file includes a column for bin locations 
+              (e.g., "binLocation", "bin location", "location", etc.)
+            </p>
+            <p className="text-xs mt-2 text-gray-500">
+              Expected format: Zone-Number (e.g., "A-0719", "B-1234")
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Format currency function
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP'
+    }).format(value);
+  };
+
+  // Get zone color
+  const getZoneColor = (zone: string) => {
+    switch (zone) {
+      case 'A': return '#10B981'; // green - fastest
+      case 'B': return '#3B82F6'; // blue - fast
+      case 'C': return '#F59E0B'; // orange - medium
+      case 'D': return '#EF4444'; // red - slow
+      case 'G': return '#8B5CF6'; // purple - specialty
+      case 'H': return '#EC4899'; // pink - controlled
+      default: return '#6B7280'; // gray - other
+    }
+  };
+
+  // Get usage category color
+  const getUsageCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Ultra Fast': return '#10B981'; // green
+      case 'Fast': return '#3B82F6'; // blue
+      case 'Medium': return '#F59E0B'; // orange
+      case 'Slow Moving': return '#EF4444'; // red
+      default: return '#6B7280'; // gray
+    }
+  };
+
+  // Column definitions for AG Grid
+  const columnDefs: ColDef[] = [
+    {
+      headerName: 'Item',
+      field: 'stockcode',
+      pinned: 'left',
+      width: 300,
+      cellRenderer: (params: any) => {
+        const stockcode = params.data.stockcode || '';
+        const description = params.data.description || '';
+        
+        return (
+          <div style={{ 
+            lineHeight: '1.3',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: '6px 4px',
+            minHeight: '50px'
+          }}>
+            <div style={{ 
+              fontWeight: '600', 
+              color: '#ffffff',
+              fontSize: '13px',
+              marginBottom: '3px',
+              maxWidth: '280px', 
+              overflow: 'hidden', 
+              textOverflow: 'ellipsis', 
+              whiteSpace: 'nowrap'
+            }}>
+              {description || 'No description available'}
+            </div>
+            <div style={{ 
+              fontSize: '11px', 
+              color: '#9ca3af'
+            }}>
+              {stockcode}
+            </div>
+          </div>
+        );
+      },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Current Bin',
+      field: 'binLocation',
+      width: 120,
+      valueFormatter: (params: any) => params.value || 'Unassigned',
+      cellStyle: { textAlign: 'left' as const, color: '#d1d5db', fontWeight: 'bold' },
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Current Zone',
+      field: 'currentZone',
+      width: 110,
+      valueFormatter: (params: any) => params.value || 'N/A',
+      cellStyle: (params: any) => ({
+        textAlign: 'center' as const,
+        fontWeight: 'bold',
+        color: getZoneColor(params.value)
+      }),
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Usage Rank',
+      field: 'usageRank',
+      width: 100,
+      valueFormatter: (params: any) => `#${params.value}`,
+      cellStyle: (params: any) => {
+        const rank = params.value;
+        const totalItems = data.length;
+        let color = '#6B7280';
+        if (rank <= totalItems * 0.25) color = '#10B981'; // green
+        else if (rank <= totalItems * 0.5) color = '#3B82F6'; // blue
+        else if (rank <= totalItems * 0.75) color = '#F59E0B'; // orange
+        else color = '#EF4444'; // red
+        
+        return {
+          textAlign: 'center' as const,
+          fontWeight: 'bold',
+          color
+        };
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Monthly Usage',
+      field: 'monthlyUsage',
+      width: 120,
+      valueFormatter: (params: any) => params.value.toLocaleString(),
+      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Usage Category',
+      field: 'usageCategory',
+      width: 130,
+      cellStyle: (params: any) => ({
+        textAlign: 'center' as const,
+        fontWeight: 'bold',
+        color: getUsageCategoryColor(params.value)
+      }),
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Recommended Bin',
+      field: 'recommendedBinLocation',
+      width: 140,
+      cellStyle: (params: any) => ({
+        textAlign: 'center' as const,
+        fontWeight: 'bold',
+        color: getZoneColor(params.data.recommendedZone)
+      }),
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Optimal %',
+      headerTooltip: 'Percentage showing how close item is to its optimal bin location (100% = perfect, lower % = further from optimal)',
+      field: 'optimalPercentage',
+      width: 100,
+      valueFormatter: (params: any) => `${params.value}%`,
+      cellStyle: (params: any) => {
+        const percentage = params.value;
+        let color = '#EF4444'; // Red for low percentages
+        if (percentage >= 90) color = '#10B981'; // Green for high percentages
+        else if (percentage >= 70) color = '#F59E0B'; // Orange for medium percentages
+        else if (percentage >= 50) color = '#F97316'; // Orange-red for below average
+        
+        return {
+          textAlign: 'center' as const,
+          fontWeight: 'bold',
+          color
+        };
+      },
+      tooltipValueGetter: (params: any) => {
+        const percentage = params.value;
+        if (percentage === 100) {
+          return 'Item is in optimal bin location - no move needed';
+        } else {
+          return `Item is ${percentage}% optimal. Should be moved from ${params.data.binLocation} to ${params.data.recommendedBinLocation} for better picking efficiency`;
+        }
+      },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Stock Value',
+      field: 'stockValue',
+      width: 120,
+      valueFormatter: (params: any) => formatCurrency(params.value || 0),
+      cellStyle: { textAlign: 'right' as const, color: '#d1d5db' },
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      suppressSizeToFit: true
+    },
+    {
+      headerName: 'Star',
+      field: 'starred',
+      width: 60,
+      valueGetter: (params: any) => starredItems.has(params.data.id) ? '★' : '☆',
+      cellStyle: (params: any) => {
+        const isStarred = starredItems.has(params.data.id);
+        return {
+          color: isStarred ? '#facc15' : '#6b7280',
+          textAlign: 'center' as const,
+          cursor: 'pointer'
+        };
+      },
+      onCellClicked: (params: any) => {
+        onToggleStar(params.data.id);
+      },
+      sortable: false,
+      filter: false,
+      resizable: false,
+      suppressHeaderMenuButton: true,
+      suppressSizeToFit: true
+    }
+  ];
+
+  const onGridReady = (params: any) => {
+    setGridApi(params.api);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-white">Bin Optimisation Recommendations</h3>
+          <p className="text-sm text-gray-400">
+            {data.length} items analysed • Showing all items with optimal percentage scores
+          </p>
+        </div>
+        <div className="flex gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded"></div>
+            <span className="text-gray-300">Ultra Fast</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+            <span className="text-gray-300">Fast</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-orange-500 rounded"></div>
+            <span className="text-gray-300">Medium</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-red-500 rounded"></div>
+            <span className="text-gray-300">Slow Moving</span>
+          </div>
+        </div>
+      </div>
+
+      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+        <CardContent className="p-0">
+          <div 
+            className="ag-theme-alpine-dark" 
+            style={{ 
+              height: '600px', 
+              width: '100%',
+              '--ag-header-column-separator-display': 'block',
+              '--ag-header-column-separator-height': '100%',
+              '--ag-header-column-separator-width': '1px',
+              '--ag-header-column-separator-color': 'rgba(255, 255, 255, 0.1)',
+              '--ag-column-separator-display': 'block',
+              '--ag-column-separator-height': '100%',
+              '--ag-column-separator-width': '1px',
+              '--ag-column-separator-color': 'rgba(255, 255, 255, 0.05)'
+            } as React.CSSProperties}
+          >
+            <AgGridReact
+              columnDefs={columnDefs}
+              rowData={data}
+              onGridReady={onGridReady}
+              defaultColDef={{
+                resizable: true,
+                sortable: true,
+                filter: true,
+                minWidth: 80
+              }}
+              rowHeight={64}
+              headerHeight={56}
+              suppressRowClickSelection={true}
+              rowSelection="multiple"
+              pagination={true}
+              paginationPageSize={50}
+              paginationPageSizeSelector={[25, 50, 100, 200]}
+              suppressPaginationPanel={false}
+              animateRows={true}
+              suppressCellFocus={false}
+              enableCellTextSelection={true}
+              tooltipShowDelay={500}
+              tooltipHideDelay={10000}
+              tooltipMouseTrack={true}
+              domLayout="normal"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 // Sticky Horizontal Scroll Table Component
@@ -8167,7 +8912,7 @@ const InventoryAnalyticsContent: React.FC = () => {
 
     // Calculate monthly lost profit for OOS items
     topOOSByUsage.forEach(item => {
-      const itemName = item.description || item.Description || item.stockcode || 'Unknown Item';
+      const itemName = item.description || item.stockcode || 'Unknown Item';
       const monthlyUsage = item.packs_sold_avg_last_six_months || 0;
       const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
       
@@ -8194,7 +8939,7 @@ const InventoryAnalyticsContent: React.FC = () => {
     }).sort((a, b) => (b.stockValue || 0) - (a.stockValue || 0)).slice(0, 10);
 
     marginOpportunityItems.forEach(item => {
-      const itemName = item.description || item.Description || item.stockcode || 'Unknown Item';
+      const itemName = item.description || item.stockcode || 'Unknown Item';
       const lowestComp = item.bestCompetitorPrice || item.lowestMarketPrice || item.Nupharm || item.AAH2 || item.LEXON2;
       const stockValue = item.stockValue || 0;
       
@@ -8221,16 +8966,16 @@ const InventoryAnalyticsContent: React.FC = () => {
     // 3. Market Change - Items with significant competitor price movements
     const marketChangeItems = data.analyzedItems.filter(item => {
       const hasCurrentPrice = item.AVER && item.AVER > 0;
-      const hasCompetitorPrices = item.Nupharm || item.AAH2 || item.LEXON2 || item.ETH || item.ETHN;
+      const hasCompetitorPrices = item.Nupharm || item.AAH2 || item.LEXON2;
       return hasCurrentPrice && hasCompetitorPrices;
     }).slice(0, 15); // Get more items for market change
 
     marketChangeItems.forEach((item, index) => {
-      const itemName = item.description || item.Description || item.stockcode || 'Unknown Item';
+      const itemName = item.description || item.stockcode || 'Unknown Item';
       
       // Simulate market change based on competitor price variations
       // In real implementation, this would compare historical prices
-      const competitorPrices = [item.Nupharm, item.AAH2, item.LEXON2, item.ETH, item.ETHN].filter(p => p && p > 0);
+      const competitorPrices = [item.Nupharm, item.AAH2, item.LEXON2].filter(p => p && p > 0);
       if (competitorPrices.length > 1) {
         const avgCompPrice = competitorPrices.reduce((sum, p) => sum + p, 0) / competitorPrices.length;
         const priceVariation = Math.max(...competitorPrices) - Math.min(...competitorPrices);
@@ -8952,6 +9697,24 @@ const InventoryOverview: React.FC<{
     return comparison.sort((a, b) => a.velocityCategory - b.velocityCategory);
   }, [data.analyzedItems]);
 
+  // Add bin optimization data processing
+  const { binOptimizationItems, binDistributionData, zoneAnalysis } = useMemo(() => {
+    const result = processBinOptimizationData(data);
+    console.log('🔍 Bin Optimization Debug:', {
+      totalItems: data.analyzedItems.length,
+      itemsWithBinData: data.analyzedItems.filter(item => item.binLocation).length,
+      itemsWithUsageData: data.analyzedItems.filter(item => item.packs_sold_last_30_days).length,
+      itemsWithBothData: data.analyzedItems.filter(item => item.binLocation && item.packs_sold_last_30_days).length,
+      binOptimizationItems: result.binOptimizationItems.length,
+      sampleItem: data.analyzedItems[0] ? {
+        stockcode: data.analyzedItems[0].stockcode,
+        binLocation: data.analyzedItems[0].binLocation,
+        packs_sold_last_30_days: data.analyzedItems[0].packs_sold_last_30_days
+      } : null
+    });
+    return result;
+  }, [data]);
+
   // Prepare data for Supplier Split Analysis (Strict Wins Only)
   const supplierSplitData = useMemo(() => {
     const supplierCounts: Record<string, number> = {
@@ -9178,6 +9941,15 @@ const InventoryOverview: React.FC<{
   // Enhanced overview with modern analytics
   return (
     <div className="space-y-6">
+      {/* Bin Optimisation Table - Only show if we have bin data */}
+      {binOptimizationItems.length > 0 && (
+        <BinOptimizationTable 
+          data={binOptimizationItems}
+          onToggleStar={onToggleStar}
+          starredItems={starredItems}
+        />
+      )}
+
       {/* Price Comparison Analysis - Strategic Pricing Framework */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardHeader>
@@ -11114,7 +11886,7 @@ const MetricFilteredView: React.FC<{
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-white">{formatCurrency(filteredStats.totalValue)}</div>
             <div className="text-sm text-gray-400">
-              {filterType === 'out-of-stock' ? 'Potential Profit' : 'Total Value'}
+                              {filterType === 'out-of-stock' ? 'Profit' : 'Total Value'}
             </div>
           </CardContent>
         </Card>

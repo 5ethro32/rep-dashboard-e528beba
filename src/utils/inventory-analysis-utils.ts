@@ -39,6 +39,14 @@ export interface InventoryItem {
   
   // Min Supplier field
   min_supplier?: string; // Column BM - Min Supplier information
+  
+  // Bin Location field
+  binLocation?: string; // Bin location for warehouse optimization
+  
+  // Overstock Location fields
+  overstockLocation1?: string;
+  overstockLocation2?: string;
+  overstockLocation3?: string;
 }
 
 export interface ProcessedInventoryItem extends InventoryItem {
@@ -311,6 +319,10 @@ const generateInventoryColumnMapping = (headers: string[]) => {
       'BM', // Column BM directly
       'column BM',
       'col BM'
+    ],
+    binLocation: [
+      'binlocation', 'bin location', 'bin_location', 'location', 'bin', 'warehouse location',
+      'picking location', 'storage location', 'shelf location', 'position'
     ]
   };
   
@@ -480,6 +492,14 @@ const transformInventoryRow = (row: any, mapping: Record<string, string>): Inven
     const rawValue = row[mapping.min_supplier];
     if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
       transformed.min_supplier = String(rawValue).trim();
+    }
+  }
+  
+  // Add Bin Location field
+  if (mapping.binLocation && row[mapping.binLocation] !== undefined) {
+    const rawValue = row[mapping.binLocation];
+    if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+      transformed.binLocation = String(rawValue).trim();
     }
   }
   
@@ -839,15 +859,22 @@ export const processInventoryExcelFile = async (file: File): Promise<ProcessedIn
         }
 
         // Look for 'maintenance' sheet first, then fallback to first sheet
-        const sheetName = sheetNames.find(name => name.toLowerCase().includes('maintenance')) || sheetNames[0];
+        const maintenanceSheetName = sheetNames.find(name => name.toLowerCase().includes('maintenance')) || sheetNames[0];
         
-        // Debug the sheet structure before converting to JSON
-        const sheet = workbook.Sheets[sheetName];
+        // Also look for 'stock_data' sheet for bin location information
+        const stockDataSheetName = sheetNames.find(name => name.toLowerCase().includes('stock_data') || name.toLowerCase().includes('stock data'));
         
-        // Try different parsing methods
+        console.log('📊 Processing Excel sheets:', { 
+          allSheets: sheetNames, 
+          maintenanceSheet: maintenanceSheetName, 
+          stockDataSheet: stockDataSheetName 
+        });
+        
+        // Process maintenance sheet (main data)
+        const maintenanceSheet = workbook.Sheets[maintenanceSheetName];
         
         // Method 1: Default JSON conversion (force wide range to ensure we get all columns)
-        const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { 
+        const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[maintenanceSheetName], { 
           range: undefined, // Read entire sheet
           defval: null // Use null for empty cells
         });
@@ -856,13 +883,13 @@ export const processInventoryExcelFile = async (file: File): Promise<ProcessedIn
         }
         
         // Method 2: Raw values with header option
-        const rawData2 = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+        const rawData2 = XLSX.utils.sheet_to_json(workbook.Sheets[maintenanceSheetName], { header: 1 });
         if (rawData2.length > 0) {
         }
         
         // Method 3: Range-based parsing to ensure we get all columns
-        const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:Z1000');
-        const rawData3 = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { range: range });
+        const range = XLSX.utils.decode_range(maintenanceSheet['!ref'] || 'A1:Z1000');
+        const rawData3 = XLSX.utils.sheet_to_json(workbook.Sheets[maintenanceSheetName], { range: range });
         if (rawData3.length > 0) {
           const headers3 = Object.keys(rawData3[0] as object);
         }
@@ -900,14 +927,78 @@ export const processInventoryExcelFile = async (file: File): Promise<ProcessedIn
           throw new Error(`Missing required columns: ${missingFields.join(', ')}. Please ensure your file includes these fields.`);
         }
         
-        // Transform raw data
+        // Transform raw data from maintenance sheet
         const transformedData = rawData.map((row: any) => transformInventoryRow(row, columnMapping));
         
-        // Calculate velocity categories
-        const velocityLookup = calculateVelocityCategories(transformedData);
+        // Process stock_data sheet if it exists
+        let stockDataMap = new Map<string, any>();
+        if (stockDataSheetName) {
+          try {
+            const stockRawData = XLSX.utils.sheet_to_json(workbook.Sheets[stockDataSheetName], { 
+              range: undefined,
+              defval: null
+            });
+            
+            console.log('📦 Stock data sheet found:', {
+              sheetName: stockDataSheetName,
+              rowCount: stockRawData.length,
+              sampleHeaders: stockRawData.length > 0 ? Object.keys(stockRawData[0] as object) : []
+            });
+            
+            // Create a map of stock data keyed by description
+            stockRawData.forEach((row: any) => {
+              const description = String(row.description || '').trim();
+              if (description) {
+                stockDataMap.set(description, {
+                  binLocation: String(row.binLocation || '').trim(),
+                  nominalCode: String(row.nominalCode || '').trim(),
+                  type: String(row.type || '').trim(),
+                  quantityAvailable: Number(row.quantityAvailable || 0),
+                  quantityRingfenced: Number(row.quantityRingfenced || 0),
+                  overstockLocation1: String(row.overstockLocation1 || '').trim(),
+                  overstockLocation2: String(row.overstockLocation2 || '').trim(),
+                  overstockLocation3: String(row.overstockLocation3 || '').trim()
+                });
+              }
+            });
+            
+            console.log('📦 Stock data processed:', {
+              totalMappings: stockDataMap.size,
+              sampleMapping: stockDataMap.size > 0 ? Array.from(stockDataMap.entries())[0] : null
+            });
+            
+          } catch (error) {
+            console.warn('⚠️ Error processing stock_data sheet:', error);
+          }
+        }
         
-        // Analyze all items
-        const analyzedItems = transformedData.map(item => analyzeInventoryItem(item, velocityLookup));
+        // Merge stock data with maintenance data
+        const mergedData = transformedData.map(item => {
+          const stockData = stockDataMap.get(item.description);
+          if (stockData) {
+            return {
+              ...item,
+              binLocation: stockData.binLocation,
+              // You can add other stock data fields here if needed
+              overstockLocation1: stockData.overstockLocation1,
+              overstockLocation2: stockData.overstockLocation2,
+              overstockLocation3: stockData.overstockLocation3
+            };
+          }
+          return item;
+        });
+        
+        console.log('🔗 Data merge complete:', {
+          maintenanceItems: transformedData.length,
+          stockDataItems: stockDataMap.size,
+          itemsWithBinLocation: mergedData.filter(item => item.binLocation).length
+        });
+        
+        // Calculate velocity categories using merged data
+        const velocityLookup = calculateVelocityCategories(mergedData);
+        
+        // Analyze all items using merged data
+        const analyzedItems = mergedData.map(item => analyzeInventoryItem(item, velocityLookup));
         
         // Sort by stock value (descending)
         analyzedItems.sort((a, b) => b.stockValue - a.stockValue);
@@ -930,7 +1021,7 @@ export const processInventoryExcelFile = async (file: File): Promise<ProcessedIn
           velocityBreakdown,
           trendBreakdown,
           strategyBreakdown,
-          rawData: transformedData
+          rawData: mergedData
         };
         
         resolve(result);
