@@ -210,7 +210,7 @@ const RepPerformance = () => {
   const filteredMaySummary: SummaryData = calculateSummary(mayBaseSummary, mayRevaValues, mayWholesaleValues, includeRetail, includeReva, includeWholesale);
   const filteredJunSummary: SummaryData = calculateSummary(junBaseSummary, junRevaValues, junWholesaleValues, includeRetail, includeReva, includeWholesale);
   const filteredJun2Summary: SummaryData = calculateSummary(jun2BaseSummary, jun2RevaValues, jun2WholesaleValues, includeRetail, includeReva, includeWholesale);
-  const filteredJulSummary: SummaryData = calculateSummary(julBaseSummary, julRevaValues, julWholesaleValues, includeRetail, includeReva, includeWholesale);
+  const filteredJulSummary: SummaryData = calculateSummary(jun2BaseSummary, jun2RevaValues, jun2WholesaleValues, includeRetail, includeReva, includeWholesale);
 
   // Create the rep data object for the chart with month-specific data
   const repData = {
@@ -220,7 +220,7 @@ const RepPerformance = () => {
       may: getActiveData('rep', 'May'),
       june: getActiveData('rep', 'June'),
       june2: getActiveData('rep', 'June 2'),
-      july: getActiveData('rep', 'July')
+      july: getActiveData('rep', 'July MTD')
   };
 
   // Add debugging logs to verify we're getting different data for each month

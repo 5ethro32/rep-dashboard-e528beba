@@ -89,6 +89,63 @@ export const projectMonthlyValue = (currentValue: number, percentageComplete: nu
   return currentValue * (100 / percentageComplete);
 };
 
+/**
+ * Calculates the actual number of working days completed in the current month
+ * Used for calculating daily averages based on MTD data
+ * 
+ * @param currentDate - The date to calculate working days up to
+ * @param adjustForDataLag - If true, subtracts one day to account for data lag
+ * @returns The number of working days completed in the month
+ */
+export const getWorkingDaysCompleted = (currentDate: Date, adjustForDataLag: boolean = false): number => {
+  const now = new Date(currentDate);
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const currentDay = now.getDate();
+  
+  let completedWorkingDays = 0;
+  
+  for (let day = 1; day <= currentDay; day++) {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    
+    // Skip weekends (0 = Sunday, 6 = Saturday)
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      // Only count as completed if it's before the current day, or if we're not adjusting for data lag
+      if (day < currentDay || !adjustForDataLag) {
+        completedWorkingDays++;
+      }
+    }
+  }
+  
+  return completedWorkingDays;
+};
+
+/**
+ * Calculates the total working days in a given month
+ * Used for calculating daily averages for comparison months
+ * 
+ * @param year - The year
+ * @param month - The month (0-indexed, so 0 = January, 11 = December)
+ * @returns The total number of working days in the month
+ */
+export const getTotalWorkingDaysInMonth = (year: number, month: number): number => {
+  const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+  let totalWorkingDays = 0;
+  
+  for (let day = 1; day <= totalDaysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dayOfWeek = date.getDay();
+    
+    // Skip weekends (0 = Sunday, 6 = Saturday)
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      totalWorkingDays++;
+    }
+  }
+  
+  return totalWorkingDays;
+};
+
 // Get the first day of the month
 export const getFirstDayOfMonth = (date: Date): Date => {
   const result = new Date(date);

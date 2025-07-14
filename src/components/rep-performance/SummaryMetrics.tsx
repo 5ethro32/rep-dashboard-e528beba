@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import MetricCard from '@/components/MetricCard';
 import { formatCurrency, formatPercent, formatNumber } from '@/utils/rep-performance-utils';
-import { ChartBar, Wallet, Gauge, Package } from 'lucide-react';
+import { ChartBar, Wallet, Gauge, Package, Calendar } from 'lucide-react';
+import { getWorkingDaysCompleted, getTotalWorkingDaysInMonth } from '@/utils/date-utils';
 
 interface SummaryMetricsProps {
   summary: {
@@ -87,7 +88,7 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
     if (selectedMonth === 'April') return 'March';
     if (selectedMonth === 'May') return 'April';
     if (selectedMonth === 'June') return 'May'; // Display name - actual data comes from June_Data_Comparison
-          if (selectedMonth === 'June 2' || selectedMonth === 'July MTD') return 'May'; // Display name - actual data comes from June_Data_Comparison (same as June)
+          if (selectedMonth === 'June 2' || selectedMonth === 'July MTD') return 'June'; // Display name - actual data comes from July_Data_Comparison
     if (selectedMonth === 'July') return 'June'; // Display name - actual data comes from July_Data_Comparison
     return 'Previous';
   };
@@ -137,19 +138,55 @@ const SummaryMetrics: React.FC<SummaryMetricsProps> = ({
         hideRanking={hideRankings}
       />
       
-      {/* Packs Card */}
-      <MetricCard
-        title="Packs"
-        value={formatNumber(summary.totalPacks || 0)}
-        change={renderChangeIndicator(filteredChanges.totalPacks)}
-        subtitle={showChangeIndicators ? 
-          `${getComparisonMonthName()}: ${formatNumber(getComparisonValue('totalPacks'))}` :
-          selectedMonth === 'February' ? 'No comparison data available' : undefined
-        }
-        icon={<Package />}
-        isLoading={isLoading}
-        hideRanking={hideRankings}
-      />
+      {/* Daily Average (Profit) Card for July MTD, Packs Card for other months */}
+      {selectedMonth === 'July MTD' ? (
+        (() => {
+          const currentWorkingDays = getWorkingDaysCompleted(new Date(), true);
+          const currentDailyAverage = (summary.totalProfit || 0) / Math.max(1, currentWorkingDays);
+          
+          // Get comparison data from July_Data_Comparison table (contains June MTD data)
+          const previousMonthProfit = getComparisonValue('totalProfit');
+          const comparisonMonthName = getComparisonMonthName();
+          
+          // Use the same number of working days for both current and comparison
+          // This ensures we're comparing like-for-like periods (e.g., first 10 days vs first 10 days)
+          const previousDailyAverage = currentWorkingDays > 0 ? previousMonthProfit / currentWorkingDays : 0;
+          
+          // Calculate percentage change
+          const percentageChange = previousDailyAverage > 0 ? 
+            ((currentDailyAverage - previousDailyAverage) / previousDailyAverage) * 100 : 0;
+          
+          return (
+            <MetricCard
+              title="Daily Average (Profit)"
+              value={formatCurrency(currentDailyAverage)}
+              change={showChangeIndicators && previousDailyAverage > 0 ? 
+                renderChangeIndicator(percentageChange) : undefined
+              }
+              subtitle={showChangeIndicators && previousDailyAverage > 0 ? 
+                `${comparisonMonthName}: ${formatCurrency(previousDailyAverage)}` : 
+                `Working days: ${currentWorkingDays}`
+              }
+              icon={<Calendar />}
+              isLoading={isLoading}
+              hideRanking={hideRankings}
+            />
+          );
+        })()
+      ) : (
+        <MetricCard
+          title="Packs"
+          value={formatNumber(summary.totalPacks || 0)}
+          change={renderChangeIndicator(filteredChanges.totalPacks)}
+          subtitle={showChangeIndicators ? 
+            `${getComparisonMonthName()}: ${formatNumber(getComparisonValue('totalPacks'))}` :
+            selectedMonth === 'February' ? 'No comparison data available' : undefined
+          }
+          icon={<Package />}
+          isLoading={isLoading}
+          hideRanking={hideRankings}
+        />
+      )}
     </div>
   );
 };
