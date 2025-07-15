@@ -299,6 +299,7 @@ import {
   PoundSterling, 
   TrendingUp, 
   AlertTriangle,
+  AlertCircle,
   BarChart3,
   Download,
   Info,
@@ -316,6 +317,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import MetricCard from '@/components/MetricCard';
+import InventoryHealthTable from '@/components/engine-room/InventoryHealthTable';
 import { 
   processInventoryExcelFile, 
   exportInventoryAnalysisToExcel,
@@ -2411,16 +2413,22 @@ const PriorityIssuesAGGrid: React.FC<{
         </div>
       </div>
 
-      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <Input
-            placeholder="Search by stock code, description, or issue..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-gray-800 border-gray-700 text-white"
-          />
-        </CardContent>
-      </Card>
+      {/* Search - Hide for inventory-health as it has its own search */}
+      {filterType !== 'inventory-health' && (
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <Input
+              placeholder="Search by stock code or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-gray-800 border-gray-700 text-white"
+            />
+            <div className="mt-2 text-sm text-gray-400">
+              Showing {filteredStats.totalItems.toLocaleString()} items
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
@@ -2885,17 +2893,22 @@ const PriorityIssuesAnalysis: React.FC<{
         </CardContent>
       </Card>
 
-      {/* Search */}
-      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <Input
-            placeholder="Search by stock code, description, or issue..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-gray-800 border-gray-700 text-white"
-          />
-        </CardContent>
-      </Card>
+      {/* Search - Hide for inventory-health as it has its own search */}
+      {filterType !== 'inventory-health' && (
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <Input
+              placeholder="Search by stock code or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-gray-800 border-gray-700 text-white"
+            />
+            <div className="mt-2 text-sm text-gray-400">
+              Showing {filteredStats.totalItems.toLocaleString()} items
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Data Table with Sticky Headers */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -4190,7 +4203,7 @@ const WatchlistAnalysis: React.FC<{
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-left text-blue-400 font-semibold text-sm">
+                    <td className="p-3 text-left text-blue-400 font-bold text-sm">
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger asChild>
@@ -5895,17 +5908,19 @@ const AllItemsAnalysis: React.FC<{
         </div>
       </div>
 
-      {/* Search */}
-      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <Input
-            placeholder="Search by stock code or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-gray-800 border-gray-700 text-white"
-          />
-        </CardContent>
-      </Card>
+      {/* Search - Hide for inventory-health as it has its own search */}
+      {filterType !== 'inventory-health' && (
+        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <Input
+              placeholder="Search by stock code or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-gray-800 border-gray-700 text-white"
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Strategic Filters */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -8874,6 +8889,72 @@ const OverstockAnalysis: React.FC<{
   );
 };
 
+// Inventory Control Chart Calculation Function
+const calculateInventoryControlMetrics = (items: ProcessedInventoryItem[]) => {
+  const controlMetrics = items.map(item => {
+    // Calculate daily demand using existing data
+    const recentDailyDemand = (item.packs_sold_last_30_days || 0) / 30;
+    const longTermDailyDemand = (item.packs_sold_avg_last_six_months || 0) / 30;
+    
+    // Use hybrid approach: recent trend with long-term stability
+    const avgDailyDemand = recentDailyDemand > 0 ? 
+      (recentDailyDemand * 0.7 + longTermDailyDemand * 0.3) : 
+      longTermDailyDemand;
+
+    // REVA usage provides safety stock baseline
+    const safetyStock = item.packs_sold_reva_last_30_days || 0;
+    
+    // Assume 14-day lead time (can be made configurable later)
+    const leadTimeDays = 14;
+    const reorderPoint = (avgDailyDemand * leadTimeDays) + safetyStock;
+    
+    // Calculate current stock position
+    const currentStock = item.currentStock || 0;
+    
+    // Determine inventory health status
+    let status: 'optimal' | 'reorder' | 'critical' | 'overstock' = 'optimal';
+    
+    if (currentStock <= safetyStock) {
+      status = 'critical';
+    } else if (currentStock <= reorderPoint) {
+      status = 'reorder';
+    } else if (currentStock > (reorderPoint * 2.5)) {
+      status = 'overstock';
+    }
+    
+    // Calculate days of stock remaining
+    const daysOfStock = avgDailyDemand > 0 ? currentStock / avgDailyDemand : 999;
+    
+    return {
+      item,
+      avgDailyDemand,
+      safetyStock,
+      reorderPoint,
+      currentStock,
+      status,
+      daysOfStock
+    };
+  });
+
+  // Calculate summary metrics
+  const criticalItems = controlMetrics.filter(m => m.status === 'critical').length;
+  const reorderItems = controlMetrics.filter(m => m.status === 'reorder').length;
+  const overstockItems = controlMetrics.filter(m => m.status === 'overstock').length;
+  const optimalItems = controlMetrics.filter(m => m.status === 'optimal').length;
+  
+  return {
+    controlMetrics,
+    summary: {
+      criticalItems,
+      reorderItems,
+      overstockItems,
+      optimalItems,
+      totalItems: items.length,
+      healthPercentage: ((optimalItems + reorderItems) / items.length) * 100
+    }
+  };
+};
+
 // Now define InventoryAnalyticsContent after all the analysis components
 const InventoryAnalyticsContent: React.FC = () => {
   const [inventoryData, setInventoryData] = useState<ProcessedInventoryData | null>(null);
@@ -9361,21 +9442,30 @@ const InventoryAnalyticsContent: React.FC = () => {
           <MetricCard 
             title="Total Products"
             value={inventoryData.summaryStats.totalProducts.toLocaleString()}
-            subtitle={`${inventoryData.summaryStats.totalOverstockItems} overstocked`}
+            subtitle={formatCurrency(inventoryData.summaryStats.totalStockValue)}
             icon={<Package className="h-5 w-5" />}
             iconPosition="right"
           />
         </div>
         
-        <div className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg opacity-60">
-          <MetricCard 
-            title="Stock Value"
-            value={formatCurrency(inventoryData.summaryStats.totalStockValue)}
-            subtitle="Physical inventory"
-            icon={<PoundSterling className="h-5 w-5" />}
-            iconPosition="right"
-          />
-        </div>
+        {(() => {
+          const controlMetrics = calculateInventoryControlMetrics(inventoryData.analyzedItems);
+          return (
+            <div onClick={() => handleMetricCardClick('inventory-health')} className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg">
+              <MetricCard 
+                title="Inventory Health"
+                value={`${controlMetrics.summary.healthPercentage.toFixed(1)}%`}
+                subtitle={`${controlMetrics.summary.criticalItems} critical items`}
+                icon={<AlertCircle className="h-5 w-5" />}
+                iconPosition="right"
+                change={{
+                  value: `${controlMetrics.summary.criticalItems} critical`,
+                  type: controlMetrics.summary.criticalItems > 0 ? 'decrease' : 'increase'
+                }}
+              />
+            </div>
+          );
+        })()}
         
         <div onClick={() => handleMetricCardClick('on-order')} className="hover:scale-105 hover:bg-white/5 hover:border-white/20 transition-all duration-200 cursor-pointer border border-transparent rounded-lg">
           <MetricCard 
@@ -11321,6 +11411,21 @@ const MetricFilteredView: React.FC<{
         case 'overstock-value':
           matchesFilter = item.isOverstocked;
           break;
+        case 'inventory-health':
+          // Show critical and reorder items for inventory health review
+          const recentDailyDemand = (item.packs_sold_last_30_days || 0) / 30;
+          const longTermDailyDemand = (item.packs_sold_avg_last_six_months || 0) / 30;
+          const avgDailyDemand = recentDailyDemand > 0 ? 
+            (recentDailyDemand * 0.7 + longTermDailyDemand * 0.3) : 
+            longTermDailyDemand;
+          const safetyStock = item.packs_sold_reva_last_30_days || 0;
+          const leadTimeDays = 14;
+          const reorderPoint = (avgDailyDemand * leadTimeDays) + safetyStock;
+          const currentStock = item.currentStock || 0;
+          
+          // Show items that are critical (below safety stock) or need reordering (below reorder point)
+          matchesFilter = currentStock <= reorderPoint;
+          break;
         default:
           matchesFilter = true;
       }
@@ -11654,6 +11759,7 @@ const MetricFilteredView: React.FC<{
       case 'stock-risk': return 'Stock Risk Items';
       case 'on-order': return 'On Order Items';
       case 'overstock-value': return 'Overstock Items';
+      case 'inventory-health': return 'Inventory Health Review';
       default: return 'Filtered Items';
     }
   };
@@ -11754,6 +11860,7 @@ const MetricFilteredView: React.FC<{
       case 'stock-risk': return 'Items with less than 2 weeks supply based on usage';
       case 'on-order': return 'Items with future commitments on order';
       case 'overstock-value': return 'Items with >6 months stock based on sales data';
+      case 'inventory-health': return 'Items below reorder point requiring attention (critical/reorder status)';
       default: return 'Filtered view of inventory items';
     }
   };
@@ -11909,23 +12016,6 @@ const MetricFilteredView: React.FC<{
         </Card>
       </div>
 
-      {/* Search */}
-      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <Input
-            placeholder="Search by stock code or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-gray-800 border-gray-700 text-white"
-          />
-          <div className="mt-2 text-sm text-gray-400">
-            Showing {filteredStats.totalItems.toLocaleString()} items
-          </div>
-        </CardContent>
-      </Card>
-
-
-
       {/* Supplier Filter for Out of Stock view */}
       {filterType === 'out-of-stock' && (
         <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -12077,6 +12167,12 @@ const MetricFilteredView: React.FC<{
               <div className="text-lg font-medium">No items found</div>
               <div className="text-sm mt-1">Try adjusting your search criteria</div>
             </div>
+          ) : filterType === 'inventory-health' ? (
+            <InventoryHealthTable
+              items={filteredItems}
+              onToggleStar={onToggleStar}
+              starredItems={starredItems}
+            />
           ) : (
             <MetricFilteredAGGrid
               data={data}
