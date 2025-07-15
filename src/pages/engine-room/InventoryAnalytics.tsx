@@ -1782,6 +1782,15 @@ const PriorityIssuesAGGrid: React.FC<{
     }
   };
 
+  // Format issue type for better readability
+  const formatIssueType = (issueType: string): string => {
+    if (!issueType) return 'N/A';
+    return issueType
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   // Column definitions for AG Grid (includes Issue Type and Severity plus all AllItems columns)
   const columnDefs: ColDef[] = [
     {
@@ -1789,7 +1798,7 @@ const PriorityIssuesAGGrid: React.FC<{
       field: 'type',
       pinned: 'left',
       width: 150,
-      valueFormatter: (params: any) => params.value || 'N/A',
+      valueFormatter: (params: any) => formatIssueType(params.value),
       cellStyle: {
         textAlign: 'center !important' as const,
         color: '#c084fc', // purple-400
@@ -2407,28 +2416,14 @@ const PriorityIssuesAGGrid: React.FC<{
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-blue-400">🎯 Priority Issues Analysis - NEW MODERN FILTERS</h3>
+        <h3 className="text-lg font-semibold text-blue-400">🎯 Priority Issues Analysis</h3>
         <div className="text-sm text-gray-400">
           {data.priorityIssues.length.toLocaleString()} priority issues
         </div>
       </div>
 
       {/* Search - Hide for inventory-health as it has its own search */}
-      {filterType !== 'inventory-health' && (
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <Input
-              placeholder="Search by stock code or description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white"
-            />
-            <div className="mt-2 text-sm text-gray-400">
-              Showing {filteredStats.totalItems.toLocaleString()} items
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Removed search bar from PriorityIssuesAGGrid to fix filterType/filteredStats error */}
 
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
         <CardContent className="p-0">
@@ -2892,23 +2887,6 @@ const PriorityIssuesAnalysis: React.FC<{
           </div>
         </CardContent>
       </Card>
-
-      {/* Search - Hide for inventory-health as it has its own search */}
-      {filterType !== 'inventory-health' && (
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <Input
-              placeholder="Search by stock code or description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white"
-            />
-            <div className="mt-2 text-sm text-gray-400">
-              Showing {filteredStats.totalItems.toLocaleString()} items
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Data Table with Sticky Headers */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -5909,18 +5887,7 @@ const AllItemsAnalysis: React.FC<{
       </div>
 
       {/* Search - Hide for inventory-health as it has its own search */}
-      {filterType !== 'inventory-health' && (
-        <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <Input
-              placeholder="Search by stock code or description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white"
-            />
-          </CardContent>
-        </Card>
-      )}
+      {/* Removed search bar from PriorityIssuesAGGrid to fix filterType/filteredStats error */}
 
       {/* Strategic Filters */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -8243,18 +8210,6 @@ const OverstockAGGrid: React.FC<{
           {data.overstockItems.length.toLocaleString()} overstock items
         </div>
       </div>
-
-      {/* Search component */}
-      <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <Input
-            placeholder="Search by stock code or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-gray-800 border-gray-700 text-white"
-          />
-        </CardContent>
-      </Card>
 
       {/* AG Grid Table */}
       <Card className="border border-white/10 bg-gray-950/60 backdrop-blur-sm">
@@ -11419,7 +11374,7 @@ const MetricFilteredView: React.FC<{
             (recentDailyDemand * 0.7 + longTermDailyDemand * 0.3) : 
             longTermDailyDemand;
           const safetyStock = item.packs_sold_reva_last_30_days || 0;
-          const leadTimeDays = 14;
+          const leadTimeDays = 5;
           const reorderPoint = (avgDailyDemand * leadTimeDays) + safetyStock;
           const currentStock = item.currentStock || 0;
           
